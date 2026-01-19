@@ -8,6 +8,22 @@ import { messaging, getToken, onMessage } from '../firebase';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 /**
+ * Check if running inside Flutter WebView
+ * @returns {boolean}
+ */
+function isFlutterWebView() {
+  return !!(window.flutter_inappwebview && window.flutter_inappwebview.callHandler);
+}
+
+/**
+ * Get the current platform type
+ * @returns {'web' | 'mobile'}
+ */
+function getPlatformType() {
+  return isFlutterWebView() ? 'mobile' : 'web';
+}
+
+/**
  * Register service worker for push notifications
  * @returns {Promise<ServiceWorkerRegistration>}
  */
@@ -175,15 +191,16 @@ async function registerFCMToken(userType = 'user', forceUpdate = false) {
 }
 
 /**
- * Remove FCM token from backend (removes all web tokens for this user)
+ * Remove FCM token from backend (removes tokens for current platform)
  * @param {string} userType - 'user', 'vendor', or 'worker'
  */
 async function removeFCMToken(userType = 'user') {
   try {
-    const storageKey = `fcm_token_${userType}_web`;
+    // Detect platform automatically
+    const platform = getPlatformType();
+    const storageKey = `fcm_token_${userType}_${platform}`;
 
-    // Notify Flutter WebView to clear mobile token (Flutter handles its own logout)
-    notifyFlutterLogout(userType);
+    console.log(`[FCM] Removing ${platform} tokens for ${userType}...`);
 
     // Determine API endpoint based on user type
     let endpoint;
@@ -210,7 +227,7 @@ async function removeFCMToken(userType = 'user') {
 
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-    // Call remove-all with platform='web' to clear only web tokens
+    // Call remove-all with detected platform
     await fetch(`${baseUrl}${endpoint}`, {
       method: 'DELETE',
       headers: {
@@ -218,12 +235,12 @@ async function removeFCMToken(userType = 'user') {
         'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify({
-        platform: 'web'
+        platform: platform
       })
     });
 
     localStorage.removeItem(storageKey);
-    console.log('[FCM] ✅ All web FCM tokens removed on logout');
+    console.log(`[FCM] ✅ All ${platform} FCM tokens removed on logout`);
   } catch (error) {
     console.error('[FCM] Error removing FCM tokens:', error);
   }
