@@ -9,6 +9,9 @@ import { VisitVerificationModal } from '../../components/common'; // Import from
 import { toast } from 'react-hot-toast';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 
+// Simple toggle for the simulation button (Controlled via .env)
+const SHOW_SIMULATION_BUTTON = import.meta.env.VITE_ENABLE_MAP_SIMULATION === 'true';
+
 // Zomato-like Premium Map Style (Silver/Clean)
 const mapStyles = [
   { "elementType": "geometry", "stylers": [{ "color": "#f5f5f5" }] },
@@ -123,6 +126,99 @@ const JobMap = () => {
   }, []);
 
   const socket = useAppNotifications('worker'); // Use worker namespace
+
+  // DEBUG: Location Simulator for testing
+  const [isSimulating, setIsSimulating] = useState(false);
+  const simulationRef = useRef(null);
+
+  const startSimulation = () => {
+    if (!currentLocation || !coords || !socket) {
+      toast.error('Wait for map to load first');
+      return;
+    }
+
+    if (!routePath || routePath.length === 0) {
+      toast.error('No road path found. Wait for route to load.');
+      return;
+    }
+
+    setIsSimulating(true);
+    toast.success('🚀 Simulation started! Following the road.');
+
+    // Generate detailed points along the specific road path
+    const pathPoints = [];
+    const stepMeters = 20; // Distance between points (smaller = smoother)
+
+    for (let i = 0; i < routePath.length - 1; i++) {
+      const p1 = routePath[i];
+      const p2 = routePath[i + 1];
+      const dist = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+      const steps = Math.max(1, Math.floor(dist / stepMeters));
+
+      for (let j = 0; j < steps; j++) {
+        const fraction = j / steps;
+        const lat = p1.lat() + (p2.lat() - p1.lat()) * fraction;
+        const lng = p1.lng() + (p2.lng() - p1.lng()) * fraction;
+        pathPoints.push({ lat, lng });
+      }
+    }
+    // Add destination
+    const last = routePath[routePath.length - 1];
+    pathPoints.push({ lat: last.lat(), lng: last.lng() });
+
+    let pathIndex = 0;
+
+    simulationRef.current = setInterval(() => {
+      if (pathIndex >= pathPoints.length) {
+        stopSimulation();
+        toast.success('✅ Arrived at destination!');
+        return;
+      }
+
+      const point = pathPoints[pathIndex];
+      let simHeading = heading;
+
+      // Calculate heading for correct icon rotation
+      if (pathIndex < pathPoints.length - 1) {
+        const nextPoint = pathPoints[pathIndex + 1];
+        simHeading = window.google.maps.geometry.spherical.computeHeading(
+          new window.google.maps.LatLng(point),
+          new window.google.maps.LatLng(nextPoint)
+        );
+      }
+
+      // Emit to socket
+      socket.emit('update_location', {
+        bookingId: id,
+        lat: point.lat,
+        lng: point.lng,
+        heading: simHeading
+      });
+
+      // Update local display
+      setCurrentLocation(point);
+      setHeading(simHeading);
+
+      pathIndex++;
+    }, 1000); // Update every 1 second
+  };
+
+  const stopSimulation = () => {
+    if (simulationRef.current) {
+      clearInterval(simulationRef.current);
+      simulationRef.current = null;
+    }
+    setIsSimulating(false);
+  };
+
+  // Cleanup simulation on unmount
+  useEffect(() => {
+    return () => {
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+      }
+    };
+  }, []);
 
   // Animated location for smooth marker movement
   const [animatedLocation, setAnimatedLocation] = useState(null);
@@ -462,6 +558,17 @@ const JobMap = () => {
         >
           <FiCrosshair className="w-6 h-6" />
         </button>
+
+        {/* DEBUG: Simulation Button */}
+        {SHOW_SIMULATION_BUTTON && (
+          <button
+            onClick={isSimulating ? stopSimulation : startSimulation}
+            className={`absolute top-56 right-4 px-4 py-3 rounded-full shadow-2xl transition-all active:scale-90 z-50 text-xs font-bold ${isSimulating ? 'bg-red-500 text-white' : 'bg-purple-600 text-white'}`}
+            style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
+          >
+            {isSimulating ? '⏹ Stop' : '🚀 Simulate'}
+          </button>
+        )}
       </div>
 
       {/* Modern Bottom Card */}

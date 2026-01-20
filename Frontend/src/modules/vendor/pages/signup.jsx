@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../theme';
 import { sendOTP as sendVendorOTP, register } from '../services/authService';
+import Logo from '../../../components/common/Logo';
 
 const VendorSignup = () => {
   const navigate = useNavigate();
@@ -24,6 +25,10 @@ const VendorSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [documentPreview, setDocumentPreview] = useState({});
 
+  // Refs for auto-focus
+  const nameInputRef = useRef(null);
+  const otpInputRefs = useRef([]);
+
   // Unified Flow: Pre-fill
   useEffect(() => {
     if (location.state?.phone && location.state?.verificationToken) {
@@ -39,18 +44,14 @@ const VendorSignup = () => {
     localStorage.removeItem('vendorData');
   }, []);
 
-  // Sample services - this should come from API
-  const services = [
-    'AC Service',
-    'Electrician',
-    'Plumber',
-    'Carpenter',
-    'Cleaning',
-    'Salon',
-    'Spa',
-    'Massage',
-    'Appliance Repair'
-  ];
+  // Auto-focus logic
+  useEffect(() => {
+    if (step === 'details' && nameInputRef.current) {
+      setTimeout(() => nameInputRef.current.focus(), 100);
+    } else if (step === 'otp' && otpInputRefs.current[0]) {
+      setTimeout(() => otpInputRefs.current[0].focus(), 100);
+    }
+  }, [step]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,14 +65,12 @@ const VendorSignup = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
-      toast.error('Please upload a valid image (JPEG, PNG, WEBP, GIF) or PDF file');
+      toast.error('Please upload a valid image or PDF');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File size should be less than 5MB');
       return;
@@ -135,7 +134,7 @@ const VendorSignup = () => {
   const validatePAN = (pan) => {
     if (!pan) return 'PAN number is required';
     if (pan.length !== 10) return 'PAN number must be exactly 10 characters';
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) return 'Please enter a valid PAN format (e.g., ABCDE1234F)';
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) return 'Invalid PAN format';
     return null;
   };
 
@@ -153,7 +152,6 @@ const VendorSignup = () => {
     if (aadharError) errors.push(aadharError);
     if (panError) errors.push(panError);
 
-    // Document validation
     const hasAadharDoc = formData.documents.some(d => d.type === 'aadhar');
     const hasPanDoc = formData.documents.some(d => d.type === 'pan');
     if (!hasAadharDoc) errors.push('Please upload Aadhar document');
@@ -165,7 +163,6 @@ const VendorSignup = () => {
   const handleDetailsSubmit = async (e) => {
     e.preventDefault();
 
-    // Run all validations
     const errors = validateForm();
     if (errors.length > 0) {
       errors.forEach(err => toast.error(err));
@@ -174,7 +171,6 @@ const VendorSignup = () => {
 
     setIsLoading(true);
 
-    // Unified Flow: Direct Registration
     if (verificationToken) {
       try {
         const aadharDoc = formData.documents.find(d => d.type === 'aadhar')?.url || null;
@@ -187,17 +183,23 @@ const VendorSignup = () => {
           phone: formData.phoneNumber,
           aadhar: formData.aadhar,
           pan: formData.pan,
-          service: [], // Default empty
+          service: [],
           aadharDocument: aadharDoc,
           panDocument: panDoc,
           otherDocuments: otherDocs,
-          verificationToken // Use token
+          verificationToken
         };
 
         const response = await register(registerData);
 
         if (response.success) {
-          toast.success('Registration successful! Your account is pending admin approval.');
+          toast.success(
+            <div className="flex flex-col">
+              <span className="font-bold">Application Submitted!</span>
+              <span className="text-xs">Your vendor account is pending admin approval.</span>
+            </div>,
+            { icon: <FiCheckCircle className="text-[#D68F35]" />, duration: 5000 }
+          );
           navigate('/vendor/login');
         } else {
           toast.error(response.message || 'Registration failed');
@@ -210,41 +212,37 @@ const VendorSignup = () => {
       return;
     }
 
-    // Standard Flow
     try {
       const response = await sendVendorOTP(formData.phoneNumber);
       if (response.success) {
         setOtpToken(response.token);
         setIsLoading(false);
         setStep('otp');
-        toast.success('OTP sent to your phone number');
+        toast.success('OTP sent successfully');
       } else {
         setIsLoading(false);
         toast.error(response.message || 'Failed to send OTP');
       }
     } catch (error) {
       setIsLoading(false);
-      toast.error(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to send OTP');
     }
   };
 
   const handleOtpChange = (index, value) => {
-    if (value.length > 1) return;
+    const cleanValue = value.replace(/\D/g, '').slice(0, 1);
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = cleanValue;
     setOtp(newOtp);
 
-    // Auto focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      if (nextInput) nextInput.focus();
+    if (cleanValue && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      if (prevInput) prevInput.focus();
+      otpInputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -261,7 +259,6 @@ const VendorSignup = () => {
     }
     setIsLoading(true);
     try {
-      // Prepare document URLs (in production, upload to Cloudinary first)
       const aadharDoc = formData.documents.find(d => d.type === 'aadhar')?.url || null;
       const panDoc = formData.documents.find(d => d.type === 'pan')?.url || null;
       const otherDocs = formData.documents.filter(d => d.type === 'other').map(d => d.url);
@@ -280,13 +277,11 @@ const VendorSignup = () => {
         token: otpToken
       };
 
-      console.log('Sending register data:', registerData);
-
       const response = await register(registerData);
 
       if (response.success) {
         setIsLoading(false);
-        toast.success('Registration successful! Your account is pending admin approval.');
+        toast.success('Registration successful! Pending admin approval.');
         navigate('/vendor/login');
       } else {
         setIsLoading(false);
@@ -294,415 +289,294 @@ const VendorSignup = () => {
       }
     } catch (error) {
       setIsLoading(false);
-      toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
+      toast.error(error.response?.data?.message || 'Registration failed');
     }
   };
 
+  const brandColor = themeColors.brand?.teal || '#347989';
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Top Section with Teal Gradient */}
-      <div
-        className="relative h-64 overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, #00a6a6 0%, #008a8a 50%, #006b6b 100%)'
-        }}
-      >
-        {/* Abstract Pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <svg className="w-full h-full" viewBox="0 0 400 400" preserveAspectRatio="none">
-            <path
-              d="M0,200 Q100,100 200,200 T400,200 L400,0 L0,0 Z"
-              fill="white"
-              opacity="0.3"
-            />
-            <path
-              d="M0,300 Q150,150 300,300 T400,300 L400,400 L0,400 Z"
-              fill="white"
-              opacity="0.2"
-            />
-            <path
-              d="M0,100 Q50,50 100,100 T200,100 T300,100 T400,100 L400,0 L0,0 Z"
-              fill="white"
-              opacity="0.25"
-            />
-          </svg>
-        </div>
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl text-center mb-8 relative z-10 animate-fade-in">
+        <Logo className="h-16 w-auto mx-auto transform hover:scale-110 transition-transform duration-500" />
+        <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
+          {step === 'details' ? 'Vendor Registration' : 'Verify Identity'}
+        </h2>
+        <p className="mt-2 text-sm text-gray-600 animate-stagger-1 animate-fade-in">
+          Partner with Homster and grow your business
+        </p>
       </div>
 
-      {/* Bottom Section with White Background */}
-      <div className="relative -mt-20 bg-white rounded-t-3xl min-h-[calc(100vh-16rem)] px-6 pt-8 pb-6">
-        {step === 'details' ? (
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Vendor Registration</h1>
-            <p className="text-gray-600 mb-8">Create your vendor account</p>
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl relative z-10">
+        <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#347989] via-[#D68F35] to-[#BB5F36]" />
 
-            <form onSubmit={handleDetailsSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Name *
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiUser className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter your name"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
-                    required
-                  />
-                </div>
-              </div>
+          {step === 'details' ? (
+            <form onSubmit={handleDetailsSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Basic Details */}
+                <div className="space-y-4 animate-stagger-1 animate-fade-in">
+                  <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Business Profile</h3>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email *
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiMail className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="demo@email.com"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone Number *
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiPhone className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={(e) => handleInputChange({
-                      target: {
-                        name: 'phoneNumber',
-                        value: e.target.value.replace(/\D/g, '')
-                      }
-                    })}
-                    placeholder="Enter your phone number"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
-                    maxLength={10}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Aadhar Number *
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiFileText className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="aadhar"
-                    value={formData.aadhar}
-                    onChange={(e) => handleInputChange({
-                      target: {
-                        name: 'aadhar',
-                        value: e.target.value.replace(/\D/g, '').slice(0, 12)
-                      }
-                    })}
-                    placeholder="Enter 12-digit Aadhar number"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
-                    maxLength={12}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  PAN Number *
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiFileText className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="pan"
-                    value={formData.pan}
-                    onChange={(e) => handleInputChange({
-                      target: {
-                        name: 'pan',
-                        value: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)
-                      }
-                    })}
-                    placeholder="Enter 10-character PAN number"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
-                    maxLength={10}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Service Selection Removed */}
-
-              {/* Document Upload Section */}
-              <div className="space-y-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Documents *
-                </label>
-
-                {/* Aadhar Document */}
-                <div>
-                  <label className="block text-xs text-gray-600 mb-2">Aadhar Document</label>
-                  {documentPreview.aadhar ? (
-                    <div className="relative">
-                      <img
-                        src={documentPreview.aadhar}
-                        alt="Aadhar"
-                        className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeDocument('aadhar')}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <FiX className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
-                      <div className="text-center">
-                        <FiUpload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                        <span className="text-sm text-gray-600">Upload Aadhar</span>
+                  <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                        <FiUser className="text-gray-400" />
                       </div>
                       <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleDocumentUpload(e, 'aadhar')}
-                        className="hidden"
+                        ref={nameInputRef}
+                        type="text"
+                        name="name"
+                        required
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
+                        style={{ '--tw-ring-color': brandColor }}
+                        placeholder="Organization name"
                       />
-                    </label>
-                  )}
-                </div>
-
-                {/* PAN Document */}
-                <div>
-                  <label className="block text-xs text-gray-600 mb-2">PAN Document</label>
-                  {documentPreview.pan ? (
-                    <div className="relative">
-                      <img
-                        src={documentPreview.pan}
-                        alt="PAN"
-                        className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeDocument('pan')}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <FiX className="w-4 h-4" />
-                      </button>
                     </div>
-                  ) : (
-                    <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
-                      <div className="text-center">
-                        <FiUpload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                        <span className="text-sm text-gray-600">Upload PAN</span>
+                  </div>
+
+                  <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                        <FiMail className="text-gray-400" />
                       </div>
                       <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleDocumentUpload(e, 'pan')}
-                        className="hidden"
+                        type="email"
+                        name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
+                        style={{ '--tw-ring-color': brandColor }}
+                        placeholder="vendor@example.com"
                       />
-                    </label>
-                  )}
-                </div>
-
-                {/* Other Documents */}
-                <div>
-                  <label className="block text-xs text-gray-600 mb-2">Other Documents (Optional)</label>
-                  {documentPreview.other ? (
-                    <div className="relative">
-                      <img
-                        src={documentPreview.other}
-                        alt="Other"
-                        className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeDocument('other')}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <FiX className="w-4 h-4" />
-                      </button>
                     </div>
-                  ) : (
-                    <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
-                      <div className="text-center">
-                        <FiUpload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                        <span className="text-sm text-gray-600">Upload Other Documents</span>
+                  </div>
+
+                  {!verificationToken && (
+                    <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 border-r pr-2 flex items-center pointer-events-none">
+                          <span className="text-gray-500 text-sm font-bold">+91</span>
+                        </div>
+                        <input
+                          type="tel"
+                          required
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData(p => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                          className="block w-full pl-14 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
+                          style={{ '--tw-ring-color': brandColor }}
+                          placeholder="9876543210"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Aadhar Number</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                        <FiFileText className="text-gray-400" />
                       </div>
                       <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleDocumentUpload(e, 'other')}
-                        className="hidden"
+                        type="text"
+                        required
+                        value={formData.aadhar}
+                        onChange={(e) => setFormData(p => ({ ...p, aadhar: e.target.value.replace(/\D/g, '').slice(0, 12) }))}
+                        className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
+                        style={{ '--tw-ring-color': brandColor }}
+                        placeholder="1234 5678 9012"
                       />
-                    </label>
-                  )}
+                    </div>
+                  </div>
+
+                  <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                        <FiFileText className="text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={formData.pan}
+                        onChange={(e) => setFormData(p => ({ ...p, pan: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) }))}
+                        className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
+                        style={{ '--tw-ring-color': brandColor }}
+                        placeholder="ABCDE1234F"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Documents Section */}
+                <div className="space-y-4 animate-stagger-2 animate-fade-in">
+                  <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Verification Docs</h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Aadhar Upload */}
+                    <div className="space-y-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Aadhar Card</p>
+                      {documentPreview.aadhar ? (
+                        <div className="relative group overflow-hidden rounded-xl">
+                          <img src={documentPreview.aadhar} className="w-full h-28 object-cover border transform group-hover:scale-110 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" onClick={() => removeDocument('aadhar')} className="bg-red-500 text-white rounded-full p-2 shadow-xl hover:bg-red-600 transition-colors">
+                              <FiX size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group">
+                          <FiUpload className="text-gray-400 mb-2 group-hover:text-[#347989] group-hover:-translate-y-1 transition-all" />
+                          <span className="text-[10px] text-gray-500 font-medium">Click to upload</span>
+                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleDocumentUpload(e, 'aadhar')} />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* PAN Upload */}
+                    <div className="space-y-2 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">PAN Card</p>
+                      {documentPreview.pan ? (
+                        <div className="relative group overflow-hidden rounded-xl">
+                          <img src={documentPreview.pan} className="w-full h-28 object-cover border transform group-hover:scale-110 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" onClick={() => removeDocument('pan')} className="bg-red-500 text-white rounded-full p-2 shadow-xl hover:bg-red-600 transition-colors">
+                              <FiX size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group">
+                          <FiUpload className="text-gray-400 mb-2 group-hover:text-[#347989] group-hover:-translate-y-1 transition-all" />
+                          <span className="text-[10px] text-gray-500 font-medium">Click to upload</span>
+                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleDocumentUpload(e, 'pan')} />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-teal-50 border border-teal-100 rounded-xl mt-4 animate-pulse-subtle">
+                    <p className="text-xs text-teal-700 leading-relaxed italic">
+                      "Homster values trust. Please ensure all documents are clear and valid for faster approval."
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading || !formData.name.trim() || !formData.email.trim() || !formData.phoneNumber || formData.phoneNumber.length < 10 || !formData.aadhar || formData.aadhar.length !== 12 || !formData.pan || formData.pan.length !== 10 || formData.documents.length < 2}
-                className="w-full py-4 rounded-xl text-white font-semibold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: themeColors.button,
-                  boxShadow: '0 4px 12px rgba(0, 166, 166, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.4)';
-                    e.currentTarget.style.backgroundColor = '#008a8a';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 166, 166, 0.3)';
-                  e.currentTarget.style.backgroundColor = themeColors.button;
-                }}
-              >
-                {isLoading ? (verificationToken ? 'Registering...' : 'Sending OTP...') : (verificationToken ? 'Register' : 'Send OTP')}
-              </button>
+              <div className="animate-stagger-3 animate-fade-in">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-base font-bold rounded-xl text-white transition-all transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  style={{
+                    backgroundColor: brandColor,
+                    boxShadow: `0 10px 15px -3px ${brandColor}4D`
+                  }}
+                >
+                  <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
+                  {isLoading ? (
+                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <span className="flex items-center relative z-10">
+                      {verificationToken ? 'Finish Application' : 'Proceed to Verify'}
+                      <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  )}
+                </button>
+              </div>
             </form>
+          ) : (
+            <div className="space-y-6">
+              <button
+                onClick={() => setStep('details')}
+                className="flex items-center text-sm text-gray-500 hover:text-[#347989] transition-colors mb-4 animate-fade-in"
+              >
+                <FiChevronLeft className="mr-1" /> Re-check details
+              </button>
 
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                Already have an Account?{' '}
-                <Link to="/vendor/login" className="font-semibold" style={{ color: themeColors.button }}>
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <button
-              onClick={() => setStep('details')}
-              className="mb-4 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ← Back
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Enter OTP</h1>
-            <p className="text-gray-600 mb-2">
-              We've sent a 6-digit OTP to {formData.phoneNumber}
-            </p>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const response = await sendVendorOTP(formData.phoneNumber);
-                  if (response.success) {
-                    setOtpToken(response.token);
-                    toast.success('OTP resent!');
-                  } else {
-                    toast.error(response.message || 'Failed to resend OTP');
-                  }
-                } catch (error) {
-                  toast.error(error.response?.data?.message || 'Failed to resend OTP');
-                }
-              }}
-              className="text-sm mb-8 font-semibold"
-              style={{ color: themeColors.button }}
-            >
-              Resend OTP
-            </button>
+              <div className="text-center animate-fade-in">
+                <h3 className="text-xl font-bold text-gray-900">One Last Step</h3>
+                <p className="text-sm text-gray-500">Enter the 6-digit code sent to your phone</p>
+              </div>
 
-            <form onSubmit={handleOtpSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-4">
-                  Enter OTP
-                </label>
-                <div className="flex gap-3 justify-center">
+              <form onSubmit={handleOtpSubmit} className="space-y-8">
+                <div className="flex justify-between gap-3 px-4 sm:px-12 animate-stagger-1 animate-fade-in">
                   {otp.map((digit, index) => (
                     <input
                       key={index}
-                      id={`otp-${index}`}
+                      ref={(el) => (otpInputRefs.current[index] = el)}
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:outline-none text-gray-900"
-                      style={{ borderColor: 'rgb(209, 213, 219)' }}
-                      onFocus={(e) => e.target.style.borderColor = themeColors.button}
-                      onBlur={(e) => e.target.style.borderColor = 'rgb(209, 213, 219)'}
+                      className="w-full h-14 text-center text-xl font-bold border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 outline-none transition-all duration-300 hover:border-gray-400"
+                      style={{ '--tw-ring-color': brandColor, backgroundColor: digit ? `${brandColor}05` : 'white' }}
                     />
                   ))}
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={isLoading || otp.join('').length !== 6}
-                className="w-full py-4 rounded-xl text-white font-semibold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: themeColors.button,
-                  boxShadow: '0 4px 12px rgba(0, 166, 166, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.4)';
-                    e.currentTarget.style.backgroundColor = '#008a8a';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 166, 166, 0.3)';
-                  e.currentTarget.style.backgroundColor = themeColors.button;
-                }}
-              >
-                {isLoading ? 'Verifying...' : 'Verify & Sign Up'}
-              </button>
-            </form>
-          </div>
-        )}
+                <div className="text-center animate-stagger-2 animate-fade-in">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const response = await sendVendorOTP(formData.phoneNumber);
+                        if (response.success) {
+                          setOtpToken(response.token);
+                          toast.success('OTP sent again');
+                        }
+                      } catch (e) { toast.error('Resend failed'); }
+                    }}
+                    className="text-sm font-semibold transition-colors duration-300 opacity-70 hover:opacity-100"
+                    style={{ color: brandColor }}
+                  >
+                    Resend Code
+                  </button>
+                </div>
+
+                <div className="animate-stagger-3 animate-fade-in">
+                  <button
+                    type="submit"
+                    disabled={isLoading || otp.join('').length !== 6}
+                    className="group relative w-full py-4 rounded-xl text-white font-bold transition-all transform hover:-translate-y-1 shadow-lg disabled:opacity-50 overflow-hidden"
+                    style={{ backgroundColor: brandColor, boxShadow: `0 10px 15px -3px ${brandColor}4D` }}
+                  >
+                    <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
+                    <span className="relative z-10">
+                      {isLoading ? 'Processing...' : 'Verify & Register'}
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+
+        <p className="mt-8 text-center text-sm text-gray-600 animate-fade-in animate-stagger-4">
+          Already a partner?{' '}
+          <Link to="/vendor/login" className="font-bold hover:text-[#D68F35] transition-colors" style={{ color: brandColor }}>
+            Login here
+          </Link>
+        </p>
       </div>
     </div>
   );
 };
 
 export default VendorSignup;
-

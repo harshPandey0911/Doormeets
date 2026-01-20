@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiUser, FiMail, FiPhone } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../theme';
 import { userAuthService } from '../../../services/authService';
+import Logo from '../../../components/common/Logo';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -16,16 +17,29 @@ const Signup = () => {
   });
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpToken, setOtpToken] = useState('');
-  const [verificationToken, setVerificationToken] = useState(''); // New State
+  const [verificationToken, setVerificationToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Refs for auto-focus
+  const nameInputRef = useRef(null);
+  const otpInputRefs = useRef([]);
+
   // Pre-fill from navigation state (Unified Flow)
-  React.useEffect(() => {
+  useEffect(() => {
     if (location.state?.phone && location.state?.verificationToken) {
       setFormData(prev => ({ ...prev, phoneNumber: location.state.phone }));
       setVerificationToken(location.state.verificationToken);
     }
   }, [location.state]);
+
+  // Auto-focus logic
+  useEffect(() => {
+    if (step === 'details' && nameInputRef.current) {
+      setTimeout(() => nameInputRef.current.focus(), 100);
+    } else if (step === 'otp' && otpInputRefs.current[0]) {
+      setTimeout(() => otpInputRefs.current[0].focus(), 100);
+    }
+  }, [step]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,7 +87,6 @@ const Signup = () => {
   const handleDetailsSubmit = async (e) => {
     e.preventDefault();
 
-    // Run all validations
     const errors = validateForm();
     if (errors.length > 0) {
       errors.forEach(err => toast.error(err));
@@ -82,21 +95,26 @@ const Signup = () => {
 
     setIsLoading(true);
 
-    // If we have verification token, register directly (SKIP OTP)
     if (verificationToken) {
       try {
         const response = await userAuthService.register({
           name: formData.name,
           email: formData.email || null,
-          verificationToken // Use token instead of OTP
+          verificationToken
         });
         if (response.success) {
-          // Register FCM
           try {
             const { registerFCMToken } = await import('../../../services/pushNotificationService');
             await registerFCMToken('user', true);
           } catch (e) { console.error(e); }
-          toast.success('Account created successfully!');
+
+          toast.success(
+            <div className="flex flex-col">
+              <span className="font-bold">Welcome to Homster!</span>
+              <span className="text-xs">Your account has been created successfully.</span>
+            </div>,
+            { icon: <FiCheckCircle className="text-green-500" /> }
+          );
           navigate('/user');
         } else {
           toast.error(response.message || 'Registration failed');
@@ -109,14 +127,13 @@ const Signup = () => {
       return;
     }
 
-    // Standard Flow (Send OTP)
     try {
       const response = await userAuthService.sendOTP(formData.phoneNumber, formData.email || null);
       if (response.success) {
         setOtpToken(response.token);
         setIsLoading(false);
         setStep('otp');
-        toast.success('OTP sent to your phone number');
+        toast.success('OTP sent successfully');
       } else {
         setIsLoading(false);
         toast.error(response.message || 'Failed to send OTP');
@@ -127,24 +144,20 @@ const Signup = () => {
     }
   };
 
-  // ... handleOtpChange ... handleOtpKeyDown ... handleOtpSubmit (unchanged for fallback)
   const handleOtpChange = (index, value) => {
-    if (value.length > 1) return;
+    const cleanValue = value.replace(/\D/g, '').slice(0, 1);
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = cleanValue;
     setOtp(newOtp);
 
-    // Auto focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      if (nextInput) nextInput.focus();
+    if (cleanValue && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      if (prevInput) prevInput.focus();
+      otpInputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -177,7 +190,13 @@ const Signup = () => {
           console.error('FCM Registration failed on signup:', fcmError);
         }
 
-        toast.success('Account created successfully!');
+        toast.success(
+          <div className="flex flex-col">
+            <span className="font-bold">Welcome to Homster!</span>
+            <span className="text-xs">Account created successfully.</span>
+          </div>,
+          { icon: <FiCheckCircle className="text-green-500" /> }
+        );
         navigate('/user');
       } else {
         setIsLoading(false);
@@ -189,241 +208,225 @@ const Signup = () => {
     }
   };
 
+  const brandColor = themeColors.brand?.teal || '#347989';
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Top Section with Teal Gradient */}
-      <div
-        className="relative h-64 overflow-hidden"
-        style={{
-          background: themeColors.headerGradient
-        }}
-      >
-        {/* Abstract Pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <svg className="w-full h-full" viewBox="0 0 400 400" preserveAspectRatio="none">
-            <path
-              d="M0,200 Q100,100 200,200 T400,200 L400,0 L0,0 Z"
-              fill="white"
-              opacity="0.3"
-            />
-            <path
-              d="M0,300 Q150,150 300,300 T400,300 L400,400 L0,400 Z"
-              fill="white"
-              opacity="0.2"
-            />
-            <path
-              d="M0,100 Q50,50 100,100 T200,100 T300,100 T400,100 L400,0 L0,0 Z"
-              fill="white"
-              opacity="0.25"
-            />
-          </svg>
-        </div>
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8 relative z-10 animate-fade-in">
+        <Logo className="h-16 w-auto transform hover:scale-110 transition-transform duration-500 mx-auto" />
+        <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
+          {step === 'details' ? 'Create Account' : 'Verify Phone'}
+        </h2>
+        <p className="mt-2 text-sm text-gray-600 animate-stagger-1 animate-fade-in">
+          {step === 'details' ? 'Join Homster to start booking services' : `We've sent a 6-digit code to ${formData.phoneNumber}`}
+        </p>
       </div>
 
-      {/* Bottom Section with White Background */}
-      <div className="relative -mt-20 bg-white rounded-t-3xl min-h-[calc(100vh-16rem)] px-6 pt-8 pb-6">
-        {step === 'details' ? (
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome</h1>
-            <p className="text-gray-600 mb-8">Create your account to get started</p>
+      <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0 relative z-10">
+        <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#347989] via-[#D68F35] to-[#BB5F36]" />
 
+          {step === 'details' ? (
             <form onSubmit={handleDetailsSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Name *
+              {verificationToken && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/user/login')}
+                  className="flex items-center text-sm text-gray-500 hover:text-[#347989] transition-colors mb-4 animate-fade-in"
+                >
+                  <FiChevronLeft className="mr-1" /> Back to Login
+                </button>
+              )}
+
+              <div className="animate-stagger-1 animate-fade-in">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
                 </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiUser className="w-5 h-5 text-gray-400" />
+                <div className="relative rounded-xl shadow-sm group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                    <FiUser className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    type="text"
+                    ref={nameInputRef}
+                    id="name"
                     name="name"
+                    type="text"
+                    required
                     value={formData.name}
                     onChange={handleInputChange}
+                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
                     placeholder="Enter your name"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
-                    required
+                    style={{ '--tw-ring-color': brandColor }}
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email (Optional)
+              <div className="animate-stagger-2 animate-fade-in">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-gray-400 text-xs font-normal ml-1">(Optional)</span>
                 </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiMail className="w-5 h-5 text-gray-400" />
+                <div className="relative rounded-xl shadow-sm group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                    <FiMail className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    type="email"
+                    id="email"
                     name="email"
+                    type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="demo@email.com"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
+                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
+                    placeholder="you@example.com"
+                    style={{ '--tw-ring-color': brandColor }}
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Phone Number *
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <FiPhone className="w-5 h-5 text-gray-400" />
+              {!verificationToken && (
+                <div className="animate-stagger-3 animate-fade-in">
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  <div className="relative rounded-xl shadow-sm group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                      <FiPhone className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <div className="absolute inset-y-0 left-10 flex items-center pointer-events-none">
+                      <span className="text-gray-500 font-medium border-r border-gray-300 pr-2">+91</span>
+                    </div>
+                    <input
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      type="tel"
+                      required
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                      className="block w-full pl-24 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
+                      placeholder="9876543210"
+                      style={{ '--tw-ring-color': brandColor }}
+                    />
                   </div>
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={(e) => handleInputChange({
-                      target: {
-                        name: 'phoneNumber',
-                        value: e.target.value.replace(/\D/g, '')
-                      }
-                    })}
-                    placeholder="Enter your phone number"
-                    className="w-full pl-12 pr-4 py-4 border-b-2 border-gray-300 focus:outline-none text-gray-900 placeholder-gray-400"
-                    style={{ borderBottomColor: 'transparent' }}
-                    onFocus={(e) => e.target.style.borderBottomColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
-                    maxLength={10}
-                    required
-                  />
                 </div>
+              )}
+
+              <div className="animate-stagger-4 animate-fade-in">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed  overflow-hidden"
+                  style={{
+                    backgroundColor: brandColor,
+                    boxShadow: `0 10px 15px -3px ${brandColor}4D`
+                  }}
+                >
+                  <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="flex items-center relative z-10">
+                      {verificationToken ? 'Complete Registration' : 'Send OTP'}
+                      <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  )}
+                </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={isLoading || !formData.name.trim() || !formData.phoneNumber || formData.phoneNumber.length < 10}
-                className="w-full py-4 rounded-xl text-white font-semibold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: themeColors.button,
-                  boxShadow: `0 4px 12px ${themeColors.brand.teal}4D`
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = `0 6px 16px ${themeColors.brand.teal}66`;
-                    e.currentTarget.style.backgroundColor = themeColors.brand.teal;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = `0 4px 12px ${themeColors.brand.teal}4D`;
-                  e.currentTarget.style.backgroundColor = themeColors.button;
-                }}
-              >
-                {isLoading ? (verificationToken ? 'Registering...' : 'Sending OTP...') : (verificationToken ? 'Register' : 'Send OTP')}
-              </button>
             </form>
+          ) : (
+            <div className="space-y-6">
+              <button
+                type="button"
+                onClick={() => setStep('details')}
+                className="flex items-center text-sm text-gray-500 hover:text-[#347989] transition-colors mb-4 animate-fade-in"
+              >
+                <FiChevronLeft className="mr-1" /> Edit details
+              </button>
 
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                Already have an Account?{' '}
-                <Link to="/user/login" className="font-semibold" style={{ color: themeColors.button }}>
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <button
-              onClick={() => setStep('details')}
-              className="mb-4 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ← Back
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Enter OTP</h1>
-            <p className="text-gray-600 mb-2">
-              We've sent a 6-digit OTP to {formData.phoneNumber}
-            </p>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const response = await userAuthService.sendOTP(formData.phoneNumber, formData.email || null);
-                  if (response.success) {
-                    setOtpToken(response.token);
-                    toast.success('OTP resent!');
-                  } else {
-                    toast.error(response.message || 'Failed to resend OTP');
-                  }
-                } catch (error) {
-                  toast.error(error.response?.data?.message || 'Failed to resend OTP');
-                }
-              }}
-              className="text-sm mb-8 font-semibold"
-              style={{ color: themeColors.button }}
-            >
-              Resend OTP
-            </button>
-
-            <form onSubmit={handleOtpSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-4">
-                  Enter OTP
-                </label>
-                <div className="flex gap-3 justify-center">
+              <form onSubmit={handleOtpSubmit} className="space-y-8">
+                <div className="flex justify-between gap-2 sm:gap-4 animate-stagger-1 animate-fade-in">
                   {otp.map((digit, index) => (
                     <input
                       key={index}
-                      id={`otp-${index}`}
+                      ref={(el) => (otpInputRefs.current[index] = el)}
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:outline-none text-gray-900"
-                      style={{ borderColor: 'rgb(209, 213, 219)' }}
-                      onFocus={(e) => e.target.style.borderColor = themeColors.button}
-                      onBlur={(e) => e.target.style.borderColor = 'rgb(209, 213, 219)'}
+                      className="w-full h-14 text-center text-xl font-bold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
+                      style={{
+                        '--tw-ring-color': brandColor,
+                        caretColor: brandColor,
+                        backgroundColor: digit ? `${brandColor}05` : 'white'
+                      }}
                     />
                   ))}
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={isLoading || otp.join('').length !== 6}
-                className="w-full py-4 rounded-xl text-white font-semibold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: themeColors.button,
-                  boxShadow: `0 4px 12px ${themeColors.brand.teal}4D`
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = `0 6px 16px ${themeColors.brand.teal}66`;
-                    e.currentTarget.style.backgroundColor = themeColors.brand.teal;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = `0 4px 12px ${themeColors.brand.teal}4D`;
-                  e.currentTarget.style.backgroundColor = themeColors.button;
-                }}
-              >
-                {isLoading ? 'Verifying...' : 'Verify & Sign Up'}
-              </button>
-            </form>
-          </div>
-        )}
+                <div className="text-center animate-stagger-2 animate-fade-in">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const response = await userAuthService.sendOTP(formData.phoneNumber, formData.email || null);
+                        if (response.success) {
+                          setOtpToken(response.token);
+                          toast.success('New code sent!');
+                        }
+                      } catch (error) {
+                        toast.error('Failed to resend code');
+                      }
+                    }}
+                    className="text-sm font-semibold hover:text-[#D68F35] transition-colors duration-300"
+                    style={{ color: brandColor }}
+                  >
+                    Resend code
+                  </button>
+                </div>
+
+                <div className="animate-stagger-3 animate-fade-in">
+                  <button
+                    type="submit"
+                    disabled={isLoading || otp.join('').length !== 6}
+                    className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed  overflow-hidden"
+                    style={{
+                      backgroundColor: brandColor,
+                      boxShadow: `0 10px 15px -3px ${brandColor}4D`
+                    }}
+                  >
+                    <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
+                    {isLoading ? 'Verifying...' : (
+                      <span className="flex items-center relative z-10">
+                        Create Account
+                        <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+
+        <p className="mt-8 text-center text-sm text-gray-500 animate-fade-in animate-stagger-5">
+          Already have an account?{' '}
+          <Link to="/user/login" className="font-semibold text-[#347989] hover:text-[#D68F35] transition-colors duration-300">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );
 };
 
 export default Signup;
-

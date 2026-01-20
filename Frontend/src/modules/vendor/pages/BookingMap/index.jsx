@@ -11,8 +11,8 @@ import vendorService from '../../../../services/vendorService';
 import { toast } from 'react-hot-toast';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 
-// Simple toggle for the simulation button (Set to false to hide)
-const SHOW_SIMULATION_BUTTON = false;
+// Simple toggle for the simulation button (Controlled via .env)
+const SHOW_SIMULATION_BUTTON = import.meta.env.VITE_ENABLE_MAP_SIMULATION === 'true';
 
 // Zomato-like Premium Map Style (Silver/Clean)
 const mapStyles = [
