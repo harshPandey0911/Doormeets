@@ -667,6 +667,24 @@ const payWorker = async (req, res) => {
       booking.save()
     ]);
 
+    // Notify worker about payment
+    const { createNotification } = require('../notificationControllers/notificationController');
+    await createNotification({
+      workerId: worker._id,
+      type: 'payment_received',
+      title: '💰 Payment Received',
+      message: `You received ₹${amount.toLocaleString()} from ${booking.vendorId?.businessName || 'vendor'} for booking #${booking.bookingNumber}`,
+      relatedId: booking._id,
+      relatedType: 'booking',
+      priority: 'high',
+      pushData: {
+        type: 'payment_received',
+        bookingId: booking._id.toString(),
+        amount: parseFloat(amount),
+        link: `/worker/wallet`
+      }
+    });
+
     res.status(200).json({
       success: true,
       message: `Payment of ₹${amount} recorded for ${worker.name}`,

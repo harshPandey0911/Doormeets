@@ -309,11 +309,10 @@ function setupForegroundNotificationHandler(handler) {
     }
     */
 
-    // Show native system notification if supported (even in foreground)
-    // DISABLED: We already show a custom Toast via SocketContext for foreground notifications.
-    // Showing both creates a redundant "double notification" experience.
-    // Show native system notification if supported (even in foreground)
-    // ENABLED: User wants both In-App (Socket) and System Tray notifications simultaneously.
+    // DISABLED: Show system notification when app is in foreground
+    // Since socket.io already shows in-app notifications, showing both creates duplicates.
+    // System notifications will still appear when app is in background (handled by service worker).
+    /*
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
         const notif = new Notification(title, {
@@ -337,6 +336,7 @@ function setupForegroundNotificationHandler(handler) {
         // console.error('Error showing native notification:', e);
       }
     }
+    */
 
     // Call custom handler (e.g. for toast)
     if (handler) {

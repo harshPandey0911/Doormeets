@@ -275,11 +275,7 @@ const startJob = async (req, res) => {
         visitOtp: otp
       });
 
-      io.to(`user_${booking.userId}`).emit('notification', {
-        title: 'Worker Started Journey',
-        message: `Worker is on the way! OTP: ${otp}`,
-        relatedId: booking._id
-      });
+      // Socket notification removed - createNotification already handles this
     }
 
     res.status(200).json({
@@ -407,11 +403,7 @@ const verifyVisit = async (req, res) => {
         status: booking.status,
         message: 'Visit verified successful'
       });
-      io.to(`user_${booking.userId}`).emit('notification', {
-        title: 'Visit Verified',
-        message: 'The professional has arrived at your location.',
-        relatedId: booking._id
-      });
+      // Socket notification removed - createNotification already handles this
     }
 
     res.status(200).json({
@@ -525,11 +517,7 @@ const completeJob = async (req, res) => {
         status: BOOKING_STATUS.WORK_DONE
       });
 
-      io.to(`user_${booking.userId}`).emit('notification', {
-        title: 'Work Completed',
-        message: `Work completed. Your verification OTP is ${payOtp}.`,
-        relatedId: booking._id
-      });
+      // Socket notification removed - createNotification already handles this
     }
 
     res.status(200).json({

@@ -760,11 +760,7 @@ const startSelfJob = async (req, res) => {
         status: BOOKING_STATUS.JOURNEY_STARTED,
         visitOtp: otp
       });
-      io.to(`user_${booking.userId}`).emit('notification', {
-        title: 'Vendor Started Journey',
-        message: `Vendor is on the way! OTP: ${otp}`,
-        relatedId: booking._id
-      });
+      // Socket notification removed - createNotification already handles this
     }
 
     res.status(200).json({ success: true, message: 'Journey started, OTP sent', data: booking });
@@ -814,14 +810,7 @@ const vendorReachedLocation = async (req, res) => {
       }
     });
 
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`user_${booking.userId}`).emit('notification', {
-        title: 'Vendor has Reached!',
-        message: `Vendor has reached your location. OTP: ${otp}`,
-        relatedId: booking._id
-      });
-    }
+    // Socket notification removed - createNotification already handles this
 
     res.status(200).json({ success: true, message: 'User notified that vendor reached' });
   } catch (error) {
@@ -879,11 +868,7 @@ const verifySelfVisit = async (req, res) => {
         status: BOOKING_STATUS.VISITED,
         message: 'Visit verified successful'
       });
-      io.to(`user_${booking.userId}`).emit('notification', {
-        title: 'Visit Verified',
-        message: 'The professional has arrived at your location.',
-        relatedId: booking._id
-      });
+      // Socket notification removed - createNotification already handles this
     }
 
     res.status(200).json({ success: true, message: 'Visit verified', data: booking });
@@ -952,11 +937,7 @@ const completeSelfJob = async (req, res) => {
         bookingId: booking._id,
         status: BOOKING_STATUS.WORK_DONE
       });
-      io.to(`user_${booking.userId}`).emit('notification', {
-        title: 'Work Completed',
-        message: `Work finished! ${req.user.businessName || req.user.name} is preparing your final bill.`,
-        relatedId: booking._id
-      });
+      // Socket notification removed - createNotification already handles this
     }
 
     res.status(200).json({ success: true, message: 'Work done, OTP sent', data: booking });

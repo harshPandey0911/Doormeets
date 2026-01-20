@@ -1,7 +1,6 @@
 const Worker = require('../../models/Worker');
 const Transaction = require('../../models/Transaction');
 const Booking = require('../../models/Booking');
-const Notification = require('../../models/Notification');
 
 /**
  * Get worker wallet with ledger balance
@@ -111,39 +110,24 @@ const requestPayout = async (req, res) => {
 
     const vendor = booking.vendorId;
     const message = `Worker ${worker.name} has requested payment for Booking #${booking.bookingNumber}.`;
-    const title = 'Payout Request';
+    const title = '💸 Payout Request';
 
-    // Create DB Notification
-    await Notification.create({
-      recipient: vendor._id,
+    // Use createNotification helper for proper notification delivery
+    const { createNotification } = require('../notificationControllers/notificationController');
+    await createNotification({
       vendorId: vendor._id,
+      type: 'payout_requested',
       title: title,
       message: message,
-      type: 'payout_requested',
       relatedId: booking._id,
       relatedType: 'booking',
-      isRead: false
+      priority: 'high',
+      pushData: {
+        type: 'payout_requested',
+        bookingId: booking._id.toString(),
+        link: `/vendor/booking/${booking._id}`
+      }
     });
-
-    // Send High Priority Push Notification
-    const fcmTokens = [
-      ...(vendor.fcmTokens || []),
-      ...(vendor.fcmTokenMobile || [])
-    ];
-
-    if (fcmTokens.length > 0) {
-      await sendPushNotification(fcmTokens, {
-        title: title,
-        body: message,
-        data: {
-          type: 'payout_requested',
-          relatedId: booking._id.toString(),
-          relatedType: 'booking',
-          url: `/vendor/booking/${booking._id}` // Helpful for deep linking if supported
-        },
-        highPriority: true // Explicit high priority
-      });
-    }
 
     res.status(200).json({ success: true, message: 'Payment request sent to vendor' });
 
