@@ -615,6 +615,19 @@ const updateBookingStatus = async (req, res) => {
       // Send FCM push notification to user
       // Manual push removed - auto handled by createNotification
       // sendNotificationToUser(booking.userId, { ... });
+
+      // SEND INVOICE EMAILS
+      try {
+        const { sendBookingCompletionEmails } = require('../../services/emailService');
+        const fullBooking = await Booking.findById(booking._id)
+          .populate('userId')
+          .populate('vendorId')
+          .populate('serviceId');
+
+        sendBookingCompletionEmails(fullBooking).catch(err => console.error(err));
+      } catch (emailErr) {
+        console.error('Failed to send completion emails:', emailErr);
+      }
     }
 
     // Emit socket event for real-time UI refresh

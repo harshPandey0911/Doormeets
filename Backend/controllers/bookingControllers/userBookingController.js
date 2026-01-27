@@ -478,6 +478,7 @@ const createBooking = async (req, res) => {
     });
 
     // Send notification to vendor only if assigned (Direct Booking)
+    let vendorObj = null;
     if (vendorId) {
       await createNotification({
         vendorId,
@@ -487,7 +488,15 @@ const createBooking = async (req, res) => {
         relatedId: booking._id,
         relatedType: 'booking'
       });
+      // Fetch vendor details for email
+      const Vendor = require('../../models/Vendor');
+      vendorObj = await Vendor.findById(vendorId);
     }
+
+    // SEND EMAILS (Confirmation)
+    const { sendBookingEmails } = require('../../services/emailService');
+    // Run in background (no await) to speed up response
+    sendBookingEmails(populatedBooking, user, vendorObj, service).catch(err => console.error(err));
 
     // Clear booked items from user's cart
     try {

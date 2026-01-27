@@ -240,6 +240,10 @@ const approveSettlement = async (req, res) => {
     settlement.processedAt = new Date();
     settlement.adminNotes = adminNotes;
     settlement.balanceAfter = vendor.wallet.dues;
+    // Send Dues Payment (Settlement) Email
+    const { sendDuesPaymentApprovedEmail } = require('../../services/emailService');
+    sendDuesPaymentApprovedEmail(vendor, settlement.amount, vendor.wallet.dues).catch(e => console.error(e));
+
     await settlement.save();
 
     res.status(200).json({
@@ -593,6 +597,10 @@ module.exports = {
       withdrawal.netAmount = netAmount;
       await withdrawal.save();
 
+      // Send Withdrawal Approved Email
+      const { sendWithdrawalApprovedEmail } = require('../../services/emailService');
+      sendWithdrawalApprovedEmail(vendor, grossAmount, transactionReference).catch(e => console.error(e));
+
       // Transaction 1: Withdrawal Payout (Gross Amount Debited from Wallet)
       await Transaction.create({
         vendorId: vendor._id,
@@ -658,6 +666,8 @@ module.exports = {
       withdrawal.processedAt = new Date();
       withdrawal.rejectionReason = reason;
       await withdrawal.save();
+
+
 
       res.status(200).json({ success: true, message: 'Withdrawal rejected' });
     } catch (error) {

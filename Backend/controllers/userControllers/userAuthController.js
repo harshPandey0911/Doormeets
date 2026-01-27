@@ -2,7 +2,7 @@ const User = require('../../models/User');
 const { generateTokenPair, verifyRefreshToken, generateVerificationToken, verifyVerificationToken } = require('../../utils/tokenService');
 const { generateOTP, hashOTP, storeOTP, verifyOTP, checkRateLimit } = require('../../utils/redisOtp.util');
 const { sendOTP: sendSMSOTP } = require('../../services/smsService');
-const { sendOTPEmail } = require('../../services/emailService');
+const { sendOTPEmail, sendWelcomeEmail } = require('../../services/emailService');
 const { USER_ROLES } = require('../../utils/constants');
 const { validationResult } = require('express-validator');
 
@@ -194,6 +194,11 @@ const register = async (req, res) => {
       isPhoneVerified: true,
       isEmailVerified: email ? false : true
     });
+
+    // Send Welcome Email
+    if (email) {
+      sendWelcomeEmail(email, name).catch(err => console.error(err));
+    }
 
     // Generate JWT tokens
     const tokens = generateTokenPair({
