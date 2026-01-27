@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiMenu, FiBell, FiLogOut } from 'react-icons/fi';
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -83,6 +83,69 @@ const AdminHeader = ({ onMenuClick }) => {
 
   const { title, description } = getPageInfo(location.pathname);
 
+  // Notification Logic
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = async () => {
+    try {
+      // Import api dynamically if needed or just use fetch with auth headers
+      // Since we don't have api imported, let's use adminAuthService's axios instance if available, or just fetch
+      // Assuming api.js handles interceptors. Let's import api at top.
+      const { default: api } = await import('../../../../services/api');
+      const res = await api.get('/notifications/admin');
+      if (res.data.success) {
+        setNotifications(res.data.data);
+        setUnreadCount(res.data.unreadCount);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // Optional: Poll every 60 seconds
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      const { default: api } = await import('../../../../services/api');
+      await api.put(`/notifications/${id}/read`);
+      // Optimistic update
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const { default: api } = await import('../../../../services/api');
+      await api.put(`/notifications/read-all`);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const { default: api } = await import('../../../../services/api');
+      await api.delete(`/notifications/${id}`);
+      setNotifications(prev => prev.filter(n => n._id !== id));
+      // If deleted was unread, decrease count? We don't know easily without checking.
+      // Ideally re-fetch or check current state
+      fetchNotifications();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
   return (
     <header
       className="bg-white fixed top-0 left-0 right-0 z-30 transition-all duration-300 lg:left-[278px] border-b border-gray-100 shadow-sm"
@@ -116,12 +179,20 @@ const AdminHeader = ({ onMenuClick }) => {
               className="text-gray-700"
               icon={FiBell}
             />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
 
             <NotificationWindow
               isOpen={showNotifications}
               onClose={() => setShowNotifications(false)}
               position="right"
+              notifications={notifications}
+              onMarkAsRead={handleMarkAsRead}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onDelete={handleDelete}
             />
           </div>
 

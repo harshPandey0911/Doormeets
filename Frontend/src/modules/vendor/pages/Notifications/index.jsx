@@ -1,4 +1,3 @@
-```javascript
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiBell, FiCheck, FiX, FiFilter, FiTrash2 } from 'react-icons/fi';
@@ -17,7 +16,7 @@ import {
 const Notifications = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = true);
+  const [loading, setLoading] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [filter, setFilter] = useState('all'); // all, alerts, jobs, payments
 
@@ -171,16 +170,15 @@ const Notifications = () => {
             <button
               key={filterOption.id}
               onClick={() => setFilter(filterOption.id)}
-              className={`px - 4 py - 2 rounded - full font - semibold text - sm whitespace - nowrap transition - all ${
-  filter === filterOption.id
-  ? 'text-white'
-  : 'bg-white text-gray-700'
-} `}
+              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all ${filter === filterOption.id
+                  ? 'text-white'
+                  : 'bg-white text-gray-700'
+                }`}
               style={
                 filter === filterOption.id
                   ? {
                     background: themeColors.button,
-                    boxShadow: `0 2px 8px ${ themeColors.button } 40`,
+                    boxShadow: `0 2px 8px ${themeColors.button}40`,
                   }
                   : {
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -228,9 +226,8 @@ const Notifications = () => {
             {filteredNotifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`bg - white rounded - xl p - 4 shadow - md transition - all relative group ${
-  !notif.read ? 'border-l-4' : ''
-} `}
+                className={`bg-white rounded-xl p-4 shadow-md transition-all relative group ${!notif.read ? 'border-l-4' : ''
+                  }`}
                 style={{
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                   borderLeftColor: !notif.read ? getNotificationColor(notif.type) : 'transparent',
@@ -239,14 +236,14 @@ const Notifications = () => {
                 <div className="flex items-start gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                    style={{ backgroundColor: `${ getNotificationColor(notif.type) } 15` }}
+                    style={{ backgroundColor: `${getNotificationColor(notif.type)}15` }}
                   >
                     {getNotificationIcon(notif.type)}
                   </div>
                   <div className="flex-1 pr-6">
                     <div className="flex items-start justify-between mb-1">
                       <div>
-                        <p className={`font - semibold text - gray - 800 ${ !notif.read ? 'font-bold' : '' } `}>{notif.title}</p>
+                        <p className={`font-semibold text-gray-800 ${!notif.read ? 'font-bold' : ''}`}>{notif.title}</p>
                         <p className="text-sm text-gray-600 mt-1 leading-snug">{notif.message}</p>
                       </div>
                     </div>
@@ -257,9 +254,9 @@ const Notifications = () => {
                       <button
                         onClick={() => {
                           if (notif.relatedType === 'booking' && notif.relatedId) {
-                            navigate(`/ vendor / booking / ${ notif.relatedId } `);
+                            navigate(`/vendor/booking/${notif.relatedId}`);
                           } else if (notif.action === 'view_booking' && notif.bookingId) {
-                            navigate(`/ vendor / booking / ${ notif.bookingId } `);
+                            navigate(`/vendor/booking/${notif.bookingId}`);
                           } else if (notif.action === 'view_wallet') {
                             navigate('/vendor/wallet');
                           }
@@ -279,8 +276,8 @@ const Notifications = () => {
                   {!notif.read && (
                     <button
                       onClick={(e) => {
-                         e.stopPropagation();
-                         handleMarkAsRead(notif.id);
+                        e.stopPropagation();
+                        handleMarkAsRead(notif.id);
                       }}
                       className="p-1.5 rounded-full bg-gray-50 hover:bg-gray-100 text-green-600 transition-colors shadow-sm"
                       title="Mark as read"
@@ -337,4 +334,3 @@ const Notifications = () => {
 };
 
 export default Notifications;
-```

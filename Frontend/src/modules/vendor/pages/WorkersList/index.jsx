@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiUsers, FiPlus, FiEdit2, FiTrash2, FiSearch, FiUser, FiBriefcase, FiPhone } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
@@ -113,11 +114,10 @@ const WorkersList = () => {
             <button
               key={option.id}
               onClick={() => setFilter(option.id)}
-              className={`px-5 py-2.5 rounded-full font-bold text-xs whitespace-nowrap transition-all duration-300 ${
-                filter === option.id 
-                  ? 'text-white shadow-lg shadow-teal-500/20' 
-                  : 'bg-white text-gray-500 border border-gray-100'
-              }`}
+              className={`px-5 py-2.5 rounded-full font-bold text-xs whitespace-nowrap transition-all duration-300 ${filter === option.id
+                ? 'text-white shadow-lg shadow-teal-500/20'
+                : 'bg-white text-gray-500 border border-gray-100'
+                }`}
               style={
                 filter === option.id
                   ? { background: themeColors.button }
@@ -174,7 +174,7 @@ const WorkersList = () => {
           <div className="space-y-4">
             {filteredWorkers.map((worker, index) => {
               const statusRaw = (worker.status || 'OFFLINE').toUpperCase();
-              
+
               let displayStatus = 'Offline';
               let statusColor = '#94A3B8'; // Grey
 
@@ -204,7 +204,7 @@ const WorkersList = () => {
                           </div>
                         )}
                       </div>
-                      <div 
+                      <div
                         className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-4 border-white shadow-sm transition-all duration-300 ${statusRaw === 'ONLINE' ? 'animate-pulse ring-4 ring-green-100' : ''}`}
                         style={{ backgroundColor: statusColor }}
                       />
@@ -218,7 +218,7 @@ const WorkersList = () => {
                           <div className="flex items-center gap-2 mt-0.5">
                             <div className="flex items-center gap-1.5">
                               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: statusColor }} />
-                              <span 
+                              <span
                                 className="text-[10px] font-bold uppercase tracking-wider"
                                 style={{ color: statusColor }}
                               >
@@ -272,7 +272,7 @@ const WorkersList = () => {
                             <span className="text-[10px] text-gray-400 font-bold">+{worker.skills.length - 2}</span>
                           )}
                         </div>
-                        
+
                         <div className="flex items-center gap-3 ml-auto shrink-0">
                           <div className="flex items-center gap-1">
                             <span className="text-amber-400 text-xs text-yellow-500">⭐</span>
@@ -280,7 +280,7 @@ const WorkersList = () => {
                           </div>
                           <div className="h-3 w-[1px] bg-gray-200" />
                           <div className="text-[10px] font-bold text-gray-600">
-                             {worker.completedJobs || 0} Jobs
+                            {worker.completedJobs || 0} Jobs
                           </div>
                         </div>
                       </div>
@@ -292,6 +292,24 @@ const WorkersList = () => {
           </div>
         )}
       </main>
+
+      {/* Floating Action Button */}
+      <motion.button
+        onClick={() => navigate('/vendor/workers/add')}
+        className="fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl active:scale-95 z-50 overflow-hidden"
+        style={{
+          background: themeColors.button,
+          boxShadow: `0 8px 16px ${themeColors.brand.teal}40`,
+          border: '2px solid rgba(255, 255, 255, 0.2)'
+        }}
+        initial={{ scale: 0, opacity: 0, y: 50 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.1 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+      >
+        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <FiPlus className="w-8 h-8 font-bold" />
+      </motion.button>
 
       <BottomNav />
     </div>

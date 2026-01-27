@@ -48,6 +48,12 @@ export const bookingService = {
   addReview: async (id, reviewData) => {
     const response = await api.post(`/users/bookings/${id}/review`, reviewData);
     return response.data;
+  },
+
+  // Get user ratings and reviews
+  getRatings: async (params = {}) => {
+    const response = await api.get('/users/bookings/ratings', { params });
+    return response.data;
   }
 };
 

@@ -3,41 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiBell, FiCheck, FiX, FiChevronRight } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
-// Same structure as single-vendor NotificationWindow, but reads our app notifications from localStorage.
-const NotificationWindow = ({ isOpen, onClose, position = 'right' }) => {
+// NotificationWindow now controlled by parent (AdminHeader)
+const NotificationWindow = ({
+  isOpen,
+  onClose,
+  position = 'right',
+  notifications = [],
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onDelete
+}) => {
   const navigate = useNavigate();
   const windowRef = useRef(null);
 
-  const [notifications, setNotifications] = useState([]);
-
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
-
-  const loadNotifications = () => {
-    try {
-      // vendorNotifications already used across our apps (payment requests etc.)
-      const vendorNotifications = JSON.parse(localStorage.getItem('vendorNotifications') || '[]');
-      // normalize
-      const normalized = vendorNotifications.map((n, idx) => ({
-        id: n.id || `${idx}`,
-        type: n.type || 'general',
-        title: n.type === 'payment' ? 'Payment' : 'Notification',
-        message: n.message || '',
-        read: Boolean(n.read),
-        createdAt: n.timestamp || n.createdAt || new Date().toISOString(),
-        bookingId: n.bookingId,
-      }));
-      setNotifications(normalized);
-    } catch {
-      setNotifications([]);
-    }
-  };
-
-  useEffect(() => {
-    loadNotifications();
-    const onUpdate = () => loadNotifications();
-    window.addEventListener('vendorNotificationsUpdated', onUpdate);
-    return () => window.removeEventListener('vendorNotificationsUpdated', onUpdate);
-  }, []);
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -59,48 +38,19 @@ const NotificationWindow = ({ isOpen, onClose, position = 'right' }) => {
     };
   }, [isOpen, onClose]);
 
-  const markAsRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    try {
-      const vendorNotifications = JSON.parse(localStorage.getItem('vendorNotifications') || '[]');
-      const updated = vendorNotifications.map((n) => (n.id === id ? { ...n, read: true } : n));
-      localStorage.setItem('vendorNotifications', JSON.stringify(updated));
-      window.dispatchEvent(new Event('vendorNotificationsUpdated'));
-    } catch {
-      // ignore
-    }
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    try {
-      const vendorNotifications = JSON.parse(localStorage.getItem('vendorNotifications') || '[]');
-      const updated = vendorNotifications.map((n) => ({ ...n, read: true }));
-      localStorage.setItem('vendorNotifications', JSON.stringify(updated));
-      window.dispatchEvent(new Event('vendorNotificationsUpdated'));
-    } catch {
-      // ignore
-    }
-  };
-
-  const deleteNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    try {
-      const vendorNotifications = JSON.parse(localStorage.getItem('vendorNotifications') || '[]');
-      const updated = vendorNotifications.filter((n) => n.id !== id);
-      localStorage.setItem('vendorNotifications', JSON.stringify(updated));
-      window.dispatchEvent(new Event('vendorNotificationsUpdated'));
-    } catch {
-      // ignore
-    }
-  };
-
   const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
-    if (notification.bookingId) {
-      navigate(`/admin/bookings`); // keep functionality, admin can navigate to bookings
-      onClose();
+    if (!notification.isRead && onMarkAsRead) {
+      onMarkAsRead(notification._id);
     }
+    if (notification.relatedId && notification.relatedType === 'booking') {
+      // Navigate to booking details if possible, or just bookings list
+      // For now, if we have bookingId in data, use it.
+      const bookingId = notification.relatedId || notification.bookingId;
+      if (bookingId) {
+        navigate(`/admin/bookings`);
+      }
+    }
+    onClose();
   };
 
   const positionClasses = {
@@ -142,7 +92,7 @@ const NotificationWindow = ({ isOpen, onClose, position = 'right' }) => {
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
-                    onClick={markAllAsRead}
+                    onClick={onMarkAllAsRead}
                     className="text-xs font-semibold text-primary-600 hover:text-primary-700 px-2 py-1 rounded-lg hover:bg-primary-50 transition-colors"
                   >
                     Mark all read
@@ -168,10 +118,9 @@ const NotificationWindow = ({ isOpen, onClose, position = 'right' }) => {
                 <div className="p-2">
                   {notifications.map((n) => (
                     <div
-                      key={n.id}
-                      className={`p-3 rounded-xl border mb-2 cursor-pointer transition-colors ${
-                        n.read ? 'bg-white border-gray-200' : 'bg-primary-50 border-primary-300'
-                      }`}
+                      key={n._id}
+                      className={`p-3 rounded-xl border mb-2 cursor-pointer transition-colors ${n.isRead ? 'bg-white border-gray-200' : 'bg-primary-50 border-primary-300'
+                        }`}
                       onClick={() => handleNotificationClick(n)}
                     >
                       <div className="flex items-start gap-3">
@@ -184,11 +133,11 @@ const NotificationWindow = ({ isOpen, onClose, position = 'right' }) => {
                           <p className="text-[11px] text-gray-400 mt-2">{new Date(n.createdAt).toLocaleString()}</p>
                         </div>
                         <div className="flex flex-col gap-2">
-                          {!n.read && (
+                          {!n.isRead && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                markAsRead(n.id);
+                                onMarkAsRead && onMarkAsRead(n._id);
                               }}
                               className="p-1.5 rounded-lg hover:bg-gray-100 text-green-600"
                               title="Mark as read"
@@ -199,7 +148,7 @@ const NotificationWindow = ({ isOpen, onClose, position = 'right' }) => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteNotification(n.id);
+                              onDelete && onDelete(n._id);
                             }}
                             className="p-1.5 rounded-lg hover:bg-gray-100 text-red-600"
                             title="Delete"

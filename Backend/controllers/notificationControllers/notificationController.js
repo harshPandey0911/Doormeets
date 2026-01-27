@@ -290,6 +290,55 @@ const getWorkerNotifications = async (req, res) => {
 };
 
 /**
+ * Get admin notifications
+ */
+const getAdminNotifications = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const { isRead, page = 1, limit = 20 } = req.query;
+
+    // Build query
+    const query = { adminId };
+    if (isRead !== undefined) {
+      query.isRead = isRead === 'true';
+    }
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get notifications
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Get total count
+    const total = await Notification.countDocuments(query);
+
+    // Get unread count
+    const unreadCount = await Notification.countDocuments({ adminId, isRead: false });
+
+    res.status(200).json({
+      success: true,
+      data: notifications,
+      unreadCount,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Get admin notifications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notifications. Please try again.'
+    });
+  }
+};
+
+/**
  * Mark notification as read
  */
 const markAsRead = async (req, res) => {
@@ -408,6 +457,7 @@ module.exports = {
   getUserNotifications,
   getVendorNotifications,
   getWorkerNotifications,
+  getAdminNotifications,
   markAsRead,
   markAllAsRead,
   deleteNotification

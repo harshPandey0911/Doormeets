@@ -1089,12 +1089,53 @@ const addReview = async (req, res) => {
   }
 };
 
+/**
+ * Get user ratings and reviews (given by the user)
+ */
+const getUserRatings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch bookings where rating is not null
+    const bookings = await Booking.find({ userId, rating: { $ne: null } })
+      .populate('vendorId', 'name businessName profilePhoto')
+      .populate('serviceId', 'title iconUrl')
+      .populate('workerId', 'name profilePhoto')
+      .sort({ reviewedAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Booking.countDocuments({ userId, rating: { $ne: null } });
+
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Get user ratings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch your ratings'
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
   getBookingById,
   cancelBooking,
   rescheduleBooking,
-  addReview
+  addReview,
+  getUserRatings
 };
 
