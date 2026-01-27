@@ -677,7 +677,8 @@ const Home = () => {
         </main>
       </motion.div>
 
-      <BottomNav />
+      {/* Bottom Navigation */}
+      {!isAddressModalOpen && <BottomNav />}
 
       {/* Category Modal */}
       <CategoryModal

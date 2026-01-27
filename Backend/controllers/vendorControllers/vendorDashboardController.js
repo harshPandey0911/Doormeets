@@ -59,21 +59,28 @@ const getDashboardStats = async (req, res) => {
     });
 
     // Rating (Average from Bookings)
-    const ratingResult = await Booking.aggregate([
-      {
-        $match: {
-          vendorId: vendorId,
-          rating: { $ne: null }
+    // Rating (Average from Bookings)
+    // Primary: Use stored rating in Vendor profile (if available)
+    // Secondary: Calculate from active bookings if stored is 0
+    let rating = vendor.rating || 0;
+
+    if (rating === 0) {
+      const ratingResult = await Booking.aggregate([
+        {
+          $match: {
+            vendorId: vendorId,
+            rating: { $ne: null }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgRating: { $avg: "$rating" }
+          }
         }
-      },
-      {
-        $group: {
-          _id: null,
-          avgRating: { $avg: "$rating" }
-        }
-      }
-    ]);
-    const rating = ratingResult.length > 0 ? parseFloat(ratingResult[0].avgRating.toFixed(1)) : 0;
+      ]);
+      rating = ratingResult.length > 0 ? parseFloat(ratingResult[0].avgRating.toFixed(1)) : 0;
+    }
 
     // Total revenue
     const revenueResult = await Booking.aggregate([

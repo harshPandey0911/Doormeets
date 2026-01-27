@@ -139,7 +139,7 @@ const ServiceDynamic = () => {
 
     const shareData = {
       title: service?.title || 'Service',
-      text: service?.page?.description || `Check out ${service?.title || 'this service'} on Appzeto`,
+      text: service?.page?.description || `Check out ${service?.title || 'this service'} on Homster`,
       url: window.location.href,
     };
 
@@ -325,11 +325,11 @@ const ServiceDynamic = () => {
         onBack={handleBack}
         onSearch={() => setIsSearchOpen(true)}
         onShare={handleShare}
-        isVisible={showStickyHeader}
+        isVisible={showStickyHeader && !showDetailModal}
       />
       <StickySubHeading
         title={currentSection}
-        isVisible={showStickyHeader && !!currentSection}
+        isVisible={showStickyHeader && !!currentSection && !showDetailModal}
       />
 
       <main>
@@ -619,10 +619,8 @@ const ServiceDynamic = () => {
                   {/* Warranty & Cover */}
                   <div className="mb-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-4">
                     <div className="mb-3 flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600">
-                        <span className="text-sm font-bold text-white">✓</span>
-                      </div>
-                      <h3 className="text-lg font-bold text-black">Appzeto cover promise</h3>
+                      <img src="/Homster-logo.png" alt="Homster" className="h-6 w-auto object-contain" />
+                      <h3 className="text-lg font-bold text-black">Homster cover promise</h3>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 rounded-lg bg-white/60 p-2.5">
@@ -693,6 +691,7 @@ const ServiceDynamic = () => {
 
       {/* Floating Menu Button - Small at bottom */}
       {(() => {
+        if (showDetailModal) return null;
         const categoryItems = cartItems.filter(item => item.category === service?.title);
         const categoryCount = categoryItems.length;
 

@@ -20,6 +20,18 @@ const Signup = () => {
   const [otpToken, setOtpToken] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Timer countdown effect
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   // Refs for auto-focus
   const nameInputRef = useRef(null);
@@ -134,6 +146,7 @@ const Signup = () => {
         setOtpToken(response.token);
         setIsLoading(false);
         setStep('otp');
+        setResendTimer(120); // Start timer
         toast.success('OTP sent successfully');
       } else {
         setIsLoading(false);
@@ -212,7 +225,7 @@ const Signup = () => {
   const brandColor = themeColors.brand?.teal || '#347989';
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-y-auto overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-x-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
@@ -372,20 +385,25 @@ const Signup = () => {
                   <button
                     type="button"
                     onClick={async () => {
+                      if (resendTimer > 0) return;
                       try {
                         const response = await userAuthService.sendOTP(formData.phoneNumber, formData.email || null);
                         if (response.success) {
                           setOtpToken(response.token);
+                          setResendTimer(120);
                           toast.success('New code sent!');
                         }
                       } catch (error) {
                         toast.error('Failed to resend code');
                       }
                     }}
-                    className="text-sm font-semibold hover:text-[#D68F35] transition-colors duration-300"
+                    disabled={resendTimer > 0}
+                    className="text-sm font-semibold hover:text-[#D68F35] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: brandColor }}
                   >
-                    Resend code
+                    {resendTimer > 0
+                      ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
+                      : 'Resend code'}
                   </button>
                 </div>
 

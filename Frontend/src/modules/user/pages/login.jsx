@@ -14,6 +14,18 @@ const Login = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpToken, setOtpToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Timer countdown effect
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   // Refs for focus management
   const phoneInputRef = useRef(null);
@@ -50,6 +62,7 @@ const Login = () => {
         setOtpToken(response.token);
         setIsLoading(false);
         setStep('otp');
+        setResendTimer(120); // Start 2 min timer
         toast.success(
           <div className="flex items-center gap-2">
             <FiCheckCircle className="text-green-500" />
@@ -143,7 +156,7 @@ const Login = () => {
   const brandColor = themeColors.brand?.teal || '#347989';
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-y-auto overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-x-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
@@ -264,6 +277,7 @@ const Login = () => {
                     setOtp(['', '', '', '', '', '']);
                     setOtpToken('');
                     setStep('phone');
+                    setResendTimer(0);
                   }}
                   className="flex items-center font-medium text-gray-600 hover:text-[#347989] transition-colors"
                 >
@@ -273,12 +287,13 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={async () => {
-                    if (isLoading) return;
+                    if (isLoading || resendTimer > 0) return;
                     try {
                       setIsLoading(true);
                       const response = await userAuthService.sendOTP(phoneNumber.replace(/\D/g, ''));
                       if (response.success) {
                         setOtpToken(response.token);
+                        setResendTimer(120);
                         toast.success('OTP resent!');
                       }
                     } catch (err) {
@@ -287,10 +302,12 @@ const Login = () => {
                       setIsLoading(false);
                     }
                   }}
-                  disabled={isLoading}
-                  className="font-medium text-[#347989] hover:text-[#D68F35] transition-colors disabled:opacity-50"
+                  disabled={isLoading || resendTimer > 0}
+                  className="font-medium text-[#347989] hover:text-[#D68F35] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Resend OTP
+                  {resendTimer > 0
+                    ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
+                    : 'Resend OTP'}
                 </button>
               </div>
 

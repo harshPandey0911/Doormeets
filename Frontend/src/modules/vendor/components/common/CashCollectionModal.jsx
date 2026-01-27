@@ -169,7 +169,7 @@ const CashCollectionModal = ({
       <div className={`
         bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl
         animate-in slide-in-from-bottom-4 duration-300
-        max-h-[85vh] sm:max-h-[90vh] flex flex-col mb- safe-bottom
+        max-h-[85vh] sm:max-h-[90vh] flex flex-col mb-24
       `}>  {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
           <div>

@@ -28,6 +28,11 @@ const settingsSchema = new mongoose.Schema({
     default: 10000,
     min: 0
   },
+  cancellationPenalty: {
+    type: Number,
+    default: 49,
+    min: 0
+  },
   // Razorpay Settings
   razorpayKeyId: {
     type: String,

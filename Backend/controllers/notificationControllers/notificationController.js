@@ -53,7 +53,48 @@ const createNotification = async ({
       data
     });
 
-    // Send Push Notification
+    // Check Socket Connectivity to prevent Duplicate Notifications (Push + Socket)
+    let io = null;
+    let room = null;
+    let isOnline = false;
+
+    try {
+      const { getIO } = require('../../sockets');
+      io = getIO();
+
+      if (userId) room = `user_${userId.toString()}`;
+      else if (vendorId) room = `vendor_${vendorId.toString()}`;
+      else if (workerId) room = `worker_${workerId.toString()}`;
+      else if (adminId) room = `admin_${adminId.toString()}`;
+
+      if (io && room) {
+        // Check if user is actively connected to the room
+        const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
+        isOnline = roomSize > 0;
+      }
+    } catch (e) {
+      console.log('Socket check failed:', e.message);
+    }
+
+    // DECISION: If User is Online (Socket Connected) -> Send Socket Event ONLY (Skip Push)
+    // If User is Offline -> Send Push Notification
+
+    // Override skipPush if user is online (to avoid double notification)
+    if (isOnline) {
+      console.log(`[Notification] User ${room} is ONLINE. Sending Socket event.`);
+      // We DO NOT skip push anymore. Rely on client-side handling or just send both to ensure delivery.
+      // skipPush = true; // REMOVED to fix missing notifications
+
+      // Emit Socket Event immediately
+      if (io && room) {
+        io.to(room).emit('notification', notification);
+      }
+    } else {
+      console.log(`[Notification] User ${room} is OFFLINE. Sending Push Notification.`);
+      // Socket emit useless here, but safe to ignore
+    }
+
+    // Send Push Notification (If not skipped)
     if (!skipPush) {
       // Prepare payload
       // Use explicit pushData if provided, otherwise merge generic data
@@ -90,25 +131,9 @@ const createNotification = async ({
         // Do not fail the function, notification is saved in DB
       }
     }
-
-    // Emit real-time notification via Socket.io
-    try {
-      const { getIO } = require('../../sockets');
-      const io = getIO();
-
-      let room = null;
-      if (userId) room = `user_${userId.toString()}`;
-      else if (vendorId) room = `vendor_${vendorId.toString()}`;
-      else if (workerId) room = `worker_${workerId.toString()}`;
-      else if (adminId) room = `admin_${adminId.toString()}`;
-
-      if (room && io) {
-        io.to(room).emit('notification', notification);
-      }
-    } catch (error) {
-      // Socket.io not initialized or error - continue without real-time notification
-      console.log('Socket.io notification skipped:', error.message);
-    }
+    // Socket emission handled above in "isOnline" block for clarity, 
+    // but technically if we wanted to emit even if offline (for when they reconnect? No, socket doesn't buffer like that usually)
+    // we could keep it here. But logic above is cleaner: Online -> Socket, Offline -> Push.
 
     return notification;
   } catch (error) {

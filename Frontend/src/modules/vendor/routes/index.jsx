@@ -5,6 +5,7 @@ import BottomNav from '../components/layout/BottomNav';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 import PublicRoute from '../../../components/auth/PublicRoute';
+import CashLimitModal from '../components/common/CashLimitModal'; // Import
 // import useAppNotifications from '../../../hooks/useAppNotifications.jsx'; // Handled globally
 
 // Lazy load wrapper with error handling (same as user app)
@@ -126,6 +127,9 @@ const VendorRoutes = () => {
 
       {/* BottomNav is OUTSIDE Suspense so it persists during page loads */}
       {shouldShowBottomNav && <BottomNav />}
+
+      {/* Global Alert for Cash Limit */}
+      <CashLimitModal />
     </ErrorBoundary>
   );
 };

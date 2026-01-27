@@ -124,6 +124,11 @@ const bookingSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  penalty: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   // Extra Charges (Added by Vendor)
   extraCharges: [{
     name: { type: String, required: true },

@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
 import BottomNav from '../../components/layout/BottomNav';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { cartService } from '../../../../services/cartService';
+import { useCart } from '../../../../context/CartContext';
 import electricianIcon from '../../../../assets/images/icons/services/electrician.png';
 import womensSalonIcon from '../../../../assets/images/icons/services/womens-salon-spa-icon.png';
 import massageMenIcon from '../../../../assets/images/icons/services/massage-men-icon.png';
@@ -15,31 +15,7 @@ import NotificationBell from '../../components/common/NotificationBell';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Load cart items from backend
-  useEffect(() => {
-    const loadCart = async () => {
-      try {
-        setLoading(true);
-        const response = await cartService.getCart();
-        if (response.success) {
-          setCartItems(response.data || []);
-        } else {
-          toast.error(response.message || 'Failed to load cart');
-          setCartItems([]);
-        }
-      } catch (error) {
-        toast.error('Failed to load cart');
-        setCartItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCart();
-  }, []);
+  const { cartItems, isLoading: loading, removeItem, removeCategoryItems, updateItem } = useCart();
 
   // Category icon mapping
   const getCategoryIcon = (category) => {
@@ -80,9 +56,8 @@ const Cart = () => {
 
   const handleDeleteCategory = async (category) => {
     try {
-      const response = await cartService.removeCategoryItems(category);
+      const response = await removeCategoryItems(category);
       if (response.success) {
-        setCartItems(response.data || []);
         toast.success('Category items removed');
       } else {
         toast.error(response.message || 'Failed to remove category items');
@@ -94,9 +69,8 @@ const Cart = () => {
 
   const handleDelete = async (itemId) => {
     try {
-      const response = await cartService.removeItem(itemId);
+      const response = await removeItem(itemId);
       if (response.success) {
-        setCartItems(response.data || []);
         toast.success('Item removed from cart');
       } else {
         toast.error(response.message || 'Failed to remove item');
@@ -112,11 +86,9 @@ const Cart = () => {
       if (!item) return;
 
       const newCount = Math.max(1, (item.serviceCount || 1) + change);
-      const response = await cartService.updateItem(itemId, newCount);
+      const response = await updateItem(itemId, newCount);
 
-      if (response.success) {
-        setCartItems(response.data || []);
-      } else {
+      if (!response.success) {
         toast.error(response.message || 'Failed to update quantity');
       }
     } catch (error) {

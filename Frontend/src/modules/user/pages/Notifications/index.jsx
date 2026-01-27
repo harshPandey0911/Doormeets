@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiBell, FiCheck, FiArrowLeft, FiTrash2 } from 'react-icons/fi';
+import { FiBell, FiCheck, FiArrowLeft, FiTrash2, FiX } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
 import BottomNav from '../../components/layout/BottomNav';
 import {
   getNotifications,
   markAsRead,
-  markAllAsRead
+  markAllAsRead,
+  deleteNotification,
+  deleteAllNotifications
 } from '../../services/notificationService';
 
 const Notifications = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [filter, setFilter] = useState('all'); // all, alerts, jobs, payments
 
   useLayoutEffect(() => {
@@ -49,7 +53,6 @@ const Notifications = () => {
     fetchNotifications();
 
     // Listen for real-time updates (if implemented via window event or socket)
-    // For now assuming the socket global listener might trigger a refresh or we can add one here
     const handleUpdate = () => fetchNotifications();
     window.addEventListener('userNotificationsUpdated', handleUpdate);
 
@@ -74,8 +77,43 @@ const Notifications = () => {
     try {
       await markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      toast.success('All marked as read');
     } catch (error) {
       console.error('Failed to mark all as read', error);
+      toast.error('Failed to mark all as read');
+    }
+  };
+
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    try {
+      // Professional confirmation could be a custom modal, but native confirm is robust for now
+      // Or just delete with undo toast.
+      // User asked for "professionally". Often direct delete is preferred for single items, confirmation for "Clear All".
+      // But let's add no confirm for single item for speed, or a simple one.
+      await deleteNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      toast.success('Notification removed');
+    } catch (error) {
+      console.error('Failed to delete notification', error);
+      toast.error('Failed to delete');
+    }
+  };
+
+  const handleClearAll = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearAll = async () => {
+    try {
+      await deleteAllNotifications();
+      setNotifications([]);
+      toast.success('All notifications cleared');
+      setShowClearConfirm(false);
+    } catch (error) {
+      console.error('Failed to clear notifications', error);
+      toast.error('Failed to clear');
+      setShowClearConfirm(false);
     }
   };
 
@@ -134,7 +172,6 @@ const Notifications = () => {
             <h1 className="text-lg font-bold text-gray-900">Notifications</h1>
           </div>
         </div>
-        {/* Optional: Add clear all or mark all read button in header if desired, or keep in body */}
       </div>
 
       <main className="px-4 py-6">
@@ -142,7 +179,7 @@ const Notifications = () => {
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
           {[
             { id: 'all', label: 'All' },
-            { id: 'jobs', label: 'Bookings' }, // Changed 'Jobs' to 'Bookings' for User
+            { id: 'jobs', label: 'Bookings' },
             { id: 'payments', label: 'Payments' },
           ].map((filterOption) => (
             <button
@@ -168,15 +205,21 @@ const Notifications = () => {
           ))}
         </div>
 
-        {/* Clear All Button */}
+        {/* Action Buttons */}
         {notifications.length > 0 && (
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end gap-4 mb-4">
             <button
               onClick={handleMarkAllRead}
-              className="text-sm font-semibold hover:underline"
-              style={{ color: themeColors.button }}
+              className="text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
             >
               Mark All as Read
+            </button>
+            <button
+              onClick={handleClearAll}
+              className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center gap-1"
+            >
+              <FiTrash2 className="w-3 h-3" />
+              Clear All
             </button>
           </div>
         )}
@@ -218,7 +261,7 @@ const Notifications = () => {
             {filteredNotifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`bg-white rounded-xl p-4 shadow-md transition-all ${!notif.read ? 'border-l-4' : ''
+                className={`bg-white rounded-xl p-4 shadow-md transition-all relative group ${!notif.read ? 'border-l-4' : ''
                   }`}
                 style={{
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -232,23 +275,14 @@ const Notifications = () => {
                   >
                     {getNotificationIcon(notif.type)}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 pr-6"> {/* Added pr-6 to avoid overlap with delete btn */}
                     <div className="flex items-start justify-between mb-1">
                       <div>
-                        <p className="font-semibold text-gray-800">{notif.title}</p>
-                        <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                        <p className={`font-semibold text-gray-800 ${!notif.read ? 'font-bold' : ''}`}>{notif.title}</p>
+                        <p className="text-sm text-gray-600 mt-1 leading-snug">{notif.message}</p>
                       </div>
-                      {!notif.read && (
-                        <button
-                          onClick={() => handleMarkAsRead(notif.id)}
-                          className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                          style={{ color: themeColors.button }}
-                        >
-                          <FiCheck className="w-4 h-4" />
-                        </button>
-                      )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">{notif.time}</p>
+                    <p className="text-xs text-gray-400 mt-2 font-medium">{notif.time}</p>
                     {notif.action && (
                       <button
                         onClick={() => {
@@ -258,13 +292,34 @@ const Notifications = () => {
                             navigate('/user/wallet');
                           }
                         }}
-                        className="mt-2 text-sm font-semibold"
+                        className="mt-3 text-sm font-bold flex items-center gap-1"
                         style={{ color: themeColors.button }}
                       >
-                        View Details →
+                        View Details
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Actions: Mark Read & Delete */}
+                <div className="absolute top-3 right-3 flex gap-2">
+                  {!notif.read && (
+                    <button
+                      onClick={() => handleMarkAsRead(notif.id)}
+                      className="p-1.5 rounded-full bg-gray-50 hover:bg-gray-100 text-green-600 transition-colors shadow-sm"
+                      title="Mark as read"
+                    >
+                      <FiCheck className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => handleDelete(e, notif.id)}
+                    className="p-1.5 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors shadow-sm"
+                    title="Delete"
+                  >
+                    <FiX className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -273,6 +328,35 @@ const Notifications = () => {
       </main>
 
       <BottomNav />
+
+      {/* Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl animate-scale-in">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                <FiTrash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Clear All Notifications?</h3>
+              <p className="text-sm text-gray-500 mt-2">This action cannot be undone.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmClearAll}
+                className="py-3 rounded-xl font-bold text-white bg-red-500 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
+              >
+                Yes, Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

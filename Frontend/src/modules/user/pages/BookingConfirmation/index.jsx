@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import { bookingService } from '../../../../services/bookingService';
 import NotificationBell from '../../components/common/NotificationBell';
+import ConfirmDialog from '../../../../components/common/ConfirmDialog';
 
 // Inline Searching Animation Component
 const SearchingAnimation = () => {
@@ -95,6 +96,7 @@ const BookingConfirmation = () => {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(true); // Show searching by default
+  const [confirmDialog, setConfirmDialog] = useState(false);
 
   useEffect(() => {
     const loadBooking = async () => {
@@ -102,10 +104,17 @@ const BookingConfirmation = () => {
         setLoading(true);
         const response = await bookingService.getById(id);
         if (response.success) {
-          setBooking(response.data);
+          const data = { ...response.data };
+          // Calculate notional display values for plan_benefit
+          if (data.paymentMethod === 'plan_benefit') {
+            if (!data.tax) data.tax = (data.basePrice || 0) * 0.18;
+            if (!data.visitingCharges && !data.visitationFee) data.visitingCharges = 49;
+          }
+          setBooking(data);
+
           // Check if vendor is already assigned
-          const currentStatus = response.data.status?.toLowerCase();
-          if (response.data.vendorId || (currentStatus !== 'requested' && currentStatus !== 'searching')) {
+          const currentStatus = data.status?.toLowerCase();
+          if (data.vendorId || (currentStatus !== 'requested' && currentStatus !== 'searching')) {
             setIsSearching(false);
           }
         } else {
@@ -133,7 +142,14 @@ const BookingConfirmation = () => {
       try {
         const response = await bookingService.getById(id);
         if (response.success) {
-          const updatedBooking = response.data;
+          const updatedBooking = { ...response.data };
+
+          // Calculate notional display values for plan_benefit
+          if (updatedBooking.paymentMethod === 'plan_benefit') {
+            if (!updatedBooking.tax) updatedBooking.tax = (updatedBooking.basePrice || 0) * 0.18;
+            if (!updatedBooking.visitingCharges && !updatedBooking.visitationFee) updatedBooking.visitingCharges = 49;
+          }
+
           setBooking(updatedBooking);
           // If vendor accepted or status changed
           const currentStatus = updatedBooking.status?.toLowerCase();
@@ -203,6 +219,19 @@ const BookingConfirmation = () => {
 
   const handleGoHome = () => {
     navigate('/user', { replace: true });
+  };
+
+  const handleCancelBooking = async () => {
+    try {
+      setLoading(true);
+      await bookingService.cancel(booking._id || booking.id, { reason: 'Cancelled during uncertain vendor search' });
+      toast.success('Booking cancelled successfully');
+      navigate('/user');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to cancel booking');
+      setLoading(false);
+    }
   };
 
   return (
@@ -471,6 +500,15 @@ const BookingConfirmation = () => {
 
           {/* Action Buttons */}
           <div className="space-y-3">
+            {isSearching && (
+              <button
+                onClick={() => setConfirmDialog(true)}
+                className="w-full py-3 rounded-lg text-base font-semibold bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-all mb-4"
+              >
+                Cancel Booking Request
+              </button>
+            )}
+
             <button
               onClick={handleViewDetails}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-base font-semibold text-white transition-all"
@@ -488,6 +526,17 @@ const BookingConfirmation = () => {
           </div>
         </main>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog}
+        onClose={() => setConfirmDialog(false)}
+        onConfirm={handleCancelBooking}
+        title="Cancel Booking Request"
+        message="Are you sure you want to cancel this booking search?"
+        confirmLabel="Yes, Cancel"
+        cancelLabel="No, Keep It"
+        type="danger"
+      />
     </div>
   );
 };

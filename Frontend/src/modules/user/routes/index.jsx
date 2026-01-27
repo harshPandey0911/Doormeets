@@ -59,6 +59,7 @@ const ServiceDynamic = lazyLoad(() => import('../pages/ServiceDynamic'));
 const Scrap = lazyLoad(() => import('../pages/Scrap'));
 const Notifications = lazyLoad(() => import('../pages/Notifications'));
 const HelpSupport = lazyLoad(() => import('../pages/HelpSupport'));
+const CancellationPolicy = lazyLoad(() => import('../pages/CancellationPolicy'));
 
 // Loading fallback component
 import LogoLoader from '../../../components/common/LogoLoader';
@@ -135,6 +136,7 @@ const UserRoutes = () => {
               <Route path="/scrap" element={<ProtectedRoute userType="user"><Scrap /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute userType="user"><Notifications /></ProtectedRoute>} />
               <Route path="/help-support" element={<ProtectedRoute userType="user"><HelpSupport /></ProtectedRoute>} />
+              <Route path="/cancellation-policy" element={<ProtectedRoute userType="user"><CancellationPolicy /></ProtectedRoute>} />
               <Route path="/:slug" element={<ProtectedRoute userType="user"><ServiceDynamic /></ProtectedRoute>} />
             </Routes>
           </PageTransition>

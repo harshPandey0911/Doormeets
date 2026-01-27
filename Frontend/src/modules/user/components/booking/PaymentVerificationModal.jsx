@@ -14,7 +14,11 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
   const extraItems = booking.workDoneDetails?.items || [];
   const extraTotal = extraItems.reduce((sum, item) => sum + (parseFloat(item.price) * (item.qty || 1)), 0);
 
-  const finalTotal = booking.finalAmount || (baseAmount - discount + tax + convenienceFee + extraTotal);
+  const finalTotal = (booking.finalAmount !== undefined && booking.finalAmount !== null)
+    ? booking.finalAmount
+    : (baseAmount - discount + tax + convenienceFee + extraTotal);
+
+  const isPlanBenefit = booking.paymentMethod === 'plan_benefit';
 
   return (
     <AnimatePresence>
@@ -65,24 +69,45 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
               <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Base Amount</span>
-                  <span className="font-bold text-gray-800">₹{baseAmount.toLocaleString()}</span>
+                  {isPlanBenefit ? (
+                    <div className="flex items-center gap-2">
+                      <span className="line-through text-gray-400 text-xs">₹{baseAmount.toLocaleString()}</span>
+                      <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">FREE</span>
+                    </div>
+                  ) : (
+                    <span className="font-bold text-gray-800">₹{baseAmount.toLocaleString()}</span>
+                  )}
                 </div>
 
-                {tax > 0 && (
+                {(tax > 0 || isPlanBenefit) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Tax</span>
-                    <span className="font-bold text-gray-800">+₹{tax.toLocaleString()}</span>
+                    {isPlanBenefit ? (
+                      <div className="flex items-center gap-2">
+                        <span className="line-through text-gray-400 text-xs">₹{tax.toLocaleString()}</span>
+                        <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">FREE</span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-gray-800">+₹{tax.toLocaleString()}</span>
+                    )}
                   </div>
                 )}
 
-                {convenienceFee > 0 && (
+                {(convenienceFee > 0 || isPlanBenefit) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Convenience Fee</span>
-                    <span className="font-bold text-gray-800">+₹{convenienceFee.toLocaleString()}</span>
+                    {isPlanBenefit ? (
+                      <div className="flex items-center gap-2">
+                        <span className="line-through text-gray-400 text-xs">₹{convenienceFee.toLocaleString()}</span>
+                        <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">FREE</span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-gray-800">+₹{convenienceFee.toLocaleString()}</span>
+                    )}
                   </div>
                 )}
 
-                {discount > 0 && (
+                {discount > 0 && !isPlanBenefit && (
                   <div className="flex justify-between text-sm text-green-600 font-medium">
                     <span>Discount</span>
                     <span>-₹{discount.toLocaleString()}</span>

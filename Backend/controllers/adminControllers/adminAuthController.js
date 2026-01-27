@@ -52,7 +52,7 @@ const login = async (req, res) => {
     // Generate JWT tokens
     const tokens = generateTokenPair({
       userId: admin._id,
-      role: admin.role
+      role: USER_ROLES.ADMIN // Force Uppercase ADMIN role from constants
     });
 
     res.status(200).json({

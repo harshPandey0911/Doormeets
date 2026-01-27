@@ -91,6 +91,20 @@ export const deleteNotification = async (notificationId) => {
 };
 
 /**
+ * Delete all notifications
+ * @returns {Promise<boolean>} Success status
+ */
+export const deleteAllNotifications = async () => {
+  try {
+    const response = await api.delete(`${BASE_URL}/delete-all`);
+    return response.data.success;
+  } catch (error) {
+    console.error('Error deleting all notifications:', error);
+    throw error;
+  }
+};
+
+/**
  * Get unread notification count
  * @returns {Promise<number>} Unread count
  */

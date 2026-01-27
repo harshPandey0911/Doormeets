@@ -127,10 +127,19 @@ const ActiveJobs = memo(() => {
   // Memoize filtered jobs to prevent recalculation on every render
   const filteredJobs = useMemo(() => {
     return jobs.filter(job => {
-      const matchesFilter = filter === 'all' ||
-        (filter === 'assigned' && job.status === 'ASSIGNED') ||
-        (filter === 'in_progress' && ['VISITED', 'WORK_DONE'].includes(job.status)) ||
-        (filter === 'completed' && job.status === 'COMPLETED');
+      const status = (job.status || '').toUpperCase();
+
+      let matchesFilter = false;
+      if (filter === 'all') {
+        matchesFilter = true;
+      } else if (filter === 'assigned') {
+        // Jobs that are assigned but not yet in progress or completed
+        matchesFilter = ['ASSIGNED', 'WORKER_ACCEPTED'].includes(status) || (!!job.assignedTo && ['ACCEPTED', 'CONFIRMED'].includes(status));
+      } else if (filter === 'in_progress') {
+        matchesFilter = ['STARTED', 'REACHED', 'VISITED', 'WORK_DONE', 'IN_PROGRESS', 'ON_THE_WAY'].includes(status);
+      } else if (filter === 'completed') {
+        matchesFilter = ['COMPLETED', 'WORKER_PAID', 'SETTLEMENT_PENDING', 'PAID', 'CLOSED'].includes(status);
+      }
 
       const matchesSearch = searchQuery === '' ||
         job.serviceType.toLowerCase().includes(searchQuery.toLowerCase()) ||

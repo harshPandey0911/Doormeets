@@ -146,10 +146,10 @@ api.interceptors.response.use(
       }
     }
 
-    // Handle 403 Forbidden - Role mismatch
+    // Handle 403 Forbidden - Role mismatch or Invalid Token
     if (error.response?.status === 403) {
       console.error('Access Denied (403):', error.response.data.message);
-      // Optional: Redirect if role mismatch is permanent?
+      // Removed automatic logout to prevent login loops during debugging
     }
 
     return Promise.reject(error);

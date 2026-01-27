@@ -57,28 +57,75 @@ const SettlementRequest = () => {
     }
   };
 
-  const handleProofUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_WIDTH = 1000;
+          const MAX_HEIGHT = 1000;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size should be less than 5MB');
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            }));
+          }, 'image/jpeg', 0.8); // 0.8 quality
+        };
+      };
+    });
+  };
+
+  const handleProofUpload = async (e) => {
+    const originalFile = e.target.files[0];
+    if (!originalFile) return;
+
+    if (originalFile.size > 10 * 1024 * 1024) {
+      toast.error('File too large (max 10MB original)');
       return;
     }
 
     // Preview
     const reader = new FileReader();
     reader.onload = () => setProofPreview(reader.result);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(originalFile);
 
-    // Upload to Cloudinary using Backend Signature (Secure)
     try {
+      const loadingToast = toast.loading('Optimizing & Uploading...');
+
+      // Compress client-side
+      const file = await compressImage(originalFile);
+
       // 1. Get Signature from Backend (Generic Endpoint)
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const sigRes = await fetch(`${apiUrl}/api/upload/sign-signature`);
       const sigData = await sigRes.json();
 
       if (!sigData.success) {
+        toast.dismiss(loadingToast);
         throw new Error(sigData.message || 'Failed to get upload signature');
       }
 
@@ -98,16 +145,18 @@ const SettlementRequest = () => {
       );
 
       const data = await res.json();
+      toast.dismiss(loadingToast);
 
       if (data.error) {
         throw new Error(data.error.message);
       }
 
       setFormData(prev => ({ ...prev, paymentProof: data.secure_url }));
-      toast.success('Proof uploaded');
+      toast.success('Proof uploaded successfully');
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error('Failed to upload proof');
+      setProofPreview(null);
     }
   };
 

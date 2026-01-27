@@ -89,48 +89,77 @@ export const CartProvider = ({ children }) => {
 
   // Update item quantity
   const updateItem = useCallback(async (itemId, serviceCount) => {
+    // Optimistic update
+    setCartItems(prev =>
+      prev.map(item => {
+        if (item._id === itemId || item.id === itemId) {
+          const unitPrice = item.unitPrice || (item.serviceCount ? item.price / item.serviceCount : item.price);
+          return {
+            ...item,
+            serviceCount,
+            price: unitPrice * serviceCount
+          };
+        }
+        return item;
+      })
+    );
+
     try {
       const response = await cartService.updateItem(itemId, serviceCount);
       if (response.success && response.data) {
+        // Replace with server data to ensure correctness
         setCartItems(prev =>
           prev.map(item => item._id === itemId ? response.data : item)
         );
+      } else {
+        fetchCart();
       }
       return response;
     } catch (error) {
+      fetchCart();
       throw error;
     }
-  }, []);
+  }, [fetchCart]);
 
   // Remove item from cart - instant update
   const removeItem = useCallback(async (itemId) => {
+    // Optimistic update
+    setCartItems(prev => prev.filter(item => item._id !== itemId && item.id !== itemId));
+    setCartCount(prev => Math.max(0, prev - 1));
+
     try {
       const response = await cartService.removeItem(itemId);
-      if (response.success) {
-        setCartItems(prev => prev.filter(item => item._id !== itemId));
-        setCartCount(prev => Math.max(0, prev - 1));
+      if (!response.success) {
+        // Re-fetch on failure to ensure correct state
+        fetchCart();
       }
       return response;
     } catch (error) {
+      fetchCart();
       throw error;
     }
-  }, []);
+  }, [fetchCart]);
 
   // Remove all items from a category
   const removeCategoryItems = useCallback(async (category) => {
+    // Optimistic update
+    setCartItems(prev => {
+      const filtered = prev.filter(item => item.category !== category);
+      setCartCount(filtered.length);
+      return filtered;
+    });
+
     try {
       const response = await cartService.removeCategoryItems(category);
-      if (response.success) {
-        // Count items being removed
-        const removedCount = cartItems.filter(item => item.category === category).length;
-        setCartItems(prev => prev.filter(item => item.category !== category));
-        setCartCount(prev => Math.max(0, prev - removedCount));
+      if (!response.success) {
+        fetchCart();
       }
       return response;
     } catch (error) {
+      fetchCart();
       throw error;
     }
-  }, [cartItems]);
+  }, [fetchCart]);
 
   // Clear entire cart
   const clearCart = useCallback(async () => {

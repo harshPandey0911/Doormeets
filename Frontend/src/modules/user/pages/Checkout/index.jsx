@@ -39,6 +39,10 @@ const Checkout = () => {
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [userPhone, setUserPhone] = useState('');
 
+  // Custom Contact State (for this booking only)
+  const [contactDetails, setContactDetails] = useState({ name: '', phone: '' });
+  const [showContactModal, setShowContactModal] = useState(false);
+
   // New state for vendor search flow
   const [currentStep, setCurrentStep] = useState('details'); // 'details' | 'searching' | 'waiting' | 'accepted' | 'payment'
   const [acceptedVendor, setAcceptedVendor] = useState(null);
@@ -76,13 +80,25 @@ const Checkout = () => {
 
   // Load user data and cart
   useEffect(() => {
-    const storedUserData = localStorage.getItem('userData');
-    if (storedUserData) {
-      const userData = JSON.parse(storedUserData);
-      if (userData.phone) {
-        setUserPhone(userData.phone);
+    const loadUserData = () => {
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        const userData = JSON.parse(storedUserData);
+        if (userData.phone) {
+          setUserPhone(userData.phone);
+        }
+        // Initialize contact details for editing
+        setContactDetails({
+          name: userData.name || '',
+          phone: userData.phone || ''
+        });
       }
-    }
+    };
+    loadUserData();
+
+    // Refresh on focus to catch updates from profile page
+    window.addEventListener('focus', loadUserData);
+    return () => window.removeEventListener('focus', loadUserData);
   }, []);
 
   useEffect(() => {
@@ -278,6 +294,11 @@ const Checkout = () => {
         discount: savings,
         tax: taxesAndFee,
         visitationFee: finalVisitedFee,
+
+        contactDetails: {
+          name: contactDetails.name,
+          phone: contactDetails.phone.length === 10 && !contactDetails.phone.includes('+') ? `+91${contactDetails.phone}` : contactDetails.phone
+        },
 
         paymentMethod: 'online',
         bookedItems: bookedItemsData
@@ -533,7 +554,7 @@ const Checkout = () => {
         amount: orderResponse.data.amount * 100,
         currency: orderResponse.data.currency || 'INR',
         order_id: orderResponse.data.orderId,
-        name: 'Appzeto',
+        name: 'Homster',
         description: `Payment for ${bookingRequest.serviceName || 'service'}`,
         handler: async function (response) {
           try {
@@ -573,9 +594,9 @@ const Checkout = () => {
           }
         },
         prefill: {
-          name: JSON.parse(localStorage.getItem('userData'))?.name || 'User',
+          name: contactDetails.name || JSON.parse(localStorage.getItem('userData'))?.name || 'User',
           email: JSON.parse(localStorage.getItem('userData'))?.email || '',
-          contact: userPhone
+          contact: contactDetails.phone || userPhone
         },
         theme: {
           color: themeColors.button
@@ -705,7 +726,7 @@ const Checkout = () => {
           key,
           amount: amount * 100,
           currency: 'INR',
-          name: 'Appzeto',
+          name: 'Homster',
           description: `Payment for ${plan.name} ${isUpgrade ? '(Upgrade)' : ''}`,
           order_id: orderId,
           handler: async (response) => {
@@ -1056,11 +1077,15 @@ const Checkout = () => {
             <div className="flex items-center gap-3">
               <FiPhone className="w-5 h-5 text-gray-600" />
               <div>
-                <p className="text-sm font-medium text-black">{JSON.parse(localStorage.getItem('userData'))?.name || 'Verified Customer'}</p>
-                <p className="text-xs text-gray-600">{userPhone || 'Loading...'}</p>
+                <p className="text-sm font-medium text-black">{contactDetails.name || JSON.parse(localStorage.getItem('userData'))?.name || 'Verified Customer'}</p>
+                <p className="text-xs text-gray-600">{contactDetails.phone || userPhone || 'Loading...'}</p>
               </div>
             </div>
-            <button className="text-sm font-medium hover:underline" style={{ color: themeColors.button }}>
+            <button
+              onClick={() => setShowContactModal(true)}
+              className="text-sm font-medium hover:underline"
+              style={{ color: themeColors.button }}
+            >
               Change
             </button>
           </div>
@@ -1164,7 +1189,11 @@ const Checkout = () => {
           <p className="text-sm text-gray-700 mb-2">
             Free cancellations if done more than 12 hrs before the service or if a professional isn't assigned. A fee will be charged otherwise.
           </p>
-          <button className="text-sm font-medium hover:underline" style={{ color: themeColors.button }}>
+          <button
+            onClick={() => navigate('/user/cancellation-policy')}
+            className="text-sm font-medium hover:underline"
+            style={{ color: themeColors.button }}
+          >
             Read full policy
           </button>
         </div>
@@ -1265,6 +1294,72 @@ const Checkout = () => {
         currentStep={currentStep}
         acceptedVendor={acceptedVendor}
       />
+
+      {/* Contact Details Edit Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl animate-scale-in">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Update Contact Details</h3>
+            <p className="text-sm text-gray-500 mb-4">These details will be used for this booking only.</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
+                <input
+                  type="text"
+                  value={contactDetails.name}
+                  onChange={(e) => setContactDetails(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full mt-1 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter name"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Phone Number</label>
+                <div className="flex gap-2">
+                  <span className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-medium select-none">+91</span>
+                  <input
+                    type="tel"
+                    maxLength={10}
+                    value={contactDetails.phone?.replace('+91', '')?.replace(/^\+91/, '') || ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setContactDetails(prev => ({ ...prev, phone: val }));
+                    }}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="9999999999"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  onClick={() => setShowContactModal(false)}
+                  className="py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (contactDetails.name.length < 2) {
+                      toast.error('Please enter a valid name');
+                      return;
+                    }
+                    if (!contactDetails.phone || contactDetails.phone.length < 10) {
+                      toast.error('Please enter a valid 10-digit phone number');
+                      return;
+                    }
+                    setShowContactModal(false);
+                  }}
+                  className="py-3 rounded-xl font-bold text-white shadow-lg shadow-teal-500/30 active:scale-95 transition-all"
+                  style={{ backgroundColor: themeColors.button }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Address Selection Modal */}
       <AddressSelectionModal

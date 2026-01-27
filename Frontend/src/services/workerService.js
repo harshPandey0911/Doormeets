@@ -102,6 +102,16 @@ const workerService = {
   markAllNotificationsAsRead: async () => {
     const response = await api.put('/notifications/read-all');
     return response.data;
+  },
+
+  deleteNotification: async (id) => {
+    const response = await api.delete(`/notifications/${id}`);
+    return response.data;
+  },
+
+  deleteAllNotifications: async () => {
+    const response = await api.delete('/notifications/delete-all');
+    return response.data;
   }
 };
 

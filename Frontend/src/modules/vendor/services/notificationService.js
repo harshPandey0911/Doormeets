@@ -91,17 +91,15 @@ export const deleteNotification = async (notificationId) => {
 };
 
 /**
- * Clear all notifications
+ * Delete all notifications
  * @returns {Promise<boolean>} Success status
  */
-export const clearAllNotifications = async () => {
+export const deleteAllNotifications = async () => {
   try {
-    // Backend doesn't support clear all yet, so we mark all as read or delete individually
-    // For now, let's just mark all as read as a safe fallback or throw not implemented
-    console.warn('Clear all not supported by backend yet');
-    return false;
+    const response = await api.delete(`${BASE_URL}/delete-all`);
+    return response.data.success;
   } catch (error) {
-    console.error('Error clearing notifications:', error);
+    console.error('Error deleting all notifications:', error);
     throw error;
   }
 };

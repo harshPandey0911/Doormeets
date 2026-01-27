@@ -7,7 +7,7 @@ const USER_ROLES = {
   USER: 'USER',
   VENDOR: 'VENDOR',
   WORKER: 'WORKER',
-  ADMIN: 'admin'
+  ADMIN: 'ADMIN'
 };
 
 // Token Types

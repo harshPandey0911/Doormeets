@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiCamera, FiX, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../theme';
 import { workerAuthService } from '../../../services/authService';
@@ -22,6 +22,18 @@ const WorkerSignup = () => {
   const [verificationToken, setVerificationToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [documentPreview, setDocumentPreview] = useState(null);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Timer countdown effect
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   // Refs for auto-focus
   const nameInputRef = useRef(null);
@@ -183,6 +195,7 @@ const WorkerSignup = () => {
         setOtpToken(response.token);
         setIsLoading(false);
         setStep('otp');
+        setResendTimer(120); // Start timer
         toast.success('OTP sent successfully');
       } else {
         setIsLoading(false);
@@ -253,7 +266,7 @@ const WorkerSignup = () => {
   const brandColor = themeColors.brand?.teal || '#347989';
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-y-auto overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-x-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
@@ -364,11 +377,27 @@ const WorkerSignup = () => {
                     </div>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group">
-                    <FiUpload className="w-8 h-8 text-gray-400 mb-2 group-hover:text-[#347989] group-hover:-translate-y-1 transition-all" />
-                    <span className="text-sm text-gray-500 font-medium">Click to upload Aadhar</span>
-                    <input type="file" className="hidden" accept="image/*,.pdf" onChange={handleDocumentUpload} />
-                  </label>
+                  <div className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group bg-white">
+                    <div className="flex items-center gap-6">
+                      <label className="flex flex-col items-center cursor-pointer transform hover:scale-105 transition-transform">
+                        <div className="p-3 bg-blue-50 text-blue-600 rounded-full mb-2 hover:bg-blue-100 transition-colors">
+                          <FiUpload className="w-6 h-6" />
+                        </div>
+                        <span className="text-xs text-gray-500 font-bold">Gallery</span>
+                        <input type="file" className="hidden" accept="image/*,.pdf" onChange={handleDocumentUpload} />
+                      </label>
+
+                      <div className="w-[1px] h-10 bg-gray-200"></div>
+
+                      <label className="flex flex-col items-center cursor-pointer transform hover:scale-105 transition-transform">
+                        <div className="p-3 bg-teal-50 text-teal-600 rounded-full mb-2 hover:bg-teal-100 transition-colors">
+                          <FiCamera className="w-6 h-6" />
+                        </div>
+                        <span className="text-xs text-gray-500 font-bold">Camera</span>
+                        <input type="file" className="hidden" accept="image/*" capture="environment" onChange={handleDocumentUpload} />
+                      </label>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -425,18 +454,23 @@ const WorkerSignup = () => {
                   <button
                     type="button"
                     onClick={async () => {
+                      if (resendTimer > 0) return;
                       try {
                         const response = await workerAuthService.sendOTP(formData.phoneNumber, formData.email);
                         if (response.success) {
                           setOtpToken(response.token);
+                          setResendTimer(120);
                           toast.success('OTP sent again');
                         }
                       } catch (e) { toast.error('Resend failed'); }
                     }}
-                    className="text-sm font-semibold transition-colors duration-300 opacity-70 hover:opacity-100"
+                    className="text-sm font-semibold transition-colors duration-300 opacity-70 hover:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={resendTimer > 0}
                     style={{ color: brandColor }}
                   >
-                    Resend Code
+                    {resendTimer > 0
+                      ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
+                      : 'Resend Code'}
                   </button>
                 </div>
 

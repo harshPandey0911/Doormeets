@@ -29,7 +29,9 @@ const authenticate = async (req, res, next) => {
     let decoded;
     try {
       decoded = verifyAccessToken(token);
+      // console.log('Decoded Token:', decoded); // Debug
     } catch (error) {
+      console.error('Token verification failed:', error.message);
       return res.status(401).json({
         success: false,
         message: 'Invalid or expired token. Please login again.'
@@ -38,6 +40,7 @@ const authenticate = async (req, res, next) => {
 
     // Get user based on role
     let user;
+    // console.log('Role from token:', decoded.role); // Debug
     switch (decoded.role) {
       case USER_ROLES.USER:
         user = await User.findById(decoded.userId).select('-password');
@@ -56,9 +59,12 @@ const authenticate = async (req, res, next) => {
         break;
       case USER_ROLES.ADMIN:
       case 'super_admin':
+      case 'admin':
+      case 'ADMIN':
         user = await Admin.findById(decoded.userId).select('-password');
         break;
       default:
+        console.error('Role mismatch in middleware:', decoded.role);
         return res.status(401).json({
           success: false,
           message: 'Invalid user role.'
@@ -66,6 +72,7 @@ const authenticate = async (req, res, next) => {
     }
 
     if (!user) {
+      console.error('User not found for ID:', decoded.userId);
       return res.status(401).json({
         success: false,
         message: 'User not found. Please login again.'

@@ -122,6 +122,9 @@ const verifyPaymentWebhook = async (req, res) => {
       });
     }
 
+    // Capture original payment method before update
+    const originalPaymentMethod = booking.paymentMethod;
+
     // Update booking payment status
     booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
     booking.paymentMethod = 'razorpay';
@@ -136,12 +139,30 @@ const verifyPaymentWebhook = async (req, res) => {
       booking.completedAt = new Date();
     }
 
-    // Calculate commission
+    // Calculate commission with Extra Charges logic
     const settings = await Settings.findOne({ type: 'global' });
     const commissionRate = settings?.commissionPercentage || 10;
-    const commission = (booking.finalAmount * commissionRate) / 100;
-    booking.adminCommission = parseFloat(commission.toFixed(2));
-    booking.vendorEarnings = parseFloat((booking.finalAmount - commission).toFixed(2));
+
+    // Separate Base from Extras
+    const extraChargesTotal = booking.extraChargesTotal || 0;
+    const baseAmount = Math.max(0, booking.finalAmount - extraChargesTotal); // Commissionable Amount for Standard Bookings
+
+    if (originalPaymentMethod === 'plan_benefit') {
+      // For Plan Benefit: Logic matches Cash Collection
+      // 1. Existing Vendor Earnings (Base) + Payment (Extras 100% to Vendor)
+      const currentEarnings = booking.vendorEarnings || 0;
+      booking.vendorEarnings = parseFloat((currentEarnings + booking.finalAmount).toFixed(2));
+
+      // 2. Set User Payable explicitly
+      booking.userPayableAmount = booking.finalAmount;
+
+      // 3. Admin Commission remains unchanged (calculated on base only at creation)
+    } else {
+      // Normal Split on Base, 100% Extras to Vendor
+      const commissionOnBase = (baseAmount * commissionRate) / 100;
+      booking.adminCommission = parseFloat(commissionOnBase.toFixed(2));
+      booking.vendorEarnings = parseFloat((booking.finalAmount - commissionOnBase).toFixed(2));
+    }
 
     await booking.save();
 
@@ -305,6 +326,9 @@ const processWalletPayment = async (req, res) => {
       balanceAfter: user.wallet.balance
     });
 
+    // Capture original payment method
+    const originalPaymentMethod = booking.paymentMethod;
+
     // Update booking payment status
     booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
     booking.paymentMethod = 'wallet';
@@ -315,12 +339,30 @@ const processWalletPayment = async (req, res) => {
       booking.status = BOOKING_STATUS.CONFIRMED;
     }
 
-    // Calculate commission
+    // Calculate commission with Extra Charges logic
     const settings = await Settings.findOne({ type: 'global' });
     const commissionRate = settings?.commissionPercentage || 10;
-    const commission = (booking.finalAmount * commissionRate) / 100;
-    booking.adminCommission = parseFloat(commission.toFixed(2));
-    booking.vendorEarnings = parseFloat((booking.finalAmount - commission).toFixed(2));
+
+    // Separate Base from Extras
+    const extraChargesTotal = booking.extraChargesTotal || 0;
+    const baseAmount = Math.max(0, booking.finalAmount - extraChargesTotal); // Commissionable Amount
+
+    if (originalPaymentMethod === 'plan_benefit') {
+      // For Plan Benefit: Logic matches Cash Collection
+      // 1. Existing Vendor Earnings (Base) + Payment (Extras 100% to Vendor)
+      const currentEarnings = booking.vendorEarnings || 0;
+      booking.vendorEarnings = parseFloat((currentEarnings + booking.finalAmount).toFixed(2));
+
+      // 2. Set User Payable explicitly
+      booking.userPayableAmount = booking.finalAmount;
+
+      // 3. Admin Commission remains unchanged (calculated on base only at creation)
+    } else {
+      // Normal Split on Base, 100% Extras to Vendor
+      const commissionOnBase = (baseAmount * commissionRate) / 100;
+      booking.adminCommission = parseFloat(commissionOnBase.toFixed(2));
+      booking.vendorEarnings = parseFloat((booking.finalAmount - commissionOnBase).toFixed(2));
+    }
 
     await booking.save();
 

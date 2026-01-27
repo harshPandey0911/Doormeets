@@ -30,12 +30,21 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
   };
 
   const calculateTotal = () => {
-    return job?.finalAmount || ((job?.basePrice || 0) + (job?.tax || 0) - (job?.discount || 0));
+    // For Plan Benefit, user only pays for Extra Charges
+    if (job?.paymentMethod === 'plan_benefit') {
+      return job?.extraChargesTotal || 0;
+    }
+
+    // For normal bookings, prefer finalAmount (even if 0)
+    if (typeof job?.finalAmount === 'number') {
+      return job.finalAmount;
+    }
+
+    return ((job?.basePrice || 0) + (job?.tax || 0) - (job?.discount || 0));
   };
 
   const handleSubmit = () => {
-    // Optional for development:
-    // if (workPhotos.length === 0) return; 
+    if (workPhotos.length === 0) return;
     onComplete(workPhotos);
   };
 
@@ -73,15 +82,15 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
             <div className="px-8 pb-8 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
 
               <p className="text-sm text-gray-500 font-medium leading-relaxed">
-                Please upload proof of work and confirm completion regardless of payment status.
+                Please upload proof of work (Camera/Gallery) to confirm completion.
               </p>
 
               {/* Photo Upload Section */}
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Work Photos</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Work Photos <span className="text-red-500">*</span></p>
                   <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-bold">
-                    {workPhotos.length}/3 Required
+                    {workPhotos.length}/5 (Min 1)
                   </span>
                 </div>
 
@@ -99,11 +108,18 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
                     </div>
                   ))}
 
-                  {workPhotos.length < 3 && (
+                  {workPhotos.length < 5 && (
                     <label className="aspect-square rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-green-400 hover:bg-green-50/30 flex flex-col items-center justify-center text-gray-400 hover:text-green-500 cursor-pointer active:scale-95 transition-all">
-                      <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        multiple
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
                       <FiCamera className="w-7 h-7 mb-1" />
-                      <span className="text-[10px] font-bold uppercase">Add</span>
+                      <span className="text-[10px] font-bold uppercase">Add / Cam</span>
                     </label>
                   )}
                 </div>

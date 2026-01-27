@@ -288,10 +288,15 @@ export const adminAuthService = {
   login: async (email, password, rememberMe = false) => {
     const response = await api.post('/admin/auth/login', { email, password });
     if (response.data.accessToken) {
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem('adminAccessToken', response.data.accessToken);
-      storage.setItem('adminRefreshToken', response.data.refreshToken);
-      storage.setItem('adminData', JSON.stringify(response.data.admin));
+      // Clear any session storage to prevent conflicts
+      sessionStorage.removeItem('adminAccessToken');
+      sessionStorage.removeItem('adminRefreshToken');
+      sessionStorage.removeItem('adminData');
+
+      // Always use localStorage for consistency
+      localStorage.setItem('adminAccessToken', response.data.accessToken);
+      localStorage.setItem('adminRefreshToken', response.data.refreshToken);
+      localStorage.setItem('adminData', JSON.stringify(response.data.admin));
     }
     return response.data;
   },

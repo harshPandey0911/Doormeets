@@ -60,6 +60,10 @@ const userSchema = new mongoose.Schema({
     balance: {
       type: Number,
       default: 0
+    },
+    penalty: {
+      type: Number,
+      default: 0
     }
   },
   plans: {

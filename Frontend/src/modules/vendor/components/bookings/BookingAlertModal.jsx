@@ -215,7 +215,10 @@ const BookingAlertModal = ({ isOpen, booking, onAccept, onReject, onMinimize, ti
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Scheduled Time</p>
-                    <p className="text-sm font-bold text-gray-800">{booking.timeSlot?.date} • {booking.timeSlot?.time}</p>
+                    <p className="text-sm font-bold text-gray-800">
+                      {booking.timeSlot?.date ? `${booking.timeSlot.date} • ` : ''}
+                      {booking.timeSlot?.time || 'N/A'}
+                    </p>
                   </div>
                 </div>
               </div>

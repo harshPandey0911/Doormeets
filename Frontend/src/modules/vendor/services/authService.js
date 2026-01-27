@@ -41,7 +41,11 @@ export const sendOTP = async (phone) => {
 export const verifyLogin = async (data) => {
   try {
     const response = await api.post('/vendors/auth/verify-login', data);
-    if (response.data.success && !response.data.isNewUser && response.data.accessToken) {
+
+    // Check if vendor is pending approval
+    const isPending = response.data.vendor?.adminApproval?.toLowerCase() === 'pending';
+
+    if (response.data.success && !response.data.isNewUser && response.data.accessToken && !isPending) {
       localStorage.setItem('vendorAccessToken', response.data.accessToken);
       localStorage.setItem('vendorRefreshToken', response.data.refreshToken);
       localStorage.setItem('vendorData', JSON.stringify(response.data.vendor));

@@ -48,6 +48,23 @@ const PromoCarousel = memo(({ promos, onPromoClick }) => {
     return () => clearInterval(interval);
   }, [isHovered, promotionalCards.length]);
 
+  // Trigger index update on scroll
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const scrollLeft = container.scrollLeft;
+      // Use card width if available, otherwise container width (assuming full width cards or snap points)
+      // For accurate dot highlighting, we prefer container width as the snap logic usually aligns near that.
+      const width = container.offsetWidth;
+
+      const index = Math.round(scrollLeft / width);
+
+      if (index !== currentIndex && index >= 0 && index < promotionalCards.length) {
+        setCurrentIndex(index);
+      }
+    }
+  };
+
   // Entrance animation
   useEffect(() => {
     if (carouselRef.current) {
@@ -72,6 +89,7 @@ const PromoCarousel = memo(({ promos, onPromoClick }) => {
     >
       <div
         ref={scrollContainerRef}
+        onScroll={handleScroll}
         className="flex gap-2 overflow-x-auto px-4 pb-2 scrollbar-hide snap-x snap-mandatory"
         style={{ scrollBehavior: 'smooth' }}
       >

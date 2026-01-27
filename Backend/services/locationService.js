@@ -82,12 +82,23 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
     const { VENDOR_STATUS } = require('../utils/constants');
     const { getNearbyVendorsFromCache, isRedisConnected } = require('./redisService');
 
+    // Extract custom options from filters
+    const checkCashLimit = filters.checkCashLimit;
+    // Clone filters to avoid modifying original or polluting query
+    const queryFilters = { ...filters };
+    delete queryFilters.checkCashLimit;
+
     // Build base query
     const baseQuery = {
       approvalStatus: VENDOR_STATUS.APPROVED,
       isActive: true,
-      ...filters
+      ...queryFilters
     };
+
+    // Apply Cash Limit Check if requested
+    if (checkCashLimit) {
+      baseQuery.$expr = { $lte: ["$wallet.dues", "$wallet.cashLimit"] };
+    }
 
     // OPTION 1: Try Redis geo cache first (fastest - <5ms)
     if (isRedisConnected()) {

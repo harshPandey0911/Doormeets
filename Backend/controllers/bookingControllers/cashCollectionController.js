@@ -27,7 +27,10 @@ exports.initiateCashCollection = async (req, res) => {
     if (totalAmount !== undefined) {
       booking.finalAmount = Number(totalAmount);
     }
-    if (extraItems && Array.isArray(extraItems)) {
+
+    // Store extra items for proper commission calculation
+    if (extraItems && Array.isArray(extraItems) && extraItems.length > 0) {
+      // 1. Update workDoneDetails (Frontend display)
       booking.workDoneDetails = {
         ...booking.workDoneDetails,
         items: extraItems.map(item => ({
@@ -36,10 +39,24 @@ exports.initiateCashCollection = async (req, res) => {
           price: Number(item.price) || 0
         }))
       };
+
+      // 2. Update extraCharges (Backend calculation)
+      booking.extraCharges = extraItems.map(item => ({
+        name: item.title,
+        quantity: Number(item.qty) || 1,
+        price: Number(item.price) || 0,
+        total: (Number(item.qty) || 1) * (Number(item.price) || 0)
+      }));
+
+      // 3. Update extraChargesTotal
+      booking.extraChargesTotal = booking.extraCharges.reduce((sum, item) => sum + item.total, 0);
     }
 
-    // Force mark modified for nested object if needed
-    if (extraItems) booking.markModified('workDoneDetails');
+    // Force mark modified for nested object (just in case)
+    if (extraItems) {
+      booking.markModified('workDoneDetails');
+      booking.markModified('extraCharges');
+    }
 
     // For backwards compatibility and future use, we can still generate it but not force it
     const otp = Math.floor(1000 + Math.random() * 9000).toString();

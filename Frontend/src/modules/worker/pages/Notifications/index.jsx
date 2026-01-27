@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiBell, FiCheck, FiBriefcase, FiChevronRight } from 'react-icons/fi';
+import { FiBell, FiCheck, FiBriefcase, FiChevronRight, FiTrash2, FiX } from 'react-icons/fi';
 import { workerTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
@@ -12,6 +12,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useLayoutEffect(() => {
     const html = document.documentElement;
@@ -70,17 +71,50 @@ const Notifications = () => {
     }
   };
 
-  const handleClearAll = async () => {
-    if (window.confirm('Mark all as read?')) {
-      try {
-        const response = await workerService.markAllNotificationsAsRead();
-        if (response.success) {
-          setNotifications(notifications.map(n => ({ ...n, isRead: true })));
-          toast.success('All marked as read');
-        }
-      } catch (error) {
-        console.error('Error marking all as read:', error);
+  const handleMarkAllRead = async () => {
+    try {
+      const response = await workerService.markAllNotificationsAsRead();
+      if (response.success) {
+        setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+        toast.success('All marked as read');
       }
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      toast.error('Failed to mark all as read');
+    }
+  };
+
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    try {
+      const response = await workerService.deleteNotification(id);
+      if (response.success) {
+        setNotifications(prev => prev.filter(n => n._id !== id));
+        toast.success('Notification removed');
+      }
+    } catch (err) {
+      console.error('Delete failed', err);
+      toast.error('Failed to delete');
+    }
+  };
+
+  const handleClearAll = () => {
+    if (notifications.length === 0) return;
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearAll = async () => {
+    try {
+      const response = await workerService.deleteAllNotifications();
+      if (response.success) {
+        setNotifications([]);
+        toast.success('All notifications cleared');
+      }
+      setShowClearConfirm(false);
+    } catch (error) {
+      console.error('Failed to clear', error);
+      toast.error('Failed to clear');
+      setShowClearConfirm(false);
     }
   };
 
@@ -150,15 +184,22 @@ const Notifications = () => {
           ))}
         </div>
 
-        {/* Clear All Button */}
-        {notifications.some(n => !n.isRead) && (
-          <div className="flex justify-end mb-4">
+        {/* Action Buttons */}
+        {notifications.length > 0 && (
+          <div className="flex justify-end gap-3 mb-4">
+            {notifications.some(n => !n.isRead) && (
+              <button
+                onClick={handleMarkAllRead}
+                className="text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                Mark Read
+              </button>
+            )}
             <button
               onClick={handleClearAll}
-              className="text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-80"
-              style={{ color: themeColors.button }}
+              className="text-xs font-bold uppercase tracking-wider text-red-500 hover:text-red-700 transition-colors flex items-center gap-1"
             >
-              Mark All As Read
+              <FiTrash2 className="w-3 h-3" /> Clear All
             </button>
           </div>
         )}
@@ -200,7 +241,7 @@ const Notifications = () => {
               return (
                 <div
                   key={notif._id}
-                  className={`relative overflow-hidden bg-white rounded-2xl transition-all duration-300 ${isUnread ? 'shadow-md border-b-2' : 'shadow-sm opacity-90'}`}
+                  className={`relative overflow-hidden bg-white rounded-2xl transition-all duration-300 group ${isUnread ? 'shadow-md border-b-2' : 'shadow-sm opacity-90'}`}
                   style={{
                     borderColor: isUnread ? iconColor + '40' : '#F3F4F6',
                     transform: isUnread ? 'scale(1.01)' : 'scale(1)',
@@ -225,12 +266,12 @@ const Notifications = () => {
                       >
                         {getNotificationIcon(notif.type)}
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 pr-6">
                         <div className="flex justify-between items-start mb-1">
                           <h4 className={`text-base ${isUnread ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>
                             {notif.title}
                           </h4>
-                          <span className="text-xs text-gray-400 whitespace-nowrap ml-2 font-medium">
+                          <span className="text-xs text-gray-400 whitespace-nowrap font-medium">
                             {formatTime(notif.createdAt)}
                           </span>
                         </div>
@@ -248,21 +289,32 @@ const Notifications = () => {
                               View Job <FiChevronRight className="w-3 h-3" />
                             </button>
                           ) : <div></div>}
-
-                          {isUnread && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkAsRead(notif._id);
-                              }}
-                              className="text-xs font-medium text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-gray-50"
-                            >
-                              <FiCheck className="w-3 h-3" /> Mark read
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Actions: Mark Read & Delete - Positioned absolute top-right */}
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    {isUnread && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkAsRead(notif._id);
+                        }}
+                        className="p-1 rounded-full bg-gray-50 hover:bg-gray-100 text-green-600 transition-colors shadow-sm"
+                        title="Mark as read"
+                      >
+                        <FiCheck className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => handleDelete(e, notif._id)}
+                      className="p-1 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors shadow-sm"
+                      title="Delete"
+                    >
+                      <FiX className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               );
@@ -272,6 +324,35 @@ const Notifications = () => {
       </main>
 
       <BottomNav />
+
+      {/* Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl animate-scale-in">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                <FiTrash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Clear All Notifications?</h3>
+              <p className="text-sm text-gray-500 mt-2">This action cannot be undone.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmClearAll}
+                className="py-3 rounded-xl font-bold text-white bg-red-500 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
+              >
+                Yes, Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

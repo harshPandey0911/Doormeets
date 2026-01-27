@@ -33,6 +33,7 @@ import PaymentVerificationModal from '../../components/booking/PaymentVerificati
 import { ConfirmDialog } from '../../../../components/common';
 import ReviewCard from '../../components/booking/ReviewCard';
 import NotificationBell from '../../components/common/NotificationBell';
+import api from '../../../../services/api';
 
 const toAssetUrl = (url) => {
   if (!url) return '';
@@ -58,7 +59,35 @@ const BookingDetails = () => {
     onConfirm: () => { }
   });
 
+  const [supportInfo, setSupportInfo] = useState({
+    email: 'support@homster.com',
+    phone: ''
+  });
+
   const socket = useAppNotifications();
+
+  // Fetch support settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/public/config');
+        if (response.data?.success && response.data?.settings) {
+          const { supportEmail, supportPhone } = response.data.settings;
+          setSupportInfo({
+            email: supportEmail || 'help@homster.in',
+            phone: supportPhone || '+919999999999'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch support settings:', error);
+        setSupportInfo({
+          email: 'help@homster.in',
+          phone: '+919999999999'
+        });
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Function to load booking
   const loadBooking = async () => {
@@ -66,7 +95,13 @@ const BookingDetails = () => {
       // Don't set loading true on refresh to avoid flicker
       const response = await bookingService.getById(id);
       if (response.success) {
-        setBooking(response.data);
+        const data = { ...response.data };
+        // Calculate notional display values for plan_benefit
+        if (data.paymentMethod === 'plan_benefit') {
+          if (!data.tax) data.tax = (data.basePrice || 0) * 0.18;
+          if (!data.visitingCharges && !data.visitationFee) data.visitingCharges = 49;
+        }
+        setBooking(data);
       } else {
         toast.error(response.message || 'Booking not found');
         navigate('/user/my-bookings');
@@ -137,7 +172,14 @@ const BookingDetails = () => {
           // Instant UI update for critical fields (status, OTPs, amounts)
           setBooking(prev => {
             if (!prev) return prev;
-            return { ...prev, ...(data.data || data) };
+            const newData = { ...prev, ...(data.data || data) };
+
+            // Calculate notional display values for plan_benefit
+            if (newData.paymentMethod === 'plan_benefit') {
+              if (!newData.tax) newData.tax = (newData.basePrice || 0) * 0.18;
+              if (!newData.visitingCharges && !newData.visitationFee) newData.visitingCharges = 49;
+            }
+            return newData;
           });
 
           // Fetch full data to ensure consistency
@@ -259,7 +301,7 @@ const BookingDetails = () => {
         amount: Math.round((booking.finalAmount || 0) * 100),
         currency: 'INR',
         order_id: booking.razorpayOrderId,
-        name: 'Appzeto',
+        name: 'Homster',
         description: `Payment for ${booking.serviceName}`,
         handler: async function (response) {
           toast.loading('Verifying payment...');
@@ -309,7 +351,7 @@ const BookingDetails = () => {
         amount: Math.round(orderResponse.data.amount * 100),
         currency: orderResponse.data.currency || 'INR',
         order_id: orderResponse.data.orderId,
-        name: 'Appzeto',
+        name: 'Homster',
         description: `Payment for ${booking.serviceName}`,
         handler: async function (response) {
           toast.loading('Verifying payment...');
@@ -635,7 +677,11 @@ const BookingDetails = () => {
                   <div className="flex items-center gap-1.5 mt-1">
                     <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-md border border-yellow-100">
                       <FiStar className="w-3 h-3 text-yellow-500 fill-current" />
-                      <span className="text-xs font-bold text-yellow-700">4.8</span>
+                      <span className="text-xs font-bold text-yellow-700">
+                        {(booking.workerId?.rating || booking.assignedTo?.rating || booking.vendorId?.rating || 0) > 0
+                          ? (booking.workerId?.rating || booking.assignedTo?.rating || booking.vendorId?.rating).toFixed(1)
+                          : 'New'}
+                      </span>
                     </div>
                     <span className="text-xs text-gray-400 font-medium">• Verified</span>
                   </div>
@@ -1135,11 +1181,37 @@ const BookingDetails = () => {
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4">
             {/* Support */}
-            <button className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95">
+            {/* Support */}
+            <button
+              onClick={() => {
+                const phone = supportInfo.phone || '+919999999999';
+                if (phone) {
+                  // Use native anchor click for better WebView compatibility
+                  const link = document.createElement('a');
+                  link.href = `tel:${phone.replace(/[^\d+]/g, '')}`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                } else {
+                  toast.error('Support phone number not available');
+                }
+              }}
+              className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95"
+            >
               <FiPhone className="w-6 h-6 text-gray-700" />
               <span className="text-sm font-bold text-gray-700">Call Support</span>
             </button>
-            <button className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95">
+            <button
+              onClick={() => {
+                const email = supportInfo.email || 'help@homster.in';
+                const link = document.createElement('a');
+                link.href = `mailto:${email}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95"
+            >
               <FiMail className="w-6 h-6 text-gray-700" />
               <span className="text-sm font-bold text-gray-700">Email Help</span>
             </button>

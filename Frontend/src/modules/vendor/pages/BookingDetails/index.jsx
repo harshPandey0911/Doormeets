@@ -94,12 +94,17 @@ export default function BookingDetails() {
           },
           // Price Breakdown
           basePrice: parseFloat(apiData.basePrice || 0),
-          tax: parseFloat(apiData.tax || 0),
-          visitingCharges: parseFloat(apiData.visitingCharges || apiData.visitationFee || 0),
+          tax: parseFloat(apiData.tax || (apiData.paymentMethod === 'plan_benefit' ? (apiData.basePrice || 0) * 0.18 : 0)),
+          visitingCharges: parseFloat(apiData.visitingCharges || apiData.visitationFee || (apiData.paymentMethod === 'plan_benefit' ? 49 : 0)),
           discount: parseFloat(apiData.discount || 0),
           platformCommission: parseFloat(apiData.adminCommission || apiData.platformFee || apiData.commission || 0),
           finalAmount: parseFloat(apiData.finalAmount || 0),
-          vendorEarnings: parseFloat(apiData.vendorEarnings || (apiData.finalAmount ? apiData.finalAmount - (apiData.commission || 0) : 0)),
+          vendorEarnings: parseFloat(apiData.vendorEarnings ||
+            (apiData.paymentMethod === 'plan_benefit'
+              ? (Number(apiData.basePrice || 0) * 0.9) // Fallback for plan bookings: Base - 10%
+              : (apiData.finalAmount ? apiData.finalAmount - (apiData.commission || 0) : 0)
+            )
+          ),
 
           // Display Price (Vendor Earnings by default as requested)
           price: (apiData.vendorEarnings || (apiData.finalAmount ? apiData.finalAmount - (apiData.commission || 0) : 0)).toFixed(2),

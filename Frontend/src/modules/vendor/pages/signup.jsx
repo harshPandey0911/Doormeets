@@ -25,6 +25,18 @@ const VendorSignup = () => {
   const [verificationToken, setVerificationToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [documentPreview, setDocumentPreview] = useState({});
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Timer countdown effect
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   // Refs for auto-focus
   const nameInputRef = useRef(null);
@@ -219,6 +231,7 @@ const VendorSignup = () => {
         setOtpToken(response.token);
         setIsLoading(false);
         setStep('otp');
+        setResendTimer(120); // Start timer
         toast.success('OTP sent successfully');
       } else {
         setIsLoading(false);
@@ -297,10 +310,12 @@ const VendorSignup = () => {
   const brandColor = themeColors.brand?.teal || '#347989';
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-y-auto overflow-x-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Decorative Background Elements - Fixed Container to prevent scroll issues */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+      </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-2xl text-center mb-8 relative z-10 animate-fade-in">
         <Logo className="h-16 w-auto mx-auto transform hover:scale-110 transition-transform duration-500" />
@@ -437,11 +452,27 @@ const VendorSignup = () => {
                           </div>
                         </div>
                       ) : (
-                        <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group">
-                          <FiUpload className="text-gray-400 mb-2 group-hover:text-[#347989] group-hover:-translate-y-1 transition-all" />
-                          <span className="text-[10px] text-gray-500 font-medium">Click to upload</span>
-                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleDocumentUpload(e, 'aadhar')} />
-                        </label>
+                        <div className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group bg-white">
+                          <div className="flex items-center gap-4">
+                            <label className="flex flex-col items-center cursor-pointer transform hover:scale-105 transition-transform">
+                              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-full mb-1 hover:bg-blue-100">
+                                <FiUpload className="w-5 h-5" />
+                              </div>
+                              <span className="text-[10px] text-gray-500 font-bold">Gallery</span>
+                              <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleDocumentUpload(e, 'aadhar')} />
+                            </label>
+
+                            <div className="w-[1px] h-8 bg-gray-200"></div>
+
+                            <label className="flex flex-col items-center cursor-pointer transform hover:scale-105 transition-transform">
+                              <div className="p-2.5 bg-teal-50 text-teal-600 rounded-full mb-1 hover:bg-teal-100">
+                                <FiCamera className="w-5 h-5" />
+                              </div>
+                              <span className="text-[10px] text-gray-500 font-bold">Camera</span>
+                              <input type="file" className="hidden" accept="image/*" capture="environment" onChange={(e) => handleDocumentUpload(e, 'aadhar')} />
+                            </label>
+                          </div>
+                        </div>
                       )}
                     </div>
 
@@ -458,11 +489,27 @@ const VendorSignup = () => {
                           </div>
                         </div>
                       ) : (
-                        <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group">
-                          <FiUpload className="text-gray-400 mb-2 group-hover:text-[#347989] group-hover:-translate-y-1 transition-all" />
-                          <span className="text-[10px] text-gray-500 font-medium">Click to upload</span>
-                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleDocumentUpload(e, 'pan')} />
-                        </label>
+                        <div className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-300 hover:border-[#347989] group bg-white">
+                          <div className="flex items-center gap-4">
+                            <label className="flex flex-col items-center cursor-pointer transform hover:scale-105 transition-transform">
+                              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-full mb-1 hover:bg-blue-100">
+                                <FiUpload className="w-5 h-5" />
+                              </div>
+                              <span className="text-[10px] text-gray-500 font-bold">Gallery</span>
+                              <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleDocumentUpload(e, 'pan')} />
+                            </label>
+
+                            <div className="w-[1px] h-8 bg-gray-200"></div>
+
+                            <label className="flex flex-col items-center cursor-pointer transform hover:scale-105 transition-transform">
+                              <div className="p-2.5 bg-teal-50 text-teal-600 rounded-full mb-1 hover:bg-teal-100">
+                                <FiCamera className="w-5 h-5" />
+                              </div>
+                              <span className="text-[10px] text-gray-500 font-bold">Camera</span>
+                              <input type="file" className="hidden" accept="image/*" capture="environment" onChange={(e) => handleDocumentUpload(e, 'pan')} />
+                            </label>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -533,18 +580,23 @@ const VendorSignup = () => {
                   <button
                     type="button"
                     onClick={async () => {
+                      if (resendTimer > 0) return;
                       try {
                         const response = await sendVendorOTP(formData.phoneNumber);
                         if (response.success) {
                           setOtpToken(response.token);
+                          setResendTimer(120);
                           toast.success('OTP sent again');
                         }
                       } catch (e) { toast.error('Resend failed'); }
                     }}
-                    className="text-sm font-semibold transition-colors duration-300 opacity-70 hover:opacity-100"
+                    disabled={resendTimer > 0}
+                    className="text-sm font-semibold transition-colors duration-300 opacity-70 hover:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: brandColor }}
                   >
-                    Resend Code
+                    {resendTimer > 0
+                      ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
+                      : 'Resend Code'}
                   </button>
                 </div>
 

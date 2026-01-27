@@ -181,7 +181,7 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
             <button
               onClick={() => onSave('', selectedLocation)}
               disabled={!mapAddress}
-              className="w-full py-4 rounded-xl font-semibold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mb-8"
+              className="w-full py-4 rounded-xl font-semibold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mb-24"
               style={{
                 backgroundColor: themeColors.button,
                 boxShadow: `0 4px 12px ${themeColors.button}40`

@@ -98,7 +98,10 @@ const PendingBookings = memo(({ bookings, setPendingBookings, setActiveAlertBook
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <FiClock className="w-4 h-4" />
-                <span>{booking.timeSlot?.time || 'N/A'}</span>
+                <span>
+                  {booking.timeSlot?.date ? `${booking.timeSlot.date} • ` : ''}
+                  {booking.timeSlot?.time || 'N/A'}
+                </span>
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <FiMapPin className="w-4 h-4" />

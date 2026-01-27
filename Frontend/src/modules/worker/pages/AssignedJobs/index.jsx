@@ -93,7 +93,18 @@ const AssignedJobs = () => {
   };
 
   const filteredJobs = jobs.filter(job => {
-    const matchesFilter = filter === 'all' || job.status === filter;
+    const status = (job.status || '').toLowerCase();
+
+    let matchesFilter = false;
+    if (filter === 'all') {
+      matchesFilter = true;
+    } else if (filter === 'confirmed') {
+      matchesFilter = ['confirmed', 'assigned', 'pending'].includes(status);
+    } else if (filter === 'in_progress') {
+      matchesFilter = ['in_progress', 'started', 'reached', 'visited', 'work_done', 'on_the_way'].includes(status);
+    } else if (filter === 'completed') {
+      matchesFilter = ['completed', 'worker_paid', 'paid'].includes(status);
+    }
 
     const matchesSearch = searchQuery === '' ||
       job.serviceName?.toLowerCase().includes(searchQuery.toLowerCase()) ||

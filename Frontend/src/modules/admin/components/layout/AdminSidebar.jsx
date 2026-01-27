@@ -179,11 +179,14 @@ const AdminSidebar = ({ isOpen, onClose }) => {
   }, []);
 
   // Auto-close sidebar on mobile when route changes
+  // Auto-close sidebar on mobile when route changes
   useEffect(() => {
+    // Only close if screen is small (mobile)
     if (window.innerWidth < 1024) {
       onClose();
     }
-  }, [location.pathname, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]); // Remove onClose to prevent re-triggering when parent re-renders
 
   // Auto-expand menu items when their route is active
   useEffect(() => {
@@ -408,7 +411,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-[9998] lg:hidden"
+            className="fixed inset-0 bg-black/60 z-[99998] lg:hidden backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
@@ -417,11 +420,12 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ x: -320 }}
+            initial={{ x: "-100%" }}
             animate={{ x: 0 }}
-            exit={{ x: -320 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed left-0 top-0 bottom-0 w-80 z-[10000] lg:hidden">
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed left-0 top-0 bottom-0 w-[280px] z-[99999] lg:hidden shadow-2xl"
+          >
             {sidebarContent}
           </motion.div>
         )}

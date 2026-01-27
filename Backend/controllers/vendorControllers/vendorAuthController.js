@@ -22,6 +22,21 @@ const sendOTP = async (req, res) => {
 
     const { phone, email } = req.body;
 
+    // Check existing vendor status to prevent OTP if restricted
+    const existingVendor = await Vendor.findOne({ phone });
+    if (existingVendor) {
+      if (existingVendor.approvalStatus === VENDOR_STATUS.PENDING) {
+        return res.status(200).json({
+          success: true,
+          message: 'Your account is currently under review. Please wait for admin approval.',
+          vendor: { adminApproval: 'pending' }
+        });
+      }
+      if (existingVendor.approvalStatus === VENDOR_STATUS.REJECTED || existingVendor.approvalStatus === VENDOR_STATUS.SUSPENDED) {
+        return res.status(403).json({ success: false, message: 'Account restricted.' });
+      }
+    }
+
     // 1. Rate limit check
     const allowed = await checkRateLimit(phone);
     if (!allowed) {
@@ -97,7 +112,14 @@ const verifyLogin = async (req, res) => {
         return res.status(403).json({ success: false, message: 'Account deactivated.' });
       }
 
-      // Note: If PENDING, we let them login but restricted (frontend handles this by showing "Pending" screen)
+      // BLOCK PENDING VENDORS
+      if (vendor.approvalStatus === VENDOR_STATUS.PENDING) {
+        return res.status(200).json({
+          success: true,
+          message: 'Your account is currently under review. Please wait for admin approval.',
+          vendor: { adminApproval: 'pending' }
+        });
+      }
 
       const tokens = generateTokenPair({
         userId: vendor._id,

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FiHome, FiGift, FiShoppingCart, FiUser, FiTrash2, FiCalendar } from 'react-icons/fi';
 import { HiHome, HiGift, HiShoppingCart, HiUser, HiTrash, HiCalendar } from 'react-icons/hi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../../../../context/CartContext';
 
 // Colorful theme for each nav item
 const navItemColors = {
@@ -42,7 +43,7 @@ const BottomNav = React.memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const navRef = useRef(null);
-  const [cartCount, setCartCount] = useState(0);
+  const { cartCount } = useCart();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
   const navItems = useMemo(() => [
@@ -66,37 +67,7 @@ const BottomNav = React.memo(() => {
   const activeIndex = navItems.findIndex(item => item.id === activeTab);
   const activeColor = navItemColors[activeTab];
 
-  // Load cart count from backend
-  useEffect(() => {
-    const loadCartCount = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          setCartCount(0);
-          return;
-        }
 
-        const { cartService } = await import('../../../../services/cartService');
-        const response = await cartService.getCart();
-        if (response.success) {
-          setCartCount((response.data || []).length);
-        }
-      } catch (error) {
-        setCartCount(0);
-      }
-    };
-
-    loadCartCount();
-
-    const handleFocus = () => {
-      loadCartCount();
-    };
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, []);
 
   // Update indicator position when active tab changes
   useEffect(() => {
