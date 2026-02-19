@@ -8,7 +8,7 @@ import { z } from "zod";
 
 const schema = z.object({
   name: z.string().min(2, "Name is required"),
-  hsnCode: z.string().min(2, "HSN Code is required"),
+  hsnCode: z.string().optional(),
   basePrice: z.number().min(0, "Price must be non-negative"),
   description: z.string().optional(),
   categoryId: z.string().min(1, "Category is required")
@@ -246,7 +246,7 @@ const VendorPartsPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-bold mb-1">HSN Number</label>
+            <label className="block text-sm font-bold mb-1">HSN Number (Optional)</label>
             <input
               value={form.hsnCode}
               onChange={(e) => setForm(p => ({ ...p, hsnCode: e.target.value }))}

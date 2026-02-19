@@ -27,13 +27,7 @@ const userServiceSchema = new mongoose.Schema({
     trim: true,
     index: true
   },
-  slug: {
-    type: String,
-    required: true,
-    // Removed unique: true from here to allow same slug in different brands
-    lowercase: true,
-    index: true
-  },
+  // Removed slug as it is not needed for internal modal-based services
   iconUrl: {
     type: String,
     default: null
@@ -64,19 +58,7 @@ const userServiceSchema = new mongoose.Schema({
 });
 
 // Compound index to ensure slug is unique PER BRAND
-userServiceSchema.index({ brandId: 1, slug: 1 }, { unique: true });
-
-// Generate slug from title before saving
-userServiceSchema.pre('validate', async function (next) {
-  if (this.isModified('title') && !this.slug) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  }
-  next();
-});
+// Index for faster queries
+userServiceSchema.index({ brandId: 1, categoryId: 1 });
 
 module.exports = mongoose.model('UserService', userServiceSchema);
