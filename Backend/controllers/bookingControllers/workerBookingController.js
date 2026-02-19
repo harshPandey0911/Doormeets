@@ -536,15 +536,15 @@ const completeJob = async (req, res) => {
 
 /**
  * Collect Cash & Complete Booking
+ * Uses VendorBill as the single source of truth for earnings.
  */
 const collectCash = async (req, res) => {
   try {
     const workerId = req.user.id;
     const { id } = req.params;
-    const { otp, amount } = req.body;
+    const { otp } = req.body;
 
     const booking = await Booking.findOne({ _id: id, workerId }).select('+paymentOtp');
-    const Vendor = require('../../models/Vendor');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Job not found' });
@@ -558,74 +558,104 @@ const collectCash = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 
+    // Fetch VendorBill (single source of truth)
+    const VendorBill = require('../../models/VendorBill');
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
+    if (!bill) {
+      return res.status(500).json({ success: false, message: 'Bill not found — cannot process payment' });
+    }
+
+    const grandTotal = bill.grandTotal;
+    const vendorEarning = bill.vendorTotalEarning;
+
     // Update Booking Status
     booking.status = BOOKING_STATUS.COMPLETED;
     booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
+    booking.paymentMethod = 'cash';
     booking.cashCollected = true;
     booking.cashCollectedBy = 'worker';
     booking.cashCollectorId = workerId;
     booking.cashCollectedAt = new Date();
     booking.completedAt = new Date();
-    booking.paymentOtp = undefined; // Clear OTP
+    booking.paymentOtp = undefined;
+    await booking.save();
 
+    // Mark bill as paid
+    bill.status = 'paid';
+    bill.paidAt = new Date();
+    await bill.save();
+
+    // Update Vendor Wallet
+    const Vendor = require('../../models/Vendor');
     if (booking.vendorId) {
-      const vendor = await Vendor.findById(booking.vendorId);
-      if (vendor) {
-        // Update DUES (Cash Collected)
-        vendor.wallet.dues = (vendor.wallet.dues || 0) + booking.finalAmount;
+      const vendorDoc = await Vendor.findById(booking.vendorId).select('wallet');
+      if (vendorDoc) {
+        const currentDues = (vendorDoc.wallet.dues || 0) + grandTotal;
+        const cashLimit = vendorDoc.wallet.cashLimit || 10000;
+        const netOwed = currentDues - ((vendorDoc.wallet.earnings || 0) + vendorEarning);
+        const isBlocked = netOwed > cashLimit;
 
-        // Update EARNINGS (Credit Vendor Share)
-        if (booking.vendorEarnings) {
-          vendor.wallet.earnings = (vendor.wallet.earnings || 0) + booking.vendorEarnings;
+        const updateQuery = {
+          $inc: {
+            'wallet.dues': grandTotal,
+            'wallet.earnings': vendorEarning,
+            'wallet.totalCashCollected': grandTotal
+          }
+        };
+
+        if (isBlocked) {
+          updateQuery.$set = {
+            'wallet.isBlocked': true,
+            'wallet.blockedAt': new Date(),
+            'wallet.blockReason': `Cash limit exceeded. Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`
+          };
         }
 
-        vendor.wallet.totalCashCollected = (vendor.wallet.totalCashCollected || 0) + booking.finalAmount;
-
-        // Check Auto-Blocking Logic
-        const cashLimit = vendor.wallet.cashLimit || 10000;
-        const currentDues = vendor.wallet.dues;
-
-        if (currentDues > cashLimit) {
-          vendor.wallet.isBlocked = true;
-          vendor.wallet.blockedAt = new Date();
-          vendor.wallet.blockReason = `Cash limit exceeded. Owed: ₹${currentDues}, Limit: ₹${cashLimit}`;
-        }
-
-        await vendor.save();
+        await Vendor.findByIdAndUpdate(booking.vendorId, updateQuery);
 
         // Create Transactions
         const Transaction = require('../../models/Transaction');
 
-        // 1. Dues Increase (Cash Collected)
+        // 1. Cash Collected
         await Transaction.create({
-          vendorId: vendor._id,
+          vendorId: booking.vendorId,
           bookingId: booking._id,
-          workerId: workerId,
+          workerId,
           type: 'cash_collected',
-          amount: booking.finalAmount,
+          amount: grandTotal,
           status: 'completed',
           paymentMethod: 'cash',
-          description: `Cash collected by worker. Dues +${booking.finalAmount}`,
-          metadata: { type: 'dues_increase', collectedBy: 'worker' }
+          description: `Cash ₹${grandTotal} collected by worker for booking #${booking.bookingNumber}`,
+          metadata: {
+            type: 'dues_increase',
+            collectedBy: 'worker',
+            billId: bill._id.toString(),
+            grandTotal,
+            vendorEarning,
+            companyRevenue: bill.companyRevenue
+          }
         });
 
         // 2. Earnings Credit
-        if (booking.vendorEarnings) {
+        if (vendorEarning > 0) {
           await Transaction.create({
-            vendorId: vendor._id,
+            vendorId: booking.vendorId,
             bookingId: booking._id,
             type: 'earnings_credit',
-            amount: booking.vendorEarnings,
+            amount: vendorEarning,
             status: 'completed',
             paymentMethod: 'wallet',
-            description: `Earnings credited for job #${booking.bookingNumber}`,
-            metadata: { type: 'earnings_increase' }
+            description: `Earnings ₹${vendorEarning} credited for booking #${booking.bookingNumber} (70% service + 10% parts)`,
+            metadata: {
+              type: 'earnings_increase',
+              billId: bill._id.toString(),
+              serviceEarning: bill.vendorServiceEarning,
+              partsEarning: bill.vendorPartsEarning
+            }
           });
         }
       }
     }
-
-    await booking.save();
 
     // Notify User
     const { createNotification } = require('../notificationControllers/notificationController');
@@ -633,7 +663,7 @@ const collectCash = async (req, res) => {
       userId: booking.userId,
       type: 'payment_received',
       title: 'Payment Received (Cash)',
-      message: `Payment of ₹${booking.finalAmount} received in cash for booking ${booking.bookingNumber}. Job Completed. Thanks!`,
+      message: `Payment of ₹${grandTotal} received in cash for booking ${booking.bookingNumber}. Job Completed. Thanks!`,
       relatedId: booking._id,
       relatedType: 'booking',
       priority: 'high'

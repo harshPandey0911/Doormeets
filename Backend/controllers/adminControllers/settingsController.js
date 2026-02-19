@@ -29,8 +29,10 @@ exports.updateSettings = async (req, res, next) => {
   try {
     const {
       visitedCharges,
-      gstPercentage,
-      commissionPercentage,
+      serviceGstPercentage,
+      partsGstPercentage,
+      servicePayoutPercentage,
+      partsPayoutPercentage,
       tdsPercentage,
       vendorCashLimit, // Add this
       cancellationPenalty,
@@ -52,8 +54,10 @@ exports.updateSettings = async (req, res, next) => {
       settings = await Settings.create({
         type: 'global',
         visitedCharges,
-        gstPercentage,
-        commissionPercentage,
+        serviceGstPercentage,
+        partsGstPercentage,
+        servicePayoutPercentage,
+        partsPayoutPercentage,
         tdsPercentage,
         vendorCashLimit, // Add this
         cancellationPenalty,
@@ -67,8 +71,10 @@ exports.updateSettings = async (req, res, next) => {
     } else {
       // Update fields if provided
       if (visitedCharges !== undefined) settings.visitedCharges = visitedCharges;
-      if (gstPercentage !== undefined) settings.gstPercentage = gstPercentage;
-      if (commissionPercentage !== undefined) settings.commissionPercentage = commissionPercentage;
+      if (serviceGstPercentage !== undefined) settings.serviceGstPercentage = serviceGstPercentage;
+      if (partsGstPercentage !== undefined) settings.partsGstPercentage = partsGstPercentage;
+      if (servicePayoutPercentage !== undefined) settings.servicePayoutPercentage = servicePayoutPercentage;
+      if (partsPayoutPercentage !== undefined) settings.partsPayoutPercentage = partsPayoutPercentage;
       if (tdsPercentage !== undefined) settings.tdsPercentage = tdsPercentage;
       if (vendorCashLimit !== undefined) settings.vendorCashLimit = vendorCashLimit; // Add this
       if (cancellationPenalty !== undefined) settings.cancellationPenalty = cancellationPenalty;
@@ -127,11 +133,11 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges gstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty');
 
     // Default if not found (fallback values)
     if (!settings) {
-      settings = { visitedCharges: 29, gstPercentage: 18 };
+      settings = { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18 };
     }
 
     res.status(200).json({

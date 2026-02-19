@@ -141,7 +141,7 @@ const getTransactions = async (req, res) => {
 
 /**
  * Record cash collection from customer
- * This DECREASES vendor wallet (vendor owes this amount to admin)
+ * Uses VendorBill as the single source of truth for earnings.
  */
 const recordCashCollection = async (req, res) => {
   try {
@@ -176,30 +176,42 @@ const recordCashCollection = async (req, res) => {
       });
     }
 
-    // Dues increase by full cash collected
-    vendor.wallet.dues = (vendor.wallet.dues || 0) + amount;
+    // Fetch VendorBill (single source of truth for earnings)
+    const VendorBill = require('../../models/VendorBill');
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-    // Earnings increase by vendor's share
-    // If booking has vendorEarnings, use it. If not, assume full amount - commission
-    // For now assuming booking.vendorEarnings exists and is correct
-    // If NOT set, we might need to calculate it.
-    // Assuming backend set it on job completion.
-    if (booking.vendorEarnings) {
-      vendor.wallet.earnings = (vendor.wallet.earnings || 0) + booking.vendorEarnings;
+    let vendorEarning = 0;
+    const grandTotal = amount;
+
+    if (bill) {
+      vendorEarning = bill.vendorTotalEarning;
+      bill.status = 'paid';
+      bill.paidAt = new Date();
+      await bill.save();
     }
 
-    vendor.wallet.totalCashCollected = (vendor.wallet.totalCashCollected || 0) + amount;
-
-    // Check Auto-Blocking Logic
+    // Atomic wallet update
+    const currentDues = (vendor.wallet.dues || 0) + grandTotal;
+    const currentEarnings = (vendor.wallet.earnings || 0) + vendorEarning;
     const cashLimit = vendor.wallet.cashLimit || 10000;
-    const currentDues = vendor.wallet.dues;
+    const netOwed = currentDues - currentEarnings;
 
-    if (currentDues > cashLimit) {
-      vendor.wallet.isBlocked = true;
-      vendor.wallet.blockedAt = new Date();
-      vendor.wallet.blockReason = `Cash limit exceeded. Owed: ₹${currentDues}, Limit: ₹${cashLimit}`;
+    const updateQuery = {
+      $inc: {
+        'wallet.dues': grandTotal,
+        'wallet.earnings': vendorEarning,
+        'wallet.totalCashCollected': grandTotal
+      }
+    };
 
-      // 🔔 NOTIFY ALL ADMINS about vendor cash limit exceeded
+    if (netOwed > cashLimit) {
+      updateQuery.$set = {
+        'wallet.isBlocked': true,
+        'wallet.blockedAt': new Date(),
+        'wallet.blockReason': `Cash limit exceeded. Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`
+      };
+
+      // Notify admins
       try {
         const { createNotification } = require('../notificationControllers/notificationController');
         const Admin = require('../../models/Admin');
@@ -211,13 +223,13 @@ const recordCashCollection = async (req, res) => {
             adminId: admin._id,
             type: 'vendor_cash_limit_exceeded',
             title: '⚠️ Cash Limit Exceeded',
-            message: `${vendor.businessName || vendor.name} exceeded cash limit! Dues: ₹${currentDues}, Limit: ₹${cashLimit}`,
+            message: `${vendor.businessName || vendor.name} exceeded cash limit! Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`,
             relatedId: vendor._id,
             relatedType: 'vendor',
             data: {
               vendorId: vendor._id,
               vendorName: vendor.businessName || vendor.name,
-              currentDues,
+              netOwed,
               cashLimit
             },
             pushData: {
@@ -232,31 +244,42 @@ const recordCashCollection = async (req, res) => {
       }
     }
 
-    await vendor.save();
+    await Vendor.findByIdAndUpdate(vendorId, updateQuery);
 
-    // Create transaction record for Cash Collection (DUES increase)
+    // Create transaction record for Cash Collection
     const transaction = await Transaction.create({
       vendorId,
       bookingId,
       type: 'cash_collected',
-      amount, // Current Dues increased by this
+      amount: grandTotal,
       status: 'completed',
       paymentMethod: 'cash',
-      description: `Cash collected. Dues +${amount}`,
-      metadata: { notes, type: 'dues_increase' }
+      description: `Cash ₹${grandTotal} collected. Dues increased.`,
+      metadata: {
+        notes,
+        type: 'dues_increase',
+        billId: bill?._id?.toString(),
+        vendorEarning,
+        companyRevenue: bill?.companyRevenue
+      }
     });
 
-    // Create transaction record for Earnings Credit
-    if (booking.vendorEarnings) {
+    // Create earnings credit transaction
+    if (vendorEarning > 0) {
       await Transaction.create({
         vendorId,
         bookingId,
         type: 'earnings_credit',
-        amount: booking.vendorEarnings,
+        amount: vendorEarning,
         status: 'completed',
         paymentMethod: 'system',
-        description: `Earnings credited for booking #${booking.bookingNumber}`,
-        metadata: { type: 'earnings_increase' }
+        description: `Earnings ₹${vendorEarning} credited for booking #${booking.bookingNumber}`,
+        metadata: {
+          type: 'earnings_increase',
+          billId: bill?._id?.toString(),
+          serviceEarning: bill?.vendorServiceEarning,
+          partsEarning: bill?.vendorPartsEarning
+        }
       });
     }
 
@@ -265,8 +288,8 @@ const recordCashCollection = async (req, res) => {
     booking.paymentMethod = 'cash';
     await booking.save();
 
-    const newDues = vendor.wallet.dues;
-    const newEarnings = vendor.wallet.earnings;
+    const newDues = currentDues;
+    const newEarnings = currentEarnings;
     const newBalance = newEarnings - newDues;
 
     res.status(200).json({

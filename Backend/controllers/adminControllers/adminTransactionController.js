@@ -1,5 +1,6 @@
 const Transaction = require('../../models/Transaction');
 const Booking = require('../../models/Booking');
+const VendorBill = require('../../models/VendorBill');
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
 const Worker = require('../../models/Worker');
@@ -54,41 +55,51 @@ const getAllTransactions = async (req, res) => {
       let virtualTransactions = [];
 
       bookings.forEach(booking => {
-        // 1. Commission
-        if (shouldInclude('commission') && booking.adminCommission > 0) {
+        // We'll look up VendorBill data lazily below
+      });
+
+      // Fetch VendorBills for these bookings
+      const bookingIds = bookings.map(b => b._id);
+      const bills = await VendorBill.find({ bookingId: { $in: bookingIds }, status: 'paid' });
+      const billMap = {};
+      bills.forEach(b => { billMap[b.bookingId.toString()] = b; });
+
+      bookings.forEach(booking => {
+        const bill = billMap[booking._id.toString()];
+
+        // 1. Company Revenue (from VendorBill)
+        if (shouldInclude('commission') && bill && bill.companyRevenue > 0) {
           virtualTransactions.push({
             _id: `${booking._id}_comm`,
-            referenceId: `COMM-${booking.bookingNumber}`,
+            referenceId: `REV-${booking.bookingNumber}`,
             bookingId: booking,
-            userId: booking.userId, // Attributing to user/booking context
+            userId: booking.userId,
             vendorId: booking.vendorId,
             type: 'commission',
-            amount: booking.adminCommission,
+            amount: bill.companyRevenue,
             status: 'completed',
             paymentMethod: 'system',
-            createdAt: booking.completedAt || booking.updatedAt || booking.createdAt,
-            description: `Commission for booking ${booking.bookingNumber}`
+            createdAt: bill.paidAt || booking.completedAt || booking.updatedAt || booking.createdAt,
+            description: `Company revenue for booking ${booking.bookingNumber}`
           });
         }
 
-        // 2. GST (Tax)
-        if (shouldInclude('gst') && booking.tax > 0) {
+        // 2. GST (from VendorBill)
+        if (shouldInclude('gst') && bill && bill.totalGST > 0) {
           virtualTransactions.push({
             _id: `${booking._id}_gst`,
             referenceId: `GST-${booking.bookingNumber}`,
             bookingId: booking,
             type: 'gst',
-            amount: booking.tax,
+            amount: bill.totalGST,
             status: 'completed',
             paymentMethod: 'system',
-            createdAt: booking.completedAt || booking.updatedAt || booking.createdAt,
+            createdAt: bill.paidAt || booking.completedAt || booking.updatedAt || booking.createdAt,
             description: `GST for booking ${booking.bookingNumber}`
           });
         }
 
-        // 3. Convenience Fee (Visiting Charges or similar)
-        // Assuming visitingCharges might be the convenience fee, or if explicitly defined
-        // Using visitingCharges as a proxy for "Platform/Convenience Fee" for now if confirmed
+        // 3. Convenience Fee (Visiting Charges)
         if (shouldInclude('convenience_fee') && booking.visitingCharges > 0) {
           virtualTransactions.push({
             _id: `${booking._id}_conv`,
@@ -102,9 +113,6 @@ const getAllTransactions = async (req, res) => {
             description: `Convenience Fee for booking ${booking.bookingNumber}`
           });
         }
-
-        // 4. Platform Fee (if separate from above, extracted from extraCharges or base)
-        // For now, let's assume adminCommission covers the main platform fee unless specified
       });
 
       return res.status(200).json({
@@ -230,38 +238,33 @@ const getTransactionStats = async (req, res) => {
 
     // --- SPECIAL HANDLING FOR ADMIN REVENUE (Extract from Bookings) ---
     if (entity === 'admin') {
-      const stats = await Booking.aggregate([
+      const stats = await VendorBill.aggregate([
         {
           $match: {
-            status: { $in: ['COMPLETED', 'completed', 'paid', 'PAID'] }
+            status: 'paid'
           }
         },
         {
           $group: {
             _id: null,
-            totalCommission: { $sum: '$adminCommission' },
-            totalGST: { $sum: '$tax' },
-            totalFees: { $sum: '$visitingCharges' },
-            // If total revenue includes all earning components
-            totalRevenue: {
-              $sum: { $add: ['$adminCommission', '$tax', '$visitingCharges'] }
-            }
+            totalCompanyRevenue: { $sum: '$companyRevenue' },
+            totalGST: { $sum: '$totalGST' },
+            totalGrandTotal: { $sum: '$grandTotal' },
+            totalVendorEarnings: { $sum: '$vendorTotalEarning' }
           }
         }
       ]);
 
-      const data = stats[0] || { totalCommission: 0, totalGST: 0, totalFees: 0, totalRevenue: 0 };
+      const data = stats[0] || { totalCompanyRevenue: 0, totalGST: 0, totalGrandTotal: 0, totalVendorEarnings: 0 };
 
       return res.status(200).json({
         success: true,
         data: {
-          totalRevenue: data.totalRevenue,
-          totalCommission: data.totalCommission,
-          netRevenue: data.totalCommission + data.totalFees, // Net usually excludes tax
-          details: {
-            gst: data.totalGST,
-            fees: data.totalFees
-          }
+          totalRevenue: data.totalGrandTotal,
+          totalCompanyRevenue: data.totalCompanyRevenue,
+          totalGST: data.totalGST,
+          totalVendorEarnings: data.totalVendorEarnings,
+          netRevenue: data.totalCompanyRevenue
         }
       });
     }

@@ -99,12 +99,26 @@ const BillingPage = () => {
       setServiceCategories(cats.filter(Boolean));
 
       // Load existing bill if any
+      let usedBillSettings = false;
       try {
         const billRes = await vendorBillService.getBill(id);
         if (billRes.success && billRes.bill) {
-          setSelectedServices(billRes.bill.services || []);
+          // Filter out the original service (isOriginal: true) — it's already accounted for as originalBase
+          setSelectedServices((billRes.bill.services || []).filter(s => !s.isOriginal));
           setSelectedParts(billRes.bill.parts || []);
           setCustomItems(billRes.bill.customItems || []);
+
+          // Use stored payout config if available
+          if (billRes.bill.payoutConfig) {
+            const pc = billRes.bill.payoutConfig;
+            setPayoutSettings({
+              serviceGstPct: pc.serviceGstPercentage ?? 18,
+              partsGstPct: pc.partsGstPercentage ?? 18,
+              servicePayoutPct: pc.serviceSplitPercentage ?? 70,
+              partsPayoutPct: pc.partsSplitPercentage ?? 10
+            });
+            usedBillSettings = true;
+          }
 
           // Determine data-driven step progress
           let reachedStep = 1;
@@ -113,10 +127,28 @@ const BillingPage = () => {
           else if (billRes.bill.services?.length > 0) reachedStep = 2;
 
           setMaxStep(prev => Math.max(prev, reachedStep));
-          // If starting fresh but bill exists, maybe jump to last data step?
-          // For now, let the user's last visited step (from localStorage) take precedence.
         }
       } catch (err) { /* ignore */ }
+
+      // Fallback to global settings if no bill config found
+      if (!usedBillSettings) {
+        try {
+          const token = localStorage.getItem('vendorToken');
+          const res = await fetch('/api/vendors/settings', { headers: { Authorization: `Bearer ${token}` } });
+          const data = await res.json();
+          if (data.success && data.data?.global) {
+            const g = data.data.global;
+            setPayoutSettings({
+              serviceGstPct: g.serviceGstPercentage ?? 18,
+              partsGstPct: g.partsGstPercentage ?? 18,
+              servicePayoutPct: g.servicePayoutPercentage ?? 70,
+              partsPayoutPct: g.partsPayoutPercentage ?? 10
+            });
+          }
+        } catch (e) {
+          console.error('Error fetching global settings:', e);
+        }
+      }
 
     } catch (error) {
       console.error('Error loading billing data:', error);
@@ -233,51 +265,85 @@ const BillingPage = () => {
   }
 
 
+  // --- Settings (fetched for vendor-side preview) ---
+  const [payoutSettings, setPayoutSettings] = useState({
+    serviceGstPct: 18,
+    partsGstPct: 18,
+    servicePayoutPct: 90,
+    partsPayoutPct: 100
+  });
+
+  // Settings fetched in fetchData to ensure bill priority
+
   // --- CALCULATIONS ---
   const calculations = useMemo(() => {
     if (!booking) return null;
 
-    const originalBase = booking.basePrice || 0;
-    const originalGST = (originalBase * 18) / 100;
+    const { serviceGstPct, partsGstPct, servicePayoutPct, partsPayoutPct } = payoutSettings;
 
+    // Original booking base (service)
+    const originalBase = booking.basePrice || 0;
+    const originalServiceGST = parseFloat(((originalBase * serviceGstPct) / 100).toFixed(2));
+
+    // Extra Services: price is base, GST calculated separately
     let extraServiceBase = 0;
     let extraServiceGST = 0;
     selectedServices.forEach(s => {
-      const base = s.total / 1.18;
-      const gst = s.total - base;
+      const base = s.price * s.quantity;
+      const gst = parseFloat(((base * serviceGstPct) / 100).toFixed(2));
       extraServiceBase += base;
       extraServiceGST += gst;
     });
 
+    // Parts: each part has its own gstPercentage (defaults to partsGstPct)
     let partsBase = 0;
     let partsGST = 0;
     selectedParts.forEach(p => {
       partsBase += (p.price * p.quantity);
       partsGST += p.gstAmount;
     });
+
+    // Custom Items: use partsGstPct
+    let customBase = 0;
+    let customGST = 0;
     customItems.forEach(c => {
-      partsBase += (c.price * c.quantity);
-      partsGST += c.gstAmount;
+      customBase += (c.price * c.quantity);
+      customGST += c.gstAmount;
     });
 
-    const totalServiceBase = originalBase + extraServiceBase;
-    const finalBillAmount = (originalBase + originalGST) + (extraServiceBase + extraServiceGST) + (partsBase + partsGST);
+    // Visiting Charges
+    const visitingCharges = Number(booking.visitingCharges) || 0;
 
-    const vendorServiceEarnings = totalServiceBase * 0.70;
-    const vendorPartsEarnings = partsBase * 0.10;
-    const totalVendorEarnings = vendorServiceEarnings + vendorPartsEarnings;
+    const totalServiceBase = originalBase + extraServiceBase;
+    const totalServiceGST = originalServiceGST + extraServiceGST;
+    const totalPartsBase = partsBase + customBase;
+    const totalPartsGST = partsGST + customGST;
+
+    const finalBillAmount = parseFloat(((totalServiceBase + totalServiceGST) + (totalPartsBase + totalPartsGST) + visitingCharges).toFixed(2));
+
+    // Vendor Earnings estimate
+    const vendorServiceEarnings = parseFloat(((totalServiceBase * servicePayoutPct) / 100).toFixed(2));
+    const vendorPartsEarnings = parseFloat(((totalPartsBase * partsPayoutPct) / 100).toFixed(2));
+    const totalVendorEarnings = parseFloat((vendorServiceEarnings + vendorPartsEarnings).toFixed(2));
 
     return {
       originalBase,
       extraServiceBase,
-      partsBase,
-      totalGST: originalGST + extraServiceGST + partsGST,
+      partsBase: totalPartsBase,
+      serviceGstPct,
+      partsGstPct,
+      totalServiceGST,
+      totalPartsGST,
+      totalGST: parseFloat((totalServiceGST + totalPartsGST).toFixed(2)),
+      visitingCharges,
       finalBillAmount,
       totalVendorEarnings,
       vendorServiceEarnings,
-      vendorPartsEarnings
+      vendorPartsEarnings,
+      servicePayoutPct,
+      partsPayoutPct
     };
-  }, [booking, selectedServices, selectedParts, customItems]);
+  }, [booking, selectedServices, selectedParts, customItems, payoutSettings]);
 
 
   const handleSubmit = async () => {
@@ -734,11 +800,21 @@ const BillingPage = () => {
                     Services
                   </h4>
                   <div className="space-y-2 text-sm pl-2">
-                    <div className="flex justify-between text-gray-600"><span>Original Booking</span><span>₹{calculations.originalBase.toFixed(2)}</span></div>
-                    {selectedServices.map(s => <div key={s.catalogId} className="flex justify-between text-gray-600"><span>{s.name} x {s.quantity}</span><span>₹{(s.total / 1.18).toFixed(2)}</span></div>)}
-                    <div className="flex justify-between font-bold text-gray-800 pt-1"><span>Total Service Base</span><span>₹{(calculations.originalBase + calculations.extraServiceBase).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-gray-600"><span>Original Booking : {booking.serviceName || 'Service'}</span><span>₹{calculations.originalBase.toFixed(2)}</span></div>
+                    {selectedServices.map(s => <div key={s.catalogId} className="flex justify-between text-gray-600"><span>{s.name} x {s.quantity}</span><span>₹{(s.price * s.quantity).toFixed(2)}</span></div>)}
+
+                    <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
+                      <span>Service GST ({calculations.serviceGstPct}%)</span>
+                      <span>₹{calculations.totalServiceGST.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between font-bold text-gray-800 pt-1">
+                      <span>Total Service</span>
+                      <span>₹{(calculations.originalBase + calculations.extraServiceBase + calculations.totalServiceGST).toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
+
                 {(selectedParts.length > 0 || customItems.length > 0) && (
                   <div>
                     <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
@@ -756,21 +832,50 @@ const BillingPage = () => {
                           <span>₹{(c.price * c.quantity).toFixed(2)}</span>
                         </div>
                       ))}
-                      <div className="flex justify-between font-bold text-gray-800 pt-1"><span>Total Parts Base</span><span>₹{calculations.partsBase.toFixed(2)}</span></div>
+
+                      <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
+                        <span>Parts GST ({calculations.partsGstPct}%)</span>
+                        <span>₹{calculations.totalPartsGST.toFixed(2)}</span>
+                      </div>
+
+                      <div className="flex justify-between font-bold text-gray-800 pt-1">
+                        <span>Total Parts</span>
+                        <span>₹{(calculations.partsBase + calculations.totalPartsGST).toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 )}
-                <div>
-                  <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-3 pb-2 border-b border-gray-100"><span className="w-6 h-6 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-xs">%</span>Taxes</h4>
-                  <div className="space-y-2 text-sm pl-2"><div className="flex justify-between text-gray-600"><span>Total GST (18%)</span><span>₹{calculations.totalGST.toFixed(2)}</span></div></div>
-                </div>
+
+                {booking.visitingCharges > 0 && (
+                  <div>
+                    <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+                      <span className="w-6 h-6 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center text-xs"><FiClock /></span>
+                      Visiting Charges
+                    </h4>
+                    <div className="flex justify-between text-sm pl-2 font-bold text-gray-800">
+                      <span>Visiting Price</span>
+                      <span>₹{Number(booking.visitingCharges).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="bg-emerald-50 px-6 py-4 border-t border-emerald-100">
-                <div className="flex justify-between items-center">
-                  <span className="text-emerald-800 font-bold text-xs uppercase tracking-wider">Your Estim. Earnings</span>
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between items-center text-emerald-700 text-sm">
+                    <span>Service Earnings ({calculations.servicePayoutPct}%)</span>
+                    <span className="font-bold">₹{calculations.vendorServiceEarnings.toFixed(2)}</span>
+                  </div>
+                  {(calculations.vendorPartsEarnings > 0) && (
+                    <div className="flex justify-between items-center text-emerald-700 text-sm">
+                      <span>Parts Earnings ({calculations.partsPayoutPct}%)</span>
+                      <span className="font-bold">₹{calculations.vendorPartsEarnings.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-emerald-200/50">
+                  <span className="text-emerald-800 font-bold text-xs uppercase tracking-wider">Total Estim. Earnings</span>
                   <span className="text-emerald-700 font-black text-xl">₹{calculations.totalVendorEarnings.toFixed(2)}</span>
                 </div>
-                <p className="text-[10px] text-emerald-600/70 mt-1">Based on 70% of Service Base + 10% of Parts Base</p>
               </div>
 
             </div>

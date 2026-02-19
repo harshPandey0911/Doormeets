@@ -147,7 +147,7 @@ const bookingSchema = new mongoose.Schema({
     default: 0
   },
   */
-  // Total Value of the Booking
+  // Total Value of the Booking (set after bill generation)
   finalAmount: {
     type: Number,
     required: [true, 'Final amount is required'],
@@ -158,14 +158,11 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  // Platform & Vendor Splits
-  adminCommission: {
-    type: Number,
-    default: 0
-  },
-  vendorEarnings: {
-    type: Number,
-    default: 0
+  // Reference to VendorBill (single source of truth for earnings/commission)
+  vendorBillId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'VendorBill',
+    default: null
   },
 
   // ==========================================

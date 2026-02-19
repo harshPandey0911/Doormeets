@@ -26,6 +26,8 @@ exports.initiateCashCollection = async (req, res) => {
     const { totalAmount, extraItems } = req.body;
     if (totalAmount !== undefined) {
       booking.finalAmount = Number(totalAmount);
+      // Assuming no partial payment has been made yet (as status is pending/work_done)
+      booking.userPayableAmount = Number(totalAmount);
     }
 
     // Store extra items for proper commission calculation
@@ -107,6 +109,7 @@ exports.initiateCashCollection = async (req, res) => {
 
 /**
  * Confirm Cash Collection (by Vendor/Worker)
+ * Uses VendorBill as the single source of truth for earnings.
  */
 exports.confirmCashCollection = async (req, res) => {
   try {
@@ -121,25 +124,19 @@ exports.confirmCashCollection = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    // OTP Verification - REQUIRED to ensure customer agrees to final bill
-    // EXCEPTION: For plan_benefit with no extras, OTP 0000 is allowed (no actual OTP sent)
+    // OTP Verification
     const isPlanBenefitNoExtras = booking.paymentMethod === 'plan_benefit' && otp === '0000';
 
     if (!isPlanBenefitNoExtras && booking.customerConfirmationOTP && otp && booking.customerConfirmationOTP !== otp) {
-      // Allow 0000 only if explicitly allowed in environment (for testing) or just strict check
       if (process.env.NODE_ENV !== 'development' || otp !== '0000') {
         return res.status(400).json({ success: false, message: 'Invalid OTP. Please enter the code sent to the customer.' });
       }
     }
 
     const collectionAmount = amount || booking.finalAmount;
-    const Settings = require('../../models/Settings');
-    const settings = await Settings.findOne({ type: 'global' });
-    const commissionRate = (settings?.commissionPercentage || 10) / 100;
 
-    // Store extra items in both workDoneDetails and the new extraCharges field
+    // Store extra items in workDoneDetails (for display)
     if (extraItems && Array.isArray(extraItems) && extraItems.length > 0) {
-      // Store in workDoneDetails (legacy)
       booking.workDoneDetails = {
         ...booking.workDoneDetails,
         items: extraItems.map(item => ({
@@ -149,7 +146,6 @@ exports.confirmCashCollection = async (req, res) => {
         }))
       };
 
-      // Store in new extraCharges field with proper structure
       booking.extraCharges = extraItems.map(item => ({
         name: item.name || item.title,
         quantity: Number(item.qty) || Number(item.quantity) || 1,
@@ -157,73 +153,42 @@ exports.confirmCashCollection = async (req, res) => {
         total: (Number(item.qty) || Number(item.quantity) || 1) * (Number(item.price) || 0)
       }));
 
-      // Calculate total from items
-      const calculatedExtraTotal = booking.extraCharges.reduce((sum, item) => sum + item.total, 0);
-      booking.extraChargesTotal = calculatedExtraTotal;
+      booking.extraChargesTotal = booking.extraCharges.reduce((sum, item) => sum + item.total, 0);
+      booking.markModified('workDoneDetails');
+      booking.markModified('extraCharges');
     }
 
-    // Recalculate earnings and commission
-    // Recalculate earnings and commission
+    // Fetch VendorBill (single source of truth for earnings)
+    const VendorBill = require('../../models/VendorBill');
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-    // LOGIC: 
-    // 1. Base Amount (Base + Tax + Visit - Discount) -> Commission Applies (10% Admin, 90% Vendor)
-    // 2. Extra Charges -> NO Commission (100% Vendor)
+    let vendorEarning = 0;
+    let grandTotal = collectionAmount;
 
-    const extraChargesTotal = booking.extraChargesTotal || 0;
+    if (bill) {
+      vendorEarning = bill.vendorTotalEarning;
+      grandTotal = bill.grandTotal;
 
-    if (booking.paymentMethod === 'plan_benefit') {
-      // PLAN BENEFIT
-      // Base earnings already calculated at booking creation
-      const originalVendorEarnings = booking.vendorEarnings || 0;
-
-      // Extras go 100% to vendor
-      booking.vendorEarnings = parseFloat((originalVendorEarnings + collectionAmount).toFixed(2));
-
-      // Admin commission unchanged (stays on base only)
-
-      // Update FINAL AMOUNT (User Pays)
-      // For plan, User Pays = Extras Only
-      // collectionAmount IS the extras total here
-      booking.finalAmount = (booking.finalAmount || 0) + collectionAmount;
-      booking.userPayableAmount = collectionAmount; // Explicitly set user payable
-
-    } else {
-      // NORMAL BOOKING
-
-      // "collectionAmount" is the TOTAL user is paying now (Base Remainder + Extras)
-      // We need to separate Base part from Extras part
-
-      // Base Part = Total Collection - Extras (ensure not negative)
-      const basePart = Math.max(0, collectionAmount - extraChargesTotal);
-
-      // Calculate Commission on Base Part ONLY
-      const adminCommissionOnBase = parseFloat((basePart * commissionRate).toFixed(2));
-      const vendorEarningsOnBase = parseFloat((basePart - adminCommissionOnBase).toFixed(2));
-
-      // Vendor Total = Base Earnings + Extras (100%)
-      booking.adminCommission = adminCommissionOnBase;
-      booking.vendorEarnings = parseFloat((vendorEarningsOnBase + extraChargesTotal).toFixed(2));
-
-      // Final Amount and User Payable are the same for normal
-      booking.finalAmount = collectionAmount;
-      booking.userPayableAmount = collectionAmount;
+      // Mark bill as paid
+      bill.status = 'paid';
+      bill.paidAt = new Date();
+      await bill.save();
     }
 
     // Update Booking
+    booking.finalAmount = collectionAmount;
+    booking.userPayableAmount = collectionAmount;
     booking.cashCollected = true;
     booking.cashCollectedAt = new Date();
     booking.cashCollectedBy = userRole === 'vendor' ? 'vendor' : 'worker';
     booking.cashCollectorId = userId;
 
-    // PLAN BENEFIT: Set to SUCCESS instead of COLLECTED_BY_VENDOR
     if (booking.paymentMethod === 'plan_benefit') {
       booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
     } else {
       booking.paymentStatus = PAYMENT_STATUS.COLLECTED_BY_VENDOR;
     }
 
-    // If it was a self-job or completed by worker, mark booking as completed or work_done?
-    // Usually cash collection is the last step for cash bookings.
     if (booking.status === 'work_done' || booking.status === 'visited' || booking.status === 'in_progress') {
       booking.status = 'completed';
       booking.completedAt = new Date();
@@ -231,43 +196,74 @@ exports.confirmCashCollection = async (req, res) => {
 
     await booking.save();
 
-    // Update Vendor Wallet (Even if worker collected, it goes to vendor's ledger)
+    // Update Vendor Wallet
     const vendorId = booking.vendorId;
-    // Use findByIdAndUpdate to avoid triggering full Mongoose validation
-    // (which would fail for vendors missing optional fields like aadhar.backDocument)
     const vendor = await Vendor.findById(vendorId).lean();
+    let newDues = 0;
 
     if (vendor) {
-      const newDues = (vendor.wallet?.dues || 0) + collectionAmount;
-      const newTotalCashCollected = (vendor.wallet?.totalCashCollected || 0) + collectionAmount;
+      newDues = (vendor.wallet?.dues || 0) + grandTotal;
+      const newEarnings = (vendor.wallet?.earnings || 0) + vendorEarning;
       const cashLimit = vendor.wallet?.cashLimit || 10000;
-      const isOverLimit = newDues > cashLimit;
+      const netOwed = newDues - newEarnings;
+      const isOverLimit = netOwed > cashLimit;
 
       const walletUpdate = {
-        'wallet.dues': newDues,
-        'wallet.totalCashCollected': newTotalCashCollected,
-        ...(isOverLimit && {
-          'wallet.isBlocked': true,
-          'wallet.blockedAt': new Date(),
-          'wallet.blockReason': 'Cash collection limit exceeded. Please settle dues with admin.'
-        })
+        $inc: {
+          'wallet.dues': grandTotal,
+          'wallet.earnings': vendorEarning,
+          'wallet.totalCashCollected': grandTotal
+        }
       };
 
-      await Vendor.findByIdAndUpdate(vendorId, { $set: walletUpdate }, { new: true, runValidators: false });
+      if (isOverLimit) {
+        walletUpdate.$set = {
+          'wallet.isBlocked': true,
+          'wallet.blockedAt': new Date(),
+          'wallet.blockReason': `Cash limit exceeded. Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`
+        };
+      }
 
-      // Record Transaction
+      await Vendor.findByIdAndUpdate(vendorId, walletUpdate, { runValidators: false });
+
+      // Record Transaction - Cash Collected
       await Transaction.create({
         vendorId,
         userId: booking.userId,
         bookingId: booking._id,
-        amount: collectionAmount,
+        amount: grandTotal,
         type: 'cash_collected',
-        description: `Cash collected for booking ${booking.bookingNumber}`,
-        status: 'completed'
+        description: `Cash ₹${grandTotal} collected for booking ${booking.bookingNumber}`,
+        status: 'completed',
+        metadata: {
+          type: 'dues_increase',
+          collectedBy: userRole,
+          billId: bill?._id?.toString(),
+          vendorEarning,
+          companyRevenue: bill?.companyRevenue
+        }
       });
+
+      // Record Transaction - Earnings Credit
+      if (vendorEarning > 0) {
+        await Transaction.create({
+          vendorId,
+          bookingId: booking._id,
+          amount: vendorEarning,
+          type: 'earnings_credit',
+          description: `Earnings ₹${vendorEarning} credited for booking ${booking.bookingNumber}`,
+          status: 'completed',
+          metadata: {
+            type: 'earnings_increase',
+            billId: bill?._id?.toString(),
+            serviceEarning: bill?.vendorServiceEarning,
+            partsEarning: bill?.vendorPartsEarning
+          }
+        });
+      }
     }
 
-    // Emit socket event to user for real-time update
+    // Emit socket event
     const io = req.app.get('io');
     if (io) {
       io.to(`user_${booking.userId}`).emit('booking_updated', {
@@ -278,13 +274,13 @@ exports.confirmCashCollection = async (req, res) => {
       });
     }
 
-    // Send Push Notification for Cash Confirmation
+    // Push Notification
     const { createNotification } = require('../notificationControllers/notificationController');
     await createNotification({
       userId: booking.userId,
       type: 'payment_received',
       title: 'Payment Received (Cash)',
-      message: `Payment of ₹${collectionAmount} received in cash. Job Completed. Thanks!`,
+      message: `Payment of ₹${grandTotal} received in cash. Job Completed. Thanks!`,
       relatedId: booking._id,
       relatedType: 'booking',
       priority: 'high'
@@ -295,7 +291,7 @@ exports.confirmCashCollection = async (req, res) => {
       message: 'Cash collection confirmed and recorded in ledger',
       data: {
         bookingId: booking._id,
-        amount: collectionAmount,
+        amount: grandTotal,
         walletDues: vendor ? newDues : null
       }
     });

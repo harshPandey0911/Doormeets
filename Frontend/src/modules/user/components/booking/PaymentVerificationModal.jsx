@@ -7,19 +7,27 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
 
   // --- 1. Total & Breakdown Calculations ---
   const isPlanBenefit = booking.paymentMethod === 'plan_benefit';
+  const bill = booking.bill;
 
   // Base Logic (Services)
-  const originalBase = parseFloat(booking.basePrice) || 0;
+  // Use bill.originalServiceBase if available (source of truth), else booking.basePrice
+  const originalBase = bill ? (bill.originalServiceBase || 0) : (parseFloat(booking.basePrice) || 0);
 
-  // Extra Services (from Vendor Bill)
-  const services = booking.bill?.services || [];
+  // Extra Services (from Vendor Bill) — filter out the original service
+  const allBillServices = bill?.services || [];
+  const services = allBillServices.filter(s => !s.isOriginal);
+  const originalServiceFromBill = allBillServices.find(s => s.isOriginal);
+
   let extraServiceBase = 0;
   let extraServiceGST = 0;
 
   services.forEach(s => {
-    const total = parseFloat(s.total) || 0;
-    const base = total / 1.18;
-    const gst = total - base;
+    // s.price is UNIT BASE PRICE. s.total is INCLUSIVE.
+    // Use stored values directly to avoid rounding errors or tax assumption mismatches
+    const qty = parseFloat(s.quantity) || 1;
+    const base = (parseFloat(s.price) || 0) * qty;
+    const gst = parseFloat(s.gstAmount) || 0;
+
     extraServiceBase += base;
     extraServiceGST += gst;
   });
@@ -27,31 +35,33 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
   const totalServiceBase = originalBase + extraServiceBase;
 
   // Parts & Custom Items (from Vendor Bill)
-  const parts = booking.bill?.parts || [];
-  const customItems = booking.bill?.customItems || [];
+  const parts = bill?.parts || [];
+  const customItems = bill?.customItems || [];
 
   let partsBase = 0;
   let partsGST = 0;
 
+  // Calculate parts base & GST from stored values
   parts.forEach(p => {
-    partsBase += ((parseFloat(p.price) || 0) * (parseFloat(p.quantity) || 1));
+    const qty = parseFloat(p.quantity) || 1;
+    partsBase += ((parseFloat(p.price) || 0) * qty);
     partsGST += (parseFloat(p.gstAmount) || 0);
   });
 
   customItems.forEach(c => {
-    partsBase += ((parseFloat(c.price) || 0) * (parseFloat(c.quantity) || 1));
+    const qty = parseFloat(c.quantity) || 1;
+    partsBase += ((parseFloat(c.price) || 0) * qty);
     partsGST += (parseFloat(c.gstAmount) || 0);
   });
 
   // Tax Logic
-  // Original tax is usually 18% of originalBase
-  const originalGST = (originalBase * 0.18);
+  // Use bill.originalGST if available
+  const originalGST = bill ? (bill.originalGST || 0) : (originalBase * 0.18);
   const totalGST = originalGST + extraServiceGST + partsGST;
 
   // Final Total
-  // Ideally, use grandTotal from bill if available, else calculated sum, else booking.finalAmount
-  const calculatedTotal = (originalBase + originalGST) + (extraServiceBase + extraServiceGST) + (partsBase + partsGST);
-  const finalTotal = booking.bill?.grandTotal || calculatedTotal || booking.finalAmount || 0;
+  // Ideally, use grandTotal from bill if available
+  const finalTotal = bill?.grandTotal || (booking.finalAmount || 0);
 
   // --- 2. Identity Helpers ---
   const categoryName = booking.serviceCategory || 'General';
@@ -141,7 +151,7 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                 <div className="space-y-2 pl-1">
                   {/* Base */}
                   <div className="flex justify-between text-xs text-slate-600">
-                    <span>Base Charge</span>
+                    <span>{originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
                     {isPlanBenefit ? (
                       <div className="flex items-center gap-1.5">
                         <span className="line-through text-slate-400">₹{originalBase.toFixed(2)}</span>
@@ -155,13 +165,20 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                   {services.map((s, idx) => (
                     <div key={`s-${idx}`} className="flex justify-between text-xs text-slate-600">
                       <span>{s.name} <span className="text-slate-400">x{s.quantity}</span></span>
-                      <span className="font-medium font-mono">₹{(s.total / 1.18).toFixed(2)}</span>
+                      <span className="font-medium font-mono">₹{((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1)).toFixed(2)}</span>
                     </div>
                   ))}
+
+                  {/* Service GST */}
+                  <div className="flex justify-between text-xs text-slate-500 border-t border-dashed border-slate-100 pt-1 mt-1">
+                    <span>GST (18%)</span>
+                    <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
+                  </div>
+
                   {/* Service Subtotal */}
-                  <div className="flex justify-between text-xs font-bold text-slate-800 pt-2 border-t border-dashed border-slate-200 mt-1">
-                    <span>Total Service Base</span>
-                    <span>₹{totalServiceBase.toFixed(2)}</span>
+                  <div className="flex justify-between text-xs font-bold text-slate-800 pt-1">
+                    <span>Total Service</span>
+                    <span>₹{(totalServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -186,26 +203,32 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                         <span className="font-medium font-mono">₹{(c.price * c.quantity).toFixed(2)}</span>
                       </div>
                     ))}
-                    <div className="flex justify-between text-xs font-bold text-slate-800 pt-2 border-t border-dashed border-slate-200 mt-1">
-                      <span>Total Parts Base</span>
-                      <span>₹{partsBase.toFixed(2)}</span>
+
+                    {/* Parts GST */}
+                    <div className="flex justify-between text-xs text-slate-500 border-t border-dashed border-slate-100 pt-1 mt-1">
+                      <span>GST (18%)</span>
+                      <span className="font-mono">₹{partsGST.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-xs font-bold text-slate-800 pt-1">
+                      <span>Total Parts</span>
+                      <span>₹{(partsBase + partsGST).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* 3. Taxes */}
-              <div className="mt-4 pt-4 border-t border-slate-100">
-                <div className="flex justify-between text-xs items-center">
-                  <span className="flex items-center gap-2 font-bold text-slate-500 uppercase tracking-wide">
-                    <FiAlertCircle className="w-3.5 h-3.5 text-slate-400" /> Taxes
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400">GST (18%)</span>
-                    <span className="font-mono text-slate-700 font-bold">₹{totalGST.toFixed(2)}</span>
+              {/* 3. Visiting Charges */}
+              {(booking.visitingCharges > 0 || bill?.visitingCharges > 0) && (
+                <div className="mt-4 pt-2 border-t border-slate-100">
+                  <div className="flex justify-between text-xs font-bold text-slate-600">
+                    <span className="flex items-center gap-2 uppercase tracking-wide">
+                      <FiInfo className="w-3.5 h-3.5 text-blue-400" /> Visiting Charges
+                    </span>
+                    <span className="font-mono">₹{(bill?.visitingCharges || booking.visitingCharges || 0).toFixed(2)}</span>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Actions */}

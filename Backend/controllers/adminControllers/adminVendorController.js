@@ -1,5 +1,6 @@
 const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
+const VendorBill = require('../../models/VendorBill');
 const { validationResult } = require('express-validator');
 const { VENDOR_STATUS, BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
@@ -85,37 +86,32 @@ const getVendorDetails = async (req, res) => {
       });
     }
 
-    // Get vendor booking stats
-    const bookingStats = await Booking.aggregate([
+    // Get vendor stats from VendorBill (single source of truth)
+    const totalBookings = await Booking.countDocuments({ vendorId: vendor._id });
+    const completedBookings = await Booking.countDocuments({ vendorId: vendor._id, status: BOOKING_STATUS.COMPLETED });
+
+    const earningsResult = await VendorBill.aggregate([
       {
-        $match: { vendorId: vendor._id }
+        $match: {
+          vendorId: vendor._id,
+          status: 'paid'
+        }
       },
       {
         $group: {
           _id: null,
-          totalBookings: { $sum: 1 },
-          completedBookings: {
-            $sum: {
-              $cond: [{ $eq: ['$status', BOOKING_STATUS.COMPLETED] }, 1, 0]
-            }
-          },
-          totalEarnings: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$status', BOOKING_STATUS.COMPLETED] },
-                    { $eq: ['$paymentStatus', PAYMENT_STATUS.SUCCESS] }
-                  ]
-                },
-                { $multiply: ['$finalAmount', 0.8] }, // 80% to vendor
-                0
-              ]
-            }
-          }
+          totalEarnings: { $sum: '$vendorTotalEarning' },
+          totalRevenue: { $sum: '$grandTotal' }
         }
       }
     ]);
+
+    const bookingStats = [{
+      totalBookings,
+      completedBookings,
+      totalEarnings: earningsResult[0]?.totalEarnings || 0,
+      totalRevenue: earningsResult[0]?.totalRevenue || 0
+    }];
 
     res.status(200).json({
       success: true,
@@ -324,28 +320,26 @@ const getVendorEarnings = async (req, res) => {
     const { id } = req.params;
     const { startDate, endDate } = req.query;
 
-    // Build query
-    const query = {
-      vendorId: id,
-      status: BOOKING_STATUS.COMPLETED,
-      paymentStatus: PAYMENT_STATUS.SUCCESS
+    // Get earnings from VendorBill (single source of truth)
+    const billQuery = {
+      vendorId: require('mongoose').Types.ObjectId(id),
+      status: 'paid'
     };
 
     if (startDate || endDate) {
-      query.completedAt = {};
-      if (startDate) query.completedAt.$gte = new Date(startDate);
-      if (endDate) query.completedAt.$lte = new Date(endDate);
+      billQuery.paidAt = {};
+      if (startDate) billQuery.paidAt.$gte = new Date(startDate);
+      if (endDate) billQuery.paidAt.$lte = new Date(endDate);
     }
 
-    // Get earnings
-    const earnings = await Booking.aggregate([
-      { $match: query },
+    const earnings = await VendorBill.aggregate([
+      { $match: billQuery },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$finalAmount' },
-          vendorEarnings: { $sum: { $multiply: ['$finalAmount', 0.8] } },
-          platformCommission: { $sum: { $multiply: ['$finalAmount', 0.2] } },
+          totalRevenue: { $sum: '$grandTotal' },
+          vendorEarnings: { $sum: '$vendorTotalEarning' },
+          platformCommission: { $sum: '$companyRevenue' },
           totalBookings: { $sum: 1 }
         }
       }

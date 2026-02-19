@@ -1,4 +1,5 @@
 const Booking = require('../../models/Booking');
+const VendorBill = require('../../models/VendorBill');
 const Settlement = require('../../models/Settlement');
 const Vendor = require('../../models/Vendor');
 const User = require('../../models/User');
@@ -22,24 +23,29 @@ const getFinanceOverview = async (req, res) => {
       };
     }
 
-    // 1. Total Revenue (Completed & Paid Bookings)
-    // We strictly use COMPLETED status.
-    const revenueDocs = await Booking.aggregate([
+    // 1. Total Revenue from VendorBill (single source of truth)
+    const billDateFilter = {};
+    if (startDate && endDate) {
+      billDateFilter.paidAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999))
+      };
+    }
+
+    const revenueDocs = await VendorBill.aggregate([
       {
         $match: {
-          ...dateFilter,
-          status: BOOKING_STATUS.COMPLETED
-          // Removed paymentStatus check to include Pay at Home completed bookings too, 
-          // as they are revenue even if cash is with vendor (accounted as debt)
+          ...billDateFilter,
+          status: 'paid'
         }
       },
       {
         $group: {
           _id: null,
-          totalTransactionValue: { $sum: '$finalAmount' },
-          totalPlatformRevenue: { $sum: '$adminCommission' },
-          totalVendorEarnings: { $sum: '$vendorEarnings' },
-          totalTaxCollected: { $sum: '$tax' },
+          totalTransactionValue: { $sum: '$grandTotal' },
+          totalPlatformRevenue: { $sum: '$companyRevenue' },
+          totalVendorEarnings: { $sum: '$vendorTotalEarning' },
+          totalTaxCollected: { $sum: '$totalGST' },
           count: { $sum: 1 }
         }
       }
@@ -90,18 +96,18 @@ const getFinanceOverview = async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const dailyRevenue = await Booking.aggregate([
+    const dailyRevenue = await VendorBill.aggregate([
       {
         $match: {
-          completedAt: { $gte: thirtyDaysAgo }, // Use completedAt for revenue realization
-          status: BOOKING_STATUS.COMPLETED
+          paidAt: { $gte: thirtyDaysAgo },
+          status: 'paid'
         }
       },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$completedAt' } },
-          revenue: { $sum: '$finalAmount' },
-          commission: { $sum: '$adminCommission' }
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$paidAt' } },
+          revenue: { $sum: '$grandTotal' },
+          commission: { $sum: '$companyRevenue' }
         }
       },
       { $sort: { _id: 1 } }
@@ -149,7 +155,7 @@ const getPaymentTransactions = async (req, res) => {
       .populate('userId', 'name phone')
       .populate('vendorId', 'businessName phone')
       .populate('serviceId', 'title')
-      .select('bookingNumber finalAmount adminCommission vendorEarnings tax paymentMethod paymentStatus status createdAt completedAt razorpayPaymentId')
+      .select('bookingNumber finalAmount paymentMethod paymentStatus status createdAt completedAt razorpayPaymentId vendorBillId')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -157,35 +163,44 @@ const getPaymentTransactions = async (req, res) => {
 
     const total = await Booking.countDocuments(query);
 
-    // Calculate totals for the filtered data
-    const totals = await Booking.aggregate([
-      { $match: query },
+    // Fetch VendorBills for these bookings
+    const bookingIds = bookings.map(b => b._id);
+    const bills = await VendorBill.find({ bookingId: { $in: bookingIds } }).lean();
+    const billMap = {};
+    bills.forEach(b => { billMap[b.bookingId.toString()] = b; });
+
+    const reportData = bookings.map(b => {
+      const bill = billMap[b._id.toString()];
+      return {
+        date: b.createdAt,
+        bookingNumber: b.bookingNumber,
+        service: b.serviceId?.title || 'N/A',
+        customer: b.userId?.name || 'Guest',
+        vendor: b.vendorId?.businessName || 'Unassigned',
+        amount: bill?.grandTotal || b.finalAmount || 0,
+        platformFee: bill?.companyRevenue || 0,
+        vendorEarnings: bill?.vendorTotalEarning || 0,
+        tax: bill?.totalGST || 0,
+        paymentMethod: b.paymentMethod || 'N/A',
+        paymentStatus: b.paymentStatus || 'N/A',
+        bookingStatus: b.status,
+        transactionId: b.razorpayPaymentId || '-'
+      };
+    });
+
+    // Calculate totals from VendorBills
+    const totalsResult = await VendorBill.aggregate([
+      { $match: { bookingId: { $in: bookingIds } } },
       {
         $group: {
           _id: null,
-          totalAmount: { $sum: '$finalAmount' },
-          totalCommission: { $sum: '$adminCommission' },
-          totalVendorEarnings: { $sum: '$vendorEarnings' },
-          totalTax: { $sum: '$tax' }
+          totalAmount: { $sum: '$grandTotal' },
+          totalCommission: { $sum: '$companyRevenue' },
+          totalVendorEarnings: { $sum: '$vendorTotalEarning' },
+          totalTax: { $sum: '$totalGST' }
         }
       }
     ]);
-
-    const reportData = bookings.map(b => ({
-      date: b.createdAt,
-      bookingNumber: b.bookingNumber,
-      service: b.serviceId?.title || 'N/A',
-      customer: b.userId?.name || 'Guest',
-      vendor: b.vendorId?.businessName || 'Unassigned',
-      amount: b.finalAmount || 0,
-      platformFee: b.adminCommission || 0,
-      vendorEarnings: b.vendorEarnings || 0,
-      tax: b.tax || 0,
-      paymentMethod: b.paymentMethod || 'N/A',
-      paymentStatus: b.paymentStatus || 'N/A',
-      bookingStatus: b.status,
-      transactionId: b.razorpayPaymentId || '-'
-    }));
 
     if (format === 'csv') {
       return sendCSV(res, reportData, 'payment_transactions');
@@ -194,7 +209,7 @@ const getPaymentTransactions = async (req, res) => {
     res.status(200).json({
       success: true,
       data: reportData,
-      totals: totals[0] || { totalAmount: 0, totalCommission: 0, totalVendorEarnings: 0, totalTax: 0 },
+      totals: totalsResult[0] || { totalAmount: 0, totalCommission: 0, totalVendorEarnings: 0, totalTax: 0 },
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -219,7 +234,7 @@ const getGSTRReport = async (req, res) => {
 
     // Fetch global GST setting
     const settings = await Settings.findOne({ type: 'global' });
-    const gstRate = settings?.gstPercentage || 18; // Default 18% if not set
+    const gstRate = settings?.serviceGstPercentage || 18; // Default 18% if not set
 
     // CGST/SGST split logic implies 50-50 split of the total GST rate
     const halfRate = gstRate / 2;
@@ -235,24 +250,29 @@ const getGSTRReport = async (req, res) => {
       };
     }
 
+    // Fetch bills alongside bookings for GST data
     const bookings = await Booking.find(query)
       .populate('userId', 'name phone')
-      .select('bookingNumber finalAmount adminCommission tax completedAt paymentMethod address')
+      .select('bookingNumber finalAmount completedAt paymentMethod address vendorBillId')
       .sort({ completedAt: -1 })
       .lean();
 
+    // Get VendorBills for these bookings
+    const billBookingIds = bookings.map(b => b._id);
+    const gstBills = await VendorBill.find({ bookingId: { $in: billBookingIds } }).lean();
+    const gstBillMap = {};
+    gstBills.forEach(b => { gstBillMap[b.bookingId.toString()] = b; });
+
     // Map to GSTR format
     const reportData = bookings.map(b => {
-      // If tax is already stored in booking, use it
-      // Otherwise calculate from finalAmount (assuming inclusive)
-      // taxableValue = finalAmount / (1 + rate/100)
+      const bill = gstBillMap[b._id.toString()];
 
-      let taxAmount = b.tax || 0;
-      let taxableValue = b.finalAmount - taxAmount;
+      // Use VendorBill GST data if available, otherwise fallback
+      let taxAmount = bill?.totalGST || 0;
+      let taxableValue = (bill?.totalServiceBase || 0) + (bill?.totalPartsBase || 0);
 
-      // If tax wasn't stored properly but we know rate
-      if (taxAmount === 0 && b.finalAmount > 0) {
-        // Assume inclusive
+      // Fallback if no bill exists
+      if (!bill && b.finalAmount > 0) {
         taxableValue = b.finalAmount / (1 + (gstRate / 100));
         taxAmount = b.finalAmount - taxableValue;
       }
@@ -261,15 +281,15 @@ const getGSTRReport = async (req, res) => {
         invoiceDate: b.completedAt ? new Date(b.completedAt).toISOString().split('T')[0] : '',
         invoiceNumber: b.bookingNumber,
         customerName: b.userId?.name || 'Guest',
-        placeOfSupply: b.address?.state || 'Madhya Pradesh', // Common/Default state
+        placeOfSupply: b.address?.state || 'Madhya Pradesh',
         hsnSac: '9988',
         taxableValue: parseFloat(taxableValue.toFixed(2)),
         gstRate: `${gstRate}%`,
         cgst: parseFloat((taxAmount / 2).toFixed(2)),
         sgst: parseFloat((taxAmount / 2).toFixed(2)),
-        igst: 0, // Simplified: assuming mostly intra-state for now
+        igst: 0,
         totalTax: parseFloat(taxAmount.toFixed(2)),
-        invoiceValue: b.finalAmount,
+        invoiceValue: bill?.grandTotal || b.finalAmount,
         paymentMode: b.paymentMethod
       };
     });
@@ -428,13 +448,24 @@ const getCODReport = async (req, res) => {
           $group: {
             _id: null,
             totalCashCollected: { $sum: '$finalAmount' },
-            platformCommission: { $sum: '$adminCommission' },
             count: { $sum: 1 }
           }
         }
       ]);
 
-      const cashData = cashBookings[0] || { totalCashCollected: 0, platformCommission: 0, count: 0 };
+      // Get company revenue from VendorBills for these cash bookings
+      const vendorBillStats = await VendorBill.aggregate([
+        { $match: { vendorId: v._id, status: 'paid' } },
+        {
+          $group: {
+            _id: null,
+            platformCommission: { $sum: '$companyRevenue' }
+          }
+        }
+      ]);
+
+      const cashData = cashBookings[0] || { totalCashCollected: 0, count: 0 };
+      const billData = vendorBillStats[0] || { platformCommission: 0 };
 
       // Outstanding dues = Commission they owe platform (if negative wallet, they owe)
       const outstandingDues = v.walletBalance < 0 ? Math.abs(v.walletBalance) : 0;
@@ -444,7 +475,7 @@ const getCODReport = async (req, res) => {
         vendorName: v.businessName || 'Unknown',
         phone: v.phone,
         totalCashCollected: cashData.totalCashCollected,
-        platformCommissionDue: cashData.platformCommission,
+        platformCommissionDue: billData.platformCommission,
         cashBookingCount: cashData.count,
         walletBalance: v.walletBalance, // Current live wallet status
         outstandingDues,
@@ -497,18 +528,35 @@ const getRevenueBreakdown = async (req, res) => {
       };
     }
 
-    // Revenue by Service Category
-    const byService = await Booking.aggregate([
+    // Revenue by Service Category — use VendorBill with lookup
+    const billDateFilter = {};
+    if (startDate && endDate) {
+      billDateFilter.paidAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999))
+      };
+    }
+
+    const byService = await VendorBill.aggregate([
       {
         $match: {
-          ...dateFilter,
-          status: BOOKING_STATUS.COMPLETED
+          ...billDateFilter,
+          status: 'paid'
         }
       },
       {
         $lookup: {
+          from: 'bookings',
+          localField: 'bookingId',
+          foreignField: '_id',
+          as: 'booking'
+        }
+      },
+      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
           from: 'services',
-          localField: 'serviceId',
+          localField: 'booking.serviceId',
           foreignField: '_id',
           as: 'service'
         }
@@ -517,8 +565,8 @@ const getRevenueBreakdown = async (req, res) => {
       {
         $group: {
           _id: '$service.title',
-          revenue: { $sum: '$finalAmount' },
-          commission: { $sum: '$adminCommission' },
+          revenue: { $sum: '$grandTotal' },
+          commission: { $sum: '$companyRevenue' },
           count: { $sum: 1 }
         }
       },
@@ -526,36 +574,54 @@ const getRevenueBreakdown = async (req, res) => {
     ]);
 
     // Revenue by Payment Method
-    const byPaymentMethod = await Booking.aggregate([
+    const byPaymentMethod = await VendorBill.aggregate([
       {
         $match: {
-          ...dateFilter,
-          status: BOOKING_STATUS.COMPLETED
+          ...billDateFilter,
+          status: 'paid'
         }
       },
       {
+        $lookup: {
+          from: 'bookings',
+          localField: 'bookingId',
+          foreignField: '_id',
+          as: 'booking'
+        }
+      },
+      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
+      {
         $group: {
-          _id: '$paymentMethod',
-          revenue: { $sum: '$finalAmount' },
-          commission: { $sum: '$adminCommission' },
+          _id: '$booking.paymentMethod',
+          revenue: { $sum: '$grandTotal' },
+          commission: { $sum: '$companyRevenue' },
           count: { $sum: 1 }
         }
       }
     ]);
 
     // Revenue by City/State
-    const byLocation = await Booking.aggregate([
+    const byLocation = await VendorBill.aggregate([
       {
         $match: {
-          ...dateFilter,
-          status: BOOKING_STATUS.COMPLETED
+          ...billDateFilter,
+          status: 'paid'
         }
       },
       {
+        $lookup: {
+          from: 'bookings',
+          localField: 'bookingId',
+          foreignField: '_id',
+          as: 'booking'
+        }
+      },
+      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
+      {
         $group: {
-          _id: '$address.city',
-          revenue: { $sum: '$finalAmount' },
-          commission: { $sum: '$adminCommission' },
+          _id: '$booking.address.city',
+          revenue: { $sum: '$grandTotal' },
+          commission: { $sum: '$companyRevenue' },
           count: { $sum: 1 }
         }
       },

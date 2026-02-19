@@ -517,21 +517,28 @@ const BookingDetails = () => {
   };
 
   // --- Payment Breakdown Calculations ---
-  // Default values
-  let originalBase = parseFloat(booking.basePrice) || 0;
-  let originalGST = (originalBase * 18) / 100;
+  // Default values from booking (fallback)
+  const isPlanBenefit = booking.paymentMethod === 'plan_benefit';
+  const bill = booking.bill;
+
+  // Base Logic (Services)
+  // Use bill.originalServiceBase if available, else booking.basePrice
+  const originalBase = bill ? (bill.originalServiceBase || 0) : (parseFloat(booking.basePrice) || 0);
 
   // Extra Services & Parts from vendor bill (if available)
-  const services = booking.bill?.services || [];
-  const parts = booking.bill?.parts || [];
-  const customItems = booking.bill?.customItems || [];
+  const allBillServices = bill?.services || [];
+  const services = allBillServices.filter(s => !s.isOriginal);
+  const originalServiceFromBill = allBillServices.find(s => s.isOriginal);
+  const parts = bill?.parts || [];
+  const customItems = bill?.customItems || [];
 
   let extraServiceBase = 0;
   let extraServiceGST = 0;
   services.forEach(s => {
-    const total = s.total || 0;
-    const base = total / 1.18;
-    const gst = total - base;
+    // s.price is UNIT BASE PRICE. s.total is INCLUSIVE.
+    const qty = parseFloat(s.quantity) || 1;
+    const base = (parseFloat(s.price) || 0) * qty;
+    const gst = parseFloat(s.gstAmount) || 0;
     extraServiceBase += base;
     extraServiceGST += gst;
   });
@@ -539,23 +546,24 @@ const BookingDetails = () => {
   let partsBase = 0;
   let partsGST = 0;
   parts.forEach(p => {
-    partsBase += ((p.price || 0) * (p.quantity || 1));
-    partsGST += (p.gstAmount || 0);
+    const qty = parseFloat(p.quantity) || 1;
+    partsBase += ((parseFloat(p.price) || 0) * qty);
+    partsGST += (parseFloat(p.gstAmount) || 0);
   });
   customItems.forEach(c => {
-    partsBase += ((c.price || 0) * (c.quantity || 1));
-    partsGST += (c.gstAmount || 0);
+    const qty = parseFloat(c.quantity) || 1;
+    partsBase += ((parseFloat(c.price) || 0) * qty);
+    partsGST += (parseFloat(c.gstAmount) || 0);
   });
 
+  // Use bill.originalGST if available
+  const originalGST = bill ? (bill.originalGST || 0) : (originalBase * 0.18);
   const totalGST = originalGST + extraServiceGST + partsGST;
 
-  // Use calculated final logic if bill exists, else fall back to booking.finalAmount
-  const hasBill = !!booking.bill;
-  const finalTotal = hasBill
-    ? (originalBase + originalGST) + (extraServiceBase + extraServiceGST) + (partsBase + partsGST)
-    : (booking.finalAmount || booking.totalAmount || 0);
+  // Final Total
+  const hasBill = !!bill;
+  const finalTotal = bill?.grandTotal || (booking.finalAmount || booking.totalAmount || 0);
 
-  const isPlanBenefit = booking.paymentMethod === 'plan_benefit';
   // --------------------------------------
 
   return (
@@ -1161,8 +1169,9 @@ const BookingDetails = () => {
                         <FiCheckCircle className="w-3.5 h-3.5" /> Services
                       </h4>
                       <div className="space-y-2 pl-1">
+                        {/* Original Base */}
                         <div className="flex justify-between items-center text-gray-600">
-                          <span>Original Booking</span>
+                          <span>Original Booking : {originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
                           {isPlanBenefit ? (
                             <div className="flex items-center gap-2">
                               <span className="line-through text-gray-400 text-xs">₹{originalBase.toLocaleString('en-IN')}</span>
@@ -1172,15 +1181,25 @@ const BookingDetails = () => {
                             <span className="font-medium text-gray-900">₹{originalBase.toLocaleString('en-IN')}</span>
                           )}
                         </div>
+
+                        {/* Extra Services */}
                         {services.map((s, i) => (
-                          <div key={i} className="flex justify-between items-center text-gray-600 pl-3 border-l-2 border-gray-100">
+                          <div key={i} className="flex justify-between items-center text-gray-600">
                             <span>{s.name} <span className="text-gray-400 text-xs">x{s.quantity}</span></span>
-                            <span className="font-mono text-xs">₹{(s.total / 1.18).toFixed(2)}</span>
+                            <span className="font-mono text-xs">₹{((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1)).toFixed(2)}</span>
                           </div>
                         ))}
-                        <div className="flex justify-between font-bold text-gray-800 pt-2 border-t border-dashed border-gray-200 mt-1">
-                          <span>Total Service Base</span>
-                          <span>₹{(originalBase + extraServiceBase).toFixed(2)}</span>
+
+                        {/* Service GST */}
+                        <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
+                          <span>GST (18%)</span>
+                          <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
+                        </div>
+
+                        {/* Service Subtotal */}
+                        <div className="flex justify-between font-bold text-gray-800 pt-1">
+                          <span>Total Service</span>
+                          <span>₹{(originalBase + extraServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -1189,7 +1208,7 @@ const BookingDetails = () => {
                     {(parts.length > 0 || customItems.length > 0) && (
                       <div>
                         <h4 className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 mt-4">
-                          <FiPackage className="w-3.5 h-3.5" /> Parts & Material
+                          <FiPackage className="w-3.5 h-3.5 text-orange-500" /> Parts & Material
                         </h4>
                         <div className="space-y-2 pl-1">
                           {parts.map((p, i) => (
@@ -1207,28 +1226,33 @@ const BookingDetails = () => {
                               <span className="font-mono text-xs">₹{(c.price * c.quantity).toFixed(2)}</span>
                             </div>
                           ))}
-                          <div className="flex justify-between font-bold text-gray-800 pt-2 border-t border-dashed border-gray-200 mt-1">
-                            <span>Total Parts Base</span>
-                            <span>₹{partsBase.toFixed(2)}</span>
+
+                          {/* Parts GST */}
+                          <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
+                            <span>GST (18%)</span>
+                            <span className="font-mono">₹{partsGST.toFixed(2)}</span>
+                          </div>
+
+                          {/* Parts Subtotal */}
+                          <div className="flex justify-between font-bold text-gray-800 pt-1">
+                            <span>Total Parts</span>
+                            <span>₹{(partsBase + partsGST).toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Taxes Section */}
-                    <div>
-                      <h4 className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 mt-4">
-                        <FiAlertCircle className="w-3.5 h-3.5" /> Taxes
-                      </h4>
-                      <div className="flex justify-between items-center text-gray-600 pl-1">
-                        <span>Total GST (18%)</span>
-                        {isPlanBenefit && totalGST === 0 ? (
-                          <span className="text-emerald-600 font-bold text-xs">Included</span>
-                        ) : (
-                          <span className="font-mono text-xs">₹{totalGST.toFixed(2)}</span>
-                        )}
+                    {/* Visiting Charges */}
+                    {(booking.visitingCharges > 0 || bill?.visitingCharges > 0) && (
+                      <div className="mt-4 pt-2 border-t border-gray-100">
+                        <div className="flex justify-between text-xs font-bold text-gray-600">
+                          <span className="flex items-center gap-2 uppercase tracking-wide">
+                            <FiClock className="w-3.5 h-3.5 text-blue-400" /> Visiting Charges
+                          </span>
+                          <span className="font-mono">₹{(bill?.visitingCharges || booking.visitingCharges || 0).toFixed(2)}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="pt-4 mt-2 border-t-2 border-gray-100 flex justify-between items-center">
                       <span className="font-bold text-gray-900 text-lg">Grand Total</span>

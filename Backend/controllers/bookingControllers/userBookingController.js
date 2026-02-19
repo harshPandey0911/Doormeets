@@ -242,57 +242,10 @@ const createBooking = async (req, res) => {
       }
     }
 
-    // Calculate vendor earnings and admin commission
-    const Settings = require('../../models/Settings');
-    let commissionPercentage = 10;
-    try {
-      const settings = await Settings.findOne({ type: 'global' });
-      if (settings && settings.commissionPercentage) {
-        commissionPercentage = settings.commissionPercentage;
-      }
-    } catch (err) {
-      console.error('Error fetching settings, using default commission:', err);
-    }
-
-    // Safety check for commission (cap at 50% to prevent zero earnings)
-    if (commissionPercentage > 50) commissionPercentage = 50;
-
-    const commissionRate = commissionPercentage / 100;
-    let vendorEarnings = 0;
-    let adminCommission = 0;
-
-    console.log(`[CreateBooking] Calculation Context: Payment=${paymentMethod}, TotalServiceValue=${totalServiceValue}, Commission=${commissionPercentage}%, Penalty=${pendingPenalty}`);
-
-    if (paymentMethod === 'plan_benefit') {
-      // Vendor gets paid by platform for "free" jobs
-      // They should receive the earnings AS IF it was a paid booking (Base + Tax + Fee)
-      // Penalty goes to Admin (System), not Vendor.
-
-      // Ensure totalServiceValue is robust
-      if (!totalServiceValue || totalServiceValue <= 0) {
-        totalServiceValue = service.basePrice || 500;
-      }
-
-      // Calculate what the Total would be if it was paid
-      const notionalTax = Math.round(totalServiceValue * 0.18);
-      const notionalVisitingCharges = 49; // Standard fee
-      const notionalTotal = totalServiceValue + notionalTax + notionalVisitingCharges;
-
-      const commissionAmount = Math.round(notionalTotal * commissionRate);
-      vendorEarnings = parseFloat((notionalTotal - commissionAmount).toFixed(2));
-      adminCommission = 0; // Recorded as 0 since user didn't pay platform fee (or should we track penalty as Revenue?)
-      // We will track penalty via Booking.penalty field.
-
-      console.log(`[CreateBooking] Plan Benefit Earnings: NotionalTotal(${notionalTotal}) [Base:${totalServiceValue}+Tax:${notionalTax}+Fee:${notionalVisitingCharges}] - Comm(${commissionAmount}) = ${vendorEarnings}`);
-    } else {
-      // Regular booking
-      // Penalty goes to Admin.
-      // Vendor Earnings on Service Amount (Final - Penalty).
-      const serviceAmount = finalAmount - pendingPenalty;
-
-      adminCommission = parseFloat((serviceAmount * commissionRate).toFixed(2));
-      vendorEarnings = parseFloat((serviceAmount - adminCommission).toFixed(2));
-    }
+    // NOTE: vendor earnings are NOT calculated at booking creation.
+    // They are computed ONLY at bill generation (completeSelfJob) and stored in VendorBill.
+    // This prevents inconsistency between Booking and VendorBill.
+    console.log(`[CreateBooking] Payment=${paymentMethod}, FinalAmount=${finalAmount}, Penalty=${pendingPenalty}`);
 
     // Clear penalty from user wallet if we charged it
     if (pendingPenalty > 0) {
@@ -365,8 +318,6 @@ const createBooking = async (req, res) => {
       visitingCharges,
       finalAmount,
       userPayableAmount: finalAmount,
-      vendorEarnings: vendorEarnings || 0,
-      adminCommission: adminCommission || 0,
       address: {
         type: address.type || 'home',
         addressLine1: address.addressLine1,
@@ -468,7 +419,6 @@ const createBooking = async (req, res) => {
           scheduledTime: scheduledTime,
           location: address,
           price: finalAmount, // Keep price for info
-          vendorEarnings: booking.vendorEarnings, // Use model field name
           distance: vendor.distance // Distance in km
         },
         // Ensure proper push notification style for booking request
@@ -496,7 +446,6 @@ const createBooking = async (req, res) => {
           scheduledDate: scheduledDate,
           scheduledTime: scheduledTime,
           price: finalAmount,
-          vendorEarnings: booking.vendorEarnings,
           address: address, // Add this
           distance: vendor.distance,
           playSound: true,

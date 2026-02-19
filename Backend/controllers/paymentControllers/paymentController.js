@@ -122,9 +122,6 @@ const verifyPaymentWebhook = async (req, res) => {
       });
     }
 
-    // Capture original payment method before update
-    const originalPaymentMethod = booking.paymentMethod;
-
     // Update booking payment status
     booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
     booking.paymentMethod = 'razorpay';
@@ -139,37 +136,14 @@ const verifyPaymentWebhook = async (req, res) => {
       booking.completedAt = new Date();
     }
 
-    // Calculate commission with Extra Charges logic
-    const settings = await Settings.findOne({ type: 'global' });
-    const commissionRate = settings?.commissionPercentage || 10;
-
-    // Separate Base from Extras
-    const extraChargesTotal = booking.extraChargesTotal || 0;
-    const baseAmount = Math.max(0, booking.finalAmount - extraChargesTotal); // Commissionable Amount for Standard Bookings
-
-    if (originalPaymentMethod === 'plan_benefit') {
-      // For Plan Benefit: Logic matches Cash Collection
-      // 1. Existing Vendor Earnings (Base) + Payment (Extras 100% to Vendor)
-      const currentEarnings = booking.vendorEarnings || 0;
-      booking.vendorEarnings = parseFloat((currentEarnings + booking.finalAmount).toFixed(2));
-
-      // 2. Set User Payable explicitly
-      booking.userPayableAmount = booking.finalAmount;
-
-      // 3. Admin Commission remains unchanged (calculated on base only at creation)
-    } else {
-      // Normal Split on Base, 100% Extras to Vendor
-      const commissionOnBase = (baseAmount * commissionRate) / 100;
-      booking.adminCommission = parseFloat(commissionOnBase.toFixed(2));
-      booking.vendorEarnings = parseFloat((booking.finalAmount - commissionOnBase).toFixed(2));
-    }
-
     await booking.save();
 
-    // Create Transaction Record for User (Payment)
+    // ── Credit Vendor Wallet from VendorBill (single source of truth) ──
     const Transaction = require('../../models/Transaction');
     const Vendor = require('../../models/Vendor');
+    const VendorBill = require('../../models/VendorBill');
 
+    // User payment transaction
     await Transaction.create({
       userId: booking.userId,
       bookingId: booking._id,
@@ -181,27 +155,45 @@ const verifyPaymentWebhook = async (req, res) => {
       referenceId: razorpay_payment_id
     });
 
-    const vendor = await Vendor.findById(booking.vendorId);
-    if (vendor) {
-      vendor.wallet.earnings = (vendor.wallet.earnings || 0) + booking.vendorEarnings;
-      await vendor.save();
+    // Fetch VendorBill for earnings (only if bill exists = post-completion payment)
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-      // Create Transaction Record
-      await Transaction.create({
-        vendorId: vendor._id,
-        bookingId: booking._id,
-        amount: booking.vendorEarnings,
-        type: 'earnings_credit',
-        paymentMethod: 'system',
-        status: 'completed',
-        description: `Earnings credited for booking ${booking.bookingNumber}`,
-        balanceAfter: vendor.wallet.earnings
+    if (bill && booking.vendorId) {
+      const vendorEarning = bill.vendorTotalEarning;
+
+      // Mark bill as paid
+      bill.status = 'paid';
+      bill.paidAt = new Date();
+      await bill.save();
+
+      // Online payment: only earnings increase, NO dues (platform holds the money)
+      await Vendor.findByIdAndUpdate(booking.vendorId, {
+        $inc: { 'wallet.earnings': vendorEarning }
       });
 
-      console.log(`[Payment] Credited ₹${booking.vendorEarnings} to vendor ${vendor._id}`);
+      // Earnings credit transaction
+      if (vendorEarning > 0) {
+        await Transaction.create({
+          vendorId: booking.vendorId,
+          bookingId: booking._id,
+          amount: vendorEarning,
+          type: 'earnings_credit',
+          paymentMethod: 'system',
+          status: 'completed',
+          description: `Earnings ₹${vendorEarning} credited for booking ${booking.bookingNumber} (online payment)`,
+          metadata: {
+            type: 'earnings_increase',
+            billId: bill._id.toString(),
+            serviceEarning: bill.vendorServiceEarning,
+            partsEarning: bill.vendorPartsEarning
+          }
+        });
+      }
+
+      console.log(`[Payment] Credited ₹${vendorEarning} to vendor ${booking.vendorId}`);
     }
 
-    // Send notification to user (Ensure single notification)
+    // Send notification to user
     await createNotification({
       userId: booking.userId,
       type: 'payment_success',
@@ -218,21 +210,21 @@ const verifyPaymentWebhook = async (req, res) => {
 
     if (booking.status === BOOKING_STATUS.COMPLETED) {
       vendorTitle = 'Payment Received (Online)';
-      vendorMsg = `User has successfully paid ₹${booking.finalAmount} online for booking ${booking.bookingNumber}. Job Completed!`;
+      vendorMsg = `User paid ₹${booking.finalAmount} online for booking ${booking.bookingNumber}. Job Completed!`;
     }
 
-    // Send SINGLE notification to vendor
-    await createNotification({
-      vendorId: booking.vendorId,
-      type: 'payment_success',
-      title: vendorTitle,
-      message: vendorMsg,
-      relatedId: booking._id,
-      relatedType: 'booking',
-      priority: 'high'
-    });
+    if (booking.vendorId) {
+      await createNotification({
+        vendorId: booking.vendorId,
+        type: 'payment_success',
+        title: vendorTitle,
+        message: vendorMsg,
+        relatedId: booking._id,
+        relatedType: 'booking',
+        priority: 'high'
+      });
+    }
 
-    // Worker notification (if assigned)
     if (booking.workerId) {
       await createNotification({
         workerId: booking.workerId,
@@ -310,7 +302,7 @@ const processWalletPayment = async (req, res) => {
       });
     }
 
-    // Deduct from wallet
+    // Deduct from user wallet
     user.wallet.balance -= booking.finalAmount;
     await user.save();
 
@@ -326,67 +318,59 @@ const processWalletPayment = async (req, res) => {
       balanceAfter: user.wallet.balance
     });
 
-    // Capture original payment method
-    const originalPaymentMethod = booking.paymentMethod;
-
     // Update booking payment status
     booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
     booking.paymentMethod = 'wallet';
     booking.paymentId = `WALLET_${Date.now()}`;
 
-    // Update booking status to confirmed if it was pending or searching or awaiting_payment
+    // Update booking status
     if ([BOOKING_STATUS.PENDING, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.AWAITING_PAYMENT].includes(booking.status)) {
       booking.status = BOOKING_STATUS.CONFIRMED;
-    }
-
-    // Calculate commission with Extra Charges logic
-    const settings = await Settings.findOne({ type: 'global' });
-    const commissionRate = settings?.commissionPercentage || 10;
-
-    // Separate Base from Extras
-    const extraChargesTotal = booking.extraChargesTotal || 0;
-    const baseAmount = Math.max(0, booking.finalAmount - extraChargesTotal); // Commissionable Amount
-
-    if (originalPaymentMethod === 'plan_benefit') {
-      // For Plan Benefit: Logic matches Cash Collection
-      // 1. Existing Vendor Earnings (Base) + Payment (Extras 100% to Vendor)
-      const currentEarnings = booking.vendorEarnings || 0;
-      booking.vendorEarnings = parseFloat((currentEarnings + booking.finalAmount).toFixed(2));
-
-      // 2. Set User Payable explicitly
-      booking.userPayableAmount = booking.finalAmount;
-
-      // 3. Admin Commission remains unchanged (calculated on base only at creation)
-    } else {
-      // Normal Split on Base, 100% Extras to Vendor
-      const commissionOnBase = (baseAmount * commissionRate) / 100;
-      booking.adminCommission = parseFloat(commissionOnBase.toFixed(2));
-      booking.vendorEarnings = parseFloat((booking.finalAmount - commissionOnBase).toFixed(2));
+    } else if (booking.status === BOOKING_STATUS.WORK_DONE) {
+      booking.status = BOOKING_STATUS.COMPLETED;
+      booking.completedAt = new Date();
     }
 
     await booking.save();
 
-    // Credit Vendor Wallet (Same logic as verifyPaymentWebhook)
+    // ── Credit Vendor Wallet from VendorBill (single source of truth) ──
     const Vendor = require('../../models/Vendor');
-    // Transaction already imported above
+    const VendorBill = require('../../models/VendorBill');
 
-    const vendor = await Vendor.findById(booking.vendorId);
-    if (vendor) {
-      vendor.wallet.earnings = (vendor.wallet.earnings || 0) + booking.vendorEarnings;
-      await vendor.save();
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-      await Transaction.create({
-        vendorId: vendor._id,
-        bookingId: booking._id,
-        amount: booking.vendorEarnings,
-        type: 'earnings_credit',
-        paymentMethod: 'system',
-        status: 'completed',
-        description: `Earnings credited for booking ${booking.bookingNumber}`,
-        balanceAfter: vendor.wallet.earnings
+    if (bill && booking.vendorId) {
+      const vendorEarning = bill.vendorTotalEarning;
+
+      // Mark bill as paid
+      bill.status = 'paid';
+      bill.paidAt = new Date();
+      await bill.save();
+
+      // Wallet payment: only earnings increase, NO dues (platform holds the money)
+      await Vendor.findByIdAndUpdate(booking.vendorId, {
+        $inc: { 'wallet.earnings': vendorEarning }
       });
 
-      console.log(`[Wallet Payment] Credited ₹${booking.vendorEarnings} to vendor ${vendor._id}`);
+      if (vendorEarning > 0) {
+        await Transaction.create({
+          vendorId: booking.vendorId,
+          bookingId: booking._id,
+          amount: vendorEarning,
+          type: 'earnings_credit',
+          paymentMethod: 'system',
+          status: 'completed',
+          description: `Earnings ₹${vendorEarning} credited for booking ${booking.bookingNumber} (wallet payment)`,
+          metadata: {
+            type: 'earnings_increase',
+            billId: bill._id.toString(),
+            serviceEarning: bill.vendorServiceEarning,
+            partsEarning: bill.vendorPartsEarning
+          }
+        });
+      }
+
+      console.log(`[Wallet Payment] Credited ₹${vendorEarning} to vendor ${booking.vendorId}`);
     }
 
     // Send notification to user
@@ -409,16 +393,17 @@ const processWalletPayment = async (req, res) => {
       vendorMsg = `User paid ₹${booking.finalAmount} via wallet for booking ${booking.bookingNumber}. Job Completed!`;
     }
 
-    // Send SINGLE notification to vendor
-    await createNotification({
-      vendorId: booking.vendorId,
-      type: 'payment_success',
-      title: vendorTitle,
-      message: vendorMsg,
-      relatedId: booking._id,
-      relatedType: 'booking',
-      priority: 'high'
-    });
+    if (booking.vendorId) {
+      await createNotification({
+        vendorId: booking.vendorId,
+        type: 'payment_success',
+        title: vendorTitle,
+        message: vendorMsg,
+        relatedId: booking._id,
+        relatedType: 'booking',
+        priority: 'high'
+      });
+    }
 
     if (booking.workerId) {
       await createNotification({
@@ -613,17 +598,10 @@ const confirmPayAtHome = async (req, res) => {
       });
     }
 
-    // Update booking status
+    // Update booking status — NO earnings set (VendorBill handles that later)
     booking.paymentMethod = 'pay_at_home';
     booking.paymentStatus = PAYMENT_STATUS.PENDING;
     booking.status = BOOKING_STATUS.CONFIRMED;
-
-    // Calculate commission and earnings (projected)
-    const settings = await Settings.findOne({ type: 'global' });
-    const commissionRate = settings?.commissionPercentage || 10;
-    const commission = (booking.finalAmount * commissionRate) / 100;
-    booking.adminCommission = parseFloat(commission.toFixed(2));
-    booking.vendorEarnings = parseFloat((booking.finalAmount - commission).toFixed(2));
 
     await booking.save();
 

@@ -13,8 +13,10 @@ const AdminSettings = () => {
 
   const [financialSettings, setFinancialSettings] = useState({
     visitedCharges: 0,
-    gstPercentage: 18,
-    commissionPercentage: 10,
+    serviceGstPercentage: 18,
+    partsGstPercentage: 18,
+    servicePayoutPercentage: 90,
+    partsPayoutPercentage: 100,
     vendorCashLimit: 10000,
     cancellationPenalty: 49,
     tdsPercentage: 1
@@ -105,8 +107,10 @@ const AdminSettings = () => {
         if (res.success && res.settings) {
           setFinancialSettings({
             visitedCharges: res.settings.visitedCharges || 0,
-            gstPercentage: res.settings.gstPercentage || 0,
-            commissionPercentage: res.settings.commissionPercentage || 0,
+            serviceGstPercentage: res.settings.serviceGstPercentage ?? 18,
+            partsGstPercentage: res.settings.partsGstPercentage ?? 18,
+            servicePayoutPercentage: res.settings.servicePayoutPercentage ?? 90,
+            partsPayoutPercentage: res.settings.partsPayoutPercentage ?? 100,
             tdsPercentage: res.settings.tdsPercentage || 1,
             vendorCashLimit: res.settings.vendorCashLimit || 10000,
             cancellationPenalty: res.settings.cancellationPenalty !== undefined ? res.settings.cancellationPenalty : 49
@@ -578,14 +582,32 @@ const AdminSettings = () => {
                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">GST Percentage (%)</label>
-                      <input type="number" name="gstPercentage" value={financialSettings.gstPercentage} onChange={handleFinancialChange}
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Service GST (%)</label>
+                      <input type="number" name="serviceGstPercentage" value={financialSettings.serviceGstPercentage} onChange={handleFinancialChange}
+                        min="0" max="100"
                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all" />
+                      <p className="text-[10px] text-gray-400 mt-1">GST rate applied to services</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Commission (%)</label>
-                      <input type="number" name="commissionPercentage" value={financialSettings.commissionPercentage} onChange={handleFinancialChange}
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Parts GST (%)</label>
+                      <input type="number" name="partsGstPercentage" value={financialSettings.partsGstPercentage} onChange={handleFinancialChange}
+                        min="0" max="100"
                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all" />
+                      <p className="text-[10px] text-gray-400 mt-1">GST rate applied to parts &amp; materials</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Service Payout (%)</label>
+                      <input type="number" name="servicePayoutPercentage" value={financialSettings.servicePayoutPercentage} onChange={handleFinancialChange}
+                        min="0" max="100"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all" />
+                      <p className="text-[10px] text-gray-400 mt-1">Vendor keeps this % of service charges</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Parts Payout (%)</label>
+                      <input type="number" name="partsPayoutPercentage" value={financialSettings.partsPayoutPercentage} onChange={handleFinancialChange}
+                        min="0" max="100"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all" />
+                      <p className="text-[10px] text-gray-400 mt-1">Vendor keeps this % of parts charges</p>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">TDS Percentage (%)</label>

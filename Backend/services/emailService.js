@@ -250,7 +250,7 @@ const sendBookingEmails = async (booking, user, vendor, service) => {
           <div class="data-row"><span class="data-label">Service</span><span class="data-value">${service.title}</span></div>
           <div class="data-row"><span class="data-label">Customer</span><span class="data-value">${user.name}</span></div>
           <div class="data-row"><span class="data-label">Schedule</span><span class="data-value">${new Date(booking.scheduledDate).toLocaleDateString()} at ${booking.scheduledTime}</span></div>
-          <div class="data-row"><span class="data-label">Your Earning</span><span class="data-value">₹${booking.vendorEarnings}</span></div>
+          <div class="data-row"><span class="data-label">Amount</span><span class="data-value">₹${booking.finalAmount}</span></div>
         </div>
 
         <div class="btn-container">

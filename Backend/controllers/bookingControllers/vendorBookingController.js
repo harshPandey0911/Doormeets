@@ -892,68 +892,252 @@ const verifySelfVisit = async (req, res) => {
 };
 
 /**
- * Complete Self Job
+ * Complete Self Job & Generate Bill
+ * ──────────────────────────────────
+ * Revenue Model:
+ *   Vendor → 70% of total service BASE (excl GST)
+ *   Vendor → 10% of total parts BASE  (excl GST)
+ *   GST    → 100% retained by company
+ *
+ * CRITICAL: Vendor earnings are NOT written to Booking.
+ *           VendorBill is the single source of truth.
+ *           Earnings are only credited to wallet AFTER payment.
  */
 const completeSelfJob = async (req, res) => {
   try {
     const vendorId = req.user.id;
     const { id } = req.params;
-    const { workPhotos, workDoneDetails } = req.body;
+    const { workPhotos, workDoneDetails, billDetails } = req.body;
 
     const booking = await Booking.findOne({ _id: id, vendorId });
-
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-    // Status check
+    // Status guard
     if (booking.status !== BOOKING_STATUS.VISITED && booking.status !== BOOKING_STATUS.IN_PROGRESS) {
       return res.status(400).json({ success: false, message: 'Cannot complete from current status' });
     }
 
-    booking.status = BOOKING_STATUS.WORK_DONE;
+    // Prevent duplicate bills
+    const VendorBill = require('../../models/VendorBill');
+    const existingBill = await VendorBill.findOne({ bookingId: booking._id });
+    if (existingBill) {
+      return res.status(400).json({ success: false, message: 'Bill already generated for this booking' });
+    }
 
-    // Generate Payment OTP
+    // ── Fetch Settings (frozen snapshot for this bill) ──
+    const Settings = require('../../models/Settings');
+    const settings = await Settings.findOne({ type: 'global' });
+    const serviceSplitPct = settings?.servicePayoutPercentage ?? 70;
+    const partsSplitPct = settings?.partsPayoutPercentage ?? 10;
+    const serviceGstPct = settings?.serviceGstPercentage ?? 18;
+    const partsGstPct = settings?.partsGstPercentage ?? 18;
+
+    // ═══════════════════════════════════════════
+    // STEP 1: BUILD LINE ITEMS
+    // ═══════════════════════════════════════════
+
+    // -- Original booking service (from basePrice) --
+    const originalBase = Number(booking.basePrice) || 0;
+    const originalGST = parseFloat(((originalBase * serviceGstPct) / 100).toFixed(2));
+
+    // -- Vendor-added services --
+    const billServices = (billDetails?.services || []).map(svc => {
+      const price = Number(svc.price) || 0;
+      const qty = Number(svc.quantity) || 1;
+      const base = price * qty;
+      const gst = parseFloat(((base * serviceGstPct) / 100).toFixed(2));
+      return {
+        catalogId: svc.catalogId || undefined,
+        name: svc.name || 'Service',
+        price,
+        gstPercentage: serviceGstPct,
+        quantity: qty,
+        gstAmount: gst,
+        total: parseFloat((base + gst).toFixed(2)),
+        isOriginal: false
+      };
+    });
+
+    // -- Parts --
+    const billParts = (billDetails?.parts || []).map(part => {
+      const price = Number(part.price) || 0;
+      const qty = Number(part.quantity) || 1;
+      const pGstPct = (part.gstPercentage != null) ? Number(part.gstPercentage) : partsGstPct;
+      const base = price * qty;
+      const gst = parseFloat(((base * pGstPct) / 100).toFixed(2));
+      return {
+        catalogId: part.catalogId || undefined,
+        name: part.name || 'Part',
+        price,
+        gstPercentage: pGstPct,
+        quantity: qty,
+        gstAmount: gst,
+        total: parseFloat((base + gst).toFixed(2))
+      };
+    });
+
+    // ═══════════════════════════════════════════
+    // STEP 2: CALCULATE BASE TOTALS
+    // ═══════════════════════════════════════════
+
+    const vendorServiceBase = billServices.reduce((s, sv) => s + (sv.price * sv.quantity), 0);
+    const totalServiceBase = parseFloat((originalBase + vendorServiceBase).toFixed(2));
+    const totalPartsBase = parseFloat(billParts.reduce((s, p) => s + (p.price * p.quantity), 0).toFixed(2));
+
+    // ═══════════════════════════════════════════
+    // STEP 3: CALCULATE GST TOTALS
+    // ═══════════════════════════════════════════
+
+    const vendorServiceGST = parseFloat(billServices.reduce((s, sv) => s + sv.gstAmount, 0).toFixed(2));
+    const partsGST = parseFloat(billParts.reduce((s, p) => s + p.gstAmount, 0).toFixed(2));
+    const totalGST = parseFloat((originalGST + vendorServiceGST + partsGST).toFixed(2));
+
+    // ═══════════════════════════════════════════
+    // STEP 4: FINAL BILL (what user pays)
+    // ═══════════════════════════════════════════
+
+    const visitingCharges = Number(booking.visitingCharges) || 0;
+    const grandTotal = parseFloat((totalServiceBase + totalPartsBase + totalGST + visitingCharges).toFixed(2));
+
+    // ═══════════════════════════════════════════
+    // STEP 5: REVENUE SPLIT (internal only)
+    // ═══════════════════════════════════════════
+    // Vendor % is applied ONLY on base — never on GST
+
+    const vendorServiceEarning = parseFloat(((totalServiceBase * serviceSplitPct) / 100).toFixed(2));
+    const vendorPartsEarning = parseFloat(((totalPartsBase * partsSplitPct) / 100).toFixed(2));
+    const vendorTotalEarning = parseFloat((vendorServiceEarning + vendorPartsEarning).toFixed(2));
+    const companyRevenue = parseFloat((grandTotal - vendorTotalEarning).toFixed(2));
+
+    // ═══════════════════════════════════════════
+    // STEP 6: PERSIST BILL
+    // ═══════════════════════════════════════════
+
+    // Include original service as line item for completeness
+    const allServices = [
+      {
+        name: booking.serviceName || 'Original Service',
+        price: originalBase,
+        gstPercentage: serviceGstPct,
+        quantity: 1,
+        gstAmount: originalGST,
+        total: parseFloat((originalBase + originalGST).toFixed(2)),
+        isOriginal: true
+      },
+      ...billServices
+    ];
+
+    const bill = await VendorBill.create({
+      bookingId: booking._id,
+      vendorId,
+
+      // Line items
+      services: allServices,
+      parts: billParts,
+
+      // Base totals
+      originalServiceBase: originalBase,
+      vendorServiceBase,
+      totalServiceBase,
+      totalPartsBase,
+      visitingCharges,
+
+      // GST totals
+      originalGST,
+      vendorServiceGST,
+      partsGST,
+      totalGST,
+
+      // Bill total
+      grandTotal,
+
+      // Payout config snapshot
+      payoutConfig: {
+        serviceSplitPercentage: serviceSplitPct,
+        partsSplitPercentage: partsSplitPct,
+        serviceGstPercentage: serviceGstPct,
+        partsGstPercentage: partsGstPct
+      },
+
+      // Revenue split
+      vendorServiceEarning,
+      vendorPartsEarning,
+      vendorTotalEarning,
+      companyRevenue,
+
+      status: 'generated',
+      generatedAt: new Date()
+    });
+
+    // ═══════════════════════════════════════════
+    // STEP 7: UPDATE BOOKING (no earnings!)
+    // ═══════════════════════════════════════════
+
+    booking.status = BOOKING_STATUS.WORK_DONE;
+    booking.finalAmount = grandTotal;
+    booking.userPayableAmount = grandTotal; // Ensure consistency
+    booking.vendorBillId = bill._id;
+
+    // Generate Payment OTP for cash collection
     const payOtp = Math.floor(1000 + Math.random() * 9000).toString();
     booking.paymentOtp = payOtp;
 
     if (workPhotos) booking.workPhotos = workPhotos;
-    if (workDoneDetails) booking.workDoneDetails = workDoneDetails;
+
+    // Store bill summary in workDoneDetails for frontend display
+    booking.workDoneDetails = {
+      ...(typeof workDoneDetails === 'object' ? workDoneDetails : {}),
+      billId: bill._id.toString(),
+      items: [
+        ...allServices.map(s => ({ title: s.name, qty: s.quantity, price: s.total })),
+        ...billParts.map(p => ({ title: p.name, qty: p.quantity, price: p.total }))
+      ]
+    };
+    booking.markModified('workDoneDetails');
 
     await booking.save();
 
-    const { createNotification } = require('../notificationControllers/notificationController');
-
-    // 1. Notify user that work is completed and billing is being prepared
-    await createNotification({
-      userId: booking.userId,
-      type: 'work_completed',
-      title: 'Work Completed',
-      message: `Work finished! ${req.user.businessName || req.user.name} is preparing your final bill.`,
-      relatedId: booking._id,
-      relatedType: 'booking',
-      priority: 'high',
-      pushData: {
-        type: 'work_completed',
-        bookingId: booking._id.toString(),
-        link: `/user/booking/${booking._id}`
-      }
-    });
-
-    // 2. Notification for Bill Ready is now handled in initiateCashCollection
-
-    // Send FCM push notification to user
-    // Manual push removed - auto handled by createNotification
-    // sendNotificationToUser(booking.userId, { ... });
+    // ── Notify user ──
+    // const { createNotification } = require('../notificationControllers/notificationController');
+    // await createNotification({
+    //   userId: booking.userId,
+    //   type: 'work_completed',
+    //   title: 'Work Completed & Bill Ready',
+    //   message: `Work finished! Your total bill is ₹${grandTotal}. Please review and confirm.`,
+    //   relatedId: booking._id,
+    //   relatedType: 'booking',
+    //   priority: 'high',
+    //   pushData: {
+    //     type: 'work_completed',
+    //     bookingId: booking._id.toString(),
+    //     link: `/user/booking/${booking._id}`
+    //   }
+    // });
 
     const io = req.app.get('io');
     if (io) {
       io.to(`user_${booking.userId}`).emit('booking_updated', {
         bookingId: booking._id,
-        status: BOOKING_STATUS.WORK_DONE
+        status: BOOKING_STATUS.WORK_DONE,
+        finalAmount: grandTotal
       });
-      // Socket notification removed - createNotification already handles this
     }
 
-    res.status(200).json({ success: true, message: 'Work done, OTP sent', data: booking });
+    // Response: bill totals only, NO vendor earnings exposed
+    res.status(200).json({
+      success: true,
+      message: 'Work done, bill generated',
+      data: {
+        booking,
+        bill: {
+          id: bill._id,
+          grandTotal,
+          totalGST,
+          totalServiceBase,
+          totalPartsBase
+        }
+      }
+    });
   } catch (error) {
     console.error('Complete self job error:', error);
     res.status(500).json({ success: false, message: 'Failed to complete job' });
@@ -962,114 +1146,139 @@ const completeSelfJob = async (req, res) => {
 
 /**
  * Collect Self Cash
+ * ─────────────────
+ * Called after user confirms OTP for cash payment.
+ *
+ * Wallet logic:
+ *   dues     += grandTotal          (vendor physically holds this cash)
+ *   earnings += vendorTotalEarning  (vendor's rightful share)
+ *   Net owed to platform = dues − earnings
+ *
+ * VendorBill is the ONLY source of truth for earnings.
  */
 const collectSelfCash = async (req, res) => {
   try {
     const vendorId = req.user.id;
     const { id } = req.params;
-    const { otp, amount } = req.body;
+    const { otp } = req.body;
 
     const booking = await Booking.findOne({ _id: id, vendorId }).select('+paymentOtp');
-    const Vendor = require('../../models/Vendor'); // Need Vendor model
-
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    if (booking.status !== BOOKING_STATUS.WORK_DONE) return res.status(400).json({ success: false, message: 'Work not done' });
+    if (booking.status !== BOOKING_STATUS.WORK_DONE) return res.status(400).json({ success: false, message: 'Work not done yet' });
     if (booking.paymentOtp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
 
+    // ── Fetch the VendorBill (single source of truth) ──
+    const VendorBill = require('../../models/VendorBill');
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
+    if (!bill) return res.status(500).json({ success: false, message: 'Bill not found — cannot process payment' });
+
+    const grandTotal = bill.grandTotal;
+    const vendorEarning = bill.vendorTotalEarning;
+
+    // ── Update Booking status ──
     booking.status = BOOKING_STATUS.COMPLETED;
     booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
+    booking.paymentMethod = 'cash';
     booking.cashCollected = true;
     booking.cashCollectedBy = 'vendor';
     booking.cashCollectorId = vendorId;
     booking.cashCollectedAt = new Date();
     booking.completedAt = new Date();
     booking.paymentOtp = undefined;
+    await booking.save();
 
-    // Deduct from Vendor Wallet
-    // Use findByIdAndUpdate to avoid triggering full validation on unrelated fields (like Aadhar)
-    if (vendorId) {
-      const Vendor = require('../../models/Vendor');
+    // ── Update VendorBill status ──
+    bill.status = 'paid';
+    bill.paidAt = new Date();
+    await bill.save();
 
-      // Calculate updates first
-      // We need to fetch the vendor first to check current values if we need logic based on them 
-      // OR we can use $inc.
-      // logic:
-      // dues += finalAmount
-      // earnings += vendorEarnings
-      // totalCashCollected += finalAmount
+    // ── Update Vendor Wallet (Atomic with $inc) ──
+    const Vendor = require('../../models/Vendor');
+    const vendorDoc = await Vendor.findById(vendorId).select('wallet');
 
-      const vendorRef = await Vendor.findById(vendorId).select('wallet');
-      if (vendorRef) {
-        const currentDues = (vendorRef.wallet.dues || 0) + booking.finalAmount;
-        const cashLimit = vendorRef.wallet.cashLimit || 10000;
-        const isBlocked = currentDues > cashLimit;
+    if (vendorDoc) {
+      const currentDues = (vendorDoc.wallet.dues || 0) + grandTotal;
+      const cashLimit = vendorDoc.wallet.cashLimit || 10000;
+      // Net owed = dues − earnings (vendor keeps their share from cash)
+      const netOwed = currentDues - ((vendorDoc.wallet.earnings || 0) + vendorEarning);
+      const isBlocked = netOwed > cashLimit;
 
-        const updateQuery = {
-          $inc: {
-            'wallet.dues': booking.finalAmount,
-            'wallet.earnings': booking.vendorEarnings,
-            'wallet.totalCashCollected': booking.finalAmount
-          }
+      const updateQuery = {
+        $inc: {
+          'wallet.dues': grandTotal,
+          'wallet.earnings': vendorEarning,
+          'wallet.totalCashCollected': grandTotal
+        }
+      };
+
+      if (isBlocked) {
+        updateQuery.$set = {
+          'wallet.isBlocked': true,
+          'wallet.blockedAt': new Date(),
+          'wallet.blockReason': `Cash limit exceeded. Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`
         };
+      }
 
-        if (isBlocked) {
-          updateQuery.$set = {
-            'wallet.isBlocked': true,
-            'wallet.blockedAt': new Date(),
-            'wallet.blockReason': `Cash limit exceeded. Owed: ₹${currentDues}, Limit: ₹${cashLimit}`
-          };
+      await Vendor.findByIdAndUpdate(vendorId, updateQuery);
+
+      // ── Create Transaction Records ──
+      const Transaction = require('../../models/Transaction');
+
+      // Transaction 1: Cash Collected (Platform is owed this amount)
+      await Transaction.create({
+        vendorId,
+        bookingId: booking._id,
+        type: 'cash_collected',
+        amount: grandTotal,
+        status: 'completed',
+        paymentMethod: 'cash',
+        description: `Cash ₹${grandTotal} collected for booking #${booking.bookingNumber}. Dues increased.`,
+        metadata: {
+          type: 'dues_increase',
+          collectedBy: 'vendor',
+          billId: bill._id.toString(),
+          grandTotal,
+          vendorEarning,
+          companyRevenue: bill.companyRevenue
         }
+      });
 
-        await Vendor.findByIdAndUpdate(vendorId, updateQuery);
-
-        // Create Transactions
-        const Transaction = require('../../models/Transaction');
-
-        // Transaction 1: Cash Collected (Dues Increase)
+      // Transaction 2: Earnings Credit (Vendor's rightful share)
+      if (vendorEarning > 0) {
         await Transaction.create({
-          vendorId: vendorId,
+          vendorId,
           bookingId: booking._id,
-          type: 'cash_collected',
-          amount: booking.finalAmount,
+          type: 'earnings_credit',
+          amount: vendorEarning,
           status: 'completed',
-          paymentMethod: 'cash',
-          description: `Cash collected by vendor. Dues +${booking.finalAmount}`,
-          metadata: { type: 'dues_increase', collectedBy: 'vendor' }
+          paymentMethod: 'wallet',
+          description: `Earnings ₹${vendorEarning} credited for booking #${booking.bookingNumber} (70% service + 10% parts)`,
+          metadata: {
+            type: 'earnings_increase',
+            billId: bill._id.toString(),
+            serviceEarning: bill.vendorServiceEarning,
+            partsEarning: bill.vendorPartsEarning
+          }
         });
-
-        // Transaction 2: Earnings Credit
-        if (booking.vendorEarnings > 0) {
-          await Transaction.create({
-            vendorId: vendorId,
-            bookingId: booking._id,
-            type: 'earnings_credit',
-            amount: booking.vendorEarnings,
-            status: 'completed',
-            paymentMethod: 'wallet',
-            description: `Earnings credited for self-job #${booking.bookingNumber}`,
-            metadata: { type: 'earnings_increase' }
-          });
-        }
       }
     }
 
-    await booking.save();
-
+    // ── Notify user ──
     const { createNotification } = require('../notificationControllers/notificationController');
     await createNotification({
       userId: booking.userId,
       type: 'payment_received',
       title: 'Payment Received (Cash)',
-      message: `Payment of ₹${booking.finalAmount} received in cash for booking ${booking.bookingNumber}. Job Completed. Thanks!`,
+      message: `Payment of ₹${grandTotal} received in cash for booking ${booking.bookingNumber}. Job Completed. Thanks!`,
       relatedId: booking._id,
       relatedType: 'booking',
       priority: 'high'
     });
 
-    res.status(200).json({ success: true, message: 'Cash collected', data: booking });
+    res.status(200).json({ success: true, message: 'Cash collected, job completed', data: booking });
   } catch (error) {
     console.error('Collect self cash error:', error);
-    res.status(500).json({ success: false, message: 'Failed' });
+    res.status(500).json({ success: false, message: 'Failed to process cash payment' });
   }
 };
 

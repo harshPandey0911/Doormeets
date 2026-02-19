@@ -1,4 +1,5 @@
 const Booking = require('../../models/Booking');
+const VendorBill = require('../../models/VendorBill');
 const Worker = require('../../models/Worker');
 const Service = require('../../models/UserService');
 const { BOOKING_STATUS, PAYMENT_STATUS, WORKER_STATUS } = require('../../utils/constants');
@@ -82,26 +83,25 @@ const getDashboardStats = async (req, res) => {
       rating = ratingResult.length > 0 ? parseFloat(ratingResult[0].avgRating.toFixed(1)) : 0;
     }
 
-    // Total revenue
-    const revenueResult = await Booking.aggregate([
+    // Total revenue from VendorBill (single source of truth)
+    const earningsResult = await VendorBill.aggregate([
       {
         $match: {
           vendorId: vendorId,
-          status: BOOKING_STATUS.COMPLETED,
-          paymentStatus: PAYMENT_STATUS.SUCCESS
+          status: 'paid'
         }
       },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$finalAmount' },
-          vendorEarnings: { $sum: '$vendorEarnings' }
+          totalRevenue: { $sum: '$grandTotal' },
+          vendorEarnings: { $sum: '$vendorTotalEarning' }
         }
       }
     ]);
 
-    const totalRevenue = revenueResult[0]?.totalRevenue || 0;
-    const vendorEarnings = revenueResult[0]?.vendorEarnings || 0;
+    const totalRevenue = earningsResult[0]?.totalRevenue || 0;
+    const vendorEarnings = earningsResult[0]?.vendorEarnings || 0;
 
     // Recent bookings (last 20)
     // Include both assigned and relevant unassigned alerts
@@ -162,13 +162,12 @@ const getRevenueAnalytics = async (req, res) => {
       groupFormat = '%Y-%m'; // Year-Month
     }
 
-    // Revenue analytics
-    const revenueData = await Booking.aggregate([
+    // Revenue analytics from VendorBill
+    const revenueData = await VendorBill.aggregate([
       {
         $match: {
           vendorId: vendorId,
-          status: BOOKING_STATUS.COMPLETED,
-          paymentStatus: PAYMENT_STATUS.SUCCESS
+          status: 'paid'
         }
       },
       {
@@ -176,11 +175,11 @@ const getRevenueAnalytics = async (req, res) => {
           _id: {
             $dateToString: {
               format: groupFormat,
-              date: '$completedAt'
+              date: '$paidAt'
             }
           },
-          revenue: { $sum: '$finalAmount' },
-          earnings: { $sum: '$vendorEarnings' },
+          revenue: { $sum: '$grandTotal' },
+          earnings: { $sum: '$vendorTotalEarning' },
           bookings: { $sum: 1 }
         }
       },

@@ -4,10 +4,16 @@ const { validationResult } = require('express-validator');
 /**
  * Get vendor settings
  */
+const Settings = require('../../models/Settings');
+
+/**
+ * Get vendor settings
+ */
 const getSettings = async (req, res) => {
   try {
     const vendorId = req.user.id;
     const vendor = await Vendor.findById(vendorId).select('settings businessHours');
+    const globalSettings = await Settings.findOne({ type: 'global' });
 
     if (!vendor) {
       return res.status(404).json({
@@ -20,7 +26,13 @@ const getSettings = async (req, res) => {
       success: true,
       data: {
         settings: vendor.settings || {},
-        businessHours: vendor.businessHours || {}
+        businessHours: vendor.businessHours || {},
+        global: {
+          serviceGstPercentage: globalSettings?.serviceGstPercentage ?? 18,
+          partsGstPercentage: globalSettings?.partsGstPercentage ?? 18,
+          servicePayoutPercentage: globalSettings?.servicePayoutPercentage ?? 70,
+          partsPayoutPercentage: globalSettings?.partsPayoutPercentage ?? 10
+        }
       }
     });
   } catch (error) {

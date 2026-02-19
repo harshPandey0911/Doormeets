@@ -20,7 +20,7 @@ const getWallet = async (req, res) => {
       status: 'completed', // Only completed jobs
       workerPaymentStatus: 'PENDING'
     })
-      .select('bookingNumber serviceName completedAt vendorId vendorEarnings')
+      .select('bookingNumber serviceName completedAt vendorId finalAmount vendorBillId')
       .sort({ completedAt: -1 });
 
     res.status(200).json({

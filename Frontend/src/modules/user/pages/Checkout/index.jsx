@@ -112,7 +112,7 @@ const Checkout = () => {
         if (response.success && response.settings) {
           if (!plan) setVisitedFee(response.settings.visitedCharges || 29);
           else setVisitedFee(0);
-          setGstPercentage(response.settings.gstPercentage || 18);
+          setGstPercentage(response.settings.serviceGstPercentage || 18);
         }
       } catch (error) {
         console.error('Failed to load config', error);

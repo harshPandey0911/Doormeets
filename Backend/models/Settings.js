@@ -11,15 +11,27 @@ const settingsSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
-  gstPercentage: {
+  serviceGstPercentage: {
     type: Number,
     default: 18,
     min: 0,
     max: 100
   },
-  commissionPercentage: {
+  partsGstPercentage: {
     type: Number,
-    default: 10,
+    default: 18,
+    min: 0,
+    max: 100
+  },
+  servicePayoutPercentage: {
+    type: Number,
+    default: 90, // Vendor gets 90% of service base price
+    min: 0,
+    max: 100
+  },
+  partsPayoutPercentage: {
+    type: Number,
+    default: 100, // Vendor gets 100% of parts base price
     min: 0,
     max: 100
   },
