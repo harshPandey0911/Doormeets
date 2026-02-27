@@ -26,7 +26,7 @@ import SearchOverlay from './components/SearchOverlay';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
 
-import GPSPermissionModal from '../../../../components/common/GPSPermissionModal';
+
 
 const toAssetUrl = (url) => {
   if (!url) return '';
@@ -45,7 +45,7 @@ const Home = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLocationSupported, setIsLocationSupported] = useState(true);
   const [detectedCityName, setDetectedCityName] = useState(localStorage.getItem('currentCity') || null);
-  const [showGPSPermission, setShowGPSPermission] = useState(false);
+
 
   const { cartCount, addToCart } = useCart();
   const { currentCity, cities, selectCity, loading: cityLoading } = useCity();
@@ -211,9 +211,7 @@ const Home = () => {
               }
             },
             (error) => {
-              // Show GPS permission modal on error
               console.log("GPS Error:", error);
-              setShowGPSPermission(true);
             },
             {
               enableHighAccuracy: true,
@@ -222,8 +220,6 @@ const Home = () => {
             }
           );
         }
-      } else {
-        setShowGPSPermission(true);
       }
     };
 
@@ -724,70 +720,7 @@ const Home = () => {
         onSave={handleAddressSave}
       />
 
-      {/* GPS Permission Modal */}
-      <GPSPermissionModal
-        isOpen={showGPSPermission}
-        onRequestLocation={() => {
-          // Retry location detection
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              async (position) => {
-                setShowGPSPermission(false);
-                // ... same logic as autoDetectLocation success ...
-                // Ideally extract autoDetectLocation to be reusable
-                try {
-                  const { latitude, longitude } = position.coords;
-                  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-                  const response = await fetch(
-                    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
-                  );
-                  const data = await response.json();
 
-                  if (data.status === 'OK' && data.results.length > 0) {
-                    const result = data.results[0];
-                    const getComponent = (type) =>
-                      result.address_components.find(c => c.types.includes(type))?.long_name || '';
-
-                    const area = getComponent('sublocality_level_1') || getComponent('neighborhood') || getComponent('locality');
-                    const city = getComponent('locality') || getComponent('administrative_area_level_2');
-                    const state = getComponent('administrative_area_level_1');
-
-                    const formattedAddress = `${area}, ${city}, ${state}`;
-                    setAddress(formattedAddress);
-                    localStorage.setItem('currentAddress', formattedAddress);
-
-                    if (city) {
-                      setDetectedCityName(city);
-                      localStorage.setItem('currentCity', city);
-                      // City selection logic...
-                      if (cities && cities.length > 0) {
-                        const matchedCity = cities.find(c => c.name.toLowerCase().includes(city.toLowerCase()));
-                        if (matchedCity) selectCity(matchedCity);
-                      }
-                    }
-                  }
-                } catch (e) { }
-              },
-              (error) => {
-                console.error("GPS Retry Error:", error);
-                if (error.code === 1) {
-                  toast.error('Location access denied. Please allow it from browser settings (Lock icon 🔒).', { duration: 5000 });
-                } else {
-                  toast.error('Unable to get location. Please ensure device GPS is on.', { duration: 4000 });
-                }
-              },
-              { enableHighAccuracy: true, timeout: 10000 }
-            );
-          } else {
-            toast.error('Geolocation is not supported by this browser.');
-          }
-        }}
-        onManualSearch={() => {
-          setShowGPSPermission(false);
-          setIsAddressModalOpen(true);
-        }}
-        onClose={() => setShowGPSPermission(false)}
-      />
     </div>
   );
 };

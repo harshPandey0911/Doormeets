@@ -14,7 +14,7 @@ import { registerFCMToken } from '../../../../services/pushNotificationService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import StatsCards from './components/StatsCards';
 import PendingBookings from './components/PendingBookings';
-import GPSPermissionModal from '../../../../components/common/GPSPermissionModal';
+
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:5000';
 
@@ -49,7 +49,7 @@ const Dashboard = memo(() => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeAlertBooking, setActiveAlertBooking] = useState(null);
-  const [showGPSPermission, setShowGPSPermission] = useState(false);
+
   const ignoredBookingIds = useRef(new Set());
 
   // Set background gradient
@@ -71,29 +71,7 @@ const Dashboard = memo(() => {
     };
   }, []);
 
-  // Check GPS on mount
-  useEffect(() => {
-    const hasShownPrompt = sessionStorage.getItem('gpsPromptShown');
-    if (hasShownPrompt) return;
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => {
-          // Success - no need to show modal
-          sessionStorage.setItem('gpsPromptShown', 'true');
-        },
-        (error) => {
-          console.error("GPS Error:", error);
-          setShowGPSPermission(true);
-          sessionStorage.setItem('gpsPromptShown', 'true');
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    } else {
-      setShowGPSPermission(true);
-      sessionStorage.setItem('gpsPromptShown', 'true');
-    }
-  }, []);
 
   // Process API response - extracted to avoid duplication
   const processApiResponse = useCallback((response) => {
@@ -838,19 +816,7 @@ const Dashboard = memo(() => {
         }}
       />
 
-      <GPSPermissionModal
-        isOpen={showGPSPermission}
-        onRequestLocation={() => {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              () => setShowGPSPermission(false),
-              () => toast.error('Please enable location access from browser settings'),
-              { enableHighAccuracy: true }
-            );
-          }
-        }}
-        onClose={() => setShowGPSPermission(false)}
-      />
+
     </div>
   );
 });

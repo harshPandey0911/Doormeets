@@ -11,7 +11,7 @@ import OptimizedImage from '../../../../components/common/OptimizedImage';
 import { useSocket } from '../../../../context/SocketContext';
 import WorkerJobAlertModal from '../../components/bookings/WorkerJobAlertModal';
 import LogoLoader from '../../../../components/common/LogoLoader';
-import GPSPermissionModal from '../../../../components/common/GPSPermissionModal';
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -79,7 +79,7 @@ const Dashboard = () => {
   const socket = useSocket();
 
   const [alertJobId, setAlertJobId] = useState(null);
-  const [showGPSPermission, setShowGPSPermission] = useState(false);
+
 
   // Fetch Dashboard Data Function
   const fetchDashboardData = async () => {
@@ -158,20 +158,7 @@ const Dashboard = () => {
 
   }, []);
 
-  // Check GPS on mount
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => { }, // Success
-        (error) => {
-          setShowGPSPermission(true);
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    } else {
-      setShowGPSPermission(true);
-    }
-  }, []);
+
 
   // Socket Listener for New Jobs
   useEffect(() => {
@@ -665,19 +652,7 @@ const Dashboard = () => {
         }}
       />
 
-      <GPSPermissionModal
-        isOpen={showGPSPermission}
-        onRequestLocation={() => {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              () => setShowGPSPermission(false),
-              () => { /* Error handled by browser */ },
-              { enableHighAccuracy: true }
-            );
-          }
-        }}
-        onClose={() => setShowGPSPermission(false)}
-      />
+
     </div >
   );
 };
