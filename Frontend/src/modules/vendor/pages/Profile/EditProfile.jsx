@@ -9,6 +9,7 @@ import { vendorAuthService } from '../../../../services/authService';
 import AddressSelectionModal from '../../../user/pages/Checkout/components/AddressSelectionModal';
 import { toast } from 'react-hot-toast';
 import { z } from "zod";
+import flutterBridge from '../../../../utils/flutterBridge';
 
 // Zod schema
 const vendorProfileSchema = z.object({
@@ -54,6 +55,20 @@ const EditProfile = () => {
   // Load service categories from admin config (dynamic)
   const [categories, setCategories] = useState([]);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const handleNativeCamera = async (target = 'photo') => {
+    const file = await flutterBridge.openCamera();
+    if (file) {
+      if (target === 'photo') {
+        setPhotoFile(file);
+        setPhotoPreview(URL.createObjectURL(file));
+      } else if (target === 'aadhar') {
+        setAadharFile(file);
+      }
+      flutterBridge.hapticFeedback('success');
+    }
+  };
 
   useEffect(() => {
     const loadServiceCategories = async () => {
@@ -69,8 +84,6 @@ const EditProfile = () => {
 
     loadServiceCategories();
   }, []);
-
-  const [errors, setErrors] = useState({});
 
   useLayoutEffect(() => {
     const html = document.documentElement;
@@ -367,8 +380,9 @@ const EditProfile = () => {
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="relative group">
               <div
-                className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-xl"
+                className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-xl cursor-pointer"
                 style={{ background: '#f0f0f0' }}
+                onClick={() => flutterBridge.isFlutter ? handleNativeCamera('photo') : null}
               >
                 {photoPreview || formData.profilePhoto ? (
                   <img
@@ -384,18 +398,21 @@ const EditProfile = () => {
               </div>
 
               <label
-                htmlFor="photo-upload"
+                htmlFor={flutterBridge.isFlutter ? "" : "photo-upload"}
+                onClick={() => flutterBridge.isFlutter ? handleNativeCamera('photo') : null}
                 className="absolute bottom-1 right-1 p-2 rounded-full cursor-pointer shadow-lg transition-transform active:scale-95 hover:scale-105"
                 style={{ background: themeColors.button }}
               >
                 <FiCamera className="w-5 h-5 text-white" />
-                <input
-                  id="photo-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoChange}
-                />
+                {!flutterBridge.isFlutter && (
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoChange}
+                  />
+                )}
               </label>
             </div>
             <p className="text-gray-500 text-xs mt-3 font-medium">Tap icon to change photo</p>
@@ -622,15 +639,20 @@ const EditProfile = () => {
               <span>Identity Proof (Aadhar) <span className="text-red-500">*</span></span>
             </label>
 
-            <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center transition-colors hover:border-blue-300 bg-gray-50">
-              <input
-                id="aadhar-upload"
-                type="file"
-                accept="image/*,.pdf"
-                className="hidden"
-                onChange={handleAadharChange}
-              />
-              <label htmlFor="aadhar-upload" className="cursor-pointer flex flex-col items-center">
+            <div
+              className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center transition-colors hover:border-blue-300 bg-gray-50 cursor-pointer"
+              onClick={() => flutterBridge.isFlutter ? handleNativeCamera('aadhar') : null}
+            >
+              {!flutterBridge.isFlutter && (
+                <input
+                  id="aadhar-upload"
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={handleAadharChange}
+                />
+              )}
+              <label htmlFor={flutterBridge.isFlutter ? "" : "aadhar-upload"} className="cursor-pointer flex flex-col items-center">
                 {aadharFile ? (
                   <div className="flex items-center gap-2 text-green-600 font-medium">
                     <FiUpload className="w-5 h-5" />

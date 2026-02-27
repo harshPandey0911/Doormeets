@@ -14,6 +14,8 @@ import AddressSelectionModal from '../../../user/pages/Checkout/components/Addre
 import { z } from "zod";
 
 // Zod schema
+import flutterBridge from '../../../../utils/flutterBridge';
+
 const workerProfileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   phone: z.string().optional(), // Read-only but good to have in schema
@@ -58,6 +60,15 @@ const EditProfile = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const handleNativeCamera = async () => {
+    const file = await flutterBridge.openCamera();
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+      flutterBridge.hapticFeedback('success');
+    }
+  };
 
   useEffect(() => {
     const initData = async () => {
@@ -287,8 +298,11 @@ const EditProfile = () => {
 
         {/* Profile Photo */}
         <div className="flex flex-col items-center">
-          <div className="relative cursor-pointer" onClick={() => document.getElementById('photo-upload').click()}>
-            <div className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden flex items-center justify-center">
+          <div className="relative">
+            <div
+              className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden flex items-center justify-center cursor-pointer"
+              onClick={() => flutterBridge.isFlutter ? handleNativeCamera() : document.getElementById('photo-upload').click()}
+            >
               {photoPreview || formData.profilePhoto ? (
                 <img src={photoPreview || formData.profilePhoto} className="w-full h-full object-cover" alt="Profile" />
               ) : (
@@ -298,16 +312,21 @@ const EditProfile = () => {
               )}
             </div>
             {/* Camera Icon */}
-            <div className="absolute bottom-0 right-0 p-2 bg-blue-600 rounded-full text-white ring-2 ring-white shadow-sm">
+            <div
+              className="absolute bottom-0 right-0 p-2 bg-blue-600 rounded-full text-white ring-2 ring-white shadow-sm cursor-pointer"
+              onClick={() => flutterBridge.isFlutter ? handleNativeCamera() : document.getElementById('photo-upload').click()}
+            >
               <FiCamera className="w-4 h-4" />
             </div>
-            <input
-              type="file"
-              id="photo-upload"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoChange}
-            />
+            {!flutterBridge.isFlutter && (
+              <input
+                type="file"
+                id="photo-upload"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+            )}
           </div>
           <p className="text-xs text-gray-400 mt-2 font-medium">Tap to change photo</p>
         </div>

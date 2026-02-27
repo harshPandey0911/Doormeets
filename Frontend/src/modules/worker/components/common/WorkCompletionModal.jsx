@@ -1,10 +1,32 @@
 import React, { useState } from 'react';
 import { FiX, FiTrash, FiCamera, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import flutterBridge from '../../../../utils/flutterBridge';
 
 const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
   const [workPhotos, setWorkPhotos] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  const handleNativeCamera = async () => {
+    try {
+      setIsUploading(true);
+      const file = await flutterBridge.openCamera();
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setWorkPhotos(prev => [...prev, reader.result]);
+          setIsUploading(false);
+          flutterBridge.hapticFeedback('success');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setIsUploading(false);
+      }
+    } catch (error) {
+      console.error('Native camera failed:', error);
+      setIsUploading(false);
+    }
+  };
 
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -27,6 +49,7 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
 
   const handleRemovePhoto = (index) => {
     setWorkPhotos(prev => prev.filter((_, i) => i !== index));
+    flutterBridge.hapticFeedback('light');
   };
 
   const calculateTotal = () => {
@@ -109,17 +132,24 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
                   ))}
 
                   {workPhotos.length < 5 && (
-                    <label className="aspect-square rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-green-400 hover:bg-green-50/30 flex flex-col items-center justify-center text-gray-400 hover:text-green-500 cursor-pointer active:scale-95 transition-all">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                      />
-                      <FiCamera className="w-7 h-7 mb-1" />
-                      <span className="text-[10px] font-bold uppercase">Add / Cam</span>
-                    </label>
+                    <div
+                      onClick={() => flutterBridge.isFlutter ? handleNativeCamera() : null}
+                      className="relative"
+                    >
+                      <label className="aspect-square rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-green-400 hover:bg-green-50/30 flex flex-col items-center justify-center text-gray-400 hover:text-green-500 cursor-pointer active:scale-95 transition-all">
+                        {!flutterBridge.isFlutter && (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                          />
+                        )}
+                        <FiCamera className="w-7 h-7 mb-1" />
+                        <span className="text-[10px] font-bold uppercase">Add / Cam</span>
+                      </label>
+                    </div>
                   )}
                 </div>
                 {workPhotos.length === 0 && <p className="text-red-500 text-[10px] font-bold mt-2 ml-1">At least one photo required *</p>}

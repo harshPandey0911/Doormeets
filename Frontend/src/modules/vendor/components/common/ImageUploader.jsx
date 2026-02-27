@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { FiUpload, FiX, FiImage } from 'react-icons/fi';
+import { FiUpload, FiX, FiImage, FiCamera } from 'react-icons/fi';
 import { vendorTheme as themeColors } from '../../../../theme';
+import flutterBridge from '../../../../utils/flutterBridge';
 
 const ImageUploader = ({ 
   onImageSelect, 
@@ -11,6 +12,22 @@ const ImageUploader = ({
   const [images, setImages] = useState([]);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+
+  const handleNativeCamera = async () => {
+    setError('');
+    const file = await flutterBridge.openCamera();
+    if (file) {
+      const newImage = {
+        file,
+        preview: URL.createObjectURL(file), // Create object URL for the File object
+        id: Date.now() + Math.random(),
+      };
+      const updatedImages = [...images, newImage];
+      setImages(updatedImages);
+      if (onImageSelect) onImageSelect(updatedImages.map(img => img.file));
+      flutterBridge.hapticFeedback('success');
+    }
+  };
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
@@ -86,20 +103,33 @@ const ImageUploader = ({
     <div className="w-full">
       {/* Upload Button */}
       {images.length < maxImages && (
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full py-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all hover:bg-gray-50"
-          style={{
-            borderColor: hexToRgba(themeColors.button, 0.3),
-          }}
-        >
-          <FiUpload className="w-6 h-6" style={{ color: themeColors.button }} />
-          <span className="text-sm font-semibold" style={{ color: themeColors.button }}>
-            Upload Images ({images.length}/{maxImages})
-          </span>
-          <span className="text-xs text-gray-500">Max {maxSizeMB}MB per image</span>
-        </button>
+        <div className="flex flex-col gap-3">
+          {flutterBridge.isFlutter && (
+            <button
+              type="button"
+              onClick={handleNativeCamera}
+              className="w-full py-4 bg-gray-900 text-white rounded-xl flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-gray-200 transition-all font-bold"
+            >
+              <FiCamera className="w-5 h-5" />
+              Capture from Camera
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full py-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all hover:bg-gray-50 bg-white"
+            style={{
+              borderColor: hexToRgba(themeColors.button, 0.3),
+            }}
+          >
+            <FiUpload className="w-6 h-6" style={{ color: themeColors.button }} />
+            <span className="text-sm font-semibold" style={{ color: themeColors.button }}>
+              {flutterBridge.isFlutter ? 'Pick from Gallery' : `Upload Images (${images.length}/${maxImages})`}
+            </span>
+            <span className="text-xs text-gray-500">Max {maxSizeMB}MB per image</span>
+          </button>
+        </div>
       )}
 
       {/* Hidden File Input */}
