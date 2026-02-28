@@ -4,10 +4,10 @@ import { FiMapPin, FiNavigation, FiX, FiCheckCircle, FiShield } from 'react-icon
 import { themeColors } from '../../theme';
 import { toast } from 'react-hot-toast';
 
-const LocationAccessModal = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
+const LocationAccessModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
   onManualSearch,
   userType = 'user' // 'user' | 'vendor' | 'worker'
 }) => {
@@ -34,7 +34,7 @@ const LocationAccessModal = ({
 
   const handleRequestLocation = () => {
     setRequesting(true);
-    
+
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
       setRequesting(false);
@@ -42,42 +42,62 @@ const LocationAccessModal = ({
     }
 
     const options = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
+      enableHighAccuracy: false, // Start with lower accuracy for speed/indoors
+      timeout: 15000,
+      maximumAge: Infinity
     };
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        };
-        
-        setRequesting(false);
-        toast.success("Location access granted!");
-        if (onSuccess) onSuccess(coords);
-        if (onClose) onClose();
-      },
-      (error) => {
-        setRequesting(false);
-        let errorMsg = "Failed to get location";
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg = "Location permission denied. Please enable it in browser settings.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMsg = "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMsg = "Request timed out. Please try again.";
-            break;
+    const getPos = (opts) => {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, opts);
+      });
+    };
+
+    (async () => {
+      try {
+        let position = await getPos(options);
+        handlePosSuccess(position);
+      } catch (err) {
+        console.warn("First location attempt failed, trying high accuracy fallback...", err);
+        try {
+          // Fallback to high accuracy if first attempt failed
+          let position = await getPos({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+          handlePosSuccess(position);
+        } catch (finalErr) {
+          handlePosError(finalErr);
         }
-        toast.error(errorMsg);
-      },
-      options
-    );
+      }
+    })();
+  };
+
+  const handlePosSuccess = (position) => {
+    const coords = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      accuracy: position.coords.accuracy
+    };
+
+    setRequesting(false);
+    toast.success("Location access granted!");
+    if (onSuccess) onSuccess(coords);
+    if (onClose) onClose();
+  };
+
+  const handlePosError = (error) => {
+    setRequesting(false);
+    let errorMsg = "Failed to get location";
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        errorMsg = "Location permission denied. Please enable it in browser settings.";
+        break;
+      case error.POSITION_UNAVAILABLE:
+        errorMsg = "Location information is unavailable. Check GPS.";
+        break;
+      case error.TIMEOUT:
+        errorMsg = "Request timed out. Please try again.";
+        break;
+    }
+    toast.error(errorMsg);
   };
 
   if (!isOpen) return null;
@@ -86,7 +106,7 @@ const LocationAccessModal = ({
     <AnimatePresence>
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
         {/* Backdrop */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -103,7 +123,7 @@ const LocationAccessModal = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Decorative Header */}
-          <div 
+          <div
             className="h-32 relative flex items-center justify-center overflow-hidden"
             style={{ background: `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)` }}
           >
@@ -111,8 +131,8 @@ const LocationAccessModal = ({
               <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
               <div className="absolute bottom-0 right-0 w-32 h-32 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-2xl" />
             </div>
-            
-            <motion.div 
+
+            <motion.div
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 3, repeat: Infinity }}
               className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center relative z-10"
@@ -131,7 +151,7 @@ const LocationAccessModal = ({
                 onClick={handleRequestLocation}
                 disabled={requesting}
                 className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 relative overflow-hidden group"
-                style={{ 
+                style={{
                   backgroundColor: themeColor,
                   boxShadow: `0 10px 25px -5px ${themeColor}55`
                 }}
@@ -144,7 +164,7 @@ const LocationAccessModal = ({
                     <FiNavigation className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </>
                 )}
-                
+
                 {/* Shine effect */}
                 <div className="absolute inset-x-0 top-0 h-1/2 bg-white/10 skew-y-[-10deg] -translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
               </button>
@@ -165,14 +185,14 @@ const LocationAccessModal = ({
                 Maybe Later
               </button>
             </div>
-            
+
             <p className="mt-6 text-[10px] text-gray-400">
               Your location is protected and used only for service accuracy.
             </p>
           </div>
 
           {/* Close tiny button */}
-          <button 
+          <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
           >

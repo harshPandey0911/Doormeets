@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { verifySelfVisit } from '../../services/bookingService';
+import LocationAccessModal from '../../../components/common/LocationAccessModal';
 
 /**
  * Reusable Visit Verification Modal
@@ -16,6 +17,16 @@ import { verifySelfVisit } from '../../services/bookingService';
 const VisitVerificationModal = ({ isOpen, onClose, bookingId, onSuccess }) => {
   const [otpInput, setOtpInput] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [userType, setUserType] = useState('vendor');
+
+  // Detect user type
+  React.useEffect(() => {
+    const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+    const workerData = JSON.parse(localStorage.getItem('workerData') || '{}');
+    if (workerData._id || workerData.id) setUserType('worker');
+    else if (vendorData._id || vendorData.id) setUserType('vendor');
+  }, []);
 
   // Auto-verify as last digit enters
   React.useEffect(() => {
@@ -108,15 +119,41 @@ const VisitVerificationModal = ({ isOpen, onClose, bookingId, onSuccess }) => {
 
       // Handle geolocation errors
       if (error.code === 1) {
-        toast.error('Location permission denied. Please enable location access.');
+        toast.error('Location permission denied. Requesting access...');
+        setShowLocationModal(true);
       } else if (error.code === 2) {
         toast.error('Location unavailable. Check your GPS settings.');
       } else if (error.code === 3) {
         toast.error('Location timeout. Please try again.');
       } else {
-        // API error
+        // API error or other
         toast.error(error.response?.data?.message || 'Verification failed');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLocationSuccess = async (coords) => {
+    setShowLocationModal(false);
+    const otp = otpInput.join('');
+    if (otp.length !== 4) return;
+
+    setLoading(true);
+    try {
+      const location = { lat: coords.lat, lng: coords.lng };
+      const response = await verifySelfVisit(bookingId, otp, location);
+
+      if (response.success) {
+        toast.success('Visit Verified Successfully!');
+        setOtpInput(['', '', '', '']);
+        onClose();
+        onSuccess?.();
+      } else {
+        toast.error(response.message || 'Verification failed');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -215,6 +252,13 @@ const VisitVerificationModal = ({ isOpen, onClose, bookingId, onSuccess }) => {
               )}
             </button>
           </motion.div>
+
+          <LocationAccessModal
+            isOpen={showLocationModal}
+            onClose={() => setShowLocationModal(false)}
+            onSuccess={handleLocationSuccess}
+            userType={userType}
+          />
         </div>
       )}
     </AnimatePresence>
