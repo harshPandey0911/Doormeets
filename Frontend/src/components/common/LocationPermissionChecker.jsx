@@ -18,52 +18,67 @@ export const LocationPermissionChecker = () => {
         setUserType(type);
 
         const checkPermission = async (isManualTrigger = false) => {
-            // Check if we already have it in local state to avoid repeated flashes
-            const hasGrantedPreviously = localStorage.getItem('location_granted') === 'true';
+            console.log('Checking location permissions (manual:', isManualTrigger, ')');
 
-            // If manual trigger, always show or try to get location
+            // If manual trigger (user clicked something), always show modal immediately
             if (isManualTrigger) {
                 setShowModal(true);
                 return;
             }
 
-            // Fallback for browsers without permissions API (Mobile Safari, etc.)
-            if (!navigator.permissions) {
-                if (!hasGrantedPreviously) {
-                    setTimeout(() => setShowModal(true), 1500);
-                }
-                return;
+            const hasGrantedPreviously = localStorage.getItem('location_granted') === 'true';
+
+            // 1. First, try a "silent" direct geolocation check with a very short timeout
+            // This is often more reliable than navigator.permissions in mobile WebViews
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        console.log('Location already granted (silent check success)');
+                        localStorage.setItem('location_granted', 'true');
+                        setShowModal(false);
+                    },
+                    (err) => {
+                        console.log('Silent check failed or permission needed:', err.code);
+                        // If we don't have permission, or it's turned off, show modal
+                        if (!hasGrantedPreviously || err.code === err.PERMISSION_DENIED) {
+                            setShowModal(true);
+                        }
+                    },
+                    { enableHighAccuracy: false, timeout: 2000, maximumAge: Infinity }
+                );
+            } else {
+                console.log('Geolocation API not supported');
+                setShowModal(true);
             }
 
-            try {
-                const status = await navigator.permissions.query({ name: 'geolocation' });
+            // 2. Parallel check with Permissions API if available
+            if (navigator.permissions) {
+                try {
+                    const status = await navigator.permissions.query({ name: 'geolocation' });
+                    console.log('Permissions API status:', status.state);
 
-                // Show modal if prompt state or denied state and not granted previously
-                if (status.state === 'prompt' || (status.state === 'denied' && !hasGrantedPreviously)) {
-                    setTimeout(() => setShowModal(true), 1200);
-                }
-
-                status.onchange = () => {
-                    if (status.state === 'granted') {
-                        setShowModal(false);
-                        localStorage.setItem('location_granted', 'true');
-                    } else if (status.state === 'denied') {
-                        setShowModal(true);
-                        localStorage.removeItem('location_granted');
+                    if (status.state === 'denied' || status.state === 'prompt') {
+                        if (!hasGrantedPreviously) setShowModal(true);
                     }
-                };
-            } catch (error) {
-                // If query fails, it's safer to show the modal if no previous grant
-                if (!hasGrantedPreviously) {
-                    setTimeout(() => setShowModal(true), 1500);
+
+                    status.onchange = () => {
+                        console.log('Permission state changed to:', status.state);
+                        if (status.state === 'granted') {
+                            setShowModal(false);
+                            localStorage.setItem('location_granted', 'true');
+                        }
+                    };
+                } catch (e) {
+                    console.warn('Permissions API query failed:', e);
                 }
             }
         };
 
-        // Automatic check on mount with a small delay for better mobile behavior
+        // Delay execution to ensure Flutter WebView is fully ready
         const timer = setTimeout(() => {
             checkPermission(false);
-        }, 1000);
+        }, 1500);
+
 
         // Global listener for manual triggers
         const handleManualTrigger = () => {
