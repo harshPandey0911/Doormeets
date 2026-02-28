@@ -1,7 +1,8 @@
+// Location Permission Checker Component for Homster
 import React, { useState, useEffect } from 'react';
 import LocationAccessModal from './LocationAccessModal';
 
-const LocationPermissionChecker = () => {
+export const LocationPermissionChecker = () => {
     const [showModal, setShowModal] = useState(false);
     const [userType, setUserType] = useState('user');
 
@@ -14,7 +15,7 @@ const LocationPermissionChecker = () => {
         let type = 'user';
         if (vendorData._id || vendorData.id) type = 'vendor';
         else if (workerData._id || workerData.id) type = 'worker';
-        
+
         setUserType(type);
 
         // Check if we already have permission
@@ -27,12 +28,12 @@ const LocationPermissionChecker = () => {
 
             try {
                 const status = await navigator.permissions.query({ name: 'geolocation' });
-                
+
                 if (status.state !== 'granted') {
                     // Always show if not granted
                     setTimeout(() => setShowModal(true), 1000);
                 }
-                
+
                 status.onchange = () => {
                     if (status.state === 'granted') {
                         setShowModal(false);
@@ -60,7 +61,7 @@ const LocationPermissionChecker = () => {
     };
 
     return (
-        <LocationAccessModal 
+        <LocationAccessModal
             isOpen={showModal}
             onClose={handleClose}
             onSuccess={handleSuccess}
@@ -68,5 +69,3 @@ const LocationPermissionChecker = () => {
         />
     );
 };
-
-export default LocationPermissionChecker;
