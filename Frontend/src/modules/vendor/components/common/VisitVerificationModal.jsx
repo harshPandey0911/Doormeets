@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { verifySelfVisit } from '../../services/bookingService';
-import LocationAccessModal from '../../../components/common/LocationAccessModal';
+import LocationAccessModal from '../../../../components/common/LocationAccessModal';
 
 /**
  * Reusable Visit Verification Modal
