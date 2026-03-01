@@ -4,6 +4,7 @@ const VendorBill = require('../../models/VendorBill');
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
 const Worker = require('../../models/Worker');
+const PlatformEarning = require('../../models/PlatformEarning');
 
 /**
  * Get all transactions with pagination and filtering
@@ -238,33 +239,28 @@ const getTransactionStats = async (req, res) => {
 
     // --- SPECIAL HANDLING FOR ADMIN REVENUE (Extract from Bookings) ---
     if (entity === 'admin') {
-      const stats = await VendorBill.aggregate([
-        {
-          $match: {
-            status: 'paid'
-          }
-        },
+      const stats = await PlatformEarning.aggregate([
         {
           $group: {
             _id: null,
-            totalCompanyRevenue: { $sum: '$companyRevenue' },
+            totalRevenue: { $sum: '$totalRevenue' },
+            totalCommission: { $sum: '$platformCommission' },
             totalGST: { $sum: '$totalGST' },
-            totalGrandTotal: { $sum: '$grandTotal' },
-            totalVendorEarnings: { $sum: '$vendorTotalEarning' }
+            totalVendorEarnings: { $sum: '$vendorEarnings' }
           }
         }
       ]);
 
-      const data = stats[0] || { totalCompanyRevenue: 0, totalGST: 0, totalGrandTotal: 0, totalVendorEarnings: 0 };
+      const data = stats[0] || { totalRevenue: 0, totalCommission: 0, totalGST: 0, totalVendorEarnings: 0 };
 
       return res.status(200).json({
         success: true,
         data: {
-          totalRevenue: data.totalGrandTotal,
-          totalCompanyRevenue: data.totalCompanyRevenue,
+          totalRevenue: data.totalRevenue,
+          totalCommission: data.totalCommission,
           totalGST: data.totalGST,
           totalVendorEarnings: data.totalVendorEarnings,
-          netRevenue: data.totalCompanyRevenue
+          netRevenue: data.totalCommission
         }
       });
     }
