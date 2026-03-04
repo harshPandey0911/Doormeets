@@ -48,6 +48,7 @@ const Notifications = lazyLoad(() => import('../pages/Notifications'));
 const JobMap = lazyLoad(() => import('../pages/JobMap'));
 const JobTimeline = lazyLoad(() => import('../pages/JobTimeline'));
 const Wallet = lazyLoad(() => import('../pages/Wallet'));
+const BillingPage = lazyLoad(() => import('../pages/BillingPage'));
 
 // Loading fallback component
 import LogoLoader from '../../../components/common/LogoLoader';
@@ -55,6 +56,8 @@ import LogoLoader from '../../../components/common/LogoLoader';
 const LoadingFallback = () => (
   <LogoLoader />
 );
+
+import GlobalWorkerJobAlert from '../components/common/GlobalWorkerJobAlert';
 
 const WorkerRoutes = () => {
   const location = useLocation();
@@ -67,7 +70,8 @@ const WorkerRoutes = () => {
   const shouldHideBottomNav =
     location.pathname === '/worker/login' ||
     location.pathname === '/worker/signup' ||
-    location.pathname.endsWith('/map');
+    location.pathname.endsWith('/map') ||
+    location.pathname.includes('/billing');
 
   const shouldShowBottomNav = !shouldHideBottomNav;
 
@@ -89,6 +93,7 @@ const WorkerRoutes = () => {
               <Route path="/job/:id" element={<ProtectedRoute userType="worker"><JobDetails /></ProtectedRoute>} />
               <Route path="/job/:id/map" element={<ProtectedRoute userType="worker"><JobMap /></ProtectedRoute>} />
               <Route path="/job/:id/timeline" element={<ProtectedRoute userType="worker"><JobTimeline /></ProtectedRoute>} />
+              <Route path="/job/:id/billing" element={<ProtectedRoute userType="worker"><BillingPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute userType="worker"><Profile /></ProtectedRoute>} />
               <Route path="/profile/edit" element={<ProtectedRoute userType="worker"><EditProfile /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute userType="worker"><Settings /></ProtectedRoute>} />
@@ -101,6 +106,8 @@ const WorkerRoutes = () => {
 
       {/* BottomNav is OUTSIDE Suspense so it persists during page loads */}
       {shouldShowBottomNav && <BottomNav />}
+
+      <GlobalWorkerJobAlert />
     </ErrorBoundary>
   );
 };

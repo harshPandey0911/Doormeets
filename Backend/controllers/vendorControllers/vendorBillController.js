@@ -22,16 +22,24 @@ const createOrUpdateBill = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { services, parts, customItems, transportCharges } = req.body;
-    const vendorId = req.user.id;
 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    if (booking.vendorId.toString() !== vendorId) {
+    const { USER_ROLES } = require('../../utils/constants');
+
+    // Auth check: Vendor or assigned Worker
+    const isVendorAuth = booking.vendorId.toString() === req.user.id && req.userRole === USER_ROLES.VENDOR;
+    const isWorkerAuth = booking.workerId?.toString() === req.user.id && req.userRole === USER_ROLES.WORKER;
+
+    if (!isVendorAuth && !isWorkerAuth) {
       return res.status(403).json({ success: false, message: 'Not authorized for this booking' });
     }
+
+    // Always use the booking's vendorId for the bill
+    const billVendorId = booking.vendorId;
 
     // ── Fetch Settings (frozen snapshot) ──
     const settings = await Settings.findOne({ type: 'global' });
@@ -197,7 +205,7 @@ const createOrUpdateBill = async (req, res) => {
     let bill = await VendorBill.findOne({ bookingId });
 
     const billData = {
-      vendorId,
+      vendorId: billVendorId,
       services: allServices,
       parts: processedParts,
       customItems: processedCustomItems,
@@ -270,6 +278,20 @@ const createOrUpdateBill = async (req, res) => {
 const getBillByBookingId = async (req, res) => {
   try {
     const { bookingId } = req.params;
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const { USER_ROLES } = require('../../utils/constants');
+
+    const isVendorAuth = booking.vendorId.toString() === req.user.id && req.userRole === USER_ROLES.VENDOR;
+    const isWorkerAuth = booking.workerId?.toString() === req.user.id && req.userRole === USER_ROLES.WORKER;
+
+    if (!isVendorAuth && !isWorkerAuth) {
+      return res.status(403).json({ success: false, message: 'Not authorized for this booking' });
+    }
+
     const bill = await VendorBill.findOne({ bookingId }).populate('services.catalogId parts.catalogId');
 
     if (!bill) {

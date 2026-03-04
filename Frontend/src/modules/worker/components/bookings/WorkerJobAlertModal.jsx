@@ -8,17 +8,36 @@ import { toast } from 'react-hot-toast';
 const WorkerJobAlertModal = ({ isOpen, jobId, onClose, onJobAccepted }) => {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
     if (isOpen && jobId) {
       loadJobDetails();
       playAlertRing(true);
+      setTimeLeft(60);
     } else {
       stopAlertRing();
       setJob(null);
     }
     return () => stopAlertRing();
   }, [isOpen, jobId]);
+
+  useEffect(() => {
+    if (!job || !isOpen) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 0) {
+          clearInterval(timer);
+          onClose(); // Auto-close if not responded
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [job, isOpen, onClose]);
 
   const loadJobDetails = async () => {
     try {
@@ -64,6 +83,11 @@ const WorkerJobAlertModal = ({ isOpen, jobId, onClose, onJobAccepted }) => {
     }
   };
 
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (timeLeft / 60) * circumference;
+  const dashoffset = circumference - progress;
+
   if (!isOpen) return null;
 
   return (
@@ -73,24 +97,11 @@ const WorkerJobAlertModal = ({ isOpen, jobId, onClose, onJobAccepted }) => {
           initial={{ opacity: 0, scale: 0.9, y: 40 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 40 }}
-          className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] relative"
+          className="bg-white w-full max-w-[320px] rounded-[2rem] overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] relative"
         >
-          {/* Minimal Header */}
-          <button
-            onClick={() => {
-              stopAlertRing();
-              onClose();
-            }}
-            className="absolute top-4 right-4 z-50 p-2 bg-black/20 hover:bg-black/30 backdrop-blur-md rounded-full text-white transition-all active:scale-95"
-            title="Close"
-          >
-            <FiX className="w-5 h-5" />
-          </button>
-
-          {/* Header Section */}
-          <div className="relative h-44 bg-gradient-to-br from-blue-900 to-indigo-900 flex flex-col items-center justify-center pt-4">
-            {/* Animated background elements */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
+          {/* Compact Header */}
+          <div className="relative h-24 bg-gradient-to-br from-blue-900 to-indigo-900 flex flex-col items-center justify-center pt-1">
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
               <motion.div
                 animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
                 transition={{ duration: 4, repeat: Infinity }}
@@ -98,89 +109,92 @@ const WorkerJobAlertModal = ({ isOpen, jobId, onClose, onJobAccepted }) => {
               />
             </div>
 
-            <div className="relative z-10 mb-3">
-              <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-[1.5rem] border border-white/20 flex items-center justify-center shadow-lg relative">
-                <FiBriefcase className="w-7 h-7 text-white animate-bounce" />
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+            <div className="relative z-10 mb-0.5">
+              <div className="w-10 h-10 bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 flex items-center justify-center shadow-lg relative">
+                <FiBell className="w-5 h-5 text-white animate-bounce" />
+                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
               </div>
             </div>
 
-            <h2 className="relative z-10 text-white text-2xl font-black tracking-tight">New Job Assigned!</h2>
-            <div className="relative z-10 px-4 py-1 mt-1 bg-white/20 backdrop-blur-md rounded-full border border-white/10 text-[10px] font-bold text-white uppercase tracking-widest">
+            <h2 className="relative z-10 text-white text-lg font-black tracking-tight">New Job!</h2>
+            <div className="relative z-10 px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full border border-white/10 text-[8px] font-bold text-white uppercase tracking-widest">
               Action Required
             </div>
           </div>
 
           {/* Body Section */}
-          <div className="px-6 py-6 min-h-[250px] flex flex-col justify-center">
+          <div className="px-5 py-4">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-8">
+              <div className="flex flex-col items-center justify-center py-12">
                 <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 font-medium">Loading details...</p>
+                <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">Syncing details...</p>
               </div>
             ) : job ? (
               <>
-                {/* Booking Card Details */}
-                <div className="bg-gray-50 rounded-[2rem] p-5 border border-gray-100 space-y-4 mb-6">
-                  {/* Service Row */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-xl shadow-sm border border-gray-100">
-                      {job.serviceId?.iconUrl ? <img src={job.serviceId.iconUrl} className="w-8 h-8 object-contain" /> : '⚡'}
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-black text-gray-900 leading-none">{job.serviceType || job.serviceId?.title || 'Service'}</h4>
-                      <p className="text-[11px] font-bold text-blue-600 mt-1">{job.customerName || job.userId?.name}</p>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-gray-200/50 w-full" />
-
-                  {/* Info Rows */}
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-1.5 bg-white rounded-xl shadow-xs border border-gray-100">
-                        <FiMapPin className="text-gray-400 w-4 h-4" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Location</p>
-                        <p className="text-sm font-bold text-gray-800 line-clamp-2">
-                          {typeof job.address === 'string' ? job.address : (job.address?.addressLine1 || job.location?.address)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <div className="p-1.5 bg-white rounded-xl shadow-xs border border-gray-100">
-                        <FiClock className="text-gray-400 w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Time</p>
-                        <p className="text-sm font-bold text-gray-800">{job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : 'Today'} • {job.scheduledTime || 'Flexible'}</p>
-                      </div>
+                {/* Timer Circle */}
+                <div className="flex justify-center -mt-10 mb-3">
+                  <div className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl p-0.5">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 80 80">
+                      <circle cx="40" cy="40" r={radius} fill="none" stroke="#F3F4F6" strokeWidth="5" />
+                      <motion.circle
+                        cx="40" cy="40" r={radius} fill="none"
+                        stroke={timeLeft <= 10 ? '#EF4444' : '#1E3A8A'} strokeWidth="6"
+                        strokeDasharray={circumference} strokeDashoffset={dashoffset}
+                        strokeLinecap="round" className="transition-all duration-1000 ease-linear"
+                      />
+                    </svg>
+                    <div className="text-center">
+                      <span className={`text-xl font-black block leading-none ${timeLeft <= 10 ? 'text-red-500' : 'text-blue-900'}`}>{timeLeft}</span>
+                      <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Sec left</span>
                     </div>
                   </div>
                 </div>
 
+                {/* Distance/Location info */}
+                <div className="flex items-center justify-center mb-4 bg-blue-50/50 py-2 rounded-xl border border-blue-100/50">
+                  <div className="text-center">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.1em] mb-0.5 block">Travel Distance</span>
+                    <div className="text-xl font-black text-blue-900 tracking-tight flex items-center gap-1 justify-center">
+                      <FiMapPin className="w-3.5 h-3.5" />
+                      {job.distance ? (typeof job.distance === 'number' ? `${job.distance.toFixed(1)} km` : job.distance) : 'Near You'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[1.25rem] p-3 border border-blue-100 shadow-[0_8px_25px_-5px_rgba(30,58,138,0.1)] relative overflow-hidden mb-4">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-900" />
+                  <div className="pl-2">
+                    <p className="text-[9px] font-black text-blue-600/80 uppercase tracking-[0.15em] mb-0.5">Service Requested</p>
+                    <h4 className="text-[15px] font-black text-gray-900 leading-snug">
+                      {job.serviceType || job.serviceId?.title || 'Service Request'}
+                    </h4>
+                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight line-clamp-1">
+                      {typeof job.address === 'string' ? job.address : (job.address?.addressLine1 || job.location?.address)}
+                    </p>
+                  </div>
+                </div>
+
                 {/* Action Buttons */}
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                   <button
                     onClick={handleAccept}
-                    className="w-full py-4 rounded-[1.5rem] bg-blue-900 hover:bg-blue-800 text-white font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 group"
+                    className="w-full py-3.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-black text-base shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 group"
                   >
                     Accept Job
-                    <FiArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
                   <button
                     onClick={handleReject}
-                    className="w-full py-4 rounded-[1.5rem] bg-red-100 hover:bg-red-200 text-red-600 font-bold text-sm active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-xl bg-red-50 text-red-500 font-bold text-[10px] active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center gap-1.5 border border-red-100"
                   >
-                    Decline
+                    <FiX className="w-3.5 h-3.5" /> Decline
                   </button>
                 </div>
               </>
             ) : (
               <div className="text-center py-8">
-                <p className="text-red-500 font-bold">Failed to load job data.</p>
+                <p className="text-red-500 font-bold text-sm">Booking details missing.</p>
+                <button onClick={onClose} className="mt-4 text-xs font-bold text-gray-400 uppercase underline">Dismiss</button>
               </div>
             )}
           </div>

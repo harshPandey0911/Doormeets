@@ -662,7 +662,7 @@ const getBookingById = async (req, res) => {
     const bill = await VendorBill.findOne({ bookingId: booking._id });
 
     // Convert to object to attach bill
-    const bookingData = booking.toObject();
+    const bookingData = booking;
     if (bill) {
       bookingData.bill = bill;
     }

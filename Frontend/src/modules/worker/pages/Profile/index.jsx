@@ -299,34 +299,7 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Skills */}
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg mt-0.5" style={{ background: `${themeColors.button}15` }}>
-                <FiTag className="w-5 h-5" style={{ color: themeColors.button }} />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Skills</p>
-                {profile.skills && profile.skills.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {profile.skills.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
-                        style={{
-                          background: `linear-gradient(135deg, ${themeColors.button} 0%, ${themeColors.button}dd 100%)`,
-                          color: '#FFFFFF',
-                          boxShadow: `0 2px 6px ${themeColors.button}40`,
-                        }}
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-400 text-sm font-medium">Not set</p>
-                )}
-              </div>
-            </div>
+            {/* Removed Skills display */}
           </div>
         </div>
 

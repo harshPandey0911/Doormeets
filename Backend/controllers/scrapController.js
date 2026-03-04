@@ -119,7 +119,8 @@ exports.acceptScrap = async (req, res) => {
     await scrap.save();
 
     // Customize message based on acceptor role
-    const isVendor = req.userRole === 'vendor';
+    const { USER_ROLES } = require('../utils/constants');
+    const isVendor = req.userRole === USER_ROLES.VENDOR;
     const acceptorType = isVendor ? 'A vendor' : 'An admin';
 
     // Notify User
@@ -149,7 +150,8 @@ exports.completeScrap = async (req, res) => {
     if (!scrap) return res.status(404).json({ success: false, message: 'Scrap item not found' });
 
     // Check if the user is the assigned vendor OR an admin
-    const isAdmin = req.userRole === 'admin' || req.userRole === 'super_admin' || req.userRole === 'ADMIN';
+    const { USER_ROLES } = require('../utils/constants');
+    const isAdmin = req.userRole === USER_ROLES.ADMIN || req.userRole === 'admin' || req.userRole === 'super_admin';
 
     if (scrap.vendorId && scrap.vendorId.toString() !== req.user.id && !isAdmin) {
       return res.status(403).json({ success: false, message: 'Not authorized' });

@@ -15,6 +15,12 @@ const {
   collectCash,
   respondToJob
 } = require('../../controllers/bookingControllers/workerBookingController');
+const {
+  createOrUpdateBill,
+  getBillByBookingId
+} = require('../../controllers/vendorControllers/vendorBillController');
+const VendorServiceCatalog = require('../../models/VendorServiceCatalog');
+const VendorPartsCatalog = require('../../models/VendorPartsCatalog');
 
 // Validation rules
 const updateStatusValidation = [
@@ -41,6 +47,38 @@ router.post('/jobs/:id/visit/verify', authenticate, isWorker, verifyVisit);
 router.post('/jobs/:id/complete', authenticate, isWorker, completeJob);
 router.post('/jobs/:id/payment/collect', authenticate, isWorker, collectCash);
 router.post('/jobs/:id/notes', authenticate, isWorker, addNotesValidation, addWorkerNotes);
+
+// Bill Routes
+router.post('/jobs/:id/bill', authenticate, isWorker, (req, res, next) => {
+  req.params.bookingId = req.params.id;
+  next();
+}, createOrUpdateBill);
+
+router.get('/jobs/:id/bill', authenticate, isWorker, (req, res, next) => {
+  req.params.bookingId = req.params.id;
+  next();
+}, getBillByBookingId);
+
+// Catalog Routes (for billing)
+router.get('/catalog/services', authenticate, isWorker, async (req, res) => {
+  try {
+    const services = await VendorServiceCatalog.find({ status: 'active' }).populate('categoryId', 'title').sort({ name: 1 });
+    res.status(200).json({ success: true, services });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch services catalog' });
+  }
+});
+
+router.get('/catalog/parts', authenticate, isWorker, async (req, res) => {
+  try {
+    const parts = await VendorPartsCatalog.find({ status: 'active' })
+      .populate('categoryId', 'title')
+      .sort({ name: 1 });
+    res.status(200).json({ success: true, parts });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch parts catalog' });
+  }
+});
 
 module.exports = router;
 

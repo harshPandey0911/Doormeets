@@ -6,7 +6,7 @@ import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import { vendorDashboardService } from '../../services/dashboardService';
 import { acceptBooking, rejectBooking, assignWorker } from '../../services/bookingService';
-import { BookingAlertModal } from '../../components/bookings';
+// Booking alert handled globally
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
 
@@ -756,75 +756,6 @@ const Dashboard = memo(() => {
           </div>
         </div>
       </main>
-      {/* Slick New Booking Alert Modal */}
-      <BookingAlertModal
-        isOpen={activeAlertBookings.length > 0}
-        bookings={activeAlertBookings}
-        onAccept={async (id) => {
-          try {
-            await acceptBooking(id);
-            await assignWorker(id, 'SELF');
-
-            // Remove from local storage
-            const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-            const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
-            localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
-
-            // Dispatch remove event to update ignored list and UI
-            window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
-
-            setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
-            window.dispatchEvent(new Event('vendorStatsUpdated'));
-            toast.success('Job claimed successfully! Assigned to you.');
-          } catch (e) {
-            toast.error('Failed to claim job');
-          }
-        }}
-        onAssign={async (id) => {
-          try {
-            await acceptBooking(id);
-
-            // Remove from local storage
-            const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-            const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
-            localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
-
-            // Dispatch remove event
-            window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
-
-            setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
-            window.dispatchEvent(new Event('vendorJobsUpdated'));
-            toast.success('Job claimed! Redirecting to assign...');
-            navigate(`/vendor/booking/${id}/assign-worker`);
-          } catch (e) {
-            toast.error('Failed to claim job');
-          }
-        }}
-        onReject={async (id) => {
-          try {
-            await rejectBooking(id, 'Vendor Declined');
-
-            // Remove from local storage
-            const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-            const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
-            localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
-
-            // Dispatch remove event
-            window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
-
-            setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
-            setPendingBookings(prev => prev.filter(b => b.id !== id));
-          } catch (e) {
-            setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
-          }
-        }}
-        onMinimize={() => {
-          setActiveAlertBookings([]);
-          // Sound is stopped inside the component
-        }}
-      />
-
-
     </div>
   );
 });

@@ -560,7 +560,7 @@ const BookingTrack = () => {
     </OverlayView>
   ), [animatedLocation, heading]);
 
-  if (!isLoaded || loading) return <LogoLoader />;
+  if (!isLoaded || loading || !booking) return <LogoLoader />;
 
   // Determine active provider based on priority: Worker -> Assigned -> Vendor
   const provider = booking?.workerId || booking?.assignedTo || booking?.vendorId || {};
@@ -758,7 +758,7 @@ const BookingTrack = () => {
         </div>
 
         {/* Arrival OTP - New Premium Display */}
-        {(booking.visitOtp || booking.arrivalOTP) && ['confirmed', 'assigned', 'journey_started'].includes(booking?.status?.toLowerCase()) && (
+        {(booking?.visitOtp || booking?.arrivalOTP) && ['confirmed', 'assigned', 'journey_started'].includes(booking?.status?.toLowerCase()) && (
           <div className="mb-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-3 shadow-lg">
             <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10 blur-xl"></div>
             <div className="relative z-10 flex items-center justify-between gap-3">
@@ -769,7 +769,7 @@ const BookingTrack = () => {
                 <div>
                   <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">Start Code</p>
                   <p className="text-2xl font-black text-white tracking-[0.2em] leading-none mt-0.5">
-                    {booking.visitOtp || booking.arrivalOTP}
+                    {booking?.visitOtp || booking?.arrivalOTP}
                   </p>
                 </div>
               </div>
@@ -796,7 +796,7 @@ const BookingTrack = () => {
         )}
 
         {/* Waiting for Vendor to initiate Payment */}
-        {!booking.customerConfirmationOTP && booking?.status?.toLowerCase() === 'work_done' && !booking.cashCollected && (
+        {!booking?.customerConfirmationOTP && booking?.status?.toLowerCase() === 'work_done' && !booking?.cashCollected && (
           <div className="bg-white rounded-2xl p-4 shadow-lg border border-teal-100 mb-4 flex items-center gap-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-20 h-20 bg-teal-50 rounded-full -translate-y-10 translate-x-10 blur-2xl"></div>
             <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 border border-teal-100">
@@ -810,10 +810,10 @@ const BookingTrack = () => {
         )}
 
         {/* Final Payment Card - Show when work is done AND bill is finalized (OTP exists) */}
-        {(booking.customerConfirmationOTP || booking.paymentStatus === 'success') && booking?.status?.toLowerCase() === 'work_done' && !booking?.cashCollected && (
+        {(booking?.customerConfirmationOTP || booking?.paymentStatus === 'success') && booking?.status?.toLowerCase() === 'work_done' && !booking?.cashCollected && (
           <div
             onClick={() => setShowPaymentModal(true)}
-            className={`mb-4 relative overflow-hidden rounded-2xl p-5 shadow-lg cursor-pointer active:scale-[0.98] transition-all ${booking.paymentStatus === 'success'
+            className={`mb-4 relative overflow-hidden rounded-2xl p-5 shadow-lg cursor-pointer active:scale-[0.98] transition-all ${booking?.paymentStatus === 'success'
               ? 'bg-gradient-to-br from-green-500 via-green-600 to-emerald-700'
               : 'bg-gradient-to-br from-orange-500 via-orange-600 to-red-600'
               }`}>
@@ -821,7 +821,7 @@ const BookingTrack = () => {
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex items-center gap-3 w-full mb-5">
                 <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                  {booking.paymentStatus === 'success' ? (
+                  {booking?.paymentStatus === 'success' ? (
                     <FiCheckCircle className="w-5 h-5 text-white" />
                   ) : (
                     <FiDollarSign className="w-5 h-5 text-white" />
@@ -829,15 +829,15 @@ const BookingTrack = () => {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
-                    {booking.paymentStatus === 'success' ? 'Payment Received' : 'Final Payment'}
+                    {booking?.paymentStatus === 'success' ? 'Payment Received' : 'Final Payment'}
                   </p>
                   <p className="text-white text-xs font-medium">
-                    {booking.paymentStatus === 'success' ? 'Verified Successfully' : `Service amount: ₹${(booking.finalAmount || 0).toLocaleString()}`}
+                    {booking?.paymentStatus === 'success' ? 'Verified Successfully' : `Service amount: ₹${(booking?.finalAmount || 0).toLocaleString()}`}
                   </p>
                 </div>
               </div>
 
-              {booking.paymentStatus !== 'success' ? (
+              {booking?.paymentStatus !== 'success' ? (
                 <>
                   <button
                     onClick={handleOnlinePayment}
@@ -850,7 +850,7 @@ const BookingTrack = () => {
                   <div className="mt-6 flex flex-col items-center w-full">
                     <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em] mb-3">Payment Verification OTP</p>
                     <div className="flex justify-center gap-2.5">
-                      {String(booking.customerConfirmationOTP || booking.paymentOtp || '0000').split('').map((digit, idx) => (
+                      {String(booking?.customerConfirmationOTP || booking?.paymentOtp || '0000').split('').map((digit, idx) => (
                         <div
                           key={idx}
                           className="w-10 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-md"
@@ -871,7 +871,7 @@ const BookingTrack = () => {
                 </div>
               )}
 
-              {booking.paymentStatus !== 'success' && (
+              {booking?.paymentStatus !== 'success' && (
                 <p className="mt-4 text-[10px] text-white/70 text-center font-medium">
                   Professional will mark as completed after cash collection.
                 </p>

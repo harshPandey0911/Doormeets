@@ -284,14 +284,9 @@ export const SocketProvider = ({ children }) => {
         window.dispatchEvent(new Event('vendorStatsUpdated'));
         window.dispatchEvent(new Event('vendorNotificationsUpdated'));
 
-        // If on Dashboard, show modal there instead of navigating
-        if (location.pathname === '/vendor/dashboard') {
-          const event = new CustomEvent('showDashboardBookingAlert', { detail: newJob });
-          window.dispatchEvent(event);
-        } else {
-          // Navigate to Alert Page (using replace to avoid history loops)
-          navigate(`/vendor/booking-alert/${data.bookingId}`, { replace: true });
-        }
+        // Always show the global alert instead of navigating
+        const event = new CustomEvent('showDashboardBookingAlert', { detail: newJob });
+        window.dispatchEvent(event);
       });
 
       // Listen for booking_taken - when another vendor accepts a job
@@ -323,6 +318,47 @@ export const SocketProvider = ({ children }) => {
         // Notify app components to refresh
         window.dispatchEvent(new Event('vendorJobsUpdated'));
         window.dispatchEvent(new Event('vendorStatsUpdated'));
+      });
+    }
+
+    // Listen for special Worker Job Assignments
+    if (userType === 'worker') {
+      newSocket.on('new_job_assigned', (data) => {
+        // Play urgent alert ring
+        playAlertRing();
+
+        const newJob = {
+          id: data.bookingId,
+          _id: data.bookingId,
+          serviceType: data.serviceName || 'Service',
+          customerName: data.customerName,
+          customerPhone: data.customerPhone,
+          location: {
+            address: data.address?.addressLine1 || 'Location shared',
+          },
+          price: data.price,
+          scheduledDate: data.scheduledDate,
+          scheduledTime: data.scheduledTime,
+          timeSlot: {
+            date: new Date(data.scheduledDate).toLocaleDateString(),
+            time: data.scheduledTime
+          },
+          status: 'ASSIGNED',
+          createdAt: new Date().toISOString()
+        };
+
+        const pendingJobs = JSON.parse(localStorage.getItem('workerPendingJobs') || '[]');
+        if (!pendingJobs.find(job => String(job.id || job._id) === String(newJob.id))) {
+          pendingJobs.unshift(newJob);
+          localStorage.setItem('workerPendingJobs', JSON.stringify(pendingJobs));
+        }
+
+        // Notify app components to refresh
+        window.dispatchEvent(new Event('workerJobsUpdated'));
+
+        // Always show the global alert 
+        const event = new CustomEvent('showWorkerJobAlert', { detail: newJob });
+        window.dispatchEvent(event);
       });
     }
 

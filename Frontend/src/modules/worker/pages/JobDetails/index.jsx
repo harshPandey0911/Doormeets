@@ -175,10 +175,8 @@ const JobDetails = () => {
       return;
     }
 
-    if (type === 'collect' && !isPaymentModalOpen) {
-      setOtpInput(['', '', '', '']);
-      setCollectionAmount(job.finalAmount);
-      setIsPaymentModalOpen(true);
+    if (type === 'collect') {
+      navigate(`/worker/job/${id}/billing`);
       return;
     }
 
@@ -206,7 +204,8 @@ const JobDetails = () => {
       if (response && response.success) {
         toast.success(response.message || 'Updated successfully');
         setIsCompletionModalOpen(false);
-        fetchJobDetails();
+        // Navigate to billing immediately after work is done
+        navigate(`/worker/job/${id}/billing`);
       }
       setActionLoading(false);
     } catch (error) {
@@ -611,7 +610,7 @@ const JobDetails = () => {
                 if (response && response.success) {
                   toast.success(response.message || 'Updated successfully');
                   setIsCompletionModalOpen(false);
-                  fetchJobDetails();
+                  navigate(`/worker/job/${id}/billing`);
                 }
                 setActionLoading(false);
               } catch (error) {

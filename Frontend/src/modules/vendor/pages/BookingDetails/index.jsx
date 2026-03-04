@@ -131,7 +131,9 @@ export default function BookingDetails() {
           workerResponseAt: apiData.workerResponseAt,
           paymentMethod: apiData.paymentMethod,
           paymentStatus: apiData.paymentStatus,
-          cashCollected: apiData.cashCollected || false
+          cashCollected: apiData.cashCollected || false,
+          workerPaymentStatus: apiData.workerPaymentStatus,
+          finalSettlementStatus: apiData.finalSettlementStatus
         };
 
         setBooking(mappedBooking);
@@ -299,9 +301,11 @@ export default function BookingDetails() {
     const status = booking?.status?.toLowerCase() || '';
     const isWorkDone = status === 'work_done' || status === 'completed' || status === 'worker_paid';
 
-    // Simplified logic: Show button if work is done & customer paid, 
-    // regardless of whether worker is marked as paid yet.
-    return isWorkDone && isPaid && booking?.finalSettlementStatus !== 'DONE';
+    // Check worker payment (enforce worker is paid before vendor can finalize unless doing job self)
+    const isSelfJob = booking?.assignedTo?.name === 'You (Self)';
+    const handleWorkerCheck = isSelfJob || booking?.workerPaymentStatus === 'PAID';
+
+    return isWorkDone && isPaid && handleWorkerCheck && booking?.finalSettlementStatus !== 'DONE';
   };
 
   const handleStatusChange = async (newStatus) => {

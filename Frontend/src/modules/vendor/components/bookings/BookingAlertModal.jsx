@@ -67,165 +67,136 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, initialTimeLe
     return () => clearInterval(timer);
   }, [booking, onReject, initialTimeLeft]);
 
-  const radius = 36;
+  const radius = 24;
   const circumference = 2 * Math.PI * radius;
   const progress = (timeLeft / 60) * circumference;
   const dashoffset = circumference - progress;
 
   return (
-    <div className="bg-white w-full sm:w-[350px] flex-none rounded-[3rem] overflow-y-auto max-h-[90vh] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] relative scrollbar-hide snap-center">
+    <div className="bg-white w-full sm:w-[320px] flex-none rounded-[2rem] overflow-y-auto max-h-[85vh] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] relative scrollbar-hide snap-center">
       {/* Header Section */}
-      <div className="relative h-32 bg-gradient-to-br from-teal-600 to-emerald-700 flex flex-col items-center justify-center pt-2">
+      <div className="relative h-20 bg-gradient-to-br from-teal-600 to-emerald-700 flex flex-col items-center justify-center">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <motion.div
             animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
             transition={{ duration: 4, repeat: Infinity }}
-            className="absolute -top-10 -left-10 w-40 h-40 bg-white rounded-full"
-          />
-          <motion.div
-            animate={{ scale: [1.2, 1, 1.2], opacity: [0.1, 0.2, 0.1] }}
-            transition={{ duration: 5, repeat: Infinity }}
-            className="absolute -bottom-10 -right-10 w-48 h-48 bg-white rounded-full"
+            className="absolute -top-10 -left-10 w-32 h-32 bg-white rounded-full"
           />
         </div>
 
-        <div className="relative z-10 mb-1">
-          <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 flex items-center justify-center shadow-lg relative">
-            <FiBell className="w-6 h-6 text-white animate-bounce" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+        <div className="flex items-center gap-2 relative z-10 w-full px-4 justify-center">
+          <div className="w-8 h-8 bg-white/10 backdrop-blur-xl rounded-lg border border-white/20 flex items-center justify-center shadow-md relative">
+            <FiBell className="w-4 h-4 text-white animate-bounce" />
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-400 rounded-full border-2 border-white animate-pulse" />
           </div>
-        </div>
-
-        <h2 className="relative z-10 text-white text-xl font-black tracking-tight">New Order Alert!</h2>
-        <div className="relative z-10 px-3 py-0.5 mt-1 bg-white/20 backdrop-blur-md rounded-full border border-white/10 text-[9px] font-bold text-white uppercase tracking-widest">
-          Action Required Immediately
+          <div>
+            <h2 className="text-white text-lg font-black tracking-tight leading-none">New Order!</h2>
+            <div className="text-[8px] font-bold text-teal-100 uppercase tracking-widest mt-0.5">
+              Action Required Immediately
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Body Section */}
-      <div className="px-6 py-5">
-        <div className="flex justify-center -mt-12 mb-4">
-          <div className="relative w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl p-0.5">
-            <svg className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 80 80">
-              <circle cx="40" cy="40" r={radius} fill="none" stroke="#F3F4F6" strokeWidth="5" />
+      <div className="px-5 py-4">
+        <div className="flex justify-center -mt-9 mb-3 relative z-20">
+          <div className="relative w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-xl p-0.5">
+            <svg className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r={radius} fill="none" stroke="#F3F4F6" strokeWidth="4" />
               <motion.circle
-                cx="40" cy="40" r={radius} fill="none"
-                stroke={timeLeft <= 10 ? '#EF4444' : '#059669'} strokeWidth="6"
+                cx="30" cy="30" r={radius} fill="none"
+                stroke={timeLeft <= 10 ? '#EF4444' : '#059669'} strokeWidth="5"
                 strokeDasharray={circumference} strokeDashoffset={dashoffset}
                 strokeLinecap="round" className="transition-all duration-1000 ease-linear"
               />
             </svg>
-            <div className="text-center">
-              <span className={`text-2xl font-black block leading-none ${timeLeft <= 10 ? 'text-red-500' : 'text-emerald-600'}`}>{timeLeft}</span>
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Sec left</span>
+            <div className="text-center mt-0.5">
+              <span className={`text-xl font-black block leading-none ${timeLeft <= 10 ? 'text-red-500' : 'text-emerald-600'}`}>{timeLeft}</span>
+              <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter block -mt-1">Sec</span>
             </div>
-            {timeLeft <= 10 && <div className="absolute inset-0 rounded-full border-2 border-red-500/30 animate-ping" />}
           </div>
         </div>
 
-        <div className="flex items-center justify-center mb-6 bg-emerald-50/50 py-3 rounded-2xl border border-emerald-100/50">
+        <div className="flex items-center justify-center mb-4 bg-emerald-50 py-2 rounded-xl border border-emerald-100">
           <div className="text-center">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1 block">Travel Distance</span>
-            <div className="text-2xl font-black text-emerald-600 tracking-tight flex items-center gap-1 justify-center">
-              <FiMapPin className="w-4 h-4" />
+            <span className="text-[9px] font-black text-emerald-800/60 uppercase tracking-[0.1em] mb-0.5 block">Distance</span>
+            <div className="text-lg font-black text-emerald-700 tracking-tight flex items-center gap-1 justify-center">
+              <FiMapPin className="w-3.5 h-3.5" />
               {booking.location?.distance || (booking.distance ? (String(booking.distance).includes('km') ? booking.distance : `${booking.distance} km`) : 'Near You')}
             </div>
           </div>
         </div>
 
-        <div className="mb-6 space-y-3">
+        <div className="mb-4 space-y-2.5">
           {/* Category & Urgent Badge */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]">
+            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg shadow-sm">
               {booking.categoryIcon ? (
-                <img src={booking.categoryIcon} alt="Cat" className="w-5 h-5 object-contain" />
+                <img src={booking.categoryIcon} alt="Cat" className="w-4 h-4 object-contain" />
               ) : (
-                <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded-full text-[10px]">⚡</span>
+                <span className="w-4 h-4 flex items-center justify-center bg-gray-200 rounded-full text-[9px]">⚡</span>
               )}
-              <span className="text-[11px] font-black tracking-widest text-gray-700 uppercase">
+              <span className="text-[10px] font-black tracking-widest text-gray-700 uppercase line-clamp-1 max-w-[120px]">
                 {booking.serviceCategory || 'Category'}
               </span>
             </div>
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 px-2 py-1.5 rounded-lg shadow-sm">
-              <span className="text-[10px] font-black text-red-600 tracking-widest uppercase flex items-center justify-center gap-1.5">
-                <FiBell className="w-3.5 h-3.5 animate-pulse" /> Urgent
+            <div className="bg-red-50 border border-red-100 px-1.5 py-1 rounded-md">
+              <span className="text-[9px] font-black text-red-600 tracking-widest flex items-center gap-1 uppercase">
+                <FiBell className="w-3 h-3 animate-pulse" /> Urgent
               </span>
             </div>
           </div>
 
           {/* Service Details Card */}
-          <div className="bg-white rounded-[1.5rem] p-4 border border-teal-100 shadow-[0_8px_25px_-5px_rgba(20,184,166,0.15)] relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-teal-400 to-emerald-500" />
-
-            <div className="pl-3">
-              <p className="text-[10px] font-black text-teal-600/80 uppercase tracking-[0.2em] mb-1">Service Requested</p>
-              <h4 className="text-[17px] font-black text-gray-900 leading-tight mb-3">
+          <div className="bg-white rounded-[1rem] p-3 border border-gray-100 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-teal-500" />
+            <div className="pl-2">
+              <h4 className="text-[14px] font-black text-gray-900 leading-tight">
                 {booking.serviceName || booking.serviceType || 'Service Request'}
               </h4>
-
               {(booking.brandName || booking.brandIcon) && (
-                <div className="flex items-center gap-2.5 bg-gray-50/80 rounded-xl p-2.5 border border-gray-100 shadow-sm w-fit mt-1">
-                  {booking.brandIcon ? (
-                    <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm p-1 border border-gray-50">
-                      <img src={booking.brandIcon} alt={booking.brandName} className="max-w-full max-h-full object-contain" />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-50 text-xs font-black text-gray-500">
-                      {booking.brandName ? booking.brandName.substring(0, 2).toUpperCase() : 'BR'}
-                    </div>
-                  )}
-                  <div className="flex flex-col pr-2">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] leading-none mb-0.5">Brand</span>
-                    <span className="text-xs font-black text-gray-800 uppercase tracking-wide">{booking.brandName}</span>
-                  </div>
+                <div className="flex items-center gap-1.5 mt-1.5 opacity-80">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase">Brand:</span>
+                  <span className="text-[10px] font-black text-gray-800 uppercase tracking-wider">{booking.brandName}</span>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-50/50 rounded-3xl p-4 border border-gray-100 mb-6">
-          <div className="space-y-2">
-            <div className="flex items-start gap-2.5">
-              <div className="p-1 bg-white rounded-lg shadow-xs border border-gray-100"><FiMapPin className="text-gray-400 w-3.5 h-3.5" /></div>
-              <div className="flex-1">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Arrival Location</p>
-                <p className="text-xs font-bold text-gray-800 line-clamp-1">{booking.location?.address || booking.address?.addressLine1 || 'Address not available'}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <div className="p-1 bg-white rounded-lg shadow-xs border border-gray-100"><FiClock className="text-gray-400 w-3.5 h-3.5" /></div>
-              <div>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Scheduled Time</p>
-                <p className="text-xs font-bold text-gray-800">
-                  {booking.timeSlot?.date || (booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString() : '')} {booking.timeSlot?.time || booking.scheduledTime || 'N/A'}
-                </p>
-              </div>
-            </div>
+        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-5 text-xs space-y-2">
+          <div className="flex items-start gap-2">
+            <FiMapPin className="text-gray-400 w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span className="font-bold text-gray-800 leading-snug line-clamp-2">{booking.location?.address || booking.address?.addressLine1 || 'Address not available'}</span>
+          </div>
+          <div className="flex items-start gap-2 pt-2 border-t border-gray-200">
+            <FiClock className="text-gray-400 w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span className="font-bold text-gray-800">
+              {booking.timeSlot?.date || (booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString() : '')} {booking.timeSlot?.time || booking.scheduledTime || 'N/A'}
+            </span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             disabled={!!loadingAction}
             onClick={() => handleAction(onAccept, 'accept')}
-            className="w-full py-4 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100">
-            {loadingAction === 'accept' ? 'Accepting...' : 'Accept (Myself)'} {loadingAction !== 'accept' && <FiArrowRight className="w-5 h-5" />}
+            className="w-full py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-black text-sm shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 col-span-2 disabled:opacity-50">
+            {loadingAction === 'accept' ? 'Accepting...' : 'Accept (Myself)'}
           </button>
-
           <button
             disabled={!!loadingAction}
             onClick={() => handleAction(onAssign, 'assign')}
-            className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100"
+            className="w-full py-2.5 rounded-xl text-white font-black text-[11px] shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
             style={{ background: themeColors.button }}>
-            {loadingAction === 'assign' ? 'Forwarding...' : 'Forward'} {loadingAction !== 'assign' && <FiUsers className="w-5 h-5" />}
+            <FiUsers className="w-3.5 h-3.5" /> {loadingAction === 'assign' ? '...' : 'Forward'}
           </button>
-
           <button
             disabled={!!loadingAction}
             onClick={() => handleAction(onReject, 'reject')}
-            className="w-full py-3 rounded-2xl bg-red-50 to-red-100 border border-red-100 text-red-500 font-bold text-xs active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:active:scale-100">
-            {loadingAction === 'reject' ? 'Declining...' : <><FiX className="w-4 h-4" /> Decline Order</>}
+            className="w-full py-2.5 rounded-xl bg-red-50 border border-red-100 text-red-500 font-bold text-[11px] active:scale-95 transition-all uppercase flex items-center justify-center gap-1.5 disabled:opacity-50">
+            {loadingAction === 'reject' ? '...' : <><FiX className="w-3.5 h-3.5" /> Decline</>}
           </button>
         </div>
       </div>

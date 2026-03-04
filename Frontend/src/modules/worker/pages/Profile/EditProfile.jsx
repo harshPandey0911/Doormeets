@@ -21,7 +21,6 @@ const workerProfileSchema = z.object({
   phone: z.string().optional(), // Read-only but good to have in schema
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   serviceCategories: z.array(z.string()).min(1, "Select at least one category"),
-  skills: z.array(z.string()).min(1, "Select at least one skill"),
   address: z.object({
     addressLine1: z.string().optional(),
     city: z.string().optional(),
@@ -219,7 +218,6 @@ const EditProfile = () => {
       phone: formData.phone,
       email: formData.email,
       serviceCategories: formData.serviceCategories,
-      skills: formData.skills,
       address: formData.address
     });
 
@@ -236,7 +234,6 @@ const EditProfile = () => {
         email: formData.email,
         serviceCategories: formData.serviceCategories,
         serviceCategory: formData.serviceCategories[0], // Fallback
-        skills: formData.skills,
         address: formData.address,
         status: formData.status
       };
@@ -494,73 +491,6 @@ const EditProfile = () => {
             {errors.serviceCategories && <p className="text-red-500 text-[10px] mt-1">{errors.serviceCategories}</p>}
           </div>
 
-          {formData.serviceCategories.length > 0 && (
-            <div>
-              <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Services (Skills)</label>
-
-              {/* Multi-select Dropdown for Services */}
-              <div className="relative mb-3">
-                <div
-                  onClick={() => setIsServicesOpen(!isServicesOpen)}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between cursor-pointer"
-                >
-                  <span className="font-medium text-gray-400">
-                    {formData.skills.length > 0 ? `${formData.skills.length} Selected` : 'Select Services...'}
-                  </span>
-                  <FiChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
-                </div>
-
-                {isServicesOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-60 overflow-y-auto">
-                    {uniqueAvailableSkills.length > 0 ? (
-                      uniqueAvailableSkills.map((skillName, idx) => {
-                        const isSelected = formData.skills.includes(skillName);
-                        return (
-                          <div
-                            key={skillName || idx}
-                            onClick={() => {
-                              toggleSkill(skillName);
-                            }}
-                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 font-medium text-gray-700 flex items-center justify-between"
-                          >
-                            <span>{skillName}</span>
-                            {isSelected && <FiCheck className="w-5 h-5 text-blue-600" />}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-3 text-gray-400 text-sm italic">
-                        No services available for selected categories
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Selected Services Tags */}
-              <div className="flex flex-wrap gap-2">
-                {formData.skills.map((skill, idx) => (
-                  <div
-                    key={skill || idx}
-                    className="pl-3 pr-2 py-1.5 rounded-full text-[11px] font-bold bg-blue-600 text-white flex items-center gap-1 shadow-sm"
-                  >
-                    {skill}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSkill(skill);
-                      }}
-                      className="p-0.5 hover:bg-white/20 rounded-full transition-colors"
-                    >
-                      <FiX className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {errors.skills && <p className="text-red-500 text-[10px] mt-1">Select at least one service</p>}
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}

@@ -14,13 +14,13 @@ const WorkerPaymentModal = ({ isOpen, onClose, workerName, amountDue = 0, onConf
 
   useEffect(() => {
     if (isOpen) {
-      setAmount(amountDue || '');
+      setAmount('');
       setTransactionId('');
       setNotes('');
       setPaymentMethod('hand_to_hand');
       setScreenshot(null);
     }
-  }, [isOpen, amountDue]);
+  }, [isOpen]);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -132,8 +132,8 @@ const WorkerPaymentModal = ({ isOpen, onClose, workerName, amountDue = 0, onConf
                     type="button"
                     onClick={() => setPaymentMethod('hand_to_hand')}
                     className={`py-3 rounded-xl text-xs font-bold border-2 transition-all ${paymentMethod === 'hand_to_hand'
-                        ? 'bg-green-50 border-green-500 text-green-700'
-                        : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'
+                      ? 'bg-green-50 border-green-500 text-green-700'
+                      : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'
                       }`}
                   >
                     Hand to Hand (Cash)
@@ -142,8 +142,8 @@ const WorkerPaymentModal = ({ isOpen, onClose, workerName, amountDue = 0, onConf
                     type="button"
                     onClick={() => setPaymentMethod('online')}
                     className={`py-3 rounded-xl text-xs font-bold border-2 transition-all ${paymentMethod === 'online'
-                        ? 'bg-blue-50 border-blue-500 text-blue-700'
-                        : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'
+                      ? 'bg-blue-50 border-blue-500 text-blue-700'
+                      : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'
                       }`}
                   >
                     Online / Transfer

@@ -508,6 +508,27 @@ const assignWorker = async (req, res) => {
     // Manual push removed - auto handled by createNotification
     // sendNotificationToWorker(workerId, { ... });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`worker_${workerId}`).emit('new_job_assigned', {
+        bookingId: booking._id,
+        serviceName: booking.serviceId?.title || booking.serviceName || 'Service',
+        customerName: booking.userId?.name || 'Customer',
+        customerPhone: booking.userId?.phone,
+        address: booking.address,
+        price: booking.finalAmount,
+        scheduledDate: booking.scheduledDate,
+        scheduledTime: booking.scheduledTime,
+      });
+
+      // Notify User in real-time
+      io.to(`user_${booking.userId}`).emit('booking_updated', {
+        bookingId: booking._id,
+        status: booking.status,
+        message: 'Professional assigned to your booking'
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Worker assigned successfully',
