@@ -1,4 +1,6 @@
 const User = require('../../models/User');
+const Cart = require('../../models/Cart');
+const Settings = require('../../models/Settings');
 const { validationResult } = require('express-validator');
 const cloudinaryService = require('../../services/cloudinaryService');
 
@@ -171,7 +173,49 @@ const updateProfile = async (req, res) => {
   }
 };
 
+/**
+ * Get consolidated checkout data (Profile + Cart + Settings)
+ */
+const getCheckoutData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch all 3 in parallel
+    const [user, cart, settings] = await Promise.all([
+      User.findById(userId).select('addresses phone name'),
+      Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl slug').populate('items.categoryId', 'title slug'),
+      Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage')
+    ]);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        phone: user.phone,
+        addresses: user.addresses || []
+      },
+      cartItems: cart ? cart.items : [],
+      settings: settings || { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18 }
+    });
+  } catch (error) {
+    console.error('Get checkout data error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch checkout data'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
-  updateProfile
+  updateProfile,
+  getCheckoutData
 };

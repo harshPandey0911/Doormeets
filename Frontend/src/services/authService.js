@@ -106,6 +106,12 @@ export const userAuthService = {
       localStorage.setItem('userData', JSON.stringify(response.data.user));
     }
     return response.data;
+  },
+
+  // Get checkout summary data
+  getCheckoutData: async () => {
+    const response = await api.get('/users/checkout-data');
+    return response.data;
   }
 };
 

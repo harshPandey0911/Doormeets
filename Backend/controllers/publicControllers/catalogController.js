@@ -27,7 +27,7 @@ const getPublicCategories = async (req, res) => {
       .sort({ homeOrder: 1, createdAt: -1 })
       .lean();
 
-    // Prepare initial category list
+    // Fetch only necessary fields for initial category list
     const initialCategories = categories.map(cat => ({
       id: cat._id.toString(),
       title: cat.title,
@@ -35,34 +35,12 @@ const getPublicCategories = async (req, res) => {
       icon: cat.homeIconUrl || '',
       badge: cat.homeBadge || '',
       hasSaleBadge: cat.hasSaleBadge || false,
-      showOnHome: cat.showOnHome || false,
-      homeOrder: cat.homeOrder || 0
+      showOnHome: cat.showOnHome || false
     }));
-
-    // Fetch brands for these categories
-    const categoryIds = categories.map(c => c._id);
-
-    const brandQuery = {
-      categoryIds: { $in: categoryIds },
-      status: 'active'
-    };
-    if (cityId) {
-      brandQuery.cityIds = cityId;
-    }
-
-    const brands = await Brand.find(brandQuery).select('title categoryIds').lean();
-
-    // Map brands to categories
-    const categoriesWithBrands = initialCategories.map(cat => {
-      const catBrands = brands.filter(b =>
-        b.categoryIds && b.categoryIds.some(id => id.toString() === cat.id)
-      ).map(b => b.title);
-      return { ...cat, subBrands: catBrands };
-    });
 
     res.status(200).json({
       success: true,
-      categories: categoriesWithBrands
+      categories: initialCategories
     });
   } catch (error) {
     console.error('Get public categories error:', error);
@@ -383,10 +361,108 @@ const getPublicHomeContent = async (req, res) => {
   }
 };
 
+/**
+ * Get consolidated home data (Categories + Content)
+ */
+const getPublicHomeData = async (req, res) => {
+  try {
+    const { cityId } = req.query;
+
+    // Fetch both in parallel
+    const [categoriesRes, homeContent] = await Promise.all([
+      Category.find({ status: 'active', cityIds: cityId ? cityId : { $exists: true } })
+        .select('title slug homeIconUrl homeBadge hasSaleBadge')
+        .sort({ homeOrder: 1 })
+        .lean(),
+      HomeContent.getHomeContent(cityId)
+    ]);
+
+    const formattedCategories = categoriesRes.map(cat => ({
+      id: cat._id.toString(),
+      title: cat.title,
+      slug: cat.slug,
+      icon: cat.homeIconUrl || '',
+      badge: cat.homeBadge || '',
+      hasSaleBadge: cat.hasSaleBadge || false
+    }));
+
+    let formattedContent = null;
+    if (homeContent) {
+      const contentObj = homeContent.toObject();
+      formattedContent = {
+        banners: (contentObj.banners || []).map(item => ({
+          imageUrl: item.imageUrl,
+          targetCategoryId: item.targetCategoryId?.toString() || null,
+          slug: item.slug,
+          order: item.order
+        })),
+        promos: (contentObj.promos || []).map(item => ({
+          title: item.title,
+          subtitle: item.subtitle,
+          imageUrl: item.imageUrl,
+          targetCategoryId: item.targetCategoryId?.toString() || null,
+          order: item.order
+        })),
+        curated: (contentObj.curated || []).map(item => ({
+          title: item.title,
+          gifUrl: item.gifUrl,
+          order: item.order
+        })),
+        noteworthy: (contentObj.noteworthy || []).map(item => ({
+          title: item.title,
+          imageUrl: item.imageUrl,
+          targetCategoryId: item.targetCategoryId?.toString() || null,
+          order: item.order
+        })),
+        booked: (contentObj.booked || []).map(item => ({
+          title: item.title,
+          rating: item.rating,
+          price: item.price,
+          imageUrl: item.imageUrl,
+          targetCategoryId: item.targetCategoryId?.toString() || null,
+          order: item.order
+        })),
+        categorySections: (contentObj.categorySections || []).map(section => ({
+          title: section.title,
+          seeAllTargetCategoryId: section.seeAllTargetCategoryId?.toString() || null,
+          cards: (section.cards || []).map(card => ({
+            title: card.title,
+            imageUrl: card.imageUrl,
+            price: card.price,
+            rating: card.rating,
+            targetCategoryId: card.targetCategoryId?.toString() || null
+          })),
+          order: section.order
+        })),
+        isBannersVisible: contentObj.isBannersVisible ?? true,
+        isPromosVisible: contentObj.isPromosVisible ?? true,
+        isCuratedVisible: contentObj.isCuratedVisible ?? true,
+        isNoteworthyVisible: contentObj.isNoteworthyVisible ?? true,
+        isBookedVisible: contentObj.isBookedVisible ?? true,
+        isCategorySectionsVisible: contentObj.isCategorySectionsVisible ?? true,
+        isCategoriesVisible: contentObj.isCategoriesVisible ?? true
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      categories: formattedCategories,
+      homeContent: formattedContent
+    });
+  } catch (error) {
+    console.error('Get public home data error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch home data'
+    });
+  }
+};
+
 module.exports = {
   getPublicCategories,
   getPublicBrands,
   getPublicBrandBySlug,
   getPublicServices,
-  getPublicHomeContent
+  getPublicHomeContent,
+  getPublicHomeData
 };

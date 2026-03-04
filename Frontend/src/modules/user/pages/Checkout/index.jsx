@@ -105,59 +105,84 @@ const Checkout = () => {
   }, []);
 
   useEffect(() => {
-    // Load config settings
-    const loadConfig = async () => {
+    const fetchData = async () => {
       try {
-        const response = await configService.getSettings();
-        if (response.success && response.settings) {
-          if (!plan) setVisitedFee(response.settings.visitedCharges || 29);
-          else setVisitedFee(0);
-          setGstPercentage(response.settings.serviceGstPercentage || 18);
+        setLoading(true);
+
+        if (plan) {
+          setCartItems([{
+            id: plan.id,
+            name: plan.name,
+            price: plan.price,
+            description: plan.description,
+            isPlan: true,
+            serviceCount: 1
+          }]);
+
+          // Still need config and address for plan checkout
+          const response = await userAuthService.getCheckoutData();
+          if (response.success) {
+            setVisitedFee(0); // Plans usually have 0 visitor fee
+            setGstPercentage(response.settings?.serviceGstPercentage || 18);
+
+            if (response.user?.addresses?.length > 0) {
+              const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
+              setAddress(defaultAddr.addressLine1);
+              setHouseNumber(defaultAddr.addressLine2 || '');
+              setAddressDetails({
+                address: defaultAddr.addressLine1,
+                lat: defaultAddr.lat,
+                lng: defaultAddr.lng,
+                type: defaultAddr.type,
+                city: defaultAddr.city,
+                state: defaultAddr.state,
+                pincode: defaultAddr.pincode
+              });
+            }
+          }
+        } else {
+          const response = await userAuthService.getCheckoutData();
+          if (response.success) {
+            // Set Config
+            setVisitedFee(response.settings?.visitedCharges || 29);
+            setGstPercentage(response.settings?.serviceGstPercentage || 18);
+
+            // Set Addresses
+            if (response.user?.addresses?.length > 0) {
+              const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
+              setAddress(defaultAddr.addressLine1);
+              setHouseNumber(defaultAddr.addressLine2 || '');
+              setAddressDetails({
+                address: defaultAddr.addressLine1,
+                lat: defaultAddr.lat,
+                lng: defaultAddr.lng,
+                type: defaultAddr.type,
+                city: defaultAddr.city,
+                state: defaultAddr.state,
+                pincode: defaultAddr.pincode
+              });
+            }
+
+            // Set Cart Items
+            let items = response.cartItems || [];
+            if (category) {
+              const normalizedCategory = category.toLowerCase().trim();
+              items = items.filter(item => {
+                const itemCat = (item.category || 'Other').toLowerCase().trim();
+                return itemCat === normalizedCategory;
+              });
+            }
+            setCartItems(items);
+          }
         }
       } catch (error) {
-        console.error('Failed to load config', error);
+        console.error('Failed to load checkout data', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    const loadUserAddresses = async () => {
-      try {
-        const response = await userAuthService.getProfile();
-        if (response.success && response.user?.addresses?.length > 0) {
-          const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
-          setAddress(defaultAddr.addressLine1);
-          setHouseNumber(defaultAddr.addressLine2 || '');
-          setAddressDetails({
-            address: defaultAddr.addressLine1,
-            lat: defaultAddr.lat,
-            lng: defaultAddr.lng,
-            type: defaultAddr.type,
-            city: defaultAddr.city,
-            state: defaultAddr.state,
-            pincode: defaultAddr.pincode
-          });
-        }
-      } catch (error) {
-        console.error('Failed to load user addresses', error);
-      }
-    };
-
-    if (plan) {
-      setCartItems([{
-        id: plan.id,
-        name: plan.name,
-        price: plan.price,
-        description: plan.description,
-        isPlan: true,
-        serviceCount: 1
-      }]);
-      setLoading(false);
-      loadConfig();
-      loadUserAddresses();
-    } else {
-      loadCart();
-      loadConfig();
-      loadUserAddresses();
-    }
+    fetchData();
   }, [category, plan]);
 
   const loadCart = async () => {
@@ -261,12 +286,8 @@ const Checkout = () => {
     }
 
     try {
-      setSearchingVendors(true);
       setShowVendorModal(true);
       setCurrentStep('searching');
-
-      // Add a small delay for realistic searching animation
-      await new Promise(resolve => setTimeout(resolve, 3000));
 
       const firstItem = cartItems[0];
       if (!firstItem) {

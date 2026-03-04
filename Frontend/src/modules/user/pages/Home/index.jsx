@@ -251,38 +251,28 @@ const Home = () => {
         setLoading(true);
         const cityId = currentCity?._id || currentCity?.id;
 
-        const [categoriesRes, homeContentRes] = await Promise.all([
-          publicCatalogService.getCategories(cityId),
-          publicCatalogService.getHomeContent(cityId)
-        ]);
+        const response = await publicCatalogService.getHomeData(cityId);
 
-        let hasData = false;
+        if (response.success) {
+          if (response.categories) {
+            const mappedCategories = response.categories.map(cat => ({
+              id: cat.id,
+              title: cat.title,
+              slug: cat.slug,
+              icon: toAssetUrl(cat.icon),
+              hasSaleBadge: cat.hasSaleBadge,
+              badge: cat.badge
+            }));
+            setCategories(mappedCategories);
+          }
 
-        if (categoriesRes.success) {
-          const mappedCategories = categoriesRes.categories.map(cat => ({
-            id: cat.id,
-            title: cat.title,
-            slug: cat.slug,
-            icon: toAssetUrl(cat.icon),
-            hasSaleBadge: cat.hasSaleBadge,
-            badge: cat.badge
-          }));
-          setCategories(mappedCategories);
-          if (mappedCategories.length > 0) hasData = true;
-        }
-
-        if (homeContentRes.success) {
-          setHomeContent(homeContentRes.homeContent);
-          if (homeContentRes.homeContent) hasData = true;
-        }
-
-        if (!hasData && categoriesRes.categories?.length === 0 && !homeContentRes.homeContent) {
-          // If no data, maybe we should still stop loading?
+          if (response.homeContent) {
+            setHomeContent(response.homeContent);
+          }
         }
 
         setLoading(false);
       } catch (error) {
-        // Silent fail
         setLoading(false);
       }
     };

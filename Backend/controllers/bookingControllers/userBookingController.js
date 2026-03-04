@@ -74,8 +74,12 @@ const createBooking = async (req, res) => {
       serviceId = serviceId._id;
     }
 
-    // Verify service exists
-    const service = await Service.findById(serviceId);
+    // 1. Parallel Fetching: Service and User
+    const [service, user] = await Promise.all([
+      Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds').lean(),
+      User.findById(userId).select('name phone wallet plans').lean()
+    ]);
+
     if (!service) {
       return res.status(404).json({
         success: false,
@@ -83,19 +87,6 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // Calculate total value from booked items or fallback to service base price immediately after service load
-    if (totalServiceValue === 0 && bookedItems && bookedItems.length > 0) {
-      // It was calculated above? No, I defined variable but didn't assign fallback yet.
-      // Let's just do the whole calc here correctly.
-    }
-
-    // RE-EVALUATE: Better to consolidate the logic at one place: AFTER service load.
-    if (totalServiceValue === 0) { // If not calculated from items or items were 0 price
-      totalServiceValue = service.basePrice || 500;
-    }
-
-    // Verify user exists
-    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -103,15 +94,17 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // 2. Fetch Category if exists
+    const categoryId = service.categoryId || service.categoryIds?.[0];
+    const category = categoryId ? await Category.findById(categoryId).select('title icon image slug').lean() : null;
+
+    // Calculate total value from booked items or fallback to service base price
+    if (totalServiceValue === 0) {
+      totalServiceValue = service.basePrice || 500;
+    }
+
     // Check for Pending Penalty
     const pendingPenalty = user.wallet?.penalty || 0;
-
-    // Don't assign vendor initially - send to nearby vendors instead
-    // Vendor will be assigned when a vendor accepts the booking
-
-    // Get category for the service FIRST (needed for plan validation)
-    const categoryId = service.categoryId || service.categoryIds?.[0];
-    const category = categoryId ? await Category.findById(categoryId) : null;
 
     // --- MOVE VENDOR SEARCH UP HERE ---
     // Find nearby vendors using location service
@@ -615,7 +608,8 @@ const getUserBookings = async (req, res) => {
       .populate('workerId', 'name phone profilePhoto')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     // Get total count
     const total = await Booking.countDocuments(query);
@@ -653,7 +647,8 @@ const getBookingById = async (req, res) => {
       .populate('vendorId', 'name businessName phone email address profilePhoto')
       .populate('serviceId', 'title description iconUrl images')
       .populate('categoryId', 'title slug')
-      .populate('workerId', 'name phone rating totalJobs location profilePhoto');
+      .populate('workerId', 'name phone rating totalJobs location profilePhoto')
+      .lean();
 
     if (!booking) {
       return res.status(404).json({

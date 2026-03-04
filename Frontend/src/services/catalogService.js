@@ -323,6 +323,20 @@ export const publicCatalogService = {
     return response.data;
   },
 
+  // Get consolidated home data (cached for 2 minutes)
+  getHomeData: async (cityId) => {
+    const cacheKey = `public:homeData:${cityId || 'default'}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const query = cityId ? `?cityId=${cityId}` : '';
+    const response = await api.get(`/public/home-data${query}`);
+    if (response.data.success) {
+      apiCache.set(cacheKey, response.data, 120); // 2 minutes
+    }
+    return response.data;
+  },
+
   // Invalidate all public caches (useful after admin updates)
   invalidateCache: () => {
     apiCache.invalidatePrefix('public:');
