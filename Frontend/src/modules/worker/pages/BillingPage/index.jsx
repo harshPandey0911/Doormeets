@@ -4,10 +4,10 @@ import { FiCheck, FiTool, FiPackage, FiFileText, FiPlus, FiTrash2, FiArrowLeft, 
 import { MdQrCode } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 import { workerTheme as themeColors } from '../../../../theme';
+import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 import workerBillService from '../../../../services/workerBillService';
 import workerService from '../../../../services/workerService';
 import { publicCatalogService } from '../../../../services/catalogService';
-import api from '../../../../services/api';
 import OtpVerificationModal from './OtpVerificationModal';
 
 const BillingPage = () => {
@@ -52,7 +52,7 @@ const BillingPage = () => {
   const [selectedParts, setSelectedParts] = useState([]);
   const [customItems, setCustomItems] = useState([]);
   const [transportCharges, setTransportCharges] = useState(0);
-  const [applyPartsGST, setApplyPartsGST] = useState(true); // Parts GST toggle (Final Review step)
+  const [applyPartsGST, setApplyPartsGST] = useState(true);
 
   // Search
   const [serviceSearch, setServiceSearch] = useState('');
@@ -67,12 +67,15 @@ const BillingPage = () => {
   const [onlinePaymentData, setOnlinePaymentData] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
+  const [isManualVerification, setIsManualVerification] = useState(false);
 
-  // --- Settings (payout configuration) ---
+  const socket = useAppNotifications('worker');
+
+  // --- Settings ---
   const [payoutSettings, setPayoutSettings] = useState({
     serviceGstPct: 18,
     partsGstPct: 18,
-    servicePayoutPct: 90, // Workers usually a different split, but this is for display
+    servicePayoutPct: 90,
     partsPayoutPct: 100
   });
 
@@ -80,13 +83,6 @@ const BillingPage = () => {
   useEffect(() => {
     fetchData();
   }, [id]);
-
-  // If job is already completed, redirect to details
-  useEffect(() => {
-    if (job && job.status === 'completed') {
-      navigate(`/worker/job/${id}`);
-    }
-  }, [job, id, navigate]);
 
   // Scroll to top on mount or view change or loading complete
   useLayoutEffect(() => {
@@ -115,6 +111,11 @@ const BillingPage = () => {
       const jobData = jobRes.data || jobRes;
       setJob(jobData);
 
+      // Check for existing OTP
+      if (jobData?.customerConfirmationOTP || jobData?.paymentOtp) {
+        setIsOtpSent(true);
+      }
+
       const [servicesRes, partsRes, catRes] = await Promise.all([
         workerBillService.getServiceCatalog(),
         workerBillService.getPartsCatalog(),
@@ -126,23 +127,27 @@ const BillingPage = () => {
       setServicesCatalog(services);
       setPartsCatalog(parts);
 
-      // Extract unique categories from public API if possible
-      let cats = ['All'];
-      const publicCats = catRes.success ? catRes.data.map(c => c.title) : [];
+      // Extract categories from categories API or catalog items
+      if (catRes && catRes.success) {
+        const apiCats = (catRes.categories || catRes.data || []).map(c => c.title);
+        const allCats = ['All', ...apiCats];
 
-      if (publicCats.length > 0) {
-        cats = ['All', ...publicCats];
+        // Add Uncategorized if any catalog item is missing a category
+        const hasUncategorizedServices = services.some(s => !s.categoryId?.title);
+        const hasUncategorizedParts = parts.some(p => !p.categoryId?.title);
+        if (hasUncategorizedServices || hasUncategorizedParts) {
+          allCats.push('Uncategorized');
+        }
+
+        const uniqueCats = [...new Set(allCats)].filter(Boolean);
+        setServiceCategories(uniqueCats);
+        setPartCategories(uniqueCats);
       } else {
-        // Fallback to local catalog items if API fails
-        cats = ['All', ...new Set([
-          ...services.map(s => s.categoryId?.title),
-          ...parts.map(p => p.categoryId?.title)
-        ])];
+        const cats = ['All', ...new Set(services.map(s => s.categoryId?.title || 'Uncategorized'))];
+        setServiceCategories(cats.filter(Boolean));
+        const pCats = ['All', ...new Set(parts.map(p => p.categoryId?.title || 'Uncategorized'))];
+        setPartCategories(pCats.filter(Boolean));
       }
-
-      const cleanCats = [...new Set(cats.filter(Boolean))];
-      setServiceCategories(cleanCats);
-      setPartCategories(cleanCats);
 
       // 1. Try to load from Local Storage (Draft)
       const savedDraft = localStorage.getItem(`worker_billing_data_${id}`);
@@ -161,7 +166,7 @@ const BillingPage = () => {
         }
       }
 
-      // 2. Load from Backend (if exists)
+      // 2. Load from Backend
       const billRes = await workerBillService.getBill(id);
       if (billRes.success && billRes.bill) {
         if (!hasDraft) {
@@ -181,8 +186,22 @@ const BillingPage = () => {
             partsPayoutPct: pc.partsSplitPercentage ?? 100
           });
         }
-      }
 
+        // Update max step based on data
+        const currentData = hasDraft ? JSON.parse(savedDraft) : {
+          selectedServices: (billRes.bill.services || []).filter(s => !s.isOriginal),
+          selectedParts: billRes.bill.parts || [],
+          customItems: billRes.bill.customItems || []
+        };
+
+        let reachedStep = 1;
+        if (currentData.transportCharges > 0) reachedStep = 4;
+        else if (currentData.customItems?.length > 0) reachedStep = 3;
+        else if (currentData.selectedParts?.length > 0) reachedStep = 2;
+        else if (currentData.selectedServices?.length > 0) reachedStep = 1;
+
+        setMaxStep(prev => Math.max(prev, reachedStep));
+      }
     } catch (error) {
       console.error('Error loading billing data:', error);
       toast.error('Failed to load data');
@@ -208,8 +227,7 @@ const BillingPage = () => {
     });
   }, [partsCatalog, partSearch, selectedPartCategory]);
 
-
-  // --- HANDLERS (SELECTION) ---
+  // --- HANDLERS ---
   const toggleService = (item) => {
     setSelectedServices(prev => {
       const exists = prev.find(s => s.catalogId === item._id);
@@ -250,7 +268,6 @@ const BillingPage = () => {
 
   const isPartSelected = (id) => selectedParts.some(p => p.catalogId === id);
 
-  // --- HANDLERS (QTY UPDATES ON TIMELINE) ---
   const updateServiceQty = (idx, delta) => {
     const newArr = [...selectedServices];
     const q = Math.max(1, newArr[idx].quantity + delta);
@@ -267,7 +284,6 @@ const BillingPage = () => {
     setSelectedParts(newArr);
   };
 
-  // Custom Items
   const addCustomItem = () => {
     setCustomItems([...customItems, {
       name: '',
@@ -294,13 +310,14 @@ const BillingPage = () => {
   };
 
   const removeCustomItem = (index) => {
-    setCustomItems(prev => prev.filter((_, i) => i !== index));
-  }
+    const newItems = [...customItems];
+    newItems.splice(index, 1);
+    setCustomItems(newItems);
+  };
 
   // --- CALCULATIONS ---
   const calculations = useMemo(() => {
     if (!job) return null;
-
     const { serviceGstPct, partsGstPct, servicePayoutPct, partsPayoutPct } = payoutSettings;
 
     const isPlanBooking = job.paymentMethod === 'plan_benefit';
@@ -320,7 +337,6 @@ const BillingPage = () => {
     let partsGST = 0;
     selectedParts.forEach(p => {
       partsBase += (p.price * p.quantity);
-      // Only add parts GST if the worker has ticked the GST checkbox
       if (applyPartsGST) {
         partsGST += p.gstAmount;
       }
@@ -345,7 +361,6 @@ const BillingPage = () => {
 
     const finalBillAmount = parseFloat(((totalServiceBase + totalServiceGST) + (totalPartsBase + totalPartsGST) + visitingCharges + finalTransportCharges).toFixed(2));
 
-    // Worker Earnings estimate (if applicable)
     const workerServiceEarnings = parseFloat(((totalServiceBase * servicePayoutPct) / 100).toFixed(2));
     const workerPartsEarnings = parseFloat(((totalPartsBase * partsPayoutPct) / 100).toFixed(2));
     const totalWorkerEarnings = parseFloat((workerServiceEarnings + workerPartsEarnings).toFixed(2));
@@ -370,64 +385,9 @@ const BillingPage = () => {
     };
   }, [job, selectedServices, selectedParts, customItems, transportCharges, payoutSettings, applyPartsGST]);
 
-
-  const handleSubmit = async () => {
-    try {
-      setSubmitting(true);
-      const res = await workerBillService.createOrUpdateBill(id, {
-        services: selectedServices,
-        parts: selectedParts,
-        customItems,
-        transportCharges,
-        applyPartsGST
-      });
-
-      if (res.success) {
-        toast.success('Bill generated successfully!');
-        localStorage.removeItem(`worker_billing_step_${id}`);
-        localStorage.removeItem(`worker_billing_max_step_${id}`);
-        localStorage.removeItem(`worker_billing_data_${id}`);
-        navigate(`/worker/job/${id}`);
-      } else {
-        toast.error(res.message || 'Failed to generate bill');
-        setSubmitting(false);
-      }
-    } catch (error) {
-      console.error('Submit bill error:', error);
-      toast.error('An error occurred');
-      setSubmitting(false);
-    }
-  };
-
-  const handleSubmitDraft = async () => {
-    try {
-      setSubmitting(true);
-      const res = await workerBillService.createOrUpdateBill(id, {
-        services: selectedServices,
-        parts: selectedParts,
-        customItems,
-        transportCharges,
-        applyPartsGST
-      });
-
-      if (res.success) {
-        toast.success('Bill saved as draft');
-        setSubmitting(false);
-      } else {
-        toast.error(res.message || 'Failed to save bill');
-        setSubmitting(false);
-      }
-    } catch (error) {
-      console.error('Submit bill error:', error);
-      toast.error('An error occurred');
-      setSubmitting(false);
-    }
-  };
-
   const handleSendOTP = async () => {
     try {
       setOtpLoading(true);
-      // First save the bill to ensure backend has latest amounts
       await workerBillService.createOrUpdateBill(id, {
         services: selectedServices,
         parts: selectedParts,
@@ -437,7 +397,6 @@ const BillingPage = () => {
       });
 
       const res = await workerService.initiateCashCollection(id, calculations.finalBillAmount, [...selectedParts, ...customItems]);
-
       if (res.success) {
         setIsOtpSent(true);
         setShowOtpModal(true);
@@ -457,7 +416,6 @@ const BillingPage = () => {
     try {
       setOtpLoading(true);
       const res = await workerService.collectCash(id, code, calculations.finalBillAmount, [...selectedParts, ...customItems]);
-
       if (res.success) {
         setShowOtpModal(false);
         toast.success('Payment verified successfully!');
@@ -479,7 +437,7 @@ const BillingPage = () => {
   const handleOnlinePayment = async () => {
     try {
       setQrLoading(true);
-      // First save the bill to ensure backend has latest amounts
+      setIsManualVerification(false);
       await workerBillService.createOrUpdateBill(id, {
         services: selectedServices,
         parts: selectedParts,
@@ -489,13 +447,12 @@ const BillingPage = () => {
       });
 
       const res = await workerService.initiateOnlineCollection(id, calculations.finalBillAmount, [...selectedParts, ...customItems]);
-
       if (res.success) {
         setOnlinePaymentData(res.data);
         setShowQrModal(true);
         toast.success('QR Code generated!');
       } else {
-        toast.error(res.message || 'Failed to generate QR');
+        toast.error(res.message || 'Failed to initiate online payment');
       }
     } catch (error) {
       console.error('Online payment error:', error);
@@ -509,32 +466,56 @@ const BillingPage = () => {
     try {
       setQrLoading(true);
       const res = await workerService.verifyOnlineCollection(id);
-
-      if (res.success && res.status === 'completed') {
-        toast.success(res.message || 'Payment verified! Job completed.');
-
-        // Cleanup local storage
+      if (res.success) {
+        setShowQrModal(false);
+        toast.success('Payment verified successfully!');
         localStorage.removeItem(`worker_billing_step_${id}`);
         localStorage.removeItem(`worker_billing_max_step_${id}`);
         localStorage.removeItem(`worker_billing_data_${id}`);
-
-        // Navigate to completion page or job details
         navigate(`/worker/job/${id}`);
       } else {
-        toast.error(res.message || 'Payment not yet detected. Please wait a moment.');
+        toast.error(res.message || 'Payment not yet confirmed');
       }
-    } catch (error) {
-      console.error('Check payment status error:', error);
-      toast.error(error.response?.data?.message || 'Failed to verify payment');
     } finally {
       setQrLoading(false);
     }
   };
 
+  // Listen for Real-Time Job Updates (e.g. Online Payment Success)
+  useEffect(() => {
+    if (socket && id) {
+      const handleJobUpdate = (data) => {
+        if (data.bookingId === id || data.relatedId === id || data._id === id) {
+          const isPaymentSuccess =
+            data.paymentStatus === 'SUCCESS' ||
+            data.paymentStatus === 'paid' ||
+            data.type === 'payment_success';
+
+          if (isPaymentSuccess) {
+            toast.success('Online Payment Received!');
+            // Clean up and navigate back to job details
+            localStorage.removeItem(`worker_billing_step_${id}`);
+            localStorage.removeItem(`worker_billing_max_step_${id}`);
+            localStorage.removeItem(`worker_billing_data_${id}`);
+            setTimeout(() => navigate(`/worker/job/${id}`), 1000);
+          }
+        }
+      };
+
+      socket.on('booking_updated', handleJobUpdate);
+      socket.on('payment_success', handleJobUpdate);
+
+      return () => {
+        socket.off('booking_updated', handleJobUpdate);
+        socket.off('payment_success', handleJobUpdate);
+      };
+    }
+  }, [socket, id, navigate]);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!job) return null;
 
-  // --- RENDER VIEWS (SERVICES/PARTS SELECTION) ---
+  // View logic matches vendor
   if (viewMode === 'select-services') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -542,10 +523,10 @@ const BillingPage = () => {
           <div className="px-4 py-3 flex items-center gap-3">
             <button onClick={() => setViewMode('timeline')}><FiArrowLeft className="w-6 h-6 text-gray-600" /></button>
             <div className="flex-1 relative">
-              <input autoFocus placeholder="Search services..." value={serviceSearch} onChange={e => setServiceSearch(e.target.value)}
+              <input autoFocus placeholder="Search for a service..." value={serviceSearch} onChange={e => setServiceSearch(e.target.value)}
                 className="w-full bg-gray-100 pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-800 placeholder:text-gray-400" />
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <FiPlus className="w-4 h-4 rotate-45" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               </div>
             </div>
           </div>
@@ -634,10 +615,10 @@ const BillingPage = () => {
           <div className="px-4 py-3 flex items-center gap-3">
             <button onClick={() => setViewMode('timeline')}><FiArrowLeft className="w-6 h-6 text-gray-600" /></button>
             <div className="flex-1 relative">
-              <input autoFocus placeholder="Search parts..." value={partSearch} onChange={e => setPartSearch(e.target.value)}
+              <input autoFocus placeholder="Search for parts..." value={partSearch} onChange={e => setPartSearch(e.target.value)}
                 className="w-full bg-gray-100 pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-gray-800 placeholder:text-gray-400" />
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <FiPackage className="w-4 h-4" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               </div>
             </div>
           </div>
@@ -685,9 +666,8 @@ const BillingPage = () => {
     );
   }
 
-  // --- MAIN TIMELINE VIEW ---
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 pb-0 flex flex-col">
       <div className="sticky top-0 z-50 bg-white">
         <div className="px-4 py-4 shadow-sm border-b border-gray-100 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full">
@@ -730,7 +710,7 @@ const BillingPage = () => {
       <div className="p-4 space-y-6 pb-48">
         {currentStep === 1 && (
           <div className="animate-in fade-in slide-in-from-right-4">
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-gray-800">Added Services</h3>
                 <button onClick={() => setViewMode('select-services')} className="text-blue-600 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg">+ Add Services</button>
@@ -758,7 +738,7 @@ const BillingPage = () => {
 
         {currentStep === 2 && (
           <div className="animate-in fade-in slide-in-from-right-4">
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-gray-800">Added Parts</h3>
                 <button onClick={() => setViewMode('select-parts')} className="text-orange-600 font-bold text-xs bg-orange-50 px-3 py-1.5 rounded-lg">+ Add Parts</button>
@@ -798,83 +778,48 @@ const BillingPage = () => {
                 <FiPlus className="w-4 h-4" /> Add Row
               </button>
             </div>
-
             <div className="space-y-5">
-              {customItems.map((item, idx) => {
-                return (
-                  <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative animate-in slide-in-from-bottom-2">
-                    <button
-                      onClick={() => removeCustomItem(idx)}
-                      className="absolute -top-1 -right-1 w-7 h-7 bg-white text-red-500 rounded-full border border-red-100 flex items-center justify-center hover:bg-red-50 transition-all shadow-sm z-10"
-                    >
-                      <FiTrash2 className="w-3.5 h-3.5" />
-                    </button>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+              {customItems.map((item, idx) => (
+                <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative animate-in slide-in-from-bottom-2">
+                  <button onClick={() => removeCustomItem(idx)} className="absolute -top-1 -right-1 w-7 h-7 bg-white text-red-500 rounded-full border border-red-100 flex items-center justify-center hover:bg-red-50 transition-all shadow-sm z-10">
+                    <FiTrash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Item Name</label>
+                      <input placeholder="e.g. Copper Pipe" value={item.name} onChange={e => updateCustomItem(idx, 'name', e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">HSN Code</label>
+                      <input placeholder="Optional code" value={item.hsnCode || ''} onChange={e => updateCustomItem(idx, 'hsnCode', e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 uppercase text-gray-800" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Item Name</label>
-                        <input
-                          placeholder="e.g. Copper Pipe"
-                          value={item.name}
-                          onChange={e => updateCustomItem(idx, 'name', e.target.value)}
-                          className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800"
-                        />
+                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Price (₹)</label>
+                        <input type="number" placeholder="0" value={item.price || ''} onChange={e => updateCustomItem(idx, 'price', Number(e.target.value))}
+                          className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800" />
                       </div>
-
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">HSN Code</label>
-                        <input
-                          placeholder="Optional code"
-                          value={item.hsnCode || ''}
-                          onChange={e => updateCustomItem(idx, 'hsnCode', e.target.value)}
-                          className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 uppercase text-gray-800"
-                        />
+                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Quantity</label>
+                        <input type="number" value={item.quantity} onChange={e => updateCustomItem(idx, 'quantity', Number(e.target.value))}
+                          className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800" />
                       </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Price (₹)</label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={item.price || ''}
-                            onChange={e => updateCustomItem(idx, 'price', Number(e.target.value))}
-                            className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800"
-                          />
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Quantity</label>
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            onChange={e => updateCustomItem(idx, 'quantity', Number(e.target.value))}
-                            className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800"
-                          />
-                        </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-1 md:col-span-2 md:pt-3">
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" id={`gst-${idx}`} checked={item.gstApplicable} onChange={e => updateCustomItem(idx, 'gstApplicable', e.target.checked)} className="w-4 h-4 rounded text-blue-600 border-gray-300" />
+                        <label htmlFor={`gst-${idx}`} className="text-xs font-bold text-gray-600">Apply 18% GST</label>
                       </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-1 md:col-span-2 md:pt-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`gst-${idx}`}
-                            checked={item.gstApplicable}
-                            onChange={e => updateCustomItem(idx, 'gstApplicable', e.target.checked)}
-                            className="w-4 h-4 rounded text-blue-600 border-gray-300"
-                          />
-                          <label htmlFor={`gst-${idx}`} className="text-xs font-bold text-gray-600">Apply 18% GST</label>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Subtotal: </span>
-                          <span className="text-base font-black text-gray-900">₹{item.total.toFixed(2)}</span>
-                        </div>
+                      <div className="text-right">
+                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Subtotal: </span>
+                        <span className="text-base font-black text-gray-900">₹{item.total.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-
+                </div>
+              ))}
               {customItems.length === 0 && (
                 <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-100">
                   <FiPackage className="w-8 h-8 text-gray-300 mx-auto mb-2" />
@@ -894,18 +839,12 @@ const BillingPage = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Transport Charges</h3>
               <p className="text-sm text-gray-500 mb-6">Enter any additional transportation or travel costs for this service.</p>
-
               <div className="w-full max-w-xs relative text-left">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 mb-1 block">Amount (₹)</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">₹</span>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={transportCharges || ''}
-                    onChange={e => setTransportCharges(Number(e.target.value))}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-8 pr-4 py-4 text-xl font-black outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-900"
-                  />
+                  <input type="number" placeholder="0" value={transportCharges || ''} onChange={e => setTransportCharges(Number(e.target.value))}
+                    className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-8 pr-4 py-4 text-xl font-black outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-900" />
                 </div>
               </div>
             </div>
@@ -927,54 +866,38 @@ const BillingPage = () => {
                   </h4>
                   <div className="space-y-2 text-sm pl-2">
                     <div className="flex justify-between text-gray-600">
-                      <span>Original Job : {job.serviceName || 'Service'}</span>
-                      {job.paymentMethod === 'plan_benefit' ? (
-                        <span className="text-green-600 font-bold">FREE (PLAN)</span>
-                      ) : (
-                        <span>₹{calculations.originalBase.toFixed(2)}</span>
-                      )}
+                      <span>Original Booking : {job.serviceName || 'Service'}</span>
+                      {job.paymentMethod === 'plan_benefit' ? <span className="text-green-600 font-bold">FREE (PLAN)</span> : <span>₹{calculations.originalBase.toFixed(2)}</span>}
                     </div>
                     {selectedServices.map(s => <div key={s.catalogId} className="flex justify-between text-gray-600"><span>{s.name} x {s.quantity}</span><span>₹{(s.price * s.quantity).toFixed(2)}</span></div>)}
-
                     <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
                       <span>Service GST ({calculations.serviceGstPct}%)</span>
                       <span>₹{calculations.totalServiceGST.toFixed(2)}</span>
                     </div>
-
                     <div className="flex justify-between font-bold text-gray-800 pt-1">
                       <span>Total Service</span>
                       <span>₹{(calculations.originalBase + calculations.extraServiceBase + calculations.totalServiceGST).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
-
                 {(selectedParts.length > 0 || customItems.length > 0) && (
                   <div>
                     <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
                       <span className="w-6 h-6 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center text-xs"><FiPackage /></span>
                       Parts
                     </h4>
-
-                    {/* Parts GST toggle */}
                     <label className="flex items-center gap-2.5 cursor-pointer mb-3 p-2.5 rounded-xl border border-dashed border-orange-200 bg-orange-50/50 hover:bg-orange-50 transition-colors">
                       <div className="relative">
-                        <input
-                          type="checkbox"
-                          id="partsGstToggle"
-                          checked={applyPartsGST}
-                          onChange={e => setApplyPartsGST(e.target.checked)}
-                          className="sr-only"
-                        />
+                        <input type="checkbox" checked={applyPartsGST} onChange={e => setApplyPartsGST(e.target.checked)} className="sr-only" />
                         <div className={`w-10 h-5 rounded-full transition-colors duration-200 ${applyPartsGST ? 'bg-orange-500' : 'bg-gray-300'}`}>
                           <div className={`w-4 h-4 bg-white rounded-full shadow-sm absolute top-0.5 transition-all duration-200 ${applyPartsGST ? 'left-5' : 'left-0.5'}`} />
                         </div>
                       </div>
-                      <div>
+                      <div className="text-left">
                         <p className="text-xs font-bold text-gray-800">Apply Parts GST ({calculations.partsGstPct}%)</p>
                         <p className="text-[10px] text-gray-400">{applyPartsGST ? `GST included: ₹${calculations.totalPartsGST.toFixed(2)}` : 'GST not charged on parts'}</p>
                       </div>
                     </label>
-
                     <div className="space-y-2 text-sm pl-2">
                       {selectedParts.map(p => <div key={p.catalogId} className="flex justify-between text-gray-600"><span>{p.name} x {p.quantity}</span><span>₹{(p.price * p.quantity).toFixed(2)}</span></div>)}
                       {customItems.map((c, i) => (
@@ -986,12 +909,10 @@ const BillingPage = () => {
                           <span>₹{(c.price * c.quantity).toFixed(2)}</span>
                         </div>
                       ))}
-
-                      <div className={`flex justify-between text-xs border-t border-dashed border-gray-100 pt-1 mt-1 ${applyPartsGST ? 'text-gray-500' : 'text-gray-300 line-through'}`}>
-                        <span>Parts GST ({applyPartsGST ? calculations.partsGstPct : 0}%)</span>
+                      <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
+                        <span>Parts GST ({calculations.partsGstPct}%)</span>
                         <span>₹{calculations.totalPartsGST.toFixed(2)}</span>
                       </div>
-
                       <div className="flex justify-between font-bold text-gray-800 pt-1">
                         <span>Total Parts</span>
                         <span>₹{(calculations.partsBase + calculations.totalPartsGST).toFixed(2)}</span>
@@ -999,7 +920,6 @@ const BillingPage = () => {
                     </div>
                   </div>
                 )}
-
                 {job.visitingCharges > 0 && (
                   <div>
                     <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
@@ -1012,7 +932,6 @@ const BillingPage = () => {
                     </div>
                   </div>
                 )}
-
                 {transportCharges > 0 && (
                   <div>
                     <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
@@ -1026,41 +945,17 @@ const BillingPage = () => {
                   </div>
                 )}
               </div>
-              {/* Earnings Footer - ONLY SHOW WHEN COMPLETED */}
-              {job.status === 'completed' ? (
-                <div className="bg-emerald-50 px-6 py-4 border-t border-emerald-100">
-                  <div className="space-y-2 mb-3">
-                    <div className="flex justify-between items-center text-emerald-700 text-sm">
-                      <span>Service Earnings ({calculations.servicePayoutPct}%)</span>
-                      <span className="font-bold">₹{calculations.workerServiceEarnings.toFixed(2)}</span>
-                    </div>
-                    {(calculations.workerPartsEarnings > 0) && (
-                      <div className="flex justify-between items-center text-emerald-700 text-sm">
-                        <span>Parts Earnings ({calculations.partsPayoutPct}%)</span>
-                        <span className="font-bold">₹{calculations.workerPartsEarnings.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-emerald-200/50">
-                    <span className="text-emerald-800 font-bold text-xs uppercase tracking-wider">Total Net Earnings</span>
-                    <span className="text-emerald-700 font-black text-xl">₹{calculations.totalWorkerEarnings.toFixed(2)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-50 px-6 py-4 border-t border-gray-100/50 text-center">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2">
-                    <FiClock className="w-3 h-3" />
-                    Net Earnings will be revealed after completion
-                  </p>
-                </div>
-              )}
-
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-100/50 text-center">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2">
+                  <FiClock className="w-3 h-3" /> Net Earnings will be revealed after completion
+                </p>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="fixed bottom-[72px] left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 flex gap-3">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 flex gap-3">
         {currentStep === 1 && (
           <button onClick={() => setCurrentStep(2)} className="w-full py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
             Next: Parts <FiArrowRight />
@@ -1069,95 +964,44 @@ const BillingPage = () => {
         {currentStep === 2 && (
           <>
             <button onClick={() => setCurrentStep(1)} className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl">Back</button>
-            <button onClick={() => setCurrentStep(3)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
-              Next: Extras <FiArrowRight />
-            </button>
+            <button onClick={() => setCurrentStep(3)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">Next: Extras <FiArrowRight /></button>
           </>
         )}
         {currentStep === 3 && (
           <>
             <button onClick={() => setCurrentStep(2)} className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl">Back</button>
-            <button onClick={() => setCurrentStep(4)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
-              Next: Transport <FiArrowRight />
-            </button>
+            <button onClick={() => setCurrentStep(4)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">Next: Transport <FiArrowRight /></button>
           </>
         )}
         {currentStep === 4 && (
           <>
             <button onClick={() => setCurrentStep(3)} className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl">Back</button>
-            <button onClick={() => setCurrentStep(5)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
-              Next: Final Review <FiArrowRight />
-            </button>
+            <button onClick={() => setCurrentStep(5)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">Next: Final Review <FiArrowRight /></button>
           </>
         )}
         {currentStep === 5 && (
-          <div className="flex flex-col w-full gap-3">
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCurrentStep(4)}
-                disabled={submitting || otpLoading || qrLoading}
-                className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl disabled:opacity-50"
-              >
-                Back
-              </button>
-
-              <button
-                onClick={handleSubmitDraft}
-                disabled={submitting}
-                className="flex-1 py-3 text-blue-600 font-bold bg-blue-50 border border-blue-100 rounded-xl disabled:opacity-50"
-              >
-                Save Draft
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-1">Select Payment Mode</p>
-
-              <div className="grid grid-cols-2 gap-3">
-                {/* Cash Option */}
-                {isOtpSent ? (
-                  <button
-                    onClick={() => setShowOtpModal(true)}
-                    className="py-4 bg-gray-900 text-white font-bold rounded-2xl shadow-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-all"
-                  >
-                    <FiKey className="w-5 h-5" />
-                    <span className="text-xs">Enter OTP</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSendOTP}
-                    disabled={otpLoading || qrLoading}
-                    className="py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-all disabled:opacity-50"
-                  >
-                    <FiDollarSign className="w-5 h-5" />
-                    <span className="text-xs">Pay in Cash</span>
-                  </button>
-                )}
-
-                {/* Online Option */}
-                <button
-                  onClick={handleOnlinePayment}
-                  disabled={otpLoading || qrLoading}
-                  className="py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-all disabled:opacity-50"
-                >
-                  <MdQrCode className="w-5 h-5" />
-                  <span className="text-xs">{qrLoading ? 'Generating...' : 'Online (QR)'}</span>
+          <>
+            <button onClick={() => setCurrentStep(4)} disabled={submitting || otpLoading} className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl disabled:opacity-50">Back</button>
+            <div className="flex-[2] grid grid-cols-2 gap-2">
+              {isOtpSent ? (
+                <button onClick={() => setShowOtpModal(true)} disabled={otpLoading || qrLoading} className="py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 active:scale-95 transition-all text-[10px]">
+                  <FiKey className="w-4 h-4" /><span>Enter OTP</span>
                 </button>
-              </div>
+              ) : (
+                <button onClick={handleSendOTP} disabled={otpLoading || qrLoading} className="py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 active:scale-95 transition-all disabled:opacity-50 text-[10px]">
+                  <FiDollarSign className="w-4 h-4" /><span>Pay in Cash</span>
+                </button>
+              )}
+              <button onClick={handleOnlinePayment} disabled={otpLoading || qrLoading} className="py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg flex flex-col items-center justify-center gap-1 active:scale-95 transition-all disabled:opacity-50 text-[10px]">
+                <MdQrCode className="w-4 h-4" /><span>{qrLoading ? '...' : 'Online (QR)'}</span>
+              </button>
             </div>
-          </div>
+          </>
         )}
       </div>
 
-      {/* OTP Verification Modal */}
-      <OtpVerificationModal
-        isOpen={showOtpModal}
-        onClose={() => setShowOtpModal(false)}
-        onVerify={handleVerifyOTP}
-        loading={otpLoading}
-      />
+      <OtpVerificationModal isOpen={showOtpModal} onClose={() => setShowOtpModal(false)} onVerify={handleVerifyOTP} loading={otpLoading} />
 
-      {/* QR Code Modal for Online Payment */}
       {showQrModal && onlinePaymentData && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-200">
@@ -1167,36 +1011,23 @@ const BillingPage = () => {
               </div>
               <h2 className="text-2xl font-black text-gray-900 mb-2">Scan & Pay</h2>
               <p className="text-sm text-gray-500 mb-6">Ask customer to scan to pay <span className="font-bold text-gray-900">₹{calculations.finalBillAmount.toFixed(2)}</span></p>
-
-              <div
-                className="bg-gray-50 p-4 rounded-3xl inline-block mb-8 border border-gray-100 shadow-inner cursor-pointer hover:bg-gray-100 transition-colors relative group"
-                onClick={() => window.open(onlinePaymentData.paymentUrl, '_blank')}
-                title="Click to open payment link"
-              >
-                <img
-                  src={onlinePaymentData.qrImageUrl}
-                  alt="Payment QR"
-                  className="w-48 h-48 mx-auto mix-blend-multiply"
-                />
+              <div className="bg-gray-50 p-4 rounded-3xl inline-block mb-8 border border-gray-100 shadow-inner cursor-pointer hover:bg-gray-100 transition-colors relative group" onClick={() => window.open(onlinePaymentData.paymentUrl, '_blank')} title="Click to open payment link">
+                <img src={onlinePaymentData.qrImageUrl} alt="Payment QR" className="w-48 h-48 mx-auto mix-blend-multiply" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/40 rounded-3xl">
                   <p className="text-[10px] font-bold text-blue-600 bg-white px-2 py-1 rounded-full shadow-sm">Click to open link</p>
                 </div>
               </div>
-
               <div className="space-y-3">
-                <button
-                  onClick={checkPaymentStatus}
-                  className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
-                >
-                  <FiCheckCircle className="w-5 h-5" />
-                  Paid? Check Status
-                </button>
-                <button
-                  onClick={() => setShowQrModal(false)}
-                  className="w-full py-3 text-gray-500 font-bold hover:text-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
+                {onlinePaymentData.isManualUpi ? (
+                  <button onClick={() => { setIsManualVerification(true); setShowOtpModal(true); }} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <FiCheckCircle className="w-5 h-5" />Verify Manually (Enter OTP)
+                  </button>
+                ) : (
+                  <button onClick={checkPaymentStatus} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <FiCheckCircle className="w-5 h-5" />Paid? Check Status
+                  </button>
+                )}
+                <button onClick={() => setShowQrModal(false)} className="w-full py-3 text-gray-500 font-bold hover:text-gray-700 transition-colors">Cancel</button>
               </div>
             </div>
           </div>

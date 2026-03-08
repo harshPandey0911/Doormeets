@@ -192,27 +192,13 @@ const Profile = () => {
               </div>
               <div className="flex-1 pr-12">
                 <h2 className="text-xl font-bold text-white mb-0.5">{profile.name}</h2>
-                {profile.serviceCategories && profile.serviceCategories.length > 0 ? (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {profile.serviceCategories.map((cat, idx) => (
-                      <span key={idx} className="text-xs text-white bg-white/20 px-2 py-0.5 rounded font-medium backdrop-blur-sm">
-                        {cat}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="mb-2"></div>
-                )}
+                <div className="mb-2"></div>
 
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg backdrop-blur-sm">
                     <FiStar className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" />
                     <span className="text-white text-sm font-bold">{profile.rating}</span>
                   </div>
-                  <span className="text-white/60 text-xs">•</span>
-                  <p className="text-sm text-white opacity-90 font-medium">{profile.completedJobs} Completed</p>
-                  <span className="text-white/60 text-xs">•</span>
-                  <p className="text-sm text-white opacity-90 font-medium">{profile.totalJobs} Total</p>
                 </div>
               </div>
             </div>

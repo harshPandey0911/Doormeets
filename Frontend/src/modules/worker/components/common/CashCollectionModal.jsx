@@ -173,15 +173,15 @@ const CashCollectionModal = ({
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
+      {/* Modal Container */}
       <div className={`
-        bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl 
+        bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl
         animate-in slide-in-from-bottom-4 duration-300
-        max-h-[85vh] sm:max-h-[90vh] flex flex-col mb- safe-bottom
-      `}>
-        {/* Header */}
+        max-h-[85vh] sm:max-h-[90vh] flex flex-col mb-24
+      `}>  {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">{step === 'summary' ? 'Prepare Bill' : 'Verify OTP'}</h3>
+            <h3 className="text-xl font-bold text-gray-900">{step === 'summary' ? 'Collect Cash' : 'Verify OTP'}</h3>
             <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">
               {step === 'summary' ? 'Review Bill & Send OTP' : 'Enter Customer Code'}
             </p>

@@ -1019,16 +1019,21 @@ const BookingDetails = () => {
                     </div>
                   </div>
 
-                  {/* Track Button Overlay - Always visible but distinct */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-transparent pointer-events-none">
-                    <div className="pointer-events-auto bg-white text-gray-900 px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all border border-gray-100" onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}>
-                      <FiMapPin className="w-4 h-4 text-red-500" /> View on Map
+                  {/* Track Button Overlay - Only clickable when journey started */}
+                  {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-transparent pointer-events-none">
+                      <div
+                        className="pointer-events-auto bg-white text-gray-900 px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all border border-gray-100 cursor-pointer"
+                        onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
+                      >
+                        <FiMapPin className="w-4 h-4 text-red-500" /> View Live Location
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* Dedicated Track Button */}
-                {['confirmed', 'assigned', 'journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
+                {/* Dedicated Track Button - Only visible when journey started */}
+                {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
                   <button
                     onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
                     className="w-full py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"

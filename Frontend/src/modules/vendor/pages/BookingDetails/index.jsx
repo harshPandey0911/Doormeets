@@ -34,6 +34,7 @@ export default function BookingDetails() {
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
   const [isWorkDoneModalOpen, setIsWorkDoneModalOpen] = useState(false);
+  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
 
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -403,8 +404,28 @@ export default function BookingDetails() {
 
   // Handle cash collection button click
   const handleCollectCashClick = () => {
-    // Navigate to the full page billing flow
-    navigate(`/vendor/booking/${booking.id || id}/billing`);
+    // If OTP already sent, open modal. Otherwise navigate to full billing page.
+    if (booking?.customerConfirmationOTP || booking?.paymentOtp) {
+      setIsCashModalOpen(true);
+    } else {
+      // Navigate to the full page billing flow
+      navigate(`/vendor/booking/${booking.id || id}/billing`);
+    }
+  };
+
+  const handleCashCollectionConfirm = async (amount, extras, code) => {
+    try {
+      const res = await vendorWalletService.confirmCashCollection(id, amount, code, extras);
+      if (res.success) {
+        toast.success('Payment verified successfully!');
+        window.location.reload();
+      }
+      return res;
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      toast.error('Verification failed');
+      throw error;
+    }
   };
 
   const canCollectCash = (booking) => {
@@ -1299,8 +1320,17 @@ export default function BookingDetails() {
                   disabled={loading}
                   className="w-full py-4 rounded-xl font-bold bg-gray-900 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
                 >
-                  <FiDollarSign className="w-5 h-5" />
-                  {booking.paymentMethod === 'plan_benefit' ? 'Prepare/Edit Final Bill' : 'Prepare Bill & Collect Cash'}
+                  {(booking?.customerConfirmationOTP || booking?.paymentOtp) ? (
+                    <>
+                      <FiCheckCircle className="w-5 h-5" />
+                      Enter OTP
+                    </>
+                  ) : (
+                    <>
+                      <FiDollarSign className="w-5 h-5" />
+                      {booking.paymentMethod === 'plan_benefit' ? 'Prepare/Edit Final Bill' : 'Prepare Bill & Collect Cash'}
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -1505,6 +1535,17 @@ export default function BookingDetails() {
       </main>
 
 
+      {/* Cash Collection / OTP Modal */}
+      <CashCollectionModal
+        isOpen={isCashModalOpen}
+        onClose={() => setIsCashModalOpen(false)}
+        booking={booking}
+        onConfirm={handleCashCollectionConfirm}
+        onInitiateOTP={async (amt, items) => {
+          return await vendorWalletService.initiateCashCollection(id, amt, items);
+        }}
+        loading={loading}
+      />
 
       {/* Pay Worker Modal */}
       <WorkerPaymentModal

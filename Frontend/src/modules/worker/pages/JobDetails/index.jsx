@@ -81,6 +81,43 @@ const JobDetails = () => {
     enableHighAccuracy: true
   });
 
+  // Listen for Real-Time Job Updates (e.g. Online Payment)
+  useEffect(() => {
+    if (socket && id) {
+      const handleJobUpdate = (data) => {
+        if (data.bookingId === id || data.relatedId === id || data._id === id) {
+          setJob(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              ...data,
+              status: data.status || prev.status,
+              paymentStatus: data.paymentStatus || prev.paymentStatus
+            };
+          });
+
+          const isPaymentSuccess =
+            data.paymentStatus === 'SUCCESS' ||
+            data.paymentStatus === 'paid' ||
+            data.type === 'payment_success';
+
+          if (isPaymentSuccess) {
+            toast.success('Online Payment Received!');
+            setTimeout(() => fetchJobDetails(), 1500);
+          }
+        }
+      };
+
+      socket.on('booking_updated', handleJobUpdate);
+      socket.on('payment_success', handleJobUpdate);
+
+      return () => {
+        socket.off('booking_updated', handleJobUpdate);
+        socket.off('payment_success', handleJobUpdate);
+      };
+    }
+  }, [socket, id]);
+
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -175,13 +212,18 @@ const JobDetails = () => {
       return;
     }
 
-    if (type === 'collect') {
-      navigate(`/worker/job/${id}/billing`);
+    if (type === 'complete') {
+      setIsCompletionModalOpen(true);
       return;
     }
 
-    if (type === 'complete' && !isCompletionModalOpen) {
-      setIsCompletionModalOpen(true);
+    if (type === 'collect') {
+      const hasOTP = job?.customerConfirmationOTP || job?.paymentOtp;
+      if (hasOTP) {
+        setIsPaymentModalOpen(true);
+      } else {
+        navigate(`/worker/job/${id}/billing`);
+      }
       return;
     }
 
@@ -345,7 +387,11 @@ const JobDetails = () => {
               className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all text-lg"
               style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
             >
-              <FiFileText className="w-5 h-5" /> PREPARE BILL
+              {(job?.customerConfirmationOTP || job?.paymentOtp) ? (
+                <>ENTER OTP <FiCheck className="w-5 h-5" /></>
+              ) : (
+                <><FiFileText className="w-5 h-5" /> PREPARE BILL</>
+              )}
             </button>
           )}
 
