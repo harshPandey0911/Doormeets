@@ -150,75 +150,108 @@ const createQRCode = async (amount, bookingNumber, notes = {}) => {
 
     const payload = {
       type: 'upi_qr',
-      name: 'Homster Payment',
+      name: 'Service Payment',
       usage: 'single_use',
       fixed_amount: true,
       payment_amount: Math.round(amount * 100), // Convert to paise
-      description: `Payment for Booking #${bookingNumber}`,
+      description: `Order Payment for ${bookingNumber}`,
       notes
     };
 
     console.log('[QR Service] Attempting QR creation for Booking:', bookingNumber);
 
-    // Endpoint 1: Standalone QR API (Most common now)
+    // Primary: Razorpay SDK QR API
     try {
-      const response = await axios.post('https://api.razorpay.com/v1/qr_codes', payload, {
-        headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' }
-      });
+      const qrCode = await razorpay.qrCode.create(payload);
 
-      const qrCode = response.data;
-      console.log('✅ QR Code created via Standalone API');
+      console.log('✅ QR Code created via Razorpay SDK API');
       return {
         success: true,
         qrCodeId: qrCode.id,
         imageUrl: qrCode.image_url,
-        paymentUrl: qrCode.payment_url
+        qrStatus: qrCode.status
       };
     } catch (e1) {
-      console.warn('⚠️ Standalone QR API failed, trying Payments/QR API...');
+      console.warn('⚠️ SDK QR API failed, trying raw REST fallback...', e1.description || e1.message || e1);
 
-      // Endpoint 2: Payments/QR API (Legacy or specific accounts)
+      // Fallback 1: Manual API call to /v1/payments/qr_codes (as suggested by user)
       try {
         const response = await axios.post('https://api.razorpay.com/v1/payments/qr_codes', payload, {
           headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' }
         });
 
         const qrCode = response.data;
-        console.log('✅ QR Code created via Payments/QR API');
+        console.log('✅ QR Code created via Manual Payments API');
         return {
           success: true,
           qrCodeId: qrCode.id,
           imageUrl: qrCode.image_url,
-          paymentUrl: qrCode.payment_url
+          qrStatus: qrCode.status
         };
       } catch (e2) {
-        console.warn('⚠️ Both QR APIs failed, falling back to Payment Link...');
+        console.warn('⚠️ Manual Payments API failed, trying /v1/qr_codes...', e2.response?.data || e2.message);
 
-        // Fallback: Create a Payment Link which has a QR option
-        const linkPayload = {
-          amount: Math.round(amount * 100),
-          currency: 'INR',
-          description: `Payment for Booking #${bookingNumber}`,
-          notes,
-          notify: { sms: false, email: false }
-        };
+        // Fallback 2: Manual API call to /v1/qr_codes
+        try {
+          const response = await axios.post('https://api.razorpay.com/v1/qr_codes', payload, {
+            headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' }
+          });
 
-        const linkResponse = await axios.post('https://api.razorpay.com/v1/payment_links', linkPayload, {
-          headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' }
-        });
+          const qrCode = response.data;
+          console.log('✅ QR Code created via Manual QR API');
+          return {
+            success: true,
+            qrCodeId: qrCode.id,
+            imageUrl: qrCode.image_url,
+            qrStatus: qrCode.status
+          };
+        } catch (e3) {
+          console.warn('⚠️ All Razorpay QR APIs failed, trying manual UPI Intent QR...', e3.response?.data || e3.message);
 
-        const link = linkResponse.data;
-        console.log('✅ Payment Link created as fallback');
+          // Fallback 3: Manual UPI Intent QR (Scan -> UPI App -> Auto-filled amount)
+          try {
+            const QRCode = require('qrcode');
+            const upiId = process.env.MERCHANT_UPI_ID || "merchant@razorpay";
+            const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent("Homster Service")}&am=${amount}&cu=INR&tn=${bookingNumber}`;
+            const qrImage = await QRCode.toDataURL(upiLink);
 
-        // Return the payment link short URL as the "QR Image" if we really can't get a QR
-        // In the UI we'll just show a "Scan to Pay" instructions or use a JS QR generator
-        return {
-          success: true,
-          qrCodeId: link.id,
-          imageUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(link.short_url)}`,
-          paymentUrl: link.short_url,
-          isFallback: true
-        };
+            console.log('✅ Manual UPI QR generated successfully');
+            return {
+              success: true,
+              qrImage, // Base64 data URL
+              imageUrl: qrImage, // For backwards compatibility
+              upiLink,
+              isManualUpi: true,
+              qrCodeId: `manual_${bookingNumber}_${Date.now()}`
+            };
+          } catch (e4) {
+            console.warn('⚠️ Manual UPI QR generation failed, falling back to Payment Link...', e4.message);
+
+            // Fallback 4: Create a Payment Link
+            const linkPayload = {
+              amount: Math.round(amount * 100),
+              currency: 'INR',
+              description: `Payment for Booking #${bookingNumber}`,
+              notes,
+              notify: { sms: false, email: false }
+            };
+
+            const linkResponse = await axios.post('https://api.razorpay.com/v1/payment_links', linkPayload, {
+              headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' }
+            });
+
+            const link = linkResponse.data;
+            console.log('✅ Payment Link created as fallback');
+
+            return {
+              success: true,
+              qrCodeId: link.id,
+              imageUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(link.short_url)}`,
+              paymentUrl: link.short_url,
+              isFallback: true
+            };
+          }
+        }
       }
     }
   } catch (error) {
