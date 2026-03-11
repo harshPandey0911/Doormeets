@@ -79,7 +79,7 @@ const LocationAccessModal = ({
       flutterBridge.openAppSettings();
       onClose();
     } else {
-      toast.info("Please open your browser settings to allow location access.");
+      toast("Please open your browser settings to allow location access.");
     }
   };
 

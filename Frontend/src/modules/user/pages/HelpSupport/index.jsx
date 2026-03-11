@@ -121,7 +121,7 @@ const HelpSupport = () => {
           const cleanNumber = supportInfo.whatsapp.replace(/\D/g, '');
           window.location.href = `whatsapp://send?phone=${cleanNumber}`;
         } else {
-          toast.info('WhatsApp support is currently unavailable');
+          toast('WhatsApp support is currently unavailable');
         }
       }
     },
@@ -145,7 +145,7 @@ const HelpSupport = () => {
         if (supportInfo.phone) {
           window.location.href = `tel:${supportInfo.phone}`;
         } else {
-          toast.info('Phone support is currently unavailable');
+          toast('Phone support is currently unavailable');
         }
       }
     },

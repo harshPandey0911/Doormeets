@@ -56,6 +56,14 @@ const EditProfile = () => {
   const [categories, setCategories] = useState([]);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isFlutter, setIsFlutter] = useState(flutterBridge.isFlutter);
+
+  // Sync flutter bridge state
+  useEffect(() => {
+    flutterBridge.waitForFlutter().then(ready => {
+      setIsFlutter(ready);
+    });
+  }, []);
 
   const handleNativeCamera = async (target = 'photo') => {
     const file = await flutterBridge.openCamera();
@@ -67,6 +75,18 @@ const EditProfile = () => {
         setAadharFile(file);
       }
       flutterBridge.hapticFeedback('success');
+    }
+  };
+
+  const handleImageClick = (target = 'photo') => {
+    if (isFlutter) {
+      handleNativeCamera(target);
+    } else {
+      if (target === 'photo') {
+        document.getElementById('photo-upload')?.click();
+      } else {
+        document.getElementById('aadhar-upload')?.click();
+      }
     }
   };
 
@@ -382,7 +402,7 @@ const EditProfile = () => {
               <div
                 className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-xl cursor-pointer"
                 style={{ background: '#f0f0f0' }}
-                onClick={() => flutterBridge.isFlutter ? handleNativeCamera('photo') : null}
+                onClick={() => handleImageClick('photo')}
               >
                 {photoPreview || formData.profilePhoto ? (
                   <img
@@ -397,23 +417,20 @@ const EditProfile = () => {
                 )}
               </div>
 
-              <label
-                htmlFor={flutterBridge.isFlutter ? "" : "photo-upload"}
-                onClick={() => flutterBridge.isFlutter ? handleNativeCamera('photo') : null}
+              <div
+                onClick={() => handleImageClick('photo')}
                 className="absolute bottom-1 right-1 p-2 rounded-full cursor-pointer shadow-lg transition-transform active:scale-95 hover:scale-105"
                 style={{ background: themeColors.button }}
               >
                 <FiCamera className="w-5 h-5 text-white" />
-                {!flutterBridge.isFlutter && (
-                  <input
-                    id="photo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoChange}
-                  />
-                )}
-              </label>
+                <input
+                  id="photo-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
+              </div>
             </div>
             <p className="text-gray-500 text-xs mt-3 font-medium">Tap icon to change photo</p>
           </div>
@@ -641,18 +658,16 @@ const EditProfile = () => {
 
             <div
               className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center transition-colors hover:border-blue-300 bg-gray-50 cursor-pointer"
-              onClick={() => flutterBridge.isFlutter ? handleNativeCamera('aadhar') : null}
+              onClick={() => handleImageClick('aadhar')}
             >
-              {!flutterBridge.isFlutter && (
-                <input
-                  id="aadhar-upload"
-                  type="file"
-                  accept="image/*,.pdf"
-                  className="hidden"
-                  onChange={handleAadharChange}
-                />
-              )}
-              <label htmlFor={flutterBridge.isFlutter ? "" : "aadhar-upload"} className="cursor-pointer flex flex-col items-center">
+              <input
+                id="aadhar-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAadharChange}
+              />
+              <div className="cursor-pointer flex flex-col items-center">
                 {aadharFile ? (
                   <div className="flex items-center gap-2 text-green-600 font-medium">
                     <FiUpload className="w-5 h-5" />
@@ -679,7 +694,7 @@ const EditProfile = () => {
                     <span className="text-xs text-gray-400 mt-1">First Page Only (Max 5MB)</span>
                   </>
                 )}
-              </label>
+              </div>
             </div>
             {errors.aadharDocument && <p className="text-red-500 text-sm mt-1">{errors.aadharDocument}</p>}
           </div>

@@ -104,7 +104,7 @@ const WorkerPayments = () => {
                       <td className="px-4 py-4">
                         <button
                           className="flex items-center gap-1 text-primary-600 font-semibold hover:underline"
-                          onClick={() => toast.info('Detailed transaction history coming soon')}
+                          onClick={() => toast('Detailed transaction history coming soon')}
                         >
                           View History <FiArrowUpRight className="w-4 h-4" />
                         </button>

@@ -37,7 +37,7 @@ class FlutterBridge {
     await this.waitForFlutter();
 
     if (!this.isFlutter) {
-      console.warn(`[FlutterBridge] Bridge not available for ${handlerName}`);
+      // Quietly return failure for web browsers - this is expected
       return { success: false, error: "Not inside Flutter WebView" };
     }
 
@@ -95,7 +95,9 @@ class FlutterBridge {
       // If native bridge result is failure, throw to trigger fallback
       throw new Error("Native location failed");
     } catch (error) {
-      console.warn("[FlutterBridge] Flutter Location Error, falling back to browser GPS:", error);
+      if (this.isFlutter) {
+        console.warn("[FlutterBridge] Flutter Location Error, falling back to browser GPS:", error);
+      }
 
       // Browser fallback (Web Geolocation API)
       return new Promise((resolve, reject) => {
@@ -114,7 +116,9 @@ class FlutterBridge {
             });
           },
           (err) => {
-            console.error("[FlutterBridge] Browser fallback also failed:", err.message);
+            if (this.isFlutter) {
+              console.error("[FlutterBridge] Browser fallback also failed:", err.message);
+            }
             reject(err);
           },
           {

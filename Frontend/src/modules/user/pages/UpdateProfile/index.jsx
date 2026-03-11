@@ -27,13 +27,25 @@ const UpdateProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFlutter, setIsFlutter] = useState(flutterBridge.isFlutter);
 
-  const handleNativeCamera = async () => {
-    const file = await flutterBridge.openCamera();
-    if (file) {
-      setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
-      flutterBridge.hapticFeedback('success');
+  // Sync flutter bridge state
+  useEffect(() => {
+    flutterBridge.waitForFlutter().then(ready => {
+      setIsFlutter(ready);
+    });
+  }, []);
+
+  const handleImageClick = async () => {
+    if (isFlutter) {
+      const file = await flutterBridge.openCamera();
+      if (file) {
+        setPhotoFile(file);
+        setPhotoPreview(URL.createObjectURL(file));
+        flutterBridge.hapticFeedback('success');
+      }
+    } else {
+      document.getElementById('user-photo-upload')?.click();
     }
   };
 
@@ -237,7 +249,7 @@ const UpdateProfile = () => {
               <div
                 className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-xl cursor-pointer"
                 style={{ background: '#f0f0f0' }}
-                onClick={() => flutterBridge.isFlutter ? handleNativeCamera() : null}
+                onClick={handleImageClick}
               >
                 {photoPreview || formData.profilePhoto ? (
                   <img
@@ -252,23 +264,20 @@ const UpdateProfile = () => {
                 )}
               </div>
 
-              <label
-                htmlFor={flutterBridge.isFlutter ? "" : "user-photo-upload"}
-                onClick={() => flutterBridge.isFlutter ? handleNativeCamera() : null}
+              <div
+                onClick={handleImageClick}
                 className="absolute bottom-1 right-1 p-2 rounded-full cursor-pointer shadow-lg transition-transform active:scale-95 hover:scale-105"
                 style={{ background: themeColors.button }}
               >
                 <FiCamera className="w-5 h-5 text-white" />
-                {!flutterBridge.isFlutter && (
-                  <input
-                    id="user-photo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoChange}
-                  />
-                )}
-              </label>
+                <input
+                  id="user-photo-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
+              </div>
             </div>
             <p className="text-gray-500 text-[10px] mt-3 font-bold uppercase tracking-wider">Tap to change photo</p>
           </div>

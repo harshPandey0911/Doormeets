@@ -93,8 +93,8 @@ const PromoCarousel = memo(({ promos, onPromoClick }) => {
         className="flex gap-2 overflow-x-auto px-4 pb-2 scrollbar-hide snap-x snap-mandatory"
         style={{ scrollBehavior: 'smooth' }}
       >
-        {promotionalCards.map((promo) => (
-          <div key={promo.id} data-promo-card className="flex-shrink-0 snap-center">
+        {promotionalCards.map((promo, index) => (
+          <div key={promo.id || promo._id || index} data-promo-card className="flex-shrink-0 snap-center">
             <PromoCard
               title={promo.title}
               subtitle={promo.subtitle}

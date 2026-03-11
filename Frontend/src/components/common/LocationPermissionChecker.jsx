@@ -20,7 +20,7 @@ export const LocationPermissionChecker = () => {
         setUserType(type);
 
         const checkPermission = async (isManualTrigger = false) => {
-            console.log('Checking location permissions (manual:', isManualTrigger, ')');
+            // console.log('Checking location permissions (manual:', isManualTrigger, ')');
 
             // If manual trigger (user clicked something), always show modal immediately
             if (isManualTrigger) {
@@ -33,7 +33,7 @@ export const LocationPermissionChecker = () => {
             // 1. Silent check via Unified Bridge (prefers Native GPS)
             try {
                 const location = await flutterBridge.getCurrentLocation();
-                console.log('Location already granted (bridge check success)');
+                // console.log('Location already granted (bridge check success)');
                 localStorage.setItem('location_granted', 'true');
                 setShowModal(false);
             } catch (err) {
@@ -51,14 +51,14 @@ export const LocationPermissionChecker = () => {
             if (navigator.permissions) {
                 try {
                     const status = await navigator.permissions.query({ name: 'geolocation' });
-                    console.log('Permissions API status:', status.state);
+                    // console.log('Permissions API status:', status.state);
 
                     if (status.state === 'denied' || status.state === 'prompt') {
                         if (!hasGrantedPreviously) setShowModal(true);
                     }
 
                     status.onchange = () => {
-                        console.log('Permission state changed to:', status.state);
+                        // console.log('Permission state changed to:', status.state);
                         if (status.state === 'granted') {
                             setShowModal(false);
                             localStorage.setItem('location_granted', 'true');

@@ -76,7 +76,7 @@ const Profile = () => {
               serviceCategories: localWorkerData.serviceCategories || (localWorkerData.serviceCategory ? [localWorkerData.serviceCategory] : []),
               photo: localWorkerData.profilePhoto || null
             });
-            toast.info('Loaded profile from local storage (API failed)');
+            toast('Loaded profile from local storage (API failed)');
           }
         }
       } catch (err) {
@@ -97,7 +97,7 @@ const Profile = () => {
             serviceCategories: localWorkerData.serviceCategories || (localWorkerData.serviceCategory ? [localWorkerData.serviceCategory] : []),
             photo: localWorkerData.profilePhoto || null
           });
-          toast.info('Loaded profile from local storage (API failed)');
+          toast('Loaded profile from local storage (API failed)');
         }
       } finally {
         setIsLoading(false);
