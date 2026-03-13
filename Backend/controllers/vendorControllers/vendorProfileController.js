@@ -115,6 +115,14 @@ const updateProfile = async (req, res) => {
           lat: address.lat !== undefined ? address.lat : vendor.address?.lat,
           lng: address.lng !== undefined ? address.lng : vendor.address?.lng
         };
+
+        // Sync GeoJSON geoLocation for fast geo queries
+        if (vendor.address.lat && vendor.address.lng) {
+          vendor.geoLocation = {
+            type: 'Point',
+            coordinates: [vendor.address.lng, vendor.address.lat] // [lng, lat]
+          };
+        }
       }
     }
 
@@ -262,6 +270,12 @@ const updateAddress = async (req, res) => {
       lng: parseFloat(lng)
     };
 
+    // Sync GeoJSON geoLocation
+    vendor.geoLocation = {
+      type: 'Point',
+      coordinates: [parseFloat(lng), parseFloat(lat)]
+    };
+
     await vendor.save();
 
     res.status(200).json({
@@ -292,7 +306,11 @@ const updateLocation = async (req, res) => {
 
     // Update only the location field
     await Vendor.findByIdAndUpdate(vendorId, {
-      location: { lat, lng, updatedAt: new Date() }
+      location: { lat, lng, updatedAt: new Date() },
+      geoLocation: {
+        type: 'Point',
+        coordinates: [lng, lat]
+      }
     });
 
     res.status(200).json({ success: true, message: 'Location updated' });

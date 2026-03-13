@@ -55,12 +55,12 @@ const Header = ({ location, onLocationClick }) => {
             >
               <Logo
                 ref={logoRef}
-                className="h-12 w-auto"
+                className="h-9 sm:h-10 w-auto"
               />
             </div>
 
             {/* Right: City & Location */}
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-end gap-1 flex-1 min-w-0 ml-4">
 
 
 
@@ -76,7 +76,7 @@ const Header = ({ location, onLocationClick }) => {
                     </linearGradient>
                   </svg>
                   <HiLocationMarker
-                    className="w-4 h-4"
+                    className="w-4 h-4 shrink-0"
                     style={{ fill: 'url(#homestr-location-gradient)' }}
                   />
                   <span className="text-sm font-bold truncate max-w-[160px]" style={{

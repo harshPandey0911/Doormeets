@@ -219,54 +219,6 @@ const Settings = () => {
             <FiChevronRight className="w-5 h-5 text-gray-400" />
           </button>
 
-          {/* Diagnostic Test Button */}
-          <button
-            onClick={async () => {
-              try {
-                const { registerFCMToken } = await import('../../../../services/pushNotificationService');
-                const toastId = toast.loading('Attempting to register for notifications...');
-
-                // 1. Register Token
-                const token = await registerFCMToken('user', true);
-                if (!token) {
-                  toast.error('Could not register. Check browser permissions.', { id: toastId });
-                  return;
-                }
-
-                // 2. Send Test Notification from Backend
-                toast.loading('Sending test notification...', { id: toastId });
-
-                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/users/fcm-tokens/test`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-                  }
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                  toast.success(`Sent! Success: ${data.successCount}`, { id: toastId });
-                } else {
-                  toast.error(`Failed to send: ${data.message || 'Unknown error'}`, { id: toastId });
-                }
-
-              } catch (err) {
-                toast.error('Test failed. See console.', { id: toastId });
-                console.error(err);
-              }
-            }}
-            className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:bg-gray-50 active:scale-[0.98] transition-all"
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 166, 166, 0.1)' }}>
-              <FiBell className="w-5 h-5" style={{ color: themeColors.button }} />
-            </div>
-            <div className="text-left">
-              <span className="text-sm font-medium text-black block">Test Push Notifications</span>
-              <span className="text-xs text-gray-500">Tap to register & simulate alert</span>
-            </div>
-          </button>
         </div>
       </main>
 

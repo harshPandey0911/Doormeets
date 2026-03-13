@@ -6,6 +6,8 @@ import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import vendorWalletService from '../../../../services/vendorWalletService';
 import { toast } from 'react-hot-toast';
+import flutterBridge from '../../../../utils/flutterBridge';
+import { FiCamera } from 'react-icons/fi';
 
 const SettlementRequest = () => {
   const navigate = useNavigate();
@@ -59,103 +61,130 @@ const SettlementRequest = () => {
 
   const compressImage = (file) => {
     return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          const MAX_WIDTH = 1000;
-          const MAX_HEIGHT = 1000;
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const MAX_WIDTH = 1200; // Increased slightly for better text legibility in receipts
+        const MAX_HEIGHT = 1200;
 
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
           }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
 
-          canvas.toBlob((blob) => {
-            resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            }));
-          }, 'image/jpeg', 0.8); // 0.8 quality
-        };
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          }));
+        }, 'image/jpeg', 0.85); // Slightly higher quality for reference numbers
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file); // Fallback to original if canvas fails
       };
     });
   };
 
+  const uploadToCloudinary = async (file) => {
+    // 1. Get Signature from Backend
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const sigRes = await fetch(`${apiUrl}/api/upload/sign-signature`);
+    const sigData = await sigRes.json();
+
+    if (!sigData.success) {
+      throw new Error(sigData.message || 'Failed to get upload signature');
+    }
+
+    const { signature, timestamp, cloudName, apiKey, folder } = sigData;
+
+    // 2. Upload to Cloudinary
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', timestamp);
+    formData.append('signature', signature);
+    if (folder) formData.append('folder', folder);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: 'POST', body: formData }
+    );
+
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+    return data.secure_url;
+  };
+
+  const handleNativeCamera = async () => {
+    try {
+      const file = await flutterBridge.openCamera();
+      if (file) {
+        setProofPreview(URL.createObjectURL(file));
+        const loadingToast = toast.loading('Uploading Proof...');
+        const secureUrl = await uploadToCloudinary(file);
+        setFormData(prev => ({ ...prev, paymentProof: secureUrl }));
+        toast.dismiss(loadingToast);
+        toast.success('Proof captured & uploaded!');
+        flutterBridge.hapticFeedback('success');
+      }
+    } catch (error) {
+      console.error('Native capture failed:', error);
+      toast.error('Failed to capture proof');
+      toast.dismiss();
+    }
+  };
+
   const handleProofUpload = async (e) => {
-    const originalFile = e.target.files[0];
+    const originalFile = e.target.files?.[0];
     if (!originalFile) return;
 
-    if (originalFile.size > 10 * 1024 * 1024) {
-      toast.error('File too large (max 10MB original)');
+    if (originalFile.size > 20 * 1024 * 1024) {
+      toast.error('File too large (max 20MB)');
       return;
     }
 
-    // Preview
-    const reader = new FileReader();
-    reader.onload = () => setProofPreview(reader.result);
-    reader.readAsDataURL(originalFile);
+    const previewUrl = URL.createObjectURL(originalFile);
+    setProofPreview(previewUrl);
 
+    let loadingToast;
     try {
-      const loadingToast = toast.loading('Optimizing & Uploading...');
+      loadingToast = toast.loading('Optimizing & Uploading...');
 
       // Compress client-side
       const file = await compressImage(originalFile);
 
-      // 1. Get Signature from Backend (Generic Endpoint)
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const sigRes = await fetch(`${apiUrl}/api/upload/sign-signature`);
-      const sigData = await sigRes.json();
+      // Upload
+      const secureUrl = await uploadToCloudinary(file);
 
-      if (!sigData.success) {
-        toast.dismiss(loadingToast);
-        throw new Error(sigData.message || 'Failed to get upload signature');
-      }
-
-      const { signature, timestamp, cloudName, apiKey, folder } = sigData;
-
-      // 2. Upload to Cloudinary
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('api_key', apiKey);
-      formData.append('timestamp', timestamp);
-      formData.append('signature', signature);
-      if (folder) formData.append('folder', folder);
-
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        { method: 'POST', body: formData }
-      );
-
-      const data = await res.json();
+      setFormData(prev => ({ ...prev, paymentProof: secureUrl }));
       toast.dismiss(loadingToast);
-
-      if (data.error) {
-        throw new Error(data.error.message);
-      }
-
-      setFormData(prev => ({ ...prev, paymentProof: data.secure_url }));
       toast.success('Proof uploaded successfully');
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error('Failed to upload proof');
+      if (loadingToast) toast.dismiss(loadingToast);
       setProofPreview(null);
     }
   };
@@ -305,29 +334,45 @@ const SettlementRequest = () => {
                 <img
                   src={proofPreview}
                   alt="Payment Proof"
-                  className="w-full h-40 object-cover rounded-xl border-2 border-gray-200"
+                  className="w-full h-56 object-contain bg-gray-50 rounded-xl border-2 border-gray-200"
                 />
                 <button
                   onClick={() => {
                     setProofPreview(null);
                     setFormData(prev => ({ ...prev, paymentProof: '' }));
                   }}
-                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full"
+                  className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm"
                 >
-                  ×
+                  <FiX className="w-5 h-5" />
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-500">Upload Screenshot</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleProofUpload}
-                />
-              </label>
+              <div className="space-y-3">
+                {flutterBridge.isFlutter && (
+                  <button
+                    type="button"
+                    onClick={handleNativeCamera}
+                    className="w-full py-4 bg-gray-900 text-white rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all font-bold shadow-lg shadow-gray-200"
+                  >
+                    <FiCamera className="w-5 h-5" />
+                    Take a Photo
+                  </button>
+                )}
+                
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors bg-white">
+                  <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-700 font-semibold">
+                    {flutterBridge.isFlutter ? 'Pick from Gallery' : 'Upload Screenshot / Proof'}
+                  </span>
+                  <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-tight font-bold">Max 20MB Original</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleProofUpload}
+                  />
+                </label>
+              </div>
             )}
           </div>
 

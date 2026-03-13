@@ -108,8 +108,11 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
 
     // Filter by vendor's selected categories (what they set in their profile)
     if (serviceCategory) {
-      baseQuery.categories = { $in: [serviceCategory] };
-      console.log(`[LocationService] Filtering vendors by category: "${serviceCategory}"`);
+      baseQuery.$or = [
+        { categories: { $in: [serviceCategory] } },
+        { service: { $in: [serviceCategory] } }
+      ];
+      console.log(`[LocationService] Filtering vendors by category: "${serviceCategory}" (OR search across categories/service)`);
     }
 
     // Apply Cash Limit Check if requested
@@ -206,11 +209,14 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
     nearbyVendors = vendors.map(vendor => {
       let distance = null;
 
-      // If vendor has coordinates in address
-      if (vendor.address && vendor.address.lat && vendor.address.lng) {
+      // If vendor has coordinates in address or real-time location
+      const vLat = vendor.location?.lat || vendor.address?.lat;
+      const vLng = vendor.location?.lng || vendor.address?.lng;
+
+      if (vLat && vLng) {
         distance = calculateDistance(centerLocation, {
-          lat: vendor.address.lat,
-          lng: vendor.address.lng
+          lat: vLat,
+          lng: vLng
         });
       }
 

@@ -15,7 +15,10 @@ const getDashboardStats = async (req, res) => {
     const vId = new mongoose.Types.ObjectId(vendorId);
 
     // ── Get categories from req.user (from auth middleware) ──
-    const vendorCategories = req.user.categories || req.user.service || [];
+    const vendorCategories = [
+      ...(Array.isArray(req.user.categories) ? req.user.categories : []),
+      ...(Array.isArray(req.user.service) ? req.user.service : [])
+    ];
 
     // ─── SINGLE PARALLEL BLAST ───────────────────────────────────────────────
     const [bookingData, workersOnline, earningsResult] = await Promise.all([

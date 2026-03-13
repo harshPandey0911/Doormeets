@@ -34,7 +34,7 @@ const LocationSelector = ({ location, onLocationClick }) => {
       className="flex items-center gap-1.5 cursor-pointer"
       onClick={onLocationClick}
     >
-      <span className="text-xs text-gray-700 truncate max-w-[200px] leading-tight">
+      <span className="text-xs text-gray-700 truncate max-w-[140px] leading-tight text-right">
         {formattedLocation}
       </span>
       <FiChevronDown className="w-3 h-3 flex-shrink-0" style={{ color: '#F59E0B' }} />
