@@ -60,74 +60,69 @@ const geocodeAddress = async (address) => {
   }
 };
 
+const _buildVendorQuery = (filters = {}) => {
+  const { VENDOR_STATUS } = require('../utils/constants');
+  
+  const checkCashLimit = filters.checkCashLimit;
+  const serviceCategory = filters.service;
+  
+  const queryFilters = { ...filters };
+  delete queryFilters.checkCashLimit;
+  delete queryFilters.service;
+  delete queryFilters.city;
+
+  const baseQuery = {
+    approvalStatus: VENDOR_STATUS.APPROVED,
+    isActive: true,
+    ...queryFilters
+  };
+
+  if (filters.city) {
+    baseQuery['address.city'] = { $regex: new RegExp(filters.city, 'i') };
+  }
+
+  if (serviceCategory) {
+    baseQuery.$or = [
+      { categories: { $in: [serviceCategory] } },
+      { service: { $in: [serviceCategory] } }
+    ];
+  }
+
+  if (checkCashLimit) {
+    baseQuery.$expr = { $lte: ["$wallet.dues", "$wallet.cashLimit"] };
+  }
+
+  return baseQuery;
+};
+
 /**
  * Find vendors within specified radius of a location
- * Priority: 1. Redis geo cache (fastest) → 2. MongoDB 2dsphere → 3. Haversine (fallback)
- * @param {Object} centerLocation - {lat, lng} of center point
- * @param {number} radiusKm - Search radius in kilometers (default: 10)
- * @param {Object} filters - Additional filters for vendors
- * @returns {Promise<Array>} Array of nearby vendors with distance
  */
 const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) => {
+  const Vendor = require('../models/Vendor');
+  const Settings = require('../models/Settings');
+  const { getNearbyVendorsFromCache, isRedisConnected } = require('./redisService');
+
   if (!centerLocation || typeof centerLocation.lat !== 'number' || typeof centerLocation.lng !== 'number') {
-    console.warn('[LocationService] Invalid or missing coordinates for findNearbyVendors. Falling back to city search if available.');
+    console.warn('[LocationService] Invalid coordinates. City fallback for:', filters.city);
     if (filters.city) {
       return findVendorsByCity(filters.city, filters);
     }
     return [];
   }
+
   try {
-    const Vendor = require('../models/Vendor');
-    const Settings = require('../models/Settings');
-    const { VENDOR_STATUS } = require('../utils/constants');
-    const { getNearbyVendorsFromCache, isRedisConnected } = require('./redisService');
-
-    // Fetch default radius from settings if not provided or 10 is passed
+    // Fetch default radius from settings
     if (radiusKm === 10) {
-      try {
-        const globalSettings = await Settings.findOne({ type: 'global' }).select('searchRadius');
-        if (globalSettings && globalSettings.searchRadius) {
-          radiusKm = globalSettings.searchRadius;
-        }
-      } catch (err) {
-        console.error('Error fetching search radius from settings:', err);
-      }
+      const globalSettings = await Settings.findOne({ type: 'global' }).select('searchRadius').lean();
+      if (globalSettings?.searchRadius) radiusKm = globalSettings.searchRadius;
     }
 
-    // Extract custom options from filters
-    const checkCashLimit = filters.checkCashLimit;
-    const serviceCategory = filters.service; // Category title to match against vendor's categories array
-    // Clone filters to avoid modifying original or polluting query
-    const queryFilters = { ...filters };
-    delete queryFilters.checkCashLimit;
-    delete queryFilters.service; // Handled manually
-    delete queryFilters.city; // Handled explicitly below
+    const baseQuery = _buildVendorQuery(filters);
+    const totalApprovedVendors = await Vendor.countDocuments({ approvalStatus: 'APPROVED', isActive: true });
+    console.log(`[LocationService] Total Approved/Active Vendors in DB: ${totalApprovedVendors}`);
+    console.log(`[LocationService] Searching with query: ${JSON.stringify(baseQuery)}`);
 
-    // Build base query
-    const baseQuery = {
-      approvalStatus: VENDOR_STATUS.APPROVED,
-      isActive: true,
-      ...queryFilters
-    };
-
-    // Filter by city if provided
-    if (filters.city) {
-      baseQuery['address.city'] = { $regex: new RegExp(filters.city, 'i') };
-    }
-
-    // Filter by vendor's selected categories (what they set in their profile)
-    if (serviceCategory) {
-      baseQuery.$or = [
-        { categories: { $in: [serviceCategory] } },
-        { service: { $in: [serviceCategory] } }
-      ];
-      console.log(`[LocationService] Filtering vendors by category: "${serviceCategory}" (OR search across categories/service)`);
-    }
-
-    // Apply Cash Limit Check if requested
-    if (checkCashLimit) {
-      baseQuery.$expr = { $lte: ["$wallet.dues", "$wallet.cashLimit"] };
-    }
 
     // OPTION 1: Try Redis geo cache first (fastest - <5ms)
     if (isRedisConnected()) {
@@ -152,6 +147,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
             distance: cv.distance
           }));
 
+        console.log(`[LocationService] Found ${result.length} matching vendors via Redis path`);
         return result;
       }
     }
@@ -213,6 +209,8 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
     // Fallback: Use Haversine formula (slower but works without geo index)
     const vendors = await Vendor.find(baseQuery)
       .select('name businessName phone address location profilePhoto service rating isOnline availability settings');
+
+    console.log(`[LocationService] Haversine fallback: found ${vendors.length} vendors matching baseQuery before distance filter`);
 
     // Calculate distances and filter by radius
     nearbyVendors = vendors.map(vendor => {
@@ -283,32 +281,14 @@ const getDistanceMatrix = async (origins, destinations) => {
 const findVendorsByCity = async (city, filters = {}) => {
   try {
     const Vendor = require('../models/Vendor');
-    const { VENDOR_STATUS } = require('../utils/constants');
+    const baseQuery = _buildVendorQuery({ ...filters, city });
 
-    const serviceCategory = filters.service;
-    const queryFilters = { ...filters };
-    delete queryFilters.service;
-    delete queryFilters.city;
-
-    const baseQuery = {
-      'address.city': { $regex: new RegExp(city, 'i') },
-      approvalStatus: VENDOR_STATUS.APPROVED,
-      isActive: true,
-      ...queryFilters
-    };
-
-    if (serviceCategory) {
-      baseQuery.$or = [
-        { categories: { $in: [serviceCategory] } },
-        { service: { $in: [serviceCategory] } }
-      ];
-    }
-
+    console.log(`[LocationService] City search query: ${JSON.stringify(baseQuery)}`);
     const vendors = await Vendor.find(baseQuery)
-      .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation settings')
+      .select('name businessName phone address location profilePhoto service rating isOnline availability settings')
       .limit(50);
 
-    console.log(`[LocationService] Found ${vendors.length} vendors in city: ${city} (Fallback)`);
+    console.log(`[LocationService] Found ${vendors.length} vendors in city: ${city}`);
     return vendors.map(v => ({ ...v.toObject(), distance: null }));
   } catch (error) {
     console.error('Find vendors by city error:', error);
