@@ -17,11 +17,7 @@ try {
     isTestMode = process.env.RAZORPAY_KEY_ID.startsWith('rzp_test');
     console.log(`✅ Razorpay initialized in ${isTestMode ? 'TEST' : 'LIVE'} mode`);
 
-    if (process.env.MERCHANT_UPI_ID) {
-      console.log(`✅ Merchant UPI ID verified: ${process.env.MERCHANT_UPI_ID}`);
-    } else {
-      console.warn('⚠️ MERCHANT_UPI_ID not found in .env');
-    }
+    // MERCHANT_UPI_ID check removed as requested
   }
 } catch (error) {
   console.error('❌ Failed to initialize Razorpay:', error.message);
@@ -146,31 +142,8 @@ const refundPayment = async (paymentId, amount = null, notes = {}) => {
  * Tries the modern standalone QR API first, then falls back to Payment Link if needed.
  */
 const createQRCode = async (amount, bookingNumber, notes = {}) => {
-  try {
-    // 1. PRIMARY: If Merchant UPI ID is configured, use Manual Intent QR (FASTEST & DIRECT)
-    if (process.env.MERCHANT_UPI_ID) {
-      try {
-        const QRCode = require('qrcode');
-        const upiId = process.env.MERCHANT_UPI_ID;
-        // Construct standard UPI Intent Link
-        const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent("Homster Service")}&am=${amount}&cu=INR&tn=${bookingNumber}`;
-        const qrImage = await QRCode.toDataURL(upiLink);
-
-        console.log('✅ Manual UPI QR generated (Prioritized via MERCHANT_UPI_ID)');
-        return {
-          success: true,
-          qrImage,
-          imageUrl: qrImage,
-          upiLink,
-          paymentUrl: upiLink, // Ensure frontend 'Click to open' works
-          isManualUpi: true,
-          qrCodeId: `manual_${bookingNumber}_${Date.now()}`
-        };
-      } catch (e) {
-        console.warn('⚠️ Manual UPI QR generation failed, falling back to Razorpay...', e.message);
-      }
-    }
-
+    // Manual UPI QR block removed as requested
+    
     if (!razorpay) {
       return { success: false, error: 'Razorpay not initialized' };
     }
@@ -268,19 +241,8 @@ const getQRCodePayments = async (id) => {
       return { success: false, error: 'Razorpay not initialized' };
     }
 
-    // If it's a manual QR (fallback case)
-    if (id && id.startsWith('manual_')) {
-      console.log(`[QR Service] ID ${id} is a manual UPI QR. Auto-verification not possible.`);
-      return {
-        success: true,
-        isManual: true,
-        payments: [],
-        message: 'Manual UPI payments must be verified manually by the vendor'
-      };
-    }
-
-    // If it's a payment link (fallback case)
-    if (id && id.startsWith('plink_')) {
+    // Manual UPI check removed as requested
+    if (id && (id.startsWith('plink_'))) {
       const axios = require('axios');
       const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
 

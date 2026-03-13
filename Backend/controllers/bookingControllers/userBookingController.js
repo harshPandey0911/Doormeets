@@ -127,7 +127,8 @@ const createBooking = async (req, res) => {
     // CUSTOM - Check Cash Limit only if payment method is CASH
     const vendorFilters = {
       ...(category ? { service: category.title } : {}),
-      checkCashLimit: paymentMethod === 'cash'
+      checkCashLimit: paymentMethod === 'cash',
+      city: address.city
     };
 
     let nearbyVendors = await findNearbyVendors(bookingLocation, 10, vendorFilters);
@@ -467,12 +468,14 @@ const createBooking = async (req, res) => {
         await Promise.all(vendorNotifications);
 
         // Emit Socket.IO event to Wave 1 vendors for real-time notification with sound
-        const io = req.app.get('io');
+        const { getIO } = require('../../sockets');
+        const io = getIO();
         if (io) {
           console.log('Socket.IO instance found, emitting Wave 1 events...');
           wave1Vendors.forEach(vendor => {
-            console.log(`[Wave 1] Emitting to vendor_${vendor._id} (dist: ${vendor.distance?.toFixed(1)}km)`);
-            io.to(`vendor_${vendor._id}`).emit('new_booking_request', {
+            const vendorRoom = `vendor_${vendor._id.toString()}`;
+            console.log(`[Wave 1] Emitting to ${vendorRoom} (dist: ${vendor.distance?.toFixed(1) || 'N/A'}km)`);
+            io.to(vendorRoom).emit('new_booking_request', {
               bookingId: bookingForBackground._id,
               serviceName: serviceForBackground.title,
               customerName: userForBackground.name,

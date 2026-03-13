@@ -70,7 +70,10 @@ const geocodeAddress = async (address) => {
  */
 const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) => {
   if (!centerLocation || typeof centerLocation.lat !== 'number' || typeof centerLocation.lng !== 'number') {
-    console.warn('[LocationService] Invalid centerLocation provided to findNearbyVendors');
+    console.warn('[LocationService] Invalid or missing coordinates for findNearbyVendors. Falling back to city search if available.');
+    if (filters.city) {
+      return findVendorsByCity(filters.city, filters);
+    }
     return [];
   }
   try {
@@ -236,12 +239,6 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
   }
 };
 
-/**
- * Get distance matrix between multiple points
- * @param {Array} origins - Array of {lat, lng} objects
- * @param {Array} destinations - Array of {lat, lng} objects
- * @returns {Promise<Array>} Distance matrix
- */
 const getDistanceMatrix = async (origins, destinations) => {
   try {
     if (!GOOGLE_MAPS_API_KEY) {
@@ -269,9 +266,52 @@ const getDistanceMatrix = async (origins, destinations) => {
   }
 };
 
+/**
+ * Find vendors in a specific city (fallback when coordinates are missing)
+ * @param {string} city - City name
+ * @param {Object} filters - Additional filters
+ * @returns {Promise<Array>} Array of vendors
+ */
+const findVendorsByCity = async (city, filters = {}) => {
+  try {
+    const Vendor = require('../models/Vendor');
+    const { VENDOR_STATUS } = require('../utils/constants');
+
+    const serviceCategory = filters.service;
+    const queryFilters = { ...filters };
+    delete queryFilters.service;
+    delete queryFilters.city;
+
+    const baseQuery = {
+      'address.city': { $regex: new RegExp(city, 'i') },
+      approvalStatus: VENDOR_STATUS.APPROVED,
+      isActive: true,
+      ...queryFilters
+    };
+
+    if (serviceCategory) {
+      baseQuery.$or = [
+        { categories: { $in: [serviceCategory] } },
+        { service: { $in: [serviceCategory] } }
+      ];
+    }
+
+    const vendors = await Vendor.find(baseQuery)
+      .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation settings')
+      .limit(50);
+
+    console.log(`[LocationService] Found ${vendors.length} vendors in city: ${city} (Fallback)`);
+    return vendors.map(v => ({ ...v.toObject(), distance: null }));
+  } catch (error) {
+    console.error('Find vendors by city error:', error);
+    return [];
+  }
+};
+
 module.exports = {
   geocodeAddress,
   findNearbyVendors,
+  findVendorsByCity,
   calculateDistance,
   getDistanceMatrix
 };

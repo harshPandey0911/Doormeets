@@ -30,7 +30,7 @@ const VendorSearchModal = ({ isOpen, onClose, currentStep, acceptedVendor, onRet
         </button>
 
         {(currentStep === 'searching' || currentStep === 'waiting') && (
-          <div className="flex flex-col items-center justify-center pt-12 pb-10 px-6 relative h-[450px]">
+          <div className="flex flex-col items-center justify-center pt-10 pb-16 px-6 relative min-h-[480px]">
 
             {/* Map-like Background (Subtle) */}
             <div className="absolute inset-0 opacity-5 pointer-events-none">
@@ -41,7 +41,7 @@ const VendorSearchModal = ({ isOpen, onClose, currentStep, acceptedVendor, onRet
             </div>
 
             {/* Central Radar Animation */}
-            <div className="relative w-64 h-64 flex items-center justify-center mb-8">
+            <div className="relative w-56 h-56 flex items-center justify-center mb-8">
               {/* Outer Ripples */}
               <div className="absolute inset-0 rounded-full border-2 opacity-20 animate-ping"
                 style={{ borderColor: themeColors.brand.teal, animationDuration: '3s' }}></div>
@@ -56,7 +56,7 @@ const VendorSearchModal = ({ isOpen, onClose, currentStep, acceptedVendor, onRet
                 }}></div>
 
               {/* Center Core */}
-              <div className="relative z-10 w-24 h-24 bg-white rounded-full shadow-lg flex items-center justify-center p-1">
+              <div className="relative z-10 w-20 h-20 bg-white rounded-full shadow-lg flex items-center justify-center p-1">
                 <div className="w-full h-full rounded-full flex items-center justify-center relative overflow-hidden"
                   style={{ background: `linear-gradient(135deg, ${themeColors.brand.teal}15, ${themeColors.brand.teal}05)` }}>
                   {/* User Icon or Brand Icon */}
@@ -68,20 +68,20 @@ const VendorSearchModal = ({ isOpen, onClose, currentStep, acceptedVendor, onRet
               </div>
 
               {/* Floating "Found" Dots Animation */}
-              <div className="absolute top-10 right-10 w-2 h-2 rounded-full animate-bounce opacity-50" style={{ backgroundColor: themeColors.brand.orange, animationDelay: '0.2s' }}></div>
-              <div className="absolute bottom-8 left-8 w-2 h-2 rounded-full animate-bounce opacity-50" style={{ backgroundColor: themeColors.brand.yellow, animationDelay: '1.5s' }}></div>
+              <div className="absolute top-8 right-8 w-2 h-2 rounded-full animate-bounce opacity-50" style={{ backgroundColor: themeColors.brand.orange, animationDelay: '0.2s' }}></div>
+              <div className="absolute bottom-6 left-6 w-2 h-2 rounded-full animate-bounce opacity-50" style={{ backgroundColor: themeColors.brand.yellow, animationDelay: '1.5s' }}></div>
             </div>
 
             {/* Status Text */}
-            <div className="text-center relative z-20 px-4">
-              <h3 className="text-xl font-black text-gray-900 mb-2">Finding nearby {currentStep === 'waiting' ? 'professionals' : 'experts'}</h3>
+            <div className="text-center relative z-20 px-4 mb-4">
+              <h3 className="text-xl font-black text-gray-900 mb-2">Searching nearby {currentStep === 'waiting' ? 'professionals' : 'experts'}</h3>
               <p className="text-gray-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
-                Searching within 10km{dots}
+                Searching within 10km radius{dots}
               </p>
             </div>
 
-            {/* Bottom Pill */}
-            <div className="absolute bottom-10 left-0 right-0 flex justify-center">
+            {/* Bottom Pill - Now positioned relative to avoid overlap */}
+            <div className="flex justify-center mt-2">
               <div className="px-4 py-2 bg-gray-50 rounded-full border border-gray-100 text-[10px] font-black uppercase tracking-tighter text-gray-400">
                 Searching for available providers
               </div>

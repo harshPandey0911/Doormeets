@@ -74,9 +74,9 @@ const SearchingAnimation = () => {
 
       {/* Status Text */}
       <div className="text-center relative z-20">
-        <h3 className="text-lg font-bold text-gray-900 mb-2">Finding nearby experts</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">Searching nearby experts</h3>
         <p className="text-gray-500 text-sm max-w-[240px] mx-auto leading-relaxed">
-          Connecting you with the best available service providers{dots}
+          Searching within 10km radius{dots}
         </p>
       </div>
 
