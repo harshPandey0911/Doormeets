@@ -212,6 +212,7 @@ const VendorSignup = () => {
           phone: formData.phoneNumber,
           aadhar: formData.aadhar,
           pan: formData.pan,
+          experience: formData.experience,
           service: [],
           aadharDocument: aadharDoc,
           aadharBackDocument: aadharBackDoc,
