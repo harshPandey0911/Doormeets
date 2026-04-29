@@ -31,9 +31,9 @@ app.use(helmet({
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'https://www.homster.in',
-  'https://homster.in',
-  'https://api.homster.in'
+  'https://www.civilconnect.in',
+  'https://civilconnect.in',
+  'https://api.civilconnect.in'
 ];
 
 if (process.env.FRONTEND_URL) {
@@ -102,7 +102,7 @@ app.use('/api', rateLimiter);
 app.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'Homster API is running',
+    message: 'Civil connect API is running',
     timestamp: new Date().toISOString()
   });
 });

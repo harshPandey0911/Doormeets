@@ -289,6 +289,7 @@ const register = async (req, res) => {
       name,
       email,
       phone,
+      experience: req.body.experience || 0,
       aadhar: {
         number: aadhar,
         document: aadharUrl,

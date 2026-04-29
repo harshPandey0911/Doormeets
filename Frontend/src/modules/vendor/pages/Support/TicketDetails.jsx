@@ -100,7 +100,7 @@ const TicketDetails = () => {
                   : 'bg-white border border-gray-100 rounded-tl-none'
                 }`}>
                 {!isVendor && (
-                  <p className="text-[10px] font-bold text-gray-500 mb-1">Homster Support</p>
+                  <p className="text-[10px] font-bold text-gray-500 mb-1">Civil connect Support</p>
                 )}
                 <p className="text-sm text-gray-800 whitespace-pre-wrap">{msg.message}</p>
                 <div className={`text-[9px] font-medium mt-1 ${isVendor ? 'text-blue-400 text-right' : 'text-gray-400'}`}>

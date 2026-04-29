@@ -80,7 +80,7 @@ const AboutHomestr = () => {
           >
             <FiArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
-          <span className="text-xl font-bold" style={homestrTextGradient}>About Cleaning Expert Services</span>
+          <span className="text-xl font-bold" style={homestrTextGradient}>About Civil connect</span>
         </div>
       </header>
 
@@ -103,7 +103,7 @@ const AboutHomestr = () => {
           </div>
 
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-            Welcome to <span style={homestrTextGradient}>Cleaning Expert Services</span>
+            Welcome to <span style={homestrTextGradient}>Civil connect</span>
           </h1>
           <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
             Your trusted partner for premium home and personal care services.
@@ -132,14 +132,14 @@ const AboutHomestr = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-800 mb-3">Our Mission</h3>
             <p className="text-sm text-gray-600 leading-relaxed relative z-10">
-              Cleaning Expert Services is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
+              Civil connect is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
             </p>
           </div>
         </div>
 
         {/* Why Choose Us Grid */}
         <div className="animate-item">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Why Choose Cleaning Expert Services?</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Why Choose Civil connect?</h3>
           <div className="grid grid-cols-2 gap-3">
             {features.map((feature, index) => (
               <div
@@ -183,7 +183,7 @@ const AboutHomestr = () => {
         {/* Footer Info */}
         <div className="animate-item text-center pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-400 mb-1">Designed & Developed by</p>
-          <span className="text-sm font-bold tracking-wide" style={homestrTextGradient}>Cleaning Expert Services Team</span>
+          <span className="text-sm font-bold tracking-wide" style={homestrTextGradient}>Civil connect Team</span>
           <p className="text-[10px] text-gray-300 mt-4">v7.6.27 • Made with ❤️ in India</p>
         </div>
       </main>

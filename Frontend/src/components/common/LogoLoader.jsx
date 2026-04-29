@@ -36,11 +36,9 @@ const LogoLoader = ({ fullScreen = false, overlay = false, inline = false, size 
         }}
         className={`relative ${size} flex items-center justify-center`}
       >
-        <img
-          src="/cleaning-expert-logo.png"
-          alt="Loading..."
-          className="w-full h-full object-cover rounded-full shadow-lg"
-        />
+        <div className="w-full h-full flex items-center justify-center text-2xl font-black text-white bg-teal-600 rounded-full shadow-lg text-center tracking-tighter">
+          CC
+        </div>
         {/* Subtle ripple effect */}
         <motion.div
           className="absolute inset-0 rounded-full border-2 border-teal-200"

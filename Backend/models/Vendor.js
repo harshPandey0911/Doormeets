@@ -34,6 +34,10 @@ const vendorSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  experience: {
+    type: Number,
+    default: 0
+  },
   service: {
     type: [String], // Changed to array for multiple categories
     default: [],

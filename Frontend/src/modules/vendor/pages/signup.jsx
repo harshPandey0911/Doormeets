@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiArrowRight, FiChevronLeft, FiCheckCircle, FiCamera } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiArrowRight, FiChevronLeft, FiCheckCircle, FiCamera, FiAward } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../theme';
 import { register, sendOTP as sendVendorOTP, verifyLogin } from '../services/authService';
@@ -16,7 +16,8 @@ const vendorSignupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   phoneNumber: z.string().regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian phone number"),
   aadhar: z.string().regex(/^\d{12}$/, "Aadhar number must be exactly 12 digits"),
-  pan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format (e.g. ABCDE1234F)")
+  pan: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format (e.g. ABCDE1234F)"),
+  experience: z.string().min(1, "Please enter your years of experience").regex(/^\d+$/, "Experience must be a number")
 });
 
 const VendorSignup = () => {
@@ -29,6 +30,7 @@ const VendorSignup = () => {
     phoneNumber: '',
     aadhar: '',
     pan: '',
+    experience: '',
     service: '',
     documents: []
   });
@@ -178,7 +180,8 @@ const VendorSignup = () => {
       email: formData.email,
       phoneNumber: formData.phoneNumber,
       aadhar: formData.aadhar,
-      pan: formData.pan
+      pan: formData.pan,
+      experience: formData.experience
     });
 
     if (!validationResult.success) {
@@ -333,6 +336,7 @@ const VendorSignup = () => {
           phone: formData.phoneNumber,
           aadhar: formData.aadhar,
           pan: formData.pan,
+          experience: formData.experience,
           service: [], // Default empty
           aadharDocument: aadharDoc,
           aadharBackDocument: aadharBackDoc,
@@ -484,6 +488,25 @@ const VendorSignup = () => {
                         className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
                         style={{ '--tw-ring-color': brandColor }}
                         placeholder="ABCDE1234F"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                        <FiAward className="text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="experience"
+                        required
+                        value={formData.experience}
+                        onChange={(e) => setFormData(p => ({ ...p, experience: e.target.value.replace(/\D/g, '') }))}
+                        className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
+                        style={{ '--tw-ring-color': brandColor }}
+                        placeholder="e.g. 5"
                       />
                     </div>
                   </div>

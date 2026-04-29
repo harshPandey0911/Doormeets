@@ -10,7 +10,7 @@ const Rewards = () => {
   const navigate = useNavigate();
   const handleCopyLink = () => {
     // Copy referral link to clipboard
-    const referralLink = 'https://appzeto.com/refer/your-link';
+    const referralLink = 'https://civilconnect.in/refer/your-link';
     navigator.clipboard.writeText(referralLink).then(() => {
       toast.success('Link copied to clipboard!');
     });
@@ -18,12 +18,12 @@ const Rewards = () => {
 
   const handleShareWhatsApp = () => {
     const text = 'Check out this amazing electrical services app!';
-    const url = 'https://appzeto.com/refer/your-link';
+    const url = 'https://civilconnect.in/refer/your-link';
     window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
   };
 
   const handleShareMessenger = () => {
-    const url = 'https://appzeto.com/refer/your-link';
+    const url = 'https://civilconnect.in/refer/your-link';
     window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=your-app-id`, '_blank');
   };
   return (
