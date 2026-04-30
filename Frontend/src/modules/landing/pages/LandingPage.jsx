@@ -292,7 +292,7 @@ const LandingPage = () => {
             >
               <div className="relative z-10 p-2 sm:p-4 bg-gray-50 rounded-[3rem] sm:rounded-[4rem] border border-gray-100 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] overflow-hidden group">
                 <div className="overflow-hidden rounded-[2.5rem] sm:rounded-[3.5rem] relative aspect-[4/5] lg:aspect-square">
-                  <img src="/hero-image.png" alt="Homestr Pro Electronics" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  <img src="/hero-image.png" alt="Civilconnect Pro Electronics" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent"></div>
                 </div>
 
@@ -306,7 +306,7 @@ const LandingPage = () => {
                       <FaShieldAlt className="text-base sm:text-2xl" />
                     </div>
                     <div>
-                      <p className="text-[9px] sm:text-[10px] text-gray-400 font-normal leading-none mb-1">Homestr Certified</p>
+                      <p className="text-[9px] sm:text-[10px] text-gray-400 font-normal leading-none mb-1">Civilconnect Certified</p>
                       <p className="text-xs sm:text-sm font-normal whitespace-nowrap">Genuine Platform Parts</p>
                     </div>
                   </div>
@@ -558,7 +558,7 @@ const LandingPage = () => {
             <div className="flex flex-col items-center lg:items-start text-nowrap">
               <h4 className="text-[10px] font-normal text-brand mb-8 sm:mb-10">Contact Support</h4>
               <ul className="space-y-4 sm:space-y-6 text-gray-400 font-normal text-sm">
-                <li>Email: <a href={`mailto:${settings?.supportEmail || 'support@homestr.in'}`} className="hover:text-white transition-all">{settings?.supportEmail || 'support@homestr.in'}</a></li>
+                <li>Email: <a href={`mailto:${settings?.supportEmail || 'support@civilconnect.in'}`} className="hover:text-white transition-all">{settings?.supportEmail || 'support@civilconnect.in'}</a></li>
                 <li>Phone: <a href={`tel:${settings?.supportPhone || '+919876543210'}`} className="hover:text-white transition-all">{settings?.supportPhone || '+91 98765 43210'}</a></li>
                 <li className="text-[11px] opacity-50">
                   {settings?.companyAddress ? `${settings.companyAddress}, ${settings.companyCity}` : 'Indore, Madhya Pradesh'}

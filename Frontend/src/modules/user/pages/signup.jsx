@@ -99,7 +99,7 @@ const Signup = () => {
 
           toast.success(
             <div className="flex flex-col">
-              <span className="font-bold">Welcome to Homestr!</span>
+              <span className="font-bold">Welcome to Civilconnect!</span>
               <span className="text-xs">Your account has been created successfully.</span>
             </div>,
             { icon: <FiCheckCircle className="text-green-500" /> }
@@ -190,7 +190,7 @@ const Signup = () => {
 
         toast.success(
           <div className="flex flex-col">
-            <span className="font-bold">Welcome to Homestr!</span>
+            <span className="font-bold">Welcome to Civilconnect!</span>
             <span className="text-xs">Account created successfully.</span>
           </div>,
           { icon: <FiCheckCircle className="text-green-500" /> }
@@ -220,7 +220,7 @@ const Signup = () => {
           {step === 'details' ? 'Create Account' : 'Verify Phone'}
         </h2>
         <p className="mt-2 text-sm text-gray-600 animate-stagger-1 animate-fade-in">
-          {step === 'details' ? 'Join Homestr to start booking services' : `We've sent a 6-digit code to ${formData.phoneNumber}`}
+          {step === 'details' ? 'Join Civilconnect to start booking services' : `We've sent a 6-digit code to ${formData.phoneNumber}`}
         </p>
       </div>
 
