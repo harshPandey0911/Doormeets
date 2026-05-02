@@ -273,6 +273,14 @@ const Dashboard = memo(() => {
     registerFCMToken('vendor', true).catch(err => console.error('FCM registration failed:', err));
 
     // Listen for custom dashboard events from SocketContext
+    const handleStatusUpdate = (e) => {
+      if (e.detail?.isOnline !== undefined) {
+        setIsOnline(e.detail.isOnline);
+      }
+    };
+
+    window.addEventListener('vendorStatusChanged', handleStatusUpdate);
+    
     const handleShowAlert = (e) => {
       // e.detail contains the new booking job
       if (e.detail) {
@@ -299,21 +307,19 @@ const Dashboard = memo(() => {
 
         // Remove from localStorage
         const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-        const updatedPending = pendingJobs.filter(job => String(job.id || job._id) !== idToRemove);
-        localStorage.setItem('vendorPendingJobs', JSON.stringify(updatedPending));
+        localStorage.setItem('vendorPendingJobs', JSON.stringify(pendingJobs.filter(b => String(b.id || b._id) !== idToRemove)));
       }
     };
 
-    window.addEventListener('vendorJobsUpdated', handleUpdate);
-    window.addEventListener('vendorStatsUpdated', handleUpdate);
-    window.addEventListener('showDashboardBookingAlert', handleShowAlert);
+    window.addEventListener('vendorUpdate', handleUpdate);
+    window.addEventListener('showVendorAlert', handleShowAlert);
     window.addEventListener('removeVendorBooking', handleRemoveBooking);
 
     return () => {
-      window.removeEventListener('vendorJobsUpdated', handleUpdate);
-      window.removeEventListener('vendorStatsUpdated', handleUpdate);
-      window.removeEventListener('showDashboardBookingAlert', handleShowAlert);
+      window.removeEventListener('vendorUpdate', handleUpdate);
+      window.removeEventListener('showVendorAlert', handleShowAlert);
       window.removeEventListener('removeVendorBooking', handleRemoveBooking);
+      window.removeEventListener('vendorStatusChanged', handleStatusUpdate);
     };
   }, [loadDashboardData]);
 
@@ -496,109 +502,7 @@ const Dashboard = memo(() => {
       <Header title="Dashboard" showBack={false} notificationCount={stats.pendingAlerts} />
 
       <main className="pt-0">
-        {/* Profile Card Section */}
-        <div className="px-4 pt-4 pb-2">
-          <div
-            className="rounded-2xl p-4 cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
-            onClick={() => navigate('/vendor/profile')}
-            style={{
-              background: themeColors.button,
-              border: `2px solid ${themeColors.button}`,
-            }}
-          >
-            {/* Decorative Pattern */}
-            <div
-              className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10"
-              style={{
-                background: `radial-gradient(circle, ${themeColors.button} 0%, transparent 70%)`,
-                transform: 'translate(20px, -20px)',
-              }}
-            />
 
-            <div className="relative z-10 flex items-center gap-3">
-              {/* Profile Photo */}
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-                style={{
-                  background: `linear-gradient(135deg, ${themeColors.button} 0%, ${themeColors.button}dd 100%)`,
-                  border: `2.5px solid #FFFFFF`,
-                }}
-              >
-                {vendorProfile.photo ? (
-                  <img
-                    src={vendorProfile.photo}
-                    alt={vendorProfile.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <FiUser className="w-7 h-7" style={{ color: '#FFFFFF' }} />
-                )}
-              </div>
-
-              {/* Profile Info */}
-              <div className="flex-1 min-w-0">
-                <p className="text-lg font-bold uppercase tracking-wider mb-0.5" style={{
-                  color: '#FFFFFF',
-                  textShadow: `1px 1px 0px rgba(0, 0, 0, 0.2)`,
-                  letterSpacing: '0.12em',
-                }}>
-                  WELCOME !
-                </p>
-                <h2 className="text-base font-bold text-white truncate mb-0.5">{vendorProfile.name}</h2>
-                <p className="text-xs text-white truncate font-medium opacity-90">{vendorProfile.businessName}</p>
-                
-                {/* Online/Offline Badge */}
-                <div className="flex items-center gap-1.5 mt-2">
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${isOnline ? 'bg-green-400' : 'bg-gray-400'}`} />
-                  <span className="text-[10px] font-black uppercase tracking-wider text-white">
-                    {isOnline ? 'Active Now' : 'Offline'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Online/Offline Toggle Button */}
-              <div className="flex flex-col items-center gap-2 mr-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleOnline();
-                  }}
-                  disabled={isToggling}
-                  className={`relative w-14 h-7 rounded-full transition-all duration-500 flex items-center px-1 shadow-inner ${isOnline ? 'bg-green-500' : 'bg-gray-300'
-                    }`}
-                >
-                  <motion.div
-                    animate={{ x: isOnline ? 28 : 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="w-5 h-5 bg-white rounded-full shadow-md flex items-center justify-center"
-                  >
-                    {isToggling ? (
-                      <div className="w-3 h-3 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-                    )}
-                  </motion.div>
-                </button>
-                <span className="text-[9px] font-bold text-white uppercase tracking-tighter opacity-80">
-                  {isOnline ? 'Go Offline' : 'Go Online'}
-                </span>
-              </div>
-
-              {/* Arrow Icon */}
-              <div
-                className="p-2.5 rounded-lg flex-shrink-0"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.35)',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                  border: '1px solid rgba(255, 255, 255, 0.4)',
-                }}
-              >
-                <FiChevronRight className="w-6 h-6" style={{ color: '#FFFFFF', fontWeight: 'bold' }} />
-              </div>
-            </div>
-          </div>
-        </div>
 
 
         {/* Incomplete Profile Prompt */}
@@ -644,98 +548,68 @@ const Dashboard = memo(() => {
 
           {/* Performance Metrics */}
           <div>
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Performance</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-4 px-1">Performance</h2>
             <div className="grid grid-cols-2 gap-4">
               {/* Completed Jobs Card */}
               <div
-                className="rounded-2xl shadow-lg relative overflow-hidden"
+                className="rounded-3xl p-5 relative overflow-hidden transition-all duration-300 hover:shadow-xl group"
                 style={{
-                  background: 'linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%)',
-                  boxShadow: '0 8px 24px rgba(16, 185, 129, 0.15), 0 4px 12px rgba(16, 185, 129, 0.1), 0 0 0 2px rgba(16, 185, 129, 0.2)',
-                  border: '2px solid rgba(16, 185, 129, 0.3)',
+                  background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                  border: '1.5px solid rgba(16, 185, 129, 0.1)',
                 }}
               >
-                {/* Left border accent */}
-                <div
-                  className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl"
-                  style={{
-                    background: 'linear-gradient(180deg, #10B981 0%, #059669 100%)',
-                  }}
-                />
-                {/* Top Border with Heading */}
-                <div
-                  className="w-full py-3 px-4 rounded-t-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-                  }}
-                >
-                  <p className="text-base font-bold text-white text-center">Completed</p>
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2.5 rounded-2xl bg-white shadow-sm border border-green-100 group-hover:scale-110 transition-transform duration-300">
+                      <FiCheckCircle className="w-6 h-6 text-green-600" />
+                    </div>
+                    <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Target Met
+                    </span>
+                  </div>
+                  <div className="mt-auto">
+                    <p className="text-3xl font-black text-green-900 mb-1">
+                      {stats.completedJobs}
+                    </p>
+                    <p className="text-[11px] font-bold text-green-700 uppercase tracking-tight opacity-70">
+                      Completed Jobs
+                    </p>
+                  </div>
                 </div>
-                {/* Icon at top left - just below heading */}
-                <div
-                  className="absolute top-14 left-4 p-3 rounded-xl z-10"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.2) 100%)',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)',
-                    border: '2px solid rgba(16, 185, 129, 0.4)',
-                  }}
-                >
-                  <FiCheckCircle className="w-7 h-7" style={{ color: '#10B981' }} />
-                </div>
-                {/* Content */}
-                <div className="p-5 pt-16">
-                  <p className="text-4xl font-bold mb-2 text-center" style={{ color: '#10B981' }}>
-                    {stats.completedJobs}
-                  </p>
-                  <p className="text-sm text-gray-600 font-semibold text-center">Total jobs</p>
-                </div>
+                {/* Decorative blob */}
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-green-500/5 rounded-full blur-2xl" />
               </div>
 
               {/* Rating Card */}
               <div
-                className="rounded-2xl shadow-lg relative overflow-hidden"
+                className="rounded-3xl p-5 relative overflow-hidden transition-all duration-300 hover:shadow-xl group"
                 style={{
-                  background: 'linear-gradient(135deg, #FFFFFF 0%, #FFFBEB 100%)',
-                  boxShadow: '0 8px 24px rgba(245, 158, 11, 0.15), 0 4px 12px rgba(245, 158, 11, 0.1), 0 0 0 2px rgba(245, 158, 11, 0.2)',
-                  border: '2px solid rgba(245, 158, 11, 0.3)',
+                  background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                  border: '1.5px solid rgba(245, 158, 11, 0.1)',
                 }}
               >
-                {/* Left border accent */}
-                <div
-                  className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl"
-                  style={{
-                    background: 'linear-gradient(180deg, #F59E0B 0%, #D97706 100%)',
-                  }}
-                />
-                {/* Top Border with Heading */}
-                <div
-                  className="w-full py-3 px-4 rounded-t-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
-                  }}
-                >
-                  <p className="text-base font-bold text-white text-center">Rating</p>
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2.5 rounded-2xl bg-white shadow-sm border border-amber-100 group-hover:scale-110 transition-transform duration-300">
+                      <FiTrendingUp className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div className="flex items-center gap-0.5 text-amber-600">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className={`text-[8px] ${i < Math.round(stats.rating || 0) ? 'opacity-100' : 'opacity-30'}`}>★</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-auto">
+                    <p className="text-3xl font-black text-amber-900 mb-1">
+                      {stats.rating > 0 ? stats.rating.toFixed(1) : 'N/A'}
+                    </p>
+                    <p className="text-[11px] font-bold text-amber-700 uppercase tracking-tight opacity-70">
+                      Average Rating
+                    </p>
+                  </div>
                 </div>
-                {/* Icon at top left - just below heading */}
-                <div
-                  className="absolute top-14 left-4 p-3 rounded-xl z-10"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.2) 100%)',
-                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2)',
-                    border: '2px solid rgba(245, 158, 11, 0.4)',
-                  }}
-                >
-                  <FiTrendingUp className="w-7 h-7" style={{ color: '#F59E0B' }} />
-                </div>
-                {/* Content */}
-                <div className="p-5 pt-16">
-                  <p className="text-4xl font-bold mb-2 text-center" style={{ color: '#F59E0B' }}>
-                    {stats.rating > 0 ? stats.rating.toFixed(1) : 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-600 font-semibold text-center">Average rating</p>
-                </div>
+                {/* Decorative blob */}
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl" />
               </div>
             </div>
           </div>

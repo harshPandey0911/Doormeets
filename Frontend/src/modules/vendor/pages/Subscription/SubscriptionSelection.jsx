@@ -43,7 +43,7 @@ const SubscriptionSelection = () => {
           const currentData = JSON.parse(localStorage.getItem('vendorData') || '{}');
           localStorage.setItem('vendorData', JSON.stringify({ ...currentData, ...statusRes.vendor }));
           
-          navigate('/vendor/dashboard');
+          navigate('/vendor/dashboard', { replace: true });
         }
       } catch (err) {
         console.error('Error checking active status:', err);
@@ -130,7 +130,7 @@ const SubscriptionSelection = () => {
                 }
                 localStorage.setItem('vendorData', JSON.stringify(vendorData));
                 
-                navigate('/vendor/dashboard');
+                navigate('/vendor/dashboard', { replace: true });
               }
             } catch (err) {
               toast.error('Payment verification failed');
@@ -142,7 +142,7 @@ const SubscriptionSelection = () => {
             contact: ""
           },
           theme: {
-            color: "#347989"
+            color: "#9634f7"
           },
           modal: {
             ondismiss: () => setProcessingPayment(false)
@@ -163,28 +163,28 @@ const SubscriptionSelection = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#347989]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#9634f7]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f8fafc] pt-8 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16 relative">
+        <div className="text-center mb-8 relative">
           {/* Back Button */}
           <button
             onClick={handleBackToLogin}
-            className="absolute -top-4 left-0 flex items-center gap-2 text-slate-500 hover:text-[#347989] font-bold transition-all z-20 group"
+            className="absolute top-2 left-0 flex items-center gap-2 text-slate-500 hover:text-[#9634f7] font-bold transition-all z-20 group"
           >
-            <div className="p-2 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-[#347989] transition-all">
+            <div className="p-2 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-[#9634f7] transition-all">
               <FiArrowLeft className="w-5 h-5" />
             </div>
             <span className="hidden sm:inline">Back to Login</span>
           </button>
 
           <Logo className="h-12 mx-auto mb-8" />
-          <h1 className="text-4xl font-extrabold text-slate-900 sm:text-5xl tracking-tight">
+          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl tracking-tight">
             Choose Your Growth Plan
           </h1>
           <p className="mt-4 text-xl text-slate-500 max-w-2xl mx-auto">
@@ -196,30 +196,30 @@ const SubscriptionSelection = () => {
           {plans.map((plan, index) => (
             <div 
               key={plan._id}
-              className={`relative bg-white rounded-3xl shadow-xl p-8 border transition-all duration-300 flex flex-col ${
-                index === 1 ? 'border-[#347989] scale-105 z-10' : 'border-slate-100 hover:border-slate-200'
+              className={`relative bg-white rounded-2xl shadow-xl p-5 border transition-all duration-300 flex flex-col ${
+                index === 1 ? 'border-[#9634f7] scale-105 z-10' : 'border-slate-100 hover:border-slate-200'
               }`}
             >
               {index === 1 && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#347989] text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#9634f7] text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
                   MOST POPULAR
                 </div>
               )}
 
-              <div className="mb-8">
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
+              <div className="mb-4">
+                <h3 className="text-2xl font-medium text-slate-900 mb-2">{plan.name}</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-slate-900">₹{plan.price}</span>
+                  <span className="text-4xl font-bold text-slate-900">₹{plan.price}</span>
                   <span className="text-slate-500 font-medium">/{plan.duration} days</span>
                 </div>
                 <p className="mt-4 text-slate-500 text-sm">{plan.description}</p>
               </div>
 
-              <div className="flex-grow space-y-4 mb-10">
+              <div className="flex-grow space-y-2 mb-6">
                 {plan.features.map((feature, idx) => (
                   <div key={idx} className="flex items-start gap-3">
-                    <div className="bg-teal-50 rounded-full p-1 mt-0.5">
-                      <FiCheck className="text-teal-600 w-4 h-4" />
+                    <div className="bg-purple-50 rounded-full p-1 mt-0.5">
+                      <FiCheck className="text-purple-600 w-4 h-4" />
                     </div>
                     <span className="text-slate-600 text-sm leading-relaxed">{feature}</span>
                   </div>
@@ -229,9 +229,7 @@ const SubscriptionSelection = () => {
               <button
                 onClick={() => handleSubscribe(plan)}
                 disabled={processingPayment}
-                className={`w-full py-4 rounded-2xl font-bold text-white transition-all transform hover:-translate-y-1 shadow-lg flex items-center justify-center gap-2 ${
-                  index === 1 ? 'bg-[#347989] hover:bg-[#2a626e]' : 'bg-slate-900 hover:bg-slate-800'
-                } disabled:opacity-50`}
+                className={`w-full py-3 rounded-xl font-semibold text-white transition-all transform hover:-translate-y-1 shadow-lg flex items-center justify-center gap-2 bg-[#9634f7] hover:bg-[#8529db] disabled:opacity-50`}
               >
                 {processingPayment ? 'Processing...' : (
                   <>
@@ -245,8 +243,8 @@ const SubscriptionSelection = () => {
 
         <div className="mt-16 bg-white rounded-3xl p-10 shadow-lg border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-6">
-            <div className="bg-blue-50 p-4 rounded-2xl">
-              <FiShield className="w-10 h-10 text-blue-600" />
+            <div className="bg-purple-50 p-4 rounded-2xl">
+              <FiShield className="w-10 h-10 text-purple-600" />
             </div>
             <div>
               <h4 className="text-xl font-bold text-slate-900">Secure Payments</h4>

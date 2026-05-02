@@ -23,10 +23,10 @@ const Selection = () => {
       const response = await verificationService.saveChoice(vendorId, method);
       if (response.success) {
         if (method === 'self') {
-          navigate('/vendor/police-verification/upload', { state: { vendorId } });
+          navigate('/vendor/police-verification/upload', { replace: true, state: { vendorId } });
         } else {
           toast.success("Request submitted! Admin will verify your profile.");
-          navigate('/vendor/pending-approval', { state: { adminMethod: true } });
+          navigate('/vendor/pending-approval', { replace: true, state: { adminMethod: true } });
         }
       } else {
         toast.error(response.message);

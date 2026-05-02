@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Logo from '../../../../components/common/Logo';
 import api from '../../../../services/api';
+import { vendorDashboardService } from '../../services/dashboardService';
+import { toast } from 'react-hot-toast';
 
 const Header = memo(({
   title,
@@ -12,7 +14,8 @@ const Header = memo(({
   showBack = true,
   showSearch = false,
   showNotifications = true,
-  notificationCount = 0
+  notificationCount = 0,
+  showOnlineToggle = true
 }) => {
   const navigate = useNavigate();
   const [count, setCount] = useState(notificationCount);
@@ -44,6 +47,52 @@ const Header = memo(({
     }
   }, [showNotifications]);
 
+  const [isOnline, setIsOnline] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  // Sync online status
+  useEffect(() => {
+    const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+    if (vendorData.isOnline !== undefined) {
+      setIsOnline(vendorData.isOnline);
+    }
+
+    const handleStatusUpdate = (e) => {
+      if (e.detail?.isOnline !== undefined) {
+        setIsOnline(e.detail.isOnline);
+      }
+    };
+
+    window.addEventListener('vendorStatusChanged', handleStatusUpdate);
+    return () => window.removeEventListener('vendorStatusChanged', handleStatusUpdate);
+  }, []);
+
+  const handleToggleOnline = async (e) => {
+    e.stopPropagation();
+    try {
+      setIsToggling(true);
+      const newStatus = !isOnline;
+      const response = await vendorDashboardService.updateStatus(newStatus);
+      if (response.success) {
+        setIsOnline(newStatus);
+        toast.success(`You are now ${newStatus ? 'Online' : 'Offline'}`);
+        
+        // Update localStorage
+        const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+        vendorData.isOnline = newStatus;
+        localStorage.setItem('vendorData', JSON.stringify(vendorData));
+
+        // Dispatch event for other components (like Dashboard)
+        window.dispatchEvent(new CustomEvent('vendorStatusChanged', { detail: { isOnline: newStatus } }));
+      }
+    } catch (error) {
+      console.error('Failed to toggle status:', error);
+      toast.error('Failed to update status');
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
   const handleBack = () => {
     if (onBack) {
       onBack();
@@ -62,12 +111,9 @@ const Header = memo(({
 
   return (
     <header
-      className="sticky top-0 z-40 w-full bg-white"
+      className="sticky top-0 z-40 w-full bg-[#fdfbff]"
       style={{
-        borderBottom: '2px solid rgba(156, 163, 175, 0.3)',
-        borderBottomLeftRadius: '20px',
-        borderBottomRightRadius: '20px',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.08)',
+        borderBottom: '1.5px solid rgba(150, 52, 247, 0.15)',
       }}
     >
       <div className="px-4 py-3 flex items-center justify-between">
@@ -107,6 +153,32 @@ const Header = memo(({
               <FiSearch className="w-5 h-5" style={{ color: themeColors.button }} />
             </button>
           )}
+          
+          {showOnlineToggle && (
+            <div className="flex items-center gap-2 mr-1">
+              <button
+                onClick={handleToggleOnline}
+                disabled={isToggling}
+                className={`relative w-11 h-6 rounded-full transition-all duration-500 flex items-center px-1 shadow-inner ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
+              >
+                <motion.div
+                  animate={{ x: isOnline ? 20 : 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className="w-4 h-4 bg-white rounded-full shadow-md flex items-center justify-center"
+                >
+                  {isToggling ? (
+                    <div className="w-2 h-2 border-2 border-[#9634f7] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <div className={`w-1 h-1 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  )}
+                </motion.div>
+              </button>
+              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter w-14">
+                {isOnline ? 'Go Offline' : 'Go Online'}
+              </span>
+            </div>
+          )}
+
           {showNotifications && (
             <motion.div
               className="relative rounded-full cursor-pointer"

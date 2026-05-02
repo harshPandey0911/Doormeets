@@ -11,30 +11,30 @@
 
 // Homestr LOGO Core Brand Colors
 const brand = {
-  teal: '#347989',
-  yellow: '#D68F35',
-  orange: '#BB5F36',
-  gradient: 'linear-gradient(135deg, #347989 0%, #D68F35 50%, #BB5F36 100%)',
-  conic: 'conic-gradient(from 0deg, #347989, #D68F35, #BB5F36, #347989)'
+  teal: '#9634f7',
+  yellow: '#b87cff',
+  orange: '#9634f7',
+  gradient: 'linear-gradient(135deg, #9634f7 0%, #b87cff 50%, #9634f7 100%)',
+  conic: 'conic-gradient(from 0deg, #9634f7, #b87cff, #9634f7)'
 };
 
 // User Theme Colors
 const userTheme = {
-  backgroundGradient: 'linear-gradient(180deg, #F0FDFA 0%, #F5FAFF 15%, #FFFFFF 30%)',
+  backgroundGradient: 'linear-gradient(180deg, #F5F3FF 0%, #F9F8FF 15%, #FFFFFF 30%)',
   gradient: brand.gradient,
-  headerGradient: 'linear-gradient(135deg, #00a6a6 0%, #008a8a 50%, #006b6b 100%)',
-  headerBg: '#EBF8FF',
+  headerGradient: 'linear-gradient(135deg, #9634f7 0%, #b87cff 50%, #9634f7 100%)',
+  headerBg: '#F5F3FF',
   button: brand.teal,
   primary: brand.teal,
   icon: brand.teal,
-  cardShadow: '0 8px 16px -2px rgba(0, 166, 166, 0.15), 0 4px 8px -1px rgba(0, 166, 166, 0.1)',
-  cardBorder: '1px solid rgba(0, 166, 166, 0.15)',
+  cardShadow: '0 8px 16px -2px rgba(150, 52, 247, 0.15), 0 4px 8px -1px rgba(150, 52, 247, 0.1)',
+  cardBorder: '1px solid rgba(150, 52, 247, 0.15)',
   brand: brand
 };
 
 // Vendor Theme Colors
 const vendorTheme = {
-  backgroundGradient: 'linear-gradient(to bottom, rgba(52, 121, 137, 0.03) 0%, rgba(187, 95, 54, 0.02) 10%, #ffffff 20%)',
+  backgroundGradient: 'linear-gradient(to bottom, rgba(150, 52, 247, 0.03) 0%, rgba(150, 52, 247, 0.02) 10%, #ffffff 20%)',
   gradient: brand.gradient,
   headerGradient: brand.teal,
   button: brand.teal,
@@ -45,7 +45,7 @@ const vendorTheme = {
 
 // Worker Theme Colors
 const workerTheme = {
-  backgroundGradient: 'linear-gradient(to bottom, rgba(52, 121, 137, 0.03) 0%, rgba(187, 95, 54, 0.02) 10%, #ffffff 20%)',
+  backgroundGradient: 'linear-gradient(to bottom, rgba(150, 52, 247, 0.03) 0%, rgba(150, 52, 247, 0.02) 10%, #ffffff 20%)',
   gradient: brand.gradient,
   headerGradient: brand.teal,
   button: brand.teal,

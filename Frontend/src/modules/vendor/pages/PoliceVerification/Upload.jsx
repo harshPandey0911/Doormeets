@@ -35,7 +35,7 @@ const Upload = () => {
       const response = await verificationService.uploadPCC(vendorId, preview);
       if (response.success) {
         toast.success("Document uploaded! Admin will review it shortly.");
-        navigate('/vendor/pending-approval');
+        navigate('/vendor/pending-approval', { replace: true });
       } else {
         toast.error(response.message);
       }

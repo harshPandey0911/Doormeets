@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiPhone, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import { themeColors } from '../../../theme';
+import { vendorTheme as themeColors } from '../../../theme';
 import { sendOTP, verifyLogin } from '../services/authService';
 import Logo from '../../../components/common/Logo';
 
@@ -170,9 +170,9 @@ const VendorLogin = () => {
             } else if (response.vendor?.approvalStatus?.toLowerCase() === 'approved') {
               // Account is approved, now check subscription
               if (!response.vendor?.isSubscriptionActive) {
-                navigate('/vendor/subscription', { state: { vendorId } });
+                navigate('/vendor/subscription', { replace: true, state: { vendorId } });
               } else {
-                navigate('/vendor/dashboard');
+                navigate('/vendor/dashboard', { replace: true });
               }
             } else {
               // Includes status === 'submitted'
@@ -185,7 +185,7 @@ const VendorLogin = () => {
           if (!response.vendor?.isSubscriptionActive) {
             const vendorId = response.vendor.id;
             sessionStorage.setItem('pendingVendorId', vendorId);
-            navigate('/vendor/subscription', { state: { vendorId } });
+            navigate('/vendor/subscription', { replace: true, state: { vendorId } });
             return;
           }
 
@@ -209,17 +209,17 @@ const VendorLogin = () => {
     }
   };
 
-  const brandColor = themeColors.brand?.teal || '#347989';
+  const brandColor = themeColors.brand?.teal || '#9634f7';
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center pt-8 pb-12 sm:px-6 lg:px-8 relative overflow-x-hidden">
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#9634f7] opacity-[0.03] rounded-full blur-3xl animate-floating" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8 relative z-10 animate-fade-in">
-        <Logo className="h-24 w-24 mx-auto transform hover:scale-110 transition-transform duration-500" />
-        <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-4 relative z-10 animate-fade-in">
+        <Logo className="h-16 w-16 mx-auto transform hover:scale-110 transition-transform duration-500" />
+        <h2 className="mt-[-8px] text-3xl font-bold text-gray-900 tracking-tight">
           {step === 'phone' ? 'Vendor Sign In' : 'Verify Identity'}
         </h2>
         <p className="mt-2 text-sm text-gray-600 animate-stagger-1 animate-fade-in">
@@ -229,7 +229,7 @@ const VendorLogin = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0 relative z-10">
         <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#347989] via-[#D68F35] to-[#BB5F36]" />
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#9634f7] via-[#b87cff] to-[#9634f7]" />
 
           {step === 'phone' ? (
             <form onSubmit={handlePhoneSubmit} className="space-y-6">
@@ -238,7 +238,7 @@ const VendorLogin = () => {
                   Phone Number
                 </label>
                 <div className="relative rounded-xl shadow-sm group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#9634f7] transition-colors">
                     <FiPhone className="h-5 w-5 text-gray-400" />
                   </div>
                   <div className="absolute inset-y-0 left-10 flex items-center pointer-events-none">
@@ -263,7 +263,7 @@ const VendorLogin = () => {
                 <button
                   type="submit"
                   disabled={isLoading || !phoneNumber || phoneNumber.length < 10}
-                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 overflow-hidden"
+                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-semibold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 overflow-hidden"
                   style={{
                     backgroundColor: brandColor,
                     boxShadow: `0 10px 15px -3px ${brandColor}4D`
@@ -290,7 +290,7 @@ const VendorLogin = () => {
                   setStep('phone');
                   setResendTimer(0);
                 }}
-                className="flex items-center text-sm text-gray-500 hover:text-[#347989] transition-colors mb-4 animate-stagger-1 animate-fade-in"
+                className="flex items-center text-sm text-gray-500 hover:text-[#9634f7] transition-colors mb-4 animate-stagger-1 animate-fade-in"
               >
                 <FiChevronLeft className="mr-1" /> Edit number
               </button>
@@ -334,7 +334,7 @@ const VendorLogin = () => {
                       }
                     }}
                     disabled={resendTimer > 0}
-                    className="text-sm font-semibold hover:text-[#D68F35] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-sm font-medium hover:text-[#b87cff] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: brandColor }}
                   >
                     {resendTimer > 0
@@ -347,7 +347,7 @@ const VendorLogin = () => {
                   <button
                     type="submit"
                     disabled={isLoading || otp.join('').length !== 6}
-                    className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 overflow-hidden"
+                    className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-semibold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 overflow-hidden"
                     style={{
                       backgroundColor: brandColor,
                       boxShadow: `0 10px 15px -3px ${brandColor}4D`
@@ -369,7 +369,7 @@ const VendorLogin = () => {
 
         <p className="mt-8 text-center text-sm text-gray-500 animate-fade-in animate-stagger-5">
           Don't have a vendor account?{' '}
-          <Link to="/vendor/signup" className="font-semibold text-[#347989] hover:text-[#D68F35] transition-colors duration-300">
+          <Link to="/vendor/signup" className="font-medium text-[#9634f7] hover:text-[#b87cff] transition-colors duration-300">
             Register Now
           </Link>
         </p>
