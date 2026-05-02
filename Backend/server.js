@@ -204,6 +204,10 @@ app.use('/api/workers', require('./routes/worker-routes/dashboard.routes'));
 app.use('/api/workers/wallet', require('./routes/worker-routes/wallet.routes'));
 app.use('/api/workers/fcm-tokens', require('./routes/worker-routes/fcmToken.routes'));
 
+// Labour routes (independent labour booking flow)
+app.use('/api/labour', require('./routes/worker-routes/labourBooking.routes'));
+app.use('/api/labour', require('./routes/worker-routes/labour.routes'));
+
 // Admin routes
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));
 app.use('/api/admin', require('./routes/admin-routes/cityManagement.routes.js'));

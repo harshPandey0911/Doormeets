@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiActivity, FiUsers, FiCheckCircle, FiStar, FiLoader } from 'react-icons/fi';
 import {
@@ -13,16 +14,20 @@ const WorkerAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
+  const location = useLocation();
+  const isLabour = location.pathname.includes('/admin/labours');
+  const entityName = isLabour ? 'Labour' : 'Worker';
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await adminReportService.getWorkerReport();
+      const res = await adminReportService.getWorkerReport({ type: isLabour ? 'labour' : 'worker' });
       if (res.success) {
         setData(res.data);
       }
     } catch (error) {
-      console.error('Worker analytics error:', error);
-      toast.error('Failed to load worker analytics');
+      console.error(`${entityName} analytics error:`, error);
+      toast.error(`Failed to load ${entityName.toLowerCase()} analytics`);
     } finally {
       setLoading(false);
     }
@@ -30,7 +35,7 @@ const WorkerAnalytics = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isLabour]);
 
   if (loading) {
     return (
@@ -49,7 +54,7 @@ const WorkerAnalytics = () => {
         <CardShell className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none p-3.5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-[10px] font-medium uppercase tracking-wider">Total Active Workers</p>
+              <p className="text-blue-100 text-[10px] font-medium uppercase tracking-wider">Total Active {isLabour ? 'Labours' : 'Workers'}</p>
               <h3 className="text-xl font-bold mt-0.5">
                 {data?.availabilityDistribution?.reduce((acc, curr) => acc + curr.count, 0) || 0}
               </h3>
@@ -89,7 +94,7 @@ const WorkerAnalytics = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Top Workers Chart */}
-        <CardShell className="bg-white p-3.5" title="Top Performing Workers" icon={FiActivity}>
+        <CardShell className="bg-white p-3.5" title={`Top Performing ${isLabour ? 'Labours' : 'Workers'}`} icon={FiActivity}>
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.topWorkers} layout="vertical">
@@ -104,7 +109,7 @@ const WorkerAnalytics = () => {
         </CardShell>
 
         {/* Availability Pie Chart */}
-        <CardShell className="bg-white p-3.5" title="Worker Status Distribution" icon={FiUsers}>
+        <CardShell className="bg-white p-3.5" title={`${entityName} Status Distribution`} icon={FiUsers}>
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

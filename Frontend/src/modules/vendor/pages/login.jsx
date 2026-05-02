@@ -373,6 +373,21 @@ const VendorLogin = () => {
             Register Now
           </Link>
         </p>
+
+        {/* Labour Login Divider */}
+        <div className="mt-5 flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">or</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
+        <Link
+          to="/labour/login"
+          className="mt-4 w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 text-amber-700 font-black text-sm uppercase tracking-widest transition-all duration-300 group"
+        >
+          <span className="text-lg">⚒️</span>
+          Login as Labour
+        </Link>
       </div>
     </div>
   );

@@ -237,6 +237,20 @@ export const SocketProvider = ({ children }) => {
       if (userType === 'worker') window.dispatchEvent(new Event('workerJobsUpdated'));
     });
 
+    // Listen for Labour Booking Accepted/Rejected (User or Vendor)
+    if (userType === 'user' || userType === 'vendor') {
+      newSocket.on('labour_booking_accepted', (data) => {
+        if (isSoundEnabled(userType)) playNotificationSound();
+        toast.success(`Labour ${data.labourName} accepted your booking!`, { icon: '⚒️' });
+        window.dispatchEvent(new Event('labourBookingUpdated'));
+      });
+
+      newSocket.on('labour_booking_rejected', (data) => {
+        toast.error('Labour declined your booking request', { icon: '❌' });
+        window.dispatchEvent(new Event('labourBookingUpdated'));
+      });
+    }
+
     // Listen for special Vendor Booking Requests
     if (userType === 'vendor') {
       newSocket.on('new_booking_request', (data) => {

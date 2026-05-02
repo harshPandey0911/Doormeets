@@ -99,6 +99,14 @@ const brandSchema = new mongoose.Schema({
   isPriceDisclosed: {
     type: Boolean,
     default: true
+  },
+  basePrice: {
+    type: Number,
+    default: 0
+  },
+  discountPrice: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

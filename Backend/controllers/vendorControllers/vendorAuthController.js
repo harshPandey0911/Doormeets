@@ -599,10 +599,13 @@ const getRegistrationStatus = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      approvalStatus: vendor.approvalStatus,
-      policeVerification: vendor.policeVerification,
-      rejectedReason: vendor.rejectedReason,
-      isSubscriptionActive: vendor.isSubscriptionActive
+      vendor: {
+        id: vendor._id,
+        approvalStatus: vendor.approvalStatus,
+        policeVerification: vendor.policeVerification,
+        rejectedReason: vendor.rejectedReason,
+        isSubscriptionActive: vendor.isSubscriptionActive
+      }
     });
   } catch (error) {
     console.error('Get registration status error:', error);

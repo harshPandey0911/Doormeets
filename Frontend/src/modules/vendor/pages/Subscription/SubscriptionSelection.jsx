@@ -9,7 +9,9 @@ import subscriptionService from '../../services/subscriptionService';
 const SubscriptionSelection = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const vendorId = location.state?.vendorId || sessionStorage.getItem('pendingVendorId');
+  const vendorId = location.state?.vendorId 
+    || sessionStorage.getItem('pendingVendorId')
+    || (() => { try { return JSON.parse(localStorage.getItem('vendorData') || '{}')?.id; } catch { return null; } })();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);

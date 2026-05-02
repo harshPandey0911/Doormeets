@@ -23,6 +23,11 @@ const getAllWorkers = async (req, res) => {
     if (approvalStatus) {
       query.approvalStatus = approvalStatus;
     }
+    if (req.query.type === 'labour') {
+      query.vendorId = null;
+    } else if (req.query.type === 'worker') {
+      query.vendorId = { $ne: null };
+    }
     if (isActive !== undefined) {
       query.isActive = isActive === 'true';
     }
@@ -66,6 +71,44 @@ const getAllWorkers = async (req, res) => {
       success: false,
       message: 'Failed to fetch workers. Please try again.'
     });
+  }
+};
+
+/**
+ * Create a new worker (labour) manually
+ */
+const createWorker = async (req, res) => {
+  try {
+    const { name, phone, serviceCategories } = req.body;
+
+    if (!name || !phone || !serviceCategories || serviceCategories.length === 0) {
+      return res.status(400).json({ success: false, message: 'Name, phone, and at least one skill are required' });
+    }
+
+    const existingWorker = await Worker.findOne({ phone });
+    if (existingWorker) {
+      return res.status(400).json({ success: false, message: 'Worker with this phone number already exists' });
+    }
+
+    // Default to approved and active since admin is creating them
+    const worker = await Worker.create({
+      name,
+      phone,
+      serviceCategories,
+      serviceCategory: serviceCategories[0], // fallback for older schemas if needed
+      approvalStatus: 'approved',
+      isActive: true,
+      status: 'OFFLINE'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Worker created successfully',
+      data: worker
+    });
+  } catch (error) {
+    console.error('Create worker error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create worker' });
   }
 };
 
@@ -357,25 +400,35 @@ const payWorker = async (req, res) => {
  */
 const getAllWorkerJobs = async (req, res) => {
   try {
-    const { status, page = 1, limit = 20, search } = req.query;
+    const { status, page = 1, limit = 20, search, type } = req.query;
 
     const query = { workerId: { $exists: true, $ne: null } };
     if (status) {
       query.status = status;
     }
 
+    // Identify which workers we care about
+    const workerQuery = {};
+    if (type === 'labour') {
+      workerQuery.vendorId = null;
+    } else if (type === 'worker') {
+      workerQuery.vendorId = { $ne: null };
+    }
+
+    // If search is provided, add it to workerQuery
+    if (search) {
+      workerQuery.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // If search is provided, we need to find workers by name first
-    if (search) {
-      const workers = await Worker.find({
-        $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { phone: { $regex: search, $options: 'i' } }
-        ]
-      }).select('_id');
-
+    // Only lookup workers if there's a type filter or search filter
+    if (Object.keys(workerQuery).length > 0) {
+      const workers = await Worker.find(workerQuery).select('_id');
       const workerIds = workers.map(w => w._id);
       query.workerId = { $in: workerIds };
     }
@@ -509,5 +562,6 @@ module.exports = {
   getAllWorkerJobs,
   getWorkerPaymentsSummary,
   toggleWorkerStatus,
-  deleteWorker
+  deleteWorker,
+  createWorker
 };

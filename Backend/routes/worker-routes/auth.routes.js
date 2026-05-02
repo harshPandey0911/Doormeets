@@ -26,7 +26,7 @@ const verifyLoginValidation = [
 const registerValidation = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('phone').trim().notEmpty().withMessage('Phone number is required').isLength({ min: 10, max: 10 }).withMessage('Phone number must be 10 digits'),
-  body('email').isEmail().withMessage('Please provide a valid email')
+  body('email').optional({ nullable: true, checkFalsy: true }).isEmail().withMessage('Please provide a valid email')
   // otp/token optional (handled by controller)
 ];
 

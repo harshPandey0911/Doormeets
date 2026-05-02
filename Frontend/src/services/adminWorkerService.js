@@ -10,6 +10,14 @@ const adminWorkerService = {
   },
 
   /**
+   * Create a new worker manually
+   */
+  createWorker: async (workerData) => {
+    const response = await api.post('/admin/workers', workerData);
+    return response.data;
+  },
+
+  /**
    * Get specific worker details
    */
   getWorkerDetails: async (id) => {

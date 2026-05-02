@@ -44,6 +44,19 @@
     "children": []
   },
   {
+    "title": "Labours",
+    "route": "/admin/labours",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": [
+      "All Labours",
+      "Labour Jobs",
+      "Labour Analytics"
+    ]
+  },
+  {
     "title": "Workers",
     "route": "/admin/workers",
     "allowedRoles": [

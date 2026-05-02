@@ -44,6 +44,10 @@ const userServiceSchema = new mongoose.Schema({
     required: [true, 'Base price is required'],
     min: [0, 'Price cannot be negative']
   },
+  discountPrice: {
+    type: Number,
+    default: 0
+  },
   gstPercentage: {
     type: Number,
     required: [true, 'GST percentage is required'],

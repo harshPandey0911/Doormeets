@@ -150,21 +150,27 @@ const BrandCard = ({ brand, onClick, onInfoClick }) => (
           {brand.badge}
         </span>
       )}
-      
-      {/* Info Button */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          onInfoClick(brand.vendor);
-        }}
-        className="absolute bottom-1 right-1 w-6 h-6 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-sm hover:bg-white transition-colors"
-      >
-        <FiInfo className="w-3.5 h-3.5 text-blue-600" />
-      </button>
     </div>
-    <p className="text-[11px] font-bold text-gray-800 text-center leading-tight line-clamp-2 px-1">
+    <p className="text-[11px] font-black text-gray-900 text-center leading-tight line-clamp-1 px-1">
       {brand.title}
     </p>
+    <div className="flex flex-col items-center mt-0.5">
+      <span className="text-[10px] font-bold text-emerald-600">₹{brand.price || 0}</span>
+      <div className="flex items-center gap-1">
+        <span className="text-[8px] font-medium text-gray-400 truncate max-w-[70px]">
+          by {brand.vendor?.businessName || brand.vendor?.name || 'Pro'}
+        </span>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onInfoClick(brand.vendor);
+          }}
+          className="text-blue-500 hover:text-blue-600 transition-colors"
+        >
+          <FiInfo className="w-2.5 h-2.5" />
+        </button>
+      </div>
+    </div>
   </div>
 );
 
@@ -222,18 +228,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         cityId: cityId
       });
       if (response.success) {
-        // Group by title to prevent duplicates from different vendors
-        const uniqueBrands = [];
-        const seenTitles = new Set();
-        
-        (response.brands || []).forEach(brand => {
-          if (!seenTitles.has(brand.title.toLowerCase())) {
-            seenTitles.add(brand.title.toLowerCase());
-            uniqueBrands.push(brand);
-          }
-        });
-        
-        setBrands(uniqueBrands);
+        setBrands(response.brands || []);
       }
     } catch (error) {
       console.error("Failed to load brands:", error);
@@ -485,15 +480,18 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                                   <div className="flex-1 pr-4">
                                     <div className="flex items-center gap-2 mb-0.5">
                                       <h3 className="font-black text-gray-900 text-[15px] leading-snug">{svc.title}</h3>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleVendorInfo(svc.vendor);
-                                        }}
-                                        className="text-blue-500 hover:text-blue-600 transition-colors"
-                                      >
-                                        <FiInfo className="w-3.5 h-3.5" />
-                                      </button>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">by {svc.vendor?.businessName || svc.vendor?.name || 'Pro'}</span>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleVendorInfo(svc.vendor);
+                                          }}
+                                          className="text-blue-500 hover:text-blue-600 transition-colors"
+                                        >
+                                          <FiInfo className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                       {svc.isPriceDisclosed !== false ? (

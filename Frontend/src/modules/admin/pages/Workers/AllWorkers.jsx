@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiCheck, FiX, FiEye, FiSearch, FiFilter, FiDownload, FiLoader, FiDollarSign, FiPower, FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -18,15 +19,30 @@ const AllWorkers = () => {
   const [payNotes, setPayNotes] = useState('');
   const [paySubmitting, setPaySubmitting] = useState(false);
 
+  // Add Worker Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newWorker, setNewWorker] = useState({ name: '', phone: '', serviceCategories: [] });
+  const [isAdding, setIsAdding] = useState(false);
+
+  const location = useLocation();
+  const isLabour = location.pathname.includes('/admin/labours');
+  const entityName = isLabour ? 'Labour' : 'Worker';
+
+  const SKILLS = [
+    'Plumbing', 'Electrician', 'Painting', 'Carpentry', 'Mason / Construction',
+    'AC / Appliance Repair', 'Cleaning', 'Welding', 'Tiling', 'Gardening',
+    'Security Guard', 'Driving', 'Helper / General Labour'
+  ];
+
   // Load workers from backend
   useEffect(() => {
     loadWorkers();
-  }, []);
+  }, [isLabour]);
 
   const loadWorkers = async () => {
     try {
       setLoading(true);
-      const response = await adminWorkerService.getAllWorkers();
+      const response = await adminWorkerService.getAllWorkers({ type: isLabour ? 'labour' : 'worker' });
       if (response.success) {
         // Transform backend data to frontend format
         const transformedWorkers = response.data.map(worker => ({
@@ -195,6 +211,40 @@ const AllWorkers = () => {
     );
   };
 
+  const handleAddWorker = async (e) => {
+    e.preventDefault();
+    if (!newWorker.name || !newWorker.phone || newWorker.serviceCategories.length === 0) {
+      toast.error('Please fill all required fields and select at least one skill');
+      return;
+    }
+    
+    setIsAdding(true);
+    try {
+      const res = await adminWorkerService.createWorker(newWorker);
+      if (res.success) {
+        toast.success('Worker added successfully!');
+        setIsAddModalOpen(false);
+        setNewWorker({ name: '', phone: '', serviceCategories: [] });
+        loadWorkers();
+      } else {
+        toast.error(res.message || 'Failed to add worker');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add worker');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const toggleSkill = (skill) => {
+    setNewWorker(prev => ({
+      ...prev,
+      serviceCategories: prev.serviceCategories.includes(skill)
+        ? prev.serviceCategories.filter(s => s !== skill)
+        : [...prev.serviceCategories, skill]
+    }));
+  };
+
   const pendingCount = workers.filter(w => w.approvalStatus === 'pending').length;
   const approvedCount = workers.filter(w => w.approvalStatus === 'approved').length;
   const rejectedCount = workers.filter(w => w.approvalStatus === 'rejected').length;
@@ -203,8 +253,18 @@ const AllWorkers = () => {
     <div className="space-y-4">
       <CardShell
         icon={FiFilter}
-        title="Worker Management"
-        subtitle="Manage and verify platform workers"
+        title={`${entityName} Management`}
+        subtitle={`Manage and verify platform ${entityName.toLowerCase()}s`}
+        action={
+          isLabour && (
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors"
+            >
+              + Add Labour
+            </button>
+          )
+        }
       >
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -539,6 +599,69 @@ const AllWorkers = () => {
             {paySubmitting ? 'Processing...' : 'Confirm Payment'}
           </button>
         </div>
+      </Modal>
+
+      {/* Add Worker Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add New Labour"
+        size="md"
+      >
+        <form onSubmit={handleAddWorker} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+            <input
+              type="text"
+              value={newWorker.name}
+              onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })}
+              placeholder="e.g. Raju Sharma"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
+            <input
+              type="tel"
+              value={newWorker.phone}
+              onChange={(e) => setNewWorker({ ...newWorker, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              placeholder="9876543210"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              minLength={10}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Skills</label>
+            <div className="flex flex-wrap gap-2">
+              {SKILLS.map(skill => {
+                const selected = newWorker.serviceCategories.includes(skill);
+                return (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => toggleSkill(skill)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border ${
+                      selected
+                        ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-sm'
+                        : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={isAdding}
+            className="w-full mt-4 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {isAdding ? 'Adding...' : 'Save Labour'}
+          </button>
+        </form>
       </Modal>
     </div>
   );

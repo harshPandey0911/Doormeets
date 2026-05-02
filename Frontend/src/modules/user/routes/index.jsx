@@ -80,6 +80,7 @@ const AddScrap = lazyLoad(() => import('../pages/Shop/AddScrap'));
 const Notifications = lazyLoad(() => import('../pages/Notifications'));
 const HelpSupport = lazyLoad(() => import('../pages/HelpSupport'));
 const CancellationPolicy = lazyLoad(() => import('../pages/CancellationPolicy'));
+const LabourList = lazyLoad(() => import('../../labour/pages/LabourList'));
 
 // Loading fallback component
 import LogoLoader from '../../../components/common/LogoLoader';
@@ -99,7 +100,7 @@ const UserRoutes = () => {
   // useAppNotifications('user');
 
   // Pages where BottomNav should be shown
-  const bottomNavPages = ['/user', '/user/', '/user/my-bookings', '/user/shop', '/user/cart', '/user/account'];
+  const bottomNavPages = ['/user', '/user/', '/user/my-bookings', '/user/shop', '/user/cart', '/user/account', '/user/labour'];
   const shouldShowBottomNav = bottomNavPages.includes(location.pathname);
 
   // Check if we hide the live booking card (e.g. if we are on the specific booking details or track page)
@@ -147,6 +148,7 @@ const UserRoutes = () => {
               <Route path="/notifications" element={<ProtectedRoute userType="user"><Notifications /></ProtectedRoute>} />
               <Route path="/help-support" element={<ProtectedRoute userType="user"><HelpSupport /></ProtectedRoute>} />
               <Route path="/cancellation-policy" element={<ProtectedRoute userType="user"><CancellationPolicy /></ProtectedRoute>} />
+              <Route path="/labour" element={<ProtectedRoute userType="user"><LabourList /></ProtectedRoute>} />
             </Routes>
           </PageTransition>
         </Suspense>

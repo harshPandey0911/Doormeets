@@ -136,9 +136,20 @@ exports.getVendorReport = async (req, res) => {
  */
 exports.getWorkerReport = async (req, res) => {
   try {
+    const { type } = req.query;
+    
+    const workerQueryMatch = { status: BOOKING_STATUS.COMPLETED, workerId: { $ne: null } };
+    const availabilityQueryMatch = {};
+
+    if (type === 'labour') {
+      availabilityQueryMatch.vendorId = null;
+    } else if (type === 'worker') {
+      availabilityQueryMatch.vendorId = { $ne: null };
+    }
+
     // Top workers by jobs completed
     const topWorkers = await Booking.aggregate([
-      { $match: { status: BOOKING_STATUS.COMPLETED, workerId: { $ne: null } } },
+      { $match: workerQueryMatch },
       {
         $group: {
           _id: '$workerId',
@@ -158,6 +169,9 @@ exports.getWorkerReport = async (req, res) => {
       },
       { $unwind: '$worker' },
       {
+        $match: type === 'labour' ? { 'worker.vendorId': null } : type === 'worker' ? { 'worker.vendorId': { $ne: null } } : {}
+      },
+      {
         $project: {
           name: '$worker.name',
           phone: '$worker.phone',
@@ -169,6 +183,7 @@ exports.getWorkerReport = async (req, res) => {
 
     // Worker availability distribution
     const availabilityDistribution = await Worker.aggregate([
+      { $match: availabilityQueryMatch },
       { $group: { _id: '$isAvailable', count: { $sum: 1 } } }
     ]);
 

@@ -25,11 +25,15 @@ const getTokenKeys = (url) => {
   if (window.location.pathname.startsWith('/worker')) {
     return { access: 'workerAccessToken', refresh: 'workerRefreshToken', role: 'worker' };
   }
+  if (window.location.pathname.startsWith('/labour')) {
+    return { access: 'labourAccessToken', refresh: 'labourRefreshToken', role: 'worker' };
+  }
 
   // 2. Explicitly detect auth routes regardless of current page (for cross-role login/actions)
   if (url?.includes('/admin/auth')) return { access: 'adminAccessToken', refresh: 'adminRefreshToken', role: 'admin' };
   if (url?.includes('/vendors/auth')) return { access: 'vendorAccessToken', refresh: 'vendorRefreshToken', role: 'vendor' };
   if (url?.includes('/workers/auth')) return { access: 'workerAccessToken', refresh: 'workerRefreshToken', role: 'worker' };
+  if (url?.includes('/labour')) return { access: 'labourAccessToken', refresh: 'labourRefreshToken', role: 'worker' };
 
   // 3. Fallback to user token (most common case for user app)
   return { access: 'accessToken', refresh: 'refreshToken', role: 'user' };

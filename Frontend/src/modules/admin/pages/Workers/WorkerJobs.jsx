@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiSearch, FiFilter, FiLoader, FiCalendar, FiClock, FiUser, FiMapPin } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -12,6 +13,10 @@ const WorkerJobs = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
 
+  const location = useLocation();
+  const isLabour = location.pathname.includes('/admin/labours');
+  const entityName = isLabour ? 'Labour' : 'Worker';
+
   const loadJobs = async (page = 1) => {
     try {
       setLoading(true);
@@ -19,7 +24,8 @@ const WorkerJobs = () => {
         page,
         limit: pagination.limit,
         status: filterStatus === 'all' ? undefined : filterStatus,
-        search: searchQuery || undefined
+        search: searchQuery || undefined,
+        type: isLabour ? 'labour' : 'worker'
       };
       const response = await adminWorkerService.getAllJobs(params);
       if (response.success) {
@@ -36,7 +42,7 @@ const WorkerJobs = () => {
 
   useEffect(() => {
     loadJobs();
-  }, [filterStatus, searchQuery]);
+  }, [filterStatus, searchQuery, isLabour]);
 
   const getStatusStyle = (status) => {
     const styles = {
@@ -62,7 +68,7 @@ const WorkerJobs = () => {
             </div>
             <input
               type="text"
-              placeholder="Search by worker name or phone..."
+              placeholder={`Search by ${entityName.toLowerCase()} name or phone...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -115,7 +121,7 @@ const WorkerJobs = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
                             <FiUser className="w-4 h-4" />
-                            <span>Worker: <span className="font-medium text-gray-800">{job.workerId?.name || 'Unassigned'}</span></span>
+                            <span>{entityName}: <span className="font-medium text-gray-800">{job.workerId?.name || 'Unassigned'}</span></span>
                           </div>
                           <div className="flex items-center gap-2">
                             <FiUser className="w-4 h-4 text-blue-500" />

@@ -7,6 +7,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import NotificationBell from '../../components/common/NotificationBell';
 import { motion } from 'framer-motion';
 import { bookingService } from '../../../../services/bookingService';
+import api from '../../../../services/api';
 
 const MyBookings = () => {
   const navigate = useNavigate();
@@ -22,13 +23,48 @@ const MyBookings = () => {
         if (filter !== 'all') {
           params.status = filter;
         }
+        
+        // Fetch Service Bookings
         const response = await bookingService.getUserBookings(params);
-        if (response.success) {
-          setBookings(response.data || []);
-        } else {
-          toast.error(response.message || 'Failed to load bookings');
-          setBookings([]);
+        let serviceBookings = response.success ? (response.data || []) : [];
+
+        // Fetch Labour Bookings
+        let labourBookings = [];
+        try {
+          const labourRes = await api.get('/labour/user-bookings');
+          if (labourRes.data.success) {
+            labourBookings = labourRes.data.bookings.map(lb => ({
+              ...lb,
+              isLabourBooking: true,
+              serviceName: 'Labour Booking',
+              serviceCategory: 'Labour',
+              bookingNumber: lb._id.substring(0, 8),
+              totalAmount: lb.finalAmount || 0,
+              scheduledDate: lb.createdAt
+            }));
+            
+            // Filter labour bookings manually if needed
+            if (filter !== 'all') {
+              labourBookings = labourBookings.filter(lb => {
+                if (filter === 'in-progress' && lb.status === 'pending') return true;
+                if (filter === 'completed' && lb.status === 'completed') return true;
+                if (filter === 'cancelled' && lb.status === 'rejected') return true;
+                if (filter === 'confirmed' && lb.status === 'accepted') return true;
+                return false;
+              });
+            }
+          }
+        } catch(e) {
+          console.error('Failed to fetch labour bookings', e);
         }
+
+        // Merge and sort
+        const combined = [...serviceBookings, ...labourBookings].sort((a, b) => 
+          new Date(b.createdAt || b.scheduledDate) - new Date(a.createdAt || a.scheduledDate)
+        );
+
+        setBookings(combined);
+
       } catch (error) {
         toast.error('Failed to load bookings. Please try again.');
         setBookings([]);
@@ -41,9 +77,12 @@ const MyBookings = () => {
 
     // Listen for real-time updates
     window.addEventListener('userBookingsUpdated', loadBookings);
+    // Listen for labour booking events
+    window.addEventListener('labourBookingUpdated', loadBookings);
 
     return () => {
       window.removeEventListener('userBookingsUpdated', loadBookings);
+      window.removeEventListener('labourBookingUpdated', loadBookings);
     };
   }, [filter]);
 
@@ -120,6 +159,10 @@ const MyBookings = () => {
   };
 
   const handleBookingClick = (booking) => {
+    if (booking.isLabourBooking) {
+      toast('Labour booking details coming soon!', { icon: '⚒️' });
+      return;
+    }
     navigate(`/user/booking/${booking._id || booking.id}`);
   };
 
@@ -325,7 +368,7 @@ const MyBookings = () => {
 
                         {/* 3. Service Name */}
                         <h3 className="text-lg font-bold text-slate-800 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
-                          {booking.serviceName || 'Service Request'}
+                          {booking.isLabourBooking ? `Labour: ${booking.labourId?.name || 'Worker'}` : (booking.serviceName || 'Service Request')}
                         </h3>
 
                         {/* Item Details (Preview) */}
@@ -366,9 +409,9 @@ const MyBookings = () => {
                       <FiMapPin className="w-4 h-4 text-rose-500" />
                     </div>
                     <div className="flex flex-col justify-center min-w-0">
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Location</p>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Location / Note</p>
                       <p className="text-sm font-medium text-slate-700 truncate w-full">
-                        {getAddressString(booking.address)}
+                        {booking.isLabourBooking ? (booking.note || 'No note provided') : getAddressString(booking.address)}
                       </p>
                     </div>
                   </div>

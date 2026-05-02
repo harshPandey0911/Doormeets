@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiHome, FiBriefcase, FiUsers, FiUser, FiBox } from 'react-icons/fi';
 import { HiHome, HiBriefcase, HiUsers, HiUser, HiViewGrid } from 'react-icons/hi';
-import { FaWallet } from 'react-icons/fa';
+import { FaWallet, FaHardHat } from 'react-icons/fa';
 import { vendorTheme as themeColors } from '../../../../theme';
 
 const BottomNav = memo(() => {
@@ -41,8 +41,7 @@ const BottomNav = memo(() => {
     return [
       { path: '/vendor/dashboard', icon: FiHome, activeIcon: HiHome, label: 'Home' },
       { path: '/vendor/jobs', icon: FiBriefcase, activeIcon: HiBriefcase, label: 'Jobs', badge: badgeCount },
-      { path: '/vendor/products', icon: FiBox, activeIcon: HiViewGrid, label: 'Services' },
-      { path: '/vendor/workers', icon: FiUsers, activeIcon: HiUsers, label: 'Workers' },
+      { path: '/vendor/labour', icon: FaHardHat, activeIcon: FaHardHat, label: 'Labour' },
       { path: '/vendor/wallet', icon: FaWallet, activeIcon: FaWallet, label: 'Wallet' },
       { path: '/vendor/profile', icon: FiUser, activeIcon: HiUser, label: 'Profile' },
     ];

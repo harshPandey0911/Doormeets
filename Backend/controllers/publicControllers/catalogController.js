@@ -66,7 +66,20 @@ const getPublicBrands = async (req, res) => {
 
     // Build query
     const query = { status: 'active' };
-    if (categoryId) query.categoryIds = categoryId;
+    if (categoryId) {
+      const category = await Category.findById(categoryId);
+      if (category) {
+        // Find all categories with the same title to show all vendors' brands for this category
+        const relatedCategories = await Category.find({ 
+          title: { $regex: `^${category.title.trim()}$`, $options: 'i' }, 
+          status: 'active' 
+        }).select('_id');
+        const catIds = relatedCategories.map(c => c._id);
+        query.categoryIds = { $in: catIds };
+      } else {
+        query.categoryIds = categoryId;
+      }
+    }
     if (cityId) {
       query.$or = [
         { cityIds: cityId },
@@ -100,9 +113,15 @@ const getPublicBrands = async (req, res) => {
       }
 
       if (category) {
+        const relatedCategories = await Category.find({ 
+          title: { $regex: `^${category.title.trim()}$`, $options: 'i' }, 
+          status: 'active' 
+        }).select('_id');
+        const catIds = relatedCategories.map(c => c._id.toString());
+        
         brands = brands.filter(b =>
           Array.isArray(b.categoryIds) &&
-          b.categoryIds.some(id => id.toString() === category._id.toString())
+          b.categoryIds.some(id => catIds.includes(id.toString()))
         );
       }
     }
@@ -259,11 +278,27 @@ const getPublicServices = async (req, res) => {
     const query = { status: 'active' };
 
     if (brandId) {
-      query.brandId = brandId;
+      const brand = await Brand.findById(brandId);
+      if (brand) {
+        // Find all brands with the same title to show all vendors' services for this brand type
+        const relatedBrands = await Brand.find({ 
+          title: { $regex: `^${brand.title.trim()}$`, $options: 'i' }, 
+          status: 'active' 
+        }).select('_id');
+        const brandIds = relatedBrands.map(b => b._id);
+        query.brandId = { $in: brandIds };
+      } else {
+        query.brandId = brandId;
+      }
     } else if (brandSlug) {
       const brand = await Brand.findOne({ slug: brandSlug });
       if (brand) {
-        query.brandId = brand._id;
+        const relatedBrands = await Brand.find({ 
+          title: { $regex: `^${brand.title.trim()}$`, $options: 'i' }, 
+          status: 'active' 
+        }).select('_id');
+        const brandIds = relatedBrands.map(b => b._id);
+        query.brandId = { $in: brandIds };
       } else {
         return res.status(200).json({ success: true, services: [] });
       }
@@ -292,6 +327,7 @@ const getPublicServices = async (req, res) => {
         slug: svc.slug,
         icon: svc.iconUrl,
         basePrice: svc.basePrice,
+        discountPrice: svc.discountPrice || 0,
         gstPercentage: svc.gstPercentage,
         description: svc.description,
         brandId: svc.brandId?._id,

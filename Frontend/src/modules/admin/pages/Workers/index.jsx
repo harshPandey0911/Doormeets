@@ -12,15 +12,19 @@ import WorkerAnalytics from './WorkerAnalytics';
 const Workers = () => {
   const location = useLocation();
 
+  const isLabour = location.pathname.includes('/admin/labours');
+  const basePath = isLabour ? '/admin/labours' : '/admin/workers';
+  const entityName = isLabour ? 'Labour' : 'Worker';
+
   const navTabs = [
-    { name: 'All Workers', path: '/admin/workers/all', icon: FiUsers },
-    { name: 'Worker Jobs', path: '/admin/workers/jobs', icon: FiClock },
-    { name: 'Worker Analytics', path: '/admin/workers/analytics', icon: FiActivity },
+    { name: `All ${isLabour ? 'Labours' : 'Workers'}`, path: `${basePath}/all`, icon: FiUsers },
+    { name: `${entityName} Jobs`, path: `${basePath}/jobs`, icon: FiClock },
+    { name: `${entityName} Analytics`, path: `${basePath}/analytics`, icon: FiActivity },
   ];
 
   const getPageTitle = () => {
     const currentTab = navTabs.find(tab => location.pathname === tab.path);
-    return currentTab ? currentTab.name : 'Worker Management';
+    return currentTab ? currentTab.name : `${entityName} Management`;
   };
 
   return (

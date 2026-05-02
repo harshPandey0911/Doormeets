@@ -122,18 +122,18 @@ const ServicesPage = () => {
       <Header title="Manage Services/Items" showBack={true} />
 
       <main className="px-4 py-6 max-w-lg mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-black text-gray-800 tracking-tight">Your Service Catalog</h2>
+        <div className="flex justify-between items-center mb-6 px-1">
+          <h2 className="text-lg font-black text-gray-900 tracking-tight">Your Service Catalog</h2>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-teal-700 transition active:scale-95"
+            className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-teal-700 transition active:scale-95"
           >
-            <FiPlus /> Add New Item
+            <FiPlus /> Add Item
           </button>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div></div>
+          <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div></div>
         ) : products.length === 0 ? (
           <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-12 text-center border border-white/40 shadow-sm">
             <FiBox className="w-12 h-12 text-gray-300 mx-auto mb-4" />
