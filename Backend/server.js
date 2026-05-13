@@ -33,7 +33,8 @@ const allowedOrigins = [
   'http://localhost:5174',
   'https://www.civilconnect.in',
   'https://civilconnect.in',
-  'https://api.civilconnect.in'
+  'https://api.civilconnect.in',
+  'https://civilconnect.vercel.app'
 ];
 
 if (process.env.FRONTEND_URL) {
