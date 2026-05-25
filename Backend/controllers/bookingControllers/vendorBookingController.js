@@ -617,12 +617,20 @@ const assignWorker = async (req, res) => {
       });
     }
 
-    // Check if worker is active
-    const validStatuses = ['active', 'ONLINE', 'ACTIVE'];
-    if (!validStatuses.includes(worker.status)) {
+    // Check if worker is frozen
+    if (worker.isFrozen) {
       return res.status(400).json({
         success: false,
-        message: `Worker is not active (Status: ${worker.status})`
+        message: 'This worker account is currently frozen and cannot be assigned to new jobs.'
+      });
+    }
+
+    // Check if worker is active
+    const validStatuses = ['active', 'ONLINE', 'ACTIVE'];
+    if (!validStatuses.includes(worker.status) && !validStatuses.includes(worker.currentAvailability)) {
+      return res.status(400).json({
+        success: false,
+        message: `Worker is not available (Status: ${worker.status || worker.currentAvailability})`
       });
     }
 
@@ -828,11 +836,15 @@ const updateBookingStatus = async (req, res) => {
       });
     }
 
-    // ── Update Vendor Performance Stats ──
+    // ── Update Vendor Performance Stats & Availability ──
     if (status === BOOKING_STATUS.COMPLETED || status === BOOKING_STATUS.CANCELLED) {
       try {
         const { updateVendorStats } = require('../../utils/vendorStatsHelper');
         updateVendorStats(vendorId);
+
+        // Also free up the vendor's availability so they appear online to new users
+        const Vendor = require('../../models/Vendor');
+        await Vendor.findByIdAndUpdate(vendorId, { availability: 'AVAILABLE' });
       } catch (statsErr) {
         console.error('Error updating vendor stats after status change:', statsErr);
       }
@@ -1506,10 +1518,13 @@ const collectSelfCash = async (req, res) => {
       priority: 'high'
     });
 
-    // ── Update Vendor Performance Stats ──
+    // ── Update Vendor Performance Stats & Availability ──
     try {
       const { updateVendorStats } = require('../../utils/vendorStatsHelper');
       updateVendorStats(vendorId);
+
+      // Also free up the vendor's availability so they appear online to new users
+      await Vendor.findByIdAndUpdate(vendorId, { availability: 'AVAILABLE' });
     } catch (statsErr) {
       console.error('Error updating vendor stats after cash collection:', statsErr);
     }

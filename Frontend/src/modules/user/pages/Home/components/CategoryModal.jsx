@@ -63,17 +63,10 @@ const VendorInfoModal = ({ isOpen, onClose, vendor }) => {
             
             {/* Verification Badge */}
             <div className="flex justify-center mb-4">
-              {vendor.policeVerification?.status === 'approved' ? (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 text-[11px] font-bold uppercase tracking-wider">
-                  <FiShield className="w-3.5 h-3.5" />
-                  POLICE VERIFIED VENDOR
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-gray-400 rounded-full border border-gray-100 text-[11px] font-bold uppercase tracking-wider">
-                  <FiShield className="w-3.5 h-3.5" />
-                  IDENTITY VERIFIED
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 text-[11px] font-bold uppercase tracking-wider">
+                <FiShield className="w-3.5 h-3.5" />
+                VERIFIED VENDOR
+              </div>
             </div>
 
             {/* Stats Row */}
@@ -129,6 +122,27 @@ const VendorInfoModal = ({ isOpen, onClose, vendor }) => {
   );
 };
 
+const SubCategoryCard = ({ subCategory, onClick }) => (
+  <div 
+    onClick={() => onClick(subCategory)}
+    className="group flex flex-col items-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
+  >
+    <div className="w-20 h-20 rounded-[24px] bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center mb-2 overflow-hidden relative group-hover:border-[#9634f7] group-hover:shadow-md transition-all">
+      <div className="absolute inset-0 bg-gradient-to-tr from-[#9634f7] to-[#1fd8d1] opacity-0 group-hover:opacity-10 transition-opacity" />
+      {subCategory.iconUrl ? (
+        <img src={toAssetUrl(subCategory.iconUrl)} alt={subCategory.title} className="w-full h-full object-cover" />
+      ) : (
+        <FiLayers className="w-8 h-8 text-gray-300 group-hover:text-[#9634f7] transition-colors" />
+      )}
+    </div>
+    <div className="text-center">
+      <h3 className="text-xs font-bold text-gray-800 line-clamp-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#9634f7] group-hover:to-[#1fd8d1] transition-all">
+        {subCategory.title}
+      </h3>
+    </div>
+  </div>
+);
+
 const BrandCard = ({ brand, onClick, onInfoClick }) => (
   <div
     onClick={() => onClick(brand)}
@@ -180,7 +194,9 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
   const [isClosing, setIsClosing] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const [view, setView] = useState('brands'); // 'brands' | 'services'
+  const [view, setView] = useState('subcategories'); // 'subcategories' | 'brands' | 'services'
+  const [subCategories, setSubCategories] = useState([]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [services, setServices] = useState([]); // Sub-services
@@ -201,7 +217,9 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
       setIsClosing(false);
       // Reset state on close
       setTimeout(() => {
-        setView('brands');
+        setView('subcategories');
+        setSelectedSubCategory(null);
+        setSubCategories([]);
         setSelectedBrand(null);
         setBrands([]);
         setServices([]);
@@ -214,19 +232,51 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         setSelectedBrand(brand);
         setView('services');
         fetchServices(brand.id || brand._id);
+      } else if (category.hasBrands === false) {
+        setView('services');
+        fetchServices();
+      } else {
+        // Fetch subcategories first
+        fetchSubCategories();
       }
-      // Always fetch brands for this category to populate the background/back-navigation
-      fetchBrands();
     }
   }, [isOpen, category?.id, cityId]);
 
-  const fetchBrands = async () => {
+  const fetchSubCategories = async () => {
     try {
       setLoading(true);
-      const response = await publicCatalogService.getBrands({
+      const response = await publicCatalogService.getSubCategories({
+        categoryId: category.id
+      });
+      if (response.success) {
+        if (response.subCategories && response.subCategories.length > 0) {
+          setSubCategories(response.subCategories);
+          setView('subcategories');
+        } else {
+          // Fallback to brands if no subcategories
+          setView('brands');
+          fetchBrands();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load subcategories:", error);
+      setView('brands');
+      fetchBrands();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBrands = async (subCatId = null) => {
+    try {
+      setLoading(true);
+      const params = {
         categoryId: category.id,
         cityId: cityId
-      });
+      };
+      if (subCatId) params.subCategoryId = subCatId;
+      
+      const response = await publicCatalogService.getBrands(params);
       if (response.success) {
         setBrands(response.brands || []);
       }
@@ -255,6 +305,12 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
     }
   };
 
+  const handleSubCategoryClick = (subCat) => {
+    setSelectedSubCategory(subCat);
+    setView('brands');
+    fetchBrands(subCat.id || subCat._id);
+  };
+
   const handleBrandClick = (brand) => {
     setSelectedBrand(brand);
     setView('services');
@@ -270,19 +326,33 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
     }
   };
 
+  const handleBackToSubCategories = () => {
+    setView('subcategories');
+    setSelectedSubCategory(null);
+    setBrands([]);
+  };
+
   const handleBackToBrands = () => {
     setView('brands');
     setSelectedBrand(null);
     setServices([]);
   };
+  const [selectedServiceForType, setSelectedServiceForType] = useState(null);
 
-  const handleServiceClick = async (service) => {
+  const handleServiceClick = (service) => {
+    setSelectedServiceForType(service);
+  };
+
+  const handleBookingTypeSelect = async (isConsultation) => {
+    const service = selectedServiceForType;
+    if (!service) return;
+    
     // Add to cart logic
     try {
       const cartItemData = {
         serviceId: service.id || service._id,
         categoryId: category?.id,
-        title: service.title,
+        title: isConsultation ? `${service.title} (Consultation)` : service.title,
         description: service.description || '',
         icon: toAssetUrl(service.icon || ''),
         category: category?.title,
@@ -300,8 +370,9 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         reviews: "1k+",
         vendorId: service.vendorId || selectedBrand?.vendorId || null,
         isPriceDisclosed: service.isPriceDisclosed !== false,
+        isConsultation,
         card: {
-          title: service.title,
+          title: isConsultation ? `${service.title} (Consultation)` : service.title,
           subtitle: service.description || '',
           price: service.discountPrice || service.basePrice,
           originalPrice: service.discountPrice ? service.basePrice : null,
@@ -393,7 +464,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                   <div className="px-4 py-6">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-6">
-                      {view === 'services' && (
+                      {view === 'services' && category?.hasBrands !== false && (
                         <button
                           onClick={handleBackToBrands}
                           className="p-1 rounded-full hover:bg-gray-100"
@@ -401,9 +472,19 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                           <FiArrowLeft className="w-6 h-6 text-gray-800" />
                         </button>
                       )}
+                      {view === 'brands' && subCategories.length > 0 && (
+                        <button
+                          onClick={handleBackToSubCategories}
+                          className="p-1 rounded-full hover:bg-gray-100"
+                        >
+                          <FiArrowLeft className="w-6 h-6 text-gray-800" />
+                        </button>
+                      )}
                       <div>
                         <h1 className="text-xl font-bold text-gray-900">
-                          {view === 'brands' ? (category?.title || 'Brands') : (selectedBrand?.title || 'Services')}
+                          {view === 'subcategories' ? (category?.title || 'Categories') :
+                           view === 'brands' ? (selectedSubCategory?.title || category?.title || 'Brands') : 
+                           (selectedBrand?.title || 'Services')}
                         </h1>
                         {view === 'services' && <p className="text-xs text-gray-500">Select a service to add</p>}
                       </div>
@@ -411,7 +492,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                     </div>
 
                     {/* Content */}
-                    {loading && (view === 'brands' ? brands.length === 0 : services.length === 0) ? (
+                    {loading && (view === 'subcategories' ? subCategories.length === 0 : view === 'brands' ? brands.length === 0 : services.length === 0) ? (
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 animate-pulse">
                         {[1, 2, 3, 4, 5, 6].map((i) => (
                           <div key={i} className="flex flex-col items-center">
@@ -422,7 +503,20 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                       </div>
                     ) : (
                       <>
-                        {view === 'brands' ? (
+                        {view === 'subcategories' ? (
+                          // SubCategories Grid
+                          subCategories.length > 0 ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                              {subCategories.map((subCat) => (
+                                <SubCategoryCard 
+                                  key={subCat.id || subCat._id} 
+                                  subCategory={subCat} 
+                                  onClick={handleSubCategoryClick} 
+                                />
+                              ))}
+                            </div>
+                          ) : null
+                        ) : view === 'brands' ? (
                           // Brands Grid
                           brands.length > 0 ? (
                             <div className="space-y-8">
@@ -560,6 +654,79 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         onClose={() => setIsVendorModalOpen(false)} 
         vendor={selectedVendor} 
       />
+
+      {/* Booking Type Selection Modal */}
+      <AnimatePresence>
+        {selectedServiceForType && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-end justify-center sm:items-center p-4"
+            onClick={() => setSelectedServiceForType(null)}
+          >
+            <motion.div
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative"
+            >
+              <div className="absolute top-4 right-4 z-[10001]">
+                <button
+                  onClick={() => setSelectedServiceForType(null)}
+                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"
+                >
+                  <FiX className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
+                  <FiMapPin className="w-6 h-6 text-blue-500" />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 mb-2">Choose Booking Type</h3>
+                <p className="text-sm text-gray-500 mb-6">How would you like to proceed with this service?</p>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      setSelectedServiceForType(null);
+                      handleBookingTypeSelect(false);
+                    }}
+                    className="w-full flex items-start gap-4 p-4 rounded-2xl border-2 border-gray-100 hover:border-blue-500 hover:bg-blue-50 transition-all active:scale-[0.98] group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                      <FiShield className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold text-gray-900 group-hover:text-blue-700">Book Full Service</h4>
+                      <p className="text-xs text-gray-500">Get the complete repair or installation done right now.</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedServiceForType(null);
+                      handleBookingTypeSelect(true);
+                    }}
+                    className="w-full flex items-start gap-4 p-4 rounded-2xl border-2 border-gray-100 hover:border-teal-500 hover:bg-teal-50 transition-all active:scale-[0.98] group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                      <FiInfo className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold text-gray-900 group-hover:text-teal-700">Book Consultant</h4>
+                      <p className="text-xs text-gray-500">Need expert advice or inspection first? Hire a consultant.</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 

@@ -52,6 +52,11 @@ const Dashboard = () => {
     photo: null,
     categories: [],
     address: null,
+    performanceScore: 100,
+    trustScore: 100,
+    currentLevel: 'L3',
+    isFrozen: false,
+    currentAvailability: 'OFFLINE'
   });
   const [recentJobs, setRecentJobs] = useState([]);
 
@@ -99,6 +104,11 @@ const Dashboard = () => {
           photo: profile.profilePhoto || null,
           categories: profile.serviceCategories || (profile.serviceCategory ? [profile.serviceCategory] : []),
           address: profile.address,
+          performanceScore: profile.performanceScore || 100,
+          trustScore: profile.trustScore || 100,
+          currentLevel: profile.currentLevel || 'L3',
+          isFrozen: profile.isFrozen || false,
+          currentAvailability: profile.currentAvailability || 'OFFLINE'
         });
       }
 
@@ -156,7 +166,12 @@ const Dashboard = () => {
 
   }, []);
 
-
+  const toggleAvailability = () => {
+    if (!socket) return;
+    const newStatus = workerProfile.currentAvailability === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+    setWorkerProfile(prev => ({ ...prev, currentAvailability: newStatus }));
+    socket.emit('set_availability', { status: newStatus });
+  };
 
   // Socket Listener for New Jobs
   useEffect(() => {
@@ -253,18 +268,69 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* Arrow Icon */}
-              <div
-                className="p-2.5 rounded-lg shrink-0"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.35)',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                  border: '1px solid rgba(255, 255, 255, 0.4)',
+              {/* Availability Toggle */}
+              <div 
+                className="flex items-center gap-2 mt-3 p-1.5 rounded-full bg-white/20 backdrop-blur-sm self-start shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleAvailability();
                 }}
               >
-                <FiChevronRight className="w-6 h-6" style={{ color: '#FFFFFF', fontWeight: 'bold' }} />
+                <div 
+                  className={`w-8 h-4 rounded-full p-0.5 transition-colors duration-300 relative ${workerProfile.currentAvailability === 'ONLINE' ? 'bg-green-400' : 'bg-gray-400'}`}
+                >
+                  <div className={`w-3 h-3 rounded-full bg-white transition-transform duration-300 absolute top-0.5 ${workerProfile.currentAvailability === 'ONLINE' ? 'translate-x-4' : 'translate-x-0'}`} />
+                </div>
+                <span className="text-xs font-bold text-white mr-2">
+                  {workerProfile.currentAvailability === 'ONLINE' ? 'ONLINE' : 'OFFLINE'}
+                </span>
               </div>
+            </div>
+
+            {/* Arrow Icon */}
+            <div
+              className="p-2.5 rounded-lg shrink-0 ml-auto self-center"
+              style={{
+                background: 'rgba(255, 255, 255, 0.35)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+              }}
+            >
+              <FiChevronRight className="w-6 h-6" style={{ color: '#FFFFFF', fontWeight: 'bold' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Frozen Account Banner */}
+        {workerProfile.isFrozen && (
+          <div className="px-4 pt-4">
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm">
+              <div className="flex items-center">
+                <FiAlertTriangle className="h-6 w-6 text-red-500 mr-3" />
+                <div>
+                  <p className="text-sm font-bold text-red-800">Account Frozen</p>
+                  <p className="text-xs text-red-600">Your account is frozen and you cannot accept new jobs. Please contact your vendor.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Level and Score Summary */}
+        <div className="px-4 pt-4">
+          <div className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <div className="text-center flex-1 border-r border-gray-100">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Level</p>
+              <p className="text-lg font-bold text-indigo-600">{workerProfile.currentLevel}</p>
+            </div>
+            <div className="text-center flex-1 border-r border-gray-100">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Trust</p>
+              <p className="text-lg font-bold text-green-600">{workerProfile.trustScore}</p>
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Performance</p>
+              <p className="text-lg font-bold text-blue-600">{workerProfile.performanceScore}</p>
             </div>
           </div>
         </div>
@@ -272,7 +338,7 @@ const Dashboard = () => {
         {/* Incomplete Profile Prompt */}
         {((!workerProfile.categories || workerProfile.categories.length === 0) ||
           (!workerProfile.address || Object.keys(workerProfile.address).length === 0)) && (
-            <div className="px-4 pt-2 -mb-2">
+            <div className="px-4 pt-4">
               <div
                 onClick={() => navigate('/worker/profile')}
                 className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r shadow-sm cursor-pointer hover:bg-orange-100 transition-colors"

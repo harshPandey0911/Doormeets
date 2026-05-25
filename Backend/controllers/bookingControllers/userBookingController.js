@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Booking = require('../../models/Booking');
-const Service = require('../../models/UserService');
+const Service = require('../../models/Service');
 const Category = require('../../models/Category');
 const Cart = require('../../models/Cart');
 const User = require('../../models/User');
@@ -49,7 +49,8 @@ const createBooking = async (req, res) => {
       categoryIcon: reqCategoryIcon,
       brandName: reqBrandName,
       brandIcon: reqBrandIcon,
-      bookingType // Extract bookingType
+      bookingType, // Extract bookingType
+      isConsultation
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -142,15 +143,35 @@ const createBooking = async (req, res) => {
       vendorObj.distance = 0; // Dist is not critical for direct booking
       nearbyVendors = [vendorObj];
     } else {
-      // Find all active services with this EXACT title to get qualified vendors
-      const matchingServices = await Service.find({
-        title: { $regex: `^${service.title.trim()}$`, $options: 'i' },
-        status: 'active',
-        vendorId: { $ne: null }
-      }).select('vendorId').lean();
+      // Find vendors who offer the category of this service
+      let qualifiedVendorIds = [];
+      const searchCategoryTitle = category ? category.title : (reqServiceCategory || service.category);
+      
+      if (category || searchCategoryTitle) {
+        const searchArray = [];
+        if (searchCategoryTitle) {
+          searchArray.push(new RegExp(`^${searchCategoryTitle.trim()}$`, 'i'));
+        }
+        if (category) {
+          searchArray.push(category._id.toString());
+        }
+        
+        // Find vendors who have the category ID or category Title
+        const vendorQuery = {
+          isActive: true,
+          categories: { $in: searchArray }
+        };
+        
+        if (isConsultation) {
+          vendorQuery.isConsultant = true;
+        }
 
-      const qualifiedVendorIds = Array.from(new Set(matchingServices.map(ms => ms.vendorId.toString())));
-      console.log(`[CreateBooking] Found ${qualifiedVendorIds.length} vendors offering "${service.title}" globally.`);
+        const matchingVendors = await Vendor.find(vendorQuery).select('_id').lean();
+        
+        qualifiedVendorIds = Array.from(new Set(matchingVendors.map(v => v._id.toString())));
+      }
+
+      console.log(`[CreateBooking] Found ${qualifiedVendorIds.length} vendors offering category "${category ? category.title : 'Unknown'}" globally.`);
 
       if (qualifiedVendorIds.length === 0) {
         nearbyVendors = [];
@@ -335,6 +356,7 @@ const createBooking = async (req, res) => {
       brandName: reqBrandName || brandName,
       brandIcon: reqBrandIcon || brandIcon,
       bookingType: bookingType || 'scheduled',
+      isConsultation: isConsultation || false,
 
       description: service.description,
       serviceImages: service.images || [],
@@ -909,11 +931,15 @@ const cancelBooking = async (req, res) => {
       // Manual FCM push removed
     }
 
-    // ── Update Vendor Performance Stats ──
+    // ── Update Vendor Performance Stats & Availability ──
     if (booking.vendorId) {
       try {
         const { updateVendorStats } = require('../../utils/vendorStatsHelper');
         updateVendorStats(booking.vendorId);
+
+        // Also free up the vendor's availability so they appear online to new users
+        const Vendor = require('../../models/Vendor');
+        await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
       } catch (statsErr) {
         console.error('Error updating vendor stats after user cancellation:', statsErr);
       }

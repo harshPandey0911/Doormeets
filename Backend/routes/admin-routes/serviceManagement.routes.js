@@ -12,10 +12,8 @@ const {
 } = require('../../controllers/adminControllers/serviceController');
 
 const serviceValidation = [
-  body('brandId').isMongoId().withMessage('Valid Brand ID is required'),
-  body('title').notEmpty().withMessage('Title is required'),
-  body('basePrice').isNumeric().withMessage('Base Price must be a number'),
-  body('gstPercentage').isNumeric().withMessage('GST Percentage must be a number')
+  body('categoryId').isMongoId().withMessage('Valid Category ID is required'),
+  body('title').notEmpty().withMessage('Title is required')
 ];
 
 router.get('/services', authenticate, isAdmin, getAllServices);

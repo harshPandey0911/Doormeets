@@ -6,7 +6,7 @@ import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import { createWorker, updateWorker, getWorkerById, linkWorker } from '../../services/workerService';
-import { publicCatalogService } from '../../../../services/catalogService';
+import { vendorCategoryService } from '../../services/vendorCategoryService';
 import { toast } from 'react-hot-toast';
 import { z } from "zod";
 
@@ -88,7 +88,7 @@ const AddEditWorker = () => {
   useEffect(() => {
     const initData = async () => {
       try {
-        const catRes = await publicCatalogService.getCategories();
+        const catRes = await vendorCategoryService.getCategories();
         if (catRes.success) {
           console.log('Loaded Categories:', catRes.categories || []);
           setCategories(catRes.categories || []);

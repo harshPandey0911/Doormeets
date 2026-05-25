@@ -44,13 +44,48 @@ const vendorSchema = new mongoose.Schema({
     default: [],
     // required: [true, 'Please provide at least one service category'] 
   },
+  professions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Profession'
+  }],
   categories: {
     type: [String],
     default: []
   },
+  isConsultant: {
+    type: Boolean,
+    default: false
+  },
   skills: {
     type: [String],
     default: []
+  },
+  training: {
+    status: {
+      type: String,
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending'
+    },
+    score: {
+      type: Number,
+      default: 0
+    },
+    attemptCount: {
+      type: Number,
+      default: 0
+    },
+    totalQuestions: {
+      type: Number,
+      default: 0
+    },
+    correctAnswers: {
+      type: Number,
+      default: 0
+    },
+    assignedLevel: {
+      type: Number,
+      default: 3 // 1: Expert, 2: Professional, 3: Beginner
+    }
   },
   subscription: {
     planId: {
@@ -117,34 +152,7 @@ const vendorSchema = new mongoose.Schema({
   rejectedReason: {
     type: String
   },
-  policeVerification: {
-    method: {
-      type: String,
-      enum: ['self', 'admin', null],
-      default: null
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'submitted', 'approved', 'rejected', 'expired'],
-      default: 'pending'
-    },
-    documentUrl: {
-      type: String,
-      default: null
-    },
-    requestedAt: {
-      type: Date,
-      default: null
-    },
-    expiryDate: {
-      type: Date,
-      default: null
-    },
-    submissionDate: {
-      type: Date,
-      default: null
-    }
-  },
+
   profilePhoto: {
     type: String,
     default: null
@@ -329,6 +337,51 @@ const vendorSchema = new mongoose.Schema({
   commissionRate: {
     type: Number,
     default: 15 // Default 15%
+  },
+
+  // ─────────────────────────────────────────────────
+  // TRAINING & CERTIFICATION SYSTEM
+  // ─────────────────────────────────────────────────
+  training: {
+    status: {
+      type: String,
+      enum: ['not_started', 'in_progress', 'completed', 'failed'],
+      default: 'not_started'
+    },
+    assignedAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
+    attemptCount: { type: Number, default: 0 },
+    lastAttemptAt: { type: Date, default: null },
+    // Cooldown: vendor must wait before retaking (24h after fail)
+    nextAttemptAllowedAt: { type: Date, default: null }
+  },
+  // Assigned level after training test (L1=80%+, L2=50-79%, L3=<50%)
+  currentLevel: {
+    type: String,
+    enum: ['L1', 'L2', 'L3'],
+    default: null
+  },
+  trainingScore: {
+    type: Number,
+    default: null,
+    min: 0,
+    max: 100
+  },
+  // Admin can freeze vendor (blocks all activity)
+  isFrozen: {
+    type: Boolean,
+    default: false
+  },
+  freezeReason: {
+    type: String,
+    default: null
+  },
+  // Trust score (starts at 100, decreases with complaints/cancellations)
+  trustScore: {
+    type: Number,
+    default: 100,
+    min: 0,
+    max: 100
   }
 }, {
   timestamps: true

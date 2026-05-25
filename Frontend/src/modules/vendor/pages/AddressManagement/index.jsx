@@ -106,8 +106,8 @@ const AddressManagement = () => {
   };
 
   const handleSave = async () => {
-    if (!address || !selectedLocation) {
-      toast.error('Please select an address');
+    if (!address && !searchQuery) {
+      toast.error('Please enter an address');
       return;
     }
 
@@ -120,7 +120,7 @@ const AddressManagement = () => {
     let addressLine2 = '';
 
     // If we have components from Google API (either via map click or autocomplete)
-    if (selectedLocation.components) {
+    if (selectedLocation && selectedLocation.components) {
       selectedLocation.components.forEach(comp => {
         if (comp.types.includes('locality')) city = comp.long_name;
         if (comp.types.includes('administrative_area_level_1')) state = comp.long_name;
@@ -132,14 +132,14 @@ const AddressManagement = () => {
     // We can also re-use existing logic from updateProfile controller which expects an object
     // consistent with what EditProfile sends.
     const addrData = {
-      fullAddress: selectedLocation.address || address,
+      fullAddress: (selectedLocation && selectedLocation.address) || address || searchQuery,
       addressLine1: houseNumber,
       addressLine2: addressLine2,
       city: city,
       state: state,
       pincode: pincode,
-      lat: selectedLocation.lat,
-      lng: selectedLocation.lng
+      lat: selectedLocation ? selectedLocation.lat : 22.7196,
+      lng: selectedLocation ? selectedLocation.lng : 75.8577
     };
 
     try {
@@ -227,11 +227,16 @@ const AddressManagement = () => {
               </Autocomplete>
             ) : (
               <div className="relative">
+                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
                 <input
                   type="text"
-                  placeholder="Loading Maps..."
-                  disabled
-                  className="w-full pl-4 py-3 border-2 rounded-lg text-sm bg-gray-100"
+                  placeholder="Enter area, street name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border-2 rounded-lg text-sm focus:outline-none transition-colors"
+                  style={{ borderColor: '#e5e7eb' }}
+                  onFocus={(e) => e.target.style.borderColor = themeColors.button}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 />
               </div>
             )}
@@ -267,7 +272,7 @@ const AddressManagement = () => {
           {/* Save Button */}
           <button
             onClick={handleSave}
-            disabled={!searchQuery || !selectedLocation || loading}
+            disabled={!searchQuery || loading}
             className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             style={{
               background: themeColors.button,

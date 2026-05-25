@@ -43,6 +43,10 @@ const categorySchema = new mongoose.Schema({
     default: true,
     index: true
   },
+  hasBrands: {
+    type: Boolean,
+    default: true
+  },
   isBiddingEnabled: {
     type: Boolean,
     default: false

@@ -1,292 +1,311 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiGrid, FiBox, FiCheckCircle, FiTrash2 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import {
+  FiGrid, FiChevronRight, FiPlus, FiX, FiSend,
+  FiInbox, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle
+} from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import { vendorTheme } from '../../../../theme';
+import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import { vendorCategoryService } from '../../services/vendorCategoryService';
+import vendorCategoryRequestService from '../../services/vendorCategoryRequestService';
 import LogoLoader from '../../../../components/common/LogoLoader';
-import { uploadToCloudinary } from '../../../../utils/cloudinaryUpload';
-import { FiImage, FiX } from 'react-icons/fi';
+
+const statusConfig = {
+  pending:  { label: 'Pending',  icon: FiClock,        color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200' },
+  approved: { label: 'Approved', icon: FiCheckCircle,  color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200' },
+  rejected: { label: 'Rejected', icon: FiXCircle,      color: 'text-red-500',    bg: 'bg-red-50',     border: 'border-red-200' }
+};
 
 const Categories = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
+  const [myRequests, setMyRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'requests'
+
+  // Request modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('service'); // 'service' or 'product'
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const [form, setForm] = useState({ categoryName: '', reason: '' });
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    categoryType: 'service'
-  });
-
-  useEffect(() => {
-    if (isModalOpen) {
-      setFormData(prev => ({ ...prev, categoryType: activeTab }));
-    } else {
-      // Reset images on close
-      setImageFile(null);
-      setImagePreview('');
-    }
-  }, [isModalOpen, activeTab]);
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const fetchCategories = async () => {
+  const fetchAll = async () => {
     try {
       setIsLoading(true);
-      const res = await vendorCategoryService.getCategories();
-      if (res.success) {
-        setCategories(res.categories || []);
+      const [catRes, reqRes] = await Promise.allSettled([
+        vendorCategoryService.getCategories(),
+        vendorCategoryRequestService.getMyRequests()
+      ]);
+      if (catRes.status === 'fulfilled' && catRes.value.success) {
+        setCategories(catRes.value.categories || []);
       }
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to fetch categories');
+      if (reqRes.status === 'fulfilled' && reqRes.value.success) {
+        setMyRequests(reqRes.value.requests || []);
+      }
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-  
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this category? All associations with this category will be lost. Proceed?')) return;
-    try {
-      const res = await vendorCategoryService.deleteCategory(id);
-      if (res.success) {
-        toast.success('Category deleted successfully');
-        fetchCategories();
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message || 'Failed to delete category');
-    }
-  };
+  useEffect(() => { fetchAll(); }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmitRequest = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      toast.error('Category title is required');
+    if (!form.categoryName.trim()) {
+      toast.error('Category name is required');
       return;
     }
-
     try {
       setIsSubmitting(true);
-      
-      let imageUrl = null;
-      if (imageFile) {
-        toast.loading('Uploading icon...', { id: 'upload-cat' });
-        imageUrl = await uploadToCloudinary(imageFile, 'categories');
-        toast.dismiss('upload-cat');
-      }
-
-      const res = await vendorCategoryService.createCategory({ ...formData, imageUrl });
+      const res = await vendorCategoryRequestService.submitRequest(form);
       if (res.success) {
-        toast.success('Category created successfully');
+        toast.success('Request sent to admin!');
         setIsModalOpen(false);
-        setFormData({ title: '', description: '', categoryType: 'service' });
-        setImageFile(null);
-        setImagePreview('');
-        fetchCategories(); // Refresh list
+        setForm({ categoryName: '', reason: '' });
+        fetchAll();
+        setActiveTab('requests');
       }
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message || 'Failed to create category');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to send request');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Categories" />
+  const pendingCount = myRequests.filter(r => r.status === 'pending').length;
 
-      <main className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Your Categories</h2>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-transform"
-          >
-            <FiPlus />
-            <span>Add New</span>
-          </button>
-        </div>
+  return (
+    <div className="min-h-screen pb-24" style={{ background: themeColors.backgroundGradient }}>
+      <Header title="Categories" showBack={false} />
+
+      <main className="px-4 pt-4 max-w-lg mx-auto">
 
         {/* Tab Switcher */}
-        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 mb-6">
+        <div className="flex bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-sm border border-white/50 mb-5">
           <button
-            onClick={() => setActiveTab('service')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${activeTab === 'service' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+            onClick={() => setActiveTab('browse')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'browse' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-500'}`}
           >
-            <FiGrid className={activeTab === 'service' ? 'text-white' : 'text-teal-600'} />
-            Services
+            <FiGrid className="w-4 h-4" />
+            Browse
           </button>
           <button
-            onClick={() => setActiveTab('product')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${activeTab === 'product' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+            onClick={() => setActiveTab('requests')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all relative ${activeTab === 'requests' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-500'}`}
           >
-            <FiBox className={activeTab === 'product' ? 'text-white' : 'text-indigo-600'} />
-            Products
+            <FiInbox className="w-4 h-4" />
+            My Requests
+            {pendingCount > 0 && (
+              <span className="absolute top-2 right-4 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                {pendingCount}
+              </span>
+            )}
           </button>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <LogoLoader />
-          </div>
-        ) : categories.filter(c => c.categoryType === activeTab).length === 0 ? (
-          <div className="text-center py-10 bg-white rounded-2xl shadow-sm border border-gray-100">
-            {activeTab === 'service' ? <FiGrid className="w-12 h-12 text-gray-300 mx-auto mb-3" /> : <FiBox className="w-12 h-12 text-gray-300 mx-auto mb-3" />}
-            <p className="text-gray-500 font-medium">No {activeTab} categories available</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {categories.filter(c => c.categoryType === activeTab).map((cat) => (
-              <div 
-                key={cat.id} 
-                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4"
+          <div className="flex justify-center py-20"><LogoLoader /></div>
+        ) : activeTab === 'browse' ? (
+
+          /* ── Browse Categories ── */
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-gray-800">Service Categories</h2>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs text-white shadow-md active:scale-95 transition-transform"
+                style={{ background: `linear-gradient(135deg, ${themeColors.button}, ${themeColors.button}cc)` }}
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${cat.categoryType === 'product' ? 'bg-indigo-50 text-indigo-600' : 'bg-teal-50 text-teal-600'}`}>
-                  {cat.imageUrl ? (
-                    <img src={cat.imageUrl} alt={cat.title} className="w-full h-full object-cover" />
-                  ) : (
-                    cat.categoryType === 'product' ? <FiBox className="w-6 h-6" /> : <FiGrid className="w-6 h-6" />
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-bold text-gray-900 truncate">{cat.title}</h3>
-                    {cat.isOwnCategory && (
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 rounded uppercase tracking-wider">
-                          Yours
-                        </span>
-                        <button 
-                          onClick={() => handleDelete(cat.id)}
-                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all active:scale-90"
-                          title="Delete Category"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs font-semibold">
-                    <span className={`px-2 py-0.5 rounded uppercase tracking-wider ${cat.categoryType === 'product' ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'}`}>
-                      {cat.categoryType}
-                    </span>
-                    {cat.status === 'active' ? (
-                      <span className="flex items-center gap-1 text-green-600">
-                        <FiCheckCircle /> Active
+                <FiPlus className="w-3.5 h-3.5" />
+                Request New
+              </button>
+            </div>
+
+            {categories.length === 0 ? (
+              <div className="text-center py-16 bg-white/70 rounded-3xl border border-white/40">
+                <FiGrid className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-semibold">No categories available yet</p>
+                <p className="text-gray-400 text-sm mt-1">Admin will add categories soon</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => navigate(`/vendor/categories/${cat.id}`, { state: { category: cat } })}
+                    className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 p-4 hover:shadow-md active:scale-[0.98] transition-all text-left"
+                  >
+                    {/* Icon */}
+                    <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center bg-teal-50 border border-teal-100">
+                      {cat.imageUrl ? (
+                        <img src={cat.imageUrl} alt={cat.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <FiGrid className="w-6 h-6 text-teal-600" />
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-black text-gray-900 truncate text-base">{cat.title}</h3>
+                      {cat.description && (
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{cat.description}</p>
+                      )}
+                      <span className="inline-block mt-1.5 px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-black rounded uppercase tracking-wider">
+                        Service
                       </span>
-                    ) : (
-                      <span className="text-amber-600">Pending</span>
-                    )}
-                  </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <FiChevronRight className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Info card */}
+            <div className="mt-6 p-4 bg-blue-50/80 rounded-2xl border border-blue-100">
+              <div className="flex gap-3 items-start">
+                <FiAlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-blue-900">Need a category that's not listed?</p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Tap "Request New" to send a request to the admin. They'll review and add it.
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          </>
+
+        ) : (
+
+          /* ── My Requests ── */
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-gray-800">My Requests</h2>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs text-white shadow-md active:scale-95 transition-transform"
+                style={{ background: `linear-gradient(135deg, ${themeColors.button}, ${themeColors.button}cc)` }}
+              >
+                <FiPlus className="w-3.5 h-3.5" />
+                New Request
+              </button>
+            </div>
+
+            {myRequests.length === 0 ? (
+              <div className="text-center py-16 bg-white/70 rounded-3xl border border-white/40">
+                <FiInbox className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-semibold">No requests yet</p>
+                <p className="text-gray-400 text-sm mt-1">Request a new category from the Browse tab</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {myRequests.map((req) => {
+                  const cfg = statusConfig[req.status] || statusConfig.pending;
+                  const StatusIcon = cfg.icon;
+                  return (
+                    <div key={req.id} className={`bg-white rounded-2xl border p-4 shadow-sm ${cfg.border}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-black text-gray-900 text-base truncate">{req.categoryName}</h3>
+                          {req.reason && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{req.reason}</p>
+                          )}
+                          {req.adminNote && (
+                            <div className={`mt-2 px-3 py-2 rounded-xl text-xs font-semibold ${cfg.bg} ${cfg.color}`}>
+                              <span className="font-black">Admin note: </span>{req.adminNote}
+                            </div>
+                          )}
+                          <p className="text-[10px] text-gray-400 mt-2">
+                            {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black ${cfg.bg} ${cfg.color} flex-shrink-0`}>
+                          <StatusIcon className="w-3.5 h-3.5" />
+                          {cfg.label}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      {/* Add Category Modal */}
+      {/* Request New Category Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="p-5 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-900">Create New Category</h3>
-              <p className="text-sm text-gray-500 mt-1">Add a custom category if it doesn't exist.</p>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Category Name</label>
+                <h3 className="text-lg font-black text-gray-900">Request New Category</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Admin will review and respond</p>
+              </div>
+              <button
+                onClick={() => { setIsModalOpen(false); setForm({ categoryName: '', reason: '' }); }}
+                className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
+              >
+                <FiX className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitRequest} className="p-5 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">
+                  Category Name *
+                </label>
                 <input
                   type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Electrical Materials"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-colors"
+                  value={form.categoryName}
+                  onChange={e => setForm({ ...form, categoryName: e.target.value })}
+                  placeholder="e.g. Solar Panel Installation"
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Category Type</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, categoryType: 'service' })}
-                    className={`py-3 px-4 rounded-xl border flex flex-col items-center gap-2 transition-colors ${formData.categoryType === 'service' ? 'bg-teal-50 border-teal-500 text-teal-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    <FiGrid className="w-6 h-6" />
-                    <span className="text-sm font-bold">Service</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, categoryType: 'product' })}
-                    className={`py-3 px-4 rounded-xl border flex flex-col items-center gap-2 transition-colors ${formData.categoryType === 'product' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                  >
-                    <FiBox className="w-6 h-6" />
-                    <span className="text-sm font-bold">Product</span>
-                  </button>
-                </div>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">
+                  Reason / Description (Optional)
+                </label>
+                <textarea
+                  value={form.reason}
+                  onChange={e => setForm({ ...form, reason: e.target.value })}
+                  placeholder="Why do you need this category? Any additional details..."
+                  rows={3}
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition resize-none"
+                />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 text-center uppercase tracking-widest text-[10px]">Category Icon</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center relative bg-gray-50 overflow-hidden group hover:border-teal-500/50 transition-all">
-                  {imagePreview ? (
-                    <div className="relative w-full h-32">
-                       <img src={imagePreview} alt="Preview" className="h-full w-full object-contain rounded-xl" />
-                       <button 
-                        type="button" 
-                        onClick={() => { setImageFile(null); setImagePreview(''); }}
-                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full shadow-md"
-                       >
-                         <FiX size={12} />
-                       </button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-2">
-                      <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center mx-auto mb-2">
-                        <FiImage className="h-5 w-5 text-teal-500" />
-                      </div>
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Upload Icon</span>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                </div>
-              </div>
-
-              <div className="pt-4 flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                  onClick={() => { setIsModalOpen(false); setForm({ categoryName: '', reason: '' }); }}
+                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-black rounded-2xl hover:bg-gray-200 transition text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-3.5 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50"
+                  className="flex-1 py-3.5 text-white font-black rounded-2xl transition text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  style={{ background: `linear-gradient(135deg, ${themeColors.button}, ${themeColors.button}cc)` }}
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Category'}
+                  {isSubmitting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <FiSend className="w-4 h-4" />
+                      Send Request
+                    </>
+                  )}
                 </button>
               </div>
             </form>

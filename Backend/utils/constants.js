@@ -23,7 +23,30 @@ const VENDOR_STATUS = {
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
-  SUSPENDED: 'suspended'
+  SUSPENDED: 'suspended',
+  TRAINING_PENDING: 'training_pending', // Docs approved, training not yet done
+  TRAINING_FAILED: 'training_failed'    // Failed training (score < 50%)
+};
+
+// Training Levels
+const TRAINING_LEVELS = {
+  L1: 'L1', // 80%+ (premium — priority job allocation)
+  L2: 'L2', // 50-79% (standard)
+  L3: 'L3'  // <50% (must retrain, restricted)
+};
+
+// Training Score Thresholds
+const TRAINING_SCORE_THRESHOLDS = {
+  L1_MIN: 80,
+  L2_MIN: 50
+};
+
+// Training Status
+const TRAINING_STATUS = {
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
 };
 
 // Worker Status
@@ -89,5 +112,8 @@ module.exports = {
   BOOKING_STATUS,
   PAYMENT_STATUS,
   SERVICE_STATUS,
-  BILL_STATUS
+  BILL_STATUS,
+  TRAINING_LEVELS,
+  TRAINING_SCORE_THRESHOLDS,
+  TRAINING_STATUS
 };

@@ -7,7 +7,8 @@ const {
     getMyServices,
     getVendorServices,
     updateServiceAvailability,
-    setServicePricing
+    getAvailableHierarchy,
+    saveServiceSelections
 } = require('../../controllers/vendorControllers/vendorServiceController');
 
 // Validation rules
@@ -24,7 +25,10 @@ const setPricingValidation = [
 router.get('/my-services', authenticate, isVendor, getMyServices);
 router.get('/services', authenticate, isVendor, getVendorServices);
 router.put('/services/:serviceId/availability', authenticate, isVendor, updateAvailabilityValidation, updateServiceAvailability);
-router.put('/services/:serviceId/pricing', authenticate, isVendor, setPricingValidation, setServicePricing);
+
+// New Dynamic Pricing / Catalog Selection Routes
+router.get('/hierarchy', authenticate, isVendor, getAvailableHierarchy);
+router.post('/selections', authenticate, isVendor, saveServiceSelections);
 
 module.exports = router;
 

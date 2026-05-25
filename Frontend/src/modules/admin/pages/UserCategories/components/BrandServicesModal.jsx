@@ -12,7 +12,7 @@ const serviceSchema = z.object({
   discountPrice: z.number().optional()
 });
 
-const BrandServicesModal = ({ isOpen, onClose, brand }) => {
+const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -20,7 +20,8 @@ const BrandServicesModal = ({ isOpen, onClose, brand }) => {
     title: '',
     basePrice: '',
     gstPercentage: 18,
-    discountPrice: ''
+    discountPrice: '',
+    subCategoryId: ''
   });
 
   useEffect(() => {
@@ -53,7 +54,8 @@ const BrandServicesModal = ({ isOpen, onClose, brand }) => {
       title: '',
       basePrice: '',
       gstPercentage: 18,
-      discountPrice: ''
+      discountPrice: '',
+      subCategoryId: ''
     });
   };
 
@@ -68,6 +70,15 @@ const BrandServicesModal = ({ isOpen, onClose, brand }) => {
       discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined
     };
 
+    if (!form.subCategoryId) {
+      toast.error('Please select a subcategory');
+      return;
+    }
+
+    // Find the categoryId for the selected subCategory
+    const selectedSub = subCategories.find(s => String(s._id || s.id) === form.subCategoryId);
+    const categoryId = selectedSub?.categoryId?._id || selectedSub?.categoryId;
+
     const result = serviceSchema.safeParse(data);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
@@ -79,7 +90,9 @@ const BrandServicesModal = ({ isOpen, onClose, brand }) => {
       if (editingId) {
         const response = await serviceService.update(editingId, {
           ...result.data,
-          brandId: brand.id
+          brandId: brand.id,
+          subCategoryId: form.subCategoryId,
+          categoryId
         });
         if (response.success) {
           toast.success('Service updated');
@@ -89,7 +102,9 @@ const BrandServicesModal = ({ isOpen, onClose, brand }) => {
       } else {
         const response = await serviceService.create({
           ...result.data,
-          brandId: brand.id
+          brandId: brand.id,
+          subCategoryId: form.subCategoryId,
+          categoryId
         });
         if (response.success) {
           toast.success('Service created');
@@ -122,7 +137,8 @@ const BrandServicesModal = ({ isOpen, onClose, brand }) => {
       title: service.title,
       basePrice: service.basePrice,
       gstPercentage: service.gstPercentage || 18,
-      discountPrice: service.discountPrice || ''
+      discountPrice: service.discountPrice || '',
+      subCategoryId: service.subCategoryId?._id || service.subCategoryId || ''
     });
   };
 
@@ -137,6 +153,25 @@ const BrandServicesModal = ({ isOpen, onClose, brand }) => {
             {editingId ? 'Edit Service' : 'Add New Service'}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">SubCategory</label>
+              <select
+                value={form.subCategoryId}
+                onChange={e => setForm(p => ({ ...p, subCategoryId: e.target.value }))}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                required
+              >
+                <option value="">Select SubCategory</option>
+                {subCategories
+                  .filter(sub => brand.subCategoryIds?.includes(String(sub._id || sub.id)))
+                  .map(sub => (
+                    <option key={sub._id || sub.id} value={sub._id || sub.id}>
+                      {sub.title}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-gray-600 mb-1">Service Title</label>
               <input

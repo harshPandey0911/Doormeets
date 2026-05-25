@@ -109,13 +109,13 @@ const PublicRoute = ({ children, userType = 'user', redirectTo = null }) => {
   if (isAuthenticated) {
     // Determine redirect path
     const defaultRedirects = {
-      user: '/user',
+      user: '/user/home',
       vendor: '/vendor/dashboard',
       worker: '/worker/dashboard',
       admin: '/admin/dashboard'
     };
 
-    const redirectPath = redirectTo || defaultRedirects[userType] || '/user';
+    const redirectPath = redirectTo || defaultRedirects[userType] || '/user/home';
     return <Navigate to={redirectPath} replace />;
   }
 

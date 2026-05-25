@@ -152,7 +152,8 @@ const initializeSocket = (server) => {
           });
         } else if (socket.userRole === 'WORKER') {
           await Worker.findByIdAndUpdate(socket.userId, {
-            status: data.status // 'ONLINE', 'BUSY', etc.
+            status: data.status, // 'ONLINE', 'BUSY', etc.
+            currentAvailability: data.status
           });
         }
         console.log(`[Socket] ${socket.userRole} ${socket.userId} set availability to ${data.status}`);

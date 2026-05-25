@@ -127,34 +127,12 @@ const verifyLogin = async (req, res) => {
 
       // BLOCK PENDING VENDORS
       if (vendor.approvalStatus === VENDOR_STATUS.PENDING) {
-        // Auto-expiry check for self-verification (10 days limit)
-        if (vendor.policeVerification?.method === 'self' && 
-            vendor.policeVerification?.status === 'pending' && 
-            vendor.policeVerification?.expiryDate && 
-            new Date() > new Date(vendor.policeVerification.expiryDate)) {
-          
-          vendor.approvalStatus = VENDOR_STATUS.REJECTED;
-          vendor.policeVerification.status = 'expired';
-          vendor.rejectedReason = 'Police verification period expired (10 days limit).';
-          await vendor.save();
-          
-          return res.status(200).json({
-            success: true,
-            message: 'Your account application has been rejected.',
-            vendor: { 
-              adminApproval: 'rejected',
-              rejectedReason: vendor.rejectedReason
-            }
-          });
-        }
-
         return res.status(200).json({
           success: true,
           message: 'Your account is currently under review. Please complete verification steps.',
           vendor: { 
             id: vendor._id,
             adminApproval: 'pending',
-            policeVerification: vendor.policeVerification,
             isSubscriptionActive: vendor.isSubscriptionActive
           }
         });
@@ -242,11 +220,13 @@ const register = async (req, res) => {
       }
       phone = verifiedPhone.replace(/\D/g, '').slice(-10);
       console.log('[REGISTER] Phone from token:', phone);
-    } else {
+    } else if (req.body.otp) {
       // Fallback OTP
-      if (!req.body.otp) return res.status(400).json({ success: false, message: 'Verification required.' });
       const ver = await verifyOTP(phone, req.body.otp);
       if (!ver.success) return res.status(400).json({ success: false, message: ver.message });
+      phone = phone.replace(/\D/g, '').slice(-10);
+    } else {
+      // Direct registration without OTP (per user request)
       phone = phone.replace(/\D/g, '').slice(-10);
     }
 
@@ -319,12 +299,42 @@ const register = async (req, res) => {
       });
     }
 
+    // Process Professions to extract underlying categories
+    let finalCategories = [];
+    if (req.body.professions && req.body.professions.length > 0) {
+      const Profession = require('../../models/Profession');
+      const professionsData = await Profession.find({ _id: { $in: req.body.professions } });
+      professionsData.forEach(p => {
+        if (p.categories && p.categories.length > 0) {
+          finalCategories = [...finalCategories, ...p.categories.map(c => c.toString())];
+        }
+      });
+      finalCategories = [...new Set(finalCategories)]; // unique categories
+    } else {
+       finalCategories = req.body.categories || [];
+    }
+
+    // Calculate training level if completed
+    let trainingData = req.body.training || { status: 'not_started', attemptCount: 0 };
+    if (trainingData.status === 'completed') {
+      const score = trainingData.score || 0;
+      let level = 3; // Beginner
+      if (score >= 90) level = 1; // Expert
+      else if (score >= 60) level = 2; // Professional
+      
+      trainingData = { ...trainingData, assignedLevel: level };
+    }
+
     // Step 3: Create Vendor Record
     const vendor = await Vendor.create({
       name,
       email,
       phone,
       experience: req.body.experience || 0,
+      professions: req.body.professions || [],
+      categories: finalCategories,
+      isConsultant: req.body.isConsultant || false,
+      training: trainingData,
       aadhar: {
         number: aadhar,
         document: aadharUrl,

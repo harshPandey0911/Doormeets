@@ -421,7 +421,7 @@ const Account = () => {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50 transition-colors group-hover:bg-opacity-80">
                   <Logo className="w-8 h-8" iconOnly={true} />
                 </div>
-                <span className="font-semibold text-gray-900">About Civil connect</span>
+                <span className="font-semibold text-gray-900">About Doormeets</span>
               </div>
               <FiChevronRight className="w-5 h-5 text-gray-300 group-hover:text-teal-500 transition-colors" />
             </motion.button>

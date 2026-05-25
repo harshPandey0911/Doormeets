@@ -433,7 +433,7 @@ const PlanDetails = () => {
             </p>
           </div>
           <p className="text-center text-gray-300 text-[10px] uppercase font-bold tracking-widest pb-10">
-            Civilconnect Subscription • Secure & Trusted
+            Doormeets Subscription • Secure & Trusted
           </p>
         </div>
       </div>

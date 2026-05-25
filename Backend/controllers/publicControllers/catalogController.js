@@ -1,7 +1,10 @@
+const mongoose = require('mongoose');
 const Category = require('../../models/Category');
 const Brand = require('../../models/Brand');
-const Service = require('../../models/UserService');
+const Service = require('../../models/Service');
 const HomeContent = require('../../models/HomeContent');
+const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+const VendorServiceMapping = require('../../models/VendorServiceMapping');
 const { calculateDistance } = require('../../services/locationService');
 
 /**
@@ -31,25 +34,23 @@ const getPublicCategories = async (req, res) => {
     const onlineVendors = await require('../../models/Vendor').find({ 
       isOnline: true, 
       availability: 'AVAILABLE' 
-    }).select('_id');
-    const onlineVendorIds = onlineVendors.map(v => v._id);
+    }).select('categories');
 
-    // Find categories that have at least one active brand/service with an online vendor
-    const [activeCategoryIdsFromBrands, activeCategoryIdsFromServices] = await Promise.all([
-      Brand.distinct('categoryIds', { 
-        status: 'active', 
-        vendorId: { $in: onlineVendorIds } 
-      }),
-      Service.distinct('categoryId', { 
-        status: 'active', 
-        vendorId: { $in: onlineVendorIds } 
-      })
-    ]);
-
-    const activeCategoryIds = new Set([
-      ...activeCategoryIdsFromBrands.map(id => id.toString()),
-      ...activeCategoryIdsFromServices.map(id => id.toString())
-    ]);
+    const activeCategoryIds = new Set();
+    const activeCategoryTitles = new Set();
+    onlineVendors.forEach(vendor => {
+      if (Array.isArray(vendor.categories)) {
+        vendor.categories.forEach(cat => {
+          if (cat) {
+            if (mongoose.isValidObjectId(cat)) {
+              activeCategoryIds.add(cat.toString());
+            } else {
+              activeCategoryTitles.add(cat.toLowerCase().trim());
+            }
+          }
+        });
+      }
+    });
 
     const categories = await Category.find(query)
       .select('title slug homeIconUrl homeBadge hasSaleBadge homeOrder showOnHome categoryType')
@@ -58,7 +59,7 @@ const getPublicCategories = async (req, res) => {
 
     // Filter and map
     const initialCategories = categories
-      .filter(cat => activeCategoryIds.has(cat._id.toString()))
+      .filter(cat => activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim()))
       .map(cat => ({
         id: cat._id.toString(),
         title: cat.title,
@@ -83,12 +84,120 @@ const getPublicCategories = async (req, res) => {
   }
 };
 
+/**
+ * Get active subcategories for a category
+ * GET /api/public/subcategories
+ */
+const getPublicSubCategories = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+    if (!categoryId) {
+      return res.status(400).json({ success: false, message: 'categoryId is required' });
+    }
+
+    const SubCategory = require('../../models/SubCategory');
+    const subCategories = await SubCategory.find({ categoryId, status: 'active' })
+      .select('title slug iconUrl description')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      subCategories: subCategories.map(sub => ({
+        id: sub._id.toString(),
+        title: sub.title,
+        slug: sub.slug,
+        iconUrl: sub.iconUrl || '',
+        description: sub.description || ''
+      }))
+    });
+  } catch (error) {
+    console.error('Get public subcategories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch subcategories.'
+    });
+  }
+};
+
+/**
+ * Get Dynamic Booking Hierarchy (Categories -> SubCat -> Brand -> Service -> Pricing)
+ * GET /api/public/booking-hierarchy
+ */
+const getPublicBookingHierarchy = async (req, res) => {
+  try {
+    // We only want pricing where vendors actually support it
+    // Wait, the prompt says: "Booking request goes only to matching vendors."
+    // So we fetch the entire active pricing matrix.
+    const pricingMatrix = await ServiceBrandPricing.find({ isActive: true })
+      .populate('categoryId', 'title slug')
+      .populate('subCategoryId', 'title slug')
+      .populate('serviceId', 'title slug')
+      .populate('brandId', 'title slug iconUrl');
+
+    const hierarchy = {};
+
+    pricingMatrix.forEach(item => {
+      const cat = item.categoryId;
+      const sub = item.subCategoryId;
+      const srv = item.serviceId;
+      const brd = item.brandId;
+
+      if (!cat || !sub || !srv || !brd) return;
+
+      if (!hierarchy[cat._id]) {
+        hierarchy[cat._id] = { id: cat._id, title: cat.title, subCategories: {} };
+      }
+      if (!hierarchy[cat._id].subCategories[sub._id]) {
+        hierarchy[cat._id].subCategories[sub._id] = { id: sub._id, title: sub.title, brands: {} };
+      }
+      
+      // Grouping by Brand first for User Flow: Electrician -> AC Services -> LG -> AC Gas Filling
+      if (!hierarchy[cat._id].subCategories[sub._id].brands[brd._id]) {
+        hierarchy[cat._id].subCategories[sub._id].brands[brd._id] = { 
+          id: brd._id, 
+          title: brd.title,
+          iconUrl: brd.iconUrl,
+          services: [] 
+        };
+      }
+
+      hierarchy[cat._id].subCategories[sub._id].brands[brd._id].services.push({
+        id: srv._id,
+        title: srv.title,
+        price: item.finalCustomerPrice,
+        pricingId: item._id
+      });
+    });
+
+    const formattedHierarchy = Object.values(hierarchy).map(cat => ({
+      ...cat,
+      subCategories: Object.values(cat.subCategories).map(sub => ({
+        ...sub,
+        brands: Object.values(sub.brands)
+      }))
+    }));
+
+    res.status(200).json({
+      success: true,
+      hierarchy: formattedHierarchy
+    });
+
+  } catch (error) {
+    console.error('Get public hierarchy error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 const getPublicBrands = async (req, res) => {
   try {
-    const { categoryId, categorySlug, search, cityId, lat, lng } = req.query;
+    const { categoryId, subCategoryId, categorySlug, search, cityId, lat, lng } = req.query;
 
     // Build query
     const query = { status: 'active' };
+    if (subCategoryId) {
+      query.subCategoryIds = subCategoryId;
+    }
     if (categoryId) {
       const category = await Category.findById(categoryId);
       if (category) {
@@ -117,45 +226,57 @@ const getPublicBrands = async (req, res) => {
     }
 
     let brands = await Brand.find(query)
-      .select('title slug iconUrl logo imageUrl badge categoryIds basePrice discountPrice sections type vendorId isPriceDisclosed')
-      .populate({
-        path: 'vendorId',
-        match: { isOnline: true, availability: 'AVAILABLE' },
-        select: 'name businessName policeVerification address rating totalJobs profilePhoto isOnline availability geoLocation location'
-      })
+      .select('title slug iconUrl logo imageUrl badge categoryIds basePrice discountPrice sections type isPriceDisclosed')
       .sort({ createdAt: -1 })
       .lean();
 
-    // Filter out brands where vendor is offline or not found
-    brands = brands.filter(b => b.vendorId);
+    // Find all online and available vendors
+    const onlineVendors = await require('../../models/Vendor').find({ 
+      isOnline: true, 
+      availability: 'AVAILABLE' 
+    }).select('categories location address geoLocation');
+
+    const activeCategoryIds = new Set();
+    const activeCategoryTitles = new Set();
+    onlineVendors.forEach(vendor => {
+      if (Array.isArray(vendor.categories)) {
+        vendor.categories.forEach(cat => {
+          if (cat) {
+            if (mongoose.isValidObjectId(cat)) {
+              activeCategoryIds.add(cat.toString());
+            } else {
+              activeCategoryTitles.add(cat.toLowerCase().trim());
+            }
+          }
+        });
+      }
+    });
+
+    // Populate category details to get the titles for filtering
+    const brandCategoryIds = [...new Set(brands.flatMap(b => b.categoryIds || []))];
+    const brandCategories = await Category.find({ _id: { $in: brandCategoryIds } }).select('_id title').lean();
+    const brandCategoryMap = new Map();
+    brandCategories.forEach(c => brandCategoryMap.set(c._id.toString(), c.title.toLowerCase().trim()));
+
+    // Filter out brands whose category is not served by any online vendor
+    brands = brands.filter(b => {
+      if (!b.categoryIds) return false;
+      return b.categoryIds.some(catId => {
+        const idStr = catId.toString();
+        const title = brandCategoryMap.get(idStr);
+        return activeCategoryIds.has(idStr) || (title && activeCategoryTitles.has(title));
+      });
+    });
 
     // Deduplicate by title to ensure a clean catalog
     const groupedBrands = new Map();
-    const userLoc = (lat && lng) ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
     
     brands.forEach(brand => {
-      const vendor = brand.vendorId;
-      // STRICT CHECK: Only show Available vendors
-      if (!vendor || vendor.isOnline === false || vendor.availability !== 'AVAILABLE') return;
-      
-      if (userLoc) {
-        const vLat = vendor.location?.lat || vendor.address?.lat || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[1] : null);
-        const vLng = vendor.location?.lng || vendor.address?.lng || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[0] : null);
-        if (vLat && vLng) {
-          brand.distance = calculateDistance(userLoc, { lat: vLat, lng: vLng });
-        } else {
-          brand.distance = Infinity;
-        }
-      } else {
-        brand.distance = 0;
-      }
-
       const titleKey = brand.title.toLowerCase().trim();
       const existing = groupedBrands.get(titleKey);
       
       // LOGIC: 
       // 1. If brand doesn't exist in map yet, add it.
-      // 2. If it exists and we have location, pick the NEAREST.
       // 3. If distances are equal (or no location), pick the CHEAPEST (basePrice).
       if (!existing) {
         groupedBrands.set(titleKey, brand);
@@ -163,13 +284,7 @@ const getPublicBrands = async (req, res) => {
         const currentPrice = brand.basePrice || 0;
         const existingPrice = existing.basePrice || 0;
         
-        if (userLoc) {
-          if (brand.distance < existing.distance) {
-            groupedBrands.set(titleKey, brand);
-          } else if (brand.distance === existing.distance && currentPrice < existingPrice) {
-            groupedBrands.set(titleKey, brand);
-          }
-        } else if (currentPrice < existingPrice) {
+        if (currentPrice < existingPrice) {
           groupedBrands.set(titleKey, brand);
         }
       }
@@ -220,19 +335,7 @@ const getPublicBrands = async (req, res) => {
         categoryIds: (brand.categoryIds || []).map(id => id.toString()),
         sections: brand.sections || [],
         type: brand.type || 'service',
-        isPriceDisclosed: brand.isPriceDisclosed ?? true,
-        vendor: {
-          id: brand.vendorId._id,
-          name: brand.vendorId.name,
-          businessName: brand.vendorId.businessName,
-          policeVerification: brand.vendorId.policeVerification,
-          address: brand.vendorId.address,
-          rating: brand.vendorId.rating,
-          totalJobs: brand.vendorId.totalJobs,
-          profilePhoto: brand.vendorId.profilePhoto,
-          isOnline: brand.vendorId.isOnline,
-          availability: brand.vendorId.availability
-        }
+        isPriceDisclosed: brand.isPriceDisclosed ?? true
       }))
     });
   } catch (error) {
@@ -453,12 +556,19 @@ const getPublicServices = async (req, res) => {
 
     const query = { status: 'active' };
 
+    let targetBrand = null;
     if (brandId || brandSlug) {
       const brand = brandId ? await Brand.findById(brandId) : await Brand.findOne({ slug: brandSlug });
       if (brand) {
-        // Search by title globally to allow ALL available vendors to show up
-        const escapedTitle = brand.title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        query.title = { $regex: escapedTitle, $options: 'i' };
+        targetBrand = brand;
+        // Fetch service IDs mapped to this brand via pricing model
+        const pricings = await require('../../models/ServiceBrandPricing').find({
+          brandId: brand._id,
+          isActive: true
+        }).select('serviceId').lean();
+        
+        const mappedServiceIds = pricings.map(p => p.serviceId);
+        query._id = { $in: mappedServiceIds };
       }
     }
 
@@ -471,68 +581,98 @@ const getPublicServices = async (req, res) => {
       query.title = { $regex: escapedSearch, $options: 'i' };
     }
 
-    const services = await Service.find(query)
-      .populate({
-        path: 'vendorId',
-        match: { isOnline: true, availability: 'AVAILABLE' }, // Only populate if online
-        select: 'name businessName policeVerification address rating totalJobs profilePhoto isOnline availability geoLocation location'
-      })
+    let activeServices = await Service.find(query)
       .sort({ createdAt: 1 })
       .lean();
 
-    // Filter out services where vendor is offline or not found (due to match condition above)
-    let activeServices = services.filter(svc => svc.vendorId);
+    // Find all online and available vendors
+    const onlineVendors = await require('../../models/Vendor').find({ 
+      isOnline: true, 
+      availability: 'AVAILABLE' 
+    }).select('categories location address geoLocation');
+
+    const activeCategoryIds = new Set();
+    const activeCategoryTitles = new Set();
+    onlineVendors.forEach(vendor => {
+      if (Array.isArray(vendor.categories)) {
+        vendor.categories.forEach(cat => {
+          if (cat) {
+            if (mongoose.isValidObjectId(cat)) {
+              activeCategoryIds.add(cat.toString());
+            } else {
+              activeCategoryTitles.add(cat.toLowerCase().trim());
+            }
+          }
+        });
+      }
+    });
+
+    // Populate category details to get the titles for filtering
+    const svcCategoryIds = [...new Set(activeServices.map(s => s.categoryId).filter(Boolean))];
+    const svcCategories = await Category.find({ _id: { $in: svcCategoryIds } }).select('_id title').lean();
+    const svcCategoryMap = new Map();
+    svcCategories.forEach(c => svcCategoryMap.set(c._id.toString(), c.title.toLowerCase().trim()));
+
+    // Filter out services whose category is not served by any online vendor
+    activeServices = activeServices.filter(svc => {
+      if (!svc.categoryId) return false;
+      const idStr = svc.categoryId.toString();
+      const title = svcCategoryMap.get(idStr);
+      return activeCategoryIds.has(idStr) || (title && activeCategoryTitles.has(title));
+    });
 
     // Deduplicate by title to ensure only one "Reti" shows up even if 10 vendors have it
     const groupedServices = new Map();
-    const userLoc = (lat && lng) ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
 
     activeServices.forEach(svc => {
-      const vendor = svc.vendorId;
-      // STRICT CHECK: Only show Available vendors
-      if (!vendor || vendor.isOnline === false || vendor.availability !== 'AVAILABLE') return;
-      
-      // Calculate distance if coordinates available
-      if (userLoc) {
-        const vLat = vendor.location?.lat || vendor.address?.lat || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[1] : null);
-        const vLng = vendor.location?.lng || vendor.address?.lng || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[0] : null);
-        if (vLat && vLng) {
-          svc.distance = calculateDistance(userLoc, { lat: vLat, lng: vLng });
-        } else {
-          svc.distance = Infinity;
-        }
-      } else {
-        svc.distance = 0; // No distance sorting if no user location
-      }
-
       const titleKey = svc.title.toLowerCase().trim();
       const existing = groupedServices.get(titleKey);
 
-      // If no user location, just keep the first one. 
-      // If user location exists, keep the closest one.
-      // LOGIC: 
-      // 1. If service doesn't exist, add it.
-      // 2. If it exists and we have location, pick the NEAREST.
-      // 3. If distances are equal (or no location), pick the CHEAPEST.
+      // If it exists, pick the CHEAPEST.
       if (!existing) {
         groupedServices.set(titleKey, svc);
       } else {
         const currentPrice = svc.basePrice || 0;
         const existingPrice = existing.basePrice || 0;
 
-        if (userLoc) {
-          if (svc.distance < existing.distance) {
-            groupedServices.set(titleKey, svc);
-          } else if (svc.distance === existing.distance && currentPrice < existingPrice) {
-            groupedServices.set(titleKey, svc);
-          }
-        } else if (currentPrice < existingPrice) {
+        if (currentPrice < existingPrice) {
           groupedServices.set(titleKey, svc);
         }
       }
     });
 
     activeServices = Array.from(groupedServices.values());
+
+    // Fetch pricing for these services
+    const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+    const serviceIds = activeServices.map(s => s._id);
+    const pricings = await ServiceBrandPricing.find({
+      serviceId: { $in: serviceIds },
+      isActive: true
+    }).lean();
+
+    // Map pricing back to activeServices
+    activeServices = activeServices.map(svc => {
+      // Find exact pricing match if possible (matching subCategoryId and brandId)
+      const exactPricing = pricings.find(p => 
+        p.serviceId.toString() === svc._id.toString() &&
+        (targetBrand ? (p.brandId && p.brandId.toString() === targetBrand._id.toString()) : true) &&
+        (p.subCategoryId ? p.subCategoryId.toString() === svc.subCategoryId?.toString() : true)
+      );
+
+      // Or fallback to first pricing found for this service
+      const pricing = exactPricing || pricings.find(p => p.serviceId.toString() === svc._id.toString());
+
+      if (pricing) {
+        return {
+          ...svc,
+          basePrice: pricing.finalCustomerPrice || pricing.basePrice, // Present final price as basePrice for user app
+          gstPercentage: pricing.gstPercentage || 18,
+          // Vendor profit shouldn't be exposed to the public user app, only to vendors
+        };
+      }
+      return svc;
+    });
 
     res.status(200).json({
       success: true,
@@ -545,23 +685,11 @@ const getPublicServices = async (req, res) => {
         discountPrice: svc.discountPrice || 0,
         gstPercentage: svc.gstPercentage,
         description: svc.description,
-        brandId: svc.brandId?._id,
-        brandName: svc.brandId?.title,
-        brandIcon: svc.brandId?.iconUrl,
+        brandId: targetBrand ? targetBrand._id : null,
+        brandName: targetBrand ? targetBrand.title : null,
+        brandIcon: targetBrand ? targetBrand.iconUrl : null,
         type: svc.type || 'service',
-        isPriceDisclosed: svc.isPriceDisclosed ?? true,
-        vendor: {
-          id: svc.vendorId._id,
-          name: svc.vendorId.name,
-          businessName: svc.vendorId.businessName,
-          policeVerification: svc.vendorId.policeVerification,
-          address: svc.vendorId.address,
-          rating: svc.vendorId.rating,
-          totalJobs: svc.vendorId.totalJobs,
-          profilePhoto: svc.vendorId.profilePhoto,
-          isOnline: svc.vendorId.isOnline,
-          availability: svc.vendorId.availability
-        }
+        isPriceDisclosed: svc.isPriceDisclosed ?? true
       }))
     });
   } catch (error) {
@@ -677,11 +805,26 @@ const getPublicHomeData = async (req, res) => {
     const onlineVendors = await require('../../models/Vendor').find({ 
       isOnline: true, 
       availability: 'AVAILABLE' 
-    }).select('_id');
-    const onlineVendorIds = onlineVendors.map(v => v._id);
+    }).select('categories location address geoLocation');
 
-    // 2. Find categories that have at least one active brand/service with an online vendor
-    const [categoriesRes, homeContent, activeCategoryIdsFromBrands, activeCategoryIdsFromServices] = await Promise.all([
+    const activeCategoryIds = new Set();
+    const activeCategoryTitles = new Set();
+    onlineVendors.forEach(vendor => {
+      if (Array.isArray(vendor.categories)) {
+        vendor.categories.forEach(cat => {
+          if (cat) {
+            if (mongoose.isValidObjectId(cat)) {
+              activeCategoryIds.add(cat.toString());
+            } else {
+              activeCategoryTitles.add(cat.toLowerCase().trim());
+            }
+          }
+        });
+      }
+    });
+
+    // 2. Fetch categories and home content
+    const [categoriesRes, homeContent] = await Promise.all([
       Category.find({ 
         status: 'active', 
         $or: cityId ? [
@@ -693,25 +836,11 @@ const getPublicHomeData = async (req, res) => {
         .select('title slug homeIconUrl homeBadge hasSaleBadge categoryType')
         .sort({ homeOrder: 1 })
         .lean(),
-      HomeContent.getHomeContent(cityId),
-      Brand.distinct('categoryIds', { 
-        status: 'active', 
-        vendorId: { $in: onlineVendorIds } 
-      }),
-      Service.distinct('categoryId', { 
-        status: 'active', 
-        vendorId: { $in: onlineVendorIds } 
-      })
-    ]);
-
-    // Combine active category IDs
-    const activeCategoryIds = new Set([
-      ...activeCategoryIdsFromBrands.map(id => id.toString()),
-      ...activeCategoryIdsFromServices.map(id => id.toString())
+      HomeContent.getHomeContent(cityId)
     ]);
 
     const formattedCategories = categoriesRes
-      .filter(cat => activeCategoryIds.has(cat._id.toString())) // Filter by availability
+      .filter(cat => activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim())) // Filter by availability
       .map(cat => ({
         id: cat._id.toString(),
         title: cat.title,
@@ -742,21 +871,9 @@ const getPublicHomeData = async (req, res) => {
       
       // We need to fetch all active services and brands to dynamically update home page cards
       // This ensures the price shown on home matches the nearest vendor
-      const allActiveServices = await Service.find({ status: 'active' })
-        .populate({
-          path: 'vendorId',
-          select: 'name businessName isOnline availability location address geoLocation',
-          match: { isOnline: true, availability: 'AVAILABLE' }
-        })
-        .lean();
-      
-      const allActiveBrands = await Brand.find({ status: 'active' })
-        .populate({
-          path: 'vendorId',
-          select: 'name businessName isOnline availability location address geoLocation',
-          match: { isOnline: true, availability: 'AVAILABLE' }
-        })
-        .lean();
+      // We no longer populate vendorId on Service/Brand because Admin creates them
+      const allActiveServices = await Service.find({ status: 'active' }).lean();
+      const allActiveBrands = await Brand.find({ status: 'active' }).lean();
 
       // Helper to find best item for a title
       const findBestItem = (title, items) => {
@@ -765,38 +882,41 @@ const getPublicHomeData = async (req, res) => {
         
         let best = null;
         items.forEach(item => {
-          const vendor = item.vendorId;
-          // STRICT CHECK: Vendor must be Online AND Available
-          if (!vendor || vendor.isOnline === false || vendor.availability !== 'AVAILABLE') return;
+          // STRICT CHECK: Item's category must be in activeCategoryIds or Titles (meaning at least one online vendor serves it)
+          const itemCategoryId = item.categoryId || (item.categoryIds && item.categoryIds[0]);
+          let isSupported = false;
+          
+          if (itemCategoryId) {
+            const idStr = itemCategoryId.toString();
+            if (activeCategoryIds.has(idStr)) {
+              isSupported = true;
+            } else {
+              // Get category title from pre-fetched categoriesRes
+              const catObj = categoriesRes.find(c => c._id.toString() === idStr);
+              if (catObj && activeCategoryTitles.has(catObj.title.toLowerCase().trim())) {
+                isSupported = true;
+              }
+            }
+          }
+          
+          if (!isSupported) return;
           
           if (item.title.toLowerCase().trim().includes(targetTitle) || targetTitle.includes(item.title.toLowerCase().trim())) {
-            // Calculate distance
-            if (userLoc) {
-              const vLat = vendor.location?.lat || vendor.address?.lat || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[1] : null);
-              const vLng = vendor.location?.lng || vendor.address?.lng || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[0] : null);
-              item.distance = (vLat && vLng) ? calculateDistance(userLoc, { lat: vLat, lng: vLng }) : Infinity;
-            } else {
-              item.distance = 0;
-            }
-
+            
+            // Without specific vendor matching, we just pick the cheapest item for now
             if (!best) {
               best = item;
             } else {
               const currentPrice = item.basePrice || 0;
               const bestPrice = best.basePrice || 0;
               
-              if (userLoc) {
-                if (item.distance < best.distance) {
-                  best = item;
-                } else if (item.distance === best.distance && currentPrice < bestPrice) {
-                  best = item;
-                }
-              } else if (currentPrice < bestPrice) {
+              if (currentPrice < bestPrice) {
                 best = item;
               }
             }
           }
         });
+        
         return best;
       };
 
@@ -890,11 +1010,70 @@ const getPublicHomeData = async (req, res) => {
   }
 };
 
+/**
+ * Get all active professions
+ * GET /api/public/professions
+ */
+const getPublicProfessions = async (req, res) => {
+  try {
+    const Profession = require('../../models/Profession');
+    const professions = await Profession.find({ status: 'active' })
+      .populate('categories', 'title _id homeIconUrl imageUrl slug')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: professions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch professions',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get active training videos and questions for vendor signup
+ * GET /api/public/training-data
+ */
+const getPublicTrainingData = async (req, res) => {
+  try {
+    const TrainingVideo = require('../../models/TrainingVideo');
+    const TrainingQuestion = require('../../models/TrainingQuestion');
+
+    // For signup, fetch all global required videos and random questions
+    const videos = await TrainingVideo.find({ isActive: true, isRequired: true })
+      .sort({ order: 1 })
+      .select('title description videoUrl videoSource durationSeconds');
+
+    const questions = await TrainingQuestion.find({ isActive: true })
+      .select('question options difficulty');
+
+    res.status(200).json({
+      success: true,
+      videos,
+      questions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch training data',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getPublicCategories,
+  getPublicSubCategories,
   getPublicBrands,
   getPublicBrandBySlug,
   getPublicServices,
   getPublicHomeContent,
-  getPublicHomeData
+  getPublicHomeData,
+  getPublicBookingHierarchy,
+  getPublicProfessions,
+  getPublicTrainingData
 };

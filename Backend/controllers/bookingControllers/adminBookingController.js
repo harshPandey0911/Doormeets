@@ -161,11 +161,15 @@ const cancelBooking = async (req, res) => {
 
     await booking.save();
 
-    // ── Update Vendor Performance Stats ──
+    // ── Update Vendor Performance Stats & Availability ──
     if (booking.vendorId) {
       try {
         const { updateVendorStats } = require('../../utils/vendorStatsHelper');
         updateVendorStats(booking.vendorId);
+
+        // Also free up the vendor's availability so they appear online to new users
+        const Vendor = require('../../models/Vendor');
+        await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
       } catch (statsErr) {
         console.error('Error updating vendor stats after admin cancellation:', statsErr);
       }

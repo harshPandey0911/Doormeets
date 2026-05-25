@@ -23,12 +23,11 @@ const Profile = () => {
   const menuItems = [
     { id: 2, label: 'Wallet', icon: FaWallet, path: '/vendor/wallet' },
     { id: 5, label: 'My Ratings', icon: FiStar, path: '/vendor/my-ratings' },
-    { id: 11, label: 'Add Category', icon: FiGrid, path: '/vendor/categories' },
-    { id: 10, label: 'Manage Category / Items', icon: FiBriefcase, path: '/vendor/products' },
+    { id: 10, label: 'Categories', icon: FiGrid, path: '/vendor/categories' },
     { id: 12, label: 'Performance & Stats', icon: FiBox, path: '/vendor/my-services' },
     { id: 7, label: 'Manage Address', icon: FiMapPin, path: '/vendor/address-management' },
     { id: 8, label: 'Settings', icon: FiSettings, path: '/vendor/settings' },
-    { id: 9, label: 'About Civil connect', icon: null, customIcon: 'S', path: '/vendor/about-cleaning-expert' },
+    { id: 9, label: 'About Doormeets', icon: null, customIcon: 'S', path: '/vendor/about-cleaning-expert' },
     { id: 13, label: 'Stock Management', icon: FiBox, path: '/vendor/stock' },
   ];
 

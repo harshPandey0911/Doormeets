@@ -149,14 +149,6 @@ const approveVendor = async (req, res) => {
       });
     }
 
-    if (vendor.policeVerification?.status !== 'approved') {
-      return res.status(400).json({
-        success: false,
-        message: 'You need to check first police verification',
-        requiresPoliceVerification: true
-      });
-    }
-
     vendor.approvalStatus = VENDOR_STATUS.APPROVED;
     vendor.approvalDate = new Date();
     await vendor.save();

@@ -33,7 +33,6 @@ const BottomNav = memo(() => {
     };
   }, []);
 
-  // Use useMemo to update navItems when pendingJobsCount changes
   const navItems = useMemo(() => {
     // Count jobs that require attention (Pending, Accepted, In Progress)
     const badgeCount = pendingJobsCount;
@@ -41,7 +40,7 @@ const BottomNav = memo(() => {
     return [
       { path: '/vendor/dashboard', icon: FiHome, activeIcon: HiHome, label: 'Home' },
       { path: '/vendor/jobs', icon: FiBriefcase, activeIcon: HiBriefcase, label: 'Jobs', badge: badgeCount },
-      { path: '/vendor/wallet', icon: FaWallet, activeIcon: FaWallet, label: 'Wallet' },
+      { path: '/vendor/workers', icon: FiUsers, activeIcon: HiUsers, label: 'Workers' },
       { path: '/vendor/profile', icon: FiUser, activeIcon: HiUser, label: 'Profile' },
     ];
   }, [pendingJobsCount]);

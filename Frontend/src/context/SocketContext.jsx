@@ -271,7 +271,6 @@ export const SocketProvider = ({ children }) => {
           },
           status: 'requested',
           bookingStatus: data.status,
-          serviceType: data.serviceType || 'service',
           createdAt: data.createdAt || new Date().toISOString(),
           expiresAt: data.expiresAt
         };

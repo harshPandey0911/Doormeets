@@ -26,6 +26,11 @@ const brandSchema = new mongoose.Schema({
     required: [true, 'Please provide at least one category'],
     index: true
   }],
+  subCategoryIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SubCategory',
+    index: true
+  }],
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
@@ -99,15 +104,8 @@ const brandSchema = new mongoose.Schema({
   isPriceDisclosed: {
     type: Boolean,
     default: true
-  },
-  basePrice: {
-    type: Number,
-    default: 0
-  },
-  discountPrice: {
-    type: Number,
-    default: 0
   }
+  // basePrice and discountPrice moved to ServiceBrandPricing
 }, {
   timestamps: true
 });

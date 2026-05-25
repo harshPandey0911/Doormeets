@@ -135,6 +135,12 @@ const verifyPaymentWebhook = async (req, res) => {
     } else if (booking.status === BOOKING_STATUS.WORK_DONE) {
       booking.status = BOOKING_STATUS.COMPLETED;
       booking.completedAt = new Date();
+      
+      // Free up vendor availability if they were the assigned vendor
+      if (booking.vendorId) {
+        const Vendor = require('../../models/Vendor');
+        await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+      }
     }
 
     await booking.save();
@@ -340,6 +346,12 @@ const processWalletPayment = async (req, res) => {
     } else if (booking.status === BOOKING_STATUS.WORK_DONE) {
       booking.status = BOOKING_STATUS.COMPLETED;
       booking.completedAt = new Date();
+      
+      // Free up vendor availability if they were the assigned vendor
+      if (booking.vendorId) {
+        const Vendor = require('../../models/Vendor');
+        await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+      }
     }
 
     await booking.save();

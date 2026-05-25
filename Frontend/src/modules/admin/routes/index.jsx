@@ -16,6 +16,7 @@ const UserCategories = lazy(() => import('../pages/UserCategories'));
 const Users = lazy(() => import('../pages/Users'));
 const Vendors = lazy(() => import('../pages/Vendors'));
 const Workers = lazy(() => import('../pages/Workers'));
+const VendorsZone = lazy(() => import('../pages/VendorsZone'));
 const Bookings = lazy(() => import('../pages/Bookings'));
 const BookingTracking = lazy(() => import('../pages/Bookings/Tracking'));
 const BookingNotifications = lazy(() => import('../pages/Bookings/BookingNotifications'));
@@ -30,8 +31,10 @@ const Plans = lazy(() => import('../pages/Plans/Plans'));
 const Scrap = lazy(() => import('../pages/Scrap'));
 const Settlements = lazy(() => import('../pages/Settlements'));
 const Reviews = lazy(() => import('../pages/Reviews'));
-const PoliceVerificationManagement = lazy(() => import('../pages/Vendors/PoliceVerificationManagement'));
 const VendorSubscriptionManagement = lazy(() => import('../pages/VendorSubscriptions/SubscriptionManagement'));
+const Training = lazy(() => import('../pages/Training'));
+const VendorRequests = lazy(() => import('../pages/VendorRequests'));
+const Commission = lazy(() => import('../pages/Commission'));
 
 
 
@@ -61,7 +64,7 @@ const AdminRoutes = () => {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users/*" element={<Users />} />
           <Route path="vendors/*" element={<Vendors />} />
-          <Route path="police-verification" element={<PoliceVerificationManagement />} />
+          <Route path="vendors-zone" element={<VendorsZone />} />
           <Route path="vendor-subscriptions/*" element={<VendorSubscriptionManagement />} />
           <Route path="workers/*" element={<Workers />} />
           <Route path="bookings" element={<Bookings />} />
@@ -79,6 +82,9 @@ const AdminRoutes = () => {
           <Route path="settings/*" element={<Settings />} />
           <Route path="support/*" element={<AdminSupport />} />
           <Route path="offer-banners" element={<OfferBanners />} />
+          <Route path="training" element={<Training />} />
+          <Route path="vendor-requests" element={<VendorRequests />} />
+          <Route path="commission" element={<Commission />} />
         </Route>
       </Routes>
     </Suspense>

@@ -153,31 +153,13 @@ const VendorLogin = () => {
 
           // Check for admin approval status
           if (response.vendor?.adminApproval === 'PENDING' || response.vendor?.adminApproval === 'pending') {
-            const pv = response.vendor.policeVerification;
             const vendorId = response.vendor.id;
             
             // Store vendorId temporarily for persistence during verification steps
             sessionStorage.setItem('pendingVendorId', vendorId);
 
-            // Granular Redirection based on Police Verification Status
-            const method = pv?.method?.toLowerCase();
-            const status = pv?.status?.toLowerCase();
-
-            if (!method) {
-              navigate('/vendor/police-verification/selection', { state: { vendorId } });
-            } else if (method === 'self' && status === 'pending') {
-              navigate('/vendor/police-verification/upload', { state: { vendorId } });
-            } else if (response.vendor?.approvalStatus?.toLowerCase() === 'approved') {
-              // Account is approved, now check subscription
-              if (!response.vendor?.isSubscriptionActive) {
-                navigate('/vendor/subscription', { replace: true, state: { vendorId } });
-              } else {
-                navigate('/vendor/dashboard', { replace: true });
-              }
-            } else {
-              // Includes status === 'submitted'
-              navigate('/vendor/pending-approval');
-            }
+            // Directly navigate to pending approval since Police Verification is removed
+            navigate('/vendor/pending-approval');
             return;
           }
 

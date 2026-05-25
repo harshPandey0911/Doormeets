@@ -156,6 +156,14 @@ api.interceptors.response.use(
         if (!window.location.pathname.includes('/vendor/subscription')) {
           window.location.href = '/vendor/subscription';
         }
+      } else if (code === 'TRAINING_REQUIRED' || code === 'TRAINING_COOLDOWN') {
+        console.warn('Training not completed. Redirecting to training...');
+        if (!window.location.pathname.includes('/vendor/training')) {
+          window.location.href = '/vendor/training';
+        }
+      } else if (code === 'ACCOUNT_FROZEN') {
+        console.error('Account frozen:', error.response.data.message);
+        // Don't redirect; let the component handle the frozen state
       } else {
         console.error('Access Denied (403):', error.response.data.message);
       }

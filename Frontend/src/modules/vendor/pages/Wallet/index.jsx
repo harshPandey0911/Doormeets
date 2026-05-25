@@ -86,8 +86,6 @@ const Wallet = () => {
         return <FiDollarSign className="w-5 h-5 text-purple-500" />;
       case 'tds_deduction':
         return <FiAlertCircle className="w-5 h-5 text-amber-500" />;
-      case 'tds_deduction':
-        return <FiAlertCircle className="w-5 h-5 text-amber-500" />;
       default:
         return <FiDollarSign className="w-5 h-5 text-gray-500" />;
     }
@@ -103,8 +101,6 @@ const Wallet = () => {
         return 'Settlement Paid';
       case 'withdrawal':
         return 'Withdrawal Payout';
-      case 'tds_deduction':
-        return 'TDS Deduction';
       case 'tds_deduction':
         return 'TDS Deduction';
       default:

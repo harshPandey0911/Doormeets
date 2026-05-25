@@ -176,8 +176,10 @@ app.use('/api/users/fcm-tokens', require('./routes/user-routes/fcmToken.routes')
 // Vendor routes
 const { checkSubscription } = require('./middleware/roleMiddleware');
 app.use('/api/vendors/auth', require('./routes/vendor-routes/auth.routes'));
-app.use('/api/vendors/verification', require('./routes/vendor-routes/verification.routes'));
 app.use('/api/vendors/subscription', require('./routes/vendor-routes/subscription.routes'));
+
+// Training routes (require subscription but NOT training completion — they ARE the training step)
+app.use('/api/vendors/training', require('./routes/vendor-routes/training.routes'));
 
 // Protected Vendor routes (require active subscription)
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/profile.routes'));
@@ -191,6 +193,7 @@ app.use('/api/vendors/fcm-tokens', checkSubscription, require('./routes/vendor-r
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/vendorBill.routes'));
 app.use('/api/vendors/catalog', checkSubscription, require('./routes/vendor-routes/catalog.routes'));
 app.use('/api/vendors/categories', checkSubscription, require('./routes/vendor-routes/category.routes'));
+app.use('/api/vendors/category-requests', checkSubscription, require('./routes/vendor-routes/vendorCategoryRequest.routes'));
 app.use('/api/vendors/products', checkSubscription, require('./routes/vendor-routes/product.routes'));
 app.use('/api/vendors/support', checkSubscription, require('./routes/vendor-routes/support.routes'));
 
@@ -211,6 +214,9 @@ app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/categoryManagement.routes'));
+app.use('/api/admin/professions', require('./routes/admin-routes/profession.routes'));
+app.use('/api/admin/subcategories', require('./routes/admin-routes/subCategoryManagement.routes'));
+app.use('/api/admin/pricing', require('./routes/admin-routes/pricingManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/brandManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/serviceManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorCatalogManagement.routes'));
@@ -228,6 +234,8 @@ app.use('/api/admin/settlements', require('./routes/admin-routes/settlementManag
 app.use('/api/admin/admins', require('./routes/admin-routes/adminManagement.routes'));
 app.use('/api/admin/support', require('./routes/admin-routes/support.routes'));
 app.use('/api/admin/banners', require('./routes/admin-routes/banner.routes'));
+app.use('/api/admin/training', require('./routes/admin-routes/trainingManagement.routes'));
+app.use('/api/admin', require('./routes/admin-routes/adminVendorCategoryRequest.routes'));
 app.use('/api/image', require('./routes/admin-routes/image.routes'));
 app.use('/api', require('./routes/admin-routes/upload.routes')); // Generic upload access
 

@@ -114,13 +114,13 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null }) => {
   if (isAuthenticated === false) {
     // Determine redirect path
     const defaultRedirects = {
-      user: '/user/login',
+      user: '/user',
       vendor: '/vendor/login',
       worker: '/worker/login',
       admin: '/admin/login'
     };
 
-    const redirectPath = redirectTo || defaultRedirects[userType] || '/user/login';
+    const redirectPath = redirectTo || defaultRedirects[userType] || '/user';
 
     // Toast removed from render phase to prevent "Cannot update a component while rendering" error
     // If you need a toast, trigger it in useEffect before setting isAuthenticated(false) or rely on LoginPage to show "Please login"

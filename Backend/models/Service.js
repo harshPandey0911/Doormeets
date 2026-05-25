@@ -6,11 +6,17 @@ const { SERVICE_STATUS } = require('../utils/constants');
  * Represents individual services strictly under a Brand
  */
 const serviceSchema = new mongoose.Schema({
-  brandId: {
+  subCategoryId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Brand',
-    required: [true, 'Please provide a brand ID'],
-    index: true
+    ref: 'SubCategory',
+    index: true,
+    default: null
+  },
+  categoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    index: true,
+    default: null
   },
   title: {
     type: String,
@@ -29,17 +35,8 @@ const serviceSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  basePrice: {
-    type: Number,
-    required: [true, 'Base price is required'],
-    min: [0, 'Price cannot be negative']
-  },
-  gstPercentage: {
-    type: Number,
-    required: [true, 'GST percentage is required'],
-    min: 0,
-    default: 18
-  },
+  // Base price and GST removed - moved to ServiceBrandPricing
+  // Status and descriptions remain
   status: {
     type: String,
     enum: Object.values(SERVICE_STATUS),

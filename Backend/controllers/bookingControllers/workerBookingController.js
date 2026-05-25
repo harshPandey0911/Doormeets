@@ -427,6 +427,7 @@ const completeJob = async (req, res) => {
     const { workPhotos, workDoneDetails } = req.body;
 
     const booking = await Booking.findOne({ _id: id, workerId });
+    const Worker = require('../../models/Worker');
 
     if (!booking) {
       return res.status(404).json({
@@ -457,6 +458,34 @@ const completeJob = async (req, res) => {
     }
 
     await booking.save();
+
+    // --- WORKER PERFORMANCE TRACKING ---
+    const worker = await Worker.findById(workerId);
+    if (worker) {
+      worker.activeBookingId = null; // Clear active booking
+      worker.totalCompletedJobs = (worker.totalCompletedJobs || 0) + 1;
+      worker.completedJobs = (worker.completedJobs || 0) + 1;
+      worker.totalJobs = (worker.totalJobs || 0) + 1;
+      
+      // Completion Rate calculation
+      const total = worker.totalJobs;
+      worker.completionRate = total > 0 ? (worker.totalCompletedJobs / total) * 100 : 100;
+      
+      // Performance Score (Example: +5 for completion, cap at 100)
+      worker.performanceScore = Math.min(100, (worker.performanceScore || 100) + 5);
+      
+      // Re-evaluate Level (Simple logic)
+      if (worker.performanceScore >= 80 && worker.completionRate >= 80) {
+        worker.currentLevel = 'L1';
+      } else if (worker.performanceScore >= 50 && worker.completionRate >= 50) {
+        worker.currentLevel = 'L2';
+      } else {
+        worker.currentLevel = 'L3';
+      }
+      
+      await worker.save();
+    }
+    // ------------------------------------
 
     // Notify user
     const { createNotification } = require('../notificationControllers/notificationController');
@@ -737,6 +766,7 @@ const respondToJob = async (req, res) => {
     const { status } = req.body; // 'ACCEPTED' or 'REJECTED'
 
     const booking = await Booking.findOne({ _id: id, workerId });
+    const Worker = require('../../models/Worker');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Job not found' });
@@ -780,9 +810,37 @@ const respondToJob = async (req, res) => {
         pushData: { type: 'worker_accepted', bookingId: booking._id.toString(), link: `/user/booking/${booking._id}` }
       });
 
+      // Update worker active booking
+      await Worker.findByIdAndUpdate(workerId, { activeBookingId: booking._id });
+
     } else if (status === 'REJECTED') {
       booking.workerId = null;
       booking.status = BOOKING_STATUS.CONFIRMED; // Revert to unassigned state
+      
+      // --- WORKER CANCELLATION TRACKING ---
+      const worker = await Worker.findById(workerId);
+      if (worker) {
+        worker.totalCancelledJobs = (worker.totalCancelledJobs || 0) + 1;
+        worker.totalJobs = (worker.totalJobs || 0) + 1;
+        
+        // Cancellation Rate calculation
+        const total = worker.totalJobs;
+        worker.cancellationRate = total > 0 ? (worker.totalCancelledJobs / total) * 100 : 0;
+        
+        // Trust Score & Performance penalty (-5)
+        worker.trustScore = Math.max(0, (worker.trustScore || 100) - 5);
+        worker.performanceScore = Math.max(0, (worker.performanceScore || 100) - 5);
+        
+        // Re-evaluate Level
+        if (worker.performanceScore < 50) {
+          worker.currentLevel = 'L3';
+        } else if (worker.performanceScore < 80) {
+          worker.currentLevel = 'L2';
+        }
+        
+        await worker.save();
+      }
+      // ------------------------------------
 
       const { createNotification } = require('../notificationControllers/notificationController');
       await createNotification({

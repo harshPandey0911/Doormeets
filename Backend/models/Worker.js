@@ -64,6 +64,49 @@ const workerSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  workerCode: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  currentLevel: {
+    type: String,
+    enum: ['L1', 'L2', 'L3'],
+    default: 'L3'
+  },
+  performanceScore: {
+    type: Number,
+    default: 100
+  },
+  trustScore: {
+    type: Number,
+    default: 100
+  },
+  cancellationRate: {
+    type: Number,
+    default: 0
+  },
+  completionRate: {
+    type: Number,
+    default: 0
+  },
+  isFrozen: {
+    type: Boolean,
+    default: false
+  },
+  freezeReason: {
+    type: String,
+    default: null
+  },
+  trainingCompleted: {
+    type: Boolean,
+    default: false
+  },
+  activeBookingId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Booking',
+    default: null
+  },
   address: {
     addressLine1: String,
     addressLine2: String,
@@ -122,8 +165,17 @@ const workerSchema = new mongoose.Schema({
   location: {
     lat: Number,
     lng: Number,
+    heading: Number,
     updatedAt: Date
   },
+  liveLocation: {
+    type: {
+      type: String,
+      enum: ['Point']
+    },
+    coordinates: [Number]
+  },
+  lastLocationUpdatedAt: Date,
   // Additional Stats
   cancelledJobs: {
     type: Number,

@@ -30,6 +30,7 @@
     ],
     "children": [
       "All Vendors",
+      "Vendor's Zone",
       "Vendor Bookings",
       "Vendor Analytics"
     ]
@@ -115,9 +116,12 @@
     ],
     "children": [
       "Home",
+      "Manage Professions",
       "Manage Categories",
+      "Manage SubCategories",
       "Manage Brands",
-      "Manage Services"
+      "Manage Services",
+      "Pricing Matrix"
     ]
   },
   {
@@ -175,15 +179,7 @@
     ],
     "children": []
   },
-  {
-    "title": "Police Verification",
-    "icon": "FiShield",
-    "route": "/admin/police-verification",
-    "allowedRoles": [
-      "super_admin",
-      "admin"
-    ]
-  },
+
   {
     "title": "Offer Banners",
     "route": "/admin/offer-banners",
@@ -194,8 +190,35 @@
     "children": []
   },
   {
+    "title": "Commission",
+    "route": "/admin/commission",
+    "allowedRoles": [
+      "super_admin"
+    ],
+    "children": []
+  },
+  {
     "title": "Settings",
     "route": "/admin/settings",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": []
+  },
+  {
+    "title": "Training",
+    "icon": "FiPlayCircle",
+    "route": "/admin/training",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": []
+  },
+  {
+    "title": "Vendor Requests",
+    "route": "/admin/vendor-requests",
     "allowedRoles": [
       "super_admin",
       "admin"

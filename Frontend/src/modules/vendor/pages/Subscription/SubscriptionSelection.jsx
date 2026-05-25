@@ -106,10 +106,10 @@ const SubscriptionSelection = () => {
       const orderRes = await subscriptionService.createOrder(plan._id, vendorId);
       if (orderRes.success) {
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_your_key',
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_8sYbzHWidwe5Zw',
           amount: orderRes.order.amount,
           currency: orderRes.order.currency,
-          name: "Civil Connect",
+          name: "Doormeets",
           description: `Subscription: ${plan.name}`,
           order_id: orderRes.order.id,
           handler: async (response) => {
@@ -120,7 +120,7 @@ const SubscriptionSelection = () => {
                 planId: plan._id
               });
               if (verifyRes.success) {
-                toast.success('Subscription active! Welcome to Civil Connect.');
+                toast.success('Subscription active! Welcome to Doormeets.');
                 
                 // Update local storage vendor data
                 const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
@@ -188,7 +188,7 @@ const SubscriptionSelection = () => {
             Choose Your Growth Plan
           </h1>
           <p className="mt-4 text-xl text-slate-500 max-w-2xl mx-auto">
-            Get approved and start receiving high-quality leads from Civil Connect today.
+            Get approved and start receiving high-quality leads from Doormeets today.
           </p>
         </div>
 

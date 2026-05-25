@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiCheck, FiX, FiEye, FiSearch, FiFilter, FiDownload, FiLoader, FiPower, FiTrash2 } from 'react-icons/fi';
+import { FiCheck, FiX, FiEye, FiSearch, FiFilter, FiDownload, FiLoader, FiPower, FiTrash2, FiAward } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import CardShell from '../UserCategories/components/CardShell';
 import Modal from '../UserCategories/components/Modal';
@@ -43,6 +43,7 @@ const AllVendors = () => {
             pan: vendor.pan?.document,
             other: vendor.otherDocuments?.[0]
           },
+          training: vendor.training,
           createdAt: vendor.createdAt,
           isActive: vendor.isActive,
           experience: vendor.experience,
@@ -95,11 +96,7 @@ const AllVendors = () => {
       }
     } catch (error) {
       console.error('Error approving vendor:', error);
-      if (error.response?.data?.requiresPoliceVerification) {
-        toast.error('You need to check first police verification');
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to approve vendor. Please try again.');
-      }
+      toast.error(error.response?.data?.message || 'Failed to approve vendor. Please try again.');
     }
   };
 
@@ -399,6 +396,37 @@ const AllVendors = () => {
                 </div>
               </div>
             </div>
+
+            {/* Training Test Results */}
+            {selectedVendor.training && selectedVendor.training.status === 'completed' && (
+              <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 mt-6">
+                <h4 className="text-sm font-bold text-purple-900 mb-3 flex items-center gap-2">
+                  <FiAward className="text-purple-600" />
+                  Training Test Results
+                </h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs text-purple-600 mb-1">Score</label>
+                    <div className="font-bold text-purple-900">{selectedVendor.training.score}%</div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-purple-600 mb-1">Correct Answers</label>
+                    <div className="font-bold text-purple-900">
+                      {selectedVendor.training.correctAnswers} / {selectedVendor.training.totalQuestions}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-purple-600 mb-1">Assigned Level</label>
+                    <div className="font-bold text-purple-900">
+                      Level {selectedVendor.training.assignedLevel} 
+                      <span className="text-xs font-normal text-purple-700 ml-1">
+                        ({selectedVendor.training.assignedLevel === 1 ? 'Expert' : selectedVendor.training.assignedLevel === 2 ? 'Professional' : 'Beginner'})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
 
             <div>

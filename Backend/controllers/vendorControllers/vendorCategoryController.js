@@ -1,32 +1,27 @@
 const Category = require('../../models/Category');
-const { validationResult } = require('express-validator');
-const { SERVICE_STATUS } = require('../../utils/constants');
+const Brand = require('../../models/Brand');
+const Service = require('../../models/Service');
+const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
 
 /**
- * Get all categories (Vendor view)
- * GET /api/vendor/categories
+ * Get all admin-managed categories (Vendor view — read only)
+ * GET /api/vendors/categories
+ * Only returns service categories added by admin
  */
 const getVendorCategories = async (req, res) => {
   try {
-    const { status, categoryType } = req.query;
-    
-    // Build query - vendors can see their own categories + global categories (vendorId null/not exists)
-    // AND we must exclude deleted categories
     const query = {
-      status: { $ne: 'deleted' },
+      status: 'active',
+      categoryType: 'service',
       $or: [
-        { vendorId: req.user.id },
-        { vendorId: { $exists: false } },
-        { vendorId: null }
+        { vendorId: null },
+        { vendorId: { $exists: false } }
       ]
     };
-    
-    if (status) query.status = status;
-    if (categoryType) query.categoryType = categoryType;
 
     const categories = await Category.find(query)
-      .select('-__v')
-      .sort({ createdAt: -1 })
+      .select('title slug categoryType imageUrl homeIconUrl description status homeOrder')
+      .sort({ homeOrder: 1, title: 1 })
       .lean();
 
     res.status(200).json({
@@ -37,11 +32,9 @@ const getVendorCategories = async (req, res) => {
         title: cat.title,
         slug: cat.slug,
         categoryType: cat.categoryType,
-        imageUrl: cat.imageUrl,
-        status: cat.status,
-        vendorId: cat.vendorId,
-        createdAt: cat.createdAt,
-        isOwnCategory: cat.vendorId?.toString() === req.user.id
+        imageUrl: cat.imageUrl || cat.homeIconUrl || null,
+        description: cat.description || '',
+        status: cat.status
       }))
     });
   } catch (error) {
@@ -54,107 +47,94 @@ const getVendorCategories = async (req, res) => {
 };
 
 /**
- * Create new category (by Vendor)
- * POST /api/vendor/categories
+ * Get brands under a specific category (Vendor view)
+ * GET /api/vendors/categories/:categoryId/brands
  */
-const createVendorCategory = async (req, res) => {
+const getCategoryBrands = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
+    const { categoryId } = req.params;
 
-    const {
-      title,
-      description,
-      imageUrl,
-      categoryType
-    } = req.body;
+    const brands = await Brand.find({
+      $or: [
+        { categoryIds: categoryId },
+        { categoryId: categoryId }
+      ],
+      status: 'active',
+      type: { $ne: 'product' }
+    })
+      .select('title slug iconUrl badge isPopular isFeatured type rating')
+      .sort({ isPopular: -1, isFeatured: -1, title: 1 })
+      .lean();
 
-    let slug = title.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
-    
-    // Check if slug exists, if so append a short random string to make it unique for this vendor
-    const existingCategory = await Category.findOne({ slug });
-    if (existingCategory) {
-      slug = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
-    }
-
-    // Default status for vendor created category can be PENDING or ACTIVE. We'll set ACTIVE for now to not block the flow
-    const category = await Category.create({
-      title: title.trim(),
-      slug,
-      description: description?.trim() || null,
-      imageUrl: imageUrl || null,
-      homeIconUrl: imageUrl || null, // Ensure icon shows on user home page
-      status: SERVICE_STATUS.ACTIVE, 
-      categoryType: categoryType || 'service',
-      vendorId: req.user.id,
-      showOnHome: true // Allow vendor categories to show on user home
-    });
-
-    // Automatically add this new category to the vendor's authorized categories
-    const Vendor = require('../../models/Vendor');
-    await Vendor.findByIdAndUpdate(req.user.id, {
-      $addToSet: { categories: category.title, service: category.title }
-    });
-
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: 'Category created successfully',
-      category: {
-        id: category._id,
-        title: category.title,
-        slug: category.slug,
-        categoryType: category.categoryType,
-        imageUrl: category.imageUrl,
-        status: category.status,
-        vendorId: category.vendorId,
-        createdAt: category.createdAt
-      }
+      count: brands.length,
+      brands: brands.map(b => ({
+        id: b._id,
+        title: b.title,
+        slug: b.slug,
+        iconUrl: b.iconUrl || null,
+        badge: b.badge || null,
+        isPopular: b.isPopular,
+        isFeatured: b.isFeatured,
+        type: b.type,
+        rating: b.rating || 0
+      }))
     });
   } catch (error) {
-    console.error('Create vendor category error:', error);
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category with this title already exists'
-      });
-    }
+    console.error('Get category brands error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create category. Please try again.'
+      message: 'Failed to fetch brands. Please try again.'
     });
   }
 };
 
 /**
- * Delete a vendor category
- * DELETE /api/vendor/categories/:id
+ * Get services and their pricing under a specific brand
+ * GET /api/vendors/categories/:categoryId/brands/:brandId/services
  */
-const deleteVendorCategory = async (req, res) => {
+const getBrandServicesAndPricing = async (req, res) => {
   try {
-    const { id } = req.params;
-    const vendorId = req.user.id;
+    const { categoryId, brandId } = req.params;
+    const pricings = await ServiceBrandPricing.find({
+      categoryId: categoryId,
+      brandId: brandId,
+      isActive: true
+    }).populate('serviceId', 'title slug duration warranty iconUrl status').lean();
 
-    // Verify ownership and delete category
-    const category = await Category.findOneAndDelete({ _id: id, vendorId });
-    if (!category) {
-      return res.status(404).json({ success: false, message: 'Category not found or not authorized' });
-    }
+    const servicesWithPricing = pricings
+      .filter(p => p.serviceId && p.serviceId.status === 'active')
+      .map(pricing => ({
+        id: pricing.serviceId._id,
+        title: pricing.serviceId.title,
+        duration: pricing.serviceId.duration,
+        warranty: pricing.serviceId.warranty,
+        iconUrl: pricing.serviceId.iconUrl,
+        priceDetails: {
+          finalCustomerPrice: pricing.finalCustomerPrice,
+          vendorProfit: pricing.vendorProfit,
+          basePrice: pricing.basePrice,
+          gstAmount: pricing.gstAmount
+        }
+      }));
 
-    res.status(200).json({ success: true, message: 'Category deleted successfully' });
+    res.status(200).json({
+      success: true,
+      count: servicesWithPricing.length,
+      services: servicesWithPricing
+    });
   } catch (error) {
-    console.error('Delete vendor category error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete category.' });
+    console.error('Get brand services and pricing error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch services. Please try again.'
+    });
   }
 };
 
 module.exports = {
   getVendorCategories,
-  createVendorCategory,
-  deleteVendorCategory
+  getCategoryBrands,
+  getBrandServicesAndPricing
 };

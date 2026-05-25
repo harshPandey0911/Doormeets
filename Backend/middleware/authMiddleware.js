@@ -58,6 +58,15 @@ const authenticate = async (req, res, next) => {
           });
         }
 
+        // FROZEN CHECK: Blocked by admin
+        if (user && user.isFrozen) {
+          return res.status(403).json({
+            success: false,
+            code: 'ACCOUNT_FROZEN',
+            message: `Your account has been frozen. Reason: ${user.freezeReason || 'Contact support'}. Please contact support.`
+          });
+        }
+
         // SINGLE DEVICE LOGOUT Logic: Check if token's session ID matches DB
         if (user && user.loginSessionId && decoded.loginSessionId && user.loginSessionId !== decoded.loginSessionId) {
           return res.status(401).json({

@@ -6,7 +6,7 @@ import Modal from "../components/Modal";
 import ModeSelector from "../components/ModeSelector";
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
 
-import { categoryService, serviceService } from "../../../../../services/catalogService";
+import { categoryService, serviceService, professionService } from "../../../../../services/catalogService";
 import { z } from "zod";
 
 // Define Zod schema
@@ -17,6 +17,7 @@ const categorySchema = z.object({
   homeBadge: z.string().optional(),
   hasSaleBadge: z.boolean(),
   showOnHome: z.boolean(),
+  hasBrands: z.boolean().default(true),
   categoryType: z.enum(["service", "product"]).default("service"),
 });
 
@@ -24,6 +25,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [professions, setProfessions] = useState([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -31,8 +33,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
     homeIconUrl: "",
     homeBadge: "",
     hasSaleBadge: false,
+    hasBrands: true,
     showOnHome: true,
     categoryType: "service",
+    professionId: "",
   });
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -53,6 +57,11 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
         }
 
         const response = await categoryService.getAll(params);
+        const profRes = await professionService.getAll();
+        
+        if (profRes.success) {
+          setProfessions(profRes.data || []);
+        }
 
         if (response.success && response.categories) {
           // Map backend format to frontend format
@@ -63,6 +72,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
             homeIconUrl: cat.homeIconUrl || "",
             homeBadge: cat.homeBadge || "",
             hasSaleBadge: cat.hasSaleBadge || false,
+            hasBrands: cat.hasBrands ?? true,
             showOnHome: cat.showOnHome !== false,
             categoryType: cat.categoryType || "service",
             vendorId: cat.vendorId || null,
@@ -92,8 +102,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
         homeIconUrl: "",
         homeBadge: "",
         hasSaleBadge: false,
+        hasBrands: true,
         showOnHome: true,
         categoryType: "service",
+        professionId: "",
       });
       return;
     }
@@ -104,8 +116,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       homeIconUrl: safe.homeIconUrl || "",
       homeBadge: safe.homeBadge || "",
       hasSaleBadge: Boolean(safe.hasSaleBadge),
+      hasBrands: safe.hasBrands ?? true,
       showOnHome: safe.showOnHome !== false,
       categoryType: safe.categoryType || "service",
+      professionId: "",
     });
   }, [editing]);
 
@@ -119,8 +133,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       homeIconUrl: "",
       homeBadge: "",
       hasSaleBadge: false,
+      hasBrands: true,
       showOnHome: true,
       categoryType: "service",
+      professionId: "",
     });
     setIsModalOpen(false);
   };
@@ -135,6 +151,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       homeIconUrl: form.homeIconUrl.trim(),
       homeBadge: form.homeBadge.trim(),
       hasSaleBadge: Boolean(form.hasSaleBadge),
+      hasBrands: Boolean(form.hasBrands),
       showOnHome: Boolean(form.showOnHome),
       categoryType: form.categoryType,
     });
@@ -146,7 +163,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       return;
     }
 
-    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, showOnHome, categoryType } = validationResult.data;
+    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, showOnHome, categoryType } = validationResult.data;
 
     try {
       setLoading(true);
@@ -173,6 +190,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
         homeIconUrl: homeIconUrl || null,
         homeBadge: homeBadge || null,
         hasSaleBadge,
+        hasBrands,
         showOnHome,
         homeOrder,
         categoryType,
@@ -207,6 +225,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
             homeIconUrl: response.category.homeIconUrl || "",
             homeBadge: response.category.homeBadge || "",
             hasSaleBadge: response.category.hasSaleBadge || false,
+            hasBrands: response.category.hasBrands ?? true,
             showOnHome: response.category.showOnHome !== false,
             homeOrder: response.category.homeOrder || 0,
             categoryType: response.category.categoryType || "service",
@@ -226,6 +245,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
             homeIconUrl: response.category.homeIconUrl || "",
             homeBadge: response.category.homeBadge || "",
             hasSaleBadge: response.category.hasSaleBadge || false,
+            hasBrands: response.category.hasBrands ?? true,
             showOnHome: response.category.showOnHome !== false,
             homeOrder: response.category.homeOrder || 0,
             categoryType: response.category.categoryType || "service",
@@ -245,6 +265,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
             homeIconUrl: response.category.homeIconUrl || "",
             homeBadge: response.category.homeBadge || "",
             hasSaleBadge: response.category.hasSaleBadge || false,
+            hasBrands: response.category.hasBrands ?? true,
             showOnHome: response.category.showOnHome !== false,
             homeOrder: response.category.homeOrder || 0,
             categoryType: response.category.categoryType || "service",
@@ -252,6 +273,21 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
           };
         } else {
           throw new Error(response.message || 'Failed to create category');
+        }
+      }
+
+      // Link to Profession if selected
+      if (form.professionId && savedCategory) {
+        const prof = professions.find(p => (p.id || p._id) === form.professionId);
+        if (prof) {
+          const catIds = prof.categories ? prof.categories.map(c => c._id || c) : [];
+          if (!catIds.includes(savedCategory.id)) {
+            await professionService.update(prof.id || prof._id, { 
+              categories: [...catIds, savedCategory.id] 
+            });
+            // Update local profession state so we don't link it twice
+            setProfessions(professions.map(p => (p.id || p._id) === form.professionId ? { ...p, categories: [...catIds, savedCategory.id] } : p));
+          }
         }
       }
 
@@ -277,7 +313,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       reset();
     } catch (error) {
       console.error('Upsert category error:', error);
-      toast.error(error.message || 'Failed to save category. Please try again.');
+      const apiMessage = error.response?.data?.message;
+      toast.error(apiMessage || error.message || 'Failed to save category');
     } finally {
       setLoading(false);
     }
@@ -474,7 +511,6 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-12">#</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-20">Icon</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Type</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Badge</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-20">
                     Order
@@ -516,17 +552,18 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                         <div className="text-xs text-gray-500 mt-1">{c.slug || "—"}</div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
-                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded uppercase tracking-wider ${c.categoryType === 'product' ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'}`}>
-                        {c.categoryType || 'service'}
-                      </span>
-                    </td>
+
                     <td className="py-4 px-4">
                       {c.homeBadge ? (
                         <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded">{c.homeBadge}</span>
                       ) : (
                         <span className="text-sm text-gray-400">—</span>
                       )}
+                      <div className="mt-1">
+                        <span className={`inline-block px-2 py-1 text-[10px] font-semibold rounded uppercase tracking-wider ${c.hasBrands !== false ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {c.hasBrands !== false ? 'Brands Enabled' : 'No Brands'}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-4 px-4 text-center">
                       <div className="flex items-center justify-center gap-1">
@@ -601,17 +638,23 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
+
           <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">Category Type</label>
+            <label className="block text-base font-bold text-gray-900 mb-2">Link to Profession (Optional)</label>
             <select
-              value={form.categoryType}
-              onChange={(e) => setForm((p) => ({ ...p, categoryType: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              value={form.professionId}
+              onChange={(e) => setForm((p) => ({ ...p, professionId: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="service">Service (e.g. Salon, Electrician)</option>
-              <option value="product">Product (e.g. Tools, Materials)</option>
+              <option value="">-- Select a Profession --</option>
+              {professions.map((prof) => (
+                <option key={prof._id || prof.id} value={prof._id || prof.id}>
+                  {prof.name}
+                </option>
+              ))}
             </select>
           </div>
+
           <div>
             <label className="block text-base font-bold text-gray-900 mb-2">Home Icon</label>
             <div className="space-y-3">
@@ -625,7 +668,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                     setUploadingIcon(true);
                     try {
                       const categorySlug = form.slug || form.title?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                      const folder = `CivilConnect/${categorySlug}/icons`;
+                      const folder = `Doormeets/${categorySlug}/icons`;
                       const response = await serviceService.uploadImage(file, folder);
                       if (response.success && response.imageUrl) {
                         setForm((p) => ({ ...p, homeIconUrl: response.imageUrl }));
@@ -677,6 +720,19 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                 Show sale badge on home card
               </label>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <input
+              id="hasBrands"
+              type="checkbox"
+              checked={form.hasBrands}
+              onChange={(e) => setForm((p) => ({ ...p, hasBrands: e.target.checked }))}
+              className="h-4 w-4"
+            />
+            <label htmlFor="hasBrands" className="text-base font-semibold text-gray-800">
+              Enable Brands for this category
+            </label>
           </div>
 
           <div className="flex items-center gap-3 pt-2">

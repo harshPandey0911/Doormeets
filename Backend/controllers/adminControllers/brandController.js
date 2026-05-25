@@ -73,6 +73,7 @@ const getAllBrands = async (req, res) => {
           slug: brand.slug,
           cityIds: brand.cityIds || [],
           categoryIds: catIds,
+          subCategoryIds: brand.subCategoryIds ? brand.subCategoryIds.map(c => c.toString()) : [],
           categoryTitles: catTitles,
           categoryId: catIds[0] || null, // fallback to first ID
           categoryTitle: catTitles[0] || null,
@@ -145,6 +146,7 @@ const getBrandById = async (req, res) => {
         slug: brand.slug,
         cityIds: brand.cityIds || [],
         categoryIds: (brand.categoryIds || []).map(cat => cat._id?.toString() || cat.toString()),
+        subCategoryIds: (brand.subCategoryIds || []).map(cat => cat._id?.toString() || cat.toString()),
         categoryTitles: (brand.categoryIds || []).map(cat => cat.title).filter(Boolean),
         categoryId: brand.categoryIds?.[0]?._id?.toString() || brand.categoryIds?.[0]?.toString(),
         categoryTitle: brand.categoryIds?.[0]?.title || null,
@@ -198,7 +200,8 @@ const createBrand = async (req, res) => {
       discountPrice,
       page,
       sections,
-      cityIds
+      cityIds,
+      subCategoryIds
     } = req.body;
 
     // Validate cities if provided
@@ -234,13 +237,6 @@ const createBrand = async (req, res) => {
       ]
     });
 
-    if (existingBrand) {
-      return res.status(400).json({
-        success: false,
-        message: 'Brand with this title or slug already exists'
-      });
-    }
-
     // Helper to sanitize targetCategoryId
     const sanitizeId = (id) => id === '' ? null : id;
 
@@ -272,10 +268,54 @@ const createBrand = async (req, res) => {
       return newSection;
     });
 
+    if (existingBrand) {
+      if (existingBrand.status === SERVICE_STATUS.DELETED) {
+        // Revive deleted brand
+        existingBrand.title = title.trim();
+        existingBrand.categoryIds = categoryIds;
+        existingBrand.subCategoryIds = subCategoryIds || [];
+        existingBrand.iconUrl = iconUrl || null;
+        existingBrand.badge = badge?.trim() || null;
+        existingBrand.page = sanitizedPage;
+        existingBrand.sections = sanitizedSections;
+        existingBrand.cityIds = cityIds || [];
+        existingBrand.status = SERVICE_STATUS.ACTIVE;
+        existingBrand.createdBy = req.user.id;
+        
+        await existingBrand.save();
+        
+        return res.status(201).json({
+          success: true,
+          message: 'Brand revived successfully',
+          brand: {
+            id: existingBrand._id,
+            title: existingBrand.title,
+            slug: existingBrand.slug,
+            categoryIds: existingBrand.categoryIds.map(c => c.toString()),
+            subCategoryIds: existingBrand.subCategoryIds ? existingBrand.subCategoryIds.map(c => c.toString()) : [],
+            iconUrl: existingBrand.iconUrl,
+            logo: existingBrand.logo,
+            badge: existingBrand.badge,
+            routePath: existingBrand.routePath,
+            page: existingBrand.page,
+            sections: existingBrand.sections,
+            createdAt: existingBrand.createdAt,
+            updatedAt: existingBrand.updatedAt
+          }
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: 'Brand with this title or slug already exists'
+      });
+    }
+
     const brand = await Brand.create({
       title: title.trim(),
       slug: slug?.trim().toLowerCase() || undefined,
       categoryIds: categoryIds,
+      subCategoryIds: subCategoryIds || [],
       iconUrl: iconUrl || null,
       badge: badge?.trim() || null,
       routePath: `/user/brand/${slug?.trim().toLowerCase() || title.trim().toLowerCase().replace(/\s+/g, '-')}`,
@@ -294,6 +334,7 @@ const createBrand = async (req, res) => {
         title: brand.title,
         slug: brand.slug,
         categoryIds: brand.categoryIds.map(c => c.toString()),
+        subCategoryIds: brand.subCategoryIds ? brand.subCategoryIds.map(c => c.toString()) : [],
         iconUrl: brand.iconUrl,
         logo: brand.logo,
         badge: brand.badge,
@@ -351,7 +392,8 @@ const updateBrand = async (req, res) => {
       page,
       sections,
       status,
-      cityIds: updateCityIds
+      cityIds: updateCityIds,
+      subCategoryIds
     } = req.body;
 
     const categoryIds = providedCategoryIds || (categoryId ? [categoryId] : undefined);
@@ -402,6 +444,7 @@ const updateBrand = async (req, res) => {
     }
     if (updateCityIds !== undefined) brand.cityIds = updateCityIds;
     if (categoryIds !== undefined) brand.categoryIds = categoryIds;
+    if (subCategoryIds !== undefined) brand.subCategoryIds = subCategoryIds;
     if (iconUrl !== undefined) brand.iconUrl = iconUrl || null;
     if (badge !== undefined) brand.badge = badge?.trim() || null;
     if (page !== undefined) brand.page = page;

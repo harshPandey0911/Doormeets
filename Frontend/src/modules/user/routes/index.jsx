@@ -73,6 +73,7 @@ const PlanDetails = lazyLoad(() => import('../pages/MyPlan/PlanDetails'));
 const MyRating = lazyLoad(() => import('../pages/MyRating'));
 const AboutCleaningExpert = lazyLoad(() => import('../pages/AboutCleaningExpert'));
 const UpdateProfile = lazyLoad(() => import('../pages/UpdateProfile'));
+const Welcome = lazyLoad(() => import('../pages/Welcome'));
 const Login = lazyLoad(() => import('../pages/login'));
 const Signup = lazyLoad(() => import('../pages/signup'));
 const Notifications = lazyLoad(() => import('../pages/Notifications'));
@@ -97,22 +98,22 @@ const UserRoutes = () => {
   // useAppNotifications('user');
 
   // Pages where BottomNav should be shown
-  const bottomNavPages = ['/user', '/user/my-bookings', '/user/cart', '/user/account'];
+  const bottomNavPages = ['/user/home', '/user/my-bookings', '/user/cart', '/user/account'];
   
   // Normalize path by removing trailing slash (except for root /user)
   const normalizedPath = location.pathname.length > 5 && location.pathname.endsWith('/') 
     ? location.pathname.slice(0, -1) 
     : location.pathname;
 
-  const shouldShowBottomNav = bottomNavPages.includes(normalizedPath) || location.pathname === '/user/';
+  const shouldShowBottomNav = bottomNavPages.includes(normalizedPath) || location.pathname === '/user/home/';
 
   // Check if we hide the live booking card (e.g. if we are on the specific booking details or track page)
   const isBookingDetailsPage = location.pathname.match(/^\/user\/booking\/[a-zA-Z0-9]+(\/track)?$/);
   const isBookingConfirmationPage = location.pathname.includes('/booking-confirmation');
 
 
-  // Check if we are on public pages (login/signup) where we shouldn't fetch bookings
-  const isPublicPage = location.pathname.includes('/login') || location.pathname.includes('/signup');
+  // Check if we are on public pages where we shouldn't fetch bookings
+  const isPublicPage = location.pathname.includes('/login') || location.pathname.includes('/signup') || location.pathname === '/user' || location.pathname === '/user/';
 
   return (
     <ErrorBoundary>
@@ -122,11 +123,12 @@ const UserRoutes = () => {
           <PageTransition>
             <Routes>
               {/* Public routes */}
+              <Route path="/" element={<PublicRoute userType="user"><Welcome /></PublicRoute>} />
               <Route path="/login" element={<PublicRoute userType="user"><Login /></PublicRoute>} />
               <Route path="/signup" element={<PublicRoute userType="user"><Signup /></PublicRoute>} />
 
               {/* Protected routes (auth required) */}
-              <Route path="/" element={<ProtectedRoute userType="user"><Home /></ProtectedRoute>} />
+              <Route path="/home" element={<ProtectedRoute userType="user"><Home /></ProtectedRoute>} />
               <Route path="/native" element={<ProtectedRoute userType="user"><Native /></ProtectedRoute>} />
 
               <Route path="/rewards" element={<ProtectedRoute userType="user"><Rewards /></ProtectedRoute>} />
@@ -157,7 +159,7 @@ const UserRoutes = () => {
       {/* These components are OUTSIDE Suspense so they persist during page loads */}
       {!isBookingDetailsPage && !isBookingConfirmationPage && !isPublicPage && <LiveBookingCard hasBottomNav={shouldShowBottomNav} />}
       {shouldShowBottomNav && <BottomNav />}
-      {(location.pathname === '/user' || location.pathname === '/user/') && <Footer />}
+      {(location.pathname === '/user/home' || location.pathname === '/user/home/') && <Footer />}
     </ErrorBoundary>
   );
 };

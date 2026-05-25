@@ -1,5 +1,10 @@
 const Vendor = require('../../models/Vendor');
 const Category = require('../../models/Category');
+const SubCategory = require('../../models/SubCategory');
+const Service = require('../../models/Service');
+const Brand = require('../../models/Brand');
+const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+const VendorServiceMapping = require('../../models/VendorServiceMapping');
 const Booking = require('../../models/Booking');
 const { validationResult } = require('express-validator');
 
@@ -22,21 +27,39 @@ const getMyServices = async (req, res) => {
     }
 
     // Combine 'service' and 'categories' arrays (handle legacy data)
-    const assignedCategoryNames = Array.from(new Set([...(vendor.service || []), ...(vendor.categories || [])]));
-    console.log('[getMyServices] assignedCategoryNames:', assignedCategoryNames);
+    const assignedCategories = Array.from(new Set([...(vendor.service || []), ...(vendor.categories || [])]));
+    console.log('[getMyServices] assignedCategories:', assignedCategories);
 
-    if (assignedCategoryNames.length === 0) {
+    if (assignedCategories.length === 0) {
       return res.status(200).json({
         success: true,
         data: []
       });
     }
 
-    // 2. Fetch Category details for each assigned name (using case-insensitive matching)
-    const categories = await Category.find({
-      title: { $in: assignedCategoryNames.map(name => new RegExp(`^${name}$`, 'i')) },
-      status: 'active'
-    }).select('title imageUrl homeIconUrl description slug');
+    // Separate ObjectIds and Names
+    const objectIds = [];
+    const names = [];
+    assignedCategories.forEach(cat => {
+      // Check if it's a valid MongoDB ObjectId
+      if (/^[0-9a-fA-F]{24}$/.test(cat)) {
+        objectIds.push(cat);
+      } else {
+        names.push(new RegExp(`^${cat}$`, 'i'));
+      }
+    });
+
+    const query = { status: 'active' };
+    if (objectIds.length > 0 && names.length > 0) {
+      query.$or = [{ _id: { $in: objectIds } }, { title: { $in: names } }];
+    } else if (objectIds.length > 0) {
+      query._id = { $in: objectIds };
+    } else if (names.length > 0) {
+      query.title = { $in: names };
+    }
+
+    // 2. Fetch Category details
+    const categories = await Category.find(query).select('title imageUrl homeIconUrl description slug');
     
     console.log(`[getMyServices] Found ${categories.length} categories in DB for vendor ${vendorId}`);
 
@@ -121,13 +144,106 @@ const updateServiceAvailability = async (req, res) => {
 };
 
 /**
- * Set service pricing
+ * Get available catalog hierarchy for vendor selection
  */
-const setServicePricing = async (req, res) => {
+const getAvailableHierarchy = async (req, res) => {
   try {
-    res.status(200).json({ success: true, message: 'Pricing updated' });
+    // We fetch the Pricing matrix, as that defines what is actually available and priced
+    const pricingMatrix = await ServiceBrandPricing.find({ isActive: true })
+      .populate('categoryId', 'title slug')
+      .populate('subCategoryId', 'title slug')
+      .populate('serviceId', 'title slug')
+      .populate('brandId', 'title slug');
+
+    // Build a nested tree for the frontend
+    // Format: Category -> SubCategory -> Service -> Array of Brands with Pricing
+    const hierarchy = {};
+
+    pricingMatrix.forEach(item => {
+      const cat = item.categoryId;
+      const sub = item.subCategoryId;
+      const srv = item.serviceId;
+      const brd = item.brandId;
+
+      if (!cat || !sub || !srv || !brd) return;
+
+      if (!hierarchy[cat._id]) {
+        hierarchy[cat._id] = { id: cat._id, title: cat.title, subCategories: {} };
+      }
+      if (!hierarchy[cat._id].subCategories[sub._id]) {
+        hierarchy[cat._id].subCategories[sub._id] = { id: sub._id, title: sub.title, services: {} };
+      }
+      if (!hierarchy[cat._id].subCategories[sub._id].services[srv._id]) {
+        hierarchy[cat._id].subCategories[sub._id].services[srv._id] = { id: srv._id, title: srv.title, brands: [] };
+      }
+
+      hierarchy[cat._id].subCategories[sub._id].services[srv._id].brands.push({
+        id: brd._id,
+        title: brd.title,
+        customerPrice: item.finalCustomerPrice,
+        vendorProfit: item.vendorProfit
+      });
+    });
+
+    // Convert objects to arrays
+    const formattedHierarchy = Object.values(hierarchy).map(cat => ({
+      ...cat,
+      subCategories: Object.values(cat.subCategories).map(sub => ({
+        ...sub,
+        services: Object.values(sub.services)
+      }))
+    }));
+
+    // Also fetch what the vendor has already selected
+    const selections = await VendorServiceMapping.find({ vendorId: req.user.id });
+
+    res.status(200).json({ 
+      success: true, 
+      hierarchy: formattedHierarchy,
+      selections 
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('getAvailableHierarchy error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Save Vendor Service Selections
+ * Expects array of mappings: [{ categoryId, subCategoryId, serviceId, supportedBrandIds }]
+ */
+const saveServiceSelections = async (req, res) => {
+  try {
+    const { selections } = req.body; // Array of objects
+    const vendorId = req.user.id;
+
+    if (!Array.isArray(selections)) {
+      return res.status(400).json({ success: false, message: 'Selections must be an array' });
+    }
+
+    // Process each selection
+    for (const sel of selections) {
+      const { categoryId, subCategoryId, serviceId, supportedBrandIds } = sel;
+      
+      if (!categoryId || !subCategoryId || !serviceId) continue;
+
+      if (supportedBrandIds && supportedBrandIds.length > 0) {
+        // Upsert mapping
+        await VendorServiceMapping.findOneAndUpdate(
+          { vendorId, serviceId },
+          { vendorId, categoryId, subCategoryId, serviceId, supportedBrandIds, isAvailable: true },
+          { upsert: true, new: true }
+        );
+      } else {
+        // If no brands selected, remove the mapping
+        await VendorServiceMapping.findOneAndDelete({ vendorId, serviceId });
+      }
+    }
+
+    res.status(200).json({ success: true, message: 'Service selections saved successfully' });
+  } catch (error) {
+    console.error('saveServiceSelections error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -135,5 +251,6 @@ module.exports = {
   getMyServices,
   getVendorServices,
   updateServiceAvailability,
-  setServicePricing
+  getAvailableHierarchy,
+  saveServiceSelections
 };

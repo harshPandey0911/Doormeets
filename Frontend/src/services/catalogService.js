@@ -7,6 +7,32 @@ import { uploadToCloudinary } from '../utils/cloudinaryUpload';
  */
 
 /**
+ * Profession API calls
+ */
+export const professionService = {
+  getAll: async () => {
+    const response = await api.get('/admin/professions');
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/admin/professions/${id}`);
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/admin/professions', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/admin/professions/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/admin/professions/${id}`);
+    return response.data;
+  }
+};
+
+/**
  * Category API calls
  */
 export const categoryService = {
@@ -49,6 +75,18 @@ export const categoryService = {
   // Update category order
   updateOrder: async (id, homeOrder) => {
     const response = await api.patch(`/admin/categories/${id}/order`, { homeOrder });
+    return response.data;
+  }
+};
+
+/**
+ * SubCategory API calls
+ */
+export const subCategoryService = {
+  getAll: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+    const response = await api.get(`/admin/subcategories${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
     return response.data;
   }
 };
@@ -257,10 +295,25 @@ export const publicCatalogService = {
     return response.data;
   },
 
+  getSubCategories: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+    
+    // Check cache
+    const cacheKey = `public_subcats_${queryParams.toString()}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const response = await api.get(`/public/subcategories${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
+    apiCache.set(cacheKey, response.data);
+    return response.data;
+  },
+
   // Get all active brands (formerly services)
   getBrands: async (params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+    if (params.subCategoryId) queryParams.append('subCategoryId', params.subCategoryId);
     if (params.categorySlug) queryParams.append('categorySlug', params.categorySlug);
     if (params.search) queryParams.append('search', params.search);
     if (params.cityId) queryParams.append('cityId', params.cityId);

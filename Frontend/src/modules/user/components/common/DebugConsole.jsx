@@ -70,7 +70,7 @@ const DebugConsole = () => {
                 <div className="p-2 bg-teal-500/20 rounded-lg">
                   <FiTerminal className="text-teal-400" />
                 </div>
-                <h3 className="font-bold text-lg">Civil connect Debug Console</h3>
+                <h3 className="font-bold text-lg">Doormeets Debug Console</h3>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -115,7 +115,7 @@ const DebugConsole = () => {
 
             <div className="p-4 bg-gray-950/50 border-t border-gray-800 text-[10px] text-gray-500 flex justify-between items-center">
               <span>Environment: {import.meta.env.MODE || 'unknown'}</span>
-              <span>Civil connect Frontend Debugger v1.0</span>
+              <span>Doormeets Frontend Debugger v1.0</span>
             </div>
           </motion.div>
         )}

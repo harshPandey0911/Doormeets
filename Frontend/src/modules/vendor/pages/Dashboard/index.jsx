@@ -411,20 +411,20 @@ const Dashboard = memo(() => {
       subtitle: `${stats.activeJobs} running`,
     },
     {
-      title: 'My Services',
+      title: 'Categories',
       icon: FiBox,
       color: '#0ea5e9',
-      path: '/vendor/products',
-      subtitle: 'Manage Catalog',
+      path: '/vendor/categories',
+      subtitle: 'Browse & Request',
     },
     {
-      title: 'Wallet',
-      icon: FaWallet,
-      color: '#F59E0B',
-      path: '/vendor/wallet',
-      subtitle: `₹${stats.totalEarnings.toLocaleString()} total`,
+      title: 'Workers',
+      icon: FiUser,
+      color: '#8B5CF6',
+      path: '/vendor/workers',
+      subtitle: 'Manage Team',
     },
-  ], [stats.activeJobs, stats.totalEarnings]);
+  ], [stats.activeJobs]);
 
   const getStatusColor = (status) => {
     const s = String(status).toLowerCase();

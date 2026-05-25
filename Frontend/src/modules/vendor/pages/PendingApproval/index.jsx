@@ -9,6 +9,7 @@ const PendingApproval = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isRejected = location.state?.status === 'REJECTED' || location.state?.status === 'rejected' || location.state?.rejected;
+  const isTrainingPending = location.state?.status === 'TRAINING_PENDING' || location.state?.status === 'training_pending';
   const reason = location.state?.reason || 'Your application did not meet our requirements.';
   
   const brandColor = themeColors.brand?.teal || '#347989';
@@ -16,28 +17,18 @@ const PendingApproval = () => {
   useEffect(() => {
     const checkStatus = async () => {
       const vendorId = sessionStorage.getItem('pendingVendorId');
-      if (!vendorId || isRejected) return;
+      if (!vendorId || isRejected || isTrainingPending) return;
 
       try {
         const response = await getRegistrationStatus(vendorId);
         if (response.success) {
-          const pv = response.policeVerification;
-          const method = pv?.method?.toLowerCase();
-          const status = pv?.status?.toLowerCase();
-
-          // If they reach this page but still need to choose or upload, redirect them
-          if (!method) {
-            navigate('/vendor/police-verification/selection', { state: { vendorId } });
-          } else if (method === 'self' && status === 'pending') {
-            navigate('/vendor/police-verification/upload', { state: { vendorId } });
-          } else if (response.approvalStatus?.toLowerCase() === 'approved') {
+          if (response.approvalStatus?.toLowerCase() === 'approved') {
             if (!response.isSubscriptionActive) {
               navigate('/vendor/subscription', { state: { vendorId } });
             } else {
               navigate('/vendor/dashboard');
             }
           }
-          // Otherwise, stay on this page (it's either admin method or already submitted)
         }
       } catch (error) {
         console.error('Failed to check vendor status:', error);
@@ -45,7 +36,7 @@ const PendingApproval = () => {
     };
 
     checkStatus();
-  }, [navigate, isRejected]);
+  }, [navigate, isRejected, isTrainingPending]);
 
   const handleBackToLogin = () => {
     // Clear any temporary tokens if they exist
@@ -82,12 +73,14 @@ const PendingApproval = () => {
             </div>
             
             <h2 className="text-3xl font-extrabold text-gray-900 mb-4 tracking-tight">
-              {isRejected ? 'Application Rejected' : 'Registration Under Review'}
+              {isRejected ? 'Application Rejected' : isTrainingPending ? 'Training Under Review' : 'Registration Under Review'}
             </h2>
             
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
               {isRejected 
                 ? "We regret to inform you that your application has been rejected."
+                : isTrainingPending
+                ? "You have completed your training. Our team is reviewing your results and will approve your account shortly."
                 : "Your application is currently being verified by our team. You'll be able to access your dashboard once your account is approved."}
             </p>
 
@@ -119,7 +112,7 @@ const PendingApproval = () => {
         </div>
 
         <p className="mt-8 text-center text-sm text-gray-500">
-          Need help? <a href="mailto:support@civilconnect.in" className="font-bold text-[#347989] hover:underline">Contact Support</a>
+          Need help? <a href="mailto:support@Doormeets.in" className="font-bold text-[#347989] hover:underline">Contact Support</a>
         </p>
       </div>
     </div>

@@ -227,7 +227,7 @@ const BookingConfirmation = () => {
       setLoading(true);
       await bookingService.cancel(booking._id || booking.id, { reason: 'Cancelled during uncertain vendor search' });
       toast.success('Booking cancelled successfully');
-      navigate('/user');
+      navigate('/user/home');
     } catch (error) {
       console.error(error);
       toast.error('Failed to cancel booking');
@@ -478,35 +478,9 @@ const BookingConfirmation = () => {
                 </div>
               )}
 
-              {/* Tax */}
-              {(booking.tax > 0 || booking.paymentMethod === 'plan_benefit') && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">GST (18%)</span>
-                  {booking.paymentMethod === 'plan_benefit' ? (
-                    <div className="flex items-center gap-2">
-                      <span className="line-through text-slate-400 text-xs">₹{(booking.tax || 0).toLocaleString('en-IN')}</span>
-                      <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">FREE ✓</span>
-                    </div>
-                  ) : (
-                    <span className="font-medium text-slate-700">₹{(booking.tax || 0).toLocaleString('en-IN')}</span>
-                  )}
-                </div>
-              )}
+              {/* Tax block removed since GST is included in base price */}
 
-              {/* Convenience Fee */}
-              {(booking.visitingCharges > 0 || booking.visitationFee > 0 || booking.paymentMethod === 'plan_benefit') && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">Convenience Fee</span>
-                  {booking.paymentMethod === 'plan_benefit' ? (
-                    <div className="flex items-center gap-2">
-                      <span className="line-through text-slate-400 text-xs">₹{(booking.visitingCharges || booking.visitationFee || 0).toLocaleString('en-IN')}</span>
-                      <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">FREE ✓</span>
-                    </div>
-                  ) : (
-                    <span className="font-medium text-slate-700">₹{(booking.visitingCharges || booking.visitationFee || 0).toLocaleString('en-IN')}</span>
-                  )}
-                </div>
-              )}
+              {/* Convenience Fee block removed per user request */}
 
               {/* Total */}
               <div className="border-t border-slate-200 pt-4 mt-2">

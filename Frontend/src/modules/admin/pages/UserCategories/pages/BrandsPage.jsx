@@ -5,13 +5,14 @@ import CardShell from "../components/CardShell";
 import Modal from "../components/Modal";
 import BrandServicesModal from "../components/BrandServicesModal";
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
-import { brandService, categoryService } from "../../../../../services/catalogService";
+import { brandService, categoryService, subCategoryService } from "../../../../../services/catalogService";
 import { z } from "zod";
 
 // Zod schema for Brand Form
 const brandSchema = z.object({
   title: z.string().min(2, "Brand title must be at least 2 characters"),
   categoryIds: z.array(z.string()).min(1, "Select at least one category"),
+  subCategoryIds: z.array(z.string()).optional(),
   iconUrl: z.string().optional(),
   badge: z.string().optional(),
 });
@@ -23,6 +24,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
   // Connect to catalog state
   const services = catalog.services || []; // These are actually BRANDS
   const categories = catalog.categories || [];
+  const [subCategories, setSubCategories] = useState([]);
 
   const [editingId, setEditingId] = useState(null);
 
@@ -36,6 +38,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
     iconUrl: "",
     badge: "",
     categoryIds: [],
+    subCategoryIds: [],
     cityIds: [],
   });
 
@@ -81,9 +84,10 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       if (selectedCity) params.cityId = selectedCity;
 
       // Fetch ALL categories for reliable resolution, but filtered services
-      const [servicesRes, categoriesRes] = await Promise.all([
+      const [servicesRes, categoriesRes, subCategoriesRes] = await Promise.all([
         brandService.getAll(params),
-        categoryService.getAll()
+        categoryService.getAll(),
+        subCategoryService.getAll()
       ]);
 
       let mappedBrands = [];
@@ -103,6 +107,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
             title: svc.title,
             slug: svc.slug,
             categoryIds: catIds,
+            subCategoryIds: (svc.subCategoryIds || []).map(id => getStrId(id)).filter(Boolean),
             categoryTitles: svc.categoryTitles || [],
             categoryId: primaryCatId || (catIds.length > 0 ? catIds[0] : null),
             iconUrl: svc.iconUrl || "",
@@ -121,6 +126,10 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
           title: cat.title,
           slug: cat.slug
         }));
+      }
+
+      if (subCategoriesRes && subCategoriesRes.success) {
+        setSubCategories(subCategoriesRes.data || subCategoriesRes.subCategories || []);
       }
 
       setCatalog(prev => {
@@ -163,6 +172,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       iconUrl: service.iconUrl || "",
       badge: service.badge || "",
       categoryIds: service.categoryIds || (service.categoryId ? [service.categoryId] : []),
+      subCategoryIds: service.subCategoryIds || [],
       cityIds: service.cityIds || [],
     });
   }, [editingId, services, selectedCity]);
@@ -174,6 +184,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       iconUrl: "",
       badge: "",
       categoryIds: [],
+      subCategoryIds: [],
       cityIds: selectedCity ? [selectedCity] : [],
     });
     setIsModalOpen(false);
@@ -215,6 +226,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
     const validationResult = brandSchema.safeParse({
       title: form.title.trim(),
       categoryIds: form.categoryIds,
+      subCategoryIds: form.subCategoryIds,
       iconUrl: form.iconUrl.trim(),
       badge: form.badge.trim(),
     });
@@ -225,7 +237,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       return;
     }
 
-    const { title, categoryIds, iconUrl, badge } = validationResult.data;
+    const { title, categoryIds, subCategoryIds, iconUrl, badge } = validationResult.data;
     const slug = slugify(title);
 
     try {
@@ -235,6 +247,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
         title,
         slug,
         categoryIds,
+        subCategoryIds: subCategoryIds || [],
         iconUrl: iconUrl || null,
         badge: badge || null,
         // Add cityId if selected, using form state which is synchronized
@@ -269,7 +282,8 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       reset();
     } catch (error) {
       console.error('Upsert brand error:', error);
-      toast.error(error.message || 'Failed to save brand.');
+      const apiMessage = error.response?.data?.message;
+      toast.error(apiMessage || error.message || 'Failed to save brand.');
     } finally {
       setLoading(false);
       isSubmitting.current = false;
@@ -521,6 +535,35 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
           </div>
 
           <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">SubCategories (Optional)</label>
+            <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50">
+              {subCategories
+                .filter(sub => form.categoryIds.includes(String(sub.categoryId?._id || sub.categoryId || "")))
+                .map((sub) => (
+                <label key={sub._id || sub.id} className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.subCategoryIds.includes(String(sub._id || sub.id))}
+                    onChange={(e) => {
+                      const subId = String(sub._id || sub.id);
+                      if (e.target.checked) {
+                        setForm(prev => ({ ...prev, subCategoryIds: [...prev.subCategoryIds, subId] }));
+                      } else {
+                        setForm(prev => ({ ...prev, subCategoryIds: prev.subCategoryIds.filter((id) => id !== subId) }));
+                      }
+                    }}
+                    className="rounded text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">{sub.title}</span>
+                </label>
+              ))}
+              {subCategories.filter(sub => form.categoryIds.includes(String(sub.categoryId?._id || sub.categoryId || ""))).length === 0 && (
+                <span className="text-sm text-gray-500 italic p-1">No subcategories available for selected categories.</span>
+              )}
+            </div>
+          </div>
+
+          <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Brand Icon</label>
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
@@ -570,8 +613,12 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       {selectedBrandForServices && (
         <BrandServicesModal
           isOpen={isServicesModalOpen}
-          onClose={() => setIsServicesModalOpen(false)}
+          onClose={() => {
+            setIsServicesModalOpen(false);
+            setSelectedBrandForServices(null);
+          }}
           brand={selectedBrandForServices}
+          subCategories={subCategories}
         />
       )}
     </div>

@@ -22,6 +22,7 @@ import {
   FiShield,
   FiPercent,
   FiBox,
+  FiInbox,
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
@@ -51,7 +52,8 @@ const iconMap = {
   "Police Verification": FiShield,
   "Offer Banners": FiShoppingBag,
   "Stock Management": FiBox,
-  "Vendor Subscriptions": FiDollarSign
+  "Vendor Subscriptions": FiDollarSign,
+  "Vendor Requests": FiInbox
 };
 
 // Helper function to convert child name to route path
@@ -65,6 +67,7 @@ const getChildRoute = (parentRoute, childName) => {
     },
     "/admin/vendors": {
       "All Vendors": "/admin/vendors/all",
+      "Vendor's Zone": "/admin/vendors-zone",
       "Vendor Bookings": "/admin/vendors/bookings",
       "Vendor Analytics": "/admin/vendors/analytics",
       "Vendor Payments": "/admin/vendors/payments",
@@ -87,9 +90,12 @@ const getChildRoute = (parentRoute, childName) => {
     },
     "/admin/user-categories": {
       "Home": "/admin/user-categories/home",
+      "Manage Professions": "/admin/user-categories/professions",
       "Manage Categories": "/admin/user-categories/categories",
-      "Manage Brands": "/admin/user-categories/brands",
+      "Manage SubCategories": "/admin/user-categories/subcategories",
       "Manage Services": "/admin/user-categories/sections",
+      "Manage Brands": "/admin/user-categories/brands",
+      "Pricing Matrix": "/admin/user-categories/pricing"
     },
     "/admin/payments": {
       "Payment Overview": "/admin/payments/overview",
@@ -137,7 +143,8 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     vendors: 0,
     withdrawals: 0,
     pendingSettlements: 0,
-    scraps: 0
+    scraps: 0,
+    vendorRequests: 0
   });
 
   // Load admin user from storage
@@ -177,6 +184,14 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             pendingSettlements: stats.pendingSettlements || 0,
             scraps: stats.pendingScraps || 0
           });
+          // Fetch vendor request count separately
+          try {
+            const vendorRequestService = (await import('../../services/vendorRequestService')).default;
+            const reqData = await vendorRequestService.getPendingCount();
+            if (reqData.success) {
+              setCounts(prev => ({ ...prev, vendorRequests: reqData.pendingCount || 0 }));
+            }
+          } catch (e) { /* silent */ }
         }
       } catch (error) {
         console.error("Error fetching sidebar counts:", error);
@@ -330,6 +345,11 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           {item.title === "Scrap Items" && counts.scraps > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse mr-2">
               {counts.scraps > 99 ? '99+' : counts.scraps}
+            </span>
+          )}
+          {item.title === "Vendor Requests" && counts.vendorRequests > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse mr-2">
+              {counts.vendorRequests > 99 ? '99+' : counts.vendorRequests}
             </span>
           )}
 

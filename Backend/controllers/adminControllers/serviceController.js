@@ -1,5 +1,5 @@
-const Service = require('../../models/UserService');
-const Brand = require('../../models/Brand');
+const Service = require('../../models/Service');
+const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
 const { validationResult } = require('express-validator');
 const { SERVICE_STATUS } = require('../../utils/constants');
 
@@ -9,21 +9,43 @@ const { SERVICE_STATUS } = require('../../utils/constants');
  */
 const getAllServices = async (req, res) => {
   try {
-    const { status, brandId } = req.query;
+    const { status, categoryId, subCategoryId } = req.query;
 
     const query = {};
     if (status) query.status = status;
-    if (brandId) query.brandId = brandId;
+    if (categoryId) query.categoryId = categoryId;
+    if (subCategoryId) query.subCategoryId = subCategoryId;
 
     const services = await Service.find(query)
-      .populate('brandId', 'title')
       .populate('categoryId', 'title')
+      .populate('subCategoryId', 'title')
       .sort({ createdAt: -1 });
+
+    let servicesList = services;
+
+    // If brandId is provided, join with ServiceBrandPricing
+    if (req.query.brandId) {
+      const pricings = await ServiceBrandPricing.find({ brandId: req.query.brandId, isActive: true }).lean();
+      const pricingMap = new Map();
+      pricings.forEach(p => pricingMap.set(p.serviceId.toString(), p));
+      
+      servicesList = services.map(s => {
+        const doc = s.toObject ? s.toObject() : s;
+        const pricing = pricingMap.get(doc._id.toString());
+        if (pricing) {
+          doc.basePrice = pricing.basePrice;
+          doc.gstPercentage = pricing.gstPercentage;
+          doc.discountPrice = pricing.discountPrice || 0;
+          doc.pricingId = pricing._id;
+        }
+        return doc;
+      }).filter(s => s.basePrice !== undefined); // Only return services that have a pricing mapping for this brand
+    }
 
     res.status(200).json({
       success: true,
-      count: services.length,
-      services
+      count: servicesList.length,
+      services: servicesList
     });
   } catch (error) {
     console.error('Get all services error:', error);
@@ -41,8 +63,8 @@ const getAllServices = async (req, res) => {
 const getServiceById = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id)
-      .populate('brandId', 'title')
-      .populate('categoryId', 'title');
+      .populate('categoryId', 'title')
+      .populate('subCategoryId', 'title');
 
     if (!service) {
       return res.status(404).json({
@@ -80,37 +102,39 @@ const createService = async (req, res) => {
     }
 
     const {
-      brandId,
       categoryId,
+      subCategoryId,
       title,
-      basePrice,
-      gstPercentage,
       description,
       status,
-      iconUrl
+      iconUrl,
+      brandId,
+      basePrice,
+      gstPercentage,
+      discountPrice
     } = req.body;
 
-    // Verify brand exists
-    const brand = await Brand.findById(brandId);
-    if (!brand) {
-      return res.status(404).json({
-        success: false,
-        message: 'Brand not found'
-      });
-    }
-
-    // Try to create service
-    // If slug collision happens within same brand, mongoose throws duplicate key error
     const service = await Service.create({
-      brandId,
       categoryId,
+      subCategoryId,
       title,
-      basePrice,
-      gstPercentage: gstPercentage || 18,
       description,
       status: status || SERVICE_STATUS.ACTIVE,
       iconUrl
     });
+
+    if (brandId && basePrice !== undefined && categoryId) {
+      await ServiceBrandPricing.create({
+        categoryId,
+        subCategoryId: subCategoryId || null,
+        serviceId: service._id,
+        brandId,
+        basePrice: Number(basePrice),
+        gstPercentage: Number(gstPercentage || 18),
+        vendorProfit: 0, // Admin can update this later via Pricing Matrix
+        isActive: true
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -122,7 +146,7 @@ const createService = async (req, res) => {
     if (error.code === 11000 && error.keyPattern && error.keyPattern.slug) {
       return res.status(409).json({
         success: false,
-        message: 'A service with this name already exists for this brand.'
+        message: 'A service with this name already exists.'
       });
     }
 
@@ -151,26 +175,12 @@ const updateService = async (req, res) => {
       });
     }
 
-    // If brandId is being updated, verify it exists
-    if (updates.brandId) {
-      const brand = await Brand.findById(updates.brandId);
-      if (!brand) {
-        return res.status(404).json({
-          success: false,
-          message: 'Brand not found'
-        });
-      }
-    }
-
-    // Update fields
     if (updates.title) service.title = updates.title;
     if (updates.categoryId) service.categoryId = updates.categoryId;
-    if (updates.basePrice !== undefined) service.basePrice = updates.basePrice;
-    if (updates.gstPercentage !== undefined) service.gstPercentage = updates.gstPercentage;
+    if (updates.subCategoryId) service.subCategoryId = updates.subCategoryId;
     if (updates.description !== undefined) service.description = updates.description;
     if (updates.status) service.status = updates.status;
     if (updates.iconUrl !== undefined) service.iconUrl = updates.iconUrl;
-    if (updates.brandId) service.brandId = updates.brandId;
 
     // Slugs are auto-updated if title changes via pre-save hook? 
     // Wait, the pre-save hook only runs if slug is empty or we explicitly modify it?
@@ -185,6 +195,28 @@ const updateService = async (req, res) => {
 
     await service.save();
 
+    if (updates.brandId && updates.basePrice !== undefined) {
+      const pricing = await ServiceBrandPricing.findOne({ serviceId: service._id, brandId: updates.brandId });
+      if (pricing) {
+        pricing.basePrice = Number(updates.basePrice);
+        if (updates.gstPercentage !== undefined) pricing.gstPercentage = Number(updates.gstPercentage);
+        if (updates.categoryId) pricing.categoryId = updates.categoryId;
+        if (updates.subCategoryId) pricing.subCategoryId = updates.subCategoryId;
+        await pricing.save();
+      } else if (updates.categoryId || service.categoryId) {
+        await ServiceBrandPricing.create({
+          categoryId: updates.categoryId || service.categoryId,
+          subCategoryId: updates.subCategoryId || service.subCategoryId || null,
+          serviceId: service._id,
+          brandId: updates.brandId,
+          basePrice: Number(updates.basePrice),
+          gstPercentage: Number(updates.gstPercentage || 18),
+          vendorProfit: 0,
+          isActive: true
+        });
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: 'Service updated successfully',
@@ -195,7 +227,7 @@ const updateService = async (req, res) => {
     if (error.code === 11000 && error.keyPattern && error.keyPattern.slug) {
       return res.status(409).json({
         success: false,
-        message: 'A service with this name already exists for this brand.'
+        message: 'A service with this name already exists.'
       });
     }
 
@@ -224,6 +256,9 @@ const deleteService = async (req, res) => {
         message: 'Service not found'
       });
     }
+
+    // Also delete associated pricings
+    await ServiceBrandPricing.deleteMany({ serviceId: id });
 
     res.status(200).json({
       success: true,

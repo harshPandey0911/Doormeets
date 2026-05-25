@@ -71,7 +71,7 @@ const bookingSchema = new mongoose.Schema({
   // ==========================================
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'UserService',
+    ref: 'Service',
     required: [true, 'Service is required'],
     index: true
   },
@@ -104,6 +104,10 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ['service', 'product'],
     default: 'service'
+  },
+  isConsultation: {
+    type: Boolean,
+    default: false
   },
   // Booked Items (Brand > Card snapshot)
   bookedItems: [{

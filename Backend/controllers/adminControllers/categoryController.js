@@ -11,7 +11,7 @@ const getAllCategories = async (req, res) => {
     const { status, showOnHome, isPopular, cityId } = req.query;
 
     // Build query
-    const query = {};
+    const query = { status: { $ne: 'deleted' } };
     if (status) query.status = status;
     if (showOnHome !== undefined) query.showOnHome = showOnHome === 'true';
     if (isPopular !== undefined) query.isPopular = isPopular === 'true';
@@ -39,6 +39,7 @@ const getAllCategories = async (req, res) => {
         homeIconUrl: cat.homeIconUrl,
         homeBadge: cat.homeBadge,
         hasSaleBadge: cat.hasSaleBadge,
+        hasBrands: cat.hasBrands ?? true,
         showOnHome: cat.showOnHome,
         homeOrder: cat.homeOrder,
         description: cat.description,
@@ -89,6 +90,7 @@ const getCategoryById = async (req, res) => {
         homeIconUrl: category.homeIconUrl,
         homeBadge: category.homeBadge,
         hasSaleBadge: category.hasSaleBadge,
+        hasBrands: category.hasBrands ?? true,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,
@@ -134,6 +136,7 @@ const createCategory = async (req, res) => {
       homeIconUrl,
       homeBadge,
       hasSaleBadge,
+      hasBrands,
       showOnHome,
       homeOrder,
       description,
@@ -184,6 +187,51 @@ const createCategory = async (req, res) => {
     }
 
     if (isDuplicate && existingCategory) {
+      if (existingCategory.status === SERVICE_STATUS.DELETED) {
+        // Revive deleted category
+        existingCategory.title = title.trim();
+        existingCategory.homeIconUrl = homeIconUrl || null;
+        existingCategory.homeBadge = homeBadge?.trim() || null;
+        existingCategory.hasSaleBadge = Boolean(hasSaleBadge);
+        existingCategory.hasBrands = hasBrands !== undefined ? Boolean(hasBrands) : true;
+        existingCategory.showOnHome = showOnHome !== false;
+        existingCategory.homeOrder = Number(homeOrder) || 0;
+        existingCategory.description = description?.trim() || null;
+        existingCategory.imageUrl = imageUrl || null;
+        existingCategory.status = status || SERVICE_STATUS.ACTIVE;
+        existingCategory.isPopular = Boolean(isPopular);
+        existingCategory.metaTitle = metaTitle?.trim() || null;
+        existingCategory.metaDescription = metaDescription?.trim() || null;
+        existingCategory.cityIds = cityIds || [];
+        existingCategory.categoryType = categoryType || 'service';
+        existingCategory.createdBy = req.user.id;
+        
+        await existingCategory.save();
+        
+        return res.status(201).json({
+          success: true,
+          message: 'Category revived successfully',
+          category: {
+            id: existingCategory._id,
+            title: existingCategory.title,
+            slug: existingCategory.slug,
+            homeIconUrl: existingCategory.homeIconUrl,
+            homeBadge: existingCategory.homeBadge,
+            hasSaleBadge: existingCategory.hasSaleBadge,
+            hasBrands: existingCategory.hasBrands ?? true,
+            showOnHome: existingCategory.showOnHome,
+            homeOrder: existingCategory.homeOrder,
+            description: existingCategory.description,
+            imageUrl: existingCategory.imageUrl,
+            status: existingCategory.status,
+            isPopular: existingCategory.isPopular,
+            categoryType: existingCategory.categoryType,
+            createdAt: existingCategory.createdAt,
+            updatedAt: existingCategory.updatedAt
+          }
+        });
+      }
+
       console.log('Category with this title/slug already exists:', existingCategory.title, existingCategory.slug);
       return res.status(400).json({
         success: false,
@@ -197,6 +245,7 @@ const createCategory = async (req, res) => {
       homeIconUrl: homeIconUrl || null,
       homeBadge: homeBadge?.trim() || null,
       hasSaleBadge: Boolean(hasSaleBadge),
+      hasBrands: hasBrands !== undefined ? Boolean(hasBrands) : true,
       showOnHome: showOnHome !== false,
       homeOrder: Number(homeOrder) || 0,
       description: description?.trim() || null,
@@ -220,6 +269,7 @@ const createCategory = async (req, res) => {
         homeIconUrl: category.homeIconUrl,
         homeBadge: category.homeBadge,
         hasSaleBadge: category.hasSaleBadge,
+        hasBrands: category.hasBrands ?? true,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,
@@ -271,6 +321,7 @@ const updateCategory = async (req, res) => {
       homeIconUrl,
       homeBadge,
       hasSaleBadge,
+      hasBrands,
       showOnHome,
       homeOrder,
       description,
@@ -332,6 +383,7 @@ const updateCategory = async (req, res) => {
     if (homeIconUrl !== undefined) category.homeIconUrl = homeIconUrl || null;
     if (homeBadge !== undefined) category.homeBadge = homeBadge?.trim() || null;
     if (hasSaleBadge !== undefined) category.hasSaleBadge = Boolean(hasSaleBadge);
+    if (hasBrands !== undefined) category.hasBrands = Boolean(hasBrands);
     if (showOnHome !== undefined) category.showOnHome = showOnHome !== false;
     if (homeOrder !== undefined) category.homeOrder = Number(homeOrder) || 0;
     if (description !== undefined) category.description = description?.trim() || null;
@@ -359,6 +411,7 @@ const updateCategory = async (req, res) => {
         homeIconUrl: category.homeIconUrl,
         homeBadge: category.homeBadge,
         hasSaleBadge: category.hasSaleBadge,
+        hasBrands: category.hasBrands ?? true,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,

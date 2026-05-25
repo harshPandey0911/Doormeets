@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const cartItemSchema = new mongoose.Schema({
   serviceId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'UserService',
+    ref: 'Service',
     required: false
   },
   categoryId: {
@@ -98,6 +98,10 @@ const cartItemSchema = new mongoose.Schema({
   isPriceDisclosed: {
     type: Boolean,
     default: true
+  },
+  isConsultation: {
+    type: Boolean,
+    default: false
   }
 }, { _id: true });
 

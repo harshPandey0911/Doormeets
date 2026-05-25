@@ -7,6 +7,8 @@ import { register, sendOTP as sendVendorOTP, verifyLogin } from '../services/aut
 import LogoLoader from '../../../components/common/LogoLoader';
 import Logo from '../../../components/common/Logo';
 import { compressImage } from '../../../utils/imageCompression';
+import ProfessionSelection from '../components/signup/ProfessionSelection';
+import TrainingModule from '../components/signup/TrainingModule';
 
 import { z } from "zod";
 
@@ -32,7 +34,11 @@ const VendorSignup = () => {
     pan: '',
     experience: '',
     service: '',
-    documents: []
+    documents: [],
+    professions: [],
+    categories: [], // keeping for backward compatibility if needed, but not populated by new UI
+    isConsultant: false,
+    training: null
   });
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpToken, setOtpToken] = useState('');
@@ -198,6 +204,11 @@ const VendorSignup = () => {
     if (!hasAadharBackDoc) { toast.error('Please upload Aadhar Back document'); return; }
     if (!hasPanDoc) { toast.error('Please upload PAN document'); return; }
 
+    // Proceed to next step instead of registering
+    setStep('profession');
+  };
+
+  const handleFinalSubmit = async () => {
     setIsLoading(true);
     setLoadingMessage('Initializing registration...');
 
@@ -216,7 +227,9 @@ const VendorSignup = () => {
           aadhar: formData.aadhar,
           pan: formData.pan,
           experience: formData.experience,
-          service: [],
+          professions: formData.professions,
+          isConsultant: formData.isConsultant,
+          training: formData.training,
           aadharDocument: aadharDoc,
           aadharBackDocument: aadharBackDoc,
           panDocument: panDoc,
@@ -243,39 +256,45 @@ const VendorSignup = () => {
       return;
     }
 
+    // BYPASS OTP: Directly call register since OTP is no longer needed
     try {
-      setLoadingMessage('Sending OTP...');
-      const response = await sendVendorOTP(formData.phoneNumber);
+      setLoadingMessage('Uploading documents & creating profile...');
+      const aadharDoc = formData.documents.find(d => d.type === 'aadhar')?.url || null;
+      const aadharBackDoc = formData.documents.find(d => d.type === 'aadharBack')?.url || null;
+      const panDoc = formData.documents.find(d => d.type === 'pan')?.url || null;
+      const otherDocs = formData.documents.filter(d => d.type === 'other').map(d => d.url);
+
+      const registerData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phoneNumber,
+        aadhar: formData.aadhar,
+        pan: formData.pan,
+        experience: formData.experience,
+        professions: formData.professions,
+        isConsultant: formData.isConsultant,
+        training: formData.training,
+        aadharDocument: aadharDoc,
+        aadharBackDocument: aadharBackDoc,
+        panDocument: panDoc,
+        otherDocuments: otherDocs,
+        verificationToken: verificationToken || null
+      };
+
+      const response = await register(registerData);
+
       if (response.success) {
-        if (response.vendor?.adminApproval?.toLowerCase() === 'pending') {
-          setIsLoading(false);
-          setLoadingMessage('');
-          navigate('/vendor/pending-approval');
-          return;
-        }
-
-        if (!response.token) {
-          setIsLoading(false);
-          setLoadingMessage('');
-          toast.error(response.message || 'Failed to initialize verification.');
-          return;
-        }
-
-        setOtpToken(response.token);
-        setIsLoading(false);
-        setLoadingMessage('');
-        setStep('otp');
-        setResendTimer(120); // Start timer
-        toast.success('OTP sent successfully');
+        sessionStorage.setItem('pendingVendorId', response.vendor.id);
+        toast.success('Registration successful! Please choose your verification method.');
+        navigate('/vendor/police-verification/selection', { state: { vendorId: response.vendor.id } });
       } else {
-        setIsLoading(false);
-        setLoadingMessage('');
-        toast.error(response.message || 'Failed to send OTP');
+        toast.error(response.message || 'Registration failed');
       }
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Registration failed');
+    } finally {
       setIsLoading(false);
       setLoadingMessage('');
-      toast.error(error.response?.data?.message || 'Failed to send OTP');
     }
   };
 
@@ -395,7 +414,7 @@ const VendorSignup = () => {
           {step === 'details' ? 'Vendor Registration' : 'Verify Identity'}
         </h2>
         <p className="mt-0.5 text-xs text-gray-600 animate-stagger-1 animate-fade-in">
-          Partner with Civilconnect and grow your business
+          Partner with Doormeets and grow your business
         </p>
       </div>
 
@@ -403,7 +422,7 @@ const VendorSignup = () => {
         <div className="bg-white py-5 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#9634f7] via-[#b87cff] to-[#9634f7]" />
 
-          {step === 'details' ? (
+          {step === 'details' && (
             <form onSubmit={handleDetailsSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Details */}
@@ -623,7 +642,7 @@ const VendorSignup = () => {
 
                   <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl mt-2 animate-pulse-subtle">
                     <p className="text-[10px] text-purple-700 leading-relaxed italic">
-                      "Civilconnect values trust. Please ensure all documents are clear and valid for faster approval."
+                      "Doormeets values trust. Please ensure all documents are clear and valid for faster approval."
                     </p>
                   </div>
                 </div>
@@ -654,7 +673,27 @@ const VendorSignup = () => {
                 </button>
               </div>
             </form>
-          ) : (
+          )}
+
+          {step === 'profession' && (
+             <ProfessionSelection 
+                formData={formData} 
+                setFormData={setFormData} 
+                onNext={() => setStep('training')} 
+                onBack={() => setStep('details')} 
+             />
+          )}
+
+          {step === 'training' && (
+             <TrainingModule 
+                formData={formData} 
+                setFormData={setFormData} 
+                onNext={handleFinalSubmit} 
+                onBack={() => setStep('profession')} 
+             />
+          )}
+
+          {step === 'otp' && (
             <div className="space-y-4">
               <button
                 onClick={() => setStep('details')}

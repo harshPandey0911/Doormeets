@@ -1,58 +1,80 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+const LOGO_URL = '/doormeets-logo.png';
+
 /**
- * LogoLoader Component
- * @param {boolean} fullScreen - If true, shows a full-screen overlay (for initial app load). 
- *                               If false, shows an inline loader (for route transitions).
- * @param {boolean} overlay - If true with fullScreen, uses solid white background. 
- *                            If false, uses transparent background (doesn't hide BottomNav).
+ * LogoLoader Component — Doormeets branded loader
+ * @param {boolean} fullScreen - If true, shows a full-screen overlay
+ * @param {boolean} overlay - If true with fullScreen, uses solid white background
+ * @param {boolean} inline - For inline use (e.g. buttons)
  * @param {string} size - Size classes for the logo
  */
 const LogoLoader = ({ fullScreen = false, overlay = false, inline = false, size = "w-20 h-20" }) => {
-  // For route transitions (default), use a non-blocking loader
-  // For initial app load, use fullScreen with overlay
-  // For inline loading (e.g. buttons), use inline
   const containerClasses = fullScreen
     ? overlay
       ? "fixed inset-0 flex items-center justify-center bg-white z-[9999]"
       : "fixed inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-[100]"
     : inline
       ? "flex items-center justify-center"
-      : "flex items-center justify-center w-full min-h-[60vh] pb-20"; // Leave space for bottom nav
+      : "flex items-center justify-center w-full min-h-[60vh] pb-20";
 
   return (
     <div className={containerClasses}>
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0.7 }}
-        animate={{
-          scale: [0.9, 1.05, 0.9],
-          opacity: [0.7, 1, 0.7],
-        }}
-        transition={{
-          duration: 1.2,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className={`relative ${size} flex items-center justify-center`}
-      >
-        <div className="w-full h-full flex items-center justify-center text-2xl font-black text-white bg-teal-600 rounded-full shadow-lg text-center tracking-tighter">
-          CC
-        </div>
-        {/* Subtle ripple effect */}
+      <div className="flex flex-col items-center gap-4">
         <motion.div
-          className="absolute inset-0 rounded-full border-2 border-teal-200"
+          initial={{ scale: 0.9, opacity: 0.7 }}
           animate={{
-            scale: [1, 1.4],
-            opacity: [0.6, 0]
+            scale: [0.9, 1.05, 0.9],
+            opacity: [0.7, 1, 0.7],
           }}
           transition={{
-            duration: 1,
+            duration: 1.2,
             repeat: Infinity,
-            ease: "easeOut"
+            ease: "easeInOut"
           }}
-        />
-      </motion.div>
+          className={`relative ${inline ? 'w-8 h-8' : size} flex items-center justify-center`}
+        >
+          <img
+            src={LOGO_URL}
+            alt="Doormeets"
+            className="w-full h-full object-contain"
+          />
+          {/* Subtle ripple effect */}
+          {!inline && (
+            <motion.div
+              className="absolute inset-0 rounded-full border-2"
+              style={{ borderColor: 'rgba(255, 140, 0, 0.4)' }}
+              animate={{
+                scale: [1, 1.4],
+                opacity: [0.6, 0]
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeOut"
+              }}
+            />
+          )}
+        </motion.div>
+
+        {!inline && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              fontFamily: "'Montserrat', sans-serif",
+              fontWeight: 700,
+              fontSize: '13px',
+              color: '#1B3A6B',
+              letterSpacing: '0.08em',
+            }}
+          >
+            DOORMEETS
+          </motion.p>
+        )}
+      </div>
     </div>
   );
 };

@@ -41,8 +41,6 @@ const lazyLoad = (importFunc) => {
 const Login = lazyLoad(() => import('../pages/login'));
 const Signup = lazyLoad(() => import('../pages/signup'));
 const PendingApproval = lazyLoad(() => import('../pages/PendingApproval'));
-const PoliceVerificationSelection = lazyLoad(() => import('../pages/PoliceVerification/Selection'));
-const PoliceVerificationUpload = lazyLoad(() => import('../pages/PoliceVerification/Upload'));
 const SubscriptionSelection = lazyLoad(() => import('../pages/Subscription/SubscriptionSelection'));
 const Dashboard = lazyLoad(() => import('../pages/Dashboard'));
 const BookingAlert = lazyLoad(() => import('../pages/BookingAlert'));
@@ -67,6 +65,12 @@ const SettlementRequest = lazyLoad(() => import('../pages/Wallet/SettlementReque
 const SettlementHistory = lazyLoad(() => import('../pages/Wallet/SettlementHistory'));
 const MyRatings = lazyLoad(() => import('../pages/MyRatings'));
 const AboutCleaningExpert = lazyLoad(() => import('../pages/AboutCleaningExpert'));
+
+// Training module lazy loading
+const Training = lazyLoad(() => import('../pages/Training'));
+const MCQTest = lazyLoad(() => import('../pages/Training/MCQTest'));
+const TrainingResult = lazyLoad(() => import('../pages/Training/TrainingResult'));
+
 const BillingPage = lazyLoad(() => import('../pages/BillingPage'));
 const SupportList = lazyLoad(() => import('../pages/Support/index'));
 const TicketDetails = lazyLoad(() => import('../pages/Support/TicketDetails'));
@@ -74,6 +78,7 @@ const MyServices = lazyLoad(() => import('../pages/MyServices'));
 const Categories = lazyLoad(() => import('../pages/Categories'));
 const Products = lazyLoad(() => import('../pages/Products'));
 const StockManagement = lazyLoad(() => import('../pages/Stock'));
+const CategoryDetail = lazyLoad(() => import('../pages/Categories/CategoryDetail'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -84,12 +89,10 @@ const VendorRoutes = () => {
   const location = useLocation();
 
   // Check if current route should hide bottom nav (auth routes or map)
-  // Check if current route should hide bottom nav (auth routes or map or booking alert)
   const shouldHideBottomNav = location.pathname === '/vendor/login' ||
     location.pathname === '/vendor/signup' ||
     location.pathname === '/vendor/pending-approval' ||
     location.pathname === '/vendor/subscription' ||
-    location.pathname.includes('/police-verification/') ||
     location.pathname.endsWith('/map') ||
     location.pathname.includes('/booking-alert/');
 
@@ -106,8 +109,6 @@ const VendorRoutes = () => {
               <Route path="/login" element={<PublicRoute userType="vendor"><Login /></PublicRoute>} />
               <Route path="/signup" element={<PublicRoute userType="vendor"><Signup /></PublicRoute>} />
               <Route path="pending-approval" element={<PendingApproval />} />
-              <Route path="police-verification/selection" element={<PoliceVerificationSelection />} />
-              <Route path="police-verification/upload" element={<PoliceVerificationUpload />} />
               <Route path="subscription" element={<SubscriptionSelection />} />
 
               {/* Protected routes (auth required) */}
@@ -139,10 +140,16 @@ const VendorRoutes = () => {
               <Route path="/about-cleaning-expert" element={<ProtectedRoute userType="vendor"><AboutCleaningExpert /></ProtectedRoute>} />
               <Route path="/my-services" element={<ProtectedRoute userType="vendor"><MyServices /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute userType="vendor"><Categories /></ProtectedRoute>} />
-              <Route path="/products" element={<ProtectedRoute userType="vendor"><Products /></ProtectedRoute>} />
+              <Route path="/categories/:categoryId" element={<ProtectedRoute userType="vendor"><CategoryDetail /></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute userType="vendor"><Categories /></ProtectedRoute>} />
               <Route path="/support" element={<ProtectedRoute userType="vendor"><SupportList /></ProtectedRoute>} />
               <Route path="/support/:id" element={<ProtectedRoute userType="vendor"><TicketDetails /></ProtectedRoute>} />
               <Route path="/stock" element={<ProtectedRoute userType="vendor"><StockManagement /></ProtectedRoute>} />
+
+              {/* Training Routes */}
+              <Route path="/training" element={<ProtectedRoute userType="vendor"><Training /></ProtectedRoute>} />
+              <Route path="/training/test" element={<ProtectedRoute userType="vendor"><MCQTest /></ProtectedRoute>} />
+              <Route path="/training/result" element={<ProtectedRoute userType="vendor"><TrainingResult /></ProtectedRoute>} />
             </Routes>
           </PageTransition>
         </Suspense>

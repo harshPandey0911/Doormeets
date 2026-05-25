@@ -636,6 +636,7 @@ const Checkout = () => {
         categoryIcon: firstItem.categoryIcon || firstItem.icon || null,
         brandName: firstItem.sectionTitle || firstItem.brand || '',
         brandIcon: firstItem.sectionIcon || null,
+        isConsultation: firstItem.isConsultation || false,
 
         bookedItems: bookedItemsData
       });
@@ -969,7 +970,7 @@ const Checkout = () => {
                 planId: plan.id
               });
               toast.success('Subscription activated successfully!');
-              navigate('/user');
+              navigate('/user/home');
             } catch (e) {
               toast.error('Verification failed');
             }
@@ -1071,22 +1072,19 @@ const Checkout = () => {
   }, 0);
 
   const savings = totalOriginalPrice - itemTotal;
-  const taxesAndFee = Math.round((itemTotal * gstPercentage) / 100);
+  const taxesAndFee = 0; // GST is already included in the finalCustomerPrice from backend
   // Visited fee logic: if Total is 0 (All free), user might still pay visited fee?
   // User says "no payemtn". So maybe visited fee also waived? Or user pays visited fee?
   // "ask direct servicebooking" -> implies fully free.
-  // I'll set visitedFee to 0 if itemTotal is 0?
-  // Configurable?
-  // Assuming "Free under plan" means NO Payment.
-  const finalVisitedFee = itemTotal === 0 ? 0 : visitedFee;
+  // Convenience fee is now fully removed per user request
+  const finalVisitedFee = 0;
 
   const totalAmount = itemTotal + taxesAndFee + finalVisitedFee;
   const amountToPay = totalAmount;
 
   // Helper for Free Plan Full Breakdown Display
-  // If the booking is free, we still want to show what the Tax/Fee WOULD have been
-  const displayTax = totalAmount === 0 ? Math.round((totalOriginalPrice * gstPercentage) / 100) : taxesAndFee;
-  const displayFee = totalAmount === 0 ? visitedFee : finalVisitedFee;
+  const displayTax = 0;
+  const displayFee = 0;
   const displaySavings = totalAmount === 0 ? (totalOriginalPrice + displayTax + displayFee) : savings;
 
   // Date and time slot helper functions
@@ -1428,21 +1426,9 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* Taxes */}
-            {displayTax > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">GST ({gstPercentage}%)</span>
-                <span className="text-sm font-medium text-slate-700">₹{displayTax.toLocaleString('en-IN')}</span>
-              </div>
-            )}
+            {/* Taxes (Removed since it is included in Base Price) */}
 
-            {/* Visited Fee */}
-            {displayFee > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">Convenience Fee</span>
-                <span className="text-sm font-medium text-slate-700">₹{displayFee.toLocaleString('en-IN')}</span>
-              </div>
-            )}
+            {/* Visited Fee (Convenience Fee) removed per user request */}
 
             {/* Divider */}
             <div className="border-t border-slate-200 pt-4 mt-2">

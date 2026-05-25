@@ -1,7 +1,7 @@
 import api from '../../../services/api';
 
 export const vendorCategoryService = {
-  // Get all categories for vendor
+  // Get all admin-managed categories for vendor (read-only)
   getCategories: async () => {
     try {
       const response = await api.get('/vendors/categories');
@@ -11,20 +11,20 @@ export const vendorCategoryService = {
     }
   },
 
-  // Create a new category
-  createCategory: async (data) => {
+  // Get brands under a category
+  getCategoryBrands: async (categoryId) => {
     try {
-      const response = await api.post('/vendors/categories', data);
+      const response = await api.get(`/vendors/categories/${categoryId}/brands`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  // Delete a category
-  deleteCategory: async (id) => {
+  // Get services and pricing under a brand
+  getBrandServices: async (categoryId, brandId) => {
     try {
-      const response = await api.delete(`/vendors/categories/${id}`);
+      const response = await api.get(`/vendors/categories/${categoryId}/brands/${brandId}/services`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
