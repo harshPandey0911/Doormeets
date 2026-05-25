@@ -217,7 +217,7 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
             onClick={() => handleAction(onAccept, 'accept')}
             className={`w-full py-4 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 col-span-2 disabled:opacity-50 ${isProduct ? 'bg-purple-600 shadow-purple-200' : 'bg-gray-900 shadow-gray-200'}`}
           >
-            {loadingAction === 'accept' ? 'Processing...' : (isProduct ? 'Send Quote' : (isWaiting ? 'Confirm Interest' : 'Accept (Myself)'))}
+            {loadingAction === 'accept' ? 'Processing...' : (isProduct ? 'Send Quote' : (isWaiting ? 'Confirm Interest' : 'Self Assign'))}
           </button>
           
           {!isWaiting && (
@@ -228,7 +228,7 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
                 className="w-full py-3 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-sm active:scale-95 transition-all disabled:opacity-50"
                 style={{ background: themeColors.button }}
               >
-                Forward
+                Assign Worker
               </button>
               <button
                 disabled={!!loadingAction}

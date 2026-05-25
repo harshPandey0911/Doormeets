@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const LOGO_URL = '/doormeets-logo.png';
+const LOGO_URL = '/cleaning-expert-logo.png';
 
 /**
  * LogoLoader Component — Doormeets branded loader

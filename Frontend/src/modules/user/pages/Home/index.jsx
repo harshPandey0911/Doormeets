@@ -336,8 +336,9 @@ const Home = () => {
   };
 
   const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    setIsCategoryModalOpen(true);
+    if (!category) return;
+    const slug = category.slug || category.id || category._id;
+    navigate(`/user/category/${encodeURIComponent(slug)}`, { state: { category } });
   };
 
   const handlePromoClick = (promo) => {

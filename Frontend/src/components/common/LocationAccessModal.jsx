@@ -31,13 +31,13 @@ const LocationAccessModal = ({
     if (locationDisabled) {
       return {
         title: "LOCATION IS OFF",
-        subtitle: "Please turn on your GPS to continue using Homestr features.",
+        subtitle: "Please turn on your GPS to continue using Doormeets features.",
         icon: FiSettings
       };
     }
     return {
       title: "ALLOW GPS LOCATION",
-      subtitle: "Homestr needs your location to show available services and vendors near you.",
+      subtitle: "Doormeets needs your location to show available services and vendors near you.",
       icon: FiNavigation
     };
   };
@@ -87,7 +87,7 @@ const LocationAccessModal = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-999 flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}

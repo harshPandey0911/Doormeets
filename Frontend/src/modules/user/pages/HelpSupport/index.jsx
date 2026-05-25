@@ -14,7 +14,7 @@ const HelpSupport = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showContactForm, setShowContactForm] = useState(false);
   const [supportInfo, setSupportInfo] = useState({
-    email: 'support@homestr.com',
+    email: 'support@doormeets.com',
     phone: '',
     whatsapp: ''
   });
@@ -26,7 +26,7 @@ const HelpSupport = () => {
         if (response.data?.success && response.data?.settings) {
           const { supportEmail, supportPhone, supportWhatsapp } = response.data.settings;
           setSupportInfo({
-            email: supportEmail || 'support@homestr.com',
+            email: supportEmail || 'support@doormeets.com',
             phone: supportPhone || '',
             whatsapp: supportWhatsapp || ''
           });
@@ -229,7 +229,7 @@ const HelpSupport = () => {
                   className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 border border-gray-100 flex items-center gap-4 w-full"
                 >
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
                     style={{ backgroundColor: `${action.color}15` }}
                   >
                     <action.icon className="w-6 h-6" style={{ color: action.color }} />
@@ -248,7 +248,7 @@ const HelpSupport = () => {
         {/* Submit a Request Button */}
         <button
           onClick={() => setShowContactForm(true)}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl p-4 font-semibold shadow-lg hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2"
+          className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl p-4 font-semibold shadow-lg hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2"
         >
           <FiSend className="w-5 h-5" />
           Submit a Request
@@ -286,7 +286,7 @@ const HelpSupport = () => {
                       {category.questions.map((item, idx) => (
                         <div key={idx} className="text-left">
                           <div className="flex items-start gap-2 mb-2">
-                            <FiHelpCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <FiHelpCircle className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                             <p className="font-medium text-gray-900 text-sm">{item.q}</p>
                           </div>
                           <p className="text-sm text-gray-600 ml-6">{item.a}</p>
@@ -328,7 +328,7 @@ const HelpSupport = () => {
                       </span>
                     </div>
                     <div className="flex items-start gap-2 mb-2">
-                      <FiHelpCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <FiHelpCircle className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                       <p className="font-medium text-gray-900 text-sm">{item.q}</p>
                     </div>
                     <p className="text-sm text-gray-600 ml-6">{item.a}</p>
@@ -403,7 +403,7 @@ const HelpSupport = () => {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl p-4 font-semibold shadow-lg hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2"
+                className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl p-4 font-semibold shadow-lg hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2"
               >
                 <FiSend className="w-5 h-5" />
                 Submit Request

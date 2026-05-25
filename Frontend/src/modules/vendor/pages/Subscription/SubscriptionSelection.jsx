@@ -6,7 +6,7 @@ import Logo from '../../../../components/common/Logo';
 import authService from '../../services/authService';
 import subscriptionService from '../../services/subscriptionService';
 
-const SubscriptionSelection = () => {
+const SubscriptionSelection = ({ isVerificationFlow = false, onComplete }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const vendorId = location.state?.vendorId 
@@ -125,12 +125,17 @@ const SubscriptionSelection = () => {
                 // Update local storage vendor data
                 const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
                 vendorData.isSubscriptionActive = true;
+                vendorData.approvalStatus = 'approved';
                 if (verifyRes.subscription) {
                    vendorData.subscription = verifyRes.subscription;
                 }
                 localStorage.setItem('vendorData', JSON.stringify(vendorData));
                 
-                navigate('/vendor/dashboard', { replace: true });
+                if (onComplete) {
+                  onComplete();
+                } else {
+                  navigate('/vendor/dashboard', { replace: true });
+                }
               }
             } catch (err) {
               toast.error('Payment verification failed');

@@ -1,6 +1,12 @@
 // Server Entry Point
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const originalConsoleError = console.error;
+console.error = function() {
+    try { fs.appendFileSync('error.log', Array.from(arguments).join(' ') + '\\n'); } catch(e) {}
+    originalConsoleError.apply(console, arguments);
+};
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -236,6 +242,7 @@ app.use('/api/admin/support', require('./routes/admin-routes/support.routes'));
 app.use('/api/admin/banners', require('./routes/admin-routes/banner.routes'));
 app.use('/api/admin/training', require('./routes/admin-routes/trainingManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/adminVendorCategoryRequest.routes'));
+app.use('/api/admin/city-admin-requests', require('./routes/admin-routes/cityAdminRequests.routes'));
 app.use('/api/image', require('./routes/admin-routes/image.routes'));
 app.use('/api', require('./routes/admin-routes/upload.routes')); // Generic upload access
 
@@ -294,6 +301,16 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
   const PORT = process.env.PORT || 5000;
   server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  }).on('error', (err) => {
+    // Handle common listen errors gracefully so nodemon doesn't crash unhelpfully
+    if (err && err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Please free the port or set PORT env variable.`);
+      // Allow nodemon to keep running so developer can fix without forcing multiple restarts
+    } else {
+      console.error('Server listen error:', err);
+      // For unexpected errors, exit so process manager can restart if configured
+      process.exit(1);
+    }
   });
 
   // Initialize Socket.io

@@ -20,7 +20,12 @@ const getRazorpayInstance = () => {
  */
 const getActivePlans = async (req, res) => {
   try {
-    const plans = await SubscriptionPlan.find({ isActive: true }).sort({ price: 1 });
+    const plans = await SubscriptionPlan.find({
+      $or: [
+        { status: 'active' },
+        { isActive: true, status: { $exists: false } }
+      ]
+    }).sort({ price: 1 });
     res.status(200).json({ success: true, data: plans });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -114,7 +119,9 @@ const verifyPayment = async (req, res) => {
         endDate,
         status: 'active'
       },
-      isSubscriptionActive: true
+      isSubscriptionActive: true,
+      approvalStatus: 'approved',
+      adminApproval: 'approved'
     });
 
     // Record Transaction

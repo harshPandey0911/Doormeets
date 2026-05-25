@@ -4,7 +4,7 @@ import { FiArrowLeft, FiCheckCircle, FiUsers, FiShield, FiClock, FiAward, FiHear
 import { motion } from 'framer-motion';
 import Logo from '../../../../components/common/Logo';
 
-const AboutHomestr = () => {
+const AboutDoormeets = () => {
   const navigate = useNavigate();
 
   // Container animation variants
@@ -31,9 +31,9 @@ const AboutHomestr = () => {
   };
 
   // Gradient Definition for re-use in inline styles
-  const homestrGradient = 'linear-gradient(135deg, #347989 0%, #BB5F36 100%)';
-  const homestrTextGradient = {
-    background: homestrGradient,
+  const doormeetsGradient = 'linear-gradient(135deg, #347989 0%, #BB5F36 100%)';
+  const doormeetsTextGradient = {
+    background: doormeetsGradient,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   };
@@ -76,7 +76,7 @@ const AboutHomestr = () => {
     >
       {/* SVG Gradient Definition */}
       <svg width="0" height="0" className="absolute">
-        <linearGradient id="homestr-about-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="doormeets-about-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#347989" />
           <stop offset="50%" stopColor="#D68F35" />
           <stop offset="100%" stopColor="#BB5F36" />
@@ -92,7 +92,7 @@ const AboutHomestr = () => {
           >
             <FiArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
-          <span className="text-xl font-bold" style={homestrTextGradient}>About Homestr</span>
+          <span className="text-xl font-bold" style={doormeetsTextGradient}>About Doormeets</span>
         </div>
       </header>
 
@@ -115,7 +115,7 @@ const AboutHomestr = () => {
           </div>
 
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-            Welcome to <span style={homestrTextGradient}>Homestr</span>
+            Welcome to <span style={doormeetsTextGradient}>Doormeets</span>
           </h1>
           <p className="text-gray-500 max-w-xs mx-auto leading-relaxed">
             Your trusted partner for premium home and personal care services.
@@ -144,14 +144,14 @@ const AboutHomestr = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-800 mb-3">Our Mission</h3>
             <p className="text-sm text-gray-600 leading-relaxed relative z-10">
-              Homestr is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
+              Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
             </p>
           </div>
         </motion.div>
 
         {/* Why Choose Us Grid */}
         <motion.div variants={itemVariants}>
-          <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Why Choose Homestr?</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Why Choose Doormeets?</h3>
           <div className="grid grid-cols-2 gap-3">
             {features.map((feature, index) => (
               <div
@@ -160,7 +160,7 @@ const AboutHomestr = () => {
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300"
                   style={{ background: 'linear-gradient(135deg, rgba(52, 121, 137, 0.1), rgba(187, 95, 54, 0.1))' }}>
-                  <feature.icon className="w-5 h-5" style={{ stroke: 'url(#homestr-about-gradient)' }} />
+                  <feature.icon className="w-5 h-5" style={{ stroke: 'url(#doormeets-about-gradient)' }} />
                 </div>
                 <h4 className="text-sm font-bold text-gray-800 mb-1">{feature.title}</h4>
                 <p className="text-xs text-gray-500 leading-relaxed">{feature.description}</p>
@@ -195,7 +195,7 @@ const AboutHomestr = () => {
         {/* Footer Info */}
         <motion.div variants={itemVariants} className="text-center pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-400 mb-1">Designed & Developed by</p>
-          <span className="text-sm font-bold tracking-wide" style={homestrTextGradient}>Homestr Team</span>
+          <span className="text-sm font-bold tracking-wide" style={doormeetsTextGradient}>Doormeets Team</span>
           <p className="text-[10px] text-gray-300 mt-4">v7.6.27 • Made with ❤️ in India</p>
         </motion.div>
       </main>
@@ -210,4 +210,4 @@ const AboutHomestr = () => {
   );
 };
 
-export default AboutHomestr;
+export default AboutDoormeets;

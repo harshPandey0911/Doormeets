@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiCheck, FiX, FiEye, FiSearch, FiFilter, FiDownload, FiLoader, FiPower, FiTrash2, FiAward } from 'react-icons/fi';
+import { FiCheck, FiX, FiEye, FiSearch, FiFilter, FiDownload, FiLoader, FiPower, FiTrash2, FiAward, FiEdit } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import CardShell from '../UserCategories/components/CardShell';
 import Modal from '../UserCategories/components/Modal';
 import adminVendorService from '../../../../services/adminVendorService';
+import { categoryService, subCategoryService, brandService } from '../../../../services/catalogService';
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 const AllVendors = () => {
   const [vendors, setVendors] = useState([]);
@@ -14,11 +16,28 @@ const AllVendors = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [expandedCategory, setExpandedCategory] = useState(null);
+  const [subCategoriesData, setSubCategoriesData] = useState({});
+  const [brandsData, setBrandsData] = useState({});
+  const [editFormData, setEditFormData] = useState({ isActive: true, service: [], subCategories: [], brands: [] });
   const navigate = useNavigate();
 
   // Load vendors from backend
   useEffect(() => {
     loadVendors();
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryService.getAll();
+        if (response.success) {
+          setCategories(response.categories || []);
+        }
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+    fetchCategories();
   }, []);
 
   const loadVendors = async () => {
@@ -34,7 +53,10 @@ const AllVendors = () => {
           phone: vendor.phone,
           businessName: vendor.businessName,
           service: vendor.service,
+          subCategories: vendor.subCategories || [],
+          brands: vendor.brands || [],
           approvalStatus: vendor.approvalStatus,
+          city: vendor.address?.city || 'Not specified',
           aadhar: vendor.aadhar?.number,
           pan: vendor.pan?.number,
           documents: {
@@ -117,21 +139,67 @@ const AllVendors = () => {
     }
   };
 
-  const handleToggleStatus = async (vendorId, currentStatus) => {
+  const handleEditClick = (vendor) => {
+    setSelectedVendor(vendor);
+    setEditFormData({
+      isActive: vendor.isActive,
+      service: Array.isArray(vendor.service) ? vendor.service : (vendor.service ? [vendor.service] : []),
+      subCategories: Array.isArray(vendor.subCategories) ? vendor.subCategories : [],
+      brands: Array.isArray(vendor.brands) ? vendor.brands : []
+    });
+    setExpandedCategory(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleExpandCategory = async (categoryId) => {
+    if (expandedCategory === categoryId) {
+      setExpandedCategory(null);
+      return;
+    }
+    setExpandedCategory(categoryId);
+
+    // Fetch subCategories if not already fetched
+    if (!subCategoriesData[categoryId]) {
+      try {
+        const response = await subCategoryService.getAll({ categoryId });
+        if (response.success) {
+          setSubCategoriesData(prev => ({ ...prev, [categoryId]: response.subcategories || response.data || [] }));
+        }
+      } catch (err) {
+        console.error('Error fetching subcategories:', err);
+      }
+    }
+
+    // Fetch brands if not already fetched
+    if (!brandsData[categoryId]) {
+      try {
+        const response = await brandService.getAll({ categoryId });
+        if (response.success) {
+          setBrandsData(prev => ({ ...prev, [categoryId]: response.brands || response.data || [] }));
+        }
+      } catch (err) {
+        console.error('Error fetching brands:', err);
+      }
+    }
+  };
+
+  const handleUpdateVendor = async () => {
     try {
-      const newStatus = !currentStatus;
-      const response = await adminVendorService.toggleStatus(vendorId, newStatus);
+      const response = await adminVendorService.updateVendor(selectedVendor.id, editFormData);
       if (response.success) {
-        setVendors(prev => prev.map(v =>
-          v.id === vendorId ? { ...v, isActive: newStatus } : v
+        setVendors(prev => prev.map(v => 
+          v.id === selectedVendor.id 
+            ? { ...v, isActive: editFormData.isActive, service: editFormData.service, subCategories: editFormData.subCategories, brands: editFormData.brands }
+            : v
         ));
-        toast.success(`Vendor ${newStatus ? 'activated' : 'deactivated'} successfully`);
+        toast.success('Vendor updated successfully');
+        setIsEditModalOpen(false);
       } else {
-        toast.error(response.message || 'Failed to update vendor status');
+        toast.error(response.message || 'Failed to update vendor');
       }
     } catch (error) {
-      console.error('Error toggling vendor status:', error);
-      toast.error('Failed to update status');
+      console.error('Error updating vendor:', error);
+      toast.error('Failed to update vendor');
     }
   };
 
@@ -168,7 +236,7 @@ const AllVendors = () => {
 
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.pending}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status === 'pending' ? 'Signup Only' : (status.charAt(0).toUpperCase() + status.slice(1))}
       </span>
     );
   };
@@ -187,7 +255,7 @@ const AllVendors = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-            <div className="text-[10px] font-bold text-yellow-700 uppercase tracking-wider mb-1">Pending</div>
+            <div className="text-[10px] font-bold text-yellow-700 uppercase tracking-wider mb-1">Signup Only</div>
             <div className="text-xl font-bold text-yellow-900">{pendingCount}</div>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-xl p-3">
@@ -222,7 +290,7 @@ const AllVendors = () => {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
               >
-                {status}
+                {status === 'pending' ? 'Signup Only' : status}
               </button>
             ))}
           </div>
@@ -258,6 +326,7 @@ const AllVendors = () => {
                           <p className="font-bold text-gray-900 text-xs">{vendor.name}</p>
                           <p className="text-[10px] text-gray-500">{vendor.phone}</p>
                           <p className="text-[10px] text-gray-400">{vendor.email}</p>
+                          <p className="text-[10px] font-semibold text-blue-600 mt-0.5">{vendor.city}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -274,9 +343,9 @@ const AllVendors = () => {
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${vendor.approvalStatus === 'approved' ? 'bg-green-50 text-green-700 border-green-100' :
                           vendor.approvalStatus === 'rejected' ? 'bg-red-50 text-red-700 border-red-100' :
-                            'bg-yellow-50 text-yellow-700 border-yellow-100'
+                          'bg-yellow-50 text-yellow-700 border-yellow-100'
                           }`}>
-                          {vendor.approvalStatus}
+                          {vendor.approvalStatus === 'pending' ? 'Signup Only' : vendor.approvalStatus}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -290,13 +359,13 @@ const AllVendors = () => {
                             <FiEye className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Toggle Active Status */}
+                          {/* Edit Vendor */}
                           <button
-                            onClick={() => handleToggleStatus(vendor.id, vendor.isActive)}
-                            className={`p-1.5 rounded-lg transition-colors ${vendor.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'}`}
-                            title={vendor.isActive ? "Disable Login" : "Enable Login"}
+                            onClick={() => handleEditClick(vendor)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Vendor Settings"
                           >
-                            <FiPower className={`w-3.5 h-3.5 ${vendor.isActive ? 'fill-current' : ''}`} />
+                            <FiEdit className="w-3.5 h-3.5" />
                           </button>
 
                           {/* Approve/Reject (Only for pending) */}
@@ -394,6 +463,10 @@ const AllVendors = () => {
                 <div className={`text-sm font-semibold ${selectedVendor.isActive ? 'text-green-600' : 'text-red-600'}`}>
                   {selectedVendor.isActive ? 'Active' : 'Inactive'}
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">City</label>
+                <div className="text-gray-900">{selectedVendor.city}</div>
               </div>
             </div>
 
@@ -518,6 +591,142 @@ const AllVendors = () => {
           </div>
         )}
       </Modal >
+
+      {/* Edit Vendor Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Vendor Settings"
+        size="md"
+      >
+        <div className="space-y-6">
+          {/* Active Status */}
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editFormData.isActive}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+              />
+              <span className="text-sm font-semibold text-gray-700">Vendor Account Active</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-6">If disabled, the vendor will not be able to log in or receive jobs.</p>
+          </div>
+
+          {/* Categories */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Allowed Categories</label>
+            <div className="space-y-2 max-h-80 overflow-y-auto p-2 border border-gray-100 rounded-lg">
+              {categories.map(category => (
+                <div key={category.id} className="border border-gray-50 rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between p-2 hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center gap-2 cursor-pointer flex-1">
+                      <input
+                        type="checkbox"
+                        checked={editFormData.service.includes(category.title)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditFormData(prev => ({ ...prev, service: [...prev.service, category.title] }));
+                          } else {
+                            setEditFormData(prev => ({ ...prev, service: prev.service.filter(s => s !== category.title) }));
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-semibold text-gray-800">{category.title}</span>
+                    </label>
+                    <button 
+                      onClick={() => handleExpandCategory(category.id)}
+                      className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"
+                    >
+                      {expandedCategory === category.id ? <FiChevronUp /> : <FiChevronDown />}
+                    </button>
+                  </div>
+
+                  {/* Subcategories and Brands */}
+                  {expandedCategory === category.id && (
+                    <div className="pl-6 pr-2 pb-3 bg-gray-50/50 space-y-4 border-t border-gray-50 pt-2">
+                      {/* SubCategories */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Sub Categories</p>
+                        <div className="space-y-1.5 pl-2">
+                          {(subCategoriesData[category.id] || []).map(subCat => (
+                            <label key={subCat._id} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
+                              <input
+                                type="checkbox"
+                                checked={editFormData.subCategories.includes(subCat.title)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setEditFormData(prev => ({ ...prev, subCategories: [...prev.subCategories, subCat.title] }));
+                                  } else {
+                                    setEditFormData(prev => ({ ...prev, subCategories: prev.subCategories.filter(s => s !== subCat.title) }));
+                                  }
+                                }}
+                                className="w-3.5 h-3.5 text-blue-500 rounded border-gray-300 focus:ring-blue-500"
+                              />
+                              {subCat.title}
+                            </label>
+                          ))}
+                          {(!subCategoriesData[category.id] || subCategoriesData[category.id].length === 0) && (
+                            <p className="text-xs text-gray-400 italic">No subcategories found.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Brands */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Brands</p>
+                        <div className="space-y-1.5 pl-2">
+                          {(brandsData[category.id] || []).map(brand => (
+                            <label key={brand._id} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
+                              <input
+                                type="checkbox"
+                                checked={editFormData.brands.includes(brand.title)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setEditFormData(prev => ({ ...prev, brands: [...prev.brands, brand.title] }));
+                                  } else {
+                                    setEditFormData(prev => ({ ...prev, brands: prev.brands.filter(b => b !== brand.title) }));
+                                  }
+                                }}
+                                className="w-3.5 h-3.5 text-blue-500 rounded border-gray-300 focus:ring-blue-500"
+                              />
+                              {brand.title}
+                            </label>
+                          ))}
+                          {(!brandsData[category.id] || brandsData[category.id].length === 0) && (
+                            <p className="text-xs text-gray-400 italic">No brands found.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {categories.length === 0 && (
+                <p className="text-xs text-gray-500">No categories found.</p>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Select which categories this vendor is allowed to see and work in.</p>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => setIsEditModalOpen(false)}
+              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateVendor}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div >
   );
 };

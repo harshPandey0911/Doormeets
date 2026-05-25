@@ -1,5 +1,6 @@
 const Worker = require('../../models/Worker');
 const Booking = require('../../models/Booking');
+const City = require('../../models/City');
 const { validationResult } = require('express-validator');
 const { WORKER_STATUS, BOOKING_STATUS, VENDOR_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
@@ -19,6 +20,21 @@ const getAllWorkers = async (req, res) => {
 
     // Build query
     const query = {};
+
+    // CITY ADMIN FILTER: Restrict workers to assigned cities
+    if (req.user && (req.user.role === 'CITY_ADMIN' || req.user.role === 'admin')) {
+      if (req.user.assignedCities && req.user.assignedCities.length > 0) {
+        const cities = await City.find({ _id: { $in: req.user.assignedCities } });
+        const cityNames = cities.map(c => new RegExp(`^${c.name}$`, 'i'));
+        query['address.city'] = { $in: cityNames };
+      } else {
+        return res.status(200).json({
+          success: true,
+          data: [],
+          pagination: { page: parseInt(page), limit: parseInt(limit), total: 0, pages: 0 }
+        });
+      }
+    }
 
     if (approvalStatus) {
       query.approvalStatus = approvalStatus;

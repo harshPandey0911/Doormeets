@@ -10,6 +10,33 @@ const USER_ROLES = {
   ADMIN: 'ADMIN'
 };
 
+// Admin Roles (sub-roles within admin)
+const ADMIN_ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  CITY_ADMIN: 'CITY_ADMIN'
+};
+
+// Permission Keys for City Admins
+const PERMISSION_KEYS = [
+  'view_dashboard',
+  'view_vendors',
+  'view_workers',
+  'view_users',
+  'view_bookings',
+  'view_analytics',
+  'view_payments',
+  'view_reports',
+  'manage_homepage',      // can edit homepage content for their city
+  'manage_pricing',       // can override local pricing for their city
+  'manage_banners',       // can manage offer banners for their city
+  'manage_support',       // can respond to support tickets
+  'manage_training',      // can manage training content
+  'manage_notifications', // can send push notifications
+  'propose_categories',   // can propose new categories (needs super admin approval)
+  'propose_brands',       // can propose new brands (needs super admin approval)
+];
+
+
 // Token Types
 const TOKEN_TYPES = {
   EMAIL_VERIFICATION: 'EMAIL_VERIFICATION',
@@ -106,6 +133,8 @@ const BILL_STATUS = {
 
 module.exports = {
   USER_ROLES,
+  ADMIN_ROLES,
+  PERMISSION_KEYS,
   TOKEN_TYPES,
   VENDOR_STATUS,
   WORKER_STATUS,

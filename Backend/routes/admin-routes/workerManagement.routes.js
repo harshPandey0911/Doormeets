@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin, canApproveWorkers } = require('../../middleware/roleMiddleware');
 const {
   getAllWorkers,
   getWorkerDetails,
@@ -36,11 +36,11 @@ router.post('/workers', authenticate, isAdmin, createWorker); // New
 router.get('/workers/jobs', authenticate, isAdmin, getAllWorkerJobs);
 router.get('/workers/payments', authenticate, isAdmin, getWorkerPaymentsSummary);
 router.get('/workers/:id', authenticate, isAdmin, getWorkerDetails);
-router.post('/workers/:id/approve', authenticate, isAdmin, approveWorker);
-router.post('/workers/:id/reject', authenticate, isAdmin, rejectWorkerValidation, rejectWorker);
-router.post('/workers/:id/suspend', authenticate, isAdmin, suspendWorker);
+router.post('/workers/:id/approve', authenticate, isAdmin, canApproveWorkers, approveWorker);
+router.post('/workers/:id/reject', authenticate, isAdmin, canApproveWorkers, rejectWorkerValidation, rejectWorker);
+router.post('/workers/:id/suspend', authenticate, isAdmin, canApproveWorkers, suspendWorker);
 router.post('/workers/:id/pay', authenticate, isAdmin, payWorkerValidation, payWorker);
-router.patch('/workers/:id/status', authenticate, isAdmin, toggleWorkerStatus); // New
+router.patch('/workers/:id/status', authenticate, isAdmin, toggleWorkerStatus); // isActive toggle — allowed for any admin
 router.delete('/workers/:id', authenticate, isAdmin, deleteWorker); // New
 router.get('/workers/:id/jobs', authenticate, isAdmin, getWorkerJobs);
 router.get('/workers/:id/earnings', authenticate, isAdmin, getWorkerEarnings);

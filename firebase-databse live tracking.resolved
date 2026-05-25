@@ -8,7 +8,7 @@ To enable live tracking, you need to configure the Firebase Realtime Database in
 
 1.  **Enable Realtime Database**:
     *   Go to your [Firebase Console](https://console.firebase.google.com/).
-    *   Select your project (**Homster**).
+    *   Select your project (**Doormeets**).
     *   Click on **Realtime Database** in the left sidebar.
     *   Click **Create Database**.
     *   Choose a location (e.g., `us-central1` or your nearest region).
@@ -30,7 +30,7 @@ To enable live tracking, you need to configure the Firebase Realtime Database in
     > In production, you should restrict write access to the assigned worker and read access to the customer of the specific booking.
 
 3.  **Environment Variables**:
-    Ensure your [Frontend/.env](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/.env) has the following (should already be there from push notifications):
+    Ensure your [Frontend/.env](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/.env) has the following (should already be there from push notifications):
     *   `VITE_FIREBASE_API_KEY`
     *   `VITE_FIREBASE_AUTH_DOMAIN`
     *   `VITE_FIREBASE_DATABASE_URL` (Add this if not present)
@@ -43,22 +43,22 @@ To enable live tracking, you need to configure the Firebase Realtime Database in
 
 ### Frontend Infrastructure
 
-#### [MODIFY] [firebase.js](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/firebase.js)
+#### [MODIFY] [firebase.js](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/firebase.js)
 *   Add **Realtime Database** initialization and export the `db` instance.
 
 ### Driver (Worker) Side tracking
 
-#### [MODIFY] [useLocationTracking.js](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/hooks/useLocationTracking.js)
+#### [MODIFY] [useLocationTracking.js](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/hooks/useLocationTracking.js)
 *   Update the hook to write coordinates to Firebase `trackings/${bookingId}` whenever location changes.
 *   This will provide a low-latency stream for the customer.
 
-#### [MODIFY] [JobMap/index.jsx](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/modules/worker/pages/JobMap/index.jsx)
+#### [MODIFY] [JobMap/index.jsx](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/modules/worker/pages/JobMap/index.jsx)
 *   Update the simulation logic to also write to Firebase, ensuring testing works as expected.
 *   Sync periodic location updates with Firebase.
 
 ### Customer (User) Side tracking
 
-#### [MODIFY] [BookingTrack/index.jsx](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/modules/user/pages/BookingTrack/index.jsx)
+#### [MODIFY] [BookingTrack/index.jsx](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/modules/user/pages/BookingTrack/index.jsx)
 *   Add a Firebase listener (`onValue`) for `trackings/${id}`.
 *   Update the map's `currentLocation` and `heading` states immediately when Firebase data changes.
 *   Keep the existing `DirectionsRenderer` and `PolylineF` for the route path.

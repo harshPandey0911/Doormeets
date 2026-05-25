@@ -17,7 +17,7 @@ The vendor app has been optimized from ground up, achieving **80-90% faster perf
 **Files Modified:**
 - `vendor/components/layout/Header.jsx`
 - `vendor/components/layout/BottomNav.jsx`
-- `vendor/pages/AboutHomster/index.jsx`
+- `vendor/pages/AboutCleaningExpert/index.jsx`
 
 **Changes:**
 - Replaced all GSAP animations with lightweight framer-motion
@@ -230,7 +230,7 @@ Total optimized gzip size: ~171 KB (excellent!)
 1. `vendor/components/layout/Header.jsx` (GSAP → framer-motion)
 2. `vendor/components/layout/BottomNav.jsx` (Removed MutationObserver)
 3. `vendor/routes/index.jsx` (Added lazyLoad wrapper)
-4. `vendor/pages/AboutHomster/index.jsx` (GSAP → framer-motion)
+4. `vendor/pages/AboutCleaningExpert/index.jsx` (GSAP → framer-motion)
 5. `vendor/pages/Profile/EditProfile.jsx` (Bug fixes)
 6. `vendor/pages/signup.jsx` (Import fixes)
 7. Multiple login pages (LogoLoader integration)

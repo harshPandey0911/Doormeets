@@ -755,7 +755,7 @@ const Checkout = () => {
         amount: orderResponse.data.amount * 100,
         currency: orderResponse.data.currency || 'INR',
         order_id: orderResponse.data.orderId,
-        name: 'Homestr',
+        name: 'Doormeets',
         description: `Payment for ${bookingRequest.serviceName || 'service'}`,
         handler: async function (response) {
           try {
@@ -958,7 +958,7 @@ const Checkout = () => {
           key,
           amount: amount * 100,
           currency: 'INR',
-          name: 'Homestr',
+          name: 'Doormeets',
           description: `Payment for ${plan.name} ${isUpgrade ? '(Upgrade)' : ''}`,
           order_id: orderId,
           handler: async (response) => {
@@ -1468,7 +1468,7 @@ const Checkout = () => {
 
         {/* Free Plan Benefit Card */}
         {totalAmount === 0 && (
-          <div className="bg-gradient-to-br from-green-50 to-emerald-100/50 border border-green-200 rounded-2xl p-5 mb-6 relative overflow-hidden">
+          <div className="bg-linear-to-br from-green-50 to-emerald-100/50 border border-green-200 rounded-2xl p-5 mb-6 relative overflow-hidden">
             <div className="flex items-start gap-4 z-10 relative">
               <div className="bg-green-500 rounded-full p-2 shadow-lg shadow-green-200 shrink-0">
                 <FiCheckCircle className="w-6 h-6 text-white" />

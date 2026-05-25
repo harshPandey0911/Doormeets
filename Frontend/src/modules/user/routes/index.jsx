@@ -54,11 +54,11 @@ const lazyLoad = (importFunc) => {
 };
 
 // Lazy load all user pages for code splitting with error handling
-const Home = lazyLoad(() => import('../pages/Home'));
+const Home = lazyLoad(() => import('../pages/PremiumHome'));
 const Rewards = lazyLoad(() => import('../pages/Rewards'));
 const Account = lazyLoad(() => import('../pages/Account'));
 const Native = lazyLoad(() => import('../pages/Native'));
-const Cart = lazyLoad(() => import('../pages/Cart'));
+const Cart = lazyLoad(() => import('../pages/PremiumCartPage'));
 const Checkout = lazyLoad(() => import('../pages/Checkout'));
 const MyBookings = lazyLoad(() => import('../pages/MyBookings'));
 const BookingDetails = lazyLoad(() => import('../pages/BookingDetails'));
@@ -74,6 +74,9 @@ const MyRating = lazyLoad(() => import('../pages/MyRating'));
 const AboutCleaningExpert = lazyLoad(() => import('../pages/AboutCleaningExpert'));
 const UpdateProfile = lazyLoad(() => import('../pages/UpdateProfile'));
 const Welcome = lazyLoad(() => import('../pages/Welcome'));
+const CategoryPage = lazyLoad(() => import('../pages/PremiumCategoryPage'));
+const BrandPage = lazyLoad(() => import('../pages/PremiumBrandPage'));
+const ServiceDetailPage = lazyLoad(() => import('../pages/PremiumServiceDetailPage'));
 const Login = lazyLoad(() => import('../pages/login'));
 const Signup = lazyLoad(() => import('../pages/signup'));
 const Notifications = lazyLoad(() => import('../pages/Notifications'));
@@ -145,6 +148,9 @@ const UserRoutes = () => {
               <Route path="/wallet" element={<ProtectedRoute userType="user"><Wallet /></ProtectedRoute>} />
               <Route path="/my-plan" element={<ProtectedRoute userType="user"><MyPlan /></ProtectedRoute>} />
               <Route path="/my-plan/:id" element={<ProtectedRoute userType="user"><PlanDetails /></ProtectedRoute>} />
+              <Route path="/category/:slug" element={<ProtectedRoute userType="user"><CategoryPage /></ProtectedRoute>} />
+              <Route path="/brand/:slug" element={<ProtectedRoute userType="user"><BrandPage /></ProtectedRoute>} />
+              <Route path="/service/:slug" element={<ProtectedRoute userType="user"><ServiceDetailPage /></ProtectedRoute>} />
               <Route path="/my-rating" element={<ProtectedRoute userType="user"><MyRating /></ProtectedRoute>} />
               <Route path="/about-cleaning-expert" element={<ProtectedRoute userType="user"><AboutCleaningExpert /></ProtectedRoute>} />
               <Route path="/update-profile" element={<ProtectedRoute userType="user"><UpdateProfile /></ProtectedRoute>} />

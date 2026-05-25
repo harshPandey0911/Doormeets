@@ -5,25 +5,25 @@ This plan outlines the integration of a production-ready JavaScript bridge to co
 ## Proposed Changes
 
 ### [Frontend Utilities]
-#### [NEW] [flutterBridge.js](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/utils/flutterBridge.js)
+#### [NEW] [flutterBridge.js](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/utils/flutterBridge.js)
 Create a singleton utility class to handle:
 - Detecting the Flutter environment.
 - Providing a promise-based `waitForFlutter` listener.
 - Generic `callHandler` for arbitrary native calls.
-- Specific `openCamera` wrapper that returns a standard [File](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/modules/vendor/components/common/ImageUploader.jsx#15-62) object from Base64 data.
+- Specific `openCamera` wrapper that returns a standard [File](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/modules/vendor/components/common/ImageUploader.jsx#15-62) object from Base64 data.
 
 ### [Frontend Components]
 
-#### [MODIFY] [WorkCompletionModal.jsx](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/modules/worker/components/common/WorkCompletionModal.jsx)
+#### [MODIFY] [WorkCompletionModal.jsx](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/modules/worker/components/common/WorkCompletionModal.jsx)
 - Import `flutterBridge`.
 - Replace direct `<input type="file" />` behavior with a `handleNativeCamera` trigger.
 
-#### [MODIFY] [ImageUploader.jsx](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/modules/vendor/components/common/ImageUploader.jsx)
+#### [MODIFY] [ImageUploader.jsx](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/modules/vendor/components/common/ImageUploader.jsx)
 - Import `flutterBridge`.
 - Add a toggle for Native Camera in the upload UI if in Flutter environment.
-- Use `flutterBridge.openCamera()` to get standard [File](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/modules/vendor/components/common/ImageUploader.jsx#15-62) objects.
+- Use `flutterBridge.openCamera()` to get standard [File](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/modules/vendor/components/common/ImageUploader.jsx#15-62) objects.
 
-#### [MODIFY] [BookingDetails/index.jsx](file:///c:/Users/SHUBHAM/Desktop/Homster/Frontend/src/modules/vendor/pages/BookingDetails/index.jsx) (Audit)
+#### [MODIFY] [BookingDetails/index.jsx](file:///c:/Users/SHUBHAM/Desktop/Doormeets/Frontend/src/modules/vendor/pages/BookingDetails/index.jsx) (Audit)
 - Review any native-like triggers (e.g., location tracking enhancements) to see if they should move to the bridge pattern.
 
 ## User Review Required

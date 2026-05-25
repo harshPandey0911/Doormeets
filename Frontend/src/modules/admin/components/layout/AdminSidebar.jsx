@@ -26,6 +26,7 @@ import {
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
+import useAdminRole from "../../hooks/useAdminRole";
 
 // Icon mapping for menu items
 const iconMap = {
@@ -132,12 +133,37 @@ const getChildRoute = (parentRoute, childName) => {
   return routeMap[parentRoute]?.[childName] || parentRoute;
 };
 
+// Mapping from Menu Title to Permission Key
+const permissionMap = {
+  "Dashboard": "view_dashboard",
+  "Users": "view_users",
+  "Vendors": "view_vendors",
+  "Vendor Subscriptions": "view_vendors",
+  "Workers": "view_workers",
+  "Bookings": "view_bookings",
+  "Payments": "view_payments",
+  "Settlements": "view_payments",
+  "Reports": "view_reports",
+  "Reviews": "view_reports",
+  "Offer Banners": "manage_banners",
+  "Training": "manage_training",
+  "Vendor Requests": "view_vendors",
+  "Support": "manage_support",
+  "User Catalog": "propose_categories",
+  "Vendor Services": "view_vendors",
+  "Vendor Parts": "view_vendors",
+  "Stock Management": "manage_pricing",
+  "Scrap Items": "view_reports",
+  "Settings": "manage_homepage",
+  "Notifications": "manage_notifications",
+};
+
 const AdminSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { admin, role, isSuperAdmin, isCityAdmin, hasPermission } = useAdminRole();
   const [expandedItems, setExpandedItems] = useState({});
   const [isMobile, setIsMobile] = useState(false);
-  const [adminUser, setAdminUser] = useState({ name: 'Admin', email: '', role: 'admin' });
   const [counts, setCounts] = useState({
     bookings: 0,
     vendors: 0,
@@ -147,28 +173,49 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     vendorRequests: 0
   });
 
-  // Load admin user from storage
+  // Ensure city-admin selection is persisted and used across admin pages
   useEffect(() => {
     try {
       const storedData = sessionStorage.getItem('adminData') || localStorage.getItem('adminData');
       const stored = JSON.parse(storedData || '{}');
-      if (stored.name || stored.email) {
-        setAdminUser({
-          name: stored.name || 'Admin',
-          email: stored.email || '',
-          role: stored.role || 'admin'
-        });
+      if (stored.role === 'city_admin') {
+        const cityIds = stored.cityIds || stored.cityId || [];
+        const first = Array.isArray(cityIds) ? cityIds[0] : cityIds;
+        if (first) {
+          // Persist a dedicated admin selected city key so admin pages can read it
+          localStorage.setItem('adminSelectedCity', String(first));
+        }
       }
-    } catch (e) {
-      console.error('Failed to parse admin data:', e);
-    }
+    } catch (e) { /* silent */ }
   }, []);
 
-  // Filter menu items by role
+  // Filter menu items by role and permissions
   const filteredMenu = useMemo(() => adminMenu.filter(item => {
-    if (!item.allowedRoles) return true;
-    return item.allowedRoles.includes(adminUser.role);
-  }), [adminUser.role]);
+    // Basic allowedRoles array check (fallback)
+    const allowedByRole = !item.allowedRoles || item.allowedRoles.includes(role) || item.allowedRoles.includes(role.toLowerCase()) || item.allowedRoles.includes(role.toUpperCase());
+
+    // Super Admin sees everything allowed by their role
+    if (isSuperAdmin) {
+      return allowedByRole;
+    }
+
+    // For City Admin, check dynamic permissions
+    if (isCityAdmin) {
+      // Admin Management is NEVER allowed for City Admin, regardless of role array or permissions
+      if (item.title === 'Admin Management') return false;
+
+      // If there's a mapped permission key, check it
+      const requiredPerm = permissionMap[item.title];
+      if (requiredPerm) {
+        return hasPermission(requiredPerm);
+      }
+      
+      // If no permission mapped but role allows it, show it (e.g., Dashboard if no perm mapped)
+      return allowedByRole;
+    }
+
+    return allowedByRole;
+  }), [role, isSuperAdmin, isCityAdmin, hasPermission]);
 
   // Fetch pending counts for badges
   useEffect(() => {
@@ -431,10 +478,10 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-semibold text-white text-base truncate">
-                {adminUser.name}
+                {admin?.name || 'Admin'}
               </h2>
               <p className="text-xs text-gray-400 truncate">
-                {adminUser.role === 'super_admin' ? '⭐ Super Admin' : 'Admin'}
+                {isSuperAdmin ? '⭐ Super Admin' : 'Admin'}
               </p>
             </div>
           </div>

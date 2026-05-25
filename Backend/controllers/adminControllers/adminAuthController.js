@@ -63,8 +63,10 @@ const login = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        cityId: admin.cityId,
-        cityName: admin.cityName
+        assignedCities: admin.assignedCities || [],
+        permissions: admin.permissions || [],
+        canApproveVendors: admin.canApproveVendors || false,
+        canApproveWorkers: admin.canApproveWorkers || false
       },
       ...tokens
     });
@@ -152,8 +154,10 @@ const getProfile = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        cityId: admin.cityId,
-        cityName: admin.cityName
+        assignedCities: admin.assignedCities || [],
+        permissions: admin.permissions || [],
+        canApproveVendors: admin.canApproveVendors || false,
+        canApproveWorkers: admin.canApproveWorkers || false
       }
     });
   } catch (error) {

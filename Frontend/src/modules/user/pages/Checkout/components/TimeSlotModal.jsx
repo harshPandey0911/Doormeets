@@ -103,7 +103,7 @@ const TimeSlotModal = ({
             <p className="text-sm text-gray-600 mb-4">Service will take approx. 45 mins</p>
 
             {/* Date Selection */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide mb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex flex-wrap gap-2 pb-2 mb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
               {getDates().map((date, index) => {
                 const { day, date: dateNum } = formatDate(date);
                 const isSelected = isDateSelected(date);

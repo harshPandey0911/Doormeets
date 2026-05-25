@@ -201,7 +201,7 @@ const MyBookings = () => {
 
         {/* Filter Tabs */}
         <div className="bg-white border-b border-slate-100 sticky top-[61px] z-20 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)]">
-          <div className="flex overflow-x-auto px-4 py-3 gap-2.5 no-scrollbar scroll-smooth">
+          <div className="flex flex-wrap px-4 py-3 gap-2.5">
             {[
               { id: 'all', label: 'All Bookings' },
               { id: 'confirmed', label: 'Confirmed' },

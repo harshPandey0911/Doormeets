@@ -62,7 +62,7 @@ const BookingDetails = () => {
   });
 
   const [supportInfo, setSupportInfo] = useState({
-    email: 'support@homestr.com',
+    email: 'support@doormeets.com',
     phone: ''
   });
 
@@ -76,14 +76,14 @@ const BookingDetails = () => {
         if (response.data?.success && response.data?.settings) {
           const { supportEmail, supportPhone } = response.data.settings;
           setSupportInfo({
-            email: supportEmail || 'help@homestr.in',
+            email: supportEmail || 'help@doormeets.com',
             phone: supportPhone || '+919999999999'
           });
         }
       } catch (error) {
         console.error('Failed to fetch support settings:', error);
         setSupportInfo({
-          email: 'help@homestr.in',
+          email: 'help@doormeets.com',
           phone: '+919999999999'
         });
       }
@@ -324,7 +324,7 @@ const BookingDetails = () => {
         amount: Math.round((booking.finalAmount || 0) * 100),
         currency: 'INR',
         order_id: booking.razorpayOrderId,
-        name: 'Homestr',
+        name: 'Doormeets',
         description: `Payment for ${booking.serviceName}`,
         handler: async function (response) {
           toast.loading('Verifying payment...');
@@ -374,7 +374,7 @@ const BookingDetails = () => {
         amount: Math.round(orderResponse.data.amount * 100),
         currency: orderResponse.data.currency || 'INR',
         order_id: orderResponse.data.orderId,
-        name: 'Homestr',
+        name: 'Doormeets',
         description: `Payment for ${booking.serviceName}`,
         handler: async function (response) {
           toast.loading('Verifying payment...');
@@ -608,11 +608,11 @@ const BookingDetails = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/[0.03] px-4 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/3 px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/user/my-bookings')}
-              className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/[0.02]"
+              className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/2"
             >
               <FiArrowLeft className="w-5 h-5 text-gray-800" />
             </button>
@@ -681,7 +681,7 @@ const BookingDetails = () => {
                 </div>
               </div>
               {/* Connect lines */}
-              <div className="absolute top-[4.5rem] left-[15%] right-[15%] h-0.5 bg-gray-100 -z-0">
+              <div className="absolute top-18 left-[15%] right-[15%] h-0.5 bg-gray-100 z-0">
                 <div className="h-full bg-teal-500 transition-all duration-1000" style={{
                   width:
                     ['work_done', 'completed'].includes(booking.status?.toLowerCase()) ? '100%' :
@@ -771,7 +771,7 @@ const BookingDetails = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full p-1 bg-gradient-to-tr from-gray-100 to-gray-50 shrink-0">
+                <div className="w-16 h-16 rounded-full p-1 bg-linear-to-tr from-gray-100 to-gray-50 shrink-0">
                   <div className="w-full h-full rounded-full overflow-hidden relative bg-white">
                     {(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto) ? (
                       <>
@@ -823,7 +823,7 @@ const BookingDetails = () => {
           {(booking.arrivalOTP || booking.visitOtp) && ['confirmed', 'assigned', 'journey_started'].includes(booking.status?.toLowerCase()) && (
             <div className="relative overflow-hidden rounded-3xl shadow-lg border border-blue-100 mb-6 active:scale-[0.99] transition-all">
               {/* Animated gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 opacity-95"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-blue-600 via-indigo-600 to-violet-700 opacity-95"></div>
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15)_0%,transparent_50%)]"></div>
 
               <div className="relative z-10 p-6 flex flex-col items-center">
@@ -862,7 +862,7 @@ const BookingDetails = () => {
           {/* Professional Arrived Notification - Only after OTP verified */}
           {booking?.status?.toLowerCase() === 'visited' && (
             <div className="relative overflow-hidden rounded-3xl shadow-lg mb-6 active:scale-[0.98] transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-700 opacity-95"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-teal-500 via-teal-600 to-emerald-700 opacity-95"></div>
               <div className="relative z-10 p-6 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shrink-0">
                   <FiCheckCircle className="w-6 h-6 text-white" />
@@ -894,7 +894,7 @@ const BookingDetails = () => {
             ['visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase()) &&
             !booking.customerConfirmationOTP && (
               <div className="relative overflow-hidden rounded-3xl shadow-lg border border-emerald-100 mb-6">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-teal-600 to-green-700 opacity-95"></div>
+                <div className="absolute inset-0 bg-linear-to-br from-emerald-500 via-teal-600 to-green-700 opacity-95"></div>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.15)_0%,transparent_50%)]"></div>
 
                 <div className="relative z-10 p-6">
@@ -940,8 +940,8 @@ const BookingDetails = () => {
                 }`}>
               {/* Animated gradient background */}
               <div className={`absolute inset-0 opacity-95 ${booking.paymentStatus === 'success'
-                ? 'bg-gradient-to-br from-green-500 via-green-600 to-emerald-700'
-                : 'bg-gradient-to-br from-orange-500 via-orange-600 to-red-600'
+                ? 'bg-linear-to-br from-green-500 via-green-600 to-emerald-700'
+                : 'bg-linear-to-br from-orange-500 via-orange-600 to-red-600'
                 }`}></div>
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.15)_0%,transparent_50%)]"></div>
 
@@ -1074,7 +1074,7 @@ const BookingDetails = () => {
                 {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
                   <button
                     onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
-                    className="w-full py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"
+                    className="w-full py-4 bg-linear-to-r from-gray-900 to-gray-800 text-white rounded-2xl font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"
                   >
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                       <FiMapPin className="w-4 h-4 text-white" />
@@ -1444,7 +1444,7 @@ const BookingDetails = () => {
             </button>
             <button
               onClick={() => {
-                const email = supportInfo.email || 'help@homestr.in';
+                const email = supportInfo.email || 'help@doormeets.com';
                 const link = document.createElement('a');
                 link.href = `mailto:${email}`;
                 document.body.appendChild(link);

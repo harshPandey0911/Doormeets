@@ -1,5 +1,6 @@
 const Admin = require('../../models/Admin');
 const { validationResult } = require('express-validator');
+const { PERMISSION_KEYS } = require('../../utils/constants');
 
 /**
  * Get all admins (Super Admin only)
@@ -9,6 +10,7 @@ const getAllAdmins = async (req, res) => {
     const admins = await Admin.find()
       .select('-password')
       .populate('cityId', 'name')
+      .populate('assignedCities', 'name slug')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -35,7 +37,12 @@ const createAdmin = async (req, res) => {
       });
     }
 
-    const { name, email, password, role, cityId, cityName } = req.body;
+    const {
+      name, email, password, role,
+      cityId, cityName,
+      assignedCities, permissions,
+      canApproveVendors, canApproveWorkers
+    } = req.body;
 
     // Check if admin already exists
     const existingAdmin = await Admin.findOne({ email });
@@ -46,26 +53,41 @@ const createAdmin = async (req, res) => {
       });
     }
 
+    // Build permissions array from provided keys
+    const permissionsArray = (permissions || []).map(key => ({
+      key,
+      enabled: true
+    }));
+
     // Create new admin
     const admin = await Admin.create({
       name,
       email,
       password,
-      role: role || 'admin',
+      role: role || 'CITY_ADMIN',
       cityId: cityId || null,
-      cityName: cityName || ''
+      cityName: cityName || '',
+      assignedCities: assignedCities || [],
+      permissions: permissionsArray,
+      canApproveVendors: canApproveVendors || false,
+      canApproveWorkers: canApproveWorkers || false,
+      createdBySuperAdmin: true
     });
+
+    await admin.populate('assignedCities', 'name slug');
 
     res.status(201).json({
       success: true,
-      message: 'Admin created successfully',
+      message: 'City Admin created successfully',
       data: {
         id: admin._id,
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        cityId: admin.cityId,
-        cityName: admin.cityName
+        assignedCities: admin.assignedCities,
+        permissions: admin.permissions,
+        canApproveVendors: admin.canApproveVendors,
+        canApproveWorkers: admin.canApproveWorkers
       }
     });
   } catch (error) {
@@ -126,15 +148,16 @@ const updateAdminRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!['super_admin', 'admin'].includes(role)) {
+    const validRoles = ['SUPER_ADMIN', 'CITY_ADMIN', 'super_admin', 'admin'];
+    if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Must be super_admin or admin'
+        message: 'Invalid role'
       });
     }
 
     // Prevent self-demotion
-    if (id === req.user.id && role !== 'super_admin') {
+    if (id === req.user.id && role === 'CITY_ADMIN') {
       return res.status(400).json({
         success: false,
         message: 'Cannot change your own role'
@@ -165,11 +188,68 @@ const updateAdminRole = async (req, res) => {
   }
 };
 
+/**
+ * Update admin permissions (Super Admin only)
+ * PUT /api/admin/admins/:id/permissions
+ */
+const updateAdminPermissions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { permissions, assignedCities, canApproveVendors, canApproveWorkers } = req.body;
+
+    const admin = await Admin.findById(id);
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Admin not found' });
+    }
+
+    if (permissions !== undefined) {
+      // permissions is an array of { key, enabled } OR just string keys with enabled:true
+      admin.permissions = permissions.map(p => {
+        if (typeof p === 'string') return { key: p, enabled: true };
+        return { key: p.key, enabled: p.enabled !== false };
+      }).filter(p => PERMISSION_KEYS.includes(p.key));
+    }
+
+    if (assignedCities !== undefined) {
+      admin.assignedCities = assignedCities;
+    }
+
+    if (canApproveVendors !== undefined) {
+      admin.canApproveVendors = canApproveVendors;
+    }
+
+    if (canApproveWorkers !== undefined) {
+      admin.canApproveWorkers = canApproveWorkers;
+    }
+
+    await admin.save();
+    await admin.populate('assignedCities', 'name slug');
+
+    res.status(200).json({
+      success: true,
+      message: 'Permissions updated successfully',
+      data: {
+        id: admin._id,
+        name: admin.name,
+        role: admin.role,
+        permissions: admin.permissions,
+        assignedCities: admin.assignedCities,
+        canApproveVendors: admin.canApproveVendors,
+        canApproveWorkers: admin.canApproveWorkers
+      }
+    });
+  } catch (error) {
+    console.error('Update permissions error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update permissions' });
+  }
+};
+
 module.exports = {
   getAllAdmins,
   createAdmin,
   deleteAdmin,
   updateAdminRole,
+  updateAdminPermissions,
 
   /**
    * Update admin details (Super Admin only)
@@ -177,7 +257,7 @@ module.exports = {
   updateAdmin: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, password, role, cityId, cityName } = req.body;
+      const { name, email, password, role, cityId, cityName, assignedCities, canApproveVendors, canApproveWorkers } = req.body;
 
       // Find admin
       let admin = await Admin.findById(id);
@@ -197,21 +277,29 @@ module.exports = {
       if (name) admin.name = name;
       if (email) admin.email = email;
       if (password) admin.password = password; // Pre-save hook will hash it
-      if (cityId !== undefined) admin.cityId = cityId || null; // Allow clearing city
+      if (cityId !== undefined) admin.cityId = cityId || null;
       if (cityName !== undefined) admin.cityName = cityName || '';
+      if (assignedCities !== undefined) admin.assignedCities = assignedCities;
+      if (canApproveVendors !== undefined) admin.canApproveVendors = canApproveVendors;
+      if (canApproveWorkers !== undefined) admin.canApproveWorkers = canApproveWorkers;
 
-      if (role && ['super_admin', 'admin'].includes(role)) {
-        // Prevent self-demotion
-        if (id === req.user.id && role !== 'super_admin' && admin.role === 'super_admin') {
+      if (req.body.permissions !== undefined) {
+        admin.permissions = req.body.permissions.map(p => {
+          if (typeof p === 'string') return { key: p, enabled: true };
+          return { key: p.key, enabled: p.enabled !== false };
+        }).filter(p => PERMISSION_KEYS.includes(p.key));
+      }
+
+      const validRoles = ['SUPER_ADMIN', 'CITY_ADMIN', 'super_admin', 'admin'];
+      if (role && validRoles.includes(role)) {
+        if (id === req.user.id && role === 'CITY_ADMIN') {
           return res.status(400).json({ success: false, message: 'Cannot demote yourself' });
         }
         admin.role = role;
       }
 
       await admin.save();
-
-      // Populate city for response
-      await admin.populate('cityId', 'name');
+      await admin.populate('assignedCities', 'name slug');
 
       res.status(200).json({
         success: true,
@@ -221,8 +309,10 @@ module.exports = {
           name: admin.name,
           email: admin.email,
           role: admin.role,
-          cityId: admin.cityId,
-          cityName: admin.cityName,
+          assignedCities: admin.assignedCities,
+          permissions: admin.permissions,
+          canApproveVendors: admin.canApproveVendors,
+          canApproveWorkers: admin.canApproveWorkers,
           isActive: admin.isActive
         }
       });
@@ -239,7 +329,6 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      // Prevent self-blocking
       if (id === req.user.id) {
         return res.status(400).json({ success: false, message: 'Cannot block yourself' });
       }
@@ -249,7 +338,6 @@ module.exports = {
         return res.status(404).json({ success: false, message: 'Admin not found' });
       }
 
-      // Protect primary super admin
       if (admin.email === 'admin@admin.com') {
         return res.status(400).json({ success: false, message: 'Cannot block primary super admin' });
       }

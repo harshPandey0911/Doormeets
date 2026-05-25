@@ -317,6 +317,15 @@ export const adminAuthService = {
     localStorage.removeItem('adminAccessToken');
     localStorage.removeItem('adminRefreshToken');
     localStorage.removeItem('adminData');
+  },
+
+  // Get Profile
+  getProfile: async () => {
+    const response = await api.get('/admin/auth/profile');
+    if (response.data.success && response.data.data) {
+      localStorage.setItem('adminData', JSON.stringify(response.data.data));
+    }
+    return response.data;
   }
 };
 

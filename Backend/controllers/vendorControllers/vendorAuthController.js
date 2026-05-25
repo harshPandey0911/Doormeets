@@ -125,17 +125,9 @@ const verifyLogin = async (req, res) => {
         return res.status(403).json({ success: false, message: 'Account deactivated.' });
       }
 
-      // BLOCK PENDING VENDORS
+      // PENDING VENDORS ARE ALLOWED TO LOGIN TO COMPLETE VERIFICATION
       if (vendor.approvalStatus === VENDOR_STATUS.PENDING) {
-        return res.status(200).json({
-          success: true,
-          message: 'Your account is currently under review. Please complete verification steps.',
-          vendor: { 
-            id: vendor._id,
-            adminApproval: 'pending',
-            isSubscriptionActive: vendor.isSubscriptionActive
-          }
-        });
+         // Proceed to generate tokens
       }
 
       // SINGLE DEVICE LOGIN: Update Session ID & Clear OLD FCM tokens
@@ -208,149 +200,45 @@ const register = async (req, res) => {
       });
     }
 
-    // verificationToken handling
-    const { name, email, verificationToken, aadhar, pan } = req.body;
+    const { name, professionId } = req.body;
     let phone = req.body.phone;
 
-    if (verificationToken) {
-      const verifiedPhone = verifyVerificationToken(verificationToken);
-      if (!verifiedPhone) {
-        console.log('[REGISTER] Invalid/Expired verification token');
-        return res.status(400).json({ success: false, message: 'Invalid verification session.' });
-      }
-      phone = verifiedPhone.replace(/\D/g, '').slice(-10);
-      console.log('[REGISTER] Phone from token:', phone);
-    } else if (req.body.otp) {
-      // Fallback OTP
-      const ver = await verifyOTP(phone, req.body.otp);
-      if (!ver.success) return res.status(400).json({ success: false, message: ver.message });
-      phone = phone.replace(/\D/g, '').slice(-10);
-    } else {
-      // Direct registration without OTP (per user request)
-      phone = phone.replace(/\D/g, '').slice(-10);
-    }
+    // Direct registration without OTP
+    phone = phone.replace(/\D/g, '').slice(-10);
 
     // Check existing (using sanitized phone)
-    const existing = await Vendor.findOne({ $or: [{ phone }, { email }] });
+    const existing = await Vendor.findOne({ phone });
     if (existing) {
-      console.log('[REGISTER] Conflict found:', existing.phone === phone ? 'Phone' : 'Email');
+      console.log('[REGISTER] Conflict found: Phone');
       return res.status(400).json({ 
         success: false, 
-        message: existing.phone === phone ? 'Phone number already registered.' : 'Email already registered.',
-        isPhoneConflict: existing.phone === phone
+        message: 'Phone number already registered.',
+        isPhoneConflict: true
       });
     }
 
-    // Step 2: Upload Documents to Cloudinary in Parallel
-    const uploadTasks = [];
-    
-    let aadharUrl = req.body.aadharDocument || null;
-    let aadharBackUrl = req.body.aadharBackDocument || null;
-    let panUrl = req.body.panDocument || null;
-    const otherDocUrls = Array.isArray(req.body.otherDocuments) ? [...req.body.otherDocuments] : [];
-
-    if (aadharUrl && aadharUrl.startsWith('data:')) {
-      uploadTasks.push((async () => {
-        const res = await cloudinaryService.uploadFile(aadharUrl, { folder: 'vendors/documents' });
-        if (res.success) aadharUrl = res.url;
-        else throw new Error(`Aadhar upload failed: ${res.error}`);
-      })());
-    }
-
-    if (aadharBackUrl && aadharBackUrl.startsWith('data:')) {
-      uploadTasks.push((async () => {
-        const res = await cloudinaryService.uploadFile(aadharBackUrl, { folder: 'vendors/documents' });
-        if (res.success) aadharBackUrl = res.url;
-        else throw new Error(`Aadhar back upload failed: ${res.error}`);
-      })());
-    }
-
-    if (panUrl && panUrl.startsWith('data:')) {
-      uploadTasks.push((async () => {
-        const res = await cloudinaryService.uploadFile(panUrl, { folder: 'vendors/documents' });
-        if (res.success) panUrl = res.url;
-        else throw new Error(`PAN upload failed: ${res.error}`);
-      })());
-    }
-
-    // Handle other documents
-    const processedOtherDocs = [];
-    if (otherDocUrls.length > 0) {
-      otherDocUrls.forEach((doc, index) => {
-        if (doc && doc.startsWith('data:')) {
-          uploadTasks.push((async () => {
-            const res = await cloudinaryService.uploadFile(doc, { folder: 'vendors/documents' });
-            if (res.success) processedOtherDocs.push(res.url);
-          })());
-        } else if (doc) {
-          processedOtherDocs.push(doc);
-        }
-      });
-    }
-
-    // Wait for all uploads to complete
-    try {
-      await Promise.all(uploadTasks);
-    } catch (uploadError) {
-      console.error('Upload phase failed:', uploadError);
-      return res.status(500).json({ 
-        success: false, 
-        message: uploadError.message || 'Failed to upload verification documents.' 
-      });
-    }
-
-    // Process Professions to extract underlying categories
+    // Process Professions
     let finalCategories = [];
-    if (req.body.professions && req.body.professions.length > 0) {
+    if (professionId) {
       const Profession = require('../../models/Profession');
-      const professionsData = await Profession.find({ _id: { $in: req.body.professions } });
-      professionsData.forEach(p => {
-        if (p.categories && p.categories.length > 0) {
-          finalCategories = [...finalCategories, ...p.categories.map(c => c.toString())];
-        }
-      });
-      finalCategories = [...new Set(finalCategories)]; // unique categories
-    } else {
-       finalCategories = req.body.categories || [];
+      const professionData = await Profession.findById(professionId);
+      if (professionData && professionData.categories && professionData.categories.length > 0) {
+        finalCategories = professionData.categories.map(c => c.toString());
+      }
     }
 
-    // Calculate training level if completed
-    let trainingData = req.body.training || { status: 'not_started', attemptCount: 0 };
-    if (trainingData.status === 'completed') {
-      const score = trainingData.score || 0;
-      let level = 3; // Beginner
-      if (score >= 90) level = 1; // Expert
-      else if (score >= 60) level = 2; // Professional
-      
-      trainingData = { ...trainingData, assignedLevel: level };
-    }
-
-    // Step 3: Create Vendor Record
+    // Create Vendor Record
     const vendor = await Vendor.create({
       name,
-      email,
       phone,
-      experience: req.body.experience || 0,
-      professions: req.body.professions || [],
+      professions: professionId ? [professionId] : [],
       categories: finalCategories,
-      isConsultant: req.body.isConsultant || false,
-      training: trainingData,
-      aadhar: {
-        number: aadhar,
-        document: aadharUrl,
-        backDocument: aadharBackUrl
-      },
-      pan: { 
-        number: pan, 
-        document: panUrl 
-      },
-      otherDocuments: processedOtherDocs,
       approvalStatus: VENDOR_STATUS.PENDING,
       isActive: true, // Allow them to attempt login but blocked by PENDING status
       settings: { serviceRange: 15 }
     });
 
-    // Step 4: Notify Admins (Non-blocking)
+    // Notify Admins (Non-blocking)
     (async () => {
       try {
         const { createNotification } = require('../notificationControllers/notificationController');
@@ -375,11 +263,10 @@ const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful! Your account is under review.',
+      message: 'Registration successful! You can now login.',
       vendor: {
         id: vendor._id,
         name: vendor.name,
-        email: vendor.email,
         phone: vendor.phone,
         approvalStatus: vendor.approvalStatus
       }

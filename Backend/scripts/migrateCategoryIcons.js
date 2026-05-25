@@ -22,15 +22,15 @@ const migrateCategoryIcons = async () => {
       console.log(`🔄 Processing: ${category.title} (${category.slug})`);
       console.log(`   Current URL: ${currentIconUrl}`);
 
-      // Check if URL already uses Homster folder
-      if (currentIconUrl.includes('/Homster/')) {
-        console.log(`   ✅ Already in Homster folder\n`);
+      // Check if URL already uses Doormeets folder
+      if (currentIconUrl.includes('/Doormeets/')) {
+        console.log(`   ✅ Already in Doormeets folder\n`);
         continue;
       }
 
-      // Generate new Homster URL
+      // Generate new Doormeets URL
       const iconFilename = currentIconUrl.split('/').pop();
-      const newIconUrl = `https://res.cloudinary.com/shubhamcloudinary/image/upload/v1766136203/Homster/${category.slug}/icons/${iconFilename}`;
+      const newIconUrl = `https://res.cloudinary.com/shubhamcloudinary/image/upload/v1766136203/Doormeets/${category.slug}/icons/${iconFilename}`;
 
       console.log(`   New URL: ${newIconUrl}`);
 
@@ -42,7 +42,7 @@ const migrateCategoryIcons = async () => {
     }
 
     console.log('🎉 Category icon migration completed!');
-    console.log('📋 All category icons now use Homster folder structure');
+    console.log('📋 All category icons now use Doormeets folder structure');
 
   } catch (error) {
     console.error('❌ Error migrating category icons:', error);

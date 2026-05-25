@@ -7,7 +7,8 @@ const {
   deleteAdmin,
   updateAdminRole,
   updateAdmin,
-  toggleAdminStatus
+  toggleAdminStatus,
+  updateAdminPermissions
 } = require('../../controllers/adminControllers/adminManagementController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isSuperAdmin } = require('../../middleware/roleMiddleware');
@@ -17,7 +18,7 @@ const createAdminValidation = [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('role').optional().isIn(['super_admin', 'admin']).withMessage('Invalid role')
+  body('role').optional().isIn(['SUPER_ADMIN', 'CITY_ADMIN', 'super_admin', 'admin']).withMessage('Invalid role')
 ];
 
 // All routes require Super Admin
@@ -28,6 +29,7 @@ router.get('/', getAllAdmins);
 router.post('/', createAdminValidation, createAdmin);
 router.delete('/:id', deleteAdmin);
 router.put('/:id/role', updateAdminRole);
+router.put('/:id/permissions', updateAdminPermissions);
 router.put('/:id', updateAdmin);
 router.patch('/:id/status', toggleAdminStatus);
 

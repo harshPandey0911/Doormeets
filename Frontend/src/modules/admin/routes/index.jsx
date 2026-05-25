@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from '../components/layout/AdminLayout';
 import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 import PublicRoute from '../../../components/auth/PublicRoute';
+import SuperAdminRoute from '../components/auth/SuperAdminRoute';
 import useAppNotifications from '../../../hooks/useAppNotifications.jsx';
 import LogoLoader from '../../../components/common/LogoLoader';
 
@@ -35,6 +36,7 @@ const VendorSubscriptionManagement = lazy(() => import('../pages/VendorSubscript
 const Training = lazy(() => import('../pages/Training'));
 const VendorRequests = lazy(() => import('../pages/VendorRequests'));
 const Commission = lazy(() => import('../pages/Commission'));
+const AdminManagement = lazy(() => import('../pages/AdminManagement'));
 
 
 
@@ -85,6 +87,9 @@ const AdminRoutes = () => {
           <Route path="training" element={<Training />} />
           <Route path="vendor-requests" element={<VendorRequests />} />
           <Route path="commission" element={<Commission />} />
+          <Route path="admin-management/*" element={
+            <SuperAdminRoute><AdminManagement /></SuperAdminRoute>
+          } />
         </Route>
       </Routes>
     </Suspense>

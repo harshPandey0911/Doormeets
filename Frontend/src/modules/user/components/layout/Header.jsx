@@ -63,10 +63,10 @@ const Header = ({ location, onLocationClick }) => {
 
             {/* Desktop Navigation - Hidden on Mobile */}
             <nav className="hidden lg:flex items-center gap-8 ml-10">
-              <Link to="/user" className="text-gray-700 font-semibold hover:text-[#347989] transition-colors">Home</Link>
-              <Link to="/user/my-bookings" className="text-gray-700 font-semibold hover:text-[#347989] transition-colors">Bookings</Link>
-              <Link to="/user/cart" className="text-gray-700 font-semibold hover:text-[#347989] transition-colors">Cart</Link>
-              <Link to="/user/account" className="text-gray-700 font-semibold hover:text-[#347989] transition-colors">Account</Link>
+              <Link to="/user" className="text-gray-700 font-semibold hover:text-brand transition-colors">Home</Link>
+              <Link to="/user/my-bookings" className="text-gray-700 font-semibold hover:text-brand transition-colors">Bookings</Link>
+              <Link to="/user/cart" className="text-gray-700 font-semibold hover:text-brand transition-colors">Cart</Link>
+              <Link to="/user/account" className="text-gray-700 font-semibold hover:text-brand transition-colors">Account</Link>
             </nav>
 
             {/* Right: City & Location */}
@@ -77,7 +77,7 @@ const Header = ({ location, onLocationClick }) => {
                   <div className="flex items-center gap-1 mb-0.5">
                     {/* Gradient Definition for Icons */}
                     <svg width="0" height="0" className="absolute">
-                      <linearGradient id="homestr-location-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <linearGradient id="doormeets-location-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor={themeColors.brand.teal} />
                         <stop offset="50%" stopColor={themeColors.brand.yellow} />
                         <stop offset="100%" stopColor={themeColors.brand.orange} />
@@ -85,9 +85,9 @@ const Header = ({ location, onLocationClick }) => {
                     </svg>
                     <HiLocationMarker
                       className="w-4 h-4 shrink-0"
-                      style={{ fill: 'url(#homestr-location-gradient)' }}
+                      style={{ fill: 'url(#doormeets-location-gradient)' }}
                     />
-                    <span className="text-sm font-bold truncate max-w-[160px]" style={{
+                    <span className="text-sm font-bold truncate max-w-40" style={{
                       background: themeColors.gradient,
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',

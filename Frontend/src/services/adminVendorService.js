@@ -58,6 +58,14 @@ const adminVendorService = {
   },
 
   /**
+   * Update vendor details (like categories, status)
+   */
+  updateVendor: async (id, data) => {
+    const response = await api.put(`/admin/vendors/${id}`, data);
+    return response.data;
+  },
+
+  /**
    * Get bookings for a specific vendor
    */
   getVendorBookings: async (id, params = {}) => {

@@ -42,6 +42,7 @@ const Login = lazyLoad(() => import('../pages/login'));
 const Signup = lazyLoad(() => import('../pages/signup'));
 const PendingApproval = lazyLoad(() => import('../pages/PendingApproval'));
 const SubscriptionSelection = lazyLoad(() => import('../pages/Subscription/SubscriptionSelection'));
+const VerificationPage = lazyLoad(() => import('../pages/VerificationPage'));
 const Dashboard = lazyLoad(() => import('../pages/Dashboard'));
 const BookingAlert = lazyLoad(() => import('../pages/BookingAlert'));
 const BookingAlerts = lazyLoad(() => import('../pages/BookingAlerts'));
@@ -91,6 +92,7 @@ const VendorRoutes = () => {
   // Check if current route should hide bottom nav (auth routes or map)
   const shouldHideBottomNav = location.pathname === '/vendor/login' ||
     location.pathname === '/vendor/signup' ||
+    location.pathname === '/vendor/verification' ||
     location.pathname === '/vendor/pending-approval' ||
     location.pathname === '/vendor/subscription' ||
     location.pathname.endsWith('/map') ||
@@ -110,6 +112,7 @@ const VendorRoutes = () => {
               <Route path="/signup" element={<PublicRoute userType="vendor"><Signup /></PublicRoute>} />
               <Route path="pending-approval" element={<PendingApproval />} />
               <Route path="subscription" element={<SubscriptionSelection />} />
+              <Route path="verification" element={<ProtectedRoute userType="vendor"><VerificationPage /></ProtectedRoute>} />
 
               {/* Protected routes (auth required) */}
               <Route path="/" element={<ProtectedRoute userType="vendor"><Navigate to="dashboard" replace /></ProtectedRoute>} />

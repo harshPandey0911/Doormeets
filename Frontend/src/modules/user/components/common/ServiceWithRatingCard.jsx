@@ -32,7 +32,7 @@ const ServiceWithRatingCard = memo(({ image, title, rating, reviews, price, orig
         ) : (
           <div className={`w-full ${compact ? 'h-[100px]' : 'h-36'} flex items-center justify-center bg-gray-50 border-b border-gray-100`}>
             <img
-              src="/Homestr-logo.png"
+              src="/cleaning-expert-logo.png"
               alt="Placeholder"
               className="w-12 h-12 object-contain opacity-40 grayscale"
             />

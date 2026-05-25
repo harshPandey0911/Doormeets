@@ -25,12 +25,7 @@ const verifyLoginValidation = [
 
 const registerValidation = [
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
   body('phone').trim().notEmpty().withMessage('Phone number is required').isLength({ min: 10, max: 10 }).withMessage('Phone number must be 10 digits'),
-  body('aadhar').trim().notEmpty().withMessage('Aadhar number is required').isLength({ min: 12, max: 12 }).withMessage('Aadhar number must be 12 digits'),
-  body('pan').trim().notEmpty().withMessage('PAN number is required').isLength({ min: 10, max: 10 }).withMessage('PAN number must be 10 characters'),
-  body('experience').notEmpty().withMessage('Years of experience is required').isNumeric().withMessage('Experience must be a number')
-  // service and otp/token relaxed
 ];
 
 const loginValidation = [

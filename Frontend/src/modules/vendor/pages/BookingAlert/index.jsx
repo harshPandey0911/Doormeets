@@ -63,7 +63,7 @@ const BookingAlert = () => {
     };
   }, [socket, id, navigate]);
 
-  const handleAccept = async (bookingId, price, note) => {
+  const handleSelfAssign = async (bookingId, price, note) => {
     try {
       const isBidding = booking.status?.toLowerCase() === 'bidding';
       
@@ -135,7 +135,7 @@ const BookingAlert = () => {
     <BookingAlertModal
       isOpen={true}
       booking={booking}
-      onAccept={handleAccept}
+      onAccept={handleSelfAssign}
       onAssign={handleAssign}
       onReject={handleReject}
       onMinimize={() => navigate('/vendor/dashboard', { replace: true })}

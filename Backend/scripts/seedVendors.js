@@ -13,7 +13,7 @@ require('dotenv').config();
 // Connect to MongoDB
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Homster');
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Doormeets');
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -52,7 +52,7 @@ const seedVendors = async () => {
     const vendorsData = [
       {
         name: 'Rajesh Kumar',
-        email: 'rajesh.kumar@homster.com',
+        email: 'rajesh.kumar@doormeets.com',
         phone: '9876543210',
         password: 'vendor123',
         businessName: 'Kumar Electrical Services',
@@ -75,7 +75,7 @@ const seedVendors = async () => {
       },
       {
         name: 'Amit Sharma',
-        email: 'amit.sharma@homster.com',
+        email: 'amit.sharma@doormeets.com',
         phone: '9876543211',
         password: 'vendor123',
         businessName: 'Sharma Home Services',
@@ -98,7 +98,7 @@ const seedVendors = async () => {
       },
       {
         name: 'Vikram Singh',
-        email: 'vikram.singh@homster.com',
+        email: 'vikram.singh@doormeets.com',
         phone: '9876543212',
         password: 'vendor123',
         businessName: 'Singh Electrical Solutions',
@@ -134,7 +134,7 @@ const seedVendors = async () => {
       // Workers for Rajesh Kumar
       {
         name: 'Suresh Patel',
-        email: 'suresh.patel@homster.com',
+        email: 'suresh.patel@doormeets.com',
         phone: '9876543213',
         password: 'worker123',
         vendorId: createdVendors[0]._id,
@@ -152,7 +152,7 @@ const seedVendors = async () => {
       },
       {
         name: 'Mohan Das',
-        email: 'mohan.das@homster.com',
+        email: 'mohan.das@doormeets.com',
         phone: '9876543214',
         password: 'worker123',
         vendorId: createdVendors[0]._id,
@@ -171,7 +171,7 @@ const seedVendors = async () => {
       // Workers for Amit Sharma
       {
         name: 'Ravi Kumar',
-        email: 'ravi.kumar@homster.com',
+        email: 'ravi.kumar@doormeets.com',
         phone: '9876543215',
         password: 'worker123',
         vendorId: createdVendors[1]._id,
@@ -190,7 +190,7 @@ const seedVendors = async () => {
       // Workers for Vikram Singh
       {
         name: 'Deepak Joshi',
-        email: 'deepak.joshi@homster.com',
+        email: 'deepak.joshi@doormeets.com',
         phone: '9876543216',
         password: 'worker123',
         vendorId: createdVendors[2]._id,
@@ -208,7 +208,7 @@ const seedVendors = async () => {
       },
       {
         name: 'Ankit Verma',
-        email: 'ankit.verma@homster.com',
+        email: 'ankit.verma@doormeets.com',
         phone: '9876543217',
         password: 'worker123',
         vendorId: createdVendors[2]._id,

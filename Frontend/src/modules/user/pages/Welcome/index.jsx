@@ -68,6 +68,12 @@ const Welcome = () => {
           padding: 16px 20px 0;
           gap: 10px;
         }
+        .top-nav-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
         .nav-btn {
           font-family: 'Montserrat', sans-serif;
           font-weight: 700;
@@ -209,6 +215,19 @@ const Welcome = () => {
         }
         .cta-btn-secondary:hover { background: rgba(255,255,255,0.22); }
 
+        @media (max-width: 767px) {
+          .top-nav {
+            padding: 14px 14px 0;
+          }
+          .bottom-content {
+            display: none;
+          }
+          .nav-btn {
+            padding: 8px 16px;
+            font-size: 12px;
+          }
+        }
+
         /* Safe area for notch phones */
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
           .bottom-content {
@@ -249,32 +268,33 @@ const Welcome = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          style={{ justifyContent: 'space-between' }}
         >
-          {/* Speaker icon — left */}
-          <button
-            onClick={toggleMute}
-            style={{
-              background: 'rgba(255,255,255,0.18)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              border: '1.5px solid rgba(255,255,255,0.3)',
-              borderRadius: '50%',
-              width: '38px',
-              height: '38px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              flexShrink: 0,
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            aria-label={isMuted ? 'Unmute' : 'Mute'}
-          >
-            <span style={{ fontSize: '18px', lineHeight: 1 }}>
-              {isMuted ? '🔇' : '🔊'}
-            </span>
-          </button>
+          <div className="top-nav-left">
+            {/* Speaker icon — left */}
+            <button
+              onClick={toggleMute}
+              style={{
+                background: 'rgba(255,255,255,0.18)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1.5px solid rgba(255,255,255,0.3)',
+                borderRadius: '50%',
+                width: '38px',
+                height: '38px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+            >
+              <span style={{ fontSize: '18px', lineHeight: 1 }}>
+                {isMuted ? '🔇' : '🔊'}
+              </span>
+            </button>
+          </div>
 
           {/* Login + Signup — right */}
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -348,6 +368,7 @@ const Welcome = () => {
           </motion.div>
 
         </div>
+
       </div>
     </>
   );

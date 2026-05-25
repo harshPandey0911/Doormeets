@@ -206,6 +206,7 @@ const Plans = () => {
       tagline: plan.tagline || '',
       description: plan.description || '',
         price: plan.price,
+        status: plan.status || (plan.isActive ? 'active' : 'hide'),
         validityMonths: plan.validityMonths || plan.validityDays || 1,
         freeCategories: (plan.freeCategories || []).map(c => c._id || c),
         freeServices: (plan.freeServices || []).map(s => s._id || s),
@@ -261,7 +262,7 @@ const Plans = () => {
       freeCategories: [], 
       freeServices: [], 
       bonusServices: [],
-      isActive: true,
+      status: 'active',
       duration: 'Monthly'
     });
     setIsModalOpen(true);
@@ -293,8 +294,8 @@ const Plans = () => {
                 <div className="p-4 flex-1">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className={`text-lg font-bold ${style.text}`}>{plan.name}</h3>
-                    <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${plan.isActive ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
-                      {plan.isActive ? 'Active' : 'Inactive'}
+                    <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${(plan.status === 'active' || (!plan.status && plan.isActive)) ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
+                      {(plan.status === 'active' || (!plan.status && plan.isActive)) ? 'Active' : 'Hidden'}
                     </span>
                   </div>
                   <div className={`flex items-baseline gap-2 mb-4 ${style.price}`}>
@@ -475,6 +476,20 @@ const Plans = () => {
                     placeholder="1"
                     min="1"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Status</label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all font-medium"
+                    required
+                  >
+                    <option value="active">Active</option>
+                    <option value="hide">Hidden</option>
+                  </select>
                 </div>
               </div>
 

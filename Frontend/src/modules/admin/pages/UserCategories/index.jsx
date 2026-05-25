@@ -43,7 +43,22 @@ const UserCategories = () => {
               : (loadedCities[0]._id || loadedCities[0].id);
 
             if (cityId) {
-              setSelectedCity(cityId);
+              // If the logged-in admin is a city_admin, prefer the persisted adminSelectedCity
+              try {
+                const storedAdmin = JSON.parse(sessionStorage.getItem('adminData') || localStorage.getItem('adminData') || '{}');
+                if (storedAdmin.role === 'city_admin') {
+                  const adminSelected = localStorage.getItem('adminSelectedCity');
+                  if (adminSelected) {
+                    setSelectedCity(adminSelected);
+                  } else {
+                    setSelectedCity(cityId);
+                  }
+                } else {
+                  setSelectedCity(cityId);
+                }
+              } catch (e) {
+                setSelectedCity(cityId);
+              }
             }
           }
         }

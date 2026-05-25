@@ -552,7 +552,7 @@ const getPublicBrandBySlug = async (req, res) => {
 
 const getPublicServices = async (req, res) => {
   try {
-    const { brandId, brandSlug, categoryId, lat, lng } = req.query;
+    const { brandId, brandSlug, categoryId, subCategoryId, lat, lng } = req.query;
 
     const query = { status: 'active' };
 
@@ -562,11 +562,26 @@ const getPublicServices = async (req, res) => {
       if (brand) {
         targetBrand = brand;
         // Fetch service IDs mapped to this brand via pricing model
-        const pricings = await require('../../models/ServiceBrandPricing').find({
-          brandId: brand._id,
-          isActive: true
-        }).select('serviceId').lean();
-        
+        const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+
+        // Prefer pricings scoped to the requested subCategoryId when present
+        let pricings = [];
+        if (subCategoryId) {
+          pricings = await ServiceBrandPricing.find({
+            brandId: brand._id,
+            subCategoryId,
+            isActive: true
+          }).select('serviceId').lean();
+        }
+
+        // Fallback: if no scoped pricings found, use all pricings for the brand
+        if (!pricings || pricings.length === 0) {
+          pricings = await ServiceBrandPricing.find({
+            brandId: brand._id,
+            isActive: true
+          }).select('serviceId').lean();
+        }
+
         const mappedServiceIds = pricings.map(p => p.serviceId);
         query._id = { $in: mappedServiceIds };
       }
@@ -574,6 +589,12 @@ const getPublicServices = async (req, res) => {
 
     if (categoryId) {
       query.categoryId = categoryId;
+    }
+
+    // If a subCategoryId is provided and we don't already restrict by mapped services,
+    // also filter services by their subCategoryId so frontend requests return accurate results.
+    if (subCategoryId && !query._id) {
+      query.subCategoryId = subCategoryId;
     }
 
     if (req.query.search) {

@@ -141,35 +141,24 @@ const VendorLogin = () => {
           });
         } else {
           // Check for rejected status
-          if (response.vendor?.adminApproval === 'rejected' || response.vendor?.adminApproval === 'REJECTED') {
-            navigate('/vendor/pending-approval', { 
-              state: { 
-                status: 'REJECTED', 
-                reason: response.vendor.rejectedReason 
-              } 
-            });
+          if (response.vendor?.adminApproval === 'rejected' || response.vendor?.adminApproval === 'REJECTED' || response.vendor?.approvalStatus === 'REJECTED') {
+            toast.error('Your application has been rejected.');
             return;
           }
 
-          // Check for admin approval status
-          if (response.vendor?.adminApproval === 'PENDING' || response.vendor?.adminApproval === 'pending') {
-            const vendorId = response.vendor.id;
-            
-            // Store vendorId temporarily for persistence during verification steps
-            sessionStorage.setItem('pendingVendorId', vendorId);
-
-            // Directly navigate to pending approval since Police Verification is removed
-            navigate('/vendor/pending-approval');
+          // Check for pending approval status (New Verification Flow)
+          if (response.vendor?.approvalStatus === 'PENDING' || response.vendor?.adminApproval === 'pending') {
+            toast.success('Please complete your training and subscription.');
+            localStorage.setItem('vendorAccessToken', response.accessToken);
+            localStorage.setItem('vendorRefreshToken', response.refreshToken);
+            localStorage.setItem('vendorData', JSON.stringify(response.vendor));
+            navigate('/vendor/verification');
             return;
           }
 
-          // Final fallback for already approved vendors
-          if (!response.vendor?.isSubscriptionActive) {
-            const vendorId = response.vendor.id;
-            sessionStorage.setItem('pendingVendorId', vendorId);
-            navigate('/vendor/subscription', { replace: true, state: { vendorId } });
-            return;
-          }
+          localStorage.setItem('vendorAccessToken', response.accessToken);
+          localStorage.setItem('vendorRefreshToken', response.refreshToken);
+          localStorage.setItem('vendorData', JSON.stringify(response.vendor));
 
           toast.success(
             <div className="flex flex-col">

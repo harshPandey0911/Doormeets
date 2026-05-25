@@ -4,7 +4,8 @@
     "route": "/admin/dashboard",
     "allowedRoles": [
       "super_admin",
-      "admin"
+      "admin",
+      "city_admin"
     ],
     "children": []
   },
@@ -13,7 +14,8 @@
     "route": "/admin/users",
     "allowedRoles": [
       "super_admin",
-      "admin"
+      "admin",
+      "city_admin"
     ],
     "children": [
       "All Users",
@@ -26,7 +28,8 @@
     "route": "/admin/vendors",
     "allowedRoles": [
       "super_admin",
-      "admin"
+      "admin",
+      "city_admin"
     ],
     "children": [
       "All Vendors",
@@ -40,7 +43,8 @@
     "route": "/admin/vendor-subscriptions",
     "allowedRoles": [
       "super_admin",
-      "admin"
+      "admin",
+      "city_admin"
     ],
     "children": []
   },
@@ -49,7 +53,8 @@
     "route": "/admin/workers",
     "allowedRoles": [
       "super_admin",
-      "admin"
+      "admin",
+      "city_admin"
     ],
     "children": [
       "All Workers",
@@ -230,8 +235,22 @@
     "route": "/admin/support",
     "allowedRoles": [
       "super_admin",
-      "admin"
+      "SUPER_ADMIN",
+      "admin",
+      "CITY_ADMIN"
     ],
     "children": []
+  },
+  {
+    "title": "Admin Management",
+    "route": "/admin/admin-management",
+    "allowedRoles": [
+      "super_admin",
+      "SUPER_ADMIN"
+    ],
+    "children": [
+      "City Admins",
+      "Pending Proposals"
+    ]
   }
 ]

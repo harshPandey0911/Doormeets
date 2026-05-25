@@ -74,7 +74,7 @@ const OptimizedImage = ({
         style={{ width, height, ...style }}
       >
         <img
-          src="/Homestr-logo.png"
+          src="/cleaning-expert-logo.png"
           alt="Image not available"
           className="w-12 h-12 object-contain opacity-40 grayscale"
         />

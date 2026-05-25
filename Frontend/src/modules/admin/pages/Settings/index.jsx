@@ -909,6 +909,7 @@ const AdminSettings = () => {
                             className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
                             <option value="admin">Admin</option>
                             <option value="super_admin">Super Admin</option>
+                            <option value="city_admin">City Admin</option>
                           </select>
 
                           {/* City Selection */}
@@ -963,9 +964,9 @@ const AdminSettings = () => {
                           <td className="px-6 py-4">
                             <span className={`px-3 py-1 text-xs font-bold rounded-full border ${admin.role === 'super_admin'
                               ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : 'bg-blue-50 text-blue-700 border-blue-100'
+                              : admin.role === 'city_admin' ? 'bg-teal-50 text-teal-700 border-teal-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                               }`}>
-                              {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                              {admin.role === 'super_admin' ? 'Super Admin' : admin.role === 'city_admin' ? 'City Admin' : 'Admin'}
                             </span>
                           </td>
                           <td className="px-6 py-4">

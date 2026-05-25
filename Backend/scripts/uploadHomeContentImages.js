@@ -112,7 +112,7 @@ const uploadHomeContentImages = async () => {
 
           const imageBuffer = fs.readFileSync(imagePath);
           const result = await uploadFile(imageBuffer, {
-            folder: `Homster/HomeContent/${section.name}`,
+            folder: `Doormeets/HomeContent/${section.name}`,
             public_id: path.basename(imagePath, path.extname(imagePath)).replace(/[^a-zA-Z0-9-_]/g, '-')
           });
 
@@ -137,7 +137,7 @@ const uploadHomeContentImages = async () => {
     }
 
     // Save the uploaded URLs to a file for reference
-    const outputPath = path.join(process.cwd(), 'homster-home-content-urls.json');
+    const outputPath = path.join(process.cwd(), 'Doormeets-home-content-urls.json');
     fs.writeFileSync(outputPath, JSON.stringify(uploadedImages, null, 2));
     console.log(`📄 Saved uploaded URLs to: ${outputPath}`);
 
@@ -158,7 +158,7 @@ const uploadHomeContentImages = async () => {
 const runUpload = async () => {
   try {
     await uploadHomeContentImages();
-    console.log('\n🎯 Next step: Update seeding scripts with these Homster HomeContent URLs');
+    console.log('\n🎯 Next step: Update seeding scripts with these Doormeets HomeContent URLs');
   } catch (error) {
     console.error('Upload failed:', error);
     process.exit(1);

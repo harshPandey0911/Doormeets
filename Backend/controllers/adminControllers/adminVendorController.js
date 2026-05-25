@@ -1,6 +1,7 @@
 const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
 const VendorBill = require('../../models/VendorBill');
+const City = require('../../models/City');
 const { validationResult } = require('express-validator');
 const { VENDOR_STATUS, BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
@@ -20,6 +21,22 @@ const getAllVendors = async (req, res) => {
 
     // Build query
     const query = {};
+
+    // CITY ADMIN FILTER: Restrict vendors to assigned cities
+    if (req.user && (req.user.role === 'CITY_ADMIN' || req.user.role === 'admin')) {
+      if (req.user.assignedCities && req.user.assignedCities.length > 0) {
+        const cities = await City.find({ _id: { $in: req.user.assignedCities } });
+        const cityNames = cities.map(c => new RegExp(`^${c.name}$`, 'i'));
+        query['address.city'] = { $in: cityNames };
+      } else {
+        // If City Admin has no assigned cities, they shouldn't see any vendors
+        return res.status(200).json({
+          success: true,
+          data: [],
+          pagination: { page: parseInt(page), limit: parseInt(limit), total: 0, pages: 0 }
+        });
+      }
+    }
 
     if (approvalStatus) {
       query.approvalStatus = approvalStatus;
@@ -513,6 +530,55 @@ const deleteVendor = async (req, res) => {
   }
 };
 
+/**
+ * Update vendor (categories and status)
+ */
+const updateVendor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive, service, subCategories, brands } = req.body;
+
+    const vendor = await Vendor.findById(id);
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found'
+      });
+    }
+
+    if (isActive !== undefined) {
+      vendor.isActive = isActive;
+    }
+    
+    if (service !== undefined) {
+      vendor.service = Array.isArray(service) ? service : [service];
+    }
+
+    if (subCategories !== undefined) {
+      vendor.subCategories = Array.isArray(subCategories) ? subCategories : [subCategories];
+    }
+
+    if (brands !== undefined) {
+      vendor.brands = Array.isArray(brands) ? brands : [brands];
+    }
+
+    await vendor.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Vendor updated successfully',
+      data: vendor
+    });
+  } catch (error) {
+    console.error('Update vendor error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update vendor'
+    });
+  }
+};
+
 module.exports = {
   getAllVendors,
   getVendorDetails,
@@ -524,6 +590,7 @@ module.exports = {
   getAllVendorBookings,
   getVendorPaymentsSummary,
   toggleVendorStatus,
-  deleteVendor
+  deleteVendor,
+  updateVendor
 };
 

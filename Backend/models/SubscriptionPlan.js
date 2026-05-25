@@ -24,9 +24,10 @@ const subscriptionPlanSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
-  isActive: {
-    type: Boolean,
-    default: true
+  status: {
+    type: String,
+    enum: ['active', 'hide'],
+    default: 'active'
   },
   createdAt: {
     type: Date,

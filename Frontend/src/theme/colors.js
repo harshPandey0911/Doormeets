@@ -9,7 +9,7 @@
  * - Worker module: import { workerTheme } from '../../../../theme'
  */
 
-// Homestr LOGO Core Brand Colors
+// Doormeets Core Brand Colors
 const brand = {
   teal: '#9634f7',
   yellow: '#b87cff',

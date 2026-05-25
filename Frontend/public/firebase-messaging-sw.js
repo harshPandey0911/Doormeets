@@ -11,9 +11,9 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compa
 // Firebase configuration - Production values
 const firebaseConfig = {
   apiKey: 'AIzaSyB0p9BwQh6P4U6RpNI783Mf2yLV96ZFemo',
-  authDomain: 'homster-notifications.firebaseapp.com',
-  projectId: 'homster-notifications',
-  storageBucket: 'homster-notifications.firebasestorage.app',
+  authDomain: 'Doormeets-notifications.firebaseapp.com',
+  projectId: 'Doormeets-notifications',
+  storageBucket: 'Doormeets-notifications.firebasestorage.app',
   messagingSenderId: '330091938710',
   appId: '1:330091938710:web:b58aa8c0830445b1fa53b7',
   measurementId: 'G-E493PBZLED'

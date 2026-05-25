@@ -10,10 +10,9 @@ const vendorSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Please provide an email'],
-    unique: true,
     trim: true,
-    lowercase: true
+    lowercase: true,
+    sparse: true // sparse allows multiple null/undefined values without triggering unique constraint
   },
   phone: {
     type: String,
@@ -36,7 +35,6 @@ const vendorSchema = new mongoose.Schema({
   },
   experience: {
     type: Number,
-    required: [true, 'Please provide years of experience'],
     default: 0
   },
   service: {
@@ -49,6 +47,14 @@ const vendorSchema = new mongoose.Schema({
     ref: 'Profession'
   }],
   categories: {
+    type: [String],
+    default: []
+  },
+  subCategories: {
+    type: [String],
+    default: []
+  },
+  brands: {
     type: [String],
     default: []
   },
@@ -114,28 +120,23 @@ const vendorSchema = new mongoose.Schema({
   aadhar: {
     number: {
       type: String,
-      required: [true, 'Please provide Aadhar number'],
       trim: true
     },
     document: {
-      type: String, // Cloudinary URL (Front Side)
-      required: [true, 'Please upload Aadhar Front document']
+      type: String // Cloudinary URL (Front Side)
     },
     backDocument: {
-      type: String, // Cloudinary URL (Back Side)
-      required: [true, 'Please upload Aadhar Back document']
+      type: String // Cloudinary URL (Back Side)
     }
   },
   pan: {
     number: {
       type: String,
-      required: [true, 'Please provide PAN number'],
       trim: true,
       uppercase: true
     },
     document: {
-      type: String, // Cloudinary URL
-      required: [true, 'Please upload PAN document']
+      type: String // Cloudinary URL
     }
   },
   otherDocuments: [{
