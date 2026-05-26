@@ -18,8 +18,21 @@ const createRequest = async (req, res) => {
       });
     }
 
+    // Helper functions since req.admin is a plain object (due to .lean() in authMiddleware)
+    const isSuper = admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin';
+    const canAccessCity = (cId) => {
+      if (isSuper) return true;
+      if (!cId) return true;
+      return (admin.assignedCities || []).some(c => c.toString() === cId.toString());
+    };
+    const hasPerm = (key) => {
+      if (isSuper) return true;
+      const p = (admin.permissions || []).find(p => p.key === key);
+      return p ? p.enabled : false;
+    };
+
     // Validate city admin has access to this city
-    if (!req.admin.canAccessCity(cityId)) {
+    if (!canAccessCity(cityId)) {
       return res.status(403).json({
         success: false,
         message: 'You are not assigned to this city.'
@@ -31,7 +44,7 @@ const createRequest = async (req, res) => {
       category: 'propose_categories',
       brand: 'propose_brands'
     };
-    if (permMap[requestType] && !req.admin.hasPermission(permMap[requestType])) {
+    if (permMap[requestType] && !hasPerm(permMap[requestType])) {
       return res.status(403).json({
         success: false,
         code: 'PERMISSION_DENIED',
@@ -72,8 +85,9 @@ const getAllRequests = async (req, res) => {
     const { status, requestType, cityId, page = 1, limit = 20 } = req.query;
     const query = {};
 
+    const isSuper = req.admin.role === 'SUPER_ADMIN' || req.admin.role === 'super_admin';
     // City Admin can only see their own requests
-    if (!req.admin.isSuperAdmin()) {
+    if (!isSuper) {
       query.requestedBy = req.admin._id;
     }
 
@@ -123,6 +137,8 @@ const approveRequest = async (req, res) => {
     let createdDoc = null;
     let modelName = null;
 
+    let messageText = `Request approved. ${modelName || 'Document'} created successfully.`;
+
     // Create the actual document based on request type
     if (request.requestType === 'category') {
       createdDoc = await Category.create({
@@ -138,6 +154,14 @@ const approveRequest = async (req, res) => {
         createdBy: req.admin._id
       });
       modelName = 'Brand';
+    } else if (request.requestType === 'delete_vendor') {
+      const Vendor = require('../../models/Vendor');
+      const vendorId = request.proposedData?.vendorId;
+      if (vendorId) {
+        await Vendor.findByIdAndDelete(vendorId);
+      }
+      modelName = 'Vendor';
+      messageText = 'Request approved. Vendor deleted successfully.';
     }
     // Add more types here (pricing_override, banner, etc.)
 
@@ -153,7 +177,7 @@ const approveRequest = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Request approved. ${modelName || 'Document'} created successfully.`,
+      message: messageText,
       data: { request, createdDoc }
     });
   } catch (error) {

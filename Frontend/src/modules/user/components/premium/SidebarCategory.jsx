@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const SidebarCategory = ({ category, active = false, onClick }) => {
+  const isComingSoon = category.status === 'coming_soon';
+
   return (
     <motion.button
       type="button"
@@ -17,9 +19,15 @@ const SidebarCategory = ({ category, active = false, onClick }) => {
           <span className="text-sm font-black">{category.title?.[0]}</span>
         )}
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="text-sm font-bold truncate">{category.title}</div>
-        <div className={`text-[11px] truncate ${active ? 'text-white/80' : 'text-gray-400'}`}>{category.subtitle || 'Premium service'}</div>
+        {isComingSoon ? (
+          <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full ${active ? 'bg-amber-400/30 text-amber-100' : 'bg-amber-100 text-amber-700'}`}>
+            Coming Soon
+          </span>
+        ) : (
+          <div className={`text-[11px] truncate ${active ? 'text-white/80' : 'text-gray-400'}`}>{category.subtitle || 'Premium service'}</div>
+        )}
       </div>
     </motion.button>
   );

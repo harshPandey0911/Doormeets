@@ -24,7 +24,8 @@ const AdminSettings = () => {
     maxSearchTime: 5,
     waveDuration: 60,
     searchRadius: 10,
-    isOnlinePaymentEnabled: true
+    isOnlinePaymentEnabled: true,
+    mcqTimeLimitMinutes: 30
   });
 
   // Billing Configuration State
@@ -121,7 +122,8 @@ const AdminSettings = () => {
             vendorCashLimit: res.settings.vendorCashLimit || 10000,
             cancellationPenalty: res.settings.cancellationPenalty !== undefined ? res.settings.cancellationPenalty : 49,
             searchRadius: res.settings.searchRadius || 10,
-            isOnlinePaymentEnabled: res.settings.isOnlinePaymentEnabled !== undefined ? res.settings.isOnlinePaymentEnabled : true
+            isOnlinePaymentEnabled: res.settings.isOnlinePaymentEnabled !== undefined ? res.settings.isOnlinePaymentEnabled : true,
+            mcqTimeLimitMinutes: res.settings.mcqTimeLimitMinutes !== undefined ? res.settings.mcqTimeLimitMinutes : 30
           });
           // Load billing settings
           setBillingSettings({
@@ -807,6 +809,36 @@ const AdminSettings = () => {
                       className={`relative w-12 h-7 rounded-full transition-all duration-300 ${financialSettings.isOnlinePaymentEnabled ? 'bg-green-600' : 'bg-gray-200'}`}>
                       <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${financialSettings.isOnlinePaymentEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">MCQ Test Time Limit (Minutes)</p>
+                      <p className="text-xs text-gray-500 mt-1">Set the duration in minutes for the vendor MCQ training test</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        type="number" 
+                        name="mcqTimeLimitMinutes" 
+                        value={financialSettings.mcqTimeLimitMinutes || 30} 
+                        onChange={(e) => setFinancialSettings(prev => ({ ...prev, mcqTimeLimitMinutes: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white"
+                        min="1"
+                      />
+                      <button 
+                        onClick={async () => {
+                          try {
+                            await updateSettings({ mcqTimeLimitMinutes: financialSettings.mcqTimeLimitMinutes });
+                            toast.success('MCQ Time Limit updated successfully');
+                          } catch (error) {
+                            toast.error('Failed to update MCQ Time Limit');
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                      >
+                        Save
+                      </button>
+                    </div>
                   </div>
 
                 </div>

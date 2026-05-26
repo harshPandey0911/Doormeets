@@ -21,7 +21,7 @@ const getPublicCategories = async (req, res) => {
     const { cityId } = req.query;
 
     // Build query
-    const query = { status: 'active' };
+    const query = { status: { $in: ['active', 'coming_soon'] } };
     if (cityId) {
       query.$or = [
         { cityIds: cityId },
@@ -30,11 +30,21 @@ const getPublicCategories = async (req, res) => {
       ];
     }
 
-    // Find all online and available vendors
-    const onlineVendors = await require('../../models/Vendor').find({ 
-      isOnline: true, 
-      availability: 'AVAILABLE' 
-    }).select('categories');
+    // Find all DB-active category titles (admin status is the source of truth)
+    const dbActiveCategories = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
+    const dbActiveCatIdsSet = new Set(dbActiveCategories.map(c => c._id.toString()));
+    const dbActiveCatTitlesSet = new Set(dbActiveCategories.map(c => c.title.toLowerCase().trim()));
+
+    // Find all online and available vendors — filtered by city if cityId provided
+    let vendorFilterCat = { isOnline: true, availability: 'AVAILABLE' };
+    if (cityId) {
+      const City = require('../../models/City');
+      const cityDocCat = await City.findById(cityId).select('name').lean();
+      if (cityDocCat && cityDocCat.name) {
+        vendorFilterCat['address.city'] = new RegExp(`^${cityDocCat.name.trim()}$`, 'i');
+      }
+    }
+    const onlineVendors = await require('../../models/Vendor').find(vendorFilterCat).select('categories');
 
     const activeCategoryIds = new Set();
     const activeCategoryTitles = new Set();
@@ -43,9 +53,16 @@ const getPublicCategories = async (req, res) => {
         vendor.categories.forEach(cat => {
           if (cat) {
             if (mongoose.isValidObjectId(cat)) {
-              activeCategoryIds.add(cat.toString());
+              // Only count if category is truly active in DB
+              if (dbActiveCatIdsSet.has(cat.toString())) {
+                activeCategoryIds.add(cat.toString());
+              }
             } else {
-              activeCategoryTitles.add(cat.toLowerCase().trim());
+              // Only count if title maps to an actually active DB category
+              const titleLower = cat.toLowerCase().trim();
+              if (dbActiveCatTitlesSet.has(titleLower)) {
+                activeCategoryTitles.add(titleLower);
+              }
             }
           }
         });
@@ -53,13 +70,27 @@ const getPublicCategories = async (req, res) => {
     });
 
     const categories = await Category.find(query)
-      .select('title slug homeIconUrl homeBadge hasSaleBadge homeOrder showOnHome categoryType')
+      .select('title slug homeIconUrl homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers')
       .sort({ homeOrder: 1, createdAt: -1 })
       .lean();
 
+    // Check optional authentication for isInterested flag
+    const jwt = require('jsonwebtoken');
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) {
+        // Ignore invalid token for public endpoint
+      }
+    }
+
     // Filter and map
     const initialCategories = categories
-      .filter(cat => activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim()))
+      .filter(cat => cat.status === 'coming_soon' || activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim()))
       .map(cat => ({
         id: cat._id.toString(),
         title: cat.title,
@@ -68,7 +99,10 @@ const getPublicCategories = async (req, res) => {
         badge: cat.homeBadge || '',
         hasSaleBadge: cat.hasSaleBadge || false,
         showOnHome: cat.showOnHome || false,
-        categoryType: cat.categoryType || 'service'
+        categoryType: cat.categoryType || 'service',
+        status: cat.status || 'active',
+        interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
+        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false
       }));
 
     res.status(200).json({
@@ -93,6 +127,11 @@ const getPublicSubCategories = async (req, res) => {
     const { categoryId } = req.query;
     if (!categoryId) {
       return res.status(400).json({ success: false, message: 'categoryId is required' });
+    }
+
+    const category = await Category.findById(categoryId);
+    if (!category || category.status !== 'active') {
+      return res.status(200).json({ success: true, subCategories: [] });
     }
 
     const SubCategory = require('../../models/SubCategory');
@@ -195,22 +234,32 @@ const getPublicBrands = async (req, res) => {
 
     // Build query
     const query = { status: 'active' };
+    
+    // Find all active categories from DB (source of truth for status)
+    const activeCategories = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
+    const activeCatIds = activeCategories.map(c => c._id);
+    // Build Sets for fast O(1) lookup
+    const activeCatIdsSet = new Set(activeCategories.map(c => c._id.toString()));
+    const activeCatTitlesFromDB = new Set(activeCategories.map(c => c.title.toLowerCase().trim()));
+
     if (subCategoryId) {
       query.subCategoryIds = subCategoryId;
     }
     if (categoryId) {
       const category = await Category.findById(categoryId);
-      if (category) {
+      if (category && (category.status === 'active' || category.status === 'coming_soon')) {
         // Find all categories with the same title to show all vendors' brands for this category
         const relatedCategories = await Category.find({ 
           title: { $regex: `^${category.title.trim()}$`, $options: 'i' }, 
-          status: 'active' 
+          status: { $in: ['active', 'coming_soon'] } 
         }).select('_id');
         const catIds = relatedCategories.map(c => c._id);
         query.categoryIds = { $in: catIds };
       } else {
-        query.categoryIds = categoryId;
+        return res.status(200).json({ success: true, brands: [] });
       }
+    } else {
+      query.categoryIds = { $in: activeCatIds };
     }
     if (cityId) {
       query.$or = [
@@ -230,11 +279,18 @@ const getPublicBrands = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Find all online and available vendors
-    const onlineVendors = await require('../../models/Vendor').find({ 
-      isOnline: true, 
-      availability: 'AVAILABLE' 
-    }).select('categories location address geoLocation');
+    // Find all online and available vendors, filtered by city if cityId provided
+    let vendorCityFilter = { isOnline: true, availability: 'AVAILABLE' };
+    if (cityId) {
+      // Look up city name to match vendor's address.city string field
+      const City = require('../../models/City');
+      const cityDoc = await City.findById(cityId).select('name').lean();
+      if (cityDoc && cityDoc.name) {
+        vendorCityFilter['address.city'] = new RegExp(`^${cityDoc.name.trim()}$`, 'i');
+      }
+    }
+    const onlineVendors = await require('../../models/Vendor').find(vendorCityFilter)
+      .select('categories location address geoLocation');
 
     const activeCategoryIds = new Set();
     const activeCategoryTitles = new Set();
@@ -243,9 +299,16 @@ const getPublicBrands = async (req, res) => {
         vendor.categories.forEach(cat => {
           if (cat) {
             if (mongoose.isValidObjectId(cat)) {
-              activeCategoryIds.add(cat.toString());
+              // Only add if this category ID is actually active in DB
+              if (activeCatIdsSet.has(cat.toString())) {
+                activeCategoryIds.add(cat.toString());
+              }
             } else {
-              activeCategoryTitles.add(cat.toLowerCase().trim());
+              // Only add title if it corresponds to an actually active DB category
+              const titleLower = cat.toLowerCase().trim();
+              if (activeCatTitlesFromDB.has(titleLower)) {
+                activeCategoryTitles.add(titleLower);
+              }
             }
           }
         });
@@ -259,10 +322,13 @@ const getPublicBrands = async (req, res) => {
     brandCategories.forEach(c => brandCategoryMap.set(c._id.toString(), c.title.toLowerCase().trim()));
 
     // Filter out brands whose category is not served by any online vendor
+    // AND that category must be active in DB (admin status wins over vendor online status)
     brands = brands.filter(b => {
       if (!b.categoryIds) return false;
       return b.categoryIds.some(catId => {
         const idStr = catId.toString();
+        // First check: category must be active in DB
+        if (!activeCatIdsSet.has(idStr)) return false;
         const title = brandCategoryMap.get(idStr);
         return activeCategoryIds.has(idStr) || (title && activeCategoryTitles.has(title));
       });
@@ -556,6 +622,22 @@ const getPublicServices = async (req, res) => {
 
     const query = { status: 'active' };
 
+    // Find all active categories from DB (source of truth — admin status wins over vendor status)
+    const activeCategories = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
+    const activeCatIds = activeCategories.map(c => c._id);
+    const dbActiveCatIds = new Set(activeCategories.map(c => c._id.toString()));
+    const dbActiveCatTitles = new Set(activeCategories.map(c => c.title.toLowerCase().trim()));
+
+    if (categoryId) {
+      const category = await Category.findById(categoryId);
+      if (!category || (category.status !== 'active' && category.status !== 'coming_soon')) {
+        return res.status(200).json({ success: true, services: [] });
+      }
+      query.categoryId = categoryId;
+    } else {
+      query.categoryId = { $in: activeCatIds };
+    }
+
     let targetBrand = null;
     if (brandId || brandSlug) {
       const brand = brandId ? await Brand.findById(brandId) : await Brand.findOne({ slug: brandSlug });
@@ -587,10 +669,6 @@ const getPublicServices = async (req, res) => {
       }
     }
 
-    if (categoryId) {
-      query.categoryId = categoryId;
-    }
-
     // If a subCategoryId is provided and we don't already restrict by mapped services,
     // also filter services by their subCategoryId so frontend requests return accurate results.
     if (subCategoryId && !query._id) {
@@ -606,11 +684,18 @@ const getPublicServices = async (req, res) => {
       .sort({ createdAt: 1 })
       .lean();
 
-    // Find all online and available vendors
-    const onlineVendors = await require('../../models/Vendor').find({ 
-      isOnline: true, 
-      availability: 'AVAILABLE' 
-    }).select('categories location address geoLocation');
+    // Find online vendors filtered by city (if provided) so cross-city bleed doesn't happen
+    let svcVendorFilter = { isOnline: true, availability: 'AVAILABLE' };
+    const { cityId: svcCityId } = req.query;
+    if (svcCityId) {
+      const City = require('../../models/City');
+      const svcCityDoc = await City.findById(svcCityId).select('name').lean();
+      if (svcCityDoc && svcCityDoc.name) {
+        svcVendorFilter['address.city'] = new RegExp(`^${svcCityDoc.name.trim()}$`, 'i');
+      }
+    }
+    const onlineVendors = await require('../../models/Vendor').find(svcVendorFilter)
+      .select('categories location address geoLocation');
 
     const activeCategoryIds = new Set();
     const activeCategoryTitles = new Set();
@@ -619,9 +704,16 @@ const getPublicServices = async (req, res) => {
         vendor.categories.forEach(cat => {
           if (cat) {
             if (mongoose.isValidObjectId(cat)) {
-              activeCategoryIds.add(cat.toString());
+              // Only include if category is actually active in DB
+              if (dbActiveCatIds.has(cat.toString())) {
+                activeCategoryIds.add(cat.toString());
+              }
             } else {
-              activeCategoryTitles.add(cat.toLowerCase().trim());
+              // Only include if this title maps to an actually active DB category
+              const titleLower = cat.toLowerCase().trim();
+              if (dbActiveCatTitles.has(titleLower)) {
+                activeCategoryTitles.add(titleLower);
+              }
             }
           }
         });
@@ -630,14 +722,17 @@ const getPublicServices = async (req, res) => {
 
     // Populate category details to get the titles for filtering
     const svcCategoryIds = [...new Set(activeServices.map(s => s.categoryId).filter(Boolean))];
-    const svcCategories = await Category.find({ _id: { $in: svcCategoryIds } }).select('_id title').lean();
+    const svcCategories = await Category.find({ _id: { $in: svcCategoryIds }, status: { $in: ['active', 'coming_soon'] } }).select('_id title').lean();
     const svcCategoryMap = new Map();
     svcCategories.forEach(c => svcCategoryMap.set(c._id.toString(), c.title.toLowerCase().trim()));
 
     // Filter out services whose category is not served by any online vendor
+    // AND whose category is active in DB (admin status takes priority)
     activeServices = activeServices.filter(svc => {
       if (!svc.categoryId) return false;
       const idStr = svc.categoryId.toString();
+      // Category must be active in DB first
+      if (!dbActiveCatIds.has(idStr)) return false;
       const title = svcCategoryMap.get(idStr);
       return activeCategoryIds.has(idStr) || (title && activeCategoryTitles.has(title));
     });
@@ -822,11 +917,22 @@ const getPublicHomeData = async (req, res) => {
   try {
     const { cityId } = req.query;
 
-    // 1. Find all online and available vendors
-    const onlineVendors = await require('../../models/Vendor').find({ 
-      isOnline: true, 
-      availability: 'AVAILABLE' 
-    }).select('categories location address geoLocation');
+    // 1. Find all DB-active categories first (admin status is source of truth)
+    const dbActiveCategoriesForHome = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
+    const dbActiveCatIdsForHome = new Set(dbActiveCategoriesForHome.map(c => c._id.toString()));
+    const dbActiveCatTitlesForHome = new Set(dbActiveCategoriesForHome.map(c => c.title.toLowerCase().trim()));
+
+    // 2. Find all online and available vendors, filtered by city if provided
+    let homeVendorFilter = { isOnline: true, availability: 'AVAILABLE' };
+    if (cityId) {
+      const City = require('../../models/City');
+      const homeCityDoc = await City.findById(cityId).select('name').lean();
+      if (homeCityDoc && homeCityDoc.name) {
+        homeVendorFilter['address.city'] = new RegExp(`^${homeCityDoc.name.trim()}$`, 'i');
+      }
+    }
+    const onlineVendors = await require('../../models/Vendor').find(homeVendorFilter)
+      .select('categories location address geoLocation');
 
     const activeCategoryIds = new Set();
     const activeCategoryTitles = new Set();
@@ -835,9 +941,16 @@ const getPublicHomeData = async (req, res) => {
         vendor.categories.forEach(cat => {
           if (cat) {
             if (mongoose.isValidObjectId(cat)) {
-              activeCategoryIds.add(cat.toString());
+              // Only include if category is truly active in DB
+              if (dbActiveCatIdsForHome.has(cat.toString())) {
+                activeCategoryIds.add(cat.toString());
+              }
             } else {
-              activeCategoryTitles.add(cat.toLowerCase().trim());
+              // Only include title if it maps to an actually active DB category
+              const titleLower = cat.toLowerCase().trim();
+              if (dbActiveCatTitlesForHome.has(titleLower)) {
+                activeCategoryTitles.add(titleLower);
+              }
             }
           }
         });
@@ -847,21 +960,36 @@ const getPublicHomeData = async (req, res) => {
     // 2. Fetch categories and home content
     const [categoriesRes, homeContent] = await Promise.all([
       Category.find({ 
-        status: 'active', 
+        status: { $in: ['active', 'coming_soon'] }, 
+        showOnHome: { $ne: false },
         $or: cityId ? [
           { cityIds: cityId },
           { cityIds: { $exists: false } },
           { cityIds: { $size: 0 } }
-        ] : [{ status: 'active' }]
+        ] : [{ status: { $in: ['active', 'coming_soon'] } }]
       })
-        .select('title slug homeIconUrl homeBadge hasSaleBadge categoryType')
+        .select('title slug homeIconUrl homeBadge hasSaleBadge categoryType status interestedUsers')
         .sort({ homeOrder: 1 })
         .lean(),
       HomeContent.getHomeContent(cityId)
     ]);
 
+    // Check optional authentication for isInterested flag
+    const jwt = require('jsonwebtoken');
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) {
+        // Ignore invalid token for public endpoint
+      }
+    }
+
     const formattedCategories = categoriesRes
-      .filter(cat => activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim())) // Filter by availability
+      .filter(cat => cat.status === 'coming_soon' || activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim())) // Filter by availability
       .map(cat => ({
         id: cat._id.toString(),
         title: cat.title,
@@ -869,7 +997,10 @@ const getPublicHomeData = async (req, res) => {
         icon: cat.homeIconUrl || '',
         badge: cat.homeBadge || '',
         hasSaleBadge: cat.hasSaleBadge || false,
-        categoryType: cat.categoryType || 'service'
+        categoryType: cat.categoryType || 'service',
+        status: cat.status || 'active',
+        interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
+        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false
       }));
 
     // Deduplicate by title to prevent duplicate icons on home page
@@ -890,11 +1021,15 @@ const getPublicHomeData = async (req, res) => {
     if (homeContent) {
       const contentObj = homeContent.toObject();
       
+      // Find all active categories
+      const activeCats = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id');
+      const activeCatIds = activeCats.map(c => c._id);
+
       // We need to fetch all active services and brands to dynamically update home page cards
       // This ensures the price shown on home matches the nearest vendor
       // We no longer populate vendorId on Service/Brand because Admin creates them
-      const allActiveServices = await Service.find({ status: 'active' }).lean();
-      const allActiveBrands = await Brand.find({ status: 'active' }).lean();
+      const allActiveServices = await Service.find({ status: 'active', categoryId: { $in: activeCatIds } }).lean();
+      const allActiveBrands = await Brand.find({ status: 'active', categoryIds: { $in: activeCatIds } }).lean();
 
       // Helper to find best item for a title
       const findBestItem = (title, items) => {
@@ -1086,6 +1221,56 @@ const getPublicTrainingData = async (req, res) => {
   }
 };
 
+/**
+ * Register interest in a coming soon category
+ * POST /api/public/categories/:categoryId/interested
+ */
+const registerInterest = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const userId = req.user ? req.user.id : null;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    if (category.status !== 'coming_soon') {
+      return res.status(400).json({ success: false, message: 'Category is not coming soon' });
+    }
+
+    if (!category.interestedUsers) {
+      category.interestedUsers = [];
+    }
+
+    if (category.interestedUsers.some(id => id.toString() === userId.toString())) {
+      return res.status(200).json({
+        success: true,
+        message: 'You have already registered interest in this category!',
+        interestedCount: category.interestedUsers.length,
+        isInterested: true
+      });
+    }
+
+    category.interestedUsers.push(userId);
+    await category.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Thank you for your interest! We will notify you when it launches.',
+      interestedCount: category.interestedUsers.length,
+      isInterested: true
+    });
+  } catch (error) {
+    console.error('Register interest error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   getPublicCategories,
   getPublicSubCategories,
@@ -1096,5 +1281,6 @@ module.exports = {
   getPublicHomeData,
   getPublicBookingHierarchy,
   getPublicProfessions,
-  getPublicTrainingData
+  getPublicTrainingData,
+  registerInterest
 };

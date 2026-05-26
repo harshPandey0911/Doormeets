@@ -6,7 +6,7 @@ import Modal from "../components/Modal";
 import ModeSelector from "../components/ModeSelector";
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
 
-import { categoryService, serviceService, professionService } from "../../../../../services/catalogService";
+import { categoryService, serviceService, professionService, publicCatalogService } from "../../../../../services/catalogService";
 import { z } from "zod";
 
 // Define Zod schema
@@ -19,13 +19,15 @@ const categorySchema = z.object({
   showOnHome: z.boolean(),
   hasBrands: z.boolean().default(true),
   categoryType: z.enum(["service", "product"]).default("service"),
+  status: z.enum(["active", "inactive", "coming_soon"]).default("active"),
 });
 
-const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
+const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [professions, setProfessions] = useState([]);
+  const [cityFilter, setCityFilter] = useState('');
 
   const [form, setForm] = useState({
     title: "",
@@ -37,24 +39,28 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
     showOnHome: true,
     categoryType: "service",
     professionId: "",
+    status: "active",
+    allCities: true,        // true = available in all cities
+    cityIds: [],            // specific city IDs when allCities is false
   });
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
 
+  const [interestedModalOpen, setInterestedModalOpen] = useState(false);
+  const [interestedUsers, setInterestedUsers] = useState([]);
+  const [interestedCategoryTitle, setInterestedCategoryTitle] = useState("");
+  const [loadingInterested, setLoadingInterested] = useState(false);
+
   const categories = (catalog.categories || []).sort((a, b) => (a.homeOrder || 0) - (b.homeOrder || 0));
   const editing = useMemo(() => categories.find((c) => c.id === editingId) || null, [categories, editingId]);
 
-  // Fetch categories from API on mount or city change
+  // Fetch categories from API on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setFetching(true);
-        // Pass city filters
-        const params = { status: 'active' };
-        if (selectedCity) {
-          params.cityId = selectedCity;
-        }
+        const params = {};
 
         const response = await categoryService.getAll(params);
         const profRes = await professionService.getAll();
@@ -66,7 +72,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
         if (response.success && response.categories) {
           // Map backend format to frontend format
           const mappedCategories = response.categories.map(cat => ({
-            id: cat.id, // Backend returns id (not _id)
+            id: cat.id,
             title: cat.title,
             slug: cat.slug,
             homeIconUrl: cat.homeIconUrl || "",
@@ -76,6 +82,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
             showOnHome: cat.showOnHome !== false,
             categoryType: cat.categoryType || "service",
             vendorId: cat.vendorId || null,
+            status: cat.status || "active",
+            interestedCount: cat.interestedCount || 0,
+            cityIds: (cat.cityIds || []).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
           }));
 
           // Update catalog with fetched categories
@@ -92,7 +101,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
     };
 
     fetchCategories();
-  }, [selectedCity]); // Re-fetch when city changes
+  }, []); // Fetch once on mount
 
   useEffect(() => {
     if (!editing) {
@@ -106,10 +115,14 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
         showOnHome: true,
         categoryType: "service",
         professionId: "",
+        status: "active",
+        allCities: true,
+        cityIds: [],
       });
       return;
     }
     const safe = ensureIds({ ...catalog, categories: [editing] }).categories[0];
+    const existingCityIds = (safe.cityIds || []).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)));
     setForm({
       title: safe.title || "",
       slug: safe.slug || "",
@@ -120,6 +133,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       showOnHome: safe.showOnHome !== false,
       categoryType: safe.categoryType || "service",
       professionId: "",
+      status: safe.status || "active",
+      allCities: existingCityIds.length === 0,
+      cityIds: existingCityIds,
     });
   }, [editing]);
 
@@ -137,11 +153,33 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       showOnHome: true,
       categoryType: "service",
       professionId: "",
+      status: "active",
+      allCities: true,
+      cityIds: [],
     });
     setIsModalOpen(false);
   };
 
-
+  const handleShowInterested = async (categoryId) => {
+    try {
+      setLoadingInterested(true);
+      setInterestedModalOpen(true);
+      setInterestedUsers([]);
+      
+      const response = await categoryService.getInterestedUsers(categoryId);
+      if (response.success) {
+        setInterestedUsers(response.interestedUsers || []);
+        setInterestedCategoryTitle(response.categoryTitle || "Category");
+      } else {
+        toast.error(response.message || "Failed to load interested users");
+      }
+    } catch (error) {
+      console.error("Fetch interested users error:", error);
+      toast.error("Failed to fetch interested users");
+    } finally {
+      setLoadingInterested(false);
+    }
+  };
 
   const upsert = async () => {
     // Validate form with Zod
@@ -154,6 +192,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       hasBrands: Boolean(form.hasBrands),
       showOnHome: Boolean(form.showOnHome),
       categoryType: form.categoryType,
+      status: form.status,
     });
 
     if (!validationResult.success) {
@@ -163,7 +202,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       return;
     }
 
-    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, showOnHome, categoryType } = validationResult.data;
+    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, showOnHome, categoryType, status } = validationResult.data;
 
     try {
       setLoading(true);
@@ -184,6 +223,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
         homeOrder = maxOrder + 1;
       }
 
+      // Determine cityIds from form
+      const finalCityIds = form.allCities ? [] : form.cityIds;
+
       const categoryData = {
         title,
         slug,
@@ -194,83 +236,55 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
         showOnHome,
         homeOrder,
         categoryType,
-        cityIds: selectedCity ? [selectedCity] : [],
+        status,
+        cityIds: finalCityIds,
+        updateCityIds: finalCityIds,
       };
 
-      // For updates, we need to respect existing cityIds possibly, but for now we just set/add the current city
-      // If we are in "Global" mode (selectedCity is empty), we might want to keep existing cityIds?
-      // User request implies: "link it with city id" when selected.
       if (editingId && !editingId.startsWith('ucat-')) {
         const existingCat = categories.find(c => c.id === editingId);
-        // If editing, and we have a selectedCity, ensure it's in the list (or replace? usually specific intent)
-        // Assuming "Link it" implies making it available for this city.
-        // But usually in this UI, if you are filtering by a city, you are managing THAT city's entities.
-        // Let's stick to: If selectedCity is present, set cityIds = [selectedCity]. 
-        // If generic want to add multiple cities, that might need a multi-select UI. 
-        // For now, adhering to user request: "link it with city id".
         if (selectedCity) {
           categoryData.cityIds = [selectedCity];
+          categoryData.updateCityIds = [selectedCity];
         }
       }
 
+      const mapSavedCategory = (cat) => ({
+        id: cat.id,
+        title: cat.title,
+        slug: cat.slug,
+        homeIconUrl: cat.homeIconUrl || "",
+        homeBadge: cat.homeBadge || "",
+        hasSaleBadge: cat.hasSaleBadge || false,
+        hasBrands: cat.hasBrands ?? true,
+        showOnHome: cat.showOnHome !== false,
+        homeOrder: cat.homeOrder || 0,
+        categoryType: cat.categoryType || "service",
+        vendorId: cat.vendorId || null,
+        status: cat.status || "active",
+        interestedCount: cat.interestedCount || 0,
+        cityIds: (cat.cityIds || []).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
+      });
+
       let savedCategory;
       if (editingId && editingId.startsWith('ucat-')) {
-        // This is a local ID, create new in backend
         const response = await categoryService.create(categoryData);
         if (response.success) {
-          savedCategory = {
-            id: response.category.id,
-            title: response.category.title,
-            slug: response.category.slug,
-            homeIconUrl: response.category.homeIconUrl || "",
-            homeBadge: response.category.homeBadge || "",
-            hasSaleBadge: response.category.hasSaleBadge || false,
-            hasBrands: response.category.hasBrands ?? true,
-            showOnHome: response.category.showOnHome !== false,
-            homeOrder: response.category.homeOrder || 0,
-            categoryType: response.category.categoryType || "service",
-            vendorId: response.category.vendorId || null,
-          };
+          savedCategory = mapSavedCategory(response.category);
         } else {
           throw new Error(response.message || 'Failed to create category');
         }
       } else if (editingId) {
-        // Update existing category in backend
         const response = await categoryService.update(editingId, categoryData);
         if (response.success) {
-          savedCategory = {
-            id: response.category.id,
-            title: response.category.title,
-            slug: response.category.slug,
-            homeIconUrl: response.category.homeIconUrl || "",
-            homeBadge: response.category.homeBadge || "",
-            hasSaleBadge: response.category.hasSaleBadge || false,
-            hasBrands: response.category.hasBrands ?? true,
-            showOnHome: response.category.showOnHome !== false,
-            homeOrder: response.category.homeOrder || 0,
-            categoryType: response.category.categoryType || "service",
-            vendorId: response.category.vendorId || null,
-          };
+          savedCategory = mapSavedCategory(response.category);
         } else {
           throw new Error(response.message || 'Failed to update category');
         }
       } else {
-        // Create new category
         const response = await categoryService.create(categoryData);
         if (response.success) {
-          savedCategory = {
-            id: response.category.id,
-            title: response.category.title,
-            slug: response.category.slug,
-            homeIconUrl: response.category.homeIconUrl || "",
-            homeBadge: response.category.homeBadge || "",
-            hasSaleBadge: response.category.hasSaleBadge || false,
-            hasBrands: response.category.hasBrands ?? true,
-            showOnHome: response.category.showOnHome !== false,
-            homeOrder: response.category.homeOrder || 0,
-            categoryType: response.category.categoryType || "service",
-            vendorId: response.category.vendorId || null,
-          };
+          savedCategory = mapSavedCategory(response.category);
         } else {
           throw new Error(response.message || 'Failed to create category');
         }
@@ -285,7 +299,6 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
             await professionService.update(prof.id || prof._id, { 
               categories: [...catIds, savedCategory.id] 
             });
-            // Update local profession state so we don't link it twice
             setProfessions(professions.map(p => (p.id || p._id) === form.professionId ? { ...p, categories: [...catIds, savedCategory.id] } : p));
           }
         }
@@ -296,19 +309,16 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       const exists = next.categories.find((c) => c.id === editingId || c.id === savedCategory.id);
 
       if (exists && editingId) {
-        // Update existing
         next.categories = next.categories.map((c) =>
           (c.id === editingId || c.id === savedCategory.id) ? savedCategory : c
         );
       } else {
-        // Add new
         next.categories = [...next.categories, savedCategory];
       }
 
-
-
       setCatalog(next);
       saveCatalog(next);
+      publicCatalogService.invalidateCache();
       toast.success(editingId ? "Category updated successfully" : "Category created successfully");
       reset();
     } catch (error) {
@@ -323,11 +333,11 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
   const remove = async (id) => {
     if (!window.confirm("Delete this category?")) return;
 
-    // If it's a local ID (starts with ucat-), just remove from local state
     if (id.startsWith('ucat-')) {
       const next = { ...catalog, categories: categories.filter((c) => c.id !== id) };
       setCatalog(next);
       saveCatalog(next);
+      publicCatalogService.invalidateCache();
       if (editingId === id) reset();
       return;
     }
@@ -337,10 +347,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       const response = await categoryService.delete(id);
 
       if (response.success) {
-        // Remove from local state
         const next = { ...catalog, categories: categories.filter((c) => c.id !== id) };
         setCatalog(next);
         saveCatalog(next);
+        publicCatalogService.invalidateCache();
         if (editingId === id) reset();
         toast.success("Category deleted successfully");
       } else {
@@ -354,25 +364,52 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
     }
   };
 
+  const handleStatusChange = async (categoryId, newStatus) => {
+    try {
+      const category = categories.find(c => c.id === categoryId);
+      if (!category) return;
+
+      const response = await categoryService.update(categoryId, {
+        status: newStatus,
+        updateCityIds: category.cityIds || (selectedCity ? [selectedCity] : [])
+      });
+
+      if (response.success) {
+        const next = ensureIds(catalog);
+        next.categories = next.categories.map(c => 
+          c.id === categoryId ? { ...c, status: newStatus } : c
+        );
+        setCatalog(next);
+        saveCatalog(next);
+        publicCatalogService.invalidateCache();
+        toast.success(`Status updated to ${newStatus === 'active' ? 'Active' : newStatus === 'coming_soon' ? 'Coming Soon' : 'Deactive'}`);
+      } else {
+        throw new Error(response.message || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Update status error:', error);
+      toast.error(error.message || 'Failed to update status');
+    }
+  };
+
   const moveCategoryUp = async (categoryId, currentIndex) => {
-    if (currentIndex === 0) return; // Already at top
+    if (currentIndex === 0) return;
 
     try {
       setLoading(true);
       const category = categories[currentIndex];
       const previousCategory = categories[currentIndex - 1];
 
-      // Swap orders
       await categoryService.updateOrder(category.id, currentIndex - 1);
       await categoryService.updateOrder(previousCategory.id, currentIndex);
 
-      // Update local state
       const updatedCategories = [...categories];
       [updatedCategories[currentIndex], updatedCategories[currentIndex - 1]] =
         [updatedCategories[currentIndex - 1], updatedCategories[currentIndex]];
 
       setCatalog(prev => ({ ...prev, categories: updatedCategories }));
       saveCatalog({ ...catalog, categories: updatedCategories });
+      publicCatalogService.invalidateCache();
 
       toast.success("Category moved up successfully");
     } catch (error) {
@@ -384,24 +421,23 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
   };
 
   const moveCategoryDown = async (categoryId, currentIndex) => {
-    if (currentIndex === categories.length - 1) return; // Already at bottom
+    if (currentIndex === categories.length - 1) return;
 
     try {
       setLoading(true);
       const category = categories[currentIndex];
       const nextCategory = categories[currentIndex + 1];
 
-      // Swap orders
       await categoryService.updateOrder(category.id, currentIndex + 1);
       await categoryService.updateOrder(nextCategory.id, currentIndex);
 
-      // Update local state
       const updatedCategories = [...categories];
       [updatedCategories[currentIndex], updatedCategories[currentIndex + 1]] =
         [updatedCategories[currentIndex + 1], updatedCategories[currentIndex]];
 
       setCatalog(prev => ({ ...prev, categories: updatedCategories }));
       saveCatalog({ ...catalog, categories: updatedCategories });
+      publicCatalogService.invalidateCache();
 
       toast.success("Category moved down successfully");
     } catch (error) {
@@ -412,7 +448,6 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
     }
   };
 
-  // Drag and drop functions for bulk reordering
   const handleDragStart = (e, index) => {
     setDraggedItem(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -436,7 +471,6 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
     const [draggedCategory] = newCategories.splice(draggedIndex, 1);
     newCategories.splice(dropIndex, 0, draggedCategory);
 
-    // Update orders for all categories
     const bulkUpdates = newCategories.map((cat, index) =>
       categoryService.updateOrder(cat.id, index)
     );
@@ -445,6 +479,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
       .then(() => {
         setCatalog(prev => ({ ...prev, categories: newCategories }));
         saveCatalog({ ...catalog, categories: newCategories });
+        publicCatalogService.invalidateCache();
         toast.success("Categories reordered successfully");
       })
       .catch((error) => {
@@ -460,16 +495,45 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
     setDraggedItem(null);
   };
 
+  const filteredCategories = cityFilter
+    ? categories.filter(c => {
+        if (!c.cityIds || c.cityIds.length === 0) return false;
+        return c.cityIds.includes(cityFilter);
+      })
+    : categories;
+
   return (
     <div className="space-y-6">
-      {/* App Mode selector removed as per request */}
-
       <CardShell icon={FiGrid}>
         {fetching && (
           <div className="text-center py-4 text-gray-500">Loading categories...</div>
         )}
+
+        {/* City Filter Dropdown */}
+        {cities.length > 0 && (
+          <div className="flex items-center gap-3 mb-4">
+            <label className="text-sm font-bold text-gray-600 whitespace-nowrap">Filter by city:</label>
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer"
+            >
+              <option value="">All Cities</option>
+              {cities.map(city => {
+                const cid = city._id || city.id;
+                return <option key={cid} value={cid}>{city.name}</option>;
+              })}
+            </select>
+            {cityFilter && (
+              <span className="text-xs text-gray-400">
+                {filteredCategories.length} of {categories.length} categories
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">{categories.length} categories</div>
+          <div className="text-sm text-gray-600">{filteredCategories.length} categories</div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowReorderModal(true)}
@@ -501,8 +565,11 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
             </button>
           </div>
         </div>
-        {categories.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No categories yet</div>
+
+        {filteredCategories.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {cityFilter ? 'No categories for this city. Try "All Cities" or add one.' : 'No categories yet'}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -511,6 +578,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-12">#</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-20">Icon</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Name</th>
+                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Cities</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Badge</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-20">
                     Order
@@ -527,7 +595,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                 </tr>
               </thead>
               <tbody>
-                {categories.map((c, idx) => (
+                {filteredCategories.map((c, idx) => (
                   <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-4 text-sm font-semibold text-gray-600">{idx + 1}</td>
                     <td className="py-4 px-4">
@@ -552,7 +620,19 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                         <div className="text-xs text-gray-500 mt-1">{c.slug || "—"}</div>
                       </div>
                     </td>
-
+                    {/* Cities column */}
+                    <td className="py-4 px-4">
+                      <div className="flex flex-wrap gap-1 max-w-[160px]">
+                        {(!c.cityIds || c.cityIds.length === 0)
+                          ? <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">All Cities</span>
+                          : c.cityIds.map(cid => (
+                              <span key={cid} className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                {(cities.find(ci => (ci._id || ci.id) === cid) || {}).name || cid.slice(-4)}
+                              </span>
+                            ))
+                        }
+                      </div>
+                    </td>
                     <td className="py-4 px-4">
                       {c.homeBadge ? (
                         <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded">{c.homeBadge}</span>
@@ -587,9 +667,27 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                       </div>
                     </td>
                     <td className="py-4 px-4 text-center">
-                      <span className={`inline-block px-3 py-1 text-xs font-bold rounded ${c.showOnHome !== false ? "bg-green-500 text-white" : "bg-gray-300 text-gray-700"}`}>
-                        {c.showOnHome !== false ? "VISIBLE" : "HIDDEN"}
-                      </span>
+                      <select
+                        value={c.status || "active"}
+                        onChange={(e) => handleStatusChange(c.id, e.target.value)}
+                        className={`px-2 py-1 text-xs font-bold rounded border border-transparent cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                          c.status === "active" ? "bg-green-500 text-white focus:ring-green-500" :
+                          c.status === "coming_soon" ? "bg-amber-500 text-white focus:ring-amber-500" :
+                          "bg-gray-300 text-gray-700 focus:ring-gray-400"
+                        }`}
+                      >
+                        <option value="active" className="bg-white text-gray-800">ACTIVE</option>
+                        <option value="inactive" className="bg-white text-gray-800">DEACTIVE</option>
+                        <option value="coming_soon" className="bg-white text-gray-800">COMING SOON</option>
+                      </select>
+                      {c.status === "coming_soon" && (
+                        <button
+                          onClick={() => handleShowInterested(c.id)}
+                          className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline mt-1 font-bold block mx-auto cursor-pointer focus:outline-none"
+                        >
+                          {c.interestedCount || 0} Interested
+                        </button>
+                      )}
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-center gap-2">
@@ -652,6 +750,71 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
                   {prof.name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* City Assignment */}
+          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+            <label className="block text-base font-bold text-gray-900 mb-3">🏙️ City Availability</label>
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                id="allCitiesToggle"
+                type="checkbox"
+                checked={form.allCities}
+                onChange={(e) => setForm(p => ({ ...p, allCities: e.target.checked, cityIds: e.target.checked ? [] : p.cityIds }))}
+                className="h-4 w-4 accent-green-600"
+              />
+              <label htmlFor="allCitiesToggle" className="text-sm font-semibold text-gray-800">
+                Available in All Cities (no city restriction)
+              </label>
+            </div>
+            {!form.allCities && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 mb-2">Select which cities this category is available in:</p>
+                <div className="flex flex-wrap gap-2">
+                  {cities.map(city => {
+                    const cid = city._id || city.id;
+                    const isSelected = form.cityIds.includes(cid);
+                    return (
+                      <button
+                        key={cid}
+                        type="button"
+                        onClick={() => {
+                          setForm(p => ({
+                            ...p,
+                            cityIds: isSelected
+                              ? p.cityIds.filter(id => id !== cid)
+                              : [...p.cityIds, cid]
+                          }));
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
+                          isSelected
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                        }`}
+                      >
+                        {isSelected ? '✓ ' : ''}{city.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.cityIds.length === 0 && (
+                  <p className="text-xs text-amber-600 font-semibold">⚠️ Select at least one city, or enable "All Cities"</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Category Status</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Deactive</option>
+              <option value="coming_soon">Coming Soon</option>
             </select>
           </div>
 
@@ -829,9 +992,66 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity }) => {
           </div>
         </div>
       </Modal>
+
+      {/* Interested Users Modal */}
+      <Modal
+        isOpen={interestedModalOpen}
+        onClose={() => setInterestedModalOpen(false)}
+        title={`Interested Users - ${interestedCategoryTitle}`}
+      >
+        <div className="space-y-4">
+          {loadingInterested ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+              <span className="text-sm text-gray-500 font-medium">Loading interested users...</span>
+            </div>
+          ) : interestedUsers.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 font-medium">
+              No users have registered interest in this category yet.
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+              <p className="text-sm text-gray-600 font-semibold mb-2">
+                Total {interestedUsers.length} user{interestedUsers.length > 1 ? 's' : ''} interested:
+              </p>
+              {interestedUsers.map((user, index) => (
+                <div
+                  key={user._id || user.id || index}
+                  className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl bg-gray-50 hover:bg-white hover:shadow-sm transition-all"
+                >
+                  <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-base shadow-inner">
+                    {user.profilePhoto ? (
+                      <img
+                        src={toAssetUrl(user.profilePhoto)}
+                        alt={user.name}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      user.name ? user.name.slice(0, 2).toUpperCase() : 'U'
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 truncate">{user.name || 'Unnamed User'}</h4>
+                    <p className="text-xs text-gray-500 truncate">{user.email || 'No email provided'}</p>
+                    <p className="text-xs text-gray-700 font-semibold mt-0.5">{user.phone || 'No phone number'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+            <button
+              onClick={() => setInterestedModalOpen(false)}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
 
 export default CategoriesPage;
-

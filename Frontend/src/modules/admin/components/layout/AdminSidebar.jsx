@@ -72,6 +72,7 @@ const getChildRoute = (parentRoute, childName) => {
       "Vendor Bookings": "/admin/vendors/bookings",
       "Vendor Analytics": "/admin/vendors/analytics",
       "Vendor Payments": "/admin/vendors/payments",
+      "Police Verification": "/admin/vendors/police-verification",
     },
     "/admin/labours": {
       "All Labours": "/admin/labours/all",
@@ -128,6 +129,10 @@ const getChildRoute = (parentRoute, childName) => {
       "Vendors with Due": "/admin/settlements/vendors",
       "History": "/admin/settlements/history",
     },
+    "/admin/admin-management": {
+      "City Admins": "/admin/admin-management",
+      "Pending Proposals": "/admin/admin-management/proposals"
+    },
   };
 
   return routeMap[parentRoute]?.[childName] || parentRoute;
@@ -156,6 +161,7 @@ const permissionMap = {
   "Scrap Items": "view_reports",
   "Settings": "manage_homepage",
   "Notifications": "manage_notifications",
+  "Police Verification": "view_vendors",
 };
 
 const AdminSidebar = ({ isOpen, onClose }) => {

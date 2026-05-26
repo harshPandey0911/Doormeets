@@ -100,7 +100,12 @@ const categorySchema = new mongoose.Schema({
     ref: 'Vendor',
     default: null,
     index: true
-  }
+  },
+  interestedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }]
 }, {
   timestamps: true
 });

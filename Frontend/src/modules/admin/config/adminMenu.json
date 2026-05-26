@@ -35,7 +35,8 @@
       "All Vendors",
       "Vendor's Zone",
       "Vendor Bookings",
-      "Vendor Analytics"
+      "Vendor Analytics",
+      "Police Verification"
     ]
   },
   {
@@ -74,15 +75,6 @@
       "Booking Tracking",
       "Booking Notifications"
     ]
-  },
-  {
-    "title": "Scrap Items",
-    "route": "/admin/scrap",
-    "allowedRoles": [
-      "super_admin",
-      "admin"
-    ],
-    "children": []
   },
   {
     "title": "Payments",
@@ -141,15 +133,6 @@
   {
     "title": "Vendor Parts",
     "route": "/admin/user-categories/vendor-parts",
-    "allowedRoles": [
-      "super_admin",
-      "admin"
-    ],
-    "children": []
-  },
-  {
-    "title": "Stock Management",
-    "route": "/admin/stock",
     "allowedRoles": [
       "super_admin",
       "admin"

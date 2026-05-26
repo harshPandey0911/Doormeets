@@ -41,7 +41,8 @@ const createAdmin = async (req, res) => {
       name, email, password, role,
       cityId, cityName,
       assignedCities, permissions,
-      canApproveVendors, canApproveWorkers
+      canApproveVendors, canApproveWorkers,
+      assignedVendors
     } = req.body;
 
     // Check if admin already exists
@@ -71,6 +72,7 @@ const createAdmin = async (req, res) => {
       permissions: permissionsArray,
       canApproveVendors: canApproveVendors || false,
       canApproveWorkers: canApproveWorkers || false,
+      assignedVendors: assignedVendors || [],
       createdBySuperAdmin: true
     });
 
@@ -87,7 +89,8 @@ const createAdmin = async (req, res) => {
         assignedCities: admin.assignedCities,
         permissions: admin.permissions,
         canApproveVendors: admin.canApproveVendors,
-        canApproveWorkers: admin.canApproveWorkers
+        canApproveWorkers: admin.canApproveWorkers,
+        assignedVendors: admin.assignedVendors
       }
     });
   } catch (error) {
@@ -192,10 +195,10 @@ const updateAdminRole = async (req, res) => {
  * Update admin permissions (Super Admin only)
  * PUT /api/admin/admins/:id/permissions
  */
-const updateAdminPermissions = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { permissions, assignedCities, canApproveVendors, canApproveWorkers } = req.body;
+  const updateAdminPermissions = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { permissions, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors } = req.body;
 
     const admin = await Admin.findById(id);
     if (!admin) {
@@ -222,6 +225,10 @@ const updateAdminPermissions = async (req, res) => {
       admin.canApproveWorkers = canApproveWorkers;
     }
 
+    if (assignedVendors !== undefined) {
+      admin.assignedVendors = assignedVendors;
+    }
+
     await admin.save();
     await admin.populate('assignedCities', 'name slug');
 
@@ -235,7 +242,8 @@ const updateAdminPermissions = async (req, res) => {
         permissions: admin.permissions,
         assignedCities: admin.assignedCities,
         canApproveVendors: admin.canApproveVendors,
-        canApproveWorkers: admin.canApproveWorkers
+        canApproveWorkers: admin.canApproveWorkers,
+        assignedVendors: admin.assignedVendors
       }
     });
   } catch (error) {
@@ -257,7 +265,7 @@ module.exports = {
   updateAdmin: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, password, role, cityId, cityName, assignedCities, canApproveVendors, canApproveWorkers } = req.body;
+      const { name, email, password, role, cityId, cityName, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors } = req.body;
 
       // Find admin
       let admin = await Admin.findById(id);
@@ -282,6 +290,7 @@ module.exports = {
       if (assignedCities !== undefined) admin.assignedCities = assignedCities;
       if (canApproveVendors !== undefined) admin.canApproveVendors = canApproveVendors;
       if (canApproveWorkers !== undefined) admin.canApproveWorkers = canApproveWorkers;
+      if (assignedVendors !== undefined) admin.assignedVendors = assignedVendors;
 
       if (req.body.permissions !== undefined) {
         admin.permissions = req.body.permissions.map(p => {
@@ -313,6 +322,7 @@ module.exports = {
           permissions: admin.permissions,
           canApproveVendors: admin.canApproveVendors,
           canApproveWorkers: admin.canApproveWorkers,
+          assignedVendors: admin.assignedVendors,
           isActive: admin.isActive
         }
       });

@@ -235,11 +235,11 @@ const TrainingResult = () => {
         <div className="space-y-3">
           {passed ? (
             <button
-              onClick={() => navigate('/vendor/dashboard')}
+              onClick={() => navigate('/vendor/verification')}
               className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 hover:opacity-90 transition-all hover:-translate-y-1 shadow-2xl"
               style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
             >
-              <FiHome size={20} /> Go to Dashboard
+              <FiArrowRight size={20} /> Proceed to Next Step
             </button>
           ) : (
             <button

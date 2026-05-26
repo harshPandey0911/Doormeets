@@ -187,6 +187,9 @@ app.use('/api/vendors/subscription', require('./routes/vendor-routes/subscriptio
 // Training routes (require subscription but NOT training completion — they ARE the training step)
 app.use('/api/vendors/training', require('./routes/vendor-routes/training.routes'));
 
+// Verification pipeline routes (Police Verification, etc.)
+app.use('/api/vendors/verification', require('./routes/vendor-routes/verification.routes'));
+
 // Protected Vendor routes (require active subscription)
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/profile.routes'));
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/settings.routes'));
@@ -243,6 +246,7 @@ app.use('/api/admin/banners', require('./routes/admin-routes/banner.routes'));
 app.use('/api/admin/training', require('./routes/admin-routes/trainingManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/adminVendorCategoryRequest.routes'));
 app.use('/api/admin/city-admin-requests', require('./routes/admin-routes/cityAdminRequests.routes'));
+app.use('/api/admin/police-verification', require('./routes/admin-routes/policeVerification.routes'));
 app.use('/api/image', require('./routes/admin-routes/image.routes'));
 app.use('/api', require('./routes/admin-routes/upload.routes')); // Generic upload access
 

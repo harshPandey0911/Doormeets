@@ -66,6 +66,7 @@ const AllVendors = () => {
             other: vendor.otherDocuments?.[0]
           },
           training: vendor.training,
+          currentLevel: vendor.currentLevel,
           createdAt: vendor.createdAt,
           isActive: vendor.isActive,
           experience: vendor.experience,
@@ -211,8 +212,12 @@ const AllVendors = () => {
     try {
       const response = await adminVendorService.deleteVendor(vendorId);
       if (response.success) {
-        setVendors(prev => prev.filter(v => v.id !== vendorId));
-        toast.success('Vendor deleted successfully');
+        if (response.message && response.message.includes('proposal')) {
+          toast.success(response.message);
+        } else {
+          setVendors(prev => prev.filter(v => v.id !== vendorId));
+          toast.success(response.message || 'Vendor deleted successfully');
+        }
       } else {
         toast.error(response.message || 'Failed to delete vendor');
       }
@@ -304,7 +309,7 @@ const AllVendors = () => {
                 <tr className="border-b border-gray-100 bg-gray-50/50">
                   <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Vendor Details</th>
                   <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Business Info</th>
-                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Business Info</th>
+                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">MCQ Level</th>
                   <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -312,11 +317,11 @@ const AllVendors = () => {
               <tbody className="divide-y divide-gray-50">
                 {loading ? (
                   <tr>
-                    <td colSpan="4" className="px-4 py-8 text-center text-xs text-gray-500">Loading vendors...</td>
+                    <td colSpan="5" className="px-4 py-8 text-center text-xs text-gray-500">Loading vendors...</td>
                   </tr>
                 ) : filteredVendors.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-4 py-8 text-center text-xs text-gray-500">No vendors found</td>
+                    <td colSpan="5" className="px-4 py-8 text-center text-xs text-gray-500">No vendors found</td>
                   </tr>
                 ) : (
                   filteredVendors.map((vendor) => (
@@ -337,8 +342,27 @@ const AllVendors = () => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
-                        {vendor.totalJobs || 0} Total Jobs
+                      <td className="px-4 py-3">
+                        {vendor.training?.status === 'completed' ? (
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                            vendor.currentLevel === 'L1' 
+                              ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                              : vendor.currentLevel === 'L2' 
+                              ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                              : 'bg-red-50 text-red-700 border-red-200'
+                          }`}>
+                            {vendor.currentLevel || 'L3'} — {
+                              vendor.currentLevel === 'L1' 
+                                ? 'Premium' 
+                                : vendor.currentLevel === 'L2' 
+                                ? 'Standard' 
+                                : 'Basic'
+                            }
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-gray-400">Not Certified</span>
+                        )}
+                        <p className="text-[9px] text-gray-400 mt-1">{vendor.totalJobs || 0} Total Jobs</p>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${vendor.approvalStatus === 'approved' ? 'bg-green-50 text-green-700 border-green-100' :

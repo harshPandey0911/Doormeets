@@ -76,6 +76,12 @@ export const categoryService = {
   updateOrder: async (id, homeOrder) => {
     const response = await api.patch(`/admin/categories/${id}/order`, { homeOrder });
     return response.data;
+  },
+
+  // Get interested users for category
+  getInterestedUsers: async (id) => {
+    const response = await api.get(`/admin/categories/${id}/interested`);
+    return response.data;
   }
 };
 
@@ -424,6 +430,12 @@ export const publicCatalogService = {
     if (response.data.success) {
       apiCache.set(cacheKey, response.data, 0); // Disabling cache for instant real-time updates
     }
+    return response.data;
+  },
+
+  // Register interest in a category
+  registerInterest: async (categoryId) => {
+    const response = await api.post(`/public/categories/${categoryId}/interested`);
     return response.data;
   },
 

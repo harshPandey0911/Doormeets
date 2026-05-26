@@ -5,6 +5,7 @@ const City = require('../../models/City');
 const { validationResult } = require('express-validator');
 const { VENDOR_STATUS, BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
+const { getVendorQueryFilter, getBookingQueryFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all vendors with filters and pagination
@@ -22,21 +23,9 @@ const getAllVendors = async (req, res) => {
     // Build query
     const query = {};
 
-    // CITY ADMIN FILTER: Restrict vendors to assigned cities
-    if (req.user && (req.user.role === 'CITY_ADMIN' || req.user.role === 'admin')) {
-      if (req.user.assignedCities && req.user.assignedCities.length > 0) {
-        const cities = await City.find({ _id: { $in: req.user.assignedCities } });
-        const cityNames = cities.map(c => new RegExp(`^${c.name}$`, 'i'));
-        query['address.city'] = { $in: cityNames };
-      } else {
-        // If City Admin has no assigned cities, they shouldn't see any vendors
-        return res.status(200).json({
-          success: true,
-          data: [],
-          pagination: { page: parseInt(page), limit: parseInt(limit), total: 0, pages: 0 }
-        });
-      }
-    }
+    // CITY ADMIN FILTER
+    const adminFilter = await getVendorQueryFilter(req.user);
+    Object.assign(query, adminFilter);
 
     if (approvalStatus) {
       query.approvalStatus = approvalStatus;
@@ -101,6 +90,14 @@ const getVendorDetails = async (req, res) => {
         success: false,
         message: 'Vendor not found'
       });
+    }
+
+    // Security check: Can admin access this vendor?
+    const adminFilter = await getVendorQueryFilter(req.user);
+    if (adminFilter._id && adminFilter._id.$in) {
+      if (!adminFilter._id.$in.map(v => v.toString()).includes(vendor._id.toString())) {
+        return res.status(403).json({ success: false, message: 'Access denied to this vendor.' });
+      }
     }
 
     // Get vendor stats from VendorBill (single source of truth)
@@ -296,6 +293,14 @@ const getVendorBookings = async (req, res) => {
       query.status = status;
     }
 
+    // Security Check: Can admin access this vendor?
+    const vendorFilter = await getVendorQueryFilter(req.user);
+    if (vendorFilter._id && vendorFilter._id.$in) {
+      if (!vendorFilter._id.$in.map(v => v.toString()).includes(id)) {
+        return res.status(403).json({ success: false, message: 'Access denied to this vendor.' });
+      }
+    }
+
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -342,6 +347,14 @@ const getVendorEarnings = async (req, res) => {
       vendorId: require('mongoose').Types.ObjectId(id),
       status: 'paid'
     };
+
+    // Security Check: Can admin access this vendor?
+    const vendorFilter = await getVendorQueryFilter(req.user);
+    if (vendorFilter._id && vendorFilter._id.$in) {
+      if (!vendorFilter._id.$in.map(v => v.toString()).includes(id)) {
+        return res.status(403).json({ success: false, message: 'Access denied to this vendor.' });
+      }
+    }
 
     if (startDate || endDate) {
       billQuery.paidAt = {};
@@ -391,6 +404,10 @@ const getAllVendorBookings = async (req, res) => {
     if (status) {
       query.status = status;
     }
+
+    // CITY ADMIN FILTER
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
 
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -445,9 +462,13 @@ const getAllVendorBookings = async (req, res) => {
 const getVendorPaymentsSummary = async (req, res) => {
   try {
     // Return vendors with their wallet balances and earnings
-    const vendors = await Vendor.find({
-      'wallet.balance': { $exists: true }
-    })
+    const query = { 'wallet.balance': { $exists: true } };
+
+    // CITY ADMIN FILTER
+    const adminFilter = await getVendorQueryFilter(req.user);
+    Object.assign(query, adminFilter);
+
+    const vendors = await Vendor.find(query)
       .select('name businessName phone wallet email approvalStatus')
       .sort({ 'wallet.balance': -1 });
 
@@ -507,8 +528,10 @@ const toggleVendorStatus = async (req, res) => {
 const deleteVendor = async (req, res) => {
   try {
     const { id } = req.params;
+    const admin = req.admin || req.user;
+    const isSuperAdmin = admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin';
 
-    const vendor = await Vendor.findByIdAndDelete(id);
+    const vendor = await Vendor.findById(id);
 
     if (!vendor) {
       return res.status(404).json({
@@ -516,6 +539,46 @@ const deleteVendor = async (req, res) => {
         message: 'Vendor not found'
       });
     }
+
+    if (!isSuperAdmin) {
+      // Create a deletion request for Super Admin
+      const CityAdminRequest = require('../../models/CityAdminRequest');
+      
+      // Check if a request already exists
+      const existingRequest = await CityAdminRequest.findOne({
+        requestType: 'delete_vendor',
+        'proposedData.vendorId': id,
+        status: 'pending'
+      });
+
+      if (existingRequest) {
+        return res.status(400).json({
+          success: false,
+          message: 'A deletion request for this vendor is already pending approval.'
+        });
+      }
+
+      await CityAdminRequest.create({
+        requestedBy: admin._id,
+        requestedByName: admin.name,
+        cityId: vendor.city || null,
+        cityName: '', // We could fetch city name, but keeping it simple
+        requestType: 'delete_vendor',
+        proposedData: { 
+          vendorId: id,
+          businessName: vendor.businessName 
+        },
+        notes: `Requested deletion of vendor: ${vendor.businessName}`
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Vendor deletion proposal submitted for Super Admin approval.'
+      });
+    }
+
+    // Super Admin deletes directly
+    await Vendor.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,

@@ -113,13 +113,13 @@ const HelpSupport = () => {
     {
       id: 'chat',
       title: 'WhatsApp Chat',
-      subtitle: 'Chat with our support team',
+      subtitle: supportInfo.whatsapp || 'Chat with our support team',
       icon: FiMessageCircle,
       color: '#25D366',
       action: () => {
         if (supportInfo.whatsapp) {
           const cleanNumber = supportInfo.whatsapp.replace(/\D/g, '');
-          window.location.href = `whatsapp://send?phone=${cleanNumber}`;
+          window.open(`https://wa.me/${cleanNumber}`, '_blank');
         } else {
           toast('WhatsApp support is currently unavailable');
         }
@@ -212,7 +212,7 @@ const HelpSupport = () => {
             {quickActions.map(action => {
               let href = null;
               if (action.id === 'chat' && supportInfo.whatsapp) {
-                href = `whatsapp://send?phone=${supportInfo.whatsapp.replace(/\D/g, '')}`;
+                href = `https://wa.me/${supportInfo.whatsapp.replace(/\D/g, '')}`;
               } else if (action.id === 'email' && supportInfo.email) {
                 href = `mailto:${supportInfo.email}`;
               } else if (action.id === 'call' && supportInfo.phone) {
@@ -225,6 +225,8 @@ const HelpSupport = () => {
                 <Component
                   key={action.id}
                   href={href}
+                  target={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? '_blank' : undefined}
+                  rel={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? 'noopener noreferrer' : undefined}
                   onClick={!href ? action.action : undefined}
                   className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 border border-gray-100 flex items-center gap-4 w-full"
                 >

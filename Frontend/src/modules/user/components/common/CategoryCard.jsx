@@ -4,7 +4,8 @@ import { createRipple } from '../../../../utils/gsapAnimations';
 
 import { themeColors } from '../../../../theme';
 
-const CategoryCard = memo(({ icon, title, onClick, hasSaleBadge = false, index = 0 }) => {
+const CategoryCard = memo(({ icon, title, onClick, hasSaleBadge = false, status = 'active', index = 0 }) => {
+  const isComingSoon = status === 'coming_soon';
   const cardRef = useRef(null);
 
   // Simple entrance animation
@@ -67,6 +68,11 @@ const CategoryCard = memo(({ icon, title, onClick, hasSaleBadge = false, index =
             }}
           >
             SALE
+          </div>
+        )}
+        {isComingSoon && (
+          <div className="absolute -top-1.5 -right-1.5 bg-amber-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10 border border-white">
+            Soon
           </div>
         )}
       </div>

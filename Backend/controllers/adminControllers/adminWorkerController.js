@@ -132,13 +132,13 @@ const createWorker = async (req, res) => {
     });
   } catch (error) {
     console.error('Create worker error:', error);
-    
+
     // Handle duplicate key error (MongoDB error code 11000)
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
-      return res.status(400).json({ 
-        success: false, 
-        message: `This ${field} is already registered. Please use a different one.` 
+      return res.status(400).json({
+        success: false,
+        message: `This ${field} is already registered. Please use a different one.`
       });
     }
 
@@ -148,8 +148,8 @@ const createWorker = async (req, res) => {
       return res.status(400).json({ success: false, message: messages.join(', ') });
     }
 
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Internal server error while creating account',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

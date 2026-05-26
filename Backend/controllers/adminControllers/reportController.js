@@ -6,6 +6,12 @@ const User = require('../../models/User');
 const Settings = require('../../models/Settings');
 const PlatformEarning = require('../../models/PlatformEarning');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
+const {
+  getVendorQueryFilter,
+  getBookingQueryFilter,
+  getAggregateMatchFilter,
+  getAdminFilterConfig
+} = require('../../utils/adminFilterHelper');
 
 /**
  * Get Financial Dashboard Overview
@@ -61,10 +67,20 @@ const getFinanceOverview = async (req, res) => {
     revenueStats.totalPendingSettlement = latestSnapshot?.totalPendingSettlement || 0;
     revenueStats.totalPendingPayout = latestSnapshot?.totalPendingAmountToVendors || 0;
 
+    // Admin Auth Checks
+    const config = await getAdminFilterConfig(req.user);
+    if (config.isCityAdmin) {
+      // If CITY_ADMIN, they shouldn't see global platform snapshots
+      revenueStats = { totalTransactionValue: 0, totalPlatformRevenue: 0, totalVendorEarnings: 0, totalTaxCollected: 0, totalTDSCollected: 0, count: 0, totalSettlementReceived: 0, totalAmountPaidToVendors: 0, totalPendingSettlement: 0, totalPendingPayout: 0 };
+    }
+
+    const bookingMatch = await getAggregateMatchFilter(req.user, 'booking');
+
     // 2. Pending Settlements (What we owe vendors)
     const pendingSettlements = await Settlement.aggregate([
       {
         $match: {
+          ...bookingMatch,
           status: 'PENDING'
         }
       },
@@ -81,6 +97,7 @@ const getFinanceOverview = async (req, res) => {
     const paymentMethods = await Booking.aggregate([
       {
         $match: {
+          ...bookingMatch,
           status: BOOKING_STATUS.COMPLETED
         }
       },
@@ -115,7 +132,7 @@ const getFinanceOverview = async (req, res) => {
         revenue: revenueStats,
         pendingSettlements: pendingSettlements[0] || { totalPendingAmount: 0, count: 0 },
         paymentMethods,
-        dailyRevenue: formattedDaily
+        dailyRevenue: config.isCityAdmin ? [] : formattedDaily
       }
     });
 
@@ -144,6 +161,9 @@ const getPaymentTransactions = async (req, res) => {
 
     if (paymentMethod) query.paymentMethod = paymentMethod;
     if (status) query.status = status;
+
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -241,6 +261,9 @@ const getGSTRReport = async (req, res) => {
       };
     }
 
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
+
     // Fetch bills alongside bookings for GST data
     const bookings = await Booking.find(query)
       .populate('userId', 'name phone')
@@ -336,6 +359,9 @@ const getTDSReport = async (req, res) => {
       };
     }
 
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
+
     // Group by Vendor for the period
     const vendorStats = await Booking.aggregate([
       { $match: query },
@@ -411,8 +437,10 @@ const getCODReport = async (req, res) => {
       };
     }
 
+    const vendorQueryFilter = await getVendorQueryFilter(req.user);
+
     // Get all vendors (even if blocked/unapproved, as they might owe money)
-    const vendors = await Vendor.find({})
+    const vendors = await Vendor.find(vendorQueryFilter)
       .select('businessName phone walletBalance')
       .lean();
 
@@ -528,6 +556,8 @@ const getRevenueBreakdown = async (req, res) => {
       };
     }
 
+    const bookingMatch = await getAggregateMatchFilter(req.user, 'booking');
+
     const byService = await VendorBill.aggregate([
       {
         $match: {
@@ -543,7 +573,8 @@ const getRevenueBreakdown = async (req, res) => {
           as: 'booking'
         }
       },
-      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: false } },
+      { $match: { 'booking.vendorId': bookingMatch.$or ? { $in: bookingMatch.$or[1].vendorId.$in } : { $exists: true } } },
       {
         $lookup: {
           from: 'services',
@@ -580,7 +611,8 @@ const getRevenueBreakdown = async (req, res) => {
           as: 'booking'
         }
       },
-      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: false } },
+      { $match: { 'booking.vendorId': bookingMatch.$or ? { $in: bookingMatch.$or[1].vendorId.$in } : { $exists: true } } },
       {
         $group: {
           _id: '$booking.paymentMethod',
@@ -607,7 +639,8 @@ const getRevenueBreakdown = async (req, res) => {
           as: 'booking'
         }
       },
-      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$booking', preserveNullAndEmptyArrays: false } },
+      { $match: { 'booking.vendorId': bookingMatch.$or ? { $in: bookingMatch.$or[1].vendorId.$in } : { $exists: true } } },
       {
         $group: {
           _id: '$booking.address.city',

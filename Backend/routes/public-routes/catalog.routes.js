@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../../middleware/authMiddleware');
+const { isUser } = require('../../middleware/roleMiddleware');
 const {
   getPublicCategories,
   getPublicSubCategories,
@@ -10,7 +12,8 @@ const {
   getPublicHomeData,
   getPublicBookingHierarchy,
   getPublicProfessions,
-  getPublicTrainingData
+  getPublicTrainingData,
+  registerInterest
 } = require('../../controllers/publicControllers/catalogController');
 
 // Public routes - no authentication required
@@ -24,5 +27,8 @@ router.get('/home-content', getPublicHomeContent);
 router.get('/home-data', getPublicHomeData);
 router.get('/booking-hierarchy', getPublicBookingHierarchy);
 router.get('/professions', getPublicProfessions);
+
+// Authenticated user category interest registration
+router.post('/categories/:categoryId/interested', authenticate, isUser, registerInterest);
 
 module.exports = router;

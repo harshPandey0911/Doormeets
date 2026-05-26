@@ -84,7 +84,15 @@ const VendorLogin = () => {
       }
     } catch (error) {
       setIsLoading(false);
-      toast.error(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to send OTP. Please try again.';
+      toast.error(errorMessage);
+      
+      // Auto-redirect to signup if user not found (404)
+      if (error.response?.status === 404) {
+        setTimeout(() => {
+          navigate('/vendor/signup', { state: { phone: cleanPhone } });
+        }, 1500);
+      }
     }
   };
 

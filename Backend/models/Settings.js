@@ -182,6 +182,28 @@ const settingsSchema = new mongoose.Schema({
   isOnlinePaymentEnabled: {
     type: Boolean,
     default: true
+  },
+  policeVerificationDays: {
+    type: Number,
+    default: 7, // Vendors have 7 days to complete verification by default
+    min: 1
+  },
+  mcqTimeLimitMinutes: {
+    type: Number,
+    default: 30, // 30 minutes default for MCQ test
+    min: 1
+  },
+  mcqMinScoreL1: {
+    type: Number,
+    default: 80, // >= 80% is Level 1
+    min: 0,
+    max: 100
+  },
+  mcqMinScoreL2: {
+    type: Number,
+    default: 50, // >= 50% is Level 2 (passing mark)
+    min: 0,
+    max: 100
   }
 }, { timestamps: true });
 

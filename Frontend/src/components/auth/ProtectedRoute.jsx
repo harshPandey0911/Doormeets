@@ -131,7 +131,7 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null }) => {
   // Prevent pending vendors from accessing routes other than verification
   if (userType === 'vendor' && isAuthenticated) {
     const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
-    if (vendorData.approvalStatus === 'PENDING' && !location.pathname.includes('/verification')) {
+    if (vendorData.approvalStatus?.toLowerCase() === 'pending' && !location.pathname.includes('/verification')) {
       return <Navigate to="/vendor/verification" replace />;
     }
   }

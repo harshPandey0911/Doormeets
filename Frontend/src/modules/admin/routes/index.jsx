@@ -26,17 +26,15 @@ const Reports = lazy(() => import('../pages/Reports'));
 const Notifications = lazy(() => import('../pages/Notifications'));
 const AdminSupport = lazy(() => import('../pages/Support/index'));
 const OfferBanners = lazy(() => import('../pages/OfferBanners'));
-const StockManagement = lazy(() => import('../pages/Stock'));
-
 const Plans = lazy(() => import('../pages/Plans/Plans'));
-const Scrap = lazy(() => import('../pages/Scrap'));
 const Settlements = lazy(() => import('../pages/Settlements'));
 const Reviews = lazy(() => import('../pages/Reviews'));
 const VendorSubscriptionManagement = lazy(() => import('../pages/VendorSubscriptions/SubscriptionManagement'));
 const Training = lazy(() => import('../pages/Training'));
 const VendorRequests = lazy(() => import('../pages/VendorRequests'));
-const Commission = lazy(() => import('../pages/Commission'));
 const AdminManagement = lazy(() => import('../pages/AdminManagement'));
+const PoliceVerification = lazy(() => import('../pages/PoliceVerification'));
+const Commission = lazy(() => import('../pages/Commission'));
 
 
 
@@ -76,16 +74,17 @@ const AdminRoutes = () => {
           <Route path="payments/*" element={<Payments />} />
           <Route path="reports/*" element={<Reports />} />
           <Route path="notifications/*" element={<Notifications />} />
-          <Route path="scrap" element={<Scrap />} />
           <Route path="plans" element={<Plans />} />
           <Route path="reviews" element={<Reviews />} />
           <Route path="settlements/*" element={<Settlements />} />
-          <Route path="stock" element={<StockManagement />} />
           <Route path="settings/*" element={<Settings />} />
           <Route path="support/*" element={<AdminSupport />} />
           <Route path="offer-banners" element={<OfferBanners />} />
           <Route path="training" element={<Training />} />
           <Route path="vendor-requests" element={<VendorRequests />} />
+          <Route path="vendors/police-verification" element={
+            <SuperAdminRoute><PoliceVerification /></SuperAdminRoute>
+          } />
           <Route path="commission" element={<Commission />} />
           <Route path="admin-management/*" element={
             <SuperAdminRoute><AdminManagement /></SuperAdminRoute>

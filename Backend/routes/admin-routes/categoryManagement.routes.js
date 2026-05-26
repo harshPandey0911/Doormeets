@@ -9,7 +9,8 @@ const {
   createCategory,
   updateCategory,
   deleteCategory,
-  updateCategoryOrder
+  updateCategoryOrder,
+  getInterestedUsersForCategory
 } = require('../../controllers/adminControllers/categoryController');
 
 // Validation rules
@@ -32,8 +33,8 @@ const createCategoryValidation = [
     .withMessage('Home order must be a non-negative integer'),
   body('status')
     .optional()
-    .isIn(['active', 'inactive', 'deleted'])
-    .withMessage('Status must be active, inactive, or deleted')
+    .isIn(['active', 'inactive', 'coming_soon', 'deleted'])
+    .withMessage('Status must be active, inactive, coming_soon, or deleted')
 ];
 
 const updateCategoryValidation = [
@@ -56,8 +57,8 @@ const updateCategoryValidation = [
     .withMessage('Home order must be a non-negative integer'),
   body('status')
     .optional()
-    .isIn(['active', 'inactive', 'deleted'])
-    .withMessage('Status must be active, inactive, or deleted')
+    .isIn(['active', 'inactive', 'coming_soon', 'deleted'])
+    .withMessage('Status must be active, inactive, coming_soon, or deleted')
 ];
 
 // Routes
@@ -78,5 +79,8 @@ router.delete('/categories/:id', authenticate, isAdmin, deleteCategory);
 
 // PATCH /api/admin/categories/:id/order - Update category order
 router.patch('/categories/:id/order', authenticate, isAdmin, updateCategoryOrder);
+
+// GET /api/admin/categories/:id/interested - Get interested users
+router.get('/categories/:id/interested', authenticate, isAdmin, getInterestedUsersForCategory);
 
 module.exports = router;

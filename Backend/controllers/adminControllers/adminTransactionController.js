@@ -5,6 +5,7 @@ const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
 const Worker = require('../../models/Worker');
 const PlatformEarning = require('../../models/PlatformEarning');
+const { getBookingQueryFilter, getAdminFilterConfig } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all transactions with pagination and filtering
@@ -21,6 +22,9 @@ const getAllTransactions = async (req, res) => {
       let bookingQuery = {
         status: { $in: ['COMPLETED', 'completed', 'paid', 'PAID'] } // Assuming revenue realized on completion
       };
+      
+      const bookingFilter = await getBookingQueryFilter(req.user);
+      Object.assign(bookingQuery, bookingFilter);
 
       // Search filter
       if (search) {
@@ -143,6 +147,9 @@ const getAllTransactions = async (req, res) => {
       query.type = type;
     }
 
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
+
     // Apply entity filter
     if (entity) {
       if (entity === 'user') {
@@ -239,6 +246,14 @@ const getTransactionStats = async (req, res) => {
 
     // --- SPECIAL HANDLING FOR ADMIN REVENUE (Extract from Bookings) ---
     if (entity === 'admin') {
+      const config = await getAdminFilterConfig(req.user);
+      if (config.isCityAdmin) {
+        return res.status(200).json({
+          success: true,
+          data: { totalRevenue: 0, totalCommission: 0, totalGST: 0, totalVendorEarnings: 0, netRevenue: 0 }
+        });
+      }
+
       const stats = await PlatformEarning.aggregate([
         {
           $group: {
@@ -270,6 +285,9 @@ const getTransactionStats = async (req, res) => {
       status: 'completed',
       type: { $in: ['credit', 'debit', 'refund', 'commission', 'cash_collected', 'payment'] }
     };
+    
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(matchQuery, bookingFilter);
 
     // Apply entity filter
     if (entity) {

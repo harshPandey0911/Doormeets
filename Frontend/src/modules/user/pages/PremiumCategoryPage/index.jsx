@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { FiFilter, FiSearch, FiShoppingBag } from 'react-icons/fi';
 import Navbar from '../../components/premium/Navbar';
@@ -40,7 +41,10 @@ const PremiumCategoryPage = () => {
             title: cat.title,
             slug: cat.slug || cat.title?.toLowerCase().replace(/\s+/g, '-'),
             icon: toAssetUrl(cat.icon || cat.homeIconUrl),
-            subtitle: cat.subtitle || 'Premium service'
+            subtitle: cat.subtitle || 'Premium service',
+            status: cat.status || 'active',
+            interestedCount: cat.interestedCount || 0,
+            isInterested: cat.isInterested || false
           }));
           setCategories(mapped);
           const found = mapped.find((item) => item.slug === slug || item.id === slug || item.title.toLowerCase() === String(slug).toLowerCase());
@@ -241,10 +245,64 @@ const PremiumCategoryPage = () => {
                 </button>
               ))}
             </div>
-            {!subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No subcategories available.</div> : null}
+            {activeCategory?.status !== 'coming_soon' && !subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No subcategories available.</div> : null}
           </div>
 
-          <div className="hidden items-center gap-3 rounded-[28px] border border-gray-100 bg-white px-4 py-3 shadow-sm lg:flex">
+          {activeCategory?.status === 'coming_soon' ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center rounded-[30px] border border-amber-100 bg-white shadow-[0_18px_60px_rgba(245,158,11,0.08)] py-16">
+              <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6">
+                <svg className="w-10 h-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              
+              <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+                {activeCategory.title}
+              </h1>
+              
+              <div className="inline-block px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wider mb-6">
+                Coming Soon
+              </div>
+              
+              <p className="text-gray-500 max-w-sm mb-8 font-medium">
+                We are launching this category soon in your area. Click below to show your interest, and we'll notify you!
+              </p>
+              
+              <button
+                disabled={activeCategory.isInterested}
+                onClick={async () => {
+                  try {
+                    const res = await publicCatalogService.registerInterest(activeCategory.id || activeCategory._id);
+                    if (res.success) {
+                      toast.success(res.message);
+                      setCategories(prev => prev.map(c => 
+                        c.id === activeCategory.id 
+                          ? { ...c, isInterested: true, interestedCount: (c.interestedCount || 0) + 1 }
+                          : c
+                      ));
+                      setActiveCategory(prev => ({ ...prev, isInterested: true }));
+                    } else {
+                      toast.error(res.message || "Failed to register interest");
+                    }
+                  } catch (err) {
+                    console.error("Interest registration failed:", err);
+                    const msg = err.response?.data?.message || "Authentication required. Please login first.";
+                    toast.error(msg);
+                  }
+                }}
+                className={`w-full max-w-xs py-4 px-6 rounded-2xl font-bold shadow-md transition-all ${
+                  activeCategory.isInterested 
+                    ? 'bg-green-500 text-white cursor-default shadow-none'
+                    : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
+                }`}
+                style={{ backgroundColor: activeCategory.isInterested ? '#22c55e' : '#2874f0' }}
+              >
+                {activeCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="hidden items-center gap-3 rounded-[28px] border border-gray-100 bg-white px-4 py-3 shadow-sm lg:flex">
             <SearchBar value={search} onChange={setSearch} placeholder="Search services inside this category" />
             <button type="button" className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-purple-200 hover:bg-purple-50">
               <FiFilter />
@@ -306,6 +364,8 @@ const PremiumCategoryPage = () => {
             ))}
             {!filteredServices.length ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No services available.</div> : null}
           </div>
+        </>
+      )}
         </section>
       </div>
 

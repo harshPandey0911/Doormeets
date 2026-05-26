@@ -1,5 +1,6 @@
 const Review = require('../../models/Review');
 const Booking = require('../../models/Booking');
+const { getBookingQueryFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all reviews with pagination and filters
@@ -22,6 +23,9 @@ exports.getAllReviews = async (req, res) => {
     if (vendorId) query.vendorId = vendorId;
     if (serviceId) query.serviceId = serviceId;
     if (userId) query.userId = userId;
+
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
 
     // Auto-migration: If no reviews exist in Review model, check Booking model
     const reviewCount = await Review.countDocuments();
@@ -130,7 +134,10 @@ exports.updateReviewStatus = async (req, res) => {
  */
 exports.getReviewStats = async (req, res) => {
   try {
+    const matchFilter = await getBookingQueryFilter(req.user);
+
     const stats = await Review.aggregate([
+      { $match: matchFilter },
       {
         $group: {
           _id: null,
@@ -146,6 +153,7 @@ exports.getReviewStats = async (req, res) => {
     ]);
 
     const statusStats = await Review.aggregate([
+      { $match: matchFilter },
       {
         $group: {
           _id: '$status',

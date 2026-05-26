@@ -10,6 +10,7 @@ import {
   listQuestions, createQuestion, updateQuestion, deleteQuestion,
   listAttempts, assignRetraining, freezeVendor, unfreezeVendor
 } from '../../../../services/adminTrainingService';
+import { getSettings, updateSettings } from '../../services/settingsService';
 
 // ────────────────────── CONSTANTS ──────────────────────
 const TABS = [
@@ -597,12 +598,46 @@ const AttemptsTab = () => {
 const AdminTrainingPage = () => {
   const [activeTab, setActiveTab] = useState('stats');
   const [stats, setStats] = useState(null);
+  const [timeLimit, setTimeLimit] = useState(30);
+  const [minL1Score, setMinL1Score] = useState(80);
+  const [minL2Score, setMinL2Score] = useState(50);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     getTrainingStats()
       .then(res => setStats(res.data))
       .catch(() => {});
+
+    const fetchMcqSettings = async () => {
+      try {
+        const res = await getSettings();
+        if (res.success && res.settings) {
+          if (res.settings.mcqTimeLimitMinutes !== undefined) setTimeLimit(res.settings.mcqTimeLimitMinutes);
+          if (res.settings.mcqMinScoreL1 !== undefined) setMinL1Score(res.settings.mcqMinScoreL1);
+          if (res.settings.mcqMinScoreL2 !== undefined) setMinL2Score(res.settings.mcqMinScoreL2);
+        }
+      } catch (err) {
+        console.error("Failed to load MCQ settings", err);
+      }
+    };
+    fetchMcqSettings();
   }, []);
+
+  const saveMcqSettings = async () => {
+    setSavingSettings(true);
+    try {
+      await updateSettings({ 
+        mcqTimeLimitMinutes: timeLimit,
+        mcqMinScoreL1: minL1Score,
+        mcqMinScoreL2: minL2Score
+      });
+      toast.success('MCQ Test Settings updated successfully!');
+    } catch {
+      toast.error('Failed to update settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -638,6 +673,76 @@ const AdminTrainingPage = () => {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* MCQ Test Settings Card */}
+        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 mb-6">
+          <h3 className="text-gray-900 font-extrabold text-base mb-4 flex items-center gap-2">
+            ⚙️ MCQ Test & Level Configuration
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+            {/* Time Limit */}
+            <div>
+              <label className="block text-gray-700 text-xs font-bold uppercase tracking-wider mb-2">⏱️ Test Time Limit</label>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full">
+                <input
+                  type="number"
+                  value={timeLimit}
+                  onChange={e => setTimeLimit(parseInt(e.target.value) || 0)}
+                  min="1"
+                  className="bg-transparent text-gray-900 font-bold text-sm outline-none w-full text-center"
+                />
+                <span className="text-gray-400 text-xs font-bold whitespace-nowrap">Mins</span>
+              </div>
+            </div>
+
+            {/* Level 1 Min Score */}
+            <div>
+              <label className="block text-gray-700 text-xs font-bold uppercase tracking-wider mb-2">🏆 L1 Premium Min Score</label>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full">
+                <input
+                  type="number"
+                  value={minL1Score}
+                  onChange={e => setMinL1Score(parseInt(e.target.value) || 0)}
+                  min="0"
+                  max="100"
+                  className="bg-transparent text-gray-900 font-bold text-sm outline-none w-full text-center"
+                />
+                <span className="text-gray-400 text-xs font-bold whitespace-nowrap">%</span>
+              </div>
+            </div>
+
+            {/* Level 2 Min Score */}
+            <div>
+              <label className="block text-gray-700 text-xs font-bold uppercase tracking-wider mb-2">🥈 L2 Standard Min Score (Pass)</label>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full">
+                <input
+                  type="number"
+                  value={minL2Score}
+                  onChange={e => setMinL2Score(parseInt(e.target.value) || 0)}
+                  min="0"
+                  max="100"
+                  className="bg-transparent text-gray-900 font-bold text-sm outline-none w-full text-center"
+                />
+                <span className="text-gray-400 text-xs font-bold whitespace-nowrap">%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+            <p className="text-gray-400 text-[10px] font-medium">
+              * Vendors scoring below L2 Min Score will be assigned L3 (Basic) and must retake after 24 hrs.
+            </p>
+            <button
+              onClick={saveMcqSettings}
+              disabled={savingSettings}
+              className="px-6 py-2.5 rounded-xl text-white font-bold text-sm transition-all hover:opacity-90 disabled:opacity-50 shadow-md"
+              style={{ backgroundColor: '#347989' }}
+            >
+              {savingSettings ? 'Saving...' : 'Save Configuration'}
+            </button>
+          </div>
+        </div>
+
         {activeTab === 'stats' && <StatsTab stats={stats} />}
         {activeTab === 'videos' && <VideosTab />}
         {activeTab === 'questions' && <QuestionsTab />}

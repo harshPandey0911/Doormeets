@@ -142,6 +142,29 @@ const vendorSchema = new mongoose.Schema({
   otherDocuments: [{
     type: String // Cloudinary URLs
   }],
+  policeVerification: {
+    status: {
+      type: String,
+      enum: ['pending', 'submitted', 'approved', 'rejected'],
+      default: 'pending'
+    },
+    documentUrl: {
+      type: String, // Cloudinary URL
+      default: null
+    },
+    submittedAt: {
+      type: Date,
+      default: null
+    },
+    rejectionReason: {
+      type: String,
+      default: null
+    },
+    dueDate: {
+      type: Date,
+      default: null
+    }
+  },
   approvalStatus: {
     type: String,
     enum: Object.values(VENDOR_STATUS),

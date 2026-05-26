@@ -29,17 +29,17 @@ const sendOTP = async (req, res) => {
 
     // Check existing vendor status to prevent OTP if restricted
     const existingVendor = await Vendor.findOne({ phone: cleanPhone });
-    if (existingVendor) {
-      if (existingVendor.approvalStatus === VENDOR_STATUS.PENDING) {
-        return res.status(200).json({
-          success: true,
-          message: 'Your account is currently under review. Please wait for admin approval.',
-          vendor: { adminApproval: 'pending' }
-        });
-      }
-      if (existingVendor.approvalStatus === VENDOR_STATUS.REJECTED || existingVendor.approvalStatus === VENDOR_STATUS.SUSPENDED) {
-        return res.status(403).json({ success: false, message: 'Account restricted.' });
-      }
+    
+    // User requested: If not registered, do not send OTP, tell them to register first.
+    if (!existingVendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Number not registered. Please register first.'
+      });
+    }
+
+    if (existingVendor.approvalStatus === VENDOR_STATUS.REJECTED || existingVendor.approvalStatus === VENDOR_STATUS.SUSPENDED) {
+      return res.status(403).json({ success: false, message: 'Account restricted.' });
     }
 
     // 1. Rate limit check
@@ -227,6 +227,20 @@ const register = async (req, res) => {
       }
     }
 
+    // Calculate Police Verification Due Date
+    const Settings = require('../../models/Settings');
+    let policeVerificationDays = 7;
+    try {
+      const settings = await Settings.findOne({ type: 'global' });
+      if (settings && settings.policeVerificationDays) {
+        policeVerificationDays = settings.policeVerificationDays;
+      }
+    } catch (err) {
+      console.error('Error fetching settings for PV days:', err);
+    }
+    const pvDueDate = new Date();
+    pvDueDate.setDate(pvDueDate.getDate() + policeVerificationDays);
+
     // Create Vendor Record
     const vendor = await Vendor.create({
       name,
@@ -235,7 +249,11 @@ const register = async (req, res) => {
       categories: finalCategories,
       approvalStatus: VENDOR_STATUS.PENDING,
       isActive: true, // Allow them to attempt login but blocked by PENDING status
-      settings: { serviceRange: 15 }
+      settings: { serviceRange: 15 },
+      policeVerification: {
+        status: 'pending',
+        dueDate: pvDueDate
+      }
     });
 
     // Notify Admins (Non-blocking)
@@ -276,7 +294,7 @@ const register = async (req, res) => {
     console.error('Vendor registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Registration failed.'
+      message: `Registration failed. Error: ${error.message}`
     });
   }
 };

@@ -256,6 +256,7 @@ const Home = () => {
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [comingSoonCategory, setComingSoonCategory] = useState(null);
 
   // Fetch categories and home content on mount (and when city changes)
   useEffect(() => {
@@ -275,7 +276,10 @@ const Home = () => {
               icon: toAssetUrl(cat.icon),
               hasSaleBadge: cat.hasSaleBadge,
               badge: cat.badge,
-              categoryType: cat.categoryType || 'service'
+              categoryType: cat.categoryType || 'service',
+              status: cat.status || 'active',
+              interestedCount: cat.interestedCount || 0,
+              isInterested: cat.isInterested || false
             }));
             setCategories(mappedCategories);
           }
@@ -337,6 +341,10 @@ const Home = () => {
 
   const handleCategoryClick = (category) => {
     if (!category) return;
+    if (category.status === 'coming_soon') {
+      setComingSoonCategory(category);
+      return;
+    }
     const slug = category.slug || category.id || category._id;
     navigate(`/user/category/${encodeURIComponent(slug)}`, { state: { category } });
   };
@@ -765,6 +773,66 @@ const Home = () => {
         onSave={handleAddressSave}
       />
 
+      {comingSoonCategory && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-gray-100 flex flex-col items-center text-center">
+            <button 
+              onClick={() => setComingSoonCategory(null)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+              {comingSoonCategory.title}
+            </h3>
+            
+            <p className="text-sm text-gray-500 mb-6 font-medium">
+              We are launching this category soon in your area. Click below to show your interest, and we'll notify you!
+            </p>
+            
+            <button
+              disabled={comingSoonCategory.isInterested}
+              onClick={async () => {
+                try {
+                  const res = await publicCatalogService.registerInterest(comingSoonCategory.id || comingSoonCategory._id);
+                  if (res.success) {
+                    toast.success(res.message);
+                    setCategories(prev => prev.map(c => 
+                      c.id === comingSoonCategory.id 
+                        ? { ...c, isInterested: true, interestedCount: (c.interestedCount || 0) + 1 }
+                        : c
+                    ));
+                    setComingSoonCategory(prev => ({ ...prev, isInterested: true }));
+                  } else {
+                    toast.error(res.message || "Failed to register interest");
+                  }
+                } catch (err) {
+                  console.error("Interest registration failed:", err);
+                  const msg = err.response?.data?.message || "Authentication required. Please login first.";
+                  toast.error(msg);
+                }
+              }}
+              className={`w-full py-3.5 px-6 rounded-2xl font-bold shadow-md transition-all ${
+                comingSoonCategory.isInterested 
+                  ? 'bg-green-500 text-white cursor-default shadow-none'
+                  : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
+              }`}
+              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#2874f0' }}
+            >
+              {comingSoonCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

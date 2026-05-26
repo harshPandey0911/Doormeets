@@ -66,7 +66,8 @@ const login = async (req, res) => {
         assignedCities: admin.assignedCities || [],
         permissions: admin.permissions || [],
         canApproveVendors: admin.canApproveVendors || false,
-        canApproveWorkers: admin.canApproveWorkers || false
+        canApproveWorkers: admin.canApproveWorkers || false,
+        assignedVendors: admin.assignedVendors || []
       },
       ...tokens
     });
@@ -157,7 +158,8 @@ const getProfile = async (req, res) => {
         assignedCities: admin.assignedCities || [],
         permissions: admin.permissions || [],
         canApproveVendors: admin.canApproveVendors || false,
-        canApproveWorkers: admin.canApproveWorkers || false
+        canApproveWorkers: admin.canApproveWorkers || false,
+        assignedVendors: admin.assignedVendors || []
       }
     });
   } catch (error) {

@@ -47,6 +47,12 @@ const adminSchema = new mongoose.Schema({
     ref: 'City'
   }],
 
+  // Vendors this city admin is allowed to access
+  assignedVendors: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor'
+  }],
+
   // Legacy single cityId field — kept for backward compatibility
   cityId: {
     type: mongoose.Schema.Types.ObjectId,

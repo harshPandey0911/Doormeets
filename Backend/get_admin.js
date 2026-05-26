@@ -1,0 +1,1 @@
+﻿require('dotenv').config(); const mongoose = require('mongoose'); mongoose.connect(process.env.MONGODB_URI).then(async () => { const Admin = require('./models/Admin'); const admin = await Admin.findOne({ role: 'super_admin' }); console.log('Super Admin Email:', admin ? admin.email : 'None found'); process.exit(0); })

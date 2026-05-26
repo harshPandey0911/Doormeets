@@ -5,6 +5,7 @@ import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { playNotificationSound, isSoundEnabled, playAlertRing } from '../utils/notificationSound';
 import { registerFCMToken } from '../services/pushNotificationService';
+import api from '../services/api';
 
 const SwipeableNotification = ({ t, data, onClick }) => {
   const x = useMotionValue(0);
@@ -196,6 +197,12 @@ export const SocketProvider = ({ children }) => {
         playNotificationSound();
       }
 
+      // Police verification notifications — use unique ID so they are not overwritten
+      const isVerificationNotif = data.type === 'police_verification_approved' || data.type === 'police_verification_rejected';
+      const toastId = isVerificationNotif
+        ? `verif-notif-${Date.now()}`
+        : 'socket-notification';
+
       // Show custom toast for all notifications
       toast.custom((t) => (
         <SwipeableNotification
@@ -203,8 +210,8 @@ export const SocketProvider = ({ children }) => {
           data={data}
           onClick={() => {
             toast.dismiss(t.id);
-            // Optional: navigate based on relatedId
-            if (data.relatedId) {
+            // For verification notifications, don't navigate to booking
+            if (!isVerificationNotif && data.relatedId) {
               if (userType === 'vendor') navigate(`/vendor/booking/${data.relatedId}`);
               else if (userType === 'worker') navigate(`/worker/job/${data.relatedId}`);
               else navigate(`/user/booking/${data.relatedId}`);
@@ -212,8 +219,8 @@ export const SocketProvider = ({ children }) => {
           }}
         />
       ), {
-        id: 'socket-notification', // Prevent stacking
-        duration: 3500, // Slightly longer to allow interaction/reading since it's dismissible
+        id: toastId,
+        duration: isVerificationNotif ? 8000 : 3500,
         position: 'top-right'
       });
 

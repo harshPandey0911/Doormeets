@@ -52,7 +52,13 @@ exports.updateSettings = async (req, res, next) => {
       // Payment Control
       isOnlinePaymentEnabled,
       // Commission & Platform Fees
-      commissionRates, platformFeeRates
+      commissionRates, platformFeeRates,
+      // Police Verification
+      policeVerificationDays,
+      // MCQ Test
+      mcqTimeLimitMinutes,
+      mcqMinScoreL1,
+      mcqMinScoreL2
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -74,7 +80,9 @@ exports.updateSettings = async (req, res, next) => {
         razorpayWebhookSecret,
         cloudinaryCloudName,
         cloudinaryApiKey,
-        cloudinaryApiSecret
+        cloudinaryApiSecret,
+        mcqMinScoreL1,
+        mcqMinScoreL2
       });
     } else {
       // Update fields if provided
@@ -123,6 +131,15 @@ exports.updateSettings = async (req, res, next) => {
       // Commission & Platform Fees update
       if (commissionRates !== undefined) settings.commissionRates = commissionRates;
       if (platformFeeRates !== undefined) settings.platformFeeRates = platformFeeRates;
+      
+      // Police Verification update
+      if (policeVerificationDays !== undefined) settings.policeVerificationDays = policeVerificationDays;
+
+      // MCQ Test update
+      if (mcqTimeLimitMinutes !== undefined) settings.mcqTimeLimitMinutes = mcqTimeLimitMinutes;
+      if (mcqMinScoreL1 !== undefined) settings.mcqMinScoreL1 = mcqMinScoreL1;
+      if (mcqMinScoreL2 !== undefined) undefined; // handled below
+      if (mcqMinScoreL2 !== undefined) settings.mcqMinScoreL2 = mcqMinScoreL2;
 
       await settings.save();
     }

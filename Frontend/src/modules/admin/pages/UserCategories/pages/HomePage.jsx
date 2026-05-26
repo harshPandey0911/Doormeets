@@ -6,7 +6,7 @@ import Modal from "../components/Modal";
 import ToggleSwitch from "../components/ToggleSwitch"; // Import ToggleSwitch
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
 
-import { homeContentService, serviceService } from "../../../../../services/catalogService";
+import { homeContentService, serviceService, categoryService, publicCatalogService } from "../../../../../services/catalogService";
 
 const RedirectionSelector = ({
   targetCategoryId,
@@ -194,16 +194,22 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
 
   const home = ensureIds(catalog).home;
 
-  // Fetch home content from API on mount or city change
+  // Fetch home content and categories from API on mount or city change
   useEffect(() => {
-    const fetchHomeContent = async () => {
+    const fetchHomeData = async () => {
       try {
         const params = {};
         if (selectedCity) params.cityId = selectedCity;
 
-        const response = await homeContentService.get(params);
-        if (response.success && response.homeContent) {
-          const hc = response.homeContent;
+        const [homeRes, catRes] = await Promise.all([
+          homeContentService.get(params),
+          categoryService.getAll()
+        ]);
+
+        let next = ensureIds(catalog);
+
+        if (homeRes.success && homeRes.homeContent) {
+          const hc = homeRes.homeContent;
 
           // Helper function to add IDs to items if they don't have them and convert ObjectIds to strings
           const addIds = (items) => {
@@ -224,8 +230,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             }));
           };
 
-          // Map API response to component's expected format
-          const next = ensureIds(catalog);
           next.home = {
             banners: addIds(hc.banners || []),
             promoCarousel: addIds(hc.promos || []), // API returns 'promos', component expects 'promoCarousel'
@@ -241,16 +245,63 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             isCategorySectionsVisible: hc.isCategorySectionsVisible ?? true,
             isCategoriesVisible: hc.isCategoriesVisible ?? true
           };
-          setCatalog(next);
-          saveCatalog(next);
         }
+
+        if (catRes.success && catRes.categories) {
+          next.categories = catRes.categories.map(cat => ({
+            id: cat.id,
+            title: cat.title,
+            slug: cat.slug,
+            homeIconUrl: cat.homeIconUrl || "",
+            homeBadge: cat.homeBadge || "",
+            hasSaleBadge: cat.hasSaleBadge || false,
+            hasBrands: cat.hasBrands ?? true,
+            showOnHome: cat.showOnHome !== false,
+            categoryType: cat.categoryType || "service",
+            vendorId: cat.vendorId || null,
+            status: cat.status || "active",
+            interestedCount: cat.interestedCount || 0
+          }));
+        }
+
+        setCatalog(next);
+        saveCatalog(next);
       } catch (error) {
-        console.error("Error fetching home content:", error);
-        toast.error("Failed to load home content");
+        console.error("Error fetching home content or categories:", error);
+        toast.error("Failed to load home page data");
       }
     };
-    fetchHomeContent();
+    fetchHomeData();
   }, [selectedCity]); // Re-fetch on city change
+
+  const handleStatusChange = async (categoryId, newStatus) => {
+    try {
+      const category = categories.find(c => c.id === categoryId);
+      if (!category) return;
+
+      const response = await categoryService.update(categoryId, {
+        status: newStatus,
+        updateCityIds: category.cityIds || (selectedCity ? [selectedCity] : [])
+      });
+
+      if (response.success) {
+        // Update local state
+        const next = ensureIds(catalog);
+        next.categories = next.categories.map(c => 
+          c.id === categoryId ? { ...c, status: newStatus } : c
+        );
+        setCatalog(next);
+        saveCatalog(next);
+        publicCatalogService.invalidateCache();
+        toast.success(`Status updated to ${newStatus === 'active' ? 'Active' : newStatus === 'coming_soon' ? 'Coming Soon' : 'Deactive'}`);
+      } else {
+        throw new Error(response.message || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Update status error:', error);
+      toast.error(error.message || 'Failed to update status');
+    }
+  };
 
   const getCategoryTitle = (id) => {
     const found = categories.find((c) => c.id === id);
@@ -325,6 +376,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         isCategoriesVisible: homeData.isCategoriesVisible
       };
       await homeContentService.update(payload, { cityId: selectedCity });
+      publicCatalogService.invalidateCache();
       toast.success('Home page updated successfully!');
     } catch (error) {
       console.error('Failed to sync home content:', error);
@@ -639,6 +691,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         </div>
       </CardShell>
 
+      {false && (
       <CardShell icon={FiGrid}>
         <div className="space-y-5">
           {/* Promo Carousel (PromoCarousel) */}
@@ -1217,6 +1270,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           }
         </div>
       </CardShell>
+      )}
 
       <CardShell icon={FiGrid} title="Home Categories">
         <div className="flex items-center justify-between mb-4">
@@ -1270,9 +1324,24 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                       )}
                     </td>
                     <td className="py-4 px-4 text-center">
-                      <span className={`inline-block px-3 py-1 text-xs font-bold rounded ${c.showOnHome !== false ? "bg-green-500 text-white" : "bg-gray-300 text-gray-700"}`}>
-                        {c.showOnHome !== false ? "VISIBLE" : "HIDDEN"}
-                      </span>
+                      <select
+                        value={c.status || "active"}
+                        onChange={(e) => handleStatusChange(c.id, e.target.value)}
+                        className={`px-2 py-1 text-xs font-bold rounded border border-transparent cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                          c.status === "active" ? "bg-green-500 text-white focus:ring-green-500" :
+                          c.status === "coming_soon" ? "bg-amber-500 text-white focus:ring-amber-500" :
+                          "bg-gray-300 text-gray-700 focus:ring-gray-400"
+                        }`}
+                      >
+                        <option value="active" className="bg-white text-gray-800">ACTIVE</option>
+                        <option value="inactive" className="bg-white text-gray-800">DEACTIVE</option>
+                        <option value="coming_soon" className="bg-white text-gray-800">COMING SOON</option>
+                      </select>
+                      {c.status === "coming_soon" && (
+                        <div className="text-[10px] text-gray-500 mt-1 font-semibold">
+                          {c.interestedCount || 0} Interested
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-center gap-2">

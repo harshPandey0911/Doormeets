@@ -4,6 +4,7 @@ const Settlement = require('../../models/Settlement');
 const Withdrawal = require('../../models/Withdrawal');
 const mongoose = require('mongoose');
 const { recordSettlement, recordWithdrawal } = require('../../services/earningTrackerService');
+const { getVendorQueryFilter, getBookingQueryFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all vendors with their wallet balances
@@ -27,6 +28,9 @@ const getVendorBalances = async (req, res) => {
       matchQuery['wallet.dues'] = { $gt: 0 };
     }
 
+    const adminFilter = await getVendorQueryFilter(req.user);
+    Object.assign(matchQuery, adminFilter);
+
     const vendors = await Vendor.find(matchQuery)
       .select('name businessName phone email wallet profilePhoto')
       .sort({ 'wallet.dues': -1 }) // Highest dues first
@@ -37,7 +41,7 @@ const getVendorBalances = async (req, res) => {
 
     // Calculate total amount due to admin
     const totalDueResult = await Vendor.aggregate([
-      { $match: { 'wallet.dues': { $gt: 0 } } },
+      { $match: { 'wallet.dues': { $gt: 0 }, ...adminFilter } },
       { $group: { _id: null, total: { $sum: '$wallet.dues' } } }
     ]);
 
@@ -65,7 +69,7 @@ const getVendorBalances = async (req, res) => {
       data: vendorData,
       summary: {
         totalDueToAdmin,
-        vendorsWithDue: await Vendor.countDocuments({ 'wallet.dues': { $gt: 0 } })
+        vendorsWithDue: await Vendor.countDocuments({ 'wallet.dues': { $gt: 0 }, ...adminFilter })
       },
       pagination: {
         page: parseInt(page),
@@ -99,6 +103,14 @@ const getVendorLedger = async (req, res) => {
         success: false,
         message: 'Vendor not found'
       });
+    }
+
+    // Security check
+    const vendorFilter = await getVendorQueryFilter(req.user);
+    if (vendorFilter._id && vendorFilter._id.$in) {
+      if (!vendorFilter._id.$in.map(v => v.toString()).includes(vendorId)) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     const query = { vendorId: new mongoose.Types.ObjectId(vendorId) };
@@ -151,17 +163,21 @@ const getPendingSettlements = async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const settlements = await Settlement.find({ status: 'pending' })
+    const matchQuery = { status: 'pending' };
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(matchQuery, bookingFilter);
+
+    const settlements = await Settlement.find(matchQuery)
       .populate('vendorId', 'name businessName phone profilePhoto wallet.balance')
       .sort({ createdAt: 1 }) // Oldest first
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Settlement.countDocuments({ status: 'pending' });
+    const total = await Settlement.countDocuments(matchQuery);
 
     // Calculate total pending settlement amount
     const totalPending = await Settlement.aggregate([
-      { $match: { status: 'pending' } },
+      { $match: matchQuery },
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
 
@@ -330,6 +346,9 @@ const getSettlementHistory = async (req, res) => {
     if (status) query.status = status;
     if (vendorId) query.vendorId = vendorId;
 
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
+
     const settlements = await Settlement.find(query)
       .populate('vendorId', 'name businessName phone')
       .populate('processedBy', 'name')
@@ -363,17 +382,19 @@ const getSettlementHistory = async (req, res) => {
  */
 const getSettlementDashboard = async (req, res) => {
   try {
-    // Total amount due to admin
+    const adminFilter = await getVendorQueryFilter(req.user);
+    const bookingFilter = await getBookingQueryFilter(req.user);
+
     // Total amount due to admin
     const totalDueResult = await Vendor.aggregate([
-      { $match: { 'wallet.dues': { $gt: 0 } } },
+      { $match: { 'wallet.dues': { $gt: 0 }, ...adminFilter } },
       { $group: { _id: null, total: { $sum: '$wallet.dues' } } }
     ]);
     const totalDueToAdmin = totalDueResult[0]?.total || 0;
 
     // Pending settlements
     const pendingSettlements = await Settlement.aggregate([
-      { $match: { status: 'pending' } },
+      { $match: { status: 'pending', ...bookingFilter } },
       { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
     ]);
 
@@ -383,6 +404,7 @@ const getSettlementDashboard = async (req, res) => {
     const todayCollections = await Transaction.aggregate([
       {
         $match: {
+          ...bookingFilter,
           type: 'cash_collected',
           createdAt: { $gte: today }
         }
@@ -402,6 +424,7 @@ const getSettlementDashboard = async (req, res) => {
     const weekSettlements = await Transaction.aggregate([
       {
         $match: {
+          ...bookingFilter,
           type: 'settlement',
           status: 'completed',
           createdAt: { $gte: weekStart }
@@ -420,7 +443,7 @@ const getSettlementDashboard = async (req, res) => {
       success: true,
       data: {
         totalDueToAdmin,
-        vendorsWithDue: await Vendor.countDocuments({ 'wallet.dues': { $gt: 0 } }),
+        vendorsWithDue: await Vendor.countDocuments({ 'wallet.dues': { $gt: 0 }, ...adminFilter }),
         pendingSettlements: {
           amount: pendingSettlements[0]?.total || 0,
           count: pendingSettlements[0]?.count || 0
@@ -537,13 +560,17 @@ module.exports = {
       const { page = 1, limit = 20 } = req.query;
       const skip = (parseInt(page) - 1) * parseInt(limit);
 
-      const withdrawals = await Withdrawal.find({ status: 'pending' })
+      const matchQuery = { status: 'pending' };
+      const bookingFilter = await getBookingQueryFilter(req.user);
+      Object.assign(matchQuery, bookingFilter);
+
+      const withdrawals = await Withdrawal.find(matchQuery)
         .populate('vendorId', 'name businessName phone wallet.earnings')
         .sort({ createdAt: 1 })
         .skip(skip)
         .limit(parseInt(limit));
 
-      const total = await Withdrawal.countDocuments({ status: 'pending' });
+      const total = await Withdrawal.countDocuments(matchQuery);
 
       res.status(200).json({
         success: true,

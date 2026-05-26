@@ -1,6 +1,7 @@
 const User = require('../../models/User');
 const Booking = require('../../models/Booking');
 const { validationResult } = require('express-validator');
+const { getCityOnlyFilter, getBookingQueryFilter } = require('../../utils/adminFilterHelper');
 
 /**
  * Get all users with filters and pagination
@@ -40,6 +41,10 @@ const getAllUsers = async (req, res) => {
 
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // City Admin filter
+    const cityFilter = await getCityOnlyFilter(req.user);
+    Object.assign(query, cityFilter);
 
     // Get users
     const users = await User.find(query)
@@ -84,6 +89,15 @@ const getUserDetails = async (req, res) => {
         success: false,
         message: 'User not found'
       });
+    }
+
+    const cityFilter = await getCityOnlyFilter(req.user);
+    if (cityFilter['address.city'] && cityFilter['address.city'].$in) {
+      // If city filtering is active, verify user's city
+      const allowedCities = cityFilter['address.city'].$in.map(r => r.toString().replace(/^\/\^/, '').replace(/\$\/i$/, ''));
+      if (user.address && user.address.city && !allowedCities.includes(user.address.city)) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     // Get user booking stats
@@ -213,6 +227,8 @@ const getUserBookings = async (req, res) => {
     if (status) {
       query.status = status;
     }
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
 
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -314,6 +330,9 @@ const getAllUserBookings = async (req, res) => {
       const userIds = users.map(u => u._id);
       query.userId = { $in: userIds };
     }
+    
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(query, bookingFilter);
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 

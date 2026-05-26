@@ -52,10 +52,17 @@ const authenticate = async (req, res, next) => {
       case USER_ROLES.VENDOR:
         user = await Vendor.findById(decoded.userId).select('-password').lean();
         if (user && user.approvalStatus !== 'approved') {
-          return res.status(403).json({
-            success: false,
-            message: 'Your vendor account is pending approval or has been rejected.'
-          });
+          // Allow access to verification, training, and profile endpoints during pending state
+          const allowedPaths = ['/verification', '/training', '/profile', '/subscription', '/auth'];
+          const isAllowedPath = allowedPaths.some(p => req.baseUrl.includes(p) || req.path.includes(p));
+          
+          if (!isAllowedPath) {
+            return res.status(403).json({
+              success: false,
+              code: 'ACCOUNT_PENDING',
+              message: 'Your vendor account is pending approval or has been rejected.'
+            });
+          }
         }
 
         // FROZEN CHECK: Blocked by admin

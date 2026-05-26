@@ -23,9 +23,9 @@ const { createNotification } = require('../notificationControllers/notificationC
 /**
  * Calculate level based on score percentage
  */
-const calculateLevel = (score) => {
-  if (score >= TRAINING_SCORE_THRESHOLDS.L1_MIN) return TRAINING_LEVELS.L1;
-  if (score >= TRAINING_SCORE_THRESHOLDS.L2_MIN) return TRAINING_LEVELS.L2;
+const calculateLevel = (score, minL1 = 80, minL2 = 50) => {
+  if (score >= minL1) return TRAINING_LEVELS.L1;
+  if (score >= minL2) return TRAINING_LEVELS.L2;
   return TRAINING_LEVELS.L3;
 };
 
@@ -265,11 +265,17 @@ const getTestQuestions = async (req, res) => {
         options: q.options.map((opt, idx) => ({ text: opt.text, index: idx }))
       }));
 
+    // Fetch admin-configured time limit
+    const Settings = require('../../models/Settings');
+    const settings = await Settings.findOne({ type: 'global' });
+    const timeLimitMinutes = settings?.mcqTimeLimitMinutes || 30;
+
     res.status(200).json({
       success: true,
       data: shuffled,
       totalQuestions: shuffled.length,
-      passingScore: TRAINING_SCORE_THRESHOLDS.L2_MIN
+      passingScore: settings?.mcqMinScoreL2 !== undefined ? settings.mcqMinScoreL2 : 50,
+      timeLimitMinutes
     });
   } catch (error) {
     console.error('[Training] getTestQuestions error:', error);
@@ -358,10 +364,15 @@ const submitTest = async (req, res) => {
       );
     }
 
+    const Settings = require('../../models/Settings');
+    const settings = await Settings.findOne({ type: 'global' });
+    const minL1 = settings?.mcqMinScoreL1 !== undefined ? settings.mcqMinScoreL1 : 80;
+    const minL2 = settings?.mcqMinScoreL2 !== undefined ? settings.mcqMinScoreL2 : 50;
+
     const totalQuestions = evaluatedAnswers.length;
     const scorePercent = Math.round((correctCount / totalQuestions) * 100);
-    const levelAssigned = calculateLevel(scorePercent);
-    const passed = scorePercent >= TRAINING_SCORE_THRESHOLDS.L2_MIN; // L2+ = pass
+    const levelAssigned = calculateLevel(scorePercent, minL1, minL2);
+    const passed = scorePercent >= minL2; // L2+ = pass
 
     // Attempt number
     const newAttemptNumber = (vendor.training.attemptCount || 0) + 1;
@@ -448,7 +459,7 @@ const submitTest = async (req, res) => {
           vendorId: vendor._id,
           type: 'training_failed',
           title: '📚 Training Score Below Passing',
-          message: `You scored ${scorePercent}%. You need ${TRAINING_SCORE_THRESHOLDS.L2_MIN}% to pass. You can retake after 24 hours.`,
+          message: `You scored ${scorePercent}%. You need ${minL2}% to pass. You can retake after 24 hours.`,
           relatedId: attempt._id,
           relatedType: 'training'
         });
@@ -474,7 +485,7 @@ const submitTest = async (req, res) => {
       success: true,
       message: passed
         ? `Congratulations! You passed with ${scorePercent}% and have been assigned Level ${levelAssigned}.`
-        : `You scored ${scorePercent}%. Required: ${TRAINING_SCORE_THRESHOLDS.L2_MIN}%. Please retake after 24 hours.`,
+        : `You scored ${scorePercent}%. Required: ${minL2}%. Please retake after 24 hours.`,
       data: {
         score: scorePercent,
         correctAnswers: correctCount,

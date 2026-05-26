@@ -51,6 +51,7 @@ const getAllCategories = async (req, res) => {
         metaDescription: cat.metaDescription,
         categoryType: cat.categoryType,
         vendorId: cat.vendorId,
+        interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         createdAt: cat.createdAt,
         updatedAt: cat.updatedAt
       }))
@@ -101,6 +102,7 @@ const getCategoryById = async (req, res) => {
         metaDescription: category.metaDescription,
         categoryType: category.categoryType,
         vendorId: category.vendorId,
+        interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }
@@ -522,12 +524,47 @@ const updateCategoryOrder = async (req, res) => {
   }
 };
 
+/**
+ * Get interested users for a category
+ * GET /api/admin/categories/:id/interested
+ */
+const getInterestedUsersForCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const category = await Category.findById(id)
+      .select('title interestedUsers')
+      .populate('interestedUsers', 'name email phone profilePhoto')
+      .lean();
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      categoryTitle: category.title,
+      interestedUsers: category.interestedUsers || []
+    });
+  } catch (error) {
+    console.error('Get interested users for category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch interested users'
+    });
+  }
+};
+
 module.exports = {
   getAllCategories,
   getCategoryById,
   createCategory,
   updateCategory,
   deleteCategory,
-  updateCategoryOrder
+  updateCategoryOrder,
+  getInterestedUsersForCategory
 };
 

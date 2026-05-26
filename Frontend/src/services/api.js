@@ -161,6 +161,11 @@ api.interceptors.response.use(
         if (!window.location.pathname.includes('/vendor/training')) {
           window.location.href = '/vendor/training';
         }
+      } else if (code === 'ACCOUNT_PENDING') {
+        console.warn('Account is pending. Redirecting to verification...');
+        if (!window.location.pathname.includes('/vendor/verification')) {
+          window.location.href = '/vendor/verification';
+        }
       } else if (code === 'ACCOUNT_FROZEN') {
         console.error('Account frozen:', error.response.data.message);
         // Don't redirect; let the component handle the frozen state

@@ -6,6 +6,13 @@ const Withdrawal = require('../../models/Withdrawal');
 const Settlement = require('../../models/Settlement');
 const Scrap = require('../../models/Scrap');
 const { BOOKING_STATUS, PAYMENT_STATUS, VENDOR_STATUS } = require('../../utils/constants');
+const {
+  getVendorQueryFilter,
+  getWorkerQueryFilter,
+  getBookingQueryFilter,
+  getCityOnlyFilter,
+  getAggregateMatchFilter
+} = require('../../utils/adminFilterHelper');
 
 /**
  * Get overall dashboard stats
@@ -36,30 +43,42 @@ const getDashboardStats = async (req, res) => {
       }
     }
 
+    // City Admin Filters
+    const cityFilter = await getCityOnlyFilter(req.user);
+    const vendorFilter = await getVendorQueryFilter(req.user);
+    const workerFilter = await getWorkerQueryFilter(req.user);
+    const bookingFilter = await getBookingQueryFilter(req.user);
+
     // Total counts (filtered by creation date if provided)
-    const totalUsers = await User.countDocuments({ isActive: true, ...dateFilter });
-    const totalVendors = await Vendor.countDocuments({ isActive: true, ...dateFilter });
-    const totalWorkers = await Worker.countDocuments({ isActive: true, ...dateFilter });
-    const totalBookings = await Booking.countDocuments(dateFilter);
+    const totalUsers = await User.countDocuments({ isActive: true, ...dateFilter, ...cityFilter });
+    const totalVendors = await Vendor.countDocuments({ isActive: true, ...dateFilter, ...vendorFilter });
+    const totalWorkers = await Worker.countDocuments({ isActive: true, ...dateFilter, ...workerFilter });
+    const totalBookings = await Booking.countDocuments({ ...dateFilter, ...bookingFilter });
 
     // Booking stats
     const pendingBookings = await Booking.countDocuments({
       ...dateFilter,
+      ...bookingFilter,
       status: { $nin: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED] }
     });
     const completedBookings = await Booking.countDocuments({
       ...dateFilter,
+      ...bookingFilter,
       status: BOOKING_STATUS.COMPLETED
     });
     const cancelledBookings = await Booking.countDocuments({
       ...dateFilter,
+      ...bookingFilter,
       status: BOOKING_STATUS.CANCELLED
     });
+
+    const revenueMatch = await getAggregateMatchFilter(req.user, 'booking');
 
     // Revenue stats
     const revenueResult = await Booking.aggregate([
       {
         $match: {
+          ...revenueMatch,
           status: BOOKING_STATUS.COMPLETED,
           paymentStatus: { $in: [PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.COLLECTED_BY_VENDOR, 'success', 'collected_by_vendor', 'collected_by_worker', 'paid'] },
           ...revenueDateFilter
@@ -78,16 +97,17 @@ const getDashboardStats = async (req, res) => {
     const platformCommission = 0; // DISABLED: Commission removed
 
     // Vendor approval stats
-    const pendingVendors = await Vendor.countDocuments({ approvalStatus: VENDOR_STATUS.PENDING, ...dateFilter });
-    const approvedVendors = await Vendor.countDocuments({ approvalStatus: VENDOR_STATUS.APPROVED, ...dateFilter });
+    const pendingVendors = await Vendor.countDocuments({ approvalStatus: VENDOR_STATUS.PENDING, ...dateFilter, ...vendorFilter });
+    const approvedVendors = await Vendor.countDocuments({ approvalStatus: VENDOR_STATUS.APPROVED, ...dateFilter, ...vendorFilter });
 
-    // Withdrawal & Settlement stats
-    const pendingWithdrawals = await Withdrawal.countDocuments({ status: 'pending', ...dateFilter });
-    const pendingSettlementsCount = await Settlement.countDocuments({ status: 'pending', ...dateFilter });
-    const pendingScraps = await Scrap.countDocuments({ status: 'pending', ...dateFilter });
+    // Withdrawal & Settlement stats (Use generic booking filter since it uses vendorId)
+    const financialFilter = await getBookingQueryFilter(req.user);
+    const pendingWithdrawals = await Withdrawal.countDocuments({ status: 'pending', ...dateFilter, ...financialFilter });
+    const pendingSettlementsCount = await Settlement.countDocuments({ status: 'pending', ...dateFilter, ...financialFilter });
+    const pendingScraps = await Scrap.countDocuments({ status: 'pending', ...dateFilter, ...cityFilter });
 
     // Recent activities (filtered by period)
-    const recentActivityDocs = await Booking.find(dateFilter)
+    const recentActivityDocs = await Booking.find({ ...dateFilter, ...bookingFilter })
       .populate('userId', 'name phone')
       .populate('vendorId', 'name businessName')
       .populate('serviceId', 'title')
@@ -162,10 +182,13 @@ const getRevenueAnalytics = async (req, res) => {
       if (endDate) dateFilter.completedAt.$lte = new Date(endDate);
     }
 
+    const revenueMatch = await getAggregateMatchFilter(req.user, 'booking');
+
     // Revenue analytics
     const revenueData = await Booking.aggregate([
       {
         $match: {
+          ...revenueMatch,
           status: BOOKING_STATUS.COMPLETED,
           paymentStatus: { $in: [PAYMENT_STATUS.SUCCESS, PAYMENT_STATUS.COLLECTED_BY_VENDOR, 'success', 'collected_by_vendor', 'collected_by_worker', 'paid'] },
           ...dateFilter
@@ -213,10 +236,13 @@ const getBookingTrends = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
+    const bookingMatch = await getAggregateMatchFilter(req.user, 'booking');
+
     // Daily booking trends
     const trends = await Booking.aggregate([
       {
         $match: {
+          ...bookingMatch,
           createdAt: { $gte: startDate }
         }
       },
@@ -270,10 +296,14 @@ const getUserGrowthMetrics = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
+    const cityMatch = await getAggregateMatchFilter(req.user, 'cityOnly');
+    const vendorMatch = await getAggregateMatchFilter(req.user, 'vendor');
+
     // User growth
     const userGrowth = await User.aggregate([
       {
         $match: {
+          ...cityMatch,
           createdAt: { $gte: startDate }
         }
       },
@@ -295,6 +325,7 @@ const getUserGrowthMetrics = async (req, res) => {
     const vendorGrowth = await Vendor.aggregate([
       {
         $match: {
+          ...vendorMatch,
           createdAt: { $gte: startDate }
         }
       },

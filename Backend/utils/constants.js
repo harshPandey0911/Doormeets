@@ -120,7 +120,8 @@ const PAYMENT_STATUS = {
 const SERVICE_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
-  DELETED: 'deleted'
+  DELETED: 'deleted',
+  COMING_SOON: 'coming_soon'
 };
 
 // Bill Status

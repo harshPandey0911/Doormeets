@@ -240,6 +240,65 @@ const CategoryPage = () => {
 
   if (!category) return <div className="p-6">Loading category...</div>;
 
+  if (category?.status === 'coming_soon') {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="p-4 border-b">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-3">
+            <FiArrowLeft className="w-5 h-5" />
+            <span className="font-bold">Back</span>
+          </button>
+        </div>
+        <div className="flex flex-col items-center justify-center p-6 text-center pt-24 max-w-sm mx-auto">
+          <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-10 h-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-2">
+            {category.title}
+          </h1>
+          
+          <div className="inline-block px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+            Coming Soon
+          </div>
+          
+          <p className="text-gray-500 mb-8 font-medium">
+            We are launching this category soon in your area. Click below to show your interest, and we'll notify you!
+          </p>
+          
+          <button
+            disabled={category.isInterested}
+            onClick={async () => {
+              try {
+                const res = await publicCatalogService.registerInterest(category.id || category._id);
+                if (res.success) {
+                  toast.success(res.message);
+                  setCategory(prev => ({ ...prev, isInterested: true, interestedCount: (prev.interestedCount || 0) + 1 }));
+                } else {
+                  toast.error(res.message || "Failed to register interest");
+                }
+              } catch (err) {
+                console.error("Interest registration failed:", err);
+                const msg = err.response?.data?.message || "Authentication required. Please login first.";
+                toast.error(msg);
+              }
+            }}
+            className={`w-full py-4 px-6 rounded-2xl font-bold shadow-md transition-all ${
+              category.isInterested 
+                ? 'bg-green-500 text-white cursor-default shadow-none'
+                : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
+            }`}
+            style={{ backgroundColor: category.isInterested ? '#22c55e' : '#2874f0' }}
+          >
+            {category.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <div className="p-4 border-b">

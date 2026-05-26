@@ -51,6 +51,7 @@ const getProfile = async (req, res) => {
         isEmailVerified: vendor.isEmailVerified || false,
         profilePhoto: vendor.profilePhoto || null,
         aadharDocument: vendor.aadhar?.document || null,
+        policeVerification: vendor.policeVerification || null,
         createdAt: vendor.createdAt,
         updatedAt: vendor.updatedAt
       }
@@ -199,6 +200,29 @@ const updateProfile = async (req, res) => {
     }
 
     await vendor.save();
+
+    // Auto-assign to City Admins if city is set/updated
+    if (vendor.address && vendor.address.city) {
+      try {
+        const City = require('../../models/City');
+        const Admin = require('../../models/Admin');
+        
+        // Find the city document matching the vendor's city name
+        const cityDoc = await City.findOne({ name: new RegExp(`^${vendor.address.city}$`, 'i') });
+        if (cityDoc) {
+          // Add this vendor to all City Admins assigned to this city
+          await Admin.updateMany(
+            { 
+              role: { $in: ['CITY_ADMIN', 'admin'] },
+              assignedCities: cityDoc._id 
+            },
+            { $addToSet: { assignedVendors: vendor._id } }
+          );
+        }
+      } catch (assignError) {
+        console.error('Error auto-assigning vendor to city admins:', assignError);
+      }
+    }
 
     res.status(200).json({
       success: true,
