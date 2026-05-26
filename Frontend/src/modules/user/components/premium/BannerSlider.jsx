@@ -27,17 +27,17 @@ const BannerSlider = ({ banners = [], onCtaClick }) => {
               <div className={`absolute inset-0 bg-gradient-to-br ${banner.accent || 'from-purple-600 to-fuchsia-500'} opacity-85`} />
               <div className="absolute inset-0 bg-black/10" />
               <img src={banner.image} alt={banner.title} className="absolute inset-0 h-full w-full object-cover mix-blend-soft-light opacity-90" />
-              <div className="relative flex min-h-[220px] items-end p-5 md:min-h-[260px]">
+              <div className="relative flex min-h-[150px] items-end p-4 md:min-h-[190px]">
                 <div className="max-w-sm text-white">
-                  <span className="inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] backdrop-blur">
+                  <span className="inline-flex rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] backdrop-blur">
                     Premium services
                   </span>
-                  <h2 className="mt-3 text-2xl font-black leading-tight md:text-3xl">{banner.title}</h2>
-                  <p className="mt-2 text-sm text-white/85">{banner.subtitle}</p>
+                  <h2 className="mt-1.5 text-lg font-black leading-tight md:text-2xl">{banner.title}</h2>
+                  <p className="mt-0.5 text-xs text-white/85 md:text-sm">{banner.subtitle}</p>
                   <button
                     type="button"
                     onClick={() => onCtaClick?.(banner)}
-                    className="mt-4 inline-flex rounded-2xl bg-white px-4 py-3 text-sm font-black text-purple-700 shadow-lg shadow-black/10 transition-transform hover:scale-[1.02]"
+                    className="mt-2.5 inline-flex rounded-2xl bg-white px-3.5 py-2 text-xs font-black text-purple-700 shadow-lg shadow-black/10 transition-transform hover:scale-[1.02]"
                   >
                     {banner.buttonText || 'Explore'}
                   </button>

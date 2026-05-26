@@ -116,11 +116,11 @@ const PremiumHome = () => {
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/account')} />
 
       <main className="mx-auto max-w-7xl pb-28">
-        {banners.length > 0 ? <BannerSlider banners={banners} onCtaClick={(banner) => navigate('/user/category/electricity', { state: { source: banner } })} /> : null}
-
         <div className="px-4 pt-4 md:px-6">
           <SearchBar value={query} onChange={setQuery} />
         </div>
+
+        {banners.length > 0 ? <BannerSlider banners={banners} onCtaClick={(banner) => navigate('/user/category/electricity', { state: { source: banner } })} /> : null}
 
         <section className="px-4 pt-6 md:px-6">
           <div className="mb-4 flex items-end justify-between">

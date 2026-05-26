@@ -27,16 +27,7 @@ const Navbar = ({ locationLabel = 'Select location', cartCount = 0, onSearchClic
           </div>
         </button>
 
-        <button
-          type="button"
-          onClick={onSearchClick}
-          className="flex flex-1 items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-left shadow-sm hover:border-gray-300 transition-all"
-        >
-          <FiSearch className="text-gray-900 shrink-0" />
-          <span className="text-xs text-gray-400 truncate">Search home services</span>
-        </button>
-
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
           <NotificationBell />
           <Link to="/user/cart" className="relative rounded-2xl border border-gray-200 bg-white p-3 shadow-sm hover:border-gray-300 hover:shadow-md transition-all">
             <FiShoppingBag className="text-gray-800" />
