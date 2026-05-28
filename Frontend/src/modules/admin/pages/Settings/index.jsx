@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX } from 'react-icons/fi';
-import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus } from '../../services/settingsService';
+import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud } from 'react-icons/fi';
+import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus, uploadWelcomeVideo } from '../../services/settingsService';
 import { cityService } from '../../services/cityService';
 import CityManagement from '../Cities';
 import { toast } from 'react-hot-toast';
@@ -72,6 +72,11 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [activeView, setActiveView] = useState('main'); // 'main', 'profile', 'financial', 'system', 'admins'
+
+  // Welcome Video state
+  const [welcomeVideoUrl, setWelcomeVideoUrl] = useState('');
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoDragOver, setVideoDragOver] = useState(false);
 
   const isSuperAdmin = profile.role === 'super_admin';
 
@@ -145,6 +150,10 @@ const AdminSettings = () => {
             supportPhone: res.settings.supportPhone || '',
             supportWhatsapp: res.settings.supportWhatsapp || ''
           });
+          // Load welcome video url
+          if (res.settings.welcomeVideoUrl) {
+            setWelcomeVideoUrl(res.settings.welcomeVideoUrl);
+          }
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -421,6 +430,44 @@ const AdminSettings = () => {
     setServiceMode(config.mode || 'multi');
   }, []);
 
+  const handleVideoUpload = async (file) => {
+    if (!file) return;
+    const maxSize = 200 * 1024 * 1024; // 200MB
+    if (file.size > maxSize) {
+      return toast.error('Video file must be under 200MB');
+    }
+    const allowed = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+    if (!allowed.includes(file.type)) {
+      return toast.error('Only MP4, WebM, or MOV video files are allowed');
+    }
+    setVideoUploading(true);
+    try {
+      const uploadRes = await uploadWelcomeVideo(file);
+      if (uploadRes.success && uploadRes.videoUrl) {
+        await updateSettings({ welcomeVideoUrl: uploadRes.videoUrl });
+        setWelcomeVideoUrl(uploadRes.videoUrl);
+        toast.success('Welcome video updated successfully!');
+      } else {
+        toast.error(uploadRes.message || 'Upload failed');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload video');
+    } finally {
+      setVideoUploading(false);
+    }
+  };
+
+  const handleRemoveWelcomeVideo = async () => {
+    if (!window.confirm('Remove the current welcome video? The default static video will be used instead.')) return;
+    try {
+      await updateSettings({ welcomeVideoUrl: null });
+      setWelcomeVideoUrl('');
+      toast.success('Welcome video removed');
+    } catch (err) {
+      toast.error('Failed to remove video');
+    }
+  };
+
   // Render Function for Main Settings Menu
   const renderMainMenu = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -479,6 +526,18 @@ const AdminSettings = () => {
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">Manage Admins</h3>
           <p className="text-sm text-gray-500">Add, remove, and view all system administrators</p>
+        </div>
+      )}
+
+      {/* Welcome Video Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('welcome_video')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-rose-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-rose-100 transition-colors">
+            <FiVideo className="w-6 h-6 text-rose-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Welcome Video</h3>
+          <p className="text-sm text-gray-500">Upload and manage the background video shown on the welcome/splash screen</p>
         </div>
       )}
     </div>
@@ -866,9 +925,11 @@ const AdminSettings = () => {
                     <label className="block text-xs font-medium text-gray-500 mb-1">Support Phone</label>
                     <div className="relative">
                       <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input type="tel" name="supportPhone" value={supportSettings.supportPhone} onChange={handleSupportChange}
+                      <input type="text" name="supportPhone" value={supportSettings.supportPhone} onChange={handleSupportChange}
+                        placeholder="e.g. 9999999999, 8888888888"
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all" />
                     </div>
+                    <p className="text-[10px] text-gray-400 mt-1">To add multiple numbers, separate them with commas.</p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">WhatsApp Support</label>
@@ -1057,7 +1118,117 @@ const AdminSettings = () => {
             </motion.div>
           )
         }
+
+        {/* Welcome Video View - Super Admin Only */}
+        {activeView === 'welcome_video' && isSuperAdmin && (
+          <motion.div key="welcome_video" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
+            className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center">
+                  <FiVideo className="w-6 h-6 text-rose-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Welcome Page Video</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">This video plays as the full-screen background on the user welcome/splash screen.</p>
+                </div>
+              </div>
+
+              {/* Current Video Preview */}
+              {welcomeVideoUrl && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase">Current Video</p>
+                    <button
+                      onClick={handleRemoveWelcomeVideo}
+                      className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-semibold transition-colors"
+                    >
+                      <FiX className="w-3 h-3" /> Remove
+                    </button>
+                  </div>
+                  <div
+                    style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', background: '#000', borderRadius: '12px', overflow: 'hidden' }}
+                  >
+                    <video
+                      key={welcomeVideoUrl}
+                      src={welcomeVideoUrl}
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                      controls
+                      autoPlay
+                      muted
+                      playsInline
+                      loop
+                      preload="auto"
+                      onError={(e) => {
+                        console.error('Video preview error:', e);
+                        toast.error('Video could not load. The URL may be invalid or unsupported.');
+                      }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2 break-all">{welcomeVideoUrl}</p>
+                </div>
+              )}
+
+              {/* Upload Zone */}
+              {!welcomeVideoUrl && (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setVideoDragOver(true); }}
+                  onDragLeave={() => setVideoDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setVideoDragOver(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleVideoUpload(file);
+                  }}
+                  className={`relative border-2 border-dashed rounded-xl p-10 text-center transition-all ${
+                    videoDragOver
+                      ? 'border-rose-400 bg-rose-50'
+                      : 'border-gray-200 bg-gray-50 hover:border-rose-300 hover:bg-rose-50/40'
+                  }`}
+                >
+                  {videoUploading ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 border-4 border-rose-200 border-t-rose-600 rounded-full animate-spin" />
+                      <p className="text-sm font-semibold text-rose-700">Uploading video to cloud…</p>
+                      <p className="text-xs text-gray-400">This may take a few minutes for large files</p>
+                    </div>
+                  ) : (
+                    <>
+                      <FiUploadCloud className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-base font-semibold text-gray-700 mb-1">
+                        Upload welcome video
+                      </p>
+                      <p className="text-sm text-gray-400 mb-4">Drag & drop an MP4, WebM or MOV file here, or click to browse</p>
+                      <label className="inline-flex items-center gap-2 px-6 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold cursor-pointer hover:bg-rose-700 transition-colors shadow-lg shadow-rose-100">
+                        <FiVideo className="w-4 h-4" />
+                        Choose Video File
+                        <input
+                          type="file"
+                          accept="video/mp4,video/webm,video/quicktime"
+                          multiple={false}
+                          className="hidden"
+                          onChange={(e) => handleVideoUpload(e.target.files?.[0])}
+                        />
+                      </label>
+                      <p className="text-[11px] text-gray-400 mt-3">Maximum file size: 200MB • Formats: MP4, WebM, MOV</p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Info Banner */}
+              <div className="mt-4 flex gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                <span className="text-amber-500 text-xl">💡</span>
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">How it works</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Once uploaded, the video will automatically appear as the full-screen background when users open the app. If no video is set, the default built-in video is used.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence >
+
     </motion.div >
   );
 };

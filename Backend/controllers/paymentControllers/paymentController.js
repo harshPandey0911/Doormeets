@@ -140,6 +140,7 @@ const verifyPaymentWebhook = async (req, res) => {
       if (booking.vendorId) {
         const Vendor = require('../../models/Vendor');
         await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+        await Vendor.updateWorkStatus(booking.vendorId);
       }
     }
 
@@ -165,39 +166,61 @@ const verifyPaymentWebhook = async (req, res) => {
     // Fetch VendorBill for earnings (only if bill exists = post-completion payment)
     const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-    if (bill && booking.vendorId) {
-      const vendorEarning = bill.vendorTotalEarning;
+    try {
+      if (!booking.invoiceGenerated && booking.vendorId) {
+        const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
+        const transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
 
-      // Mark bill as paid
-      bill.status = 'paid';
-      bill.paidAt = new Date();
-      await bill.save();
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        const platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        const vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
 
-      // Online payment: only earnings increase, NO dues (platform holds the money)
-      await Vendor.findByIdAndUpdate(booking.vendorId, {
-        $inc: { 'wallet.earnings': vendorEarning }
-      });
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
 
-      // Earnings credit transaction
-      if (vendorEarning > 0) {
-        await Transaction.create({
-          vendorId: booking.vendorId,
-          bookingId: booking._id,
-          amount: vendorEarning,
-          type: 'earnings_credit',
-          paymentMethod: 'system',
-          status: 'completed',
-          description: `Earnings ₹${vendorEarning} credited for booking ${booking.bookingNumber} (online payment)`,
-          metadata: {
-            type: 'earnings_increase',
-            billId: bill._id.toString(),
-            serviceEarning: bill.vendorServiceEarning,
-            partsEarning: bill.vendorPartsEarning
-          }
+        const vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+
+        // Mark booking as invoice generated
+        booking.invoiceGenerated = true;
+        await booking.save();
+
+        // Online payment: only earnings increase, NO dues (platform holds the money)
+        await Vendor.findByIdAndUpdate(booking.vendorId, {
+          $inc: { 'wallet.earnings': vendorEarning }
         });
-      }
 
-      console.log(`[Payment] Credited ₹${vendorEarning} to vendor ${booking.vendorId}`);
+        // Earnings credit transaction
+        if (vendorEarning > 0) {
+          await Transaction.create({
+            vendorId: booking.vendorId,
+            bookingId: booking._id,
+            amount: vendorEarning,
+            type: 'earnings_credit',
+            paymentMethod: 'system',
+            status: 'completed',
+            description: `Earnings ₹${vendorEarning} credited (base only) for booking ${booking.bookingNumber} (online payment)`,
+            metadata: {
+              type: 'earnings_increase',
+              billId: bill?._id?.toString(),
+              serviceEarning: vendorEarning,
+              partsEarning: 0,
+              transactionGroupId
+            }
+          });
+        }
+
+        if (bill) {
+          bill.vendorTotalEarning = vendorEarning;
+          bill.companyRevenue = platformInv ? platformInv.baseAmount : platformFeeAmount;
+          bill.status = 'paid';
+          bill.paidAt = new Date();
+          await bill.save();
+        }
+
+        console.log(`[Payment] Credited base ₹${vendorEarning} to vendor ${booking.vendorId} and generated invoices.`);
+      }
+    } catch (invoiceErr) {
+      console.error('[INVOICE FLOW ERROR] Invoice generation failed during webhook payment but booking completed:', invoiceErr);
     }
 
     // Record stats in the Daily Earning Tracker (Async)
@@ -344,56 +367,80 @@ const processWalletPayment = async (req, res) => {
     if ([BOOKING_STATUS.PENDING, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.AWAITING_PAYMENT].includes(booking.status)) {
       booking.status = BOOKING_STATUS.CONFIRMED;
     } else if (booking.status === BOOKING_STATUS.WORK_DONE) {
-      booking.status = BOOKING_STATUS.COMPLETED;
-      booking.completedAt = new Date();
-      
-      // Free up vendor availability if they were the assigned vendor
-      if (booking.vendorId) {
-        const Vendor = require('../../models/Vendor');
-        await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
-      }
-    }
+       booking.status = BOOKING_STATUS.COMPLETED;
+       booking.completedAt = new Date();
+       
+       // Free up vendor availability if they were the assigned vendor
+       if (booking.vendorId) {
+         const Vendor = require('../../models/Vendor');
+         await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+         await Vendor.updateWorkStatus(booking.vendorId);
+       }
+     }
 
     await booking.save();
 
-    // ── Credit Vendor Wallet from VendorBill (single source of truth) ──
+    // ── Credit Vendor Wallet and Generate Invoices (Dual-Invoice Flow with Safeguards) ──
     const Vendor = require('../../models/Vendor');
     const VendorBill = require('../../models/VendorBill');
 
     const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-    if (bill && booking.vendorId) {
-      const vendorEarning = bill.vendorTotalEarning;
+    try {
+      if (!booking.invoiceGenerated && booking.vendorId) {
+        const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
+        const transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
 
-      // Mark bill as paid
-      bill.status = 'paid';
-      bill.paidAt = new Date();
-      await bill.save();
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        const platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        const vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
 
-      // Wallet payment: only earnings increase, NO dues (platform holds the money)
-      await Vendor.findByIdAndUpdate(booking.vendorId, {
-        $inc: { 'wallet.earnings': vendorEarning }
-      });
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
 
-      if (vendorEarning > 0) {
-        await Transaction.create({
-          vendorId: booking.vendorId,
-          bookingId: booking._id,
-          amount: vendorEarning,
-          type: 'earnings_credit',
-          paymentMethod: 'system',
-          status: 'completed',
-          description: `Earnings ₹${vendorEarning} credited for booking ${booking.bookingNumber} (wallet payment)`,
-          metadata: {
-            type: 'earnings_increase',
-            billId: bill._id.toString(),
-            serviceEarning: bill.vendorServiceEarning,
-            partsEarning: bill.vendorPartsEarning
-          }
+        const vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+
+        // Mark booking as invoice generated
+        booking.invoiceGenerated = true;
+        await booking.save();
+
+        // Increment vendor wallet by baseAmount ONLY
+        await Vendor.findByIdAndUpdate(booking.vendorId, {
+          $inc: { 'wallet.earnings': vendorEarning }
         });
-      }
 
-      console.log(`[Wallet Payment] Credited ₹${vendorEarning} to vendor ${booking.vendorId}`);
+        // Save Transaction ledger entry
+        if (vendorEarning > 0) {
+          await Transaction.create({
+            vendorId: booking.vendorId,
+            bookingId: booking._id,
+            amount: vendorEarning,
+            type: 'earnings_credit',
+            paymentMethod: 'system',
+            status: 'completed',
+            description: `Earnings ₹${vendorEarning} credited (base only) for booking ${booking.bookingNumber} (wallet payment)`,
+            metadata: {
+              type: 'earnings_increase',
+              billId: bill?._id?.toString(),
+              serviceEarning: vendorEarning,
+              partsEarning: 0,
+              transactionGroupId
+            }
+          });
+        }
+
+        if (bill) {
+          bill.vendorTotalEarning = vendorEarning;
+          bill.companyRevenue = platformInv ? platformInv.baseAmount : platformFeeAmount;
+          bill.status = 'paid';
+          bill.paidAt = new Date();
+          await bill.save();
+        }
+
+        console.log(`[Wallet Payment] Credited base ₹${vendorEarning} to vendor ${booking.vendorId} and generated invoices.`);
+      }
+    } catch (invoiceErr) {
+      console.error('[INVOICE FLOW ERROR] Invoice generation failed during wallet payment but booking completed:', invoiceErr);
     }
 
     // Record stats in the Daily Earning Tracker (Async)

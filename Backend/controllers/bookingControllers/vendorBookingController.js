@@ -126,7 +126,7 @@ const getVendorBookings = async (req, res) => {
 
     // ── Populate only required fields ──
     await Booking.populate(bookings, [
-      { path: 'userId', select: 'name phone', options: { lean: true } },
+      { path: 'userId', select: 'name', options: { lean: true } },
       { path: 'workerId', select: 'name', options: { lean: true } },
       {
         path: 'serviceId',
@@ -188,10 +188,23 @@ const getBookingById = async (req, res) => {
     const Bid = require('../../models/Bid');
     const existingBid = await Bid.findOne({ bookingId: id, vendorId });
 
+    const bookingData = booking.toObject();
+    const allowedStatuses = ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
+    const isAccepted = allowedStatuses.includes(booking.status) && booking.vendorId && booking.vendorId._id.toString() === vendorId.toString();
+    if (!isAccepted) {
+      if (bookingData.userId) {
+        bookingData.userId.phone = undefined;
+        bookingData.userId.email = undefined;
+      }
+      if (bookingData.workerId) {
+        bookingData.workerId.phone = undefined;
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
-        ...booking.toObject(),
+        ...bookingData,
         hasSubmittedBid: !!existingBid,
         myBid: existingBid,
         isSelfJob: !!(booking.assignedAt && !booking.workerId)
@@ -267,6 +280,19 @@ const acceptBooking = async (req, res) => {
     }
 
     // ── Original Direct Acceptance Flow (For non-bidding or already assigned) ──
+    const activeSelfJob = await Booking.findOne({
+      vendorId: vendorId,
+      isSelfJob: true,
+      status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement'] }
+    });
+
+    if (activeSelfJob) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have an active self-job. Complete it before accepting another.'
+      });
+    }
+
     const updatedBooking = await Booking.findOneAndUpdate(
       {
         _id: id,
@@ -278,7 +304,8 @@ const acceptBooking = async (req, res) => {
           vendorId: vendorId,
           acceptedAt: new Date(),
           // Check payment method for optimized status update logic
-          status: BOOKING_STATUS.CONFIRMED // Default to confirmed
+          status: BOOKING_STATUS.CONFIRMED, // Default to confirmed
+          isSelfJob: true
         }
       },
       { new: true } // Return updated doc
@@ -304,7 +331,7 @@ const acceptBooking = async (req, res) => {
 
     // Update vendor availability to ON_JOB
     const Vendor = require('../../models/Vendor');
-    await Vendor.findByIdAndUpdate(vendorId, { availability: 'ON_JOB' });
+    await Vendor.findByIdAndUpdate(vendorId, { availability: 'ON_JOB', workStatus: 'busy' });
 
     // Update BookingRequest statuses
     const BookingRequest = require('../../models/BookingRequest');
@@ -567,6 +594,22 @@ const assignWorker = async (req, res) => {
 
     // Handle "Assign to Self"
     if (workerId === 'SELF') {
+      if (!booking.isSelfJob) {
+        const activeSelfJob = await Booking.findOne({
+          vendorId: vendorId,
+          isSelfJob: true,
+          status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement'] }
+        });
+
+        if (activeSelfJob) {
+          return res.status(400).json({
+            success: false,
+            message: 'You already have an active self-job. Complete it before assigning another to yourself.'
+          });
+        }
+        booking.isSelfJob = true;
+      }
+
       booking.workerId = null; // null means vendor itself
       booking.assignedAt = new Date();
 
@@ -575,6 +618,9 @@ const assignWorker = async (req, res) => {
       }
 
       await booking.save();
+
+      const Vendor = require('../../models/Vendor');
+      await Vendor.findByIdAndUpdate(vendorId, { workStatus: 'busy' });
 
       // Notify User
       await createNotification({
@@ -637,6 +683,7 @@ const assignWorker = async (req, res) => {
     // Update booking
     booking.workerId = workerId;
     booking.assignedAt = new Date();
+    booking.isSelfJob = false;
 
     // Set status to ASSIGNED immediately. 
     // If worker rejects, respondToJob logic reverts it to CONFIRMED.
@@ -646,6 +693,9 @@ const assignWorker = async (req, res) => {
     booking.workerAcceptedAt = undefined;
 
     await booking.save();
+
+    const Vendor = require('../../models/Vendor');
+    await Vendor.updateWorkStatus(vendorId);
 
     // Send notification to user
     await createNotification({
@@ -747,6 +797,21 @@ const updateBookingStatus = async (req, res) => {
 
     // Validate status transition if status is changing
     if (status && status !== booking.status) {
+      // 2-minute cancellation limit for vendor after acceptance
+      if (status === BOOKING_STATUS.CANCELLED || status === 'cancelled') {
+        if (booking.acceptedAt) {
+          const acceptedTime = new Date(booking.acceptedAt).getTime();
+          const currentTime = Date.now();
+          const timeDiffMinutes = (currentTime - acceptedTime) / (1000 * 60);
+          if (timeDiffMinutes > 2) {
+            return res.status(400).json({
+              success: false,
+              message: 'Cannot cancel booking after 2 minutes of acceptance.'
+            });
+          }
+        }
+      }
+
       const validTransitions = {
         [BOOKING_STATUS.PENDING]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.REJECTED, BOOKING_STATUS.CANCELLED],
         [BOOKING_STATUS.AWAITING_PAYMENT]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED],
@@ -845,6 +910,7 @@ const updateBookingStatus = async (req, res) => {
         // Also free up the vendor's availability so they appear online to new users
         const Vendor = require('../../models/Vendor');
         await Vendor.findByIdAndUpdate(vendorId, { availability: 'AVAILABLE' });
+        await Vendor.updateWorkStatus(vendorId);
       } catch (statsErr) {
         console.error('Error updating vendor stats after status change:', statsErr);
       }
@@ -1227,11 +1293,12 @@ const completeSelfJob = async (req, res) => {
     // STEP 5: REVENUE SPLIT (internal only)
     // ═══════════════════════════════════════════
     // Vendor % is applied ONLY on base — never on GST
-
-    const vendorServiceEarning = parseFloat(((totalServiceBase * serviceSplitPct) / 100).toFixed(2));
-    const vendorPartsEarning = parseFloat(((totalPartsBase * partsSplitPct) / 100).toFixed(2));
-    const vendorTotalEarning = parseFloat((vendorServiceEarning + vendorPartsEarning).toFixed(2));
-    const companyRevenue = parseFloat((grandTotal - vendorTotalEarning).toFixed(2));
+    // TODO:
+    // New dual-invoice accounting logic will be implemented here.
+    const vendorServiceEarning = 0;
+    const vendorPartsEarning = 0;
+    const vendorTotalEarning = 0;
+    const companyRevenue = 0;
 
     // ═══════════════════════════════════════════
     // STEP 6: PERSIST BILL
@@ -1416,7 +1483,41 @@ const collectSelfCash = async (req, res) => {
     if (!bill) return res.status(500).json({ success: false, message: 'Bill not found — cannot process payment' });
 
     const grandTotal = Number(bill.grandTotal) || 0;
-    const vendorEarning = Number(bill.vendorTotalEarning) || 0;
+    
+    // ── Generate Invoices (Dual-Invoice Flow with Safeguards) ──
+    let vendorEarning = 0;
+    let platformFeeAmount = 0;
+    let vendorBaseAmount = 0;
+    let transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
+
+    try {
+      if (!booking.invoiceGenerated && booking.vendorId) {
+        const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
+        
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
+
+        vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+
+        // Mark booking as invoice generated
+        booking.invoiceGenerated = true;
+      } else {
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+        vendorEarning = vendorBaseAmount;
+      }
+    } catch (invoiceErr) {
+      console.error('[INVOICE FLOW ERROR] Invoice generation failed during cash collection but booking completed:', invoiceErr);
+      const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+      platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+      vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+      vendorEarning = vendorBaseAmount;
+    }
 
     // ── Update Booking status ──
     booking.status = BOOKING_STATUS.COMPLETED;
@@ -1431,6 +1532,8 @@ const collectSelfCash = async (req, res) => {
     await booking.save();
 
     // ── Update VendorBill status ──
+    bill.vendorTotalEarning = vendorEarning;
+    bill.companyRevenue = platformFeeAmount;
     bill.status = 'paid';
     bill.paidAt = new Date();
     await bill.save();
@@ -1482,11 +1585,12 @@ const collectSelfCash = async (req, res) => {
           billId: bill._id.toString(),
           grandTotal,
           vendorEarning,
-          companyRevenue: bill.companyRevenue
+          companyRevenue: platformFeeAmount,
+          transactionGroupId
         }
       });
 
-      // Transaction 2: Earnings Credit (Vendor's rightful share)
+      // Transaction 2: Earnings Credit (Vendor's rightful share - base only)
       if (vendorEarning > 0) {
         await Transaction.create({
           vendorId,
@@ -1495,12 +1599,13 @@ const collectSelfCash = async (req, res) => {
           amount: vendorEarning,
           status: 'completed',
           paymentMethod: 'wallet',
-          description: `Earnings ₹${vendorEarning} credited for booking #${booking.bookingNumber} (70% service + 10% parts)`,
+          description: `Earnings ₹${vendorEarning} credited (base only) for booking #${booking.bookingNumber}`,
           metadata: {
             type: 'earnings_increase',
             billId: bill._id.toString(),
-            serviceEarning: bill.vendorServiceEarning,
-            partsEarning: bill.vendorPartsEarning
+            serviceEarning: vendorEarning,
+            partsEarning: 0,
+            transactionGroupId
           }
         });
       }
@@ -1697,7 +1802,7 @@ const getPendingBookings = async (req, res) => {
         path: 'bookingId',
         match: { status: BOOKING_STATUS.SEARCHING, vendorId: null },
         populate: [
-          { path: 'userId', select: 'name phone' },
+          { path: 'userId', select: 'name' },
           {
             path: 'serviceId',
             select: 'title iconUrl categoryId',
@@ -1718,7 +1823,6 @@ const getPendingBookings = async (req, res) => {
       bookingNumber: req.bookingId.bookingNumber,
       serviceName: req.bookingId.serviceId?.title || req.bookingId.serviceName,
       customerName: req.bookingId.userId?.name,
-      customerPhone: req.bookingId.userId?.phone,
       scheduledDate: req.bookingId.scheduledDate,
       scheduledTime: req.bookingId.scheduledTime,
       address: req.bookingId.address,

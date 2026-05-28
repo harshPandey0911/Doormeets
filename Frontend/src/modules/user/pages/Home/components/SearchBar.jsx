@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { FiSearch, FiShoppingBag } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
-import NotificationBell from '../../../components/common/NotificationBell';
+import React, { useState, useEffect } from 'react';
+import { FiSearch } from 'react-icons/fi';
 import { themeColors } from '../../../../../theme';
 
 const SearchBar = ({ onInputClick }) => {
-  const navigate = useNavigate();
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [currentServiceIndex, setCurrentServiceIndex] = useState(0);
@@ -48,7 +45,7 @@ const SearchBar = ({ onInputClick }) => {
   }, [displayedText, isTyping, currentServiceIndex]);
 
   return (
-    <div className="flex items-center gap-3 w-full min-w-0">
+    <div className="flex items-center w-full min-w-0">
       <div className="flex-1 min-w-0 relative cursor-pointer" onClick={onInputClick}>
         <div className="relative w-full group">
           {/* Glow effect on hover */}
@@ -97,11 +94,6 @@ const SearchBar = ({ onInputClick }) => {
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Notification Icon */}
-      <div className="shrink-0 flex items-center gap-3">
-        <NotificationBell />
       </div>
     </div>
   );

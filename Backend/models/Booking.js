@@ -373,7 +373,13 @@ const bookingSchema = new mongoose.Schema({
   // 13. NOTES
   // ==========================================
   vendorNotes: { type: String, default: null },
-  workerNotes: { type: String, default: null }
+  workerNotes: { type: String, default: null },
+
+  // Workload and capacity status tracking
+  isSelfJob: {
+    type: Boolean,
+    default: false
+  }
 
 }, {
   timestamps: true

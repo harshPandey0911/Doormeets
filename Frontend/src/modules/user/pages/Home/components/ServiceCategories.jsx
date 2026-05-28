@@ -1,11 +1,5 @@
 import React from 'react';
 import CategoryCard from '../../../components/common/CategoryCard';
-import electricianIcon from '../../../../../assets/images/icons/services/electrician.png';
-import womensSalonIcon from '../../../../../assets/images/icons/services/womens-salon-spa-icon.png';
-import massageMenIcon from '../../../../../assets/images/icons/services/massage-men-icon.png';
-import cleaningIcon from '../../../../../assets/images/icons/services/cleaning-icon.png';
-import electricianPlumberIcon from '../../../../../assets/images/icons/services/electrician-plumber-carpenter-icon.png';
-import acApplianceRepairIcon from '../../../../../assets/images/icons/services/ac-appliance-repair-icon.png';
 
 const toAssetUrl = (url) => {
   if (!url) return '';
@@ -18,52 +12,47 @@ const toAssetUrl = (url) => {
 const ServiceCategories = React.memo(({ 
   categories, 
   onCategoryClick, 
-  onSeeAllClick,
   title = "Service Categories",
   subtitle = "Premium Home Services"
 }) => {
-
-
   if (!Array.isArray(categories) || categories.length === 0) {
     return null;
   }
 
-  const serviceCategories = categories.map((cat) => ({
+  const displayCategories = categories.map(cat => ({
     ...cat,
     icon: toAssetUrl(cat.icon || cat.image),
   }));
 
   return (
-    <div className="px-5">
-      {/* Section Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex flex-col">
-          <h2 className="text-[20px] font-black text-gray-900 tracking-tight flex items-center gap-2">
-            {title}
-            <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(40,116,240,0.5)]"></div>
-          </h2>
-          <p className="text-[11px] text-gray-400 font-bold uppercase tracking-[0.15em] -mt-0.5">{subtitle}</p>
-        </div>
-
-      </div>
-
-      {/* Professional Grid Layout */}
-      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-y-7 gap-x-3">
-        {serviceCategories.map((category, index) => {
-          const iconSrc = category.icon;
+    <div className="px-5 w-full">
+      {/* Horizontal Scroll Layout on mobile, beautiful clean scrollbar-hidden layout */}
+      <div className="flex items-start gap-4 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory -mx-5 px-5">
+        {displayCategories.map((category, index) => {
           return (
-            <div key={category.id || index} className="flex justify-center h-full">
+            <div 
+              key={category.id || index} 
+              className="flex-shrink-0 snap-start"
+              style={{ width: '76px' }}
+            >
               <CategoryCard
                 title={category.title}
-                icon={iconSrc ? (
-                  <img
-                    src={iconSrc}
-                    alt={category.title}
-                    className="w-12 h-12 object-contain group-hover:rotate-12 transition-transform duration-500 will-change-transform"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : null}
+                icon={
+                  category.icon ? (
+                    <img
+                      src={category.icon}
+                      alt={category.title}
+                      className="w-12 h-12 object-contain group-hover:scale-110 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 flex items-center justify-center bg-blue-50/50 rounded-2xl group-hover:bg-blue-50 transition-colors">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                  )
+                }
                 onClick={() => onCategoryClick?.(category)}
                 hasSaleBadge={category.hasSaleBadge}
                 index={index}
@@ -72,9 +61,6 @@ const ServiceCategories = React.memo(({
           );
         })}
       </div>
-
-      {/* Subtle Bottom Separator */}
-      <div className="mt-10 h-[1px] w-full bg-gradient-to-r from-transparent via-gray-100 to-transparent"></div>
     </div>
   );
 });

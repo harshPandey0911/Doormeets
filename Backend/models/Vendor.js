@@ -285,6 +285,12 @@ const vendorSchema = new mongoose.Schema({
     default: false,
     index: true
   },
+  workStatus: {
+    type: String,
+    enum: ["available", "busy"],
+    default: "available",
+    index: true
+  },
   lastSeenAt: {
     type: Date,
     default: null
@@ -430,6 +436,21 @@ vendorSchema.pre('save', async function (next) {
 // Compare password method
 vendorSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Static method to update workload status based on active self jobs
+vendorSchema.statics.updateWorkStatus = async function (vendorId) {
+  if (!vendorId) return;
+  const Booking = mongoose.model('Booking');
+  const activeSelfJob = await Booking.findOne({
+    vendorId: vendorId,
+    isSelfJob: true,
+    status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement'] }
+  });
+
+  const newStatus = activeSelfJob ? 'busy' : 'available';
+  await this.findByIdAndUpdate(vendorId, { workStatus: newStatus });
+  return newStatus;
 };
 
 module.exports = mongoose.model('Vendor', vendorSchema);

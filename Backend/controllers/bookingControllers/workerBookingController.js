@@ -641,6 +641,7 @@ const collectCash = async (req, res) => {
         }
 
         await Vendor.findByIdAndUpdate(booking.vendorId, updateQuery);
+        await Vendor.updateWorkStatus(booking.vendorId);
 
         // Create Transactions
         const Transaction = require('../../models/Transaction');

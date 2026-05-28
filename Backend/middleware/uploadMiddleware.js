@@ -109,9 +109,73 @@ const handleMulterError = (err, req, res, next) => {
   next();
 };
 
+// Video file filter
+const videoFilter = (req, file, cb) => {
+  const allowedMimes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only video files (mp4, webm, mov) are allowed!'), false);
+  }
+};
+
+// Video upload using memory storage + Cloudinary stream (reliable for videos)
+const videoMemoryUpload = multer({
+  storage: memoryStorage,
+  fileFilter: videoFilter,
+  limits: {
+    fileSize: 200 * 1024 * 1024 // 200MB limit for videos
+  }
+}).single('file');
+
+// Middleware: upload video buffer to Cloudinary as resource_type: 'video'
+const uploadVideo = (req, res, next) => {
+  videoMemoryUpload(req, res, async (err) => {
+    if (err) return next(err);
+    if (!req.file) return next();
+
+    try {
+      const { Readable } = require('stream');
+      const publicId = 'welcome-video';
+
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'video',
+            folder: 'appzeto/videos',
+            public_id: publicId,
+            overwrite: true,
+            invalidate: true
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+
+        const readable = new Readable();
+        readable.push(req.file.buffer);
+        readable.push(null);
+        readable.pipe(uploadStream);
+      });
+
+      // Attach Cloudinary result to req.file like multer-storage-cloudinary does
+      req.file.path = uploadResult.secure_url;
+      req.file.secure_url = uploadResult.secure_url;
+      req.file.public_id = uploadResult.public_id;
+      console.log('[uploadVideo] Cloudinary result:', uploadResult.secure_url);
+      next();
+    } catch (uploadErr) {
+      console.error('[uploadVideo] Cloudinary upload failed:', uploadErr);
+      next(uploadErr);
+    }
+  });
+};
+
 module.exports = {
   uploadImage,
   uploadProfilePhoto,
   uploadDocuments,
+  uploadVideo,
   handleMulterError
 };

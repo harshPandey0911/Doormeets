@@ -27,6 +27,11 @@ const checkSubscription = async (req, res, next) => {
   try {
     if (req.userRole !== USER_ROLES.VENDOR) return next();
 
+    // Allow profile and address routes to bypass subscription check so vendors can onboard or view status
+    if (req.path.includes('/profile') || req.path.includes('/address')) {
+      return next();
+    }
+
     const Vendor = require('../models/Vendor');
     const vendor = await Vendor.findById(req.userId);
 

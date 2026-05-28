@@ -90,21 +90,22 @@ const PremiumCategoryPage = () => {
     loadSubCategories();
   }, [activeCategory, currentCity]);
 
+  // 2) Fetch brands when category or activeSubCategory changes
   useEffect(() => {
-    // 2) fetch brands & services when category or activeSubCategory changes
-    const loadCatalogForSelection = async () => {
+    const loadBrands = async () => {
       if (!activeCategory) return;
       try {
         const categoryId = activeCategory.id || activeCategory._id;
         const subCatId = activeSubCategory?.id || activeSubCategory?._id || '';
 
-        const [brandRes, serviceRes] = await Promise.allSettled([
-          publicCatalogService.getBrands({ categoryId, subCategoryId: subCatId, cityId: currentCity?._id || currentCity?.id }),
-          publicCatalogService.getServices({ categoryId, subCategoryId: subCatId, cityId: currentCity?._id || currentCity?.id })
-        ]);
+        const brandRes = await publicCatalogService.getBrands({ 
+          categoryId, 
+          subCategoryId: subCatId, 
+          cityId: currentCity?._id || currentCity?.id 
+        });
 
-        if (brandRes.status === 'fulfilled' && brandRes.value?.success) {
-          const rawBrands = brandRes.value.brands || [];
+        if (brandRes?.success) {
+          const rawBrands = brandRes.brands || [];
           const filtered = rawBrands.filter((brand) => {
             if (subCatId) {
               if (brand.subCategoryId && String(brand.subCategoryId) === String(subCatId)) return true;
@@ -127,14 +128,48 @@ const PremiumCategoryPage = () => {
             image: toAssetUrl(brand.iconUrl || brand.icon)
           }));
           setBrands(mapped);
-          setActiveBrand(mapped[0] || null);
+          
+          // Only change active brand if none selected or the currently selected one is not in the new list
+          if (mapped.length > 0) {
+            const stillExists = activeBrand && mapped.some(b => String(b.id) === String(activeBrand.id));
+            if (!stillExists) {
+              setActiveBrand(mapped[0]);
+            }
+          } else {
+            setActiveBrand(null);
+          }
         } else {
           setBrands([]);
           setActiveBrand(null);
         }
+      } catch (error) {
+        console.error('Category brands load error', error);
+        setBrands([]);
+        setActiveBrand(null);
+      }
+    };
 
-        if (serviceRes.status === 'fulfilled' && serviceRes.value?.success) {
-          let rawServices = (serviceRes.value.services || []);
+    loadBrands();
+  }, [activeCategory, currentCity, activeSubCategory]);
+
+  // 3) Fetch services when category, activeSubCategory, or activeBrand changes
+  useEffect(() => {
+    const loadServices = async () => {
+      if (!activeCategory) return;
+      try {
+        const categoryId = activeCategory.id || activeCategory._id;
+        const subCatId = activeSubCategory?.id || activeSubCategory?._id || '';
+        const brandId = activeBrand?.id || activeBrand?._id || '';
+
+        const serviceRes = await publicCatalogService.getServices({ 
+          categoryId, 
+          subCategoryId: subCatId, 
+          brandId,
+          cityId: currentCity?._id || currentCity?.id 
+        });
+
+        if (serviceRes?.success) {
+          let rawServices = (serviceRes.services || []);
           if (activeSubCategory) {
             rawServices = rawServices.filter(s => {
               if (!s) return false;
@@ -161,14 +196,13 @@ const PremiumCategoryPage = () => {
           setServices([]);
         }
       } catch (error) {
-        console.error('Category catalog load error', error);
-        setBrands([]);
+        console.error('Category services load error', error);
         setServices([]);
       }
     };
 
-    loadCatalogForSelection();
-  }, [activeCategory, currentCity, activeSubCategory]);
+    loadServices();
+  }, [activeCategory, currentCity, activeSubCategory, activeBrand]);
 
   const quantities = useMemo(() => {
     const map = {};

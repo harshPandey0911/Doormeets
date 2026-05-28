@@ -309,10 +309,12 @@ exports.confirmCashCollection = async (req, res) => {
     const bill = await VendorBill.findOne({ bookingId: booking._id });
 
     let vendorEarning = 0;
+    let platformFeeAmount = 0;
+    let vendorBaseAmount = 0;
     let grandTotal = collectionAmount;
+    let transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
 
     if (bill) {
-      vendorEarning = Number(bill.vendorTotalEarning) || 0;
       grandTotal = Number(bill.grandTotal) || 0;
 
       // Sync booking fields from bill to ensure data consistency
@@ -321,8 +323,41 @@ exports.confirmCashCollection = async (req, res) => {
       booking.visitingCharges = bill.visitingCharges;
       booking.finalAmount = bill.grandTotal;
       booking.userPayableAmount = bill.grandTotal;
+    }
 
+    try {
+      if (!booking.invoiceGenerated && booking.vendorId) {
+        const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
+
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
+
+        vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+
+        // Mark booking as invoice generated
+        booking.invoiceGenerated = true;
+      } else {
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+        vendorEarning = vendorBaseAmount;
+      }
+    } catch (invoiceErr) {
+      console.error('[INVOICE FLOW ERROR] Invoice generation failed during confirm cash collection but booking completed:', invoiceErr);
+      const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+      platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+      vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+      vendorEarning = vendorBaseAmount;
+    }
+
+    if (bill) {
       // Mark bill as paid
+      bill.vendorTotalEarning = vendorEarning;
+      bill.companyRevenue = platformFeeAmount;
       bill.status = 'paid';
       bill.paidAt = new Date();
       await bill.save();
@@ -383,6 +418,7 @@ exports.confirmCashCollection = async (req, res) => {
       }
 
       await Vendor.findByIdAndUpdate(vendorId, walletUpdate, { runValidators: false });
+      await Vendor.updateWorkStatus(vendorId);
 
       // Record Transaction - Cash Collected
       try {
@@ -400,15 +436,15 @@ exports.confirmCashCollection = async (req, res) => {
             collectedBy: userRole,
             billId: bill?._id?.toString(),
             vendorEarning,
-            companyRevenue: bill?.companyRevenue
+            companyRevenue: platformFeeAmount,
+            transactionGroupId
           }
         });
       } catch (txnErr) {
         console.error('[ConfirmCash] Transaction 1 (cash_collected) failed:', txnErr);
-        // We don't throw here to ensure the payment status remains 'completed' since booking.save and Vendor update already finished
       }
 
-      // Record Transaction - Earnings Credit
+      // Record Transaction - Earnings Credit (base only)
       if (vendorEarning > 0) {
         try {
           await Transaction.create({
@@ -417,13 +453,14 @@ exports.confirmCashCollection = async (req, res) => {
             amount: vendorEarning,
             type: 'earnings_credit',
             paymentMethod: 'system',
-            description: `Earnings ₹${vendorEarning} credited for booking ${booking.bookingNumber}`,
+            description: `Earnings ₹${vendorEarning} credited (base only) for booking ${booking.bookingNumber}`,
             status: 'completed',
             metadata: {
               type: 'earnings_increase',
               billId: bill?._id?.toString(),
-              serviceEarning: bill?.vendorServiceEarning,
-              partsEarning: bill?.vendorPartsEarning
+              serviceEarning: vendorEarning,
+              partsEarning: 0,
+              transactionGroupId
             }
           });
         } catch (txnErr) {
@@ -552,26 +589,60 @@ exports.verifyOnlinePayment = async (req, res) => {
 
         await booking.save();
 
-        // 2. Handle Earnings & Wallet
+        // 2. Generate Invoices (Dual-Invoice Flow with Safeguards) & Wallet Update
         const VendorBill = require('../../models/VendorBill');
         const bill = await VendorBill.findOne({ bookingId: booking._id });
 
         let vendorEarning = 0;
+        let platformFeeAmount = 0;
+        let vendorBaseAmount = 0;
+        let transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
+
         if (bill) {
-          vendorEarning = bill.vendorTotalEarning;
-          
           // Sync booking fields from bill to ensure data consistency
           booking.basePrice = bill.originalServiceBase;
           booking.tax = bill.originalGST + bill.vendorServiceGST + bill.partsGST;
           booking.visitingCharges = bill.visitingCharges;
           booking.finalAmount = bill.grandTotal;
           booking.userPayableAmount = bill.grandTotal;
-          
+        }
+
+        try {
+          if (!booking.invoiceGenerated && booking.vendorId) {
+            const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
+
+            const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+            platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+            vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+
+            const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+            const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
+
+            vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+
+            // Mark booking as invoice generated
+            booking.invoiceGenerated = true;
+            await booking.save();
+          } else {
+            const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+            platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+            vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+            vendorEarning = vendorBaseAmount;
+          }
+        } catch (invoiceErr) {
+          console.error('[INVOICE FLOW ERROR] Invoice generation failed during verify online payment but booking completed:', invoiceErr);
+          const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+          platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+          vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+          vendorEarning = vendorBaseAmount;
+        }
+
+        if (bill) {
+          bill.vendorTotalEarning = vendorEarning;
+          bill.companyRevenue = platformFeeAmount;
           bill.status = 'paid';
           bill.paidAt = new Date();
           await bill.save();
-        } else {
-          vendorEarning = booking.finalAmount * 0.8;
         }
 
         const vendorId = booking.vendorId;
@@ -579,6 +650,7 @@ exports.verifyOnlinePayment = async (req, res) => {
         await Vendor.findByIdAndUpdate(vendorId, {
           $inc: { 'wallet.earnings': vendorEarning }
         });
+        await Vendor.updateWorkStatus(vendorId);
 
         // 3. Transactions
         await Transaction.create({
@@ -604,10 +676,11 @@ exports.verifyOnlinePayment = async (req, res) => {
             type: 'earnings_credit',
             paymentMethod: 'system',
             status: 'completed',
-            description: `Earnings credited for online booking #${booking.bookingNumber}`,
+            description: `Earnings ₹${vendorEarning} credited (base only) for online booking #${booking.bookingNumber}`,
             metadata: {
               type: 'online_earning',
-              billId: bill?._id?.toString()
+              billId: bill?._id?.toString(),
+              transactionGroupId
             }
           });
         }
@@ -696,32 +769,67 @@ exports.confirmManualOnlinePayment = async (req, res) => {
     booking.completedAt = new Date();
     await booking.save();
 
-    // 2. Handle Earnings & Wallet (Reuse logic)
+    // 2. Generate Invoices (Dual-Invoice Flow with Safeguards) & Wallet Update
     const VendorBill = require('../../models/VendorBill');
     const bill = await VendorBill.findOne({ bookingId: booking._id });
 
     let vendorEarning = 0;
+    let platformFeeAmount = 0;
+    let vendorBaseAmount = 0;
+    let transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
+
     if (bill) {
-      vendorEarning = bill.vendorTotalEarning;
-      
       // Sync booking fields from bill to ensure data consistency
       booking.basePrice = bill.originalServiceBase;
       booking.tax = bill.originalGST + bill.vendorServiceGST + bill.partsGST;
       booking.visitingCharges = bill.visitingCharges;
       booking.finalAmount = bill.grandTotal;
       booking.userPayableAmount = bill.grandTotal;
+    }
 
+    try {
+      if (!booking.invoiceGenerated && booking.vendorId) {
+        const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
+
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
+
+        vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+
+        // Mark booking as invoice generated
+        booking.invoiceGenerated = true;
+        await booking.save();
+      } else {
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+        vendorEarning = vendorBaseAmount;
+      }
+    } catch (invoiceErr) {
+      console.error('[INVOICE FLOW ERROR] Invoice generation failed during manual QR confirmation but booking completed:', invoiceErr);
+      const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+      platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+      vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+      vendorEarning = vendorBaseAmount;
+    }
+
+    if (bill) {
+      bill.vendorTotalEarning = vendorEarning;
+      bill.companyRevenue = platformFeeAmount;
       bill.status = 'paid';
       bill.paidAt = new Date();
       await bill.save();
-    } else {
-      vendorEarning = booking.finalAmount * 0.8;
     }
 
     const vendorId = booking.vendorId;
     await Vendor.findByIdAndUpdate(vendorId, {
       $inc: { 'wallet.earnings': vendorEarning }
     });
+    await Vendor.updateWorkStatus(vendorId);
 
     // 3. Transactions
     await Transaction.create({
@@ -744,8 +852,12 @@ exports.confirmManualOnlinePayment = async (req, res) => {
         type: 'earnings_credit',
         paymentMethod: 'system',
         status: 'completed',
-        description: `Earnings credited for manual online booking #${booking.bookingNumber}`,
-        metadata: { type: 'online_earning', billId: bill?._id?.toString() }
+        description: `Earnings ₹${vendorEarning} credited (base only) for manual online booking #${booking.bookingNumber}`,
+        metadata: {
+          type: 'online_earning',
+          billId: bill?._id?.toString(),
+          transactionGroupId
+        }
       });
     }
 

@@ -351,6 +351,7 @@ export const publicCatalogService = {
     if (params.brandSlug) queryParams.append('brandSlug', params.brandSlug);
     if (params.categoryId) queryParams.append('categoryId', params.categoryId);
     if (params.subCategoryId) queryParams.append('subCategoryId', params.subCategoryId);
+    if (params.cityId) queryParams.append('cityId', params.cityId);
     
     // Add user location if available for proximity-based filtering
     const lat = localStorage.getItem('user_lat');
@@ -366,7 +367,7 @@ export const publicCatalogService = {
 
     const response = await api.get(`/public/services${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 120);
+      apiCache.set(cacheKey, response.data, 0); // Disable cache for instant updates
     }
     return response.data;
   },

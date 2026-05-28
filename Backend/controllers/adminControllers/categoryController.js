@@ -279,6 +279,7 @@ const createCategory = async (req, res) => {
         status: category.status,
         isPopular: category.isPopular,
         categoryType: category.categoryType,
+        interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }
@@ -422,6 +423,7 @@ const updateCategory = async (req, res) => {
         isPopular: category.isPopular,
         categoryType: category.categoryType,
         vendorId: category.vendorId,
+        interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }

@@ -49,18 +49,32 @@ const createOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Plan not found' });
     }
 
+    const basePrice = plan.price;
+    const gstRate = 0.18;
+    const gstAmount = Math.round(basePrice * gstRate * 100) / 100;
+    const totalAmount = basePrice + gstAmount;
+
     const options = {
-      amount: Math.round(plan.price * 100), // amount in paise
+      amount: Math.round(totalAmount * 100), // amount in paise (including 18% GST)
       currency: "INR",
       receipt: `rcpt_${vendorId.toString().slice(-5)}_${Date.now()}`,
     };
 
-    console.log('DEBUG: Razorpay Options:', options);
+    console.log(`DEBUG: Razorpay Options (Base: ${basePrice}, GST 18%: ${gstAmount}, Total: ${totalAmount}):`, options);
 
     const razorpay = getRazorpayInstance();
     const order = await razorpay.orders.create(options);
     console.log('DEBUG: Razorpay Order Created:', order.id);
-    res.status(200).json({ success: true, order });
+    
+    res.status(200).json({ 
+      success: true, 
+      order,
+      billingDetails: {
+        basePrice,
+        gstAmount,
+        totalAmount
+      }
+    });
   } catch (error) {
     console.error('Razorpay order creation error details:', error);
     res.status(500).json({ 
@@ -107,6 +121,11 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Plan not found' });
     }
 
+    const basePrice = plan.price;
+    const gstRate = 0.18;
+    const gstAmount = Math.round(basePrice * gstRate * 100) / 100;
+    const totalAmount = basePrice + gstAmount;
+
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(startDate.getDate() + parseInt(plan.duration));
@@ -128,7 +147,7 @@ const verifyPayment = async (req, res) => {
     const transaction = new SubscriptionTransaction({
       vendorId,
       planId,
-      amount: plan.price,
+      amount: totalAmount, // Save total paid amount (including 18% GST)
       razorpay_order_id,
       razorpay_payment_id,
       startDate,
@@ -137,12 +156,18 @@ const verifyPayment = async (req, res) => {
     await transaction.save();
 
     // Update Admin Wallet (Assuming the first Super Admin is the platform owner)
-    // Alternatively, update all super admins or a specific platform account.
-    // Let's update all super admins or the first one found.
     const admin = await Admin.findOne({ role: 'super_admin' });
     if (admin) {
-      admin.wallet = (admin.wallet || 0) + plan.price;
+      admin.wallet = (admin.wallet || 0) + totalAmount; // Admin receives total amount
       await admin.save();
+    }
+
+    // Generate Subscription Invoice with Failure Isolation
+    try {
+      const { generateSubscriptionInvoice } = require('../../services/invoiceService');
+      await generateSubscriptionInvoice(vendorId, basePrice);
+    } catch (invoiceErr) {
+      console.error('[INVOICE FLOW ERROR] Subscription invoice generation failed but subscription activated:', invoiceErr);
     }
 
     res.status(200).json({ 

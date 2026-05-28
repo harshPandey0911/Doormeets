@@ -184,10 +184,12 @@ const createOrUpdateBill = async (req, res) => {
     // ═══════════════════════════════════════
     // 5. REVENUE SPLIT (% applied on BASE only)
     // ═══════════════════════════════════════
-    const vendorServiceEarning = parseFloat(((totalServiceBaseForEarnings * serviceSplitPct) / 100).toFixed(2));
-    const vendorPartsEarning = parseFloat(((totalPartsBase * partsSplitPct) / 100).toFixed(2));
-    const vendorTotalEarning = parseFloat((vendorServiceEarning + vendorPartsEarning).toFixed(2));
-    const companyRevenue = parseFloat((grandTotal - vendorTotalEarning).toFixed(2));
+    // TODO:
+    // New dual-invoice accounting logic will be implemented here.
+    const vendorServiceEarning = 0;
+    const vendorPartsEarning = 0;
+    const vendorTotalEarning = 0;
+    const companyRevenue = 0;
 
     // ═══════════════════════════════════════
     // 6. ALL SERVICES (original + vendor-added)

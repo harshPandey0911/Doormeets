@@ -403,12 +403,14 @@ const submitTest = async (req, res) => {
     });
 
     // ── Update Vendor ──
+    const levelNumber = levelAssigned === 'L1' ? 1 : levelAssigned === 'L2' ? 2 : 3;
     const vendorUpdate = {
       'training.status': passed ? 'completed' : 'failed',
       'training.completedAt': passed ? new Date() : null,
       'training.attemptCount': newAttemptNumber,
       'training.lastAttemptAt': new Date(),
       currentLevel: levelAssigned,
+      level: levelNumber,
       trainingScore: scorePercent
     };
 

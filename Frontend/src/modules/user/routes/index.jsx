@@ -54,7 +54,7 @@ const lazyLoad = (importFunc) => {
 };
 
 // Lazy load all user pages for code splitting with error handling
-const Home = lazyLoad(() => import('../pages/PremiumHome'));
+const Home = lazyLoad(() => import('../pages/Home'));
 const Rewards = lazyLoad(() => import('../pages/Rewards'));
 const Account = lazyLoad(() => import('../pages/Account'));
 const Native = lazyLoad(() => import('../pages/Native'));

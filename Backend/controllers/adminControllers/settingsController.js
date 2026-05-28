@@ -58,7 +58,8 @@ exports.updateSettings = async (req, res, next) => {
       // MCQ Test
       mcqTimeLimitMinutes,
       mcqMinScoreL1,
-      mcqMinScoreL2
+      mcqMinScoreL2,
+      welcomeVideoUrl
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -82,7 +83,8 @@ exports.updateSettings = async (req, res, next) => {
         cloudinaryApiKey,
         cloudinaryApiSecret,
         mcqMinScoreL1,
-        mcqMinScoreL2
+        mcqMinScoreL2,
+        welcomeVideoUrl
       });
     } else {
       // Update fields if provided
@@ -140,6 +142,7 @@ exports.updateSettings = async (req, res, next) => {
       if (mcqMinScoreL1 !== undefined) settings.mcqMinScoreL1 = mcqMinScoreL1;
       if (mcqMinScoreL2 !== undefined) undefined; // handled below
       if (mcqMinScoreL2 !== undefined) settings.mcqMinScoreL2 = mcqMinScoreL2;
+      if (welcomeVideoUrl !== undefined) settings.welcomeVideoUrl = welcomeVideoUrl;
 
       await settings.save();
     }
@@ -178,7 +181,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl');
 
     // Default if not found (fallback values)
     if (!settings) {

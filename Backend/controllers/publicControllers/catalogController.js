@@ -36,7 +36,7 @@ const getPublicCategories = async (req, res) => {
     const dbActiveCatTitlesSet = new Set(dbActiveCategories.map(c => c.title.toLowerCase().trim()));
 
     // Find all online and available vendors — filtered by city if cityId provided
-    let vendorFilterCat = { isOnline: true, availability: 'AVAILABLE' };
+    let vendorFilterCat = { isOnline: true, workStatus: 'available' };
     if (cityId) {
       const City = require('../../models/City');
       const cityDocCat = await City.findById(cityId).select('name').lean();
@@ -280,7 +280,7 @@ const getPublicBrands = async (req, res) => {
       .lean();
 
     // Find all online and available vendors, filtered by city if cityId provided
-    let vendorCityFilter = { isOnline: true, availability: 'AVAILABLE' };
+    let vendorCityFilter = { isOnline: true, workStatus: 'available' };
     if (cityId) {
       // Look up city name to match vendor's address.city string field
       const City = require('../../models/City');
@@ -423,7 +423,7 @@ const getPublicBrandBySlug = async (req, res) => {
 
     const brand = await Brand.findOne({ slug, status: 'active' })
       .populate('categoryIds', 'title slug')
-      .populate('vendorId', 'name businessName isOnline availability')
+      .populate('vendorId', 'name businessName isOnline availability workStatus')
       .lean();
 
     if (!brand) {
@@ -458,7 +458,7 @@ const getPublicBrandBySlug = async (req, res) => {
     const relatedBrands = await Brand.find({
       title: { $regex: `^${brand.title.trim()}$`, $options: 'i' },
       status: 'active'
-    }).populate('vendorId', 'name businessName isOnline availability location address geoLocation').lean();
+    }).populate('vendorId', 'name businessName isOnline availability workStatus location address geoLocation').lean();
 
     // Determine the closest brand/vendor if location is provided
     const { lat, lng } = req.query;
@@ -497,7 +497,7 @@ const getPublicBrandBySlug = async (req, res) => {
       title: { $in: serviceTitles.map(t => new RegExp(`${t}`, 'i')) },
       status: 'active'
     })
-      .populate('vendorId', 'name businessName isOnline availability location address geoLocation')
+      .populate('vendorId', 'name businessName isOnline availability workStatus location address geoLocation')
       .lean();
 
     // Deduplicate services by title, picking the one from the closest/best vendor
@@ -505,7 +505,7 @@ const getPublicBrandBySlug = async (req, res) => {
     allServices.forEach(svc => {
       const vendor = svc.vendorId;
       // STRICT CHECK: Only show Available vendors
-      if (!vendor || vendor.isOnline === false || vendor.availability !== 'AVAILABLE') return;
+      if (!vendor || vendor.isOnline === false || vendor.workStatus !== 'available') return;
 
       if (userLoc) {
         const vLat = vendor.location?.lat || vendor.address?.lat || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[1] : null);
@@ -599,7 +599,8 @@ const getPublicBrandBySlug = async (req, res) => {
         name: brand.vendorId.name,
         businessName: brand.vendorId.businessName,
         isOnline: brand.vendorId.isOnline,
-        availability: brand.vendorId.availability
+        availability: brand.vendorId.availability,
+        workStatus: brand.vendorId.workStatus
       } : null
     };
 
@@ -685,7 +686,7 @@ const getPublicServices = async (req, res) => {
       .lean();
 
     // Find online vendors filtered by city (if provided) so cross-city bleed doesn't happen
-    let svcVendorFilter = { isOnline: true, availability: 'AVAILABLE' };
+    let svcVendorFilter = { isOnline: true, workStatus: 'available' };
     const { cityId: svcCityId } = req.query;
     if (svcCityId) {
       const City = require('../../models/City');
@@ -794,6 +795,8 @@ const getPublicServices = async (req, res) => {
       success: true,
       services: activeServices.map(svc => ({
         id: svc._id.toString(),
+        categoryId: svc.categoryId?.toString() || null,
+        subCategoryId: svc.subCategoryId?.toString() || null,
         title: svc.title,
         slug: svc.slug,
         icon: svc.iconUrl,
@@ -923,7 +926,7 @@ const getPublicHomeData = async (req, res) => {
     const dbActiveCatTitlesForHome = new Set(dbActiveCategoriesForHome.map(c => c.title.toLowerCase().trim()));
 
     // 2. Find all online and available vendors, filtered by city if provided
-    let homeVendorFilter = { isOnline: true, availability: 'AVAILABLE' };
+    let homeVendorFilter = { isOnline: true, workStatus: 'available' };
     if (cityId) {
       const City = require('../../models/City');
       const homeCityDoc = await City.findById(cityId).select('name').lean();

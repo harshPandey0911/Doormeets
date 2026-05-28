@@ -66,6 +66,27 @@ const BookingDetails = () => {
     phone: ''
   });
 
+  const [cancellationTimeLeft, setCancellationTimeLeft] = useState(true);
+
+  // Cancellation window real-time timer check
+  useEffect(() => {
+    if (!booking || !booking.vendorId || !booking.acceptedAt) {
+      setCancellationTimeLeft(true);
+      return;
+    }
+
+    const checkTime = () => {
+      const acceptedTime = new Date(booking.acceptedAt).getTime();
+      const elapsedMs = Date.now() - acceptedTime;
+      const allowed = elapsedMs <= 2 * 60 * 1000; // 2 minutes
+      setCancellationTimeLeft(allowed);
+    };
+
+    checkTime();
+    const interval = setInterval(checkTime, 5000); // Check every 5 seconds
+    return () => clearInterval(interval);
+  }, [booking]);
+
   const socket = useAppNotifications();
 
   // Fetch support settings
@@ -1459,12 +1480,26 @@ const BookingDetails = () => {
 
             {/* Cancel */}
             {!['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && (
-              <button
-                onClick={handleCancelBooking}
-                className="col-span-2 py-4 rounded-2xl text-red-600 font-bold text-sm bg-red-50 border border-red-100 hover:bg-red-100 transition-colors active:scale-95"
-              >
-                Cancel Booking
-              </button>
+              <div className="col-span-2 space-y-2">
+                <button
+                  disabled={booking.vendorId && !cancellationTimeLeft}
+                  onClick={handleCancelBooking}
+                  className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors ${
+                    (booking.vendorId && !cancellationTimeLeft)
+                      ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                      : 'text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 active:scale-95'
+                  }`}
+                >
+                  Cancel Booking
+                </button>
+                {booking.vendorId && (
+                  <p className="text-[11px] text-center font-bold uppercase tracking-wider text-gray-400">
+                    {cancellationTimeLeft 
+                      ? '⚠️ Cancellation only allowed within 2 minutes of acceptance' 
+                      : '🚫 Cancellation window expired (exceeded 2 mins)'}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

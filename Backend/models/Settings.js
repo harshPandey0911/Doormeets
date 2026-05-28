@@ -204,6 +204,10 @@ const settingsSchema = new mongoose.Schema({
     default: 50, // >= 50% is Level 2 (passing mark)
     min: 0,
     max: 100
+  },
+  welcomeVideoUrl: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

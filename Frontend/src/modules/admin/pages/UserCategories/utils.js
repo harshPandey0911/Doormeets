@@ -163,6 +163,10 @@ export const ensureIds = (catalog) => {
       imageUrl: c.imageUrl || "",
       status: c.status || "active",
       isPopular: Boolean(c.isPopular),
+      interestedCount: Number.isFinite(c.interestedCount) ? c.interestedCount : 0,
+      hasBrands: c.hasBrands ?? true,
+      categoryType: c.categoryType || "service",
+      vendorId: c.vendorId || null,
     })),
     services: (catalog.services || []).map((s) => ({
       id: s.id || `usvc-${Date.now()}-${Math.random().toString(16).slice(2)}`,

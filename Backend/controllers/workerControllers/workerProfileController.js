@@ -116,7 +116,10 @@ const updateProfile = async (req, res) => {
         landmark: address.landmark || worker.address?.landmark || ''
       };
     }
-    if (status) worker.status = status;
+    if (status) {
+      worker.status = status;
+      worker.currentAvailability = status;
+    }
     // Update profile photo - upload to Cloudinary if it's a base64 string
     if (profilePhoto !== undefined) {
       if (profilePhoto && profilePhoto.startsWith('data:')) {

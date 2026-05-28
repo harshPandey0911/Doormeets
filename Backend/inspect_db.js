@@ -10,17 +10,14 @@ envContent.split('\n').forEach(line => {
   }
 });
 
-async function run() {
+async function inspect() {
   await mongoose.connect(env.MONGODB_URI);
-  const Category = require('./models/Category');
+  const Vendor = require('./models/Vendor');
   
-  const electrical = await Category.findOne({ title: 'Electrical' }).lean();
-  console.log('Electrical Category:', JSON.stringify(electrical, null, 2));
-
-  const electricity = await Category.findOne({ title: 'Electricity' }).lean();
-  console.log('Electricity Category:', JSON.stringify(electricity, null, 2));
+  const vendor = await Vendor.findById('6a16b5a9d1076d4f88f4b4f7').lean();
+  console.log('Vendor Devendra:', JSON.stringify(vendor, null, 2));
   
   process.exit(0);
 }
 
-run();
+inspect();

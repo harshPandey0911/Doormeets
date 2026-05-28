@@ -166,11 +166,21 @@ const Dashboard = () => {
 
   }, []);
 
-  const toggleAvailability = () => {
-    if (!socket) return;
-    const newStatus = workerProfile.currentAvailability === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+  const toggleAvailability = async () => {
+    const oldStatus = workerProfile.currentAvailability;
+    const newStatus = oldStatus === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
     setWorkerProfile(prev => ({ ...prev, currentAvailability: newStatus }));
-    socket.emit('set_availability', { status: newStatus });
+
+    try {
+      await workerService.updateProfile({ status: newStatus });
+      if (socket) {
+        socket.emit('set_availability', { status: newStatus });
+      }
+    } catch (err) {
+      console.error('Failed to update availability:', err);
+      // Revert UI state on failure
+      setWorkerProfile(prev => ({ ...prev, currentAvailability: oldStatus }));
+    }
   };
 
   // Socket Listener for New Jobs

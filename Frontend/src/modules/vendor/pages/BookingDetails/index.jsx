@@ -47,6 +47,29 @@ export default function BookingDetails() {
     type: 'warning'
   });
 
+  const [canCancel, setCanCancel] = useState(false);
+
+  useEffect(() => {
+    if (!booking?.acceptedAt) {
+      setCanCancel(false);
+      return;
+    }
+
+    const checkWindow = () => {
+      const acceptedTime = new Date(booking.acceptedAt).getTime();
+      const timeDiffMs = Date.now() - acceptedTime;
+      const twoMinutesMs = 2 * 60 * 1000;
+      // Show cancel button if accepted within last 2 minutes and in confirmatory status
+      const isCancellableStatus = ['confirmed', 'accepted', 'assigned'].includes(booking.status?.toLowerCase());
+      setCanCancel(timeDiffMs < twoMinutesMs && isCancellableStatus);
+    };
+
+    checkWindow();
+    const interval = setInterval(checkWindow, 1000);
+
+    return () => clearInterval(interval);
+  }, [booking?.acceptedAt, booking?.status]);
+
   useLayoutEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -332,6 +355,29 @@ export default function BookingDetails() {
         } catch (error) {
           console.error('Error updating status:', error);
           toast.error('Failed to update status. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  const handleCancelBooking = async () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Cancel Booking',
+      message: 'Are you sure you want to cancel this booking? This action cannot be undone.',
+      type: 'danger',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await updateBookingStatus(id, 'cancelled');
+          toast.success('Booking cancelled successfully.');
+          window.dispatchEvent(new Event('vendorJobsUpdated'));
+          loadBooking();
+        } catch (error) {
+          console.error('Error cancelling booking:', error);
+          toast.error(error.response?.data?.message || 'Failed to cancel booking.');
         } finally {
           setLoading(false);
         }
@@ -1516,6 +1562,16 @@ export default function BookingDetails() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
+          {canCancel && (
+            <button
+              onClick={handleCancelBooking}
+              className="w-full py-4 rounded-xl font-bold text-red-600 border-2 border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
+            >
+              <FiXCircle className="w-5 h-5 text-red-500 animate-pulse" />
+              Cancel Booking (Active for 2m)
+            </button>
+          )}
+
           <button
             onClick={handleViewTimeline}
             className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all active:scale-95"

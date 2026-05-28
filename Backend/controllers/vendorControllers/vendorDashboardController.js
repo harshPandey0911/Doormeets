@@ -156,7 +156,7 @@ const getDashboardStats = async (req, res) => {
 
     // 6. Fetch fresh vendor data for stats
     const Vendor = require('../../models/Vendor');
-    const vendorProfile = await Vendor.findById(vendorId).select('performanceScore level commissionRate isOnline isSubscriptionActive');
+    const vendorProfile = await Vendor.findById(vendorId).select('performanceScore level commissionRate isOnline isSubscriptionActive currentLevel');
 
     res.status(200).json({
       success: true,
@@ -176,11 +176,12 @@ const getDashboardStats = async (req, res) => {
           rating: parseFloat(rating.toFixed(1)),
           isOnline: vendorProfile?.isOnline ?? req.user.isOnline,
           isSubscriptionActive: vendorProfile?.isSubscriptionActive ?? req.user.isSubscriptionActive,
-          performanceScore: 100,
-          level: 1,
-          commissionRate: 0,
-          commissionRates: { level1: 0, level2: 0, level3: 0 },
-          platformFeeRates: { level1: 0, level2: 0, level3: 0 }
+          performanceScore: vendorProfile?.performanceScore ?? 100,
+          level: vendorProfile?.level ?? 3,
+          currentLevel: vendorProfile?.currentLevel || 'L3',
+          commissionRate: vendorProfile?.commissionRate ?? 15,
+          commissionRates: { level1: 10, level2: 15, level3: 20 },
+          platformFeeRates: { level1: 0.5, level2: 1.0, level3: 2.0 }
         },
         recentBookings
       }

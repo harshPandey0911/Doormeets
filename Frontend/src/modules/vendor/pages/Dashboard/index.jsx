@@ -39,6 +39,10 @@ const Dashboard = memo(() => {
     totalEarnings: 0,
     completedJobs: 0,
     rating: 0,
+    level: 3,
+    currentLevel: 'L3',
+    performanceScore: 100,
+    commissionRate: 15
   });
   const [isOnline, setIsOnline] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -185,6 +189,7 @@ const Dashboard = memo(() => {
       rating: apiStats.rating || 0,
       performanceScore: apiStats.performanceScore || 0,
       level: apiStats.level || 3,
+      currentLevel: apiStats.currentLevel || 'L3',
       commissionRate: apiStats.commissionRate || 15
     });
     
@@ -544,6 +549,72 @@ const Dashboard = memo(() => {
             </div>
           </div>
         )}
+
+        {/* Vendor Header Welcome & Level Badge Card */}
+        <div className="px-4 pt-4">
+          <div 
+            className="rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden border border-white/10"
+            style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+            }}
+          >
+            {/* Glowing accents */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex items-center gap-3 relative z-10">
+              {/* Profile Image / Initials */}
+              {vendorProfile.photo ? (
+                <img 
+                  src={vendorProfile.photo} 
+                  alt={vendorProfile.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/30 shadow-md"
+                />
+              ) : (
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg select-none border-2 border-purple-500/30 shadow-md text-white"
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)'
+                  }}
+                >
+                  {vendorProfile.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              <div>
+                <h2 className="text-base font-black text-white leading-tight">
+                  {vendorProfile.businessName || vendorProfile.name}
+                </h2>
+                <p className="text-[11px] font-semibold text-purple-300/80 uppercase tracking-wider mt-0.5">
+                  Partner ID: DM-{String(vendorProfile.name.slice(0,3)).toUpperCase()}-{stats.level}
+                </p>
+              </div>
+            </div>
+
+            {/* Badges Container */}
+            <div className="flex items-center relative z-10 shrink-0">
+              {/* Performance Level Badge */}
+              <span 
+                className="text-[11px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider text-white shadow-md animate-pulse"
+                style={{
+                  background: stats.level === 1 
+                    ? 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)' // Gold for Level 1
+                    : stats.level === 2
+                    ? 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)' // Silver for Level 2
+                    : 'linear-gradient(135deg, #b45309 0%, #78350f 100%)', // Bronze for Level 3
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  boxShadow: stats.level === 1 
+                    ? '0 4px 14px rgba(234, 179, 8, 0.4)' 
+                    : stats.level === 2 
+                    ? '0 4px 14px rgba(100, 116, 139, 0.4)' 
+                    : '0 4px 14px rgba(180, 83, 9, 0.4)'
+                }}
+              >
+                {stats.level === 1 ? '🥇 Level 1' : stats.level === 2 ? '🥈 Level 2' : '🥉 Level 3'}
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Stats Cards - Optimized Component */}
         <StatsCards stats={stats} />

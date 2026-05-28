@@ -75,6 +75,7 @@ const _buildVendorQuery = (filters = {}) => {
     approvalStatus: VENDOR_STATUS.APPROVED,
     isActive: true,
     isOnline: true, // Only fetch online vendors for bookings
+    workStatus: 'available',
     ...queryFilters
   };
 
@@ -138,7 +139,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
         const vendors = await Vendor.find({
           _id: { $in: vendorIds },
           ...baseQuery
-        }).select('name businessName phone address profilePhoto service rating isOnline availability geoLocation');
+        }).select('name businessName phone address profilePhoto service rating isOnline availability geoLocation level currentLevel');
 
         // Merge distance from cache
         const vendorMap = new Map(vendors.map(v => [v._id.toString(), v.toObject()]));
@@ -178,7 +179,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
             }
           }
         })
-          .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation settings')
+          .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation settings level currentLevel')
           .limit(50); // Increased limit as we filter below
 
         // Calculate distance for each vendor
@@ -195,10 +196,9 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
           return vendorObj;
         });
 
-        // Filter by individual vendor range
+        // Filter strictly by global search radius (ignore individual vendor range settings)
         nearbyVendors = nearbyVendors.filter(v => {
-          const vRange = v.settings?.serviceRange || radiusKm;
-          return v.distance <= vRange;
+          return v.distance !== null && v.distance <= radiusKm;
         });
 
         console.log(`[LocationService] Found ${nearbyVendors.length} vendors using 2dsphere query`);
@@ -210,7 +210,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
 
     // Fallback: Use Haversine formula (slower but works without geo index)
     const vendors = await Vendor.find(baseQuery)
-      .select('name businessName phone address location profilePhoto service rating isOnline availability settings');
+      .select('name businessName phone address location profilePhoto service rating isOnline availability settings level currentLevel');
 
     console.log(`[LocationService] Haversine fallback: found ${vendors.length} vendors matching baseQuery before distance filter`);
 
@@ -229,11 +229,10 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
         });
       }
 
-      const vRange = vendor.settings?.serviceRange || radiusKm;
       return {
         ...vendor.toObject(),
         distance: distance,
-        withinRange: distance !== null && distance <= vRange,
+        withinRange: distance !== null && distance <= radiusKm,
         isUsingCurrentLocation: !!vendor.location?.lat // Flag for debugging
       };
     }).filter(vendor => vendor.withinRange);
@@ -287,7 +286,7 @@ const findVendorsByCity = async (city, filters = {}) => {
 
     console.log(`[LocationService] City search query: ${JSON.stringify(baseQuery)}`);
     const vendors = await Vendor.find(baseQuery)
-      .select('name businessName phone address location profilePhoto service rating isOnline availability settings')
+      .select('name businessName phone address location profilePhoto service rating isOnline availability settings level currentLevel')
       .limit(50);
 
     console.log(`[LocationService] Found ${vendors.length} vendors in city: ${city}`);

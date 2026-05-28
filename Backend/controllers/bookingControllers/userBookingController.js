@@ -445,8 +445,19 @@ const createBooking = async (req, res) => {
           console.log(`User ${userId} upgraded to Plus Membership until ${expiryDate}`);
         }
 
-        // Nearby vendors already found above
-        const sortedVendors = nearbyVendors.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+        // Sort qualified vendors by Level (L1 -> L2 -> L3) first, then by Distance (closest first)
+        const sortedVendors = nearbyVendors.sort((a, b) => {
+          const getPriority = (v) => {
+            const cLevel = String(v.currentLevel || '').toUpperCase();
+            if (cLevel === 'L1' || v.level === 1) return 1;
+            if (cLevel === 'L2' || v.level === 2) return 2;
+            return 3;
+          };
+          const pA = getPriority(a);
+          const pB = getPriority(b);
+          if (pA !== pB) return pA - pB;
+          return (a.distance || 0) - (b.distance || 0);
+        });
 
         // Wave 1 Configuration:
         // - Products/Materials: Broadcast to ALL vendors immediately
@@ -515,7 +526,6 @@ const createBooking = async (req, res) => {
               bookingId: bookingForBackground._id,
               serviceName: serviceForBackground.title,
               customerName: userForBackground.name,
-              customerPhone: userForBackground.phone,
               scheduledDate: scheduledDate,
               scheduledTime: scheduledTime,
               price: finalAmount,
@@ -549,7 +559,6 @@ const createBooking = async (req, res) => {
                 bookingId: bookingForBackground._id,
                 serviceName: serviceForBackground.title,
                 customerName: userForBackground.name,
-                customerPhone: userForBackground.phone,
                 scheduledDate: scheduledDate,
                 scheduledTime: scheduledTime,
                 location: address,
@@ -649,10 +658,10 @@ const getUserBookings = async (req, res) => {
 
     // Get bookings
     const bookings = await Booking.find(query)
-      .populate('vendorId', 'name businessName phone profilePhoto')
+      .populate('vendorId', 'name businessName profilePhoto')
       .populate('serviceId', 'title iconUrl')
       .populate('categoryId', 'title slug')
-      .populate('workerId', 'name phone profilePhoto')
+      .populate('workerId', 'name profilePhoto')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -702,6 +711,18 @@ const getBookingById = async (req, res) => {
         success: false,
         message: 'Booking not found'
       });
+    }
+
+    const allowedStatuses = ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
+    const isAccepted = allowedStatuses.includes(booking.status);
+    if (!isAccepted) {
+      if (booking.vendorId) {
+        booking.vendorId.phone = undefined;
+        booking.vendorId.email = undefined;
+      }
+      if (booking.workerId) {
+        booking.workerId.phone = undefined;
+      }
     }
 
     // Fetch Vendor Bill if exists
@@ -767,6 +788,17 @@ const cancelBooking = async (req, res) => {
         success: false,
         message: 'Cannot cancel completed booking'
       });
+    }
+
+    // Cancelation window check: Maximum 2 minutes after vendor acceptance
+    if (booking.vendorId && booking.acceptedAt) {
+      const timeSinceAcceptanceMs = Date.now() - new Date(booking.acceptedAt).getTime();
+      if (timeSinceAcceptanceMs > 2 * 60 * 1000) { // 2 minutes in ms
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot cancel booking after 2 minutes of vendor acceptance.'
+        });
+      }
     }
 
     // --- REFUND & CANCELLATION FEE LOGIC ---
@@ -940,6 +972,7 @@ const cancelBooking = async (req, res) => {
         // Also free up the vendor's availability so they appear online to new users
         const Vendor = require('../../models/Vendor');
         await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+        await Vendor.updateWorkStatus(booking.vendorId);
       } catch (statsErr) {
         console.error('Error updating vendor stats after user cancellation:', statsErr);
       }

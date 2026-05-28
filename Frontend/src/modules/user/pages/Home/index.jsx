@@ -593,6 +593,40 @@ const Home = () => {
                 </>
               )}
 
+              {/* Smart Protect Warranty Section (As shown in screenshot) */}
+              <motion.section variants={itemVariants} className="px-5">
+                <div 
+                  className="w-full bg-[#053d87] rounded-3xl p-6 relative overflow-hidden shadow-lg border border-blue-800/10"
+                  style={{
+                    boxShadow: '0 8px 30px -4px rgba(5,61,135,0.2)'
+                  }}
+                >
+                  {/* Visual Background Accent Details */}
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-blue-400/10 rounded-full blur-xl pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-between gap-4">
+                    <div className="space-y-2.5">
+                      <span className="inline-block bg-[#ffca08] text-[#053d87] text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider leading-none">
+                        Smart Protect
+                      </span>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight leading-tight">
+                        Protect your appliances today
+                      </h3>
+                      <p className="text-[11px] text-blue-100/80 max-w-[210px] sm:max-w-sm leading-relaxed">
+                        Secure your non-warranty appliances with our premium warranty.
+                      </p>
+                    </div>
+                    
+                    <button 
+                      onClick={() => navigate('/user/my-subscription')}
+                      className="shrink-0 bg-[#ffca08] hover:bg-[#e2b300] active:scale-95 text-[#053d87] font-black text-xs px-4.5 py-3 rounded-full transition-all shadow-md shadow-[#ffca08]/15"
+                    >
+                      Buy Warranty
+                    </button>
+                  </div>
+                </div>
+              </motion.section>
 
               {/* Curated Services */}
               {homeContent?.isCuratedVisible !== false && (

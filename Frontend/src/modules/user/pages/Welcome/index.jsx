@@ -1,13 +1,51 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { configService } from '../../../../services/configService';
 
 import bgVideo from '../../../../assets/images/pages/Home/HomeRepairSection/welcome.mp4.mp4';
+
+const toAssetUrl = (url) => {
+  if (!url) return '';
+  const clean = url.replace('/api/upload', '/upload');
+  if (clean.startsWith('http')) return clean;
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/api$/, '');
+  return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
+};
 
 const Welcome = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [settings, setSettings] = useState(null);
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await configService.getSettings();
+        if (data?.success) {
+          setSettings(data.settings);
+        }
+      } catch (error) {
+        console.error('Failed to fetch welcome page settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const supportPhones = settings?.supportPhone
+    ? settings.supportPhone.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const handlePhoneClick = (e) => {
+    e.preventDefault();
+    if (supportPhones.length > 1) {
+      setIsPhoneModalOpen(true);
+    } else if (supportPhones.length === 1) {
+      window.location.href = `tel:${supportPhones[0]}`;
+    }
+  };
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -249,15 +287,11 @@ const Welcome = () => {
         <video
           ref={videoRef}
           className="bg-video"
-          src={bgVideo}
+          src={settings?.welcomeVideoUrl ? toAssetUrl(settings.welcomeVideoUrl) : bgVideo}
           autoPlay
           loop
           muted
           playsInline
-          onCanPlay={() => {
-            // Try to unmute after user interaction starts
-            if (videoRef.current) videoRef.current.muted = false;
-          }}
         />
         {/* Background image fallback removed — video is now active */}
         <div className="bg-overlay" />
@@ -269,7 +303,7 @@ const Welcome = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <div className="top-nav-left">
+          <div className="top-nav-left" style={{ display: 'flex', gap: '8px' }}>
             {/* Speaker icon — left */}
             <button
               onClick={toggleMute}
@@ -294,6 +328,35 @@ const Welcome = () => {
                 {isMuted ? '🔇' : '🔊'}
               </span>
             </button>
+
+            {/* Dynamic Phone Support call button configured by super admin */}
+            {supportPhones.length > 0 && (
+              <button
+                onClick={handlePhoneClick}
+                style={{
+                  background: 'rgba(255,255,255,0.18)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  border: '1.5px solid rgba(255,255,255,0.3)',
+                  borderRadius: '50%',
+                  width: '38px',
+                  height: '38px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  WebkitTapHighlightColor: 'transparent',
+                  borderStyle: 'solid',
+                  outline: 'none',
+                }}
+                aria-label="Call Support"
+              >
+                <span style={{ fontSize: '18px', lineHeight: 1 }}>
+                  📞
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Login + Signup — right */}
@@ -368,6 +431,101 @@ const Welcome = () => {
           </motion.div>
 
         </div>
+
+        {/* Support Call Selector Modal */}
+        <AnimatePresence>
+          {isPhoneModalOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPhoneModalOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.4)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                zIndex: 100,
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                padding: '16px'
+              }}
+            >
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  maxWidth: '400px',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: '30px',
+                  padding: '24px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#1c1c1e', letterSpacing: '-0.02em' }}>
+                    Call Support Helpline
+                  </h3>
+                  <button 
+                    onClick={() => setIsPhoneModalOpen(false)}
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.05)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '28px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '12px'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {supportPhones.map((phone, idx) => (
+                    <a
+                      key={idx}
+                      href={`tel:${phone}`}
+                      onClick={() => setIsPhoneModalOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '16px',
+                        background: 'rgba(59, 130, 246, 0.08)',
+                        borderRadius: '20px',
+                        textDecoration: 'none',
+                        color: '#2563eb',
+                        fontWeight: 700,
+                        fontSize: '15px',
+                        transition: 'transform 0.2s',
+                        border: '1px solid rgba(59, 130, 246, 0.15)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
+                    >
+                      <span style={{ fontSize: '16px' }}>📞</span>
+                      <span>Call Helpline {idx + 1} ({phone})</span>
+                    </a>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </>
