@@ -28,7 +28,12 @@ const listVideos = async (req, res) => {
   try {
     const { isActive, page = 1, limit = 50 } = req.query;
     const query = {};
-    if (isActive !== undefined) query.isActive = isActive === 'true';
+    // Default to active only; pass isActive=false to see inactive
+    if (isActive !== undefined) {
+      query.isActive = isActive === 'true';
+    } else {
+      query.isActive = true; // Only show active videos by default
+    }
 
     const videos = await TrainingVideo.find(query)
       .sort({ order: 1, createdAt: -1 })
@@ -110,18 +115,14 @@ const updateVideo = async (req, res) => {
 
 /**
  * DELETE /api/admin/training/videos/:id
- * Soft-delete (set isActive: false)
+ * Hard delete — permanently removes the video from the database
  */
 const deleteVideo = async (req, res) => {
   try {
-    const video = await TrainingVideo.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const video = await TrainingVideo.findByIdAndDelete(req.params.id);
     if (!video) return res.status(404).json({ success: false, message: 'Video not found' });
 
-    res.status(200).json({ success: true, message: 'Video deactivated successfully' });
+    res.status(200).json({ success: true, message: 'Video deleted successfully' });
   } catch (error) {
     console.error('[AdminTraining] deleteVideo error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete video' });

@@ -143,10 +143,10 @@ const VideosTab = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Deactivate this video?')) return;
+    if (!window.confirm('Delete this video permanently?')) return;
     try {
       await deleteVideo(id);
-      toast.success('Video deactivated');
+      toast.success('Video deleted');
       loadVideos();
     } catch { toast.error('Failed'); }
   };
