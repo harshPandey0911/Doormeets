@@ -21,7 +21,7 @@ const { BILL_STATUS } = require('../../utils/constants');
 const createOrUpdateBill = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { services, parts, customItems, transportCharges, applyPartsGST = true } = req.body;
+    const { services, parts, customItems, transportCharges, applyPartsGST = true, note } = req.body;
 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
@@ -88,7 +88,8 @@ const createOrUpdateBill = async (req, res) => {
           quantity,
           gstAmount: gst,
           total: totalInclusive,
-          isOriginal: false
+          isOriginal: false,
+          note: item.note || ''
         });
 
         vendorServiceBase += base;
@@ -240,7 +241,8 @@ const createOrUpdateBill = async (req, res) => {
       companyRevenue,
       applyPartsGST,
       status: BILL_STATUS.GENERATED,
-      generatedAt: new Date()
+      generatedAt: new Date(),
+      note: note !== undefined ? note : (bill ? bill.note : null)
     };
 
     if (bill) {

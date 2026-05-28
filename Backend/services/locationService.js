@@ -1,5 +1,44 @@
 const axios = require('axios');
 
+function parseScheduledStartTime(scheduledDate, timeStr) {
+  const date = new Date(scheduledDate);
+  if (isNaN(date.getTime())) return new Date();
+  
+  let hours = 0;
+  let minutes = 0;
+  if (typeof timeStr === 'string') {
+    const cleanTime = timeStr.trim().toUpperCase();
+    const isPM = cleanTime.includes('PM');
+    const isAM = cleanTime.includes('AM');
+    let numericTime = cleanTime.replace(/[AP]M/, '').trim();
+    const parts = numericTime.split(':');
+    if (parts.length >= 1) {
+      hours = parseInt(parts[0], 10) || 0;
+    }
+    if (parts.length >= 2) {
+      minutes = parseInt(parts[1], 10) || 0;
+    }
+    if (isPM && hours < 12) {
+      hours += 12;
+    } else if (isAM && hours === 12) {
+      hours = 0;
+    }
+  }
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
+const filterReservedVendors = (vendors, newBookingEndTime) => {
+  if (!newBookingEndTime || !vendors || !vendors.length) return vendors;
+  return vendors.filter(v => {
+    if (v.reservedFrom && newBookingEndTime > new Date(v.reservedFrom)) {
+      console.log(`[LocationService] Filtering out vendor ${v.name || v._id} due to overlap. New job ends: ${newBookingEndTime.toISOString()}, reservedFrom: ${new Date(v.reservedFrom).toISOString()}`);
+      return false;
+    }
+    return true;
+  });
+};
+
 /**
  * Location Service
  * Handles location-based operations using Google Maps API
@@ -70,12 +109,15 @@ const _buildVendorQuery = (filters = {}) => {
   delete queryFilters.checkCashLimit;
   delete queryFilters.service;
   delete queryFilters.city;
+  delete queryFilters.scheduledDate;
+  delete queryFilters.timeSlot;
+  delete queryFilters.scheduledTime;
 
   const baseQuery = {
     approvalStatus: VENDOR_STATUS.APPROVED,
     isActive: true,
     isOnline: true, // Only fetch online vendors for bookings
-    workStatus: 'available',
+    availabilityStatus: 'ONLINE',
     ...queryFilters
   };
 
@@ -106,10 +148,15 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
   const Settings = require('../models/Settings');
   const { getNearbyVendorsFromCache, isRedisConnected } = require('./redisService');
 
+  let newBookingEndTime = null;
+  if (filters.scheduledDate && filters.timeSlot?.end) {
+    newBookingEndTime = parseScheduledStartTime(filters.scheduledDate, filters.timeSlot.end);
+  }
+
   if (!centerLocation || typeof centerLocation.lat !== 'number' || typeof centerLocation.lng !== 'number') {
     console.warn('[LocationService] Invalid coordinates. City fallback for:', filters.city);
     if (filters.city) {
-      return findVendorsByCity(filters.city, filters);
+      return findVendorsByCity(filters.city, filters, newBookingEndTime);
     }
     return [];
   }
@@ -139,7 +186,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
         const vendors = await Vendor.find({
           _id: { $in: vendorIds },
           ...baseQuery
-        }).select('name businessName phone address profilePhoto service rating isOnline availability geoLocation level currentLevel');
+        }).select('name businessName phone address profilePhoto service rating isOnline availability geoLocation level currentLevel reservedFrom');
 
         // Merge distance from cache
         const vendorMap = new Map(vendors.map(v => [v._id.toString(), v.toObject()]));
@@ -151,7 +198,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
           }));
 
         console.log(`[LocationService] Found ${result.length} matching vendors via Redis path`);
-        return result;
+        return filterReservedVendors(result, newBookingEndTime);
       }
     }
 
@@ -179,7 +226,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
             }
           }
         })
-          .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation settings level currentLevel')
+          .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation settings level currentLevel reservedFrom')
           .limit(50); // Increased limit as we filter below
 
         // Calculate distance for each vendor
@@ -202,7 +249,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
         });
 
         console.log(`[LocationService] Found ${nearbyVendors.length} vendors using 2dsphere query`);
-        return nearbyVendors;
+        return filterReservedVendors(nearbyVendors, newBookingEndTime);
       }
     } catch (geoError) {
       console.warn('[LocationService] 2dsphere query failed, falling back to Haversine:', geoError.message);
@@ -210,7 +257,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
 
     // Fallback: Use Haversine formula (slower but works without geo index)
     const vendors = await Vendor.find(baseQuery)
-      .select('name businessName phone address location profilePhoto service rating isOnline availability settings level currentLevel');
+      .select('name businessName phone address location profilePhoto service rating isOnline availability settings level currentLevel reservedFrom');
 
     console.log(`[LocationService] Haversine fallback: found ${vendors.length} vendors matching baseQuery before distance filter`);
 
@@ -239,7 +286,7 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
 
     const currentLocCount = nearbyVendors.filter(v => v.isUsingCurrentLocation).length;
     console.log(`[LocationService] Found ${nearbyVendors.length} vendors (Online/Current: ${currentLocCount}) using Haversine`);
-    return nearbyVendors;
+    return filterReservedVendors(nearbyVendors, newBookingEndTime);
   } catch (error) {
     console.error('Find nearby vendors error:', error);
     return [];
@@ -279,18 +326,19 @@ const getDistanceMatrix = async (origins, destinations) => {
  * @param {Object} filters - Additional filters
  * @returns {Promise<Array>} Array of vendors
  */
-const findVendorsByCity = async (city, filters = {}) => {
+const findVendorsByCity = async (city, filters = {}, newBookingEndTime = null) => {
   try {
     const Vendor = require('../models/Vendor');
     const baseQuery = _buildVendorQuery({ ...filters, city });
 
     console.log(`[LocationService] City search query: ${JSON.stringify(baseQuery)}`);
     const vendors = await Vendor.find(baseQuery)
-      .select('name businessName phone address location profilePhoto service rating isOnline availability settings level currentLevel')
+      .select('name businessName phone address location profilePhoto service rating isOnline availability settings level currentLevel reservedFrom')
       .limit(50);
 
     console.log(`[LocationService] Found ${vendors.length} vendors in city: ${city}`);
-    return vendors.map(v => ({ ...v.toObject(), distance: null }));
+    const results = vendors.map(v => ({ ...v.toObject(), distance: null }));
+    return filterReservedVendors(results, newBookingEndTime);
   } catch (error) {
     console.error('Find vendors by city error:', error);
     return [];

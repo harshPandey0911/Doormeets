@@ -19,7 +19,8 @@ const {
   collectSelfCash,
   payWorker,
   getVendorRatings,
-  getPendingBookings
+  getPendingBookings,
+  reconfirmBooking
 } = require('../../controllers/bookingControllers/vendorBookingController');
 
 // Validation rules
@@ -64,6 +65,9 @@ router.post('/:id/self/payment/collect', authenticate, isVendor, collectSelfCash
 
 // Payment Route
 router.post('/:id/pay-worker', authenticate, isVendor, payWorker);
+
+// Reconfirmation Route
+router.put('/:id/reconfirm', authenticate, isVendor, reconfirmBooking);
 
 module.exports = router;
 

@@ -76,9 +76,14 @@ const BookingAlert = () => {
         await submitBid(id, price, note);
         toast.success('Your quote has been submitted!');
       } else {
+        const isScheduled = booking?.bookingType === 'scheduled';
         await acceptBooking(id);
-        await assignWorker(id, 'SELF');
-        toast.success('Booking accepted & assigned to you!');
+        if (!isScheduled) {
+          await assignWorker(id, 'SELF');
+          toast.success('Booking accepted & assigned to you!');
+        } else {
+          toast.success('Scheduled booking accepted! You can assign yourself or a worker 30 minutes before the start time.');
+        }
       }
 
       // Update local storage states

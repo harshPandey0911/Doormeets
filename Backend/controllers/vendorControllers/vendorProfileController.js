@@ -363,6 +363,7 @@ const updateStatus = async (req, res) => {
 
     vendor.isOnline = isOnline;
     vendor.availability = isOnline ? 'AVAILABLE' : 'OFFLINE';
+    vendor.availabilityStatus = isOnline ? 'ONLINE' : 'OFFLINE';
     
     // Set lastSeenAt if going offline
     if (!isOnline) {

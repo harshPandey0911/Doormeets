@@ -219,6 +219,34 @@ const getBookingById = async (req, res) => {
   }
 };
 
+function parseScheduledStartTime(scheduledDate, timeStr) {
+  const date = new Date(scheduledDate);
+  if (isNaN(date.getTime())) return new Date();
+  
+  let hours = 0;
+  let minutes = 0;
+  if (typeof timeStr === 'string') {
+    const cleanTime = timeStr.trim().toUpperCase();
+    const isPM = cleanTime.includes('PM');
+    const isAM = cleanTime.includes('AM');
+    let numericTime = cleanTime.replace(/[AP]M/, '').trim();
+    const parts = numericTime.split(':');
+    if (parts.length >= 1) {
+      hours = parseInt(parts[0], 10) || 0;
+    }
+    if (parts.length >= 2) {
+      minutes = parseInt(parts[1], 10) || 0;
+    }
+    if (isPM && hours < 12) {
+      hours += 12;
+    } else if (isAM && hours === 12) {
+      hours = 0;
+    }
+  }
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
 /**
  * Accept booking
  */
@@ -293,6 +321,10 @@ const acceptBooking = async (req, res) => {
       });
     }
 
+    const isInstant = bookingCheck.bookingType === 'instant';
+    const statusToSet = isInstant ? BOOKING_STATUS.CONFIRMED : BOOKING_STATUS.ACCEPTED;
+    const isSelfJobToSet = isInstant ? true : false;
+
     const updatedBooking = await Booking.findOneAndUpdate(
       {
         _id: id,
@@ -303,9 +335,8 @@ const acceptBooking = async (req, res) => {
         $set: {
           vendorId: vendorId,
           acceptedAt: new Date(),
-          // Check payment method for optimized status update logic
-          status: BOOKING_STATUS.CONFIRMED, // Default to confirmed
-          isSelfJob: true
+          status: statusToSet,
+          isSelfJob: isSelfJobToSet
         }
       },
       { new: true } // Return updated doc
@@ -329,9 +360,29 @@ const acceptBooking = async (req, res) => {
     // Booking successfully accepted by THIS vendor
     const booking = updatedBooking;
 
-    // Update vendor availability to ON_JOB
+    // Update vendor availability to ON_JOB / RESERVED depending on bookingType
     const Vendor = require('../../models/Vendor');
-    await Vendor.findByIdAndUpdate(vendorId, { availability: 'ON_JOB', workStatus: 'busy' });
+    if (booking.bookingType === 'instant') {
+      await Vendor.findByIdAndUpdate(vendorId, {
+        availability: 'ON_JOB',
+        workStatus: 'busy',
+        availabilityStatus: 'BUSY',
+        reservedBookingId: booking._id,
+        reservedFrom: new Date()
+      });
+    } else {
+      // Scheduled booking availability logic
+      const slotStart = parseScheduledStartTime(booking.scheduledDate, booking.timeSlot?.start || booking.scheduledTime);
+      const reservedFrom = new Date(slotStart.getTime() - 60 * 60 * 1000); // 1 hour before slot starts
+      
+      await Vendor.findByIdAndUpdate(vendorId, {
+        reservedFrom,
+        reservedBookingId: booking._id,
+        availabilityStatus: 'ONLINE',
+        availability: 'AVAILABLE',
+        workStatus: 'available'
+      });
+    }
 
     // Update BookingRequest statuses
     const BookingRequest = require('../../models/BookingRequest');
@@ -375,7 +426,10 @@ const acceptBooking = async (req, res) => {
 
     // Emit real-time updates to USER
     if (io) {
-      const message = 'Vendor has accepted your request. Your booking is confirmed!';
+      const isAcceptedOnly = booking.status === BOOKING_STATUS.ACCEPTED;
+      const message = isAcceptedOnly
+        ? 'Vendor has accepted your request. Worker not assigned yet.'
+        : 'Vendor has accepted your request. Your booking is confirmed!';
 
       io.to(`user_${booking.userId}`).emit('booking_accepted', {
         bookingId: booking._id,
@@ -391,17 +445,20 @@ const acceptBooking = async (req, res) => {
       io.to(`user_${booking.userId}`).emit('booking_updated', {
         bookingId: booking._id,
         status: booking.status,
-        message: 'Vendor has accepted your request'
+        message: isAcceptedOnly ? 'Vendor accepted, worker not assigned yet' : 'Vendor has accepted your request'
       });
     }
 
     // Send notification to user
-    const notificationMessage = `Your booking ${booking.bookingNumber} is confirmed! ${req.user.businessName || req.user.name} will arrive at scheduled time.`;
+    const isAcceptedOnly = booking.status === BOOKING_STATUS.ACCEPTED;
+    const notificationMessage = isAcceptedOnly
+      ? `Your booking ${booking.bookingNumber} is accepted! ${req.user.businessName || req.user.name} has accepted the job and will assign a worker soon.`
+      : `Your booking ${booking.bookingNumber} is confirmed! ${req.user.businessName || req.user.name} will arrive at scheduled time.`;
 
     await createNotification({
       userId: booking.userId,
       type: 'booking_accepted',
-      title: 'Booking Confirmed!',
+      title: isAcceptedOnly ? 'Booking Accepted!' : 'Booking Confirmed!',
       message: notificationMessage,
       relatedId: booking._id,
       relatedType: 'booking',
@@ -590,6 +647,19 @@ const assignWorker = async (req, res) => {
         success: false,
         message: 'Booking not found'
       });
+    }
+
+    // Enforce 30 minutes before slot start validation
+    if (booking.bookingType === 'scheduled') {
+      const slotStart = parseScheduledStartTime(booking.scheduledDate, booking.timeSlot?.start || booking.scheduledTime);
+      const now = new Date();
+      const thirtyMinutesBefore = new Date(slotStart.getTime() - 30 * 60 * 1000);
+      if (now < thirtyMinutesBefore) {
+        return res.status(400).json({
+          success: false,
+          message: 'You can only assign a worker or yourself starting 30 minutes before the scheduled time slot.'
+        });
+      }
     }
 
     // Handle "Assign to Self"
@@ -1020,6 +1090,13 @@ const startSelfJob = async (req, res) => {
 
     await booking.save();
 
+    const Vendor = require('../../models/Vendor');
+    await Vendor.findByIdAndUpdate(vendorId, {
+      availability: 'ON_JOB',
+      workStatus: 'busy',
+      availabilityStatus: 'BUSY'
+    });
+
     // Notify user
     const { createNotification } = require('../notificationControllers/notificationController');
     await createNotification({
@@ -1195,170 +1272,179 @@ const completeSelfJob = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot complete from current status' });
     }
 
-    // Prevent duplicate bills
+    // Prevent duplicate bills - UPDATE: If bill exists (e.g. from Add-on modal), use it instead of failing!
     const VendorBill = require('../../models/VendorBill');
-    const existingBill = await VendorBill.findOne({ bookingId: booking._id });
-    if (existingBill) {
-      return res.status(400).json({ success: false, message: 'Bill already generated for this booking' });
+    let bill = await VendorBill.findOne({ bookingId: booking._id });
+    let grandTotal;
+    let allServices = [];
+    let billParts = [];
+
+    if (!bill) {
+      // ── Fetch Settings & Vendor (frozen snapshot for this bill) ──
+      const Settings = require('../../models/Settings');
+      const Vendor = require('../../models/Vendor');
+      const settings = await Settings.findOne({ type: 'global' });
+      const vendor = await Vendor.findById(vendorId).select('commissionRate level');
+
+      // Dynamic split based on vendor performance
+      // If it's a cash job, we calculate commission now to add to DUES.
+      // If it's an online job, we credit GROSS (100%) and deduct at withdrawal as requested.
+      const isOnlineJob = booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online';
+      
+      // Get Dynamic Commission from Settings based on Vendor Level (DISABLED: Commission removed)
+      const dynamicCommission = 0;
+      
+      const serviceSplitPct = isOnlineJob ? 100 : (100 - dynamicCommission);
+      const partsSplitPct = settings?.partsPayoutPercentage ?? 10;
+      const serviceGstPct = settings?.serviceGstPercentage ?? 18;
+      const partsGstPct = settings?.partsGstPercentage ?? 18;
+
+      // ═══════════════════════════════════════════
+      // STEP 1: BUILD LINE ITEMS
+      // ═══════════════════════════════════════════
+
+      // -- Original booking service (from basePrice) --
+      const originalBase = Number(booking.basePrice) || 0;
+      // Use stored tax from booking to ensure 100% consistency with initial quote
+      const originalGST = Number(booking.tax) || parseFloat(((originalBase * serviceGstPct) / 100).toFixed(2));
+
+      // -- Vendor-added services --
+      const billServices = (billDetails?.services || []).map(svc => {
+        const price = Number(svc.price) || 0;
+        const qty = Number(svc.quantity) || 1;
+        const base = price * qty;
+        const gst = parseFloat(((base * serviceGstPct) / 100).toFixed(2));
+        return {
+          catalogId: svc.catalogId || undefined,
+          name: svc.name || 'Service',
+          price,
+          gstPercentage: serviceGstPct,
+          quantity: qty,
+          gstAmount: gst,
+          total: parseFloat((base + gst).toFixed(2)),
+          isOriginal: false
+        };
+      });
+
+      // -- Parts --
+      billParts = (billDetails?.parts || []).map(part => {
+        const price = Number(part.price) || 0;
+        const qty = Number(part.quantity) || 1;
+        const pGstPct = (part.gstPercentage != null) ? Number(part.gstPercentage) : partsGstPct;
+        const base = price * qty;
+        const gst = parseFloat(((base * pGstPct) / 100).toFixed(2));
+        return {
+          catalogId: part.catalogId || undefined,
+          name: part.name || 'Part',
+          price,
+          gstPercentage: pGstPct,
+          quantity: qty,
+          gstAmount: gst,
+          total: parseFloat((base + gst).toFixed(2))
+        };
+      });
+
+      // ═══════════════════════════════════════════
+      // STEP 2: CALCULATE BASE TOTALS
+      // ═══════════════════════════════════════════
+
+      const vendorServiceBase = billServices.reduce((s, sv) => s + (sv.price * sv.quantity), 0);
+      const totalServiceBase = parseFloat((originalBase + vendorServiceBase).toFixed(2));
+      const totalPartsBase = parseFloat(billParts.reduce((s, p) => s + (p.price * p.quantity), 0).toFixed(2));
+
+      // ═══════════════════════════════════════════
+      // STEP 3: CALCULATE GST TOTALS
+      // ═══════════════════════════════════════════
+
+      const vendorServiceGST = parseFloat(billServices.reduce((s, sv) => s + sv.gstAmount, 0).toFixed(2));
+      const partsGST = parseFloat(billParts.reduce((s, p) => s + p.gstAmount, 0).toFixed(2));
+      const totalGST = parseFloat((originalGST + vendorServiceGST + partsGST).toFixed(2));
+
+      // ═══════════════════════════════════════════
+      // STEP 4: FINAL BILL (what user pays)
+      // ═══════════════════════════════════════════
+
+      const visitingCharges = Number(booking.visitingCharges) || 0;
+      grandTotal = parseFloat((totalServiceBase + totalPartsBase + totalGST + visitingCharges).toFixed(2));
+
+      // ═══════════════════════════════════════════
+      // STEP 5: REVENUE SPLIT (internal only)
+      // ═══════════════════════════════════════════
+      // Vendor % is applied ONLY on base — never on GST
+      // TODO:
+      // New dual-invoice accounting logic will be implemented here.
+      const vendorServiceEarning = 0;
+      const vendorPartsEarning = 0;
+      const vendorTotalEarning = 0;
+      const companyRevenue = 0;
+
+      // ═══════════════════════════════════════════
+      // STEP 6: PERSIST BILL
+      // ═══════════════════════════════════════════
+
+      // Include original service as line item for completeness
+      allServices = [
+        {
+          name: booking.serviceName || 'Original Service',
+          price: originalBase,
+          gstPercentage: serviceGstPct,
+          quantity: 1,
+          gstAmount: originalGST,
+          total: parseFloat((originalBase + originalGST).toFixed(2)),
+          isOriginal: true
+        },
+        ...billServices
+      ];
+
+      bill = await VendorBill.create({
+        bookingId: booking._id,
+        vendorId,
+
+        // Line items
+        services: allServices,
+        parts: billParts,
+
+        // Base totals
+        originalServiceBase: originalBase,
+        vendorServiceBase,
+        totalServiceBase,
+        totalPartsBase,
+        visitingCharges,
+
+        // GST totals
+        originalGST,
+        vendorServiceGST,
+        partsGST,
+        totalGST,
+
+        // Bill total
+        grandTotal,
+
+        // Payout config snapshot
+        payoutConfig: {
+          serviceSplitPercentage: serviceSplitPct,
+          partsSplitPercentage: partsSplitPct,
+          serviceGstPercentage: serviceGstPct,
+          partsGstPercentage: partsGstPct
+        },
+
+        // Revenue split
+        vendorServiceEarning,
+        vendorPartsEarning,
+        vendorTotalEarning,
+        companyRevenue,
+
+        status: 'generated',
+        generatedAt: new Date()
+      });
+    } else {
+      grandTotal = bill.grandTotal;
+      allServices = bill.services || [];
+      billParts = bill.parts || [];
+      bill.status = 'generated';
+      bill.generatedAt = new Date();
+      await bill.save();
     }
-
-    // ── Fetch Settings & Vendor (frozen snapshot for this bill) ──
-    const Settings = require('../../models/Settings');
-    const Vendor = require('../../models/Vendor');
-    const settings = await Settings.findOne({ type: 'global' });
-    const vendor = await Vendor.findById(vendorId).select('commissionRate level');
-
-    // Dynamic split based on vendor performance
-    // If it's a cash job, we calculate commission now to add to DUES.
-    // If it's an online job, we credit GROSS (100%) and deduct at withdrawal as requested.
-    const isOnlineJob = booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online';
-    
-    // Get Dynamic Commission from Settings based on Vendor Level (DISABLED: Commission removed)
-    const dynamicCommission = 0;
-    
-    const serviceSplitPct = isOnlineJob ? 100 : (100 - dynamicCommission);
-    const partsSplitPct = settings?.partsPayoutPercentage ?? 10;
-    const serviceGstPct = settings?.serviceGstPercentage ?? 18;
-    const partsGstPct = settings?.partsGstPercentage ?? 18;
-
-    // ═══════════════════════════════════════════
-    // STEP 1: BUILD LINE ITEMS
-    // ═══════════════════════════════════════════
-
-    // -- Original booking service (from basePrice) --
-    const originalBase = Number(booking.basePrice) || 0;
-    // Use stored tax from booking to ensure 100% consistency with initial quote
-    const originalGST = Number(booking.tax) || parseFloat(((originalBase * serviceGstPct) / 100).toFixed(2));
-
-    // -- Vendor-added services --
-    const billServices = (billDetails?.services || []).map(svc => {
-      const price = Number(svc.price) || 0;
-      const qty = Number(svc.quantity) || 1;
-      const base = price * qty;
-      const gst = parseFloat(((base * serviceGstPct) / 100).toFixed(2));
-      return {
-        catalogId: svc.catalogId || undefined,
-        name: svc.name || 'Service',
-        price,
-        gstPercentage: serviceGstPct,
-        quantity: qty,
-        gstAmount: gst,
-        total: parseFloat((base + gst).toFixed(2)),
-        isOriginal: false
-      };
-    });
-
-    // -- Parts --
-    const billParts = (billDetails?.parts || []).map(part => {
-      const price = Number(part.price) || 0;
-      const qty = Number(part.quantity) || 1;
-      const pGstPct = (part.gstPercentage != null) ? Number(part.gstPercentage) : partsGstPct;
-      const base = price * qty;
-      const gst = parseFloat(((base * pGstPct) / 100).toFixed(2));
-      return {
-        catalogId: part.catalogId || undefined,
-        name: part.name || 'Part',
-        price,
-        gstPercentage: pGstPct,
-        quantity: qty,
-        gstAmount: gst,
-        total: parseFloat((base + gst).toFixed(2))
-      };
-    });
-
-    // ═══════════════════════════════════════════
-    // STEP 2: CALCULATE BASE TOTALS
-    // ═══════════════════════════════════════════
-
-    const vendorServiceBase = billServices.reduce((s, sv) => s + (sv.price * sv.quantity), 0);
-    const totalServiceBase = parseFloat((originalBase + vendorServiceBase).toFixed(2));
-    const totalPartsBase = parseFloat(billParts.reduce((s, p) => s + (p.price * p.quantity), 0).toFixed(2));
-
-    // ═══════════════════════════════════════════
-    // STEP 3: CALCULATE GST TOTALS
-    // ═══════════════════════════════════════════
-
-    const vendorServiceGST = parseFloat(billServices.reduce((s, sv) => s + sv.gstAmount, 0).toFixed(2));
-    const partsGST = parseFloat(billParts.reduce((s, p) => s + p.gstAmount, 0).toFixed(2));
-    const totalGST = parseFloat((originalGST + vendorServiceGST + partsGST).toFixed(2));
-
-    // ═══════════════════════════════════════════
-    // STEP 4: FINAL BILL (what user pays)
-    // ═══════════════════════════════════════════
-
-    const visitingCharges = Number(booking.visitingCharges) || 0;
-    const grandTotal = parseFloat((totalServiceBase + totalPartsBase + totalGST + visitingCharges).toFixed(2));
-
-    // ═══════════════════════════════════════════
-    // STEP 5: REVENUE SPLIT (internal only)
-    // ═══════════════════════════════════════════
-    // Vendor % is applied ONLY on base — never on GST
-    // TODO:
-    // New dual-invoice accounting logic will be implemented here.
-    const vendorServiceEarning = 0;
-    const vendorPartsEarning = 0;
-    const vendorTotalEarning = 0;
-    const companyRevenue = 0;
-
-    // ═══════════════════════════════════════════
-    // STEP 6: PERSIST BILL
-    // ═══════════════════════════════════════════
-
-    // Include original service as line item for completeness
-    const allServices = [
-      {
-        name: booking.serviceName || 'Original Service',
-        price: originalBase,
-        gstPercentage: serviceGstPct,
-        quantity: 1,
-        gstAmount: originalGST,
-        total: parseFloat((originalBase + originalGST).toFixed(2)),
-        isOriginal: true
-      },
-      ...billServices
-    ];
-
-    const bill = await VendorBill.create({
-      bookingId: booking._id,
-      vendorId,
-
-      // Line items
-      services: allServices,
-      parts: billParts,
-
-      // Base totals
-      originalServiceBase: originalBase,
-      vendorServiceBase,
-      totalServiceBase,
-      totalPartsBase,
-      visitingCharges,
-
-      // GST totals
-      originalGST,
-      vendorServiceGST,
-      partsGST,
-      totalGST,
-
-      // Bill total
-      grandTotal,
-
-      // Payout config snapshot
-      payoutConfig: {
-        serviceSplitPercentage: serviceSplitPct,
-        partsSplitPercentage: partsSplitPct,
-        serviceGstPercentage: serviceGstPct,
-        partsGstPercentage: partsGstPct
-      },
-
-      // Revenue split
-      vendorServiceEarning,
-      vendorPartsEarning,
-      vendorTotalEarning,
-      companyRevenue,
-
-      status: 'generated',
-      generatedAt: new Date()
-    });
 
     // ═══════════════════════════════════════════
     // STEP 7: UPDATE BOOKING (no earnings!)
@@ -1853,6 +1939,121 @@ const getPendingBookings = async (req, res) => {
   }
 };
 
+const reconfirmBooking = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+    const { action } = req.body; // 'CONFIRM' or 'DECLINE'
+
+    if (!['CONFIRM', 'DECLINE'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'Invalid action. Must be CONFIRM or DECLINE.' });
+    }
+
+    const booking = await Booking.findById(id).populate('vendorId', 'name businessName');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!booking.vendorId || booking.vendorId._id.toString() !== vendorId.toString()) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to reconfirm this booking' });
+    }
+
+    const Vendor = require('../../models/Vendor');
+
+    if (action === 'CONFIRM') {
+      booking.reconfirmationStatus = 'CONFIRMED';
+      booking.reconfirmedAt = new Date();
+      booking.bookingRiskStatus = 'NORMAL';
+      await booking.save();
+
+      // Update vendor reserved status
+      await Vendor.findByIdAndUpdate(vendorId, {
+        availabilityStatus: 'RESERVED',
+        availability: 'ON_JOB',
+        workStatus: 'busy'
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Booking reconfirmed successfully',
+        data: booking
+      });
+    } else {
+      // DECLINE Action
+      booking.reconfirmationStatus = 'DECLINED';
+      booking.bookingRiskStatus = 'HIGH';
+      await booking.save();
+
+      // Clear vendor reservation fields since they declined
+      await Vendor.findByIdAndUpdate(vendorId, {
+        availabilityStatus: 'ONLINE',
+        availability: 'AVAILABLE',
+        workStatus: 'available',
+        reservedFrom: null,
+        reservedBookingId: null
+      });
+
+      // Escalation Alert
+      const vendorName = booking.vendorId?.businessName || booking.vendorId?.name || 'Vendor';
+      const city = booking.address?.city || '';
+      const message = `Vendor ${vendorName} DECLINED scheduled booking #${booking.bookingNumber}. Slot: ${booking.scheduledTime || `${booking.timeSlot?.start} - ${booking.timeSlot?.end}`}. Manual intervention required.`;
+
+      // Find City Admins
+      const Admin = require('../../models/Admin');
+      const City = require('../../models/City');
+
+      const cityDoc = await City.findOne({ name: new RegExp(`^${city}$`, 'i') });
+      let adminQuery = { role: 'admin' };
+      if (cityDoc) {
+        adminQuery = {
+          $or: [
+            { role: 'admin' },
+            { role: 'CITY_ADMIN', assignedCities: cityDoc._id }
+          ]
+        };
+      }
+
+      const admins = await Admin.find(adminQuery);
+      const { createNotification } = require('../notificationControllers/notificationController');
+
+      const io = req.app.get('io');
+      for (const admin of admins) {
+        await createNotification({
+          adminId: admin._id,
+          type: 'booking_escalation',
+          title: 'Booking Declined (High Risk)',
+          message,
+          relatedId: booking._id,
+          relatedType: 'booking',
+          pushData: {
+            type: 'booking_escalation',
+            bookingId: booking._id.toString(),
+            link: `/admin/bookings/${booking._id}`
+          }
+        });
+
+        if (io) {
+          io.to(`admin_${admin._id.toString()}`).emit('booking_escalation', {
+            bookingId: booking._id,
+            bookingNumber: booking.bookingNumber,
+            message,
+            severity: 'HIGH'
+          });
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Booking declined. Escalation sent to support.',
+        data: booking
+      });
+    }
+  } catch (error) {
+    console.error('Reconfirm booking error:', error);
+    res.status(500).json({ success: false, message: 'Server error during reconfirmation' });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   getBookingById,
@@ -1868,5 +2069,6 @@ module.exports = {
   collectSelfCash,
   payWorker,
   getVendorRatings,
-  getPendingBookings
+  getPendingBookings,
+  reconfirmBooking
 };

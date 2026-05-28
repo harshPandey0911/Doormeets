@@ -233,6 +233,13 @@ const startJob = async (req, res) => {
 
     await booking.save();
 
+    const Vendor = require('../../models/Vendor');
+    await Vendor.findByIdAndUpdate(booking.vendorId, {
+      availability: 'ON_JOB',
+      workStatus: 'busy',
+      availabilityStatus: 'BUSY'
+    });
+
     // Notify user with OTP
     const { createNotification } = require('../notificationControllers/notificationController');
     await createNotification({

@@ -94,7 +94,7 @@ const AssignWorker = () => {
       }
     } catch (error) {
       console.error('Error assigning worker:', error);
-      toast.error(error.message || 'Failed to assign worker. Please try again.');
+      toast.error(error.response?.data?.message || error.message || 'Failed to assign worker. Please try again.');
     } finally {
       setAssigning(false);
     }

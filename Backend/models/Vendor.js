@@ -306,6 +306,21 @@ const vendorSchema = new mongoose.Schema({
     default: 'OFFLINE',
     index: true
   },
+  reservedFrom: {
+    type: Date,
+    default: null
+  },
+  reservedBookingId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Booking',
+    default: null
+  },
+  availabilityStatus: {
+    type: String,
+    enum: ['ONLINE', 'RESERVED', 'BUSY', 'OFFLINE'],
+    default: 'OFFLINE',
+    index: true
+  },
   // Rating & Stats
   rating: {
     type: Number,
@@ -444,12 +459,29 @@ vendorSchema.statics.updateWorkStatus = async function (vendorId) {
   const Booking = mongoose.model('Booking');
   const activeSelfJob = await Booking.findOne({
     vendorId: vendorId,
-    isSelfJob: true,
-    status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement'] }
+    status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] }
   });
 
+  const vendor = await this.findById(vendorId).select('isOnline');
+  const isOnline = vendor ? vendor.isOnline : false;
+
   const newStatus = activeSelfJob ? 'busy' : 'available';
-  await this.findByIdAndUpdate(vendorId, { workStatus: newStatus });
+  const newAvailability = activeSelfJob ? 'ON_JOB' : (isOnline ? 'AVAILABLE' : 'OFFLINE');
+  const availabilityStatus = activeSelfJob ? 'BUSY' : (isOnline ? 'ONLINE' : 'OFFLINE');
+
+  const updateFields = {
+    workStatus: newStatus,
+    availability: newAvailability
+  };
+
+  // If no active jobs, clean up reservation fields and reset availabilityStatus
+  if (!activeSelfJob) {
+    updateFields.availabilityStatus = availabilityStatus;
+    updateFields.reservedFrom = null;
+    updateFields.reservedBookingId = null;
+  }
+
+  await this.findByIdAndUpdate(vendorId, updateFields);
   return newStatus;
 };
 

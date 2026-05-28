@@ -339,7 +339,33 @@ const bookingSchema = new mongoose.Schema({
   // workDoneDetails and extraCharges are deprecated in favor of VendorBill
 
   // ==========================================
-  // 10. CANCELLATION
+  // 10. RECONFIRMATION
+  // ==========================================
+  reconfirmationRequired: {
+    type: Boolean,
+    default: false
+  },
+  reconfirmationSentAt: {
+    type: Date,
+    default: null
+  },
+  reconfirmedAt: {
+    type: Date,
+    default: null
+  },
+  reconfirmationStatus: {
+    type: String,
+    enum: ['PENDING', 'CONFIRMED', 'MISSED', 'DECLINED'],
+    default: null
+  },
+  bookingRiskStatus: {
+    type: String,
+    enum: ['NORMAL', 'HIGH'],
+    default: 'NORMAL'
+  },
+
+  // ==========================================
+  // 11. CANCELLATION
   // ==========================================
   cancelledAt: { type: Date, default: null },
   cancellationReason: { type: String, default: null },

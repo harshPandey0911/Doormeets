@@ -1123,9 +1123,9 @@ const Checkout = () => {
       return allSlots;
     }
 
-    // Get current hour + 1 (minimum 1 hour buffer for vendors to accept)
+    // Get current hour + 3 (minimum 3 hour buffer to hide upcoming 2 hours)
     const currentHour = now.getHours();
-    const minHour = currentHour + 1;
+    const minHour = currentHour + 3;
 
     return allSlots.filter(slot => {
       const slotHour = parseInt(slot.value.split(':')[0], 10);

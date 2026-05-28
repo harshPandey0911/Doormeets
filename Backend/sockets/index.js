@@ -263,9 +263,11 @@ const updateVendorOnlineStatus = async (vendorId, isOnline, socketId) => {
 
     if (isOnline) {
       updateData.availability = 'AVAILABLE';
+      updateData.availabilityStatus = 'ONLINE';
     } else {
       updateData.lastSeenAt = new Date();
       updateData.availability = 'OFFLINE';
+      updateData.availabilityStatus = 'OFFLINE';
     }
 
     // Update MongoDB

@@ -329,6 +329,11 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
   initializeScheduler(getIO());
   console.log('[Server] Booking Scheduler initialized for wave-based alerting');
 
+  // Initialize Booking Availability & Reconfirmation Scheduler
+  const { initializeAvailabilityScheduler } = require('./services/bookingAvailabilityScheduler');
+  initializeAvailabilityScheduler(getIO());
+  console.log('[Server] Booking Availability & Reconfirmation Scheduler initialized');
+
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (err) => {
     console.error('Unhandled Promise Rejection:', err);

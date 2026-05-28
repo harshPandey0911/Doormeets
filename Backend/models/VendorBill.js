@@ -43,7 +43,8 @@ const vendorBillSchema = new mongoose.Schema({
     quantity: { type: Number, default: 1 },
     gstAmount: Number,        // price × qty × gst%
     total: Number,            // price × qty + gstAmount
-    isOriginal: { type: Boolean, default: false } // true = from booking, false = vendor-added
+    isOriginal: { type: Boolean, default: false }, // true = from booking, false = vendor-added
+    note: { type: String, default: '' }
   }],
 
   /** Parts used during the job */

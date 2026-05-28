@@ -971,7 +971,13 @@ const cancelBooking = async (req, res) => {
 
         // Also free up the vendor's availability so they appear online to new users
         const Vendor = require('../../models/Vendor');
-        await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+        await Vendor.findByIdAndUpdate(booking.vendorId, {
+          availability: 'AVAILABLE',
+          workStatus: 'available',
+          availabilityStatus: 'ONLINE',
+          reservedFrom: null,
+          reservedBookingId: null
+        });
         await Vendor.updateWorkStatus(booking.vendorId);
       } catch (statsErr) {
         console.error('Error updating vendor stats after user cancellation:', statsErr);

@@ -8,13 +8,10 @@ import QuantityButton from '../../components/premium/QuantityButton';
 import { useCart } from '../../../../context/CartContext';
 import { useCity } from '../../../../context/CityContext';
 
-const timeSlots = ['Today 3-5 PM', 'Today 5-7 PM', 'Tomorrow 9-11 AM', 'Tomorrow 11-1 PM'];
-
 const PremiumCartPage = () => {
   const navigate = useNavigate();
   const { currentCity } = useCity();
   const { cartItems, removeItem, updateItem, cartCount } = useCart();
-  const [selectedSlot, setSelectedSlot] = useState(timeSlots[0]);
 
   const groupedItems = useMemo(() => {
     return cartItems.reduce((acc, item) => {
@@ -38,7 +35,7 @@ const PremiumCartPage = () => {
       toast.error('Your cart is empty');
       return;
     }
-    navigate('/user/checkout', { state: { selectedSlot } });
+    navigate('/user/checkout');
   };
 
   return (
@@ -53,23 +50,6 @@ const PremiumCartPage = () => {
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Address</p>
               <h1 className="text-base font-black text-gray-900">{localStorage.getItem('currentAddress') || 'Select delivery address'}</h1>
             </div>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-gray-100 p-3 text-gray-900"><FiClock /></div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Booking slot</p>
-              <h2 className="text-base font-black text-gray-900">Choose a convenient time</h2>
-            </div>
-          </div>
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-            {timeSlots.map((slot) => (
-              <button key={slot} type="button" onClick={() => setSelectedSlot(slot)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all ${selectedSlot === slot ? 'bg-black text-white shadow-lg shadow-black/20' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                {slot}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -133,7 +113,7 @@ const PremiumCartPage = () => {
         </div>
       </div>
 
-      <BottomCheckoutBar total={total} originalTotal={originalTotal} buttonText="Order" onClick={handleCheckout} note={`Booking slot: ${selectedSlot}`} />
+      <BottomCheckoutBar total={total} originalTotal={originalTotal} buttonText="Order" onClick={handleCheckout} note="" />
     </div>
   );
 };

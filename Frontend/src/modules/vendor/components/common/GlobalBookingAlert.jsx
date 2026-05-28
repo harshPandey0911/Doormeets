@@ -159,9 +159,15 @@ export default function GlobalBookingAlert() {
             await submitBid(id, price, note);
             toast.success('Quote sent successfully!');
           } else {
+            const bookingItem = activeAlertBookings.find(b => String(b.id || b._id) === String(id));
+            const isScheduled = bookingItem?.bookingType === 'scheduled';
             await acceptBooking(id);
-            await assignWorker(id, 'SELF');
-            toast.success('Job claimed successfully! Assigned to you.');
+            if (!isScheduled) {
+              await assignWorker(id, 'SELF');
+              toast.success('Job claimed successfully! Assigned to you.');
+            } else {
+              toast.success('Scheduled job accepted! You can assign yourself or a worker 30 minutes before the start time.');
+            }
           }
 
           // Remove from local storage

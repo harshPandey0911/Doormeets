@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle } from 'react-icons/fi';
+import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
@@ -34,8 +34,125 @@ export default function BookingDetails() {
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
   const [isWorkDoneModalOpen, setIsWorkDoneModalOpen] = useState(false);
-  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+
+  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
+  const [addonSearch, setAddonSearch] = useState('');
+  const [addonCatalog, setAddonCatalog] = useState([]);
+  const [selectedAddons, setSelectedAddons] = useState([]);
+  const [existingBill, setExistingBill] = useState(null);
+  const [addonLoading, setAddonLoading] = useState(false);
+
+  // Load catalog and existing bill when modal opens
+  useEffect(() => {
+    if (isAddonModalOpen) {
+      const loadAddonData = async () => {
+        try {
+          setAddonLoading(true);
+          const [catalogRes, billRes] = await Promise.all([
+            vendorBillService.getServiceCatalog(),
+            vendorBillService.getBill(id).catch(() => ({ success: false }))
+          ]);
+
+          if (catalogRes && catalogRes.success) {
+            setAddonCatalog(catalogRes.services || []);
+          }
+
+          if (billRes && billRes.success && billRes.bill) {
+            setExistingBill(billRes.bill);
+            const savedAddons = (billRes.bill.services || [])
+              .filter(s => !s.isOriginal)
+              .map(s => ({
+                catalogId: s.catalogId?._id || s.catalogId,
+                name: s.name,
+                price: s.price,
+                quantity: s.quantity || 1,
+                note: s.note || ''
+              }));
+            setSelectedAddons(savedAddons);
+          } else {
+            setExistingBill(null);
+            setSelectedAddons([]);
+          }
+        } catch (err) {
+          console.error("Failed to load addons data:", err);
+          toast.error("Failed to load catalog services");
+        } finally {
+          setAddonLoading(false);
+        }
+      };
+      loadAddonData();
+    }
+  }, [isAddonModalOpen, id]);
+
+  const handleSaveAddons = async () => {
+    try {
+      setAddonLoading(true);
+      const res = await vendorBillService.createOrUpdateBill(id, {
+        services: selectedAddons,
+        parts: existingBill?.parts || [],
+        customItems: existingBill?.customItems || [],
+        transportCharges: existingBill?.transportCharges || 0,
+        applyPartsGST: existingBill?.applyPartsGST !== undefined ? existingBill?.applyPartsGST : true
+      });
+
+      if (res.success) {
+        toast.success("Add-on services saved successfully!");
+        setIsAddonModalOpen(false);
+        loadBooking(); // Reload details to show updated totals
+      } else {
+        toast.error(res.message || "Failed to save add-ons");
+      }
+    } catch (err) {
+      console.error("Failed to save addons:", err);
+      toast.error("Failed to save add-on services");
+    } finally {
+      setAddonLoading(false);
+    }
+  };
+
+  const handleToggleAddon = (item) => {
+    setSelectedAddons(prev => {
+      const exists = prev.find(a => a.catalogId === item._id);
+      if (exists) {
+        return prev.filter(a => a.catalogId !== item._id);
+      }
+      return [...prev, {
+        catalogId: item._id,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        note: ''
+      }];
+    });
+  };
+
+  const handleUpdateAddonQty = (catalogId, delta) => {
+    setSelectedAddons(prev => prev.map(a => {
+      if (a.catalogId === catalogId) {
+        return { ...a, quantity: Math.max(1, a.quantity + delta) };
+      }
+      return a;
+    }));
+  };
+
+  const handleUpdateAddonNote = (catalogId, noteText) => {
+    setSelectedAddons(prev => prev.map(a => {
+      if (a.catalogId === catalogId) {
+        return { ...a, note: noteText };
+      }
+      return a;
+    }));
+  };
+
+  const filteredCatalog = addonCatalog.filter(s => {
+    const catIdMatch = String(s.categoryId?._id || s.categoryId || '') === String(booking?.categoryId || '');
+    const catNameMatch = String(s.categoryId?.title || '').toLowerCase() === String(booking?.serviceCategory || '').toLowerCase();
+    const isCategoryMatch = catIdMatch || catNameMatch;
+    const isSearchMatch = s.name.toLowerCase().includes(addonSearch.toLowerCase());
+    return isCategoryMatch && isSearchMatch;
+  });
 
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -551,7 +668,7 @@ export default function BookingDetails() {
           }
         } catch (error) {
           console.error('Error assigning to self:', error);
-          toast.error(error.message || 'Failed to assign to yourself');
+          toast.error(error.response?.data?.message || error.message || 'Failed to assign to yourself');
         } finally {
           setLoading(false);
         }
@@ -1649,17 +1766,26 @@ export default function BookingDetails() {
               )}
 
               {(booking.status === 'visited' || booking.status === 'in_progress') && (
-                <button
-                  onClick={() => setIsWorkDoneModalOpen(true)}
-                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
-                  style={{
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
-                  }}
-                >
-                  <FiCheckCircle className="w-5 h-5" />
-                  Work Done
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsAddonModalOpen(true)}
+                    className="flex-1 py-4 rounded-xl font-bold bg-white text-blue-600 border-2 border-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+                  >
+                    <FiPlus className="w-5 h-5" />
+                    Add-on
+                  </button>
+                  <button
+                    onClick={() => setIsWorkDoneModalOpen(true)}
+                    className="flex-[2] py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
+                    style={{
+                      background: 'linear-gradient(135deg, #10B981, #059669)',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                    }}
+                  >
+                    <FiCheckCircle className="w-5 h-5" />
+                    Work Done
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -1682,10 +1808,14 @@ export default function BookingDetails() {
       <OtpVerificationModal
         isOpen={isOtpModalOpen}
         onClose={() => setIsOtpModalOpen(false)}
-        onVerify={(otp) => {
-          const amount = booking.finalAmount || 0;
-          const extras = booking.workDoneDetails?.items || [];
-          handleCashCollectionConfirm(amount, extras, otp);
+        onVerify={async (otp) => {
+          try {
+            const amount = booking.finalAmount || 0;
+            const extras = booking.workDoneDetails?.items || [];
+            await handleCashCollectionConfirm(amount, extras, otp);
+          } catch (err) {
+            console.error("OTP verification error:", err);
+          }
         }}
         loading={loading}
       />
@@ -1739,9 +1869,144 @@ export default function BookingDetails() {
         type={confirmDialog.type}
       />
 
+      {/* Add-on Services Modal */}
+      <AnimatePresence>
+        {isAddonModalOpen && (
+          <div className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style={{ zIndex: 100 }}>
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+            >
+              <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                <div>
+                  <h3 className="text-lg font-black text-gray-900">Add Extra Services</h3>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5">Category: {booking?.serviceCategory}</p>
+                </div>
+                <button
+                  onClick={() => setIsAddonModalOpen(false)}
+                  className="p-1 rounded-full hover:bg-gray-200 transition-colors text-gray-500"
+                >
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
 
+              <div className="p-4 border-b border-gray-100">
+                <input
+                  type="text"
+                  placeholder="Search matching services..."
+                  value={addonSearch}
+                  onChange={e => setAddonSearch(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                />
+              </div>
 
-      <BottomNav />
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[250px]">
+                {addonLoading && addonCatalog.length === 0 ? (
+                  <div className="text-center py-12 text-sm text-gray-500 font-medium">Loading catalog services...</div>
+                ) : filteredCatalog.length === 0 ? (
+                  <div className="text-center py-12 text-sm text-gray-500 font-medium">
+                    No services found under "{booking?.serviceCategory}" category
+                  </div>
+                ) : (
+                  filteredCatalog.map(item => {
+                    const selected = selectedAddons.find(a => a.catalogId === item._id);
+                    return (
+                      <div
+                        key={item._id}
+                        className={`p-4 rounded-2xl border transition-all ${
+                          selected ? 'bg-blue-50/40 border-blue-200' : 'bg-white border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-gray-900 text-sm leading-snug">{item.name}</h4>
+                            <p className="text-xs font-black text-blue-600 mt-1">₹{item.price}</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {selected ? (
+                              <div className="flex items-center gap-2 bg-blue-50 p-1 rounded-xl border border-blue-100">
+                                <button
+                                  onClick={() => handleUpdateAddonQty(item._id, -1)}
+                                  className="w-7 h-7 flex items-center justify-center bg-white rounded-lg text-blue-600 shadow-sm border border-blue-100 font-bold hover:bg-blue-50"
+                                >
+                                  -
+                                </button>
+                                <span className="font-bold text-xs min-w-[16px] text-center text-blue-900">
+                                  {selected.quantity}
+                                </span>
+                                <button
+                                  onClick={() => handleUpdateAddonQty(item._id, 1)}
+                                  className="w-7 h-7 flex items-center justify-center bg-blue-600 rounded-lg text-white font-bold hover:bg-blue-700"
+                                >
+                                  +
+                                </button>
+                                <button
+                                  onClick={() => handleToggleAddon(item)}
+                                  className="p-1 text-red-500 hover:bg-red-50 rounded-lg ml-1"
+                                >
+                                  <FiTrash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleToggleAddon(item)}
+                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-600 hover:text-white font-bold text-xs transition-colors"
+                              >
+                                Add
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {selected && (
+                          <div className="mt-3 pt-3 border-t border-dashed border-blue-100">
+                            <textarea
+                              placeholder="Write a note (e.g. Customer request details)..."
+                              value={selected.note}
+                              onChange={e => handleUpdateAddonNote(item._id, e.target.value)}
+                              rows={2}
+                              className="w-full bg-white border border-blue-100 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none text-gray-700"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-3">
+                <button
+                  onClick={() => setIsAddonModalOpen(false)}
+                  className="flex-1 py-3 bg-white border border-gray-200 rounded-xl font-bold text-sm text-gray-700 active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveAddons}
+                  disabled={addonLoading}
+                  className="flex-[2] py-3 bg-blue-600 text-white rounded-xl font-bold text-sm active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {addonLoading ? 'Saving...' : 'Save Add-ons'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {(isAddonModalOpen || isCashModalOpen || isOtpModalOpen || isVisitModalOpen || isWorkDoneModalOpen) && (
+        <style>{`
+          nav {
+            display: none !important;
+          }
+        `}</style>
+      )}
+      {!(isAddonModalOpen || isCashModalOpen || isOtpModalOpen || isVisitModalOpen || isWorkDoneModalOpen) && <BottomNav />}
     </div>
   );
 }
