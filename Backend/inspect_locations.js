@@ -14,9 +14,11 @@ async function inspect() {
   await mongoose.connect(env.MONGODB_URI);
   const Vendor = require('./models/Vendor');
   
-  const vendors = await Vendor.find().select('name businessName isOnline availability availabilityStatus').lean();
-  console.log('Registered Vendors Statuses:');
-  console.log(JSON.stringify(vendors, null, 2));
+  const vendors = await Vendor.find().select('name isOnline availability location address geoLocation').lean();
+  console.log('Vendors Locations:');
+  vendors.forEach(v => {
+    console.log(`- ${v.name}: isOnline=${v.isOnline}, location=${JSON.stringify(v.location)}, address.lat=${v.address?.lat}, address.lng=${v.address?.lng}, geo=${JSON.stringify(v.geoLocation?.coordinates)}`);
+  });
   
   process.exit(0);
 }

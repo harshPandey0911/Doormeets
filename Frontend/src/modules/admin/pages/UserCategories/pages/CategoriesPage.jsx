@@ -18,6 +18,8 @@ const categorySchema = z.object({
   hasSaleBadge: z.boolean(),
   showOnHome: z.boolean(),
   hasBrands: z.boolean().default(true),
+  hasSubCategory: z.boolean().default(true),
+  hasBrand: z.boolean().default(true),
   categoryType: z.enum(["service", "product"]).default("service"),
   status: z.enum(["active", "inactive", "coming_soon"]).default("active"),
 });
@@ -36,6 +38,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
     homeBadge: "",
     hasSaleBadge: false,
     hasBrands: true,
+    hasSubCategory: true,
+    hasBrand: true,
     showOnHome: true,
     categoryType: "service",
     professionId: "",
@@ -79,6 +83,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
             homeBadge: cat.homeBadge || "",
             hasSaleBadge: cat.hasSaleBadge || false,
             hasBrands: cat.hasBrands ?? true,
+            hasSubCategory: cat.hasSubCategory ?? true,
+            hasBrand: cat.hasBrand ?? true,
             showOnHome: cat.showOnHome !== false,
             categoryType: cat.categoryType || "service",
             vendorId: cat.vendorId || null,
@@ -112,6 +118,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
         homeBadge: "",
         hasSaleBadge: false,
         hasBrands: true,
+        hasSubCategory: true,
+        hasBrand: true,
         showOnHome: true,
         categoryType: "service",
         professionId: "",
@@ -130,6 +138,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
       homeBadge: safe.homeBadge || "",
       hasSaleBadge: Boolean(safe.hasSaleBadge),
       hasBrands: safe.hasBrands ?? true,
+      hasSubCategory: safe.hasSubCategory ?? true,
+      hasBrand: safe.hasBrand ?? true,
       showOnHome: safe.showOnHome !== false,
       categoryType: safe.categoryType || "service",
       professionId: "",
@@ -150,6 +160,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
       homeBadge: "",
       hasSaleBadge: false,
       hasBrands: true,
+      hasSubCategory: true,
+      hasBrand: true,
       showOnHome: true,
       categoryType: "service",
       professionId: "",
@@ -190,6 +202,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
       homeBadge: form.homeBadge.trim(),
       hasSaleBadge: Boolean(form.hasSaleBadge),
       hasBrands: Boolean(form.hasBrands),
+      hasSubCategory: Boolean(form.hasSubCategory),
+      hasBrand: Boolean(form.hasBrand),
       showOnHome: Boolean(form.showOnHome),
       categoryType: form.categoryType,
       status: form.status,
@@ -202,7 +216,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
       return;
     }
 
-    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, showOnHome, categoryType, status } = validationResult.data;
+    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, showOnHome, categoryType, status } = validationResult.data;
 
     try {
       setLoading(true);
@@ -233,6 +247,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
         homeBadge: homeBadge || null,
         hasSaleBadge,
         hasBrands,
+        hasSubCategory,
+        hasBrand,
         showOnHome,
         homeOrder,
         categoryType,
@@ -257,6 +273,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
         homeBadge: cat.homeBadge || "",
         hasSaleBadge: cat.hasSaleBadge || false,
         hasBrands: cat.hasBrands ?? true,
+        hasSubCategory: cat.hasSubCategory ?? true,
+        hasBrand: cat.hasBrand ?? true,
         showOnHome: cat.showOnHome !== false,
         homeOrder: cat.homeOrder || 0,
         categoryType: cat.categoryType || "service",
@@ -639,9 +657,12 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
                       ) : (
                         <span className="text-sm text-gray-400">—</span>
                       )}
-                      <div className="mt-1">
-                        <span className={`inline-block px-2 py-1 text-[10px] font-semibold rounded uppercase tracking-wider ${c.hasBrands !== false ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
-                          {c.hasBrands !== false ? 'Brands Enabled' : 'No Brands'}
+                      <div className="mt-1 flex flex-col gap-1">
+                        <span className={`inline-block px-2 py-0.5 text-[9px] font-semibold rounded uppercase tracking-wider ${c.hasSubCategory !== false ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {c.hasSubCategory !== false ? 'Subcategory' : 'No Subcategory'}
+                        </span>
+                        <span className={`inline-block px-2 py-0.5 text-[9px] font-semibold rounded uppercase tracking-wider ${c.hasBrand !== false ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {c.hasBrand !== false ? 'Brand' : 'No Brand'}
                         </span>
                       </div>
                     </td>
@@ -887,14 +908,27 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
 
           <div className="flex items-center gap-3 pt-2">
             <input
-              id="hasBrands"
+              id="hasSubCategory"
               type="checkbox"
-              checked={form.hasBrands}
-              onChange={(e) => setForm((p) => ({ ...p, hasBrands: e.target.checked }))}
+              checked={form.hasSubCategory}
+              onChange={(e) => setForm((p) => ({ ...p, hasSubCategory: e.target.checked }))}
               className="h-4 w-4"
             />
-            <label htmlFor="hasBrands" className="text-base font-semibold text-gray-800">
-              Enable Brands for this category
+            <label htmlFor="hasSubCategory" className="text-base font-semibold text-gray-800">
+              Has Subcategory
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <input
+              id="hasBrand"
+              type="checkbox"
+              checked={form.hasBrand}
+              onChange={(e) => setForm((p) => ({ ...p, hasBrand: e.target.checked }))}
+              className="h-4 w-4"
+            />
+            <label htmlFor="hasBrand" className="text-base font-semibold text-gray-800">
+              Has Brand
             </label>
           </div>
 

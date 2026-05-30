@@ -59,7 +59,8 @@ exports.updateSettings = async (req, res, next) => {
       mcqTimeLimitMinutes,
       mcqMinScoreL1,
       mcqMinScoreL2,
-      welcomeVideoUrl
+      welcomeVideoUrl,
+      commissionPercentage
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -84,7 +85,8 @@ exports.updateSettings = async (req, res, next) => {
         cloudinaryApiSecret,
         mcqMinScoreL1,
         mcqMinScoreL2,
-        welcomeVideoUrl
+        welcomeVideoUrl,
+        commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 20
       });
     } else {
       // Update fields if provided
@@ -143,6 +145,7 @@ exports.updateSettings = async (req, res, next) => {
       if (mcqMinScoreL2 !== undefined) undefined; // handled below
       if (mcqMinScoreL2 !== undefined) settings.mcqMinScoreL2 = mcqMinScoreL2;
       if (welcomeVideoUrl !== undefined) settings.welcomeVideoUrl = welcomeVideoUrl;
+      if (commissionPercentage !== undefined) settings.commissionPercentage = Number(commissionPercentage);
 
       await settings.save();
     }

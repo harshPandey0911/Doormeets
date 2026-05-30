@@ -178,6 +178,26 @@
     "children": []
   },
   {
+    "title": "Promo Codes",
+    "route": "/admin/promos",
+    "allowedRoles": [
+      "super_admin",
+      "admin",
+      "city_admin"
+    ],
+    "children": []
+  },
+  {
+    "title": "Gift Vouchers",
+    "route": "/admin/vouchers",
+    "allowedRoles": [
+      "super_admin",
+      "admin",
+      "city_admin"
+    ],
+    "children": []
+  },
+  {
     "title": "Commission",
     "route": "/admin/commission",
     "allowedRoles": [

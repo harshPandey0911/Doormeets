@@ -1624,6 +1624,10 @@ const collectSelfCash = async (req, res) => {
     booking.paymentOtp = undefined;
     await booking.save();
 
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
+
     // ── Update VendorBill status ──
     bill.vendorTotalEarning = vendorEarning;
     bill.companyRevenue = platformFeeAmount;

@@ -15,6 +15,21 @@ exports.createPricing = async (req, res) => {
 
     if (req.body.brandId === '') req.body.brandId = null;
     if (req.body.subCategoryId === '') req.body.subCategoryId = null;
+    if (req.body.cityId === '' || req.body.cityId === 'all') req.body.cityId = null;
+
+    const Category = require('../../models/Category');
+    const category = await Category.findById(req.body.categoryId);
+    if (!category) {
+      return res.status(400).json({ success: false, message: 'Category not found' });
+    }
+
+    if (category.hasSubCategory && !req.body.subCategoryId) {
+      return res.status(400).json({ success: false, message: 'Subcategory is required for this category' });
+    }
+
+    if (category.hasBrand && !req.body.brandId) {
+      return res.status(400).json({ success: false, message: 'Brand is required for this category' });
+    }
 
     if (basePrice !== undefined && gstPercentage !== undefined) {
       if (gstAmount === undefined) {
@@ -49,12 +64,16 @@ exports.getAllPricing = async (req, res) => {
     if (req.query.subCategoryId) filter.subCategoryId = req.query.subCategoryId;
     if (req.query.serviceId) filter.serviceId = req.query.serviceId;
     if (req.query.brandId) filter.brandId = req.query.brandId;
+    if (req.query.cityId) {
+      filter.cityId = req.query.cityId === 'all' ? null : req.query.cityId;
+    }
 
     const pricing = await ServiceBrandPricing.find(filter)
       .populate('categoryId', 'title')
       .populate('subCategoryId', 'title')
       .populate('serviceId', 'title')
       .populate('brandId', 'title')
+      .populate('cityId', 'name')
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, data: pricing });
@@ -86,6 +105,24 @@ exports.updatePricing = async (req, res) => {
 
     if (req.body.brandId === '') req.body.brandId = null;
     if (req.body.subCategoryId === '') req.body.subCategoryId = null;
+    if (req.body.cityId === '' || req.body.cityId === 'all') req.body.cityId = null;
+
+    const categoryId = req.body.categoryId || pricingDoc.categoryId;
+    const Category = require('../../models/Category');
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(400).json({ success: false, message: 'Category not found' });
+    }
+
+    const subCategoryId = req.body.hasOwnProperty('subCategoryId') ? req.body.subCategoryId : pricingDoc.subCategoryId;
+    if (category.hasSubCategory && !subCategoryId) {
+      return res.status(400).json({ success: false, message: 'Subcategory is required for this category' });
+    }
+
+    const brandId = req.body.hasOwnProperty('brandId') ? req.body.brandId : pricingDoc.brandId;
+    if (category.hasBrand && !brandId) {
+      return res.status(400).json({ success: false, message: 'Brand is required for this category' });
+    }
 
     if (req.body.basePrice !== undefined || req.body.gstPercentage !== undefined || req.body.vendorProfit !== undefined) {
       gstAmount = (Number(basePrice) * Number(gstPercentage)) / 100;

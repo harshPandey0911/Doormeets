@@ -616,6 +616,10 @@ const collectCash = async (req, res) => {
     booking.paymentOtp = undefined;
     await booking.save();
 
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
+
     // Mark bill as paid
     bill.status = 'paid';
     bill.paidAt = new Date();

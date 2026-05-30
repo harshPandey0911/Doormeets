@@ -14,6 +14,8 @@ import { cartService } from '../../../../services/cartService';
 import { configService } from '../../../../services/configService';
 import { getPlans } from '../../services/planService';
 import { userAuthService } from '../../../../services/authService';
+import { promoService } from '../../../../services/promoService';
+import { voucherService } from '../../../../services/voucherService';
 import { useCart } from '../../../../context/CartContext';
 import LiveBookingCard from '../../components/booking/LiveBookingCard';
 
@@ -54,6 +56,12 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' | 'pay_at_home'
   const [bids, setBids] = useState([]); // Array to collect multiple vendor responses
 
+  // Promo Code States
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -61,6 +69,88 @@ const Checkout = () => {
   const [visitedFee, setVisitedFee] = useState(0);
   const [gstPercentage, setGstPercentage] = useState(18);
   const [bookingType, setBookingType] = useState('instant'); // 'instant' | 'scheduled'
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Please enter a promo code');
+      return;
+    }
+
+    setPromoLoading(true);
+    setPromoError('');
+    try {
+      const firstItem = cartItems[0];
+      const serviceId = typeof firstItem?.serviceId === 'object'
+        ? firstItem.serviceId._id || firstItem.serviceId.id
+        : firstItem?.serviceId || firstItem?._id;
+      
+      const quantity = firstItem?.serviceCount || 1;
+      
+      // 1. Try standard Promo Code validation
+      try {
+        const response = await promoService.applyPromo(
+          promoCode.trim().toUpperCase(),
+          serviceId,
+          itemTotal,
+          quantity
+        );
+
+        if (response.success) {
+          setAppliedPromo(response.data);
+          toast.success(response.message || 'Promo code applied!');
+          setPromoLoading(false);
+          return;
+        }
+      } catch (promoErr) {
+        // If it's a validation error (like service not matching), throw to display it
+        if (promoErr.message && !promoErr.message.includes('Invalid or inactive')) {
+          throw promoErr;
+        }
+      }
+
+      // 2. Try Gift Voucher redemption if promo code was invalid/not found
+      const response = await voucherService.redeemVoucher(
+        promoCode.trim().toUpperCase(),
+        serviceId,
+        itemTotal,
+        quantity
+      );
+
+      if (response.success) {
+        if (response.data.type === 'wallet') {
+          // Instantly credited wallet!
+          toast.success(response.message || `₹${response.data.value} added to your wallet balance!`);
+          setPromoCode('');
+          setPromoError('');
+        } else {
+          // Discount voucher applied!
+          setAppliedPromo({
+            code: response.data.code,
+            discountType: response.data.discountType,
+            discountValue: response.data.discountValue,
+            discountAmount: response.data.discountAmount
+          });
+          toast.success(response.message || 'Gift voucher applied!');
+        }
+      } else {
+        setPromoError(response.message || 'Failed to apply voucher');
+        toast.error(response.message || 'Failed to apply voucher');
+      }
+    } catch (error) {
+      const msg = error.message || 'Invalid promo or gift voucher code';
+      setPromoError(msg);
+      toast.error(msg);
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+    setPromoError('');
+    toast.success('Promo code removed');
+  };
 
   // Check if Razorpay is loaded (defer to avoid blocking initial render)
   useEffect(() => {
@@ -350,9 +440,10 @@ const Checkout = () => {
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
-        discount: savings,
+        discount: savings + promoDiscount,
         tax: taxesAndFee,
         visitationFee: finalVisitedFee,
+        promoCode: appliedPromo ? appliedPromo.code : null,
 
         // Metadata for better data capture
         serviceCategory: firstItem.categoryTitle || firstItem.category || 'General',
@@ -627,9 +718,10 @@ const Checkout = () => {
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
-        discount: savings,
+        discount: savings + promoDiscount,
         tax: taxesAndFee,
         visitationFee: finalVisitedFee,
+        promoCode: appliedPromo ? appliedPromo.code : null,
 
         // Metadata for better data capture
         serviceCategory: firstItem.categoryTitle || firstItem.category || 'General',
@@ -1071,7 +1163,7 @@ const Checkout = () => {
     return sum + original;
   }, 0);
 
-  const savings = totalOriginalPrice - itemTotal;
+  const savings = Math.max(0, totalOriginalPrice - itemTotal);
   const taxesAndFee = 0; // GST is already included in the finalCustomerPrice from backend
   // Visited fee logic: if Total is 0 (All free), user might still pay visited fee?
   // User says "no payemtn". So maybe visited fee also waived? Or user pays visited fee?
@@ -1079,13 +1171,14 @@ const Checkout = () => {
   // Convenience fee is now fully removed per user request
   const finalVisitedFee = 0;
 
-  const totalAmount = itemTotal + taxesAndFee + finalVisitedFee;
+  const promoDiscount = appliedPromo ? appliedPromo.discountAmount : 0;
+  const totalAmount = Math.max(0, itemTotal - promoDiscount + taxesAndFee + finalVisitedFee);
   const amountToPay = totalAmount;
 
   // Helper for Free Plan Full Breakdown Display
   const displayTax = 0;
   const displayFee = 0;
-  const displaySavings = totalAmount === 0 ? (totalOriginalPrice + displayTax + displayFee) : savings;
+  const displaySavings = totalAmount === 0 ? (totalOriginalPrice + displayTax + displayFee) : (savings + promoDiscount);
 
   // Date and time slot helper functions
   const getDates = () => {
@@ -1391,6 +1484,74 @@ const Checkout = () => {
           </div>
         </div>
 
+        {/* Promo Code Application Panel */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+              <FiCheckCircle className="w-4 h-4" />
+            </span>
+            <h3 className="text-sm font-bold text-gray-900">Promo Code</h3>
+          </div>
+
+          {appliedPromo ? (
+            <div className="bg-green-50 border border-green-100 rounded-xl p-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-green-500 rounded-lg flex items-center justify-center text-white font-black text-sm shrink-0">
+                  %
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-slate-900 tracking-wide uppercase">{appliedPromo.code}</span>
+                    <span className="text-[10px] font-black text-green-700 bg-green-100 px-2 py-0.5 rounded-full uppercase">APPLIED</span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Saved ₹{appliedPromo.discountAmount} extra!
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemovePromo}
+                className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline px-2.5 py-1.5 rounded-lg transition-all"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Enter coupon code (e.g. FLAT50)"
+                    value={promoCode}
+                    onChange={(e) => {
+                      setPromoCode(e.target.value.toUpperCase());
+                      setPromoError('');
+                    }}
+                    disabled={promoLoading}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all uppercase"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleApplyPromo}
+                  disabled={promoLoading || !promoCode.trim()}
+                  className="px-5 py-2.5 bg-black hover:bg-slate-800 disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all shrink-0"
+                >
+                  {promoLoading ? 'Applying...' : 'Apply'}
+                </button>
+              </div>
+              {promoError && (
+                <p className="text-xs font-bold text-red-600 flex items-center gap-1 mt-1 pl-1">
+                  <FiInfo className="w-3.5 h-3.5 shrink-0" />
+                  {promoError}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Payment Summary */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 mb-6 shadow-sm overflow-hidden relative">
           {/* Decorative Background for Header */}
@@ -1411,10 +1572,21 @@ const Checkout = () => {
             </div>
 
             {/* Discount Line */}
-            {displaySavings > 0 && (
+            {savings > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-green-600">Discount</span>
-                <span className="text-sm font-medium text-green-600">-₹{displaySavings.toLocaleString('en-IN')}</span>
+                <span className="text-sm font-medium text-green-600">Plan/Item Discount</span>
+                <span className="text-sm font-medium text-green-600">-₹{savings.toLocaleString('en-IN')}</span>
+              </div>
+            )}
+
+            {/* Promo Discount Line */}
+            {appliedPromo && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-indigo-600 flex items-center gap-1">
+                  <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-1.5 py-0.5 rounded uppercase">{appliedPromo.code}</span>
+                  Promo Discount
+                </span>
+                <span className="text-sm font-bold text-indigo-600">-₹{appliedPromo.discountAmount.toLocaleString('en-IN')}</span>
               </div>
             )}
 

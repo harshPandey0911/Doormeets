@@ -146,6 +146,10 @@ const verifyPaymentWebhook = async (req, res) => {
 
     await booking.save();
 
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
+
     // ── Credit Vendor Wallet from VendorBill (single source of truth) ──
     const Transaction = require('../../models/Transaction');
     const Vendor = require('../../models/Vendor');
@@ -379,6 +383,10 @@ const processWalletPayment = async (req, res) => {
      }
 
     await booking.save();
+
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
 
     // ── Credit Vendor Wallet and Generate Invoices (Dual-Invoice Flow with Safeguards) ──
     const Vendor = require('../../models/Vendor');

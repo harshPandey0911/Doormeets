@@ -4,6 +4,7 @@ import { FiArrowLeft, FiChevronRight, FiLoader } from 'react-icons/fi';
 import { MdAccountBalanceWallet } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 import { walletService } from '../../../../services/walletService';
+import { voucherService } from '../../../../services/voucherService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import NotificationBell from '../../components/common/NotificationBell';
 import { themeColors } from '../../../../theme';
@@ -13,6 +14,10 @@ const Wallet = () => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Voucher Redemption states
+  const [voucherCode, setVoucherCode] = useState('');
+  const [claiming, setClaiming] = useState(false);
 
   useEffect(() => {
     const loadWalletData = async () => {
@@ -39,6 +44,47 @@ const Wallet = () => {
 
     loadWalletData();
   }, []);
+
+  const handleRedeemVoucher = async (e) => {
+    e.preventDefault();
+    if (!voucherCode.trim()) {
+      toast.error('Please enter a voucher code');
+      return;
+    }
+
+    setClaiming(true);
+    try {
+      const response = await voucherService.redeemVoucher(
+        voucherCode.trim().toUpperCase()
+      );
+
+      if (response.success && response.data?.type === 'wallet') {
+        toast.success(response.message || `₹${response.data.value} added to your wallet balance!`);
+        setVoucherCode('');
+        
+        // Reload wallet balance and transactions
+        const [balanceResponse, transactionsResponse] = await Promise.all([
+          walletService.getBalance(),
+          walletService.getTransactions()
+        ]);
+        if (balanceResponse.success) {
+          setWalletBalance(balanceResponse.data.balance || 0);
+        }
+        if (transactionsResponse.success) {
+          setTransactions(transactionsResponse.data || []);
+        }
+      } else if (response.success) {
+        toast.success('Discount voucher claimed successfully! You can use it at checkout.');
+        setVoucherCode('');
+      } else {
+        toast.error(response.message || 'Failed to redeem voucher');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Invalid or expired gift voucher code');
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   return (
     <div className="min-h-screen pb-20 relative bg-white">
@@ -119,6 +165,33 @@ const Wallet = () => {
                   .toLocaleString('en-IN')} <span className="text-base font-normal text-red-300">(Penalty)</span>
               </h2>
             </div>
+          </div>
+
+          {/* Redeem Gift Card / Voucher Card */}
+          <div className="bg-white rounded-2xl p-5 mb-6 border border-gray-100 shadow-xs relative overflow-hidden">
+            <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-1.5">
+              <span>🎁</span> Redeem Gift Card / Voucher
+            </h3>
+            <p className="text-xs text-gray-500 mb-3.5 leading-relaxed">
+              Have a unique gift card code? Type it below to instantly credit cash to your wallet balance.
+            </p>
+            <form onSubmit={handleRedeemVoucher} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter Code (e.g. GIFT500)"
+                value={voucherCode}
+                onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                disabled={claiming}
+                className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all uppercase"
+              />
+              <button
+                type="submit"
+                disabled={claiming || !voucherCode.trim()}
+                className="px-5 py-2.5 bg-black hover:bg-slate-800 disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl text-sm font-bold shadow-xs transition-all shrink-0"
+              >
+                {claiming ? 'Claiming...' : 'Claim'}
+              </button>
+            </form>
           </div>
 
           {/* Analytics Cards */}

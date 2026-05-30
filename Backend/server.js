@@ -241,6 +241,8 @@ app.use('/api/admin', require('./routes/admin-routes/reviewManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/reportManagement.routes'));
 app.use('/api/admin/settlements', require('./routes/admin-routes/settlementManagement.routes'));
 app.use('/api/admin/admins', require('./routes/admin-routes/adminManagement.routes'));
+app.use('/api/admin/promos', require('./routes/admin-routes/promo.routes'));
+app.use('/api/admin/vouchers', require('./routes/admin-routes/voucher.routes'));
 app.use('/api/admin/support', require('./routes/admin-routes/support.routes'));
 app.use('/api/admin/banners', require('./routes/admin-routes/banner.routes'));
 app.use('/api/admin/training', require('./routes/admin-routes/trainingManagement.routes'));
@@ -249,6 +251,7 @@ app.use('/api/admin/city-admin-requests', require('./routes/admin-routes/cityAdm
 app.use('/api/admin/police-verification', require('./routes/admin-routes/policeVerification.routes'));
 app.use('/api/image', require('./routes/admin-routes/image.routes'));
 app.use('/api', require('./routes/admin-routes/upload.routes')); // Generic upload access
+app.use('/api/commissions', require('./routes/admin-routes/commission.routes'));
 
 // Vendor Wallet/Ledger routes
 // Vendor Wallet/Ledger routes
@@ -274,6 +277,8 @@ app.use('/api/stock', require('./routes/stock.routes'));
 
 // Public routes (no authentication required)
 app.use('/api/public', require('./routes/public-routes/catalog.routes'));
+app.use('/api/public/promos', require('./routes/public-routes/promo.routes'));
+app.use('/api/public/vouchers', require('./routes/public-routes/voucher.routes'));
 app.use('/api/public', require('./routes/public-routes/plan.routes'));
 app.use('/api/public', require('./routes/public-routes/config.routes'));
 app.use('/api/public/banners', require('./routes/user-routes/banner.routes'));
