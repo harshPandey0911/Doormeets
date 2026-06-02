@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin, hasPermission } = require('../../middleware/roleMiddleware');
 const {
   getVendorBalances,
   getVendorLedger,
@@ -20,31 +20,32 @@ const {
   rejectWithdrawal
 } = require('../../controllers/adminControllers/settlementController');
 
+// All routes require authentication, admin role and settlement permission
+router.use(authenticate, isAdmin, hasPermission('view_settlements'));
+
 // Dashboard summary
-router.get('/dashboard', authenticate, isAdmin, getSettlementDashboard);
+router.get('/dashboard', getSettlementDashboard);
 
 // Get all vendors with balances
-router.get('/vendors', authenticate, isAdmin, getVendorBalances);
+router.get('/vendors', getVendorBalances);
 
 // Get specific vendor's ledger
-router.get('/vendors/:vendorId/ledger', authenticate, isAdmin, getVendorLedger);
+router.get('/vendors/:vendorId/ledger', getVendorLedger);
 
 // Vendor management (blocking and limits)
-router.post('/vendors/:vendorId/block', authenticate, isAdmin, blockVendor);
-router.post('/vendors/:vendorId/unblock', authenticate, isAdmin, unblockVendor);
-router.post('/vendors/:vendorId/cash-limit', authenticate, isAdmin, updateCashLimit);
+router.post('/vendors/:vendorId/block', blockVendor);
+router.post('/vendors/:vendorId/unblock', unblockVendor);
+router.post('/vendors/:vendorId/cash-limit', updateCashLimit);
 
 // Get all pending settlements
-router.get('/pending', authenticate, isAdmin, getPendingSettlements);
+router.get('/pending', getPendingSettlements);
 
 // Get settlement history
-router.get('/history', authenticate, isAdmin, getSettlementHistory);
+router.get('/history', getSettlementHistory);
 
 // Approve settlement
 router.post(
   '/:settlementId/approve',
-  authenticate,
-  isAdmin,
   [body('adminNotes').optional().isString()],
   approveSettlement
 );
@@ -52,15 +53,13 @@ router.post(
 // Reject settlement
 router.post(
   '/:settlementId/reject',
-  authenticate,
-  isAdmin,
   [body('rejectionReason').notEmpty().withMessage('Rejection reason is required')],
   rejectSettlement
 );
 
 // Withdrawals
-router.get('/withdrawals', authenticate, isAdmin, getWithdrawalRequests);
-router.post('/withdrawals/:withdrawalId/approve', authenticate, isAdmin, approveWithdrawal);
-router.post('/withdrawals/:withdrawalId/reject', authenticate, isAdmin, rejectWithdrawal);
+router.get('/withdrawals', getWithdrawalRequests);
+router.post('/withdrawals/:withdrawalId/approve', approveWithdrawal);
+router.post('/withdrawals/:withdrawalId/reject', rejectWithdrawal);
 
 module.exports = router;

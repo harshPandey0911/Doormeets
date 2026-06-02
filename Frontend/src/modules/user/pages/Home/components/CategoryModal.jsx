@@ -226,18 +226,26 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         setIsRedirecting(false);
       }, 300);
     } else if (category?.id) {
+      const hasSubCategory = category.hasSubCategory !== false;
+      const hasBrand = category.hasBrand !== false;
+
       if (category.initialBrand) {
         // Direct to brand services if initialBrand is provided (from search)
         const brand = category.initialBrand;
         setSelectedBrand(brand);
         setView('services');
         fetchServices(brand.id || brand._id);
-      } else if (category.hasBrands === false) {
-        setView('services');
-        fetchServices();
       } else {
-        // Fetch subcategories first
-        fetchSubCategories();
+        if (hasSubCategory) {
+          setView('subcategories');
+          fetchSubCategories();
+        } else if (hasBrand) {
+          setView('brands');
+          fetchBrands();
+        } else {
+          setView('services');
+          fetchServices();
+        }
       }
     }
   }, [isOpen, category?.id, cityId]);
@@ -253,15 +261,25 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
           setSubCategories(response.subCategories);
           setView('subcategories');
         } else {
-          // Fallback to brands if no subcategories
-          setView('brands');
-          fetchBrands();
+          // Fallback if no subcategories (backward compatible/safety fallback)
+          if (category.hasBrand !== false) {
+            setView('brands');
+            fetchBrands();
+          } else {
+            setView('services');
+            fetchServices();
+          }
         }
       }
     } catch (error) {
       console.error("Failed to load subcategories:", error);
-      setView('brands');
-      fetchBrands();
+      if (category.hasBrand !== false) {
+        setView('brands');
+        fetchBrands();
+      } else {
+        setView('services');
+        fetchServices();
+      }
     } finally {
       setLoading(false);
     }
@@ -287,14 +305,19 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
     }
   };
 
-  const fetchServices = async (brandId) => {
+  const fetchServices = async (brandId = null, subCatId = null) => {
     try {
       setLoading(true);
-      const response = await publicCatalogService.getServices({
-        brandId: brandId,
+      const params = {
         cityId: cityId,
         categoryId: category?.id
-      });
+      };
+      if (brandId) params.brandId = brandId;
+      if (subCatId || selectedSubCategory?.id || selectedSubCategory?._id) {
+        params.subCategoryId = subCatId || selectedSubCategory?.id || selectedSubCategory?._id;
+      }
+      
+      const response = await publicCatalogService.getServices(params);
       if (response.success) {
         setServices(response.services || []);
       }
@@ -307,8 +330,14 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
 
   const handleSubCategoryClick = (subCat) => {
     setSelectedSubCategory(subCat);
-    setView('brands');
-    fetchBrands(subCat.id || subCat._id);
+    const hasBrand = category.hasBrand !== false;
+    if (hasBrand) {
+      setView('brands');
+      fetchBrands(subCat.id || subCat._id);
+    } else {
+      setView('services');
+      fetchServices(null, subCat.id || subCat._id);
+    }
   };
 
   const handleBrandClick = (brand) => {
@@ -330,6 +359,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
     setView('subcategories');
     setSelectedSubCategory(null);
     setBrands([]);
+    setServices([]);
   };
 
   const handleBackToBrands = () => {
@@ -464,15 +494,21 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                   <div className="px-4 py-6">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-6">
-                      {view === 'services' && category?.hasBrands !== false && (
+                      {view === 'services' && (category?.hasBrand !== false || category?.hasSubCategory !== false) && (
                         <button
-                          onClick={handleBackToBrands}
+                          onClick={() => {
+                            if (category?.hasBrand !== false) {
+                              handleBackToBrands();
+                            } else {
+                              handleBackToSubCategories();
+                            }
+                          }}
                           className="p-1 rounded-full hover:bg-gray-100"
                         >
                           <FiArrowLeft className="w-6 h-6 text-gray-800" />
                         </button>
                       )}
-                      {view === 'brands' && subCategories.length > 0 && (
+                      {view === 'brands' && category?.hasSubCategory !== false && (
                         <button
                           onClick={handleBackToSubCategories}
                           className="p-1 rounded-full hover:bg-gray-100"

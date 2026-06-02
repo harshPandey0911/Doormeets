@@ -1267,8 +1267,9 @@ const completeSelfJob = async (req, res) => {
     const booking = await Booking.findOne({ _id: id, vendorId });
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-    // Status guard
-    if (booking.status !== BOOKING_STATUS.VISITED && booking.status !== BOOKING_STATUS.IN_PROGRESS) {
+    // Status guard — allow work_done for idempotent re-trigger (e.g. vendor clicks again after partial failure)
+    const alreadyDone = booking.status === BOOKING_STATUS.WORK_DONE;
+    if (!alreadyDone && booking.status !== BOOKING_STATUS.VISITED && booking.status !== BOOKING_STATUS.IN_PROGRESS) {
       return res.status(400).json({ success: false, message: 'Cannot complete from current status' });
     }
 
@@ -1441,10 +1442,16 @@ const completeSelfJob = async (req, res) => {
       grandTotal = bill.grandTotal;
       allServices = bill.services || [];
       billParts = bill.parts || [];
+      // Also extract totals for the response (declared in else scope via the bill object)
       bill.status = 'generated';
       bill.generatedAt = new Date();
       await bill.save();
     }
+
+    // Extract totals for response (from either new or existing bill)
+    const totalGST = bill.totalGST ?? 0;
+    const totalServiceBase = bill.totalServiceBase ?? 0;
+    const totalPartsBase = bill.totalPartsBase ?? 0;
 
     // ═══════════════════════════════════════════
     // STEP 7: UPDATE BOOKING (no earnings!)
@@ -1616,6 +1623,10 @@ const collectSelfCash = async (req, res) => {
     booking.completedAt = new Date();
     booking.paymentOtp = undefined;
     await booking.save();
+
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
 
     // ── Update VendorBill status ──
     bill.vendorTotalEarning = vendorEarning;

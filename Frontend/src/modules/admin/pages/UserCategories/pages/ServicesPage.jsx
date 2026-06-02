@@ -160,22 +160,30 @@ const ServicesPage = () => {
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SubCategory</label>
-                <select 
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.subCategoryId}
-                  onChange={(e) => setFormData({...formData, subCategoryId: e.target.value})}
-                  required
-                >
-                  <option value="">Select SubCategory</option>
-                  {subCategories
-                    .filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId)
-                    .map(sub => (
-                    <option key={sub._id} value={sub._id}>{sub.title}</option>
-                  ))}
-                </select>
-              </div>
+              {(() => {
+                const selectedCategory = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+                const hasSubCategory = selectedCategory ? (selectedCategory.hasSubCategory !== false) : true;
+                if (!hasSubCategory) return null;
+
+                return (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">SubCategory</label>
+                    <select 
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={formData.subCategoryId}
+                      onChange={(e) => setFormData({...formData, subCategoryId: e.target.value})}
+                      required={hasSubCategory}
+                    >
+                      <option value="">Select SubCategory</option>
+                      {subCategories
+                        .filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId)
+                        .map(sub => (
+                        <option key={sub._id} value={sub._id}>{sub.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Service Title</label>

@@ -44,6 +44,8 @@ const notificationSchema = new mongoose.Schema({
       'booking_completed',
       'booking_rejected',
       'booking_rescheduled',
+      'booking_reconfirmation_request', // 30-min before slot reminder
+      'booking_escalation',             // Admin alert: vendor missed reconfirmation
       'job_accepted',
       'job_rejected',
       'job_cancelled',
@@ -71,6 +73,9 @@ const notificationSchema = new mongoose.Schema({
       'scrap_completed',
       'vendor_withdrawal_request',
       'new_vendor_registration',
+      'retraining_assigned',  // Admin forced vendor retraining
+      'account_frozen',       // Admin froze vendor account
+      'account_unfrozen',     // Admin unfroze vendor account
       'general'
     ],
     index: true
@@ -93,7 +98,7 @@ const notificationSchema = new mongoose.Schema({
   },
   relatedType: {
     type: String,
-    enum: ['booking', 'payment', 'user', 'vendor', 'worker', 'service', 'scrap', 'withdrawal'],
+    enum: ['booking', 'payment', 'user', 'vendor', 'worker', 'service', 'scrap', 'withdrawal', 'training'],
     default: null
   },
   // Notification Status

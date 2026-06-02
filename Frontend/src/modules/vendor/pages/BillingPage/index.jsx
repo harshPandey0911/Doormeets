@@ -798,22 +798,20 @@ const BillingPage = () => {
           <div className="animate-in fade-in slide-in-from-right-4">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-gray-800">Added Services</h3>
-                <button onClick={() => setViewMode('select-services')} className="text-blue-600 font-bold text-xs bg-blue-50 px-3 py-1.5 rounded-lg">+ Add Services</button>
+                <h3 className="font-bold text-gray-800">Work Done – Services</h3>
+                <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg font-medium">Read Only</span>
               </div>
-              {selectedServices.length === 0 ? <div className="text-center py-8 bg-gray-50 rounded-xl text-gray-400 text-sm">No extra services added</div> : (
+              {selectedServices.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-xl text-gray-400 text-sm">No extra services were added</div>
+              ) : (
                 <div className="space-y-3">
                   {selectedServices.map((s, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 bg-blue-50/30 rounded-xl border border-blue-100">
                       <div>
                         <p className="font-bold text-sm text-gray-800">{s.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <button onClick={() => updateServiceQty(idx, -1)} className="w-6 h-6 flex items-center justify-center bg-white border border-blue-200 rounded text-blue-600 font-bold">-</button>
-                          <span className="text-xs font-bold w-4 text-center">{s.quantity}</span>
-                          <button onClick={() => updateServiceQty(idx, 1)} className="w-6 h-6 flex items-center justify-center bg-white border border-blue-200 rounded text-blue-600 font-bold">+</button>
-                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">Qty: {s.quantity}</p>
                       </div>
-                      <p className="font-bold text-gray-800">₹{s.total.toFixed(2)}</p>
+                      <p className="font-bold text-gray-800">₹{(s.price * s.quantity).toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -826,20 +824,18 @@ const BillingPage = () => {
           <div className="animate-in fade-in slide-in-from-right-4">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-gray-800">Added Parts</h3>
-                <button onClick={() => setViewMode('select-parts')} className="text-orange-600 font-bold text-xs bg-orange-50 px-3 py-1.5 rounded-lg">+ Add Parts</button>
+                <h3 className="font-bold text-gray-800">Work Done – Parts</h3>
+                <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg font-medium">Read Only</span>
               </div>
-              {selectedParts.length === 0 ? <div className="text-center py-8 bg-gray-50 rounded-xl text-gray-400 text-sm">No parts added</div> : (
+              {selectedParts.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-xl text-gray-400 text-sm">No parts were added</div>
+              ) : (
                 <div className="space-y-3">
                   {selectedParts.map((p, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 bg-orange-50/30 rounded-xl border border-orange-100">
                       <div>
                         <p className="font-bold text-sm text-gray-800">{p.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <button onClick={() => updatePartQty(idx, -1)} className="w-6 h-6 flex items-center justify-center bg-white border border-orange-200 rounded text-orange-600 font-bold">-</button>
-                          <span className="text-xs font-bold w-4 text-center">{p.quantity}</span>
-                          <button onClick={() => updatePartQty(idx, 1)} className="w-6 h-6 flex items-center justify-center bg-white border border-orange-200 rounded text-orange-600 font-bold">+</button>
-                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">Qty: {p.quantity}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-gray-800">₹{p.total.toFixed(2)}</p>

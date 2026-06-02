@@ -50,7 +50,8 @@ const createBooking = async (req, res) => {
       brandName: reqBrandName,
       brandIcon: reqBrandIcon,
       bookingType, // Extract bookingType
-      isConsultation
+      isConsultation,
+      promoCode
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -418,6 +419,27 @@ const createBooking = async (req, res) => {
     // All operations below will run non-blocking after the HTTP response has been sent.
     setImmediate(async () => {
       try {
+        if (promoCode) {
+          const upperCode = promoCode.trim().toUpperCase();
+          const PromoCode = require('../../models/PromoCode');
+          const Voucher = require('../../models/Voucher');
+
+          // Check if it's a PromoCode
+          const promoResult = await PromoCode.findOneAndUpdate({ code: upperCode }, { $inc: { usageCount: 1 } });
+          if (promoResult) {
+            console.log(`[CreateBooking][bg] Promo code usage count incremented for ${upperCode}`);
+          } else {
+            // Check if it's a Voucher
+            const voucher = await Voucher.findOne({ code: upperCode });
+            if (voucher) {
+              voucher.redeemedBy.push({ userId, redeemedAt: new Date() });
+              voucher.usageCount += 1;
+              await voucher.save();
+              console.log(`[CreateBooking][bg] Gift voucher redemption recorded for ${upperCode}`);
+            }
+          }
+        }
+
         // Re-fetch user and booking for background tasks to ensure latest state
         const userForBackground = await User.findById(userId);
         const bookingForBackground = await Booking.findById(booking._id)

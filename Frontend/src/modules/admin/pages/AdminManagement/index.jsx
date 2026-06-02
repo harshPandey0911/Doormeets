@@ -25,6 +25,18 @@ const PERMISSION_KEYS = [
   { key: 'manage_notifications', label: 'Send Notifications' },
   { key: 'propose_categories', label: 'Propose New Categories (needs approval)' },
   { key: 'propose_brands', label: 'Propose New Brands (needs approval)' },
+  { key: 'view_reviews', label: 'View Reviews' },
+  { key: 'view_settlements', label: 'View Settlements' },
+  { key: 'view_commissions', label: 'View Commissions' },
+  { key: 'manage_plans', label: 'Manage Plans' },
+  { key: 'view_subscriptions', label: 'View Vendor Subscriptions' },
+  { key: 'view_police_verification', label: 'View Police Verification' },
+  { key: 'view_vendor_requests', label: 'View Vendor Requests' },
+  { key: 'view_vendor_services', label: 'View Vendor Services' },
+  { key: 'view_vendor_parts', label: 'View Vendor Parts' },
+  { key: 'manage_stock', label: 'Manage Stock' },
+  { key: 'view_scrap_items', label: 'View Scrap Items' },
+  { key: 'manage_promos', label: 'Manage Promo Codes' },
 ];
 
 const REQUEST_TYPE_LABELS = {
@@ -58,6 +70,7 @@ const AdminManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [rolePreset, setRolePreset] = useState('CITY_ADMIN');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -119,12 +132,16 @@ const AdminManagement = () => {
 
   const openCreate = () => {
     setFormData(emptyForm);
+    setRolePreset('CITY_ADMIN');
     setEditingAdmin(null);
     setShowCreateModal(true);
   };
 
   const openEdit = (admin) => {
     setEditingAdmin(admin);
+    const presets = ['SUPER_ADMIN', 'CITY_ADMIN', 'MANAGER', 'SUPPORT', 'OPERATIONS'];
+    const isPreset = presets.includes(admin.role);
+    setRolePreset(isPreset ? admin.role : 'CUSTOM');
     setFormData({
       name: admin.name,
       email: admin.email,
@@ -330,7 +347,11 @@ const AdminManagement = () => {
                   <FiUser className="text-blue-500" />
                   <span className="font-bold text-gray-900 text-sm">{admin.name}</span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin' ? 'Super Admin' : 'City Admin'}
+                    {admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin' 
+                      ? 'Super Admin' 
+                      : admin.role === 'CITY_ADMIN' 
+                        ? 'City Admin' 
+                        : admin.role.charAt(0).toUpperCase() + admin.role.slice(1).toLowerCase()}
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${admin.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {admin.isActive ? 'Active' : 'Inactive'}
@@ -519,15 +540,40 @@ const AdminManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Role *</label>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Role Preset *</label>
                     <select
-                      value={formData.role} onChange={e => setFormData(p => ({...p, role: e.target.value}))}
+                      value={rolePreset} 
+                      onChange={e => {
+                        const val = e.target.value;
+                        setRolePreset(val);
+                        if (val !== 'CUSTOM') {
+                          setFormData(p => ({...p, role: val}));
+                        } else {
+                          setFormData(p => ({...p, role: p.role === 'SUPER_ADMIN' || p.role === 'CITY_ADMIN' ? '' : p.role}));
+                        }
+                      }}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="CITY_ADMIN">City Admin</option>
                       <option value="SUPER_ADMIN">Super Admin</option>
+                      <option value="MANAGER">Manager</option>
+                      <option value="SUPPORT">Support</option>
+                      <option value="OPERATIONS">Operations</option>
+                      <option value="CUSTOM">Custom...</option>
                     </select>
                   </div>
+                  {rolePreset === 'CUSTOM' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Custom Role Name *</label>
+                      <input
+                        type="text" 
+                        value={formData.role} 
+                        onChange={e => setFormData(p => ({...p, role: e.target.value.toUpperCase()}))}
+                        placeholder="e.g. SUPERVISOR, COORDINATOR"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Assigned Cities - Only show if CITY_ADMIN */}

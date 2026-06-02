@@ -34,6 +34,18 @@ const PERMISSION_KEYS = [
   'manage_notifications', // can send push notifications
   'propose_categories',   // can propose new categories (needs super admin approval)
   'propose_brands',       // can propose new brands (needs super admin approval)
+  'view_reviews',
+  'view_settlements',
+  'view_commissions',
+  'manage_plans',
+  'view_subscriptions',
+  'view_police_verification',
+  'view_vendor_requests',
+  'view_vendor_services',
+  'view_vendor_parts',
+  'manage_stock',
+  'view_scrap_items',
+  'manage_promos',
 ];
 
 
@@ -113,7 +125,8 @@ const PAYMENT_STATUS = {
   FAILED: 'failed',
   REFUNDED: 'refunded',
   COLLECTED_BY_VENDOR: 'collected_by_vendor',
-  PLAN_COVERED: 'plan_covered' // For plan_benefit bookings until bill is finalized
+  PLAN_COVERED: 'plan_covered', // For plan_benefit bookings until bill is finalized
+  COMPLETED: 'completed'
 };
 
 // Service Status

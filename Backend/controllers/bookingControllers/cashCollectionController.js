@@ -389,6 +389,10 @@ exports.confirmCashCollection = async (req, res) => {
 
     await booking.save();
 
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
+
     // Update Vendor Wallet
     const vendorId = booking.vendorId;
     const vendor = await Vendor.findById(vendorId).lean();
@@ -589,6 +593,10 @@ exports.verifyOnlinePayment = async (req, res) => {
 
         await booking.save();
 
+        // Trigger Commission & Collection System
+        const { processBookingCompletion } = require('../../services/commissionService');
+        processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
+
         // 2. Generate Invoices (Dual-Invoice Flow with Safeguards) & Wallet Update
         const VendorBill = require('../../models/VendorBill');
         const bill = await VendorBill.findOne({ bookingId: booking._id });
@@ -768,6 +776,10 @@ exports.confirmManualOnlinePayment = async (req, res) => {
     booking.status = BOOKING_STATUS.COMPLETED;
     booking.completedAt = new Date();
     await booking.save();
+
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
 
     // 2. Generate Invoices (Dual-Invoice Flow with Safeguards) & Wallet Update
     const VendorBill = require('../../models/VendorBill');

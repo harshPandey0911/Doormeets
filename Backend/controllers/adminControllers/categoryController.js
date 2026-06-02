@@ -40,6 +40,8 @@ const getAllCategories = async (req, res) => {
         homeBadge: cat.homeBadge,
         hasSaleBadge: cat.hasSaleBadge,
         hasBrands: cat.hasBrands ?? true,
+        hasSubCategory: cat.hasSubCategory ?? true,
+        hasBrand: cat.hasBrand ?? true,
         showOnHome: cat.showOnHome,
         homeOrder: cat.homeOrder,
         description: cat.description,
@@ -92,6 +94,8 @@ const getCategoryById = async (req, res) => {
         homeBadge: category.homeBadge,
         hasSaleBadge: category.hasSaleBadge,
         hasBrands: category.hasBrands ?? true,
+        hasSubCategory: category.hasSubCategory ?? true,
+        hasBrand: category.hasBrand ?? true,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,
@@ -139,6 +143,8 @@ const createCategory = async (req, res) => {
       homeBadge,
       hasSaleBadge,
       hasBrands,
+      hasSubCategory,
+      hasBrand,
       showOnHome,
       homeOrder,
       description,
@@ -196,6 +202,8 @@ const createCategory = async (req, res) => {
         existingCategory.homeBadge = homeBadge?.trim() || null;
         existingCategory.hasSaleBadge = Boolean(hasSaleBadge);
         existingCategory.hasBrands = hasBrands !== undefined ? Boolean(hasBrands) : true;
+        existingCategory.hasSubCategory = hasSubCategory !== undefined ? Boolean(hasSubCategory) : true;
+        existingCategory.hasBrand = hasBrand !== undefined ? Boolean(hasBrand) : true;
         existingCategory.showOnHome = showOnHome !== false;
         existingCategory.homeOrder = Number(homeOrder) || 0;
         existingCategory.description = description?.trim() || null;
@@ -221,6 +229,8 @@ const createCategory = async (req, res) => {
             homeBadge: existingCategory.homeBadge,
             hasSaleBadge: existingCategory.hasSaleBadge,
             hasBrands: existingCategory.hasBrands ?? true,
+            hasSubCategory: existingCategory.hasSubCategory ?? true,
+            hasBrand: existingCategory.hasBrand ?? true,
             showOnHome: existingCategory.showOnHome,
             homeOrder: existingCategory.homeOrder,
             description: existingCategory.description,
@@ -248,6 +258,8 @@ const createCategory = async (req, res) => {
       homeBadge: homeBadge?.trim() || null,
       hasSaleBadge: Boolean(hasSaleBadge),
       hasBrands: hasBrands !== undefined ? Boolean(hasBrands) : true,
+      hasSubCategory: hasSubCategory !== undefined ? Boolean(hasSubCategory) : true,
+      hasBrand: hasBrand !== undefined ? Boolean(hasBrand) : true,
       showOnHome: showOnHome !== false,
       homeOrder: Number(homeOrder) || 0,
       description: description?.trim() || null,
@@ -272,6 +284,8 @@ const createCategory = async (req, res) => {
         homeBadge: category.homeBadge,
         hasSaleBadge: category.hasSaleBadge,
         hasBrands: category.hasBrands ?? true,
+        hasSubCategory: category.hasSubCategory ?? true,
+        hasBrand: category.hasBrand ?? true,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,
@@ -325,6 +339,8 @@ const updateCategory = async (req, res) => {
       homeBadge,
       hasSaleBadge,
       hasBrands,
+      hasSubCategory,
+      hasBrand,
       showOnHome,
       homeOrder,
       description,
@@ -387,6 +403,8 @@ const updateCategory = async (req, res) => {
     if (homeBadge !== undefined) category.homeBadge = homeBadge?.trim() || null;
     if (hasSaleBadge !== undefined) category.hasSaleBadge = Boolean(hasSaleBadge);
     if (hasBrands !== undefined) category.hasBrands = Boolean(hasBrands);
+    if (hasSubCategory !== undefined) category.hasSubCategory = Boolean(hasSubCategory);
+    if (hasBrand !== undefined) category.hasBrand = Boolean(hasBrand);
     if (showOnHome !== undefined) category.showOnHome = showOnHome !== false;
     if (homeOrder !== undefined) category.homeOrder = Number(homeOrder) || 0;
     if (description !== undefined) category.description = description?.trim() || null;
@@ -415,6 +433,8 @@ const updateCategory = async (req, res) => {
         homeBadge: category.homeBadge,
         hasSaleBadge: category.hasSaleBadge,
         hasBrands: category.hasBrands ?? true,
+        hasSubCategory: category.hasSubCategory ?? true,
+        hasBrand: category.hasBrand ?? true,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,

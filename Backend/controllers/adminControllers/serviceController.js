@@ -40,6 +40,27 @@ const getAllServices = async (req, res) => {
         }
         return doc;
       }).filter(s => s.basePrice !== undefined); // Only return services that have a pricing mapping for this brand
+    } else {
+      // Default: attach first available pricing mapping so that price shows up globally (e.g. in promo manager)
+      const pricings = await ServiceBrandPricing.find({ isActive: true }).lean();
+      const pricingMap = new Map();
+      pricings.forEach(p => {
+        if (!pricingMap.has(p.serviceId.toString())) {
+          pricingMap.set(p.serviceId.toString(), p);
+        }
+      });
+      
+      servicesList = services.map(s => {
+        const doc = s.toObject ? s.toObject() : s;
+        const pricing = pricingMap.get(doc._id.toString());
+        if (pricing) {
+          doc.basePrice = pricing.basePrice;
+          doc.gstPercentage = pricing.gstPercentage;
+          doc.discountPrice = pricing.discountPrice || 0;
+          doc.pricingId = pricing._id;
+        }
+        return doc;
+      });
     }
 
     res.status(200).json({

@@ -182,6 +182,24 @@ const bookingSchema = new mongoose.Schema({
     ref: 'VendorBill',
     default: null
   },
+  totalAmount: {
+    type: Number,
+    default: 0
+  },
+  adminCommission: {
+    type: Number,
+    default: 0
+  },
+  vendorShare: {
+    type: Number,
+    default: 0
+  },
+  commissionStatus: {
+    type: String,
+    enum: ['pending', 'received', 'none'],
+    default: 'none',
+    index: true
+  },
 
   // ==========================================
   // 4. PAYMENT INFORMATION

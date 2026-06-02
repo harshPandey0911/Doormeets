@@ -33,11 +33,10 @@ const adminSchema = new mongoose.Schema({
     select: false
   },
 
-  // Roles: SUPER_ADMIN has full access, CITY_ADMIN is scoped
+  // Roles: SUPER_ADMIN has full access, CITY_ADMIN is scoped. Custom roles like MANAGER or SUPPORT are allowed.
   // Legacy values 'super_admin' and 'admin' are treated as SUPER_ADMIN / CITY_ADMIN for backward compat
   role: {
     type: String,
-    enum: ['SUPER_ADMIN', 'CITY_ADMIN', 'super_admin', 'admin'],
     default: 'CITY_ADMIN'
   },
 
