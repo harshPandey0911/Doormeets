@@ -502,7 +502,7 @@ const Home = () => {
       >
         <motion.div
           variants={itemVariants}
-          className="backdrop-blur-xl sticky top-0 z-50 border-b border-black/[0.03] rounded-b-[24px] shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300"
+          className="backdrop-blur-xl sticky top-0 z-50 border-b border-black/[0.03] shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300"
           style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}
         >
           <Header
@@ -573,7 +573,7 @@ const Home = () => {
                     <ServiceCategories
                       categories={categories.filter(c => c.categoryType === 'service')}
                       onCategoryClick={handleCategoryClick}
-                      title="Service Categories"
+                      title="Categories"
                       subtitle="Premium Home Services"
                     />
                   </motion.section>
@@ -688,27 +688,7 @@ const Home = () => {
                 </motion.div>
               )}
 
-              {/* Dynamic Banner 1 */}
-              {homeContent?.isBannersVisible !== false && (
-                <motion.div variants={itemVariants}>
-                  <Suspense fallback={<div className="h-32 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
-                    <Banner
-                      imageUrl={homeContent?.banners?.[0] ? toAssetUrl(homeContent.banners[0].imageUrl) : null}
-                      onClick={() => {
-                        const b = homeContent?.banners?.[0];
-                        if (b?.slug) {
-                          navigate(`/user/${b.slug}`);
-                          return;
-                        }
-                        if (b?.targetCategoryId) {
-                          const cat = categories.find(c => c.id === b.targetCategoryId);
-                          if (cat) handleCategoryClick(cat);
-                        }
-                      }}
-                    />
-                  </Suspense>
-                </motion.div>
-              )}
+
 
               {/* Dynamic Sections */}
               {homeContent?.isCategorySectionsVisible !== false && (homeContent?.categorySections || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map((section, sIdx) => (
@@ -745,23 +725,7 @@ const Home = () => {
                 </motion.div>
               ))}
 
-              {/* Dynamic Banner 2 */}
-              {homeContent?.isBannersVisible !== false && (
-                <motion.div variants={itemVariants}>
-                  <Suspense fallback={<div className="h-32 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
-                    <Banner
-                      imageUrl={homeContent?.banners?.[1] ? toAssetUrl(homeContent.banners[1].imageUrl) : null}
-                      onClick={() => {
-                        const b = homeContent?.banners?.[1];
-                        if (b?.targetCategoryId) {
-                          const cat = categories.find(c => (c.id === b.targetCategoryId || c._id === b.targetCategoryId));
-                          if (cat) handleCategoryClick(cat);
-                        }
-                      }}
-                    />
-                  </Suspense>
-                </motion.div>
-              )}
+
 
               {/* Refer & Earn Section */}
               <motion.div variants={itemVariants}>

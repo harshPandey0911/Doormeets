@@ -10,7 +10,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
       whileHover={{ y: -3 }}
       className="rounded-[24px] border border-gray-100 bg-white p-4 shadow-[0_10px_35px_rgba(17,24,39,0.06)] transition-all"
     >
-      <button type="button" onClick={() => onOpen?.(service)} className="flex w-full items-start gap-4 text-left">
+      <div onClick={() => onOpen?.(service)} className="flex w-full items-start gap-4 text-left cursor-pointer">
         <div className="h-24 w-24 shrink-0 overflow-hidden rounded-[20px] bg-gradient-to-br from-purple-50 to-white border border-purple-100">
           {service.image ? (
             <img src={service.image} alt={service.title} className="h-full w-full object-cover" />
@@ -37,7 +37,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
           </div>
           <p className="mt-2 text-sm leading-5 text-gray-500 line-clamp-2">{service.description}</p>
         </div>
-      </button>
+      </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <PriceTag price={service.price} originalPrice={service.originalPrice} />

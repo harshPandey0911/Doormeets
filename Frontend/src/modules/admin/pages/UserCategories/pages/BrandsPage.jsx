@@ -222,25 +222,25 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
     if (loading || isSubmitting.current) return;
     isSubmitting.current = true;
 
-    // Validate inputs
-    const validationResult = brandSchema.safeParse({
-      title: form.title.trim(),
-      categoryIds: form.categoryIds,
-      subCategoryIds: form.subCategoryIds,
-      iconUrl: form.iconUrl.trim(),
-      badge: form.badge.trim(),
-    });
-
-    if (!validationResult.success) {
-      toast.error(validationResult.error.errors[0].message);
-      isSubmitting.current = false;
-      return;
-    }
-
-    const { title, categoryIds, subCategoryIds, iconUrl, badge } = validationResult.data;
-    const slug = slugify(title);
-
     try {
+      // Validate inputs
+      const validationResult = brandSchema.safeParse({
+        title: (form.title || "").trim(),
+        categoryIds: form.categoryIds || [],
+        subCategoryIds: form.subCategoryIds || [],
+        iconUrl: (form.iconUrl || "").trim(),
+        badge: (form.badge || "").trim(),
+      });
+
+      if (!validationResult.success) {
+        toast.error(validationResult.error.errors[0].message);
+        isSubmitting.current = false;
+        return;
+      }
+
+      const { title, categoryIds, subCategoryIds, iconUrl, badge } = validationResult.data;
+      const slug = slugify(title);
+
       setLoading(true);
 
       const serviceData = {
@@ -256,10 +256,6 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
         page: { banners: [], paymentOffers: [], serviceCategoriesGrid: [] },
         sections: []
       };
-
-      let savedBrand; // kept for legacy if needed, but unused here
-      // well, savedBrand is assigned but not used now.
-      // I should remove 'let savedBrand' and the assignments.
 
       if (editingId) {
         // Update

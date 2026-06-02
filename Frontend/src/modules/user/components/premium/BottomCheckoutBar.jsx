@@ -3,7 +3,7 @@ import PriceTag from './PriceTag';
 
 const BottomCheckoutBar = ({ total, originalTotal, buttonText = 'Checkout', onClick, note = 'Inclusive of taxes and charges' }) => {
   return (
-    <div className="fixed inset-x-0 bottom-[5.25rem] z-40 border-t border-gray-100 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl lg:bottom-0">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-100 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[28px] border border-gray-100 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(17,24,39,0.08)]">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400">Total payable</div>

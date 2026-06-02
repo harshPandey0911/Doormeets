@@ -380,7 +380,7 @@ const Welcome = () => {
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
             <img
-              src="/doormeets-logo.png"
+              src="/cleaning-expert-logo.png"
               alt="Doormeets"
               style={{
                 width: '160px',

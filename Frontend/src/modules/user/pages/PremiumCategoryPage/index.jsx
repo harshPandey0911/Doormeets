@@ -30,10 +30,32 @@ const PremiumCategoryPage = () => {
   const [activeSubCategory, setActiveSubCategory] = useState(null);
   const [activeBrand, setActiveBrand] = useState(null);
 
+  // Loading states to prevent flickering / blinking of empty placeholders
+  const [subCategoriesLoading, setSubCategoriesLoading] = useState(true);
+  const [brandsLoading, setBrandsLoading] = useState(true);
+  const [servicesLoading, setServicesLoading] = useState(true);
+
+  console.log('--- RENDERING PremiumCategoryPage ---', {
+    slug,
+    currentCityId: currentCity?._id,
+    categoriesCount: categories.length,
+    activeCategory: activeCategory?.title,
+    subCategoriesCount: subCategories.length,
+    activeSubCategory: activeSubCategory?.title,
+    brandsCount: brands.length,
+    activeBrand: activeBrand?.title,
+    servicesCount: services.length
+  });
+
+  const cityId = currentCity?._id || currentCity?.id;
+  const activeCategoryId = activeCategory?.id || activeCategory?._id;
+  const activeSubCategoryId = activeSubCategory?.id || activeSubCategory?._id;
+  const activeBrandId = activeBrand?.id || activeBrand?._id;
+
   useEffect(() => {
+    console.log('useEffect [loadCategory] triggered', { cityId, slug });
     const loadCategory = async () => {
       try {
-        const cityId = currentCity?._id || currentCity?.id;
         const homeRes = await publicCatalogService.getHomeData(cityId);
         if (homeRes?.success && Array.isArray(homeRes.categories)) {
           const mapped = homeRes.categories.map((cat) => ({
@@ -57,23 +79,24 @@ const PremiumCategoryPage = () => {
     };
 
     loadCategory();
-  }, [currentCity, slug]);
+  }, [cityId, slug]);
 
   useEffect(() => {
-    // Split loading: 1) fetch subcategories when category changes
+    console.log('useEffect [loadSubCategories] triggered', { activeCategoryId, cityId });
     const loadSubCategories = async () => {
-      if (!activeCategory) return;
+      if (!activeCategory) {
+        setSubCategoriesLoading(false);
+        return;
+      }
       try {
-        const categoryId = activeCategory.id || activeCategory._id;
-        const subRes = await publicCatalogService.getSubCategories({ categoryId });
+        setSubCategoriesLoading(true);
+        const subRes = await publicCatalogService.getSubCategories({ categoryId: activeCategoryId });
         if (subRes?.success) {
           setSubCategories(subRes.subCategories || []);
-          // Only set active subcategory if none selected or it belongs to a different category
           if (!activeSubCategory) {
             setActiveSubCategory(subRes.subCategories?.[0] || null);
           } else {
-            // if currently selected subcategory is not part of this category, reset to first
-            const exists = (subRes.subCategories || []).some(sc => String(sc.id || sc._id) === String(activeSubCategory.id || activeSubCategory._id));
+            const exists = (subRes.subCategories || []).some(sc => String(sc.id || sc._id) === String(activeSubCategoryId));
             if (!exists) setActiveSubCategory(subRes.subCategories?.[0] || null);
           }
         } else {
@@ -84,34 +107,38 @@ const PremiumCategoryPage = () => {
         console.error('Failed to load subcategories', error);
         setSubCategories([]);
         setActiveSubCategory(null);
+      } finally {
+        setSubCategoriesLoading(false);
       }
     };
 
     loadSubCategories();
-  }, [activeCategory, currentCity]);
+  }, [activeCategoryId, cityId]);
 
-  // 2) Fetch brands when category or activeSubCategory changes
   useEffect(() => {
+    console.log('useEffect [loadBrands] triggered', { activeCategoryId, activeSubCategoryId, cityId });
     const loadBrands = async () => {
-      if (!activeCategory) return;
+      if (!activeCategory) {
+        setBrandsLoading(false);
+        return;
+      }
       try {
-        const categoryId = activeCategory.id || activeCategory._id;
-        const subCatId = activeSubCategory?.id || activeSubCategory?._id || '';
+        setBrandsLoading(true);
 
         const brandRes = await publicCatalogService.getBrands({ 
-          categoryId, 
-          subCategoryId: subCatId, 
-          cityId: currentCity?._id || currentCity?.id 
+          categoryId: activeCategoryId, 
+          subCategoryId: activeSubCategoryId || '', 
+          cityId 
         });
 
         if (brandRes?.success) {
           const rawBrands = brandRes.brands || [];
           const filtered = rawBrands.filter((brand) => {
-            if (subCatId) {
-              if (brand.subCategoryId && String(brand.subCategoryId) === String(subCatId)) return true;
-              if (brand.subCategory && String(brand.subCategory._id || brand.subCategory.id) === String(subCatId)) return true;
+            if (activeSubCategoryId) {
+              if (brand.subCategoryId && String(brand.subCategoryId) === String(activeSubCategoryId)) return true;
+              if (brand.subCategory && String(brand.subCategory._id || brand.subCategory.id) === String(activeSubCategoryId)) return true;
             }
-            const catIdStr = String(categoryId);
+            const catIdStr = String(activeCategoryId);
             if (!catIdStr) return false;
             if (brand.categoryId && String(brand.categoryId) === catIdStr) return true;
             if (brand.category && (String(brand.category._id || brand.category.id) === catIdStr)) return true;
@@ -129,9 +156,8 @@ const PremiumCategoryPage = () => {
           }));
           setBrands(mapped);
           
-          // Only change active brand if none selected or the currently selected one is not in the new list
           if (mapped.length > 0) {
-            const stillExists = activeBrand && mapped.some(b => String(b.id) === String(activeBrand.id));
+            const stillExists = activeBrandId && mapped.some(b => String(b.id) === String(activeBrandId));
             if (!stillExists) {
               setActiveBrand(mapped[0]);
             }
@@ -146,36 +172,39 @@ const PremiumCategoryPage = () => {
         console.error('Category brands load error', error);
         setBrands([]);
         setActiveBrand(null);
+      } finally {
+        setBrandsLoading(false);
       }
     };
 
     loadBrands();
-  }, [activeCategory, currentCity, activeSubCategory]);
+  }, [activeCategoryId, cityId, activeSubCategoryId]);
 
-  // 3) Fetch services when category, activeSubCategory, or activeBrand changes
   useEffect(() => {
+    console.log('useEffect [loadServices] triggered', { activeCategoryId, activeSubCategoryId, activeBrandId, cityId });
     const loadServices = async () => {
-      if (!activeCategory) return;
+      if (!activeCategory) {
+        setServicesLoading(false);
+        return;
+      }
       try {
-        const categoryId = activeCategory.id || activeCategory._id;
-        const subCatId = activeSubCategory?.id || activeSubCategory?._id || '';
-        const brandId = activeBrand?.id || activeBrand?._id || '';
+        setServicesLoading(true);
 
         const serviceRes = await publicCatalogService.getServices({ 
-          categoryId, 
-          subCategoryId: subCatId, 
-          brandId,
-          cityId: currentCity?._id || currentCity?.id 
+          categoryId: activeCategoryId, 
+          subCategoryId: activeSubCategoryId || '', 
+          brandId: activeBrandId || '',
+          cityId 
         });
 
         if (serviceRes?.success) {
           let rawServices = (serviceRes.services || []);
-          if (activeSubCategory) {
+          if (activeSubCategoryId) {
             rawServices = rawServices.filter(s => {
               if (!s) return false;
-              if (s.subCategoryId && String(s.subCategoryId) === String(activeSubCategory.id || activeSubCategory._id)) return true;
-              if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === String(activeSubCategory.id || activeSubCategory._id)) return true;
-              return (s.categoryId && String(s.categoryId) === String(categoryId));
+              if (s.subCategoryId && String(s.subCategoryId) === String(activeSubCategoryId)) return true;
+              if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === String(activeSubCategoryId)) return true;
+              return (s.categoryId && String(s.categoryId) === String(activeCategoryId));
             });
           }
 
@@ -198,11 +227,13 @@ const PremiumCategoryPage = () => {
       } catch (error) {
         console.error('Category services load error', error);
         setServices([]);
+      } finally {
+        setServicesLoading(false);
       }
     };
 
     loadServices();
-  }, [activeCategory, currentCity, activeSubCategory, activeBrand]);
+  }, [activeCategoryId, cityId, activeSubCategoryId, activeBrandId]);
 
   const quantities = useMemo(() => {
     const map = {};
@@ -279,7 +310,7 @@ const PremiumCategoryPage = () => {
                 </button>
               ))}
             </div>
-            {activeCategory?.status !== 'coming_soon' && !subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No subcategories available.</div> : null}
+            {activeCategory?.status !== 'coming_soon' && !subCategoriesLoading && !subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No subcategories available.</div> : null}
           </div>
 
           {activeCategory?.status === 'coming_soon' ? (
@@ -355,18 +386,26 @@ const PremiumCategoryPage = () => {
                 <h3 className="text-2xl font-black text-gray-900">{activeCategory?.title}</h3>
               </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {(subCategories.length ? subCategories : [{ title: 'All' }]).map((sub) => (
-                <button
-                  key={sub.id || sub._id || sub.title}
-                  type="button"
-                  onClick={() => setActiveSubCategory(sub)}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeSubCategory?.id === sub.id ? 'bg-linear-to-r from-purple-600 to-fuchsia-500 text-white shadow-lg shadow-purple-200' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'}`}
-                >
-                  {sub.title}
-                </button>
-              ))}
-            </div>
+            {subCategoriesLoading ? (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-purple-50" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {(subCategories.length ? subCategories : [{ title: 'All' }]).map((sub) => (
+                  <button
+                    key={sub.id || sub._id || sub.title}
+                    type="button"
+                    onClick={() => setActiveSubCategory(sub)}
+                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeSubCategory?.id === sub.id ? 'bg-linear-to-r from-purple-600 to-fuchsia-500 text-white shadow-lg shadow-purple-200' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'}`}
+                  >
+                    {sub.title}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="rounded-[30px] border border-gray-100 bg-white p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
@@ -376,27 +415,45 @@ const PremiumCategoryPage = () => {
                 <h3 className="text-xl font-black text-gray-900">Top options in this category</h3>
               </div>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {brands.map((brand) => (
-                <BrandCard key={brand.id || brand.slug} brand={brand} active={(activeBrand?.id || activeBrand?.slug) === (brand.id || brand.slug)} onClick={() => setActiveBrand(brand)} />
-              ))}
-            </div>
-            {!brands.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No brands available.</div> : null}
+            {brandsLoading ? (
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-28 w-28 shrink-0 animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                  {brands.map((brand) => (
+                    <BrandCard key={brand.id || brand.slug} brand={brand} active={(activeBrand?.id || activeBrand?.slug) === (brand.id || brand.slug)} onClick={() => setActiveBrand(brand)} />
+                  ))}
+                </div>
+                {!brands.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No brands available.</div> : null}
+              </>
+            )}
           </div>
 
           <div className="space-y-4">
-            {filteredServices.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                quantity={quantities[service.id] || 0}
-                onAdd={handleAdd}
-                onIncrease={handleIncrease}
-                onDecrease={handleDecrease}
-                onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory, brand: activeBrand } })}
-              />
-            ))}
-            {!filteredServices.length ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No services available.</div> : null}
+            {servicesLoading ? (
+              [1, 2].map((i) => (
+                <div key={i} className="h-32 w-full animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
+              ))
+            ) : (
+              <>
+                {filteredServices.map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    quantity={quantities[service.id] || 0}
+                    onAdd={handleAdd}
+                    onIncrease={handleIncrease}
+                    onDecrease={handleDecrease}
+                    onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory, brand: activeBrand } })}
+                  />
+                ))}
+                {!filteredServices.length ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No services available.</div> : null}
+              </>
+            )}
           </div>
         </>
       )}
