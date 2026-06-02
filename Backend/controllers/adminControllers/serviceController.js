@@ -135,19 +135,22 @@ const createService = async (req, res) => {
       discountPrice
     } = req.body;
 
+    const cleanedCategoryId = (categoryId === '' || !categoryId) ? null : categoryId;
+    const cleanedSubCategoryId = (subCategoryId === '' || !subCategoryId) ? null : subCategoryId;
+
     const service = await Service.create({
-      categoryId,
-      subCategoryId,
+      categoryId: cleanedCategoryId,
+      subCategoryId: cleanedSubCategoryId,
       title,
       description,
       status: status || SERVICE_STATUS.ACTIVE,
       iconUrl
     });
 
-    if (brandId && basePrice !== undefined && categoryId) {
+    if (brandId && basePrice !== undefined && cleanedCategoryId) {
       await ServiceBrandPricing.create({
-        categoryId,
-        subCategoryId: subCategoryId || null,
+        categoryId: cleanedCategoryId,
+        subCategoryId: cleanedSubCategoryId || null,
         serviceId: service._id,
         brandId,
         basePrice: Number(basePrice),
@@ -197,22 +200,15 @@ const updateService = async (req, res) => {
     }
 
     if (updates.title) service.title = updates.title;
-    if (updates.categoryId) service.categoryId = updates.categoryId;
-    if (updates.subCategoryId) service.subCategoryId = updates.subCategoryId;
+    if (updates.categoryId !== undefined) {
+      service.categoryId = (updates.categoryId === '' || !updates.categoryId) ? null : updates.categoryId;
+    }
+    if (updates.subCategoryId !== undefined) {
+      service.subCategoryId = (updates.subCategoryId === '' || !updates.subCategoryId) ? null : updates.subCategoryId;
+    }
     if (updates.description !== undefined) service.description = updates.description;
     if (updates.status) service.status = updates.status;
     if (updates.iconUrl !== undefined) service.iconUrl = updates.iconUrl;
-
-    // Slugs are auto-updated if title changes via pre-save hook? 
-    // Wait, the pre-save hook only runs if slug is empty or we explicitly modify it?
-    // In Mongoose schemas, I usually rely on logic. 
-    // My previous Service.js schema had logic: if (this.isModified('title') && !this.slug)
-    // This implies slug is created once.
-    // If user changes title, slug might remain old? 
-    // If they want to regenerate usage, they should clear slug?
-    // UserService.js has: if (this.isModified('title') && !this.slug)
-    // So updating title WON'T update slug unless slug is cleared.
-    // This is generally safer for URLs.
 
     await service.save();
 
@@ -221,13 +217,20 @@ const updateService = async (req, res) => {
       if (pricing) {
         pricing.basePrice = Number(updates.basePrice);
         if (updates.gstPercentage !== undefined) pricing.gstPercentage = Number(updates.gstPercentage);
-        if (updates.categoryId) pricing.categoryId = updates.categoryId;
-        if (updates.subCategoryId) pricing.subCategoryId = updates.subCategoryId;
+        if (updates.categoryId !== undefined) {
+          pricing.categoryId = (updates.categoryId === '' || !updates.categoryId) ? null : updates.categoryId;
+        }
+        if (updates.subCategoryId !== undefined) {
+          pricing.subCategoryId = (updates.subCategoryId === '' || !updates.subCategoryId) ? null : updates.subCategoryId;
+        }
         await pricing.save();
       } else if (updates.categoryId || service.categoryId) {
+        const finalCategoryId = (updates.categoryId === '' || !updates.categoryId) ? service.categoryId : updates.categoryId;
+        const finalSubCategoryId = (updates.subCategoryId === '' || !updates.subCategoryId) ? service.subCategoryId : updates.subCategoryId;
+        
         await ServiceBrandPricing.create({
-          categoryId: updates.categoryId || service.categoryId,
-          subCategoryId: updates.subCategoryId || service.subCategoryId || null,
+          categoryId: finalCategoryId,
+          subCategoryId: finalSubCategoryId || null,
           serviceId: service._id,
           brandId: updates.brandId,
           basePrice: Number(updates.basePrice),
