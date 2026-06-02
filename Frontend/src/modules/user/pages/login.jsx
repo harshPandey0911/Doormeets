@@ -178,8 +178,8 @@ const Login = () => {
   return (
     <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-x-hidden">
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#FF9F45] opacity-[0.03] rounded-full blur-3xl animate-floating" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#FFB86C] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8 relative z-10 animate-fade-in">
         <div className="flex justify-center mb-6">
@@ -198,7 +198,7 @@ const Login = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0 relative z-10">
         <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#347989] via-[#D68F35] to-[#BB5F36]" />
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FF9F45] via-[#FFB86C] to-[#FFD8A8]" />
 
           {step === 'phone' ? (
             <form className="space-y-6" onSubmit={handlePhoneSubmit}>
@@ -207,7 +207,7 @@ const Login = () => {
                   Mobile Number
                 </label>
                 <div className="relative rounded-xl shadow-sm group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#FF9F45] transition-colors">
                     <FiPhone className="h-5 w-5 text-gray-400" />
                   </div>
                   <div className="absolute inset-y-0 left-10 flex items-center pointer-events-none">
@@ -219,7 +219,7 @@ const Login = () => {
                     inputMode="numeric"
                     autoComplete="tel"
                     id="phone"
-                    className="block w-full pl-24 pr-4 py-3.5 border-gray-300 rounded-xl focus:ring-[#347989] focus:border-[#347989] sm:text-sm transition-all duration-300 ease-in-out hover:border-gray-400"
+                    className="block w-full pl-24 pr-4 py-3.5 border-gray-300 rounded-xl focus:ring-[#FF9F45] focus:border-[#FF9F45] sm:text-sm transition-all duration-300 ease-in-out hover:border-gray-400"
                     placeholder="98765 43210"
                     value={phoneNumber}
                     onChange={(e) => {
@@ -235,7 +235,7 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={isLoading || phoneNumber.length < 10}
-                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl text-sm font-bold text-white transition-all duration-500 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#347989] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-1 transform shadow-lg shadow-[#347989]/30 hover:shadow-[#347989]/40 overflow-hidden"
+                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl text-sm font-bold text-white transition-all duration-500 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF9F45] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-1 transform shadow-lg shadow-[#FF9F45]/30 hover:shadow-[#FF9F45]/40 overflow-hidden"
                   style={{ backgroundColor: brandColor }}
                 >
                   <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
@@ -262,7 +262,7 @@ const Login = () => {
                 <div className="mt-6">
                   <Link
                     to="/user/signup"
-                    className="w-full inline-flex justify-center py-3 px-4 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:text-[#347989] hover:bg-gray-50 border border-gray-200 transition-all duration-300 hover:border-[#347989]/30"
+                    className="w-full inline-flex justify-center py-3 px-4 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:text-[#FF9F45] hover:bg-gray-50 border border-gray-200 transition-all duration-300 hover:border-[#FF9F45]/30"
                   >
                     Create an account
                   </Link>
@@ -283,7 +283,7 @@ const Login = () => {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-gray-300 rounded-xl focus:ring-[#347989] focus:border-[#347989] transition-all duration-300 shadow-sm border focus:-translate-y-1 hover:border-gray-400"
+                    className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-gray-300 rounded-xl focus:ring-[#FF9F45] focus:border-[#FF9F45] transition-all duration-300 shadow-sm border focus:-translate-y-1 hover:border-gray-400"
                     style={{ caretColor: brandColor }}
                   />
                 ))}
@@ -299,7 +299,7 @@ const Login = () => {
                     setStep('phone');
                     setResendTimer(0);
                   }}
-                  className="flex items-center font-medium text-gray-600 hover:text-[#347989] transition-colors"
+                  className="flex items-center font-medium text-gray-600 hover:text-[#FF9F45] transition-colors"
                 >
                   <FiChevronLeft className="mr-1" /> Change Number
                 </button>
@@ -323,7 +323,7 @@ const Login = () => {
                     }
                   }}
                   disabled={isLoading || resendTimer > 0}
-                  className="font-medium text-[#347989] hover:text-[#D68F35] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="font-medium text-[#FF9F45] hover:text-[#FFB86C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {resendTimer > 0
                     ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
@@ -335,7 +335,7 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={isLoading || otp.join('').length !== 6}
-                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl text-sm font-bold text-white transition-all duration-500 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#347989] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#347989]/30 hover:shadow-[#347989]/40 hover:-translate-y-1 transform overflow-hidden"
+                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl text-sm font-bold text-white transition-all duration-500 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF9F45] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#FF9F45]/30 hover:shadow-[#FF9F45]/40 hover:-translate-y-1 transform overflow-hidden"
                   style={{ backgroundColor: brandColor }}
                 >
                   <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />

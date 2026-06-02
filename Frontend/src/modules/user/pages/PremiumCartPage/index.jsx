@@ -105,7 +105,7 @@ const PremiumCartPage = () => {
               </div>
               <div className="text-base font-black text-gray-900">Your cart is empty</div>
               <p className="mt-2 text-xs text-gray-500">Add a service from home, category or brand page.</p>
-              <button type="button" onClick={() => navigate('/user/home')} className="mt-4 rounded-2xl bg-black px-5 py-3 text-xs font-black text-white shadow-lg shadow-black/20">
+              <button type="button" onClick={() => navigate('/user/home')} className="mt-4 rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-5 py-3 text-xs font-black text-white shadow-lg shadow-orange-100/50 hover:opacity-90 active:scale-95 transition-all">
                 Browse services
               </button>
             </div>

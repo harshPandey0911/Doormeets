@@ -14,6 +14,35 @@ import { useCity } from '../../../../context/CityContext';
 import { useCart } from '../../../../context/CartContext';
 import { publicCatalogService } from '../../../../services/catalogService';
 
+const getServiceDummyImage = (title) => {
+  const t = (title || '').toLowerCase();
+  if (t.includes('screen') || t.includes('display') || t.includes('glass')) {
+    return 'https://images.unsplash.com/photo-1597740985671-2a8a3b80502e?w=300&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('motherboard') || t.includes('board') || t.includes('circuit') || t.includes('ic') || t.includes('repair')) {
+    return 'https://images.unsplash.com/photo-1517059224940-d4af9eec41b7?w=300&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('switch') || t.includes('socket') || t.includes('button') || t.includes('plug') || t.includes('board connection')) {
+    return 'https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=300&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('battery') || t.includes('power') || t.includes('charging')) {
+    return 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=300&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('wire') || t.includes('wiring') || t.includes('cable')) {
+    return 'https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=300&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('camera') || t.includes('lens')) {
+    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('fan') || t.includes('ac') || t.includes('cooler') || t.includes('conditioner')) {
+    return 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('cleaning') || t.includes('wash') || t.includes('service')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=300&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=300&auto=format&fit=crop&q=80';
+};
+
 const PremiumCategoryPage = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
@@ -82,71 +111,42 @@ const PremiumCategoryPage = () => {
   }, [cityId, slug]);
 
   useEffect(() => {
-    console.log('useEffect [loadSubCategories] triggered', { activeCategoryId, cityId });
-    const loadSubCategories = async () => {
-      if (!activeCategory) {
-        setSubCategoriesLoading(false);
-        return;
-      }
+    if (!activeCategoryId) return;
+
+    const loadCategoryData = async () => {
       try {
         setSubCategoriesLoading(true);
-        const subRes = await publicCatalogService.getSubCategories({ categoryId: activeCategoryId });
-        if (subRes?.success) {
-          setSubCategories(subRes.subCategories || []);
-          if (!activeSubCategory) {
-            setActiveSubCategory(subRes.subCategories?.[0] || null);
-          } else {
-            const exists = (subRes.subCategories || []).some(sc => String(sc.id || sc._id) === String(activeSubCategoryId));
-            if (!exists) setActiveSubCategory(subRes.subCategories?.[0] || null);
+        setBrandsLoading(true);
+        setServicesLoading(true);
+
+        // Parallel fetch subcategories and brands
+        const [subRes, brandRes] = await Promise.all([
+          publicCatalogService.getSubCategories({ categoryId: activeCategoryId }),
+          publicCatalogService.getBrands({ categoryId: activeCategoryId, subCategoryId: '', cityId })
+        ]);
+
+        let defaultSub = null;
+        let defaultBrand = null;
+
+        if (subRes?.success && Array.isArray(subRes.subCategories)) {
+          setSubCategories(subRes.subCategories);
+          if (subRes.subCategories.length > 0) {
+            defaultSub = subRes.subCategories[0];
           }
         } else {
           setSubCategories([]);
-          setActiveSubCategory(null);
         }
-      } catch (error) {
-        console.error('Failed to load subcategories', error);
-        setSubCategories([]);
-        setActiveSubCategory(null);
-      } finally {
-        setSubCategoriesLoading(false);
-      }
-    };
 
-    loadSubCategories();
-  }, [activeCategoryId, cityId]);
-
-  useEffect(() => {
-    console.log('useEffect [loadBrands] triggered', { activeCategoryId, activeSubCategoryId, cityId });
-    const loadBrands = async () => {
-      if (!activeCategory) {
-        setBrandsLoading(false);
-        return;
-      }
-      try {
-        setBrandsLoading(true);
-
-        const brandRes = await publicCatalogService.getBrands({ 
-          categoryId: activeCategoryId, 
-          subCategoryId: activeSubCategoryId || '', 
-          cityId 
-        });
-
-        if (brandRes?.success) {
-          const rawBrands = brandRes.brands || [];
-          const filtered = rawBrands.filter((brand) => {
-            if (activeSubCategoryId) {
-              if (brand.subCategoryId && String(brand.subCategoryId) === String(activeSubCategoryId)) return true;
-              if (brand.subCategory && String(brand.subCategory._id || brand.subCategory.id) === String(activeSubCategoryId)) return true;
-            }
+        let mappedBrands = [];
+        if (brandRes?.success && Array.isArray(brandRes.brands)) {
+          const filtered = brandRes.brands.filter((brand) => {
             const catIdStr = String(activeCategoryId);
-            if (!catIdStr) return false;
             if (brand.categoryId && String(brand.categoryId) === catIdStr) return true;
             if (brand.category && (String(brand.category._id || brand.category.id) === catIdStr)) return true;
             if (Array.isArray(brand.categoryIds) && brand.categoryIds.map(String).includes(catIdStr)) return true;
             return false;
           });
-
-          const mapped = filtered.map((brand) => ({
+          mappedBrands = filtered.map((brand) => ({
             id: brand.id || brand._id,
             title: brand.title,
             slug: brand.slug || brand.title?.toLowerCase().replace(/\s+/g, '-'),
@@ -154,57 +154,90 @@ const PremiumCategoryPage = () => {
             subtitle: brand.type === 'service' ? 'Services' : 'Parts',
             image: toAssetUrl(brand.iconUrl || brand.icon)
           }));
-          setBrands(mapped);
-          
-          if (mapped.length > 0) {
-            const stillExists = activeBrandId && mapped.some(b => String(b.id) === String(activeBrandId));
-            if (!stillExists) {
-              setActiveBrand(mapped[0]);
-            }
-          } else {
-            setActiveBrand(null);
+          setBrands(mappedBrands);
+          if (mappedBrands.length > 0) {
+            defaultBrand = mappedBrands[0];
           }
         } else {
           setBrands([]);
-          setActiveBrand(null);
         }
-      } catch (error) {
-        console.error('Category brands load error', error);
-        setBrands([]);
-        setActiveBrand(null);
+
+        // Set subcategory and brand states simultaneously to avoid multiple render cascades
+        setActiveSubCategory(defaultSub);
+        setActiveBrand(defaultBrand);
+
+        // Fetch services with the resolved defaults immediately
+        const serviceRes = await publicCatalogService.getServices({
+          categoryId: activeCategoryId,
+          subCategoryId: defaultSub ? (defaultSub.id || defaultSub._id) : '',
+          brandId: defaultBrand ? defaultBrand.id : '',
+          cityId
+        });
+
+        if (serviceRes?.success && Array.isArray(serviceRes.services)) {
+          let rawServices = serviceRes.services;
+          if (defaultSub) {
+            const subIdStr = String(defaultSub.id || defaultSub._id);
+            rawServices = rawServices.filter(s => {
+              if (!s) return false;
+              if (s.subCategoryId && String(s.subCategoryId) === subIdStr) return true;
+              if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === subIdStr) return true;
+              return false;
+            });
+          }
+          setServices(rawServices.map((service, index) => ({
+            id: service.id || service._id || `service-${index}`,
+            title: service.title,
+            description: service.description || 'Premium service with trusted experts.',
+            image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
+            rating: service.rating || 4.8,
+            reviews: service.reviewCount || 120,
+            price: service.discountPrice || service.basePrice || service.price || 0,
+            originalPrice: service.basePrice || null,
+            features: service.features || [],
+            brandId: service.brandId,
+            vendorId: service.vendorId
+          })));
+        } else {
+          setServices([]);
+        }
+
+      } catch (err) {
+        console.error("Error loading category data in parallel:", err);
       } finally {
+        setSubCategoriesLoading(false);
         setBrandsLoading(false);
+        setServicesLoading(false);
       }
     };
 
-    loadBrands();
-  }, [activeCategoryId, cityId, activeSubCategoryId]);
+    loadCategoryData();
+  }, [activeCategoryId, cityId]);
 
+  // Handle manual subcategory or brand selection changes after initial loading is done
   useEffect(() => {
-    console.log('useEffect [loadServices] triggered', { activeCategoryId, activeSubCategoryId, activeBrandId, cityId });
-    const loadServices = async () => {
-      if (!activeCategory) {
-        setServicesLoading(false);
-        return;
-      }
+    // Avoid double refetch during initial full category load
+    if (!activeCategoryId || subCategoriesLoading) return;
+
+    const refetchServices = async () => {
       try {
         setServicesLoading(true);
-
-        const serviceRes = await publicCatalogService.getServices({ 
-          categoryId: activeCategoryId, 
-          subCategoryId: activeSubCategoryId || '', 
+        const serviceRes = await publicCatalogService.getServices({
+          categoryId: activeCategoryId,
+          subCategoryId: activeSubCategoryId || '',
           brandId: activeBrandId || '',
-          cityId 
+          cityId
         });
 
-        if (serviceRes?.success) {
-          let rawServices = (serviceRes.services || []);
+        if (serviceRes?.success && Array.isArray(serviceRes.services)) {
+          let rawServices = serviceRes.services;
           if (activeSubCategoryId) {
+            const subIdStr = String(activeSubCategoryId);
             rawServices = rawServices.filter(s => {
               if (!s) return false;
-              if (s.subCategoryId && String(s.subCategoryId) === String(activeSubCategoryId)) return true;
-              if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === String(activeSubCategoryId)) return true;
-              return (s.categoryId && String(s.categoryId) === String(activeCategoryId));
+              if (s.subCategoryId && String(s.subCategoryId) === subIdStr) return true;
+              if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === subIdStr) return true;
+              return false;
             });
           }
 
@@ -212,7 +245,7 @@ const PremiumCategoryPage = () => {
             id: service.id || service._id || `service-${index}`,
             title: service.title,
             description: service.description || 'Premium service with trusted experts.',
-            image: toAssetUrl(service.icon || service.image),
+            image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
             rating: service.rating || 4.8,
             reviews: service.reviewCount || 120,
             price: service.discountPrice || service.basePrice || service.price || 0,
@@ -225,15 +258,14 @@ const PremiumCategoryPage = () => {
           setServices([]);
         }
       } catch (error) {
-        console.error('Category services load error', error);
-        setServices([]);
+        console.error("Error refetching services:", error);
       } finally {
         setServicesLoading(false);
       }
     };
 
-    loadServices();
-  }, [activeCategoryId, cityId, activeSubCategoryId, activeBrandId]);
+    refetchServices();
+  }, [activeSubCategoryId, activeBrandId]);
 
   const quantities = useMemo(() => {
     const map = {};
@@ -276,7 +308,7 @@ const PremiumCategoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f7f1ff_0%,#ffffff_38%,#ffffff_100%)] pb-28">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-4 lg:grid-cols-[280px_1fr] lg:px-6">
@@ -305,7 +337,7 @@ const PremiumCategoryPage = () => {
             <SearchBar value={search} onChange={setSearch} placeholder="Search this category" />
             <div className="flex gap-2 overflow-x-auto pb-1">
               {categories.map((category) => (
-                <button key={category.id || category.slug} type="button" onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeCategory?.id === category.id ? 'bg-linear-to-r from-purple-600 to-fuchsia-500 text-white shadow-lg shadow-purple-200' : 'bg-white text-gray-700 border border-gray-200'}`}>
+                <button key={category.id || category.slug} type="button" onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeCategory?.id === category.id ? 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white shadow-lg shadow-orange-100' : 'bg-white text-gray-700 border border-gray-200'}`}>
                   {category.title}
                 </button>
               ))}
@@ -314,22 +346,22 @@ const PremiumCategoryPage = () => {
           </div>
 
           {activeCategory?.status === 'coming_soon' ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center rounded-[30px] border border-amber-100 bg-white shadow-[0_18px_60px_rgba(245,158,11,0.08)] py-16">
-              <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-10 h-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <div className="flex flex-col items-center justify-center p-5 text-center rounded-[30px] border border-amber-100 bg-white shadow-[0_12px_40px_rgba(255,159,69,0.06)] py-8 max-w-md mx-auto">
+              <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
               
-              <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+              <h1 className="text-2xl font-extrabold text-gray-900 mb-1.5">
                 {activeCategory.title}
               </h1>
               
-              <div className="inline-block px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wider mb-6">
+              <div className="inline-block px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4">
                 Coming Soon
               </div>
               
-              <p className="text-gray-500 max-w-sm mb-8 font-medium">
+              <p className="text-sm text-gray-500 max-w-xs mb-5 font-medium leading-relaxed">
                 We are launching this category soon in your area. Click below to show your interest, and we'll notify you!
               </p>
               
@@ -355,12 +387,12 @@ const PremiumCategoryPage = () => {
                     toast.error(msg);
                   }
                 }}
-                className={`w-full max-w-xs py-4 px-6 rounded-2xl font-bold shadow-md transition-all ${
+                className={`w-full max-w-xs py-3 px-5 rounded-2xl font-bold shadow-md transition-all ${
                   activeCategory.isInterested 
                     ? 'bg-green-500 text-white cursor-default shadow-none'
-                    : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
+                    : 'bg-[#FF9F45] text-white hover:bg-[#FFB86C] hover:shadow-lg'
                 }`}
-                style={{ backgroundColor: activeCategory.isInterested ? '#22c55e' : '#2874f0' }}
+                style={{ backgroundColor: activeCategory.isInterested ? '#22c55e' : '#FF9F45' }}
               >
                 {activeCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
               </button>
@@ -369,27 +401,27 @@ const PremiumCategoryPage = () => {
             <>
               <div className="hidden items-center gap-3 rounded-[28px] border border-gray-100 bg-white px-4 py-3 shadow-sm lg:flex">
             <SearchBar value={search} onChange={setSearch} placeholder="Search services inside this category" />
-            <button type="button" className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-purple-200 hover:bg-purple-50">
+            <button type="button" className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-orange-200 hover:bg-orange-50">
               <FiFilter />
               Filter
             </button>
-            <button type="button" onClick={() => navigate('/user/cart')} className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-purple-200 hover:bg-purple-50">
+            <button type="button" onClick={() => navigate('/user/cart')} className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-orange-200 hover:bg-orange-50">
               <FiShoppingBag />
               Cart
             </button>
           </div>
 
-          <div className="rounded-[30px] border border-purple-100 bg-white p-4 shadow-[0_18px_60px_rgba(124,58,237,0.08)]">
+          <div className="rounded-[30px] border border-orange-100 bg-white p-4 shadow-[0_18px_60px_rgba(255,159,69,0.08)]">
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-purple-400">Subcategories</p>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-[#FF9F45]">Subcategories</p>
                 <h3 className="text-2xl font-black text-gray-900">{activeCategory?.title}</h3>
               </div>
             </div>
             {subCategoriesLoading ? (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-purple-50" />
+                  <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-orange-50/50" />
                 ))}
               </div>
             ) : (
@@ -399,7 +431,7 @@ const PremiumCategoryPage = () => {
                     key={sub.id || sub._id || sub.title}
                     type="button"
                     onClick={() => setActiveSubCategory(sub)}
-                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeSubCategory?.id === sub.id ? 'bg-linear-to-r from-purple-600 to-fuchsia-500 text-white shadow-lg shadow-purple-200' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'}`}
+                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeSubCategory?.id === sub.id ? 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white shadow-lg shadow-orange-100' : 'bg-orange-50 text-[#FF9F45] hover:bg-orange-100/50'}`}
                   >
                     {sub.title}
                   </button>

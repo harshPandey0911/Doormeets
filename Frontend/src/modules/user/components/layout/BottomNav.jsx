@@ -110,11 +110,11 @@ const BottomNav = React.memo(() => {
 
           {/* Animated Sliding Indicator */}
           <motion.div
-            className="absolute -top-3 h-1 rounded-full"
+            className="absolute -top-3 h-[3px] rounded-full"
             animate={{
               left: indicatorStyle.left,
               width: indicatorStyle.width,
-              background: activeColor?.gradient || navItemColors.home.gradient,
+              background: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
             }}
             transition={{
               type: "spring",
@@ -122,14 +122,13 @@ const BottomNav = React.memo(() => {
               damping: 30
             }}
             style={{
-              boxShadow: `0 2px 12px ${activeColor?.shadow || navItemColors.home.shadow}`,
+              boxShadow: '0 2px 10px rgba(255, 159, 69, 0.6)',
             }}
           />
 
           {navItems.map((item) => {
             const IconComponent = activeTab === item.id ? item.filledIcon : item.icon;
             const isActive = activeTab === item.id;
-            const itemColor = navItemColors[item.id];
 
             return (
               <motion.button
@@ -148,7 +147,7 @@ const BottomNav = React.memo(() => {
                       transition={{ duration: 0.2 }}
                       className="absolute inset-1 rounded-xl"
                       style={{
-                        background: itemColor.bg,
+                        background: 'rgba(255, 159, 69, 0.08)',
                       }}
                     />
                   )}
@@ -166,7 +165,7 @@ const BottomNav = React.memo(() => {
                     <IconComponent
                       className="w-6 h-6 transition-colors duration-200"
                       style={{
-                        color: isActive ? itemColor.primary : '#9CA3AF',
+                        color: isActive ? '#000000' : '#9CA3AF',
                       }}
                     />
                     {item.isCart && cartCount > 0 && (
@@ -181,8 +180,8 @@ const BottomNav = React.memo(() => {
                   </motion.div>
                   <motion.span
                     animate={{
-                      color: isActive ? itemColor.primary : '#6B7280',
-                      fontWeight: isActive ? 600 : 500
+                      color: isActive ? '#000000' : '#6B7280',
+                      fontWeight: isActive ? 700 : 500
                     }}
                     className="text-[10px]"
                   >
