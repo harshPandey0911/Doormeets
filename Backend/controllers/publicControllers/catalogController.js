@@ -90,7 +90,6 @@ const getPublicCategories = async (req, res) => {
 
     // Filter and map
     const initialCategories = categories
-      .filter(cat => cat.status === 'coming_soon' || activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim()))
       .map(cat => ({
         id: cat._id.toString(),
         title: cat.title,
@@ -321,16 +320,13 @@ const getPublicBrands = async (req, res) => {
     const brandCategoryMap = new Map();
     brandCategories.forEach(c => brandCategoryMap.set(c._id.toString(), c.title.toLowerCase().trim()));
 
-    // Filter out brands whose category is not served by any online vendor
-    // AND that category must be active in DB (admin status wins over vendor online status)
+    // Filter out brands whose category is not active in DB (admin status wins)
     brands = brands.filter(b => {
       if (!b.categoryIds) return false;
       return b.categoryIds.some(catId => {
         const idStr = catId.toString();
-        // First check: category must be active in DB
-        if (!activeCatIdsSet.has(idStr)) return false;
-        const title = brandCategoryMap.get(idStr);
-        return activeCategoryIds.has(idStr) || (title && activeCategoryTitles.has(title));
+        // category must be active in DB
+        return activeCatIdsSet.has(idStr);
       });
     });
 
@@ -727,15 +723,12 @@ const getPublicServices = async (req, res) => {
     const svcCategoryMap = new Map();
     svcCategories.forEach(c => svcCategoryMap.set(c._id.toString(), c.title.toLowerCase().trim()));
 
-    // Filter out services whose category is not served by any online vendor
-    // AND whose category is active in DB (admin status takes priority)
+    // Filter out services whose category is not active in DB (admin status takes priority)
     activeServices = activeServices.filter(svc => {
       if (!svc.categoryId) return false;
       const idStr = svc.categoryId.toString();
       // Category must be active in DB first
-      if (!dbActiveCatIds.has(idStr)) return false;
-      const title = svcCategoryMap.get(idStr);
-      return activeCategoryIds.has(idStr) || (title && activeCategoryTitles.has(title));
+      return dbActiveCatIds.has(idStr);
     });
 
     // Deduplicate by title to ensure only one "Reti" shows up even if 10 vendors have it
@@ -992,7 +985,6 @@ const getPublicHomeData = async (req, res) => {
     }
 
     const formattedCategories = categoriesRes
-      .filter(cat => cat.status === 'coming_soon' || activeCategoryIds.has(cat._id.toString()) || activeCategoryTitles.has(cat.title.toLowerCase().trim())) // Filter by availability
       .map(cat => ({
         id: cat._id.toString(),
         title: cat.title,
@@ -1274,6 +1266,40 @@ const registerInterest = async (req, res) => {
   }
 };
 
+const getPublicServiceDynamicDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ServiceField = require('../../models/ServiceField');
+    const ServiceWorkflow = require('../../models/ServiceWorkflow');
+    const ServiceWorkflowStep = require('../../models/ServiceWorkflowStep');
+    const PricingRule = require('../../models/PricingRule');
+
+    const service = await Service.findById(id).lean();
+    if (!service) {
+      return res.status(404).json({ success: false, message: 'Service not found' });
+    }
+
+    const fields = await ServiceField.find({ serviceId: id }).sort({ order: 1 }).lean();
+    const workflow = await ServiceWorkflow.findOne({ serviceId: id }).lean();
+    let steps = [];
+    if (workflow) {
+      steps = await ServiceWorkflowStep.find({ workflowId: workflow._id }).sort({ sequence: 1 }).lean();
+    }
+    const pricingRules = await PricingRule.find({ serviceId: id }).lean();
+
+    res.status(200).json({
+      success: true,
+      service,
+      fields,
+      workflow: workflow ? { ...workflow, steps } : null,
+      pricingRules
+    });
+  } catch (error) {
+    console.error('Get public service dynamic details error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   getPublicCategories,
   getPublicSubCategories,
@@ -1285,5 +1311,6 @@ module.exports = {
   getPublicBookingHierarchy,
   getPublicProfessions,
   getPublicTrainingData,
-  registerInterest
+  registerInterest,
+  getPublicServiceDynamicDetails
 };

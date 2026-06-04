@@ -102,7 +102,13 @@ const cartItemSchema = new mongoose.Schema({
   isConsultation: {
     type: Boolean,
     default: false
-  }
+  },
+  dynamicFields: [{
+    fieldId: String,
+    name: String,
+    label: String,
+    value: mongoose.Schema.Types.Mixed
+  }]
 }, { _id: true });
 
 const cartSchema = new mongoose.Schema({

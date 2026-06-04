@@ -13,7 +13,8 @@ const {
   getPublicBookingHierarchy,
   getPublicProfessions,
   getPublicTrainingData,
-  registerInterest
+  registerInterest,
+  getPublicServiceDynamicDetails
 } = require('../../controllers/publicControllers/catalogController');
 
 // Public routes - no authentication required
@@ -23,6 +24,7 @@ router.get('/subcategories', getPublicSubCategories);
 router.get('/brands', getPublicBrands); // Formerly services
 router.get('/brands/slug/:slug', getPublicBrandBySlug);
 router.get('/services', getPublicServices); // New services
+router.get('/services/:id/dynamic-details', getPublicServiceDynamicDetails);
 router.get('/home-content', getPublicHomeContent);
 router.get('/home-data', getPublicHomeData);
 router.get('/booking-hierarchy', getPublicBookingHierarchy);

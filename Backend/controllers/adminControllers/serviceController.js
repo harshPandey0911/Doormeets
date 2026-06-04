@@ -132,7 +132,10 @@ const createService = async (req, res) => {
       brandId,
       basePrice,
       gstPercentage,
-      discountPrice
+      discountPrice,
+      fields,
+      workflow,
+      rules
     } = req.body;
 
     const cleanedCategoryId = (categoryId === '' || !categoryId) ? null : categoryId;
@@ -147,17 +150,76 @@ const createService = async (req, res) => {
       iconUrl
     });
 
-    if (brandId && basePrice !== undefined && cleanedCategoryId) {
+    if (basePrice !== undefined && cleanedCategoryId) {
       await ServiceBrandPricing.create({
         categoryId: cleanedCategoryId,
         subCategoryId: cleanedSubCategoryId || null,
         serviceId: service._id,
-        brandId,
+        brandId: brandId || null,
         basePrice: Number(basePrice),
         gstPercentage: Number(gstPercentage || 18),
         vendorProfit: 0, // Admin can update this later via Pricing Matrix
         isActive: true
       });
+    }
+
+    // Dynamic Fields (Step 2)
+    if (Array.isArray(fields) && fields.length > 0) {
+      const ServiceField = require('../../models/ServiceField');
+      for (const field of fields) {
+        await ServiceField.create({
+          serviceId: service._id,
+          label: field.label,
+          name: field.name,
+          fieldType: field.fieldType,
+          isRequired: !!field.isRequired,
+          showToUser: field.showToUser !== undefined ? !!field.showToUser : true,
+          options: field.options || [],
+          defaultValue: field.defaultValue || '',
+          order: Number(field.order) || 0
+        });
+      }
+    }
+
+    // Workflow (Step 3)
+    if (workflow) {
+      const ServiceWorkflow = require('../../models/ServiceWorkflow');
+      const ServiceWorkflowStep = require('../../models/ServiceWorkflowStep');
+      const newWorkflow = await ServiceWorkflow.create({
+        serviceId: service._id,
+        workflowType: workflow.workflowType || 'single_visit',
+        totalVisits: workflow.totalVisits || 1,
+        frequency: workflow.frequency || 'none'
+      });
+      if (Array.isArray(workflow.steps) && workflow.steps.length > 0) {
+        for (let i = 0; i < workflow.steps.length; i++) {
+          const step = workflow.steps[i];
+          await ServiceWorkflowStep.create({
+            workflowId: newWorkflow._id,
+            sequence: i + 1,
+            title: step.title,
+            daysAfterPreviousVisit: step.daysAfterPreviousVisit || 0,
+            schedulingType: step.schedulingType || 'auto_offset'
+          });
+        }
+      }
+    }
+
+    // Pricing Rules (Step 4)
+    if (Array.isArray(rules) && rules.length > 0) {
+      const PricingRule = require('../../models/PricingRule');
+      for (const rule of rules) {
+        await PricingRule.create({
+          serviceId: service._id,
+          ruleType: rule.ruleType || 'conditional',
+          formulaString: rule.formulaString || '',
+          fieldName: rule.fieldName || '',
+          operator: rule.operator || '',
+          value: rule.value || '',
+          priceModifierType: rule.priceModifierType || '',
+          modifierValue: Number(rule.modifierValue) || 0
+        });
+      }
     }
 
     res.status(201).json({
@@ -212,8 +274,9 @@ const updateService = async (req, res) => {
 
     await service.save();
 
-    if (updates.brandId && updates.basePrice !== undefined) {
-      const pricing = await ServiceBrandPricing.findOne({ serviceId: service._id, brandId: updates.brandId });
+    if (updates.basePrice !== undefined) {
+      const targetBrandId = updates.brandId || null;
+      const pricing = await ServiceBrandPricing.findOne({ serviceId: service._id, brandId: targetBrandId });
       if (pricing) {
         pricing.basePrice = Number(updates.basePrice);
         if (updates.gstPercentage !== undefined) pricing.gstPercentage = Number(updates.gstPercentage);
@@ -232,12 +295,86 @@ const updateService = async (req, res) => {
           categoryId: finalCategoryId,
           subCategoryId: finalSubCategoryId || null,
           serviceId: service._id,
-          brandId: updates.brandId,
+          brandId: targetBrandId,
           basePrice: Number(updates.basePrice),
           gstPercentage: Number(updates.gstPercentage || 18),
           vendorProfit: 0,
           isActive: true
         });
+      }
+    }
+
+    // Dynamic Fields (Step 2)
+    if (updates.fields !== undefined) {
+      const ServiceField = require('../../models/ServiceField');
+      await ServiceField.deleteMany({ serviceId: service._id });
+      if (Array.isArray(updates.fields) && updates.fields.length > 0) {
+        for (const field of updates.fields) {
+          await ServiceField.create({
+            serviceId: service._id,
+            label: field.label,
+            name: field.name,
+            fieldType: field.fieldType,
+            isRequired: !!field.isRequired,
+            showToUser: field.showToUser !== undefined ? !!field.showToUser : true,
+            options: field.options || [],
+            defaultValue: field.defaultValue || '',
+            order: Number(field.order) || 0
+          });
+        }
+      }
+    }
+
+    // Workflow (Step 3)
+    if (updates.workflow !== undefined) {
+      const ServiceWorkflow = require('../../models/ServiceWorkflow');
+      const ServiceWorkflowStep = require('../../models/ServiceWorkflowStep');
+      
+      const existingWorkflow = await ServiceWorkflow.findOne({ serviceId: service._id });
+      if (existingWorkflow) {
+        await ServiceWorkflowStep.deleteMany({ workflowId: existingWorkflow._id });
+        await ServiceWorkflow.deleteOne({ _id: existingWorkflow._id });
+      }
+
+      if (updates.workflow) {
+        const newWorkflow = await ServiceWorkflow.create({
+          serviceId: service._id,
+          workflowType: updates.workflow.workflowType || 'single_visit',
+          totalVisits: updates.workflow.totalVisits || 1,
+          frequency: updates.workflow.frequency || 'none'
+        });
+        if (Array.isArray(updates.workflow.steps) && updates.workflow.steps.length > 0) {
+          for (let i = 0; i < updates.workflow.steps.length; i++) {
+            const step = updates.workflow.steps[i];
+            await ServiceWorkflowStep.create({
+              workflowId: newWorkflow._id,
+              sequence: i + 1,
+              title: step.title,
+              daysAfterPreviousVisit: step.daysAfterPreviousVisit || 0,
+              schedulingType: step.schedulingType || 'auto_offset'
+            });
+          }
+        }
+      }
+    }
+
+    // Pricing Rules (Step 4)
+    if (updates.rules !== undefined) {
+      const PricingRule = require('../../models/PricingRule');
+      await PricingRule.deleteMany({ serviceId: service._id });
+      if (Array.isArray(updates.rules) && updates.rules.length > 0) {
+        for (const rule of updates.rules) {
+          await PricingRule.create({
+            serviceId: service._id,
+            ruleType: rule.ruleType || 'conditional',
+            formulaString: rule.formulaString || '',
+            fieldName: rule.fieldName || '',
+            operator: rule.operator || '',
+            value: rule.value || '',
+            priceModifierType: rule.priceModifierType || '',
+            modifierValue: Number(rule.modifierValue) || 0
+          });
+        }
       }
     }
 

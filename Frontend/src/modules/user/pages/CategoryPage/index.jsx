@@ -181,7 +181,12 @@ const CategoryPage = () => {
       if (subCatId) params.subCategoryId = subCatId;
       const response = await publicCatalogService.getBrands(params);
       if (response.success) {
-        setBrands(response.brands || []);
+        const fetchedBrands = response.brands || [];
+        setBrands(fetchedBrands);
+        if (fetchedBrands.length === 0) {
+          setView('services');
+          fetchServices(null, subCatId);
+        }
       }
     } catch (error) {
       console.error('Failed to load brands:', error);
@@ -190,10 +195,15 @@ const CategoryPage = () => {
     }
   };
 
-  const fetchServices = async (brandId) => {
+  const fetchServices = async (brandId, subCatId = null) => {
     try {
       setLoading(true);
-      const response = await publicCatalogService.getServices({ brandId, categoryId: category?.id });
+      const params = { categoryId: category.id || category._id };
+      if (brandId) params.brandId = brandId;
+      if (subCatId || selectedSubCategory?.id || selectedSubCategory?._id) {
+        params.subCategoryId = subCatId || selectedSubCategory?.id || selectedSubCategory?._id;
+      }
+      const response = await publicCatalogService.getServices(params);
       if (response.success) {
         setServices(response.services || []);
       }
@@ -229,9 +239,24 @@ const CategoryPage = () => {
   };
 
   const handleBackToBrands = () => {
-    setView('brands');
-    setSelectedBrand(null);
+    if (brands.length === 0) {
+      setView('subcategories');
+      setSelectedSubCategory(null);
+    } else {
+      setView('brands');
+      setSelectedBrand(null);
+    }
     setServices([]);
+  };
+
+  const handleBack = () => {
+    if (view === 'services') {
+      handleBackToBrands();
+    } else if (view === 'brands') {
+      handleBackToSubCategories();
+    } else {
+      navigate(-1);
+    }
   };
 
   const handleServiceClick = (service) => {
@@ -302,7 +327,7 @@ const CategoryPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="p-4 border-b">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-3">
+        <button onClick={handleBack} className="flex items-center gap-3">
           <FiArrowLeft className="w-5 h-5" />
           <span className="font-bold">Back</span>
         </button>

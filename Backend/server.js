@@ -228,6 +228,7 @@ app.use('/api/admin/subcategories', require('./routes/admin-routes/subCategoryMa
 app.use('/api/admin/pricing', require('./routes/admin-routes/pricingManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/brandManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/serviceManagement.routes'));
+app.use('/api/admin/services', require('./routes/admin-routes/dynamicServiceRoutes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorCatalogManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/homePageManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/bookingManagement.routes'));

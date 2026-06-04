@@ -1,13 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import Navbar from '../../components/premium/Navbar';
 import BottomCheckoutBar from '../../components/premium/BottomCheckoutBar';
 import PriceTag from '../../components/premium/PriceTag';
 import { buildCartItemData, toAssetUrl } from '../../components/premium/cartUtils';
 import { useCart } from '../../../../context/CartContext';
+import api from '../../../../services/api';
 
 const PremiumServiceDetailPage = () => {
   const { slug } = useParams();
@@ -22,9 +23,166 @@ const PremiumServiceDetailPage = () => {
   const features = useMemo(() => service?.features || [], [service]);
   const steps = service?.steps || [];
 
+  const [fields, setFields] = useState([]);
+  const [pricingRules, setPricingRules] = useState([]);
+  const [dynamicAnswers, setDynamicAnswers] = useState({});
+  const [calculatedPrice, setCalculatedPrice] = useState(service?.price || 0);
+  const [uploadingFiles, setUploadingFiles] = useState({});
+
+  useEffect(() => {
+    const fetchDynamicDetails = async () => {
+      if (!service?._id && !service?.id) return;
+      const sId = service._id || service.id;
+      try {
+        const res = await api.get(`/public/services/${sId}/dynamic-details`);
+        if (res.data.success) {
+          setFields(res.data.fields || []);
+          setPricingRules(res.data.pricingRules || []);
+          
+          const initialAnswers = {};
+          (res.data.fields || []).forEach(f => {
+            initialAnswers[f.name] = f.defaultValue || '';
+          });
+          setDynamicAnswers(initialAnswers);
+        }
+      } catch (err) {
+        console.error("Error loading dynamic details", err);
+      }
+    };
+    fetchDynamicDetails();
+  }, [service]);
+
+  useEffect(() => {
+    if (!service) return;
+    let price = service.price || 0;
+    if (pricingRules.length === 0) {
+      setCalculatedPrice(price);
+      return;
+    }
+
+    const formulaRule = pricingRules.find(r => r.ruleType === 'formula');
+    const conditionalRules = pricingRules.filter(r => r.ruleType === 'conditional');
+
+    if (formulaRule && formulaRule.formulaString) {
+      try {
+        let formula = formulaRule.formulaString;
+        const vars = { basePrice: service.price || 0, ...dynamicAnswers };
+        Object.keys(vars).forEach(key => {
+          const val = parseFloat(vars[key]) || 0;
+          const regex = new RegExp(`\\b${key}\\b`, 'g');
+          formula = formula.replace(regex, val);
+        });
+        const safeFormula = formula.replace(/[^0-9\s+\-*/().]/g, '');
+        const evaluated = new Function(`return (${safeFormula})`)();
+        if (typeof evaluated === 'number' && !isNaN(evaluated)) {
+          price = evaluated;
+        }
+      } catch (e) {
+        console.error('Error evaluating formula:', e);
+      }
+    }
+
+    conditionalRules.forEach(rule => {
+      const userVal = dynamicAnswers[rule.fieldName];
+      if (userVal === undefined) return;
+
+      let isMatch = false;
+      if (rule.operator === 'equals') {
+        isMatch = String(userVal).toLowerCase() === String(rule.value).toLowerCase();
+      } else if (rule.operator === 'greater_than') {
+        isMatch = parseFloat(userVal) > parseFloat(rule.value);
+      } else if (rule.operator === 'less_than') {
+        isMatch = parseFloat(userVal) < parseFloat(rule.value);
+      }
+
+      if (isMatch) {
+        if (rule.priceModifierType === 'add') {
+          price += rule.modifierValue;
+        } else if (rule.priceModifierType === 'multiply') {
+          price *= rule.modifierValue;
+        } else if (rule.priceModifierType === 'fixed') {
+          price = rule.modifierValue;
+        }
+      }
+    });
+
+    setCalculatedPrice(Math.max(0, price));
+  }, [dynamicAnswers, pricingRules, service]);
+
+  const handleFileUpload = async (fieldName, file) => {
+    try {
+      setUploadingFiles(prev => ({ ...prev, [fieldName]: true }));
+      const { uploadToCloudinary } = await import('../../../../utils/cloudinaryUpload');
+      const url = await uploadToCloudinary(file, 'user_bookings');
+      if (url) {
+        setDynamicAnswers(prev => ({
+          ...prev,
+          [fieldName]: url
+        }));
+        toast.success('File uploaded successfully!');
+      } else {
+        toast.error('Failed to upload file');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Upload failed');
+    } finally {
+      setUploadingFiles(prev => ({ ...prev, [fieldName]: false }));
+    }
+  };
+
+  const fetchCurrentLocation = (fieldName) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const locStr = `${position.coords.latitude}, ${position.coords.longitude}`;
+          setDynamicAnswers(prev => ({ ...prev, [fieldName]: locStr }));
+          toast.success('Location detected!');
+        },
+        (error) => {
+          toast.error('Failed to get location');
+        }
+      );
+    } else {
+      toast.error('Geolocation is not supported by your browser');
+    }
+  };
+
   const handleAdd = async () => {
     if (!service) return;
-    const response = await addToCart(buildCartItemData({ service, category, brand }));
+
+    // Validate required fields
+    // Validate required fields (only if shown to user)
+    const missingFields = fields.filter(f => f.showToUser !== false && f.isRequired && !dynamicAnswers[f.name]);
+    if (missingFields.length > 0) {
+      toast.error(`Please fill out required field: ${missingFields[0].label}`);
+      return;
+    }
+
+    const dynamicFieldsPayload = Object.keys(dynamicAnswers)
+      .filter(key => {
+        const field = fields.find(f => f.name === key);
+        return field && field.showToUser !== false;
+      })
+      .map(key => {
+        const field = fields.find(f => f.name === key);
+        return {
+          fieldId: field?._id || field?.id,
+          name: key,
+          label: field?.label || key,
+          value: dynamicAnswers[key]
+        };
+      });
+
+    const cartData = buildCartItemData({ service, category, brand });
+    cartData.price = calculatedPrice;
+    cartData.unitPrice = calculatedPrice;
+    if (cartData.card) {
+      cartData.card.price = calculatedPrice;
+    }
+    cartData.dynamicFields = dynamicFieldsPayload;
+
+    const response = await addToCart(cartData);
     if (response?.success) {
       toast.success('Added to cart');
     }
@@ -75,11 +233,173 @@ const PremiumServiceDetailPage = () => {
 
         <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
           <div className="flex items-center justify-between gap-3">
-            <PriceTag price={service.price} originalPrice={service.originalPrice} />
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100) : 25}%</span>
+            <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} />
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - calculatedPrice) / service.originalPrice) * 100) : 25}%</span>
           </div>
           <p className="mt-4 text-sm leading-7 text-gray-600">{service.description}</p>
         </section>
+
+        {fields.filter(f => f.showToUser !== false).length > 0 && (
+          <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-6 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
+                <FiSliders className="w-5 h-5" />
+              </span>
+              <h2 className="text-xl font-black text-gray-900">Custom Options</h2>
+            </div>
+            
+            <div className="space-y-4">
+              {fields.filter(f => f.showToUser !== false).map((field) => {
+                const value = dynamicAnswers[field.name] || '';
+                return (
+                  <div key={field._id || field.name} className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      {field.label} {field.isRequired && <span className="text-red-500">*</span>}
+                    </label>
+                    
+                    {/* Render inputs based on type */}
+                    {field.fieldType === 'text' && (
+                      <input
+                        type="text"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'number' && (
+                      <input
+                        type="number"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'textarea' && (
+                      <textarea
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        rows={3}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'dropdown' && (
+                      <select
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-purple-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      >
+                        <option value="">Select Option</option>
+                        {(field.options || []).map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {field.fieldType === 'radio' && (
+                      <div className="flex flex-wrap gap-3 pt-1">
+                        {(field.options || []).map(opt => (
+                          <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={field.name}
+                              value={opt}
+                              checked={value === opt}
+                              onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {field.fieldType === 'checkbox' && (
+                      <label className="flex items-center gap-2 py-1 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.checked }))}
+                        />
+                        Enable this Option
+                      </label>
+                    )}
+
+                    {field.fieldType === 'date' && (
+                      <input
+                        type="date"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'time' && (
+                      <input
+                        type="time"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {/* File / Image Uploader with progress indicator */}
+                    {(field.fieldType === 'image' || field.fieldType === 'file') && (
+                      <div className="flex flex-col gap-2 pt-1">
+                        <input
+                          type="file"
+                          accept={field.fieldType === 'image' ? 'image/*' : '*'}
+                          disabled={uploadingFiles[field.name]}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleFileUpload(field.name, e.target.files[0]);
+                            }
+                          }}
+                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                        />
+                        {uploadingFiles[field.name] && <p className="text-[10px] text-purple-600 animate-pulse">Uploading file...</p>}
+                        {value && (
+                          <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-150">
+                            <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-150">UPLOADED</span>
+                            <a href={value} target="_blank" rel="noreferrer" className="text-xs text-purple-600 hover:underline truncate flex-1">{value}</a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Location Picker */}
+                    {field.fieldType === 'location' && (
+                      <div className="flex gap-2 pt-1">
+                        <input
+                          type="text"
+                          placeholder="Latitude, Longitude coordinates"
+                          className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                          value={value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                          required={field.isRequired}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fetchCurrentLocation(field.name)}
+                          className="px-3 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl text-xs font-semibold border border-purple-150"
+                        >
+                          Locate Me
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
@@ -133,7 +453,7 @@ const PremiumServiceDetailPage = () => {
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border border-purple-100 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(124,58,237,0.12)]">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-gray-400">Price</div>
-            <PriceTag price={service.price} originalPrice={service.originalPrice} className="mt-1" />
+            <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
           <button type="button" onClick={handleAdd} className="rounded-2xl bg-linear-to-r from-purple-600 to-fuchsia-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-purple-200 transition-transform hover:scale-[1.02]">
             Add to cart

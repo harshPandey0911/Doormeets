@@ -403,9 +403,7 @@ const PremiumCategoryPage = () => {
         </section>
       </div>
 
-      {cartCount > 0 ? (
-        <BottomCheckoutBar total={cartItems.reduce((sum, item) => sum + (item.price || 0), 0)} originalTotal={cartItems.reduce((sum, item) => sum + ((item.originalPrice || item.price || 0) * (item.serviceCount || 1)), 0)} buttonText="Go to cart" onClick={() => navigate('/user/cart')} />
-      ) : null}
+
     </div>
   );
 };
