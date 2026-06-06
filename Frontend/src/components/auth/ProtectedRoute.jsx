@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
 
 /**
  * Protected Route Component
@@ -14,91 +13,39 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null }) => {
   useEffect(() => {
     const checkAuth = async () => {
       let tokenKey = 'accessToken';
-      let refreshTokenKey = 'refreshToken';
-      let dataKey = 'userData';
 
       switch (userType) {
         case 'vendor':
           tokenKey = 'vendorAccessToken';
-          refreshTokenKey = 'vendorRefreshToken';
-          dataKey = 'vendorData';
           break;
         case 'worker':
           tokenKey = 'workerAccessToken';
-          refreshTokenKey = 'workerRefreshToken';
-          dataKey = 'workerData';
           break;
         case 'admin':
           tokenKey = 'adminAccessToken';
-          refreshTokenKey = 'adminRefreshToken';
-          dataKey = 'adminData';
           break;
         case 'user':
         default:
           tokenKey = 'accessToken';
-          refreshTokenKey = 'refreshToken';
-          dataKey = 'userData';
           break;
       }
 
       const token = sessionStorage.getItem(tokenKey) || localStorage.getItem(tokenKey);
-      const refreshToken = sessionStorage.getItem(refreshTokenKey) || localStorage.getItem(refreshTokenKey);
-      const userData = sessionStorage.getItem(dataKey) || localStorage.getItem(dataKey);
 
-      if (token && userData) {
-        try {
-          const parts = token.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1]));
-            const currentTime = Math.floor(Date.now() / 1000);
-
-            // If token is expired but we have a refresh token, let's try to let it proceed.
-            // The axios interceptor in api.js will handle the actual refresh when the first request fails.
-            // We only logout here if there's NO refresh token or if the refresh token itself is expired.
-            
-            if (payload.exp && payload.exp > currentTime) {
-              setIsAuthenticated(true);
-              setIsLoading(false);
-            } else if (refreshToken) {
-              // Access token expired but refresh token exists.
-              // We'll give it a chance. If the first API call fails to refresh, it will logout then.
-              // This prevents an aggressive logout before the interceptor can do its job.
-              console.log(`[Auth] Access token expired for ${userType}, but refresh token exists. Proveding...`);
-              setIsAuthenticated(true);
-              setIsLoading(false);
-            } else {
-              // Truly expired and no way to refresh
-              handleExpiredSession(tokenKey, refreshTokenKey, dataKey);
-            }
-          } else {
-            setIsAuthenticated(false);
-            setIsLoading(false);
-          }
-        } catch (error) {
-          console.error('Token validation error:', error);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-        }
+      // ✅ Agar koi bhi token hai (expired bhi), andar jaane do.
+      // Axios interceptor refresh handle karega.
+      // Sirf tab block karo jab token bilkul nahi ho (never logged in / manual logout).
+      if (token) {
+        setIsAuthenticated(true);
+        setIsLoading(false);
       } else {
         setIsAuthenticated(false);
         setIsLoading(false);
       }
     };
 
-    const handleExpiredSession = (tokenKey, refreshTokenKey, dataKey) => {
-      console.log('Session truly expired, clearing auth data');
-      localStorage.removeItem(tokenKey);
-      localStorage.removeItem(refreshTokenKey);
-      localStorage.removeItem(dataKey);
-      sessionStorage.removeItem(tokenKey);
-      sessionStorage.removeItem(refreshTokenKey);
-      sessionStorage.removeItem(dataKey);
-      setIsAuthenticated(false);
-      setIsLoading(false);
-    };
-
     checkAuth();
-  }, [userType, location.pathname]);
+  }, [userType]); // ✅ Only re-run if userType changes, NOT on every route change
 
   if (isLoading) {
     return (

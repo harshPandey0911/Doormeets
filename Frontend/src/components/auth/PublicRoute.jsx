@@ -93,7 +93,7 @@ const PublicRoute = ({ children, userType = 'user', redirectTo = null }) => {
     };
 
     checkAuth();
-  }, [userType, location.pathname]);
+  }, [userType]); // ✅ Only re-run if userType changes, NOT on every route change
 
   if (isLoading) {
     return (
