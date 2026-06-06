@@ -6,6 +6,7 @@ import BottomNav from '../../components/layout/BottomNav';
 import SearchBar from './components/SearchBar';
 import ServiceCategories from './components/ServiceCategories';
 import { publicCatalogService } from '../../../../services/catalogService';
+import { bookingService } from '../../../../services/bookingService';
 import { useCart } from '../../../../context/CartContext';
 import { useCity } from '../../../../context/CityContext';
 import { toast } from 'react-hot-toast';
@@ -257,6 +258,18 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [comingSoonCategory, setComingSoonCategory] = useState(null);
+  const [currentStackIndex, setCurrentStackIndex] = useState(0);
+  const [pastServices, setPastServices] = useState([]);
+  const [pastServicesLoading, setPastServicesLoading] = useState(false);
+
+  const upcomingCategories = categories.filter(c => c.status === 'coming_soon');
+
+  // Reset currentStackIndex if it goes out of bounds when categories change
+  useEffect(() => {
+    if (currentStackIndex >= upcomingCategories.length) {
+      setCurrentStackIndex(0);
+    }
+  }, [upcomingCategories.length, currentStackIndex]);
 
   // Fetch categories and home content on mount (and when city changes)
   useEffect(() => {
@@ -316,6 +329,68 @@ const Home = () => {
     fetchData();
     fetchBanners();
   }, [currentCity]);
+
+  // Fetch user bookings for "Order Again" section
+  useEffect(() => {
+    const fetchPastOrders = async () => {
+      try {
+        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        if (!token) return;
+        setPastServicesLoading(true);
+        const res = await bookingService.getUserBookings({ limit: 20 });
+        if (res.success && Array.isArray(res.data)) {
+          // Extract unique services from bookedItems or main service info
+          const servicesMap = new Map();
+          res.data.forEach(booking => {
+            if (Array.isArray(booking.bookedItems) && booking.bookedItems.length > 0) {
+              booking.bookedItems.forEach(item => {
+                const sId = item.serviceId || item._id || item.id;
+                if (sId && !servicesMap.has(sId)) {
+                  servicesMap.set(sId, {
+                    id: sId,
+                    serviceId: sId,
+                    categoryId: item.categoryId || booking.categoryId,
+                    title: item.card?.title || item.title || item.name,
+                    price: item.price || 0,
+                    originalPrice: item.originalPrice || null,
+                    discount: item.discount || null,
+                    image: toAssetUrl(item.icon || item.image || ''),
+                    vendorName: booking.vendorName || booking.vendorId?.name || 'Evenox Clean',
+                    rating: item.rating || "4.8",
+                    reviews: item.reviews || "10k+"
+                  });
+                }
+              });
+            } else if (booking.serviceId) {
+              const sId = booking.serviceId;
+              if (sId && !servicesMap.has(sId)) {
+                servicesMap.set(sId, {
+                  id: sId,
+                  serviceId: sId,
+                  categoryId: booking.categoryId,
+                  title: booking.serviceName || 'Service',
+                  price: booking.finalAmount || booking.totalAmount || 0,
+                  originalPrice: null,
+                  image: toAssetUrl(booking.serviceImage || ''),
+                  vendorName: booking.vendorName || booking.vendorId?.name || 'Evenox Clean',
+                  rating: "4.8",
+                  reviews: "10k+"
+                });
+              }
+            }
+          });
+          setPastServices(Array.from(servicesMap.values()));
+        }
+      } catch (err) {
+        console.error("Failed to fetch past services for Order Again:", err);
+      } finally {
+        setPastServicesLoading(false);
+      }
+    };
+
+    fetchPastOrders();
+  }, []);
+
   // Open category modal from navigation state (e.g. from Cart 'Add Services')
   useEffect(() => {
     if (!loading && categories.length > 0 && (location.state?.openCategoryId || location.state?.openCategoryName)) {
@@ -571,7 +646,7 @@ const Home = () => {
                   <motion.section variants={itemVariants} className="relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent pointer-events-none -z-10" />
                     <ServiceCategories
-                      categories={categories.filter(c => c.categoryType === 'service')}
+                      categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
                       onCategoryClick={handleCategoryClick}
                       title="Categories"
                       subtitle="Premium Home Services"
@@ -582,7 +657,7 @@ const Home = () => {
                   {categories.some(c => c.categoryType === 'product') && (
                     <motion.section variants={itemVariants} className="relative overflow-hidden">
                       <ServiceCategories
-                        categories={categories.filter(c => c.categoryType === 'product')}
+                        categories={categories.filter(c => c.categoryType === 'product' && c.status !== 'coming_soon')}
                         onCategoryClick={handleCategoryClick}
                         title="Products & Materials"
                         subtitle="Quality building materials"
@@ -593,40 +668,228 @@ const Home = () => {
                 </>
               )}
 
-              {/* Smart Protect Warranty Section (As shown in screenshot) */}
-              <motion.section variants={itemVariants} className="px-5">
-                <div 
-                  className="w-full bg-[#053d87] rounded-2xl p-4 relative overflow-hidden shadow-md border border-blue-800/10"
-                  style={{
-                    boxShadow: '0 4px 20px -2px rgba(5,61,135,0.15)'
-                  }}
-                >
-                  {/* Visual Background Accent Details */}
-                  <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-                  <div className="absolute -bottom-8 -left-8 w-20 h-20 bg-blue-400/10 rounded-full blur-xl pointer-events-none" />
-
-                  <div className="relative z-10 flex items-center justify-between gap-3">
-                    <div className="space-y-1.5">
-                      <span className="inline-block bg-[#ffca08] text-[#053d87] text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider leading-none">
-                        Smart Protect
+              {/* Upcoming Categories Section (Replacing Smart Protect Blue Banner) */}
+              {upcomingCategories.length > 0 && (() => {
+                const activeCat = upcomingCategories[currentStackIndex] || upcomingCategories[0];
+                return (
+                  <motion.section variants={itemVariants} className="px-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-base font-extrabold text-[#111827] tracking-tight">
+                        Upcoming Services
+                      </h2>
+                      <span className="text-xs font-bold text-[#FF9F45] bg-[#FF9F45]/10 px-2.5 py-1 rounded-full animate-pulse">
+                        {upcomingCategories.length} Coming Soon
                       </span>
-                      <h3 className="text-sm font-extrabold text-white tracking-tight leading-tight">
-                        Protect your appliances today
-                      </h3>
-                      <p className="text-[10px] text-blue-100/70 max-w-[180px] sm:max-w-sm leading-tight">
-                        Secure your non-warranty appliances with our premium warranty.
-                      </p>
                     </div>
-                    
+
+                    {/* Staggered Card Stack Container */}
+                    <div className="relative pt-2">
+                      
+                      {/* Inner Stack Wrapper to align layers with the main card bottom */}
+                      <div className="relative z-10">
+                        {/* Third Layer Card (Deepest) */}
+                        {upcomingCategories.length > 2 && (
+                          <div className="absolute left-5 right-5 bottom-0 h-full bg-[#FF9F45]/25 rounded-[24px] shadow-sm transform translate-y-3 z-0 pointer-events-none border border-white/5" />
+                        )}
+                        
+                        {/* Second Layer Card (Middle) */}
+                        {upcomingCategories.length > 1 && (
+                          <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-[#FF9F45]/50 rounded-[24px] shadow-md transform translate-y-1.5 z-10 pointer-events-none border border-white/10" />
+                        )}
+
+                        {/* Main Card (Top) */}
+                        <div 
+                          onClick={() => {
+                            // Cycle on click
+                            if (upcomingCategories.length > 1) {
+                              setCurrentStackIndex((prev) => (prev + 1) % upcomingCategories.length);
+                            } else {
+                              handleCategoryClick(activeCat);
+                            }
+                          }}
+                          className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] rounded-[24px] p-5 relative overflow-hidden shadow-[0_12px_28px_rgba(255,159,69,0.22)] border border-white/20 active:scale-[0.98] hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
+                        >
+                          {/* Smooth glassmorphism-inspired highlights */}
+                          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-white/30 to-transparent pointer-events-none" />
+                          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-[0.5px] pointer-events-none" />
+
+                          {/* Diagonal glow shine */}
+                          <div className="absolute -inset-y-12 -left-16 w-32 bg-white/10 blur-xl transform rotate-12 pointer-events-none" />
+
+                          <div className="relative z-10 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-4">
+                              {/* White Circle Container for Icon */}
+                              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.06)] overflow-hidden shrink-0 border border-white/50">
+                                {activeCat.icon ? (
+                                  <img 
+                                    src={activeCat.icon} 
+                                    alt={activeCat.title} 
+                                    className="w-9 h-9 object-contain"
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 flex items-center justify-center bg-orange-50 rounded-full">
+                                    <svg className="w-5 h-5 text-[#FF9F45]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-0.5">
+                                <h3 className="text-lg font-extrabold text-white tracking-tight leading-tight">
+                                  {activeCat.title}
+                                </h3>
+                                <p className="text-orange-50 text-[11px] font-semibold opacity-90 leading-tight">
+                                  Launching soon in {currentCity?.name || 'Indore'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Notify / Bell Button */}
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                handleCategoryClick(activeCat);
+                              }}
+                              className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
+                                activeCat.isInterested
+                                  ? 'bg-white text-green-500 shadow-md'
+                                  : 'bg-white/25 hover:bg-white/35 text-white active:scale-95'
+                              }`}
+                            >
+                              {activeCat.isInterested ? (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Lighter sub-bar inside the card */}
+                          <div className="bg-black/10 rounded-[18px] p-3.5 mt-4 flex items-center justify-between text-white text-[11px] font-bold tracking-tight">
+                            <div className="flex items-center gap-1.5 opacity-95">
+                              <svg className="w-3.5 h-3.5 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>Status: COMING SOON</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 opacity-95">
+                              <svg className="w-3.5 h-3.5 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                              <span>{activeCat.interestedCount || 0} Interested</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Small Indicator Dots for Stack */}
+                      {upcomingCategories.length > 1 && (
+                        <div className="flex justify-center gap-1.5 mt-4 relative z-20">
+                          {upcomingCategories.map((_, dotIdx) => (
+                            <button
+                              key={dotIdx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCurrentStackIndex(dotIdx);
+                              }}
+                              className={`h-1.5 rounded-full transition-all duration-300 ${
+                                currentStackIndex === dotIdx ? 'w-5 bg-[#FF9F45]' : 'w-1.5 bg-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.section>
+                );
+              })()}
+
+              {/* Order Again Section */}
+              {!pastServicesLoading && pastServices.length > 0 && (
+                <motion.section variants={itemVariants} className="px-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base font-extrabold text-[#111827] tracking-tight">
+                      Order again
+                    </h2>
                     <button 
-                      onClick={() => navigate('/user/my-subscription')}
-                      className="shrink-0 bg-[#ffca08] hover:bg-[#e2b300] active:scale-95 text-[#053d87] font-black text-[10px] px-3 py-1.5 rounded-full transition-all shadow-md shadow-[#ffca08]/15"
+                      onClick={() => navigate('/user/bookings')}
+                      className="text-xs font-bold text-gray-500 hover:text-[#FF9F45] transition-colors"
                     >
-                      Buy Warranty
+                      see all
                     </button>
                   </div>
-                </div>
-              </motion.section>
+
+                  {/* Horizontal Scroll list of past services */}
+                  <div 
+                    className="flex gap-4 overflow-x-auto pb-3 -mx-5 px-5 no-scrollbar"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {pastServices.map((service, index) => {
+                      return (
+                        <div
+                          key={service.id || index}
+                          onClick={() => handleAddClick(service)}
+                          className="flex-shrink-0 bg-white border border-gray-100/70 rounded-3xl p-5 flex items-center justify-between w-[285px] shadow-[0_4px_16px_rgba(0,0,0,0.015)] active:scale-[0.98] hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden"
+                        >
+                          {/* Inner Content (Left Side) */}
+                          <div className="flex-1 min-w-0 pr-3 space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="text-xs font-extrabold text-gray-800 truncate leading-tight">
+                                {service.title}
+                              </h3>
+                              <span className="shrink-0 bg-[#FF9F45]/10 text-[#FF9F45] text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                ★ {service.rating}
+                              </span>
+                            </div>
+
+                            <p className="text-[10px] text-gray-400 font-semibold truncate">
+                              by {service.vendorName}
+                            </p>
+
+                            <div className="flex items-baseline gap-1.5 pt-1">
+                              <span className="text-sm font-extrabold text-[#FF9F45]">
+                                ₹{(service.price || 0).toLocaleString('en-IN')}
+                              </span>
+                              {service.originalPrice && service.originalPrice > service.price && (
+                                <>
+                                  <span className="text-[10px] text-gray-400 line-through">
+                                    ₹{service.originalPrice.toLocaleString('en-IN')}
+                                  </span>
+                                  <span className="text-[9px] font-extrabold text-green-500">
+                                    {Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100)}% off
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Service Icon/Visual (Right Side) */}
+                          <div className="w-16 h-16 rounded-2xl bg-orange-50/50 flex items-center justify-center shrink-0 border border-orange-100/30 overflow-hidden">
+                            {service.image ? (
+                              <img
+                                src={service.image}
+                                alt={service.title}
+                                className="w-12 h-12 object-contain"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <svg className="w-8 h-8 text-[#FF9F45]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.section>
+              )}
 
               {/* Curated Services */}
               {homeContent?.isCuratedVisible !== false && (

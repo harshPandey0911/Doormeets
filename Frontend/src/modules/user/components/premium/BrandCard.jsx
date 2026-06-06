@@ -24,11 +24,13 @@ const BrandCard = ({ brand, active = false, onClick }) => {
           </div>
         )}
       </div>
-      <div className="text-xs sm:text-sm font-bold text-gray-900 truncate leading-tight">{brand.title}</div>
+      <div className="text-xs sm:text-sm font-normal text-gray-900 truncate leading-tight">
+        {brand.title ? brand.title.charAt(0).toUpperCase() + brand.title.slice(1).toLowerCase() : ''}
+      </div>
       <div className="mt-0.5 sm:mt-1 flex items-center gap-1 text-[9px] sm:text-xs text-gray-500 leading-none">
         <FiStar className="text-amber-500 fill-amber-500 w-2 h-2 sm:w-3 sm:h-3" />
-        <span className="font-semibold">{brand.rating || '4.8'}</span>
-        <span className="truncate">{brand.subtitle || ''}</span>
+        <span className="font-normal">{brand.rating || '4.8'}</span>
+        <span className="truncate">{brand.subtitle ? brand.subtitle.charAt(0).toUpperCase() + brand.subtitle.slice(1).toLowerCase() : ''}</span>
       </div>
     </motion.button>
   );

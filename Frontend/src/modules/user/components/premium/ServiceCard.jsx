@@ -19,12 +19,14 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-amber-500">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-normal text-amber-500">
                 <span>★ {service.rating || 4.8}</span>
                 <span className="text-gray-300">|</span>
                 <span>{service.reviews || 0} reviews</span>
               </div>
-              <h3 className="mt-0.5 text-sm sm:text-[15px] font-black leading-snug text-gray-900 line-clamp-2">{service.title}</h3>
+              <h3 className="mt-0.5 text-sm sm:text-[15px] font-normal leading-snug text-gray-900 line-clamp-2">
+                {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
+              </h3>
             </div>
             <div className="flex gap-1 text-gray-400">
               <button type="button" onClick={(e) => { e.stopPropagation(); onWishlist?.(service); }} className="rounded-full p-1.5 sm:p-2 hover:bg-orange-50 hover:text-[#FF9F45] transition-colors">
@@ -44,7 +46,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         {quantity > 0 ? (
           <QuantityButton quantity={quantity} onIncrement={() => onIncrease?.(service)} onDecrement={() => onDecrease?.(service)} />
         ) : (
-          <button type="button" onClick={() => onAdd?.(service)} className="inline-flex items-center gap-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-3.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-black text-white shadow-lg shadow-orange-100 transition-transform hover:scale-[1.02]">
+          <button type="button" onClick={() => onAdd?.(service)} className="inline-flex items-center gap-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-3.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-normal text-white shadow-lg shadow-orange-100 transition-transform hover:scale-[1.02]">
             <FiPlus /> Add
           </button>
         )}

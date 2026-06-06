@@ -56,9 +56,9 @@ const Header = ({ location, onLocationClick }) => {
           onClick={onLocationClick}
           className="flex items-center gap-3 cursor-pointer select-none"
         >
-          {/* Blue Pin Icon in modern circular glow container */}
-          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100/50 shadow-sm shrink-0">
-            <HiLocationMarker className="w-5 h-5 text-blue-600" />
+          {/* Orange Pin Icon matching theme */}
+          <div className="w-10 h-10 rounded-full bg-[#FF9F45]/10 flex items-center justify-center border border-[#FF9F45]/20 shadow-sm shrink-0">
+            <HiLocationMarker className="w-5 h-5 text-[#FF9F45]" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-1">
@@ -70,20 +70,10 @@ const Header = ({ location, onLocationClick }) => {
           </div>
         </div>
 
-        {/* Right Side: Notification Bell & User Avatar */}
+        {/* Right Side: Notification Bell */}
         <div className="flex items-center gap-3.5 shrink-0">
           {/* Dynamic premium notification bell */}
           <NotificationBell notificationCount={unreadCount} />
-
-          {/* User Avatar Circle */}
-          <div 
-            onClick={() => navigate('/user/account')}
-            className="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center cursor-pointer shadow-md shadow-blue-100 border-2 border-white hover:scale-105 active:scale-95 transition-all select-none"
-          >
-            <span className="text-white font-extrabold text-lg tracking-tight">
-              {userInitial}
-            </span>
-          </div>
         </div>
 
       </div>

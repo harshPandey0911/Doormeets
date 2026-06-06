@@ -7,7 +7,7 @@ import NotificationBell from '../common/NotificationBell';
 const Navbar = ({ locationLabel = 'Select location', cartCount = 0, onSearchClick, onLocationClick }) => {
   return (
     <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 w-full">
         <Link to="/user/home" className="shrink-0">
           <Logo className="h-9 w-auto" />
         </Link>

@@ -308,10 +308,10 @@ const PremiumCategoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28 w-full overflow-x-hidden">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-4 lg:grid-cols-[280px_1fr] lg:px-6">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-3 rounded-[28px] border border-gray-100 bg-white p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
             <div>
@@ -332,10 +332,10 @@ const PremiumCategoryPage = () => {
           </div>
         </aside>
 
-        <section className="space-y-5">
-          <div className="lg:hidden space-y-3">
+        <section className="space-y-5 min-w-0 w-full max-w-full overflow-hidden">
+          <div className="lg:hidden space-y-3 w-full max-w-full overflow-hidden">
             <SearchBar value={search} onChange={setSearch} placeholder="Search this category" />
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {categories.map((category) => (
                 <button key={category.id || category.slug} type="button" onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeCategory?.id === category.id ? 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white shadow-lg shadow-orange-100' : 'bg-white text-gray-700 border border-gray-200'}`}>
                   {category.title}
@@ -414,26 +414,26 @@ const PremiumCategoryPage = () => {
           <div className="rounded-[30px] border border-orange-100 bg-white p-4 shadow-[0_18px_60px_rgba(255,159,69,0.08)]">
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-[#FF9F45]">Subcategories</p>
-                <h3 className="text-2xl font-black text-gray-900">{activeCategory?.title}</h3>
+                <p className="text-xs font-normal tracking-[0.1em] text-[#FF9F45]">Subcategories</p>
+                <h3 className="text-2xl font-normal text-gray-900">{activeCategory?.title}</h3>
               </div>
             </div>
             {subCategoriesLoading ? (
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-orange-50/50" />
                 ))}
               </div>
             ) : (
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {(subCategories.length ? subCategories : [{ title: 'All' }]).map((sub) => (
                   <button
                     key={sub.id || sub._id || sub.title}
                     type="button"
                     onClick={() => setActiveSubCategory(sub)}
-                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeSubCategory?.id === sub.id ? 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white shadow-lg shadow-orange-100' : 'bg-orange-50 text-[#FF9F45] hover:bg-orange-100/50'}`}
+                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-normal transition-all ${activeSubCategory?.id === sub.id ? 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white shadow-lg shadow-orange-100' : 'bg-orange-50 text-[#FF9F45] hover:bg-orange-100/50'}`}
                   >
-                    {sub.title}
+                    {sub.title ? sub.title.charAt(0).toUpperCase() + sub.title.slice(1).toLowerCase() : ''}
                   </button>
                 ))}
               </div>
@@ -443,19 +443,19 @@ const PremiumCategoryPage = () => {
           <div className="rounded-[30px] border border-gray-100 bg-white p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Brands</p>
-                <h3 className="text-xl font-black text-gray-900">Top options in this category</h3>
+                <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Brands</p>
+                <h3 className="text-xl font-normal text-gray-900">Top options in this category</h3>
               </div>
             </div>
             {brandsLoading ? (
-              <div className="flex gap-3 overflow-x-auto pb-1">
+              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-28 w-28 shrink-0 animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="flex gap-3 overflow-x-auto pb-1">
+                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
                   {brands.map((brand) => (
                     <BrandCard key={brand.id || brand.slug} brand={brand} active={(activeBrand?.id || activeBrand?.slug) === (brand.id || brand.slug)} onClick={() => setActiveBrand(brand)} />
                   ))}
@@ -465,9 +465,9 @@ const PremiumCategoryPage = () => {
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {servicesLoading ? (
-              [1, 2].map((i) => (
+              [1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-32 w-full animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
               ))
             ) : (
@@ -483,7 +483,7 @@ const PremiumCategoryPage = () => {
                     onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory, brand: activeBrand } })}
                   />
                 ))}
-                {!filteredServices.length ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No services available.</div> : null}
+                {!filteredServices.length ? <div className="col-span-full rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 text-center">No services available.</div> : null}
               </>
             )}
           </div>
