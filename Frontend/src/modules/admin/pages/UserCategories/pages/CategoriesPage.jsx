@@ -259,7 +259,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
 
       if (editingId && !editingId.startsWith('ucat-')) {
         const existingCat = categories.find(c => c.id === editingId);
-        if (selectedCity) {
+        if (selectedCity && !form.allCities && form.cityIds.length === 0) {
           categoryData.cityIds = [selectedCity];
           categoryData.updateCityIds = [selectedCity];
         }

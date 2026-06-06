@@ -239,27 +239,27 @@ const Account = () => {
           {/* Elevated Profile Card */}
           <motion.div
             variants={itemVariants}
-            className="bg-white rounded-[28px] p-5 shadow-[0_32px_64px_-16px_rgba(52,121,137,0.15)] mb-8 relative overflow-hidden border border-white"
+            className="bg-white rounded-[24px] p-3.5 shadow-[0_16px_36px_-12px_rgba(52,121,137,0.1)] mb-4 relative overflow-hidden border border-white"
           >
             {/* Vivid Brand Accents */}
-            <div className="absolute top-0 right-0 w-48 h-48 rounded-full -mr-20 -mt-20 blur-3xl opacity-[0.2]"
+            <div className="absolute top-0 right-0 w-36 h-36 rounded-full -mr-16 -mt-16 blur-3xl opacity-[0.2]"
               style={{ backgroundColor: themeColors.brand.yellow }}
             ></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full -ml-24 -mb-24 blur-3xl opacity-[0.2]"
+            <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full -ml-20 -mb-20 blur-3xl opacity-[0.2]"
               style={{ backgroundColor: themeColors.brand.teal }}
             ></div>
 
-            <div className="flex items-center gap-4 relative z-10">
+            <div className="flex items-center gap-3 relative z-10">
               <div className="relative">
-                <div className="w-20 h-20 rounded-2xl p-1 bg-white shadow-xl rotate-2">
+                <div className="w-16 h-16 rounded-xl p-1 bg-white shadow-md">
                   {userProfile.profilePhoto ? (
                     <img
                       src={userProfile.profilePhoto}
                       alt={userProfile.name}
-                      className="w-full h-full rounded-[14px] object-cover"
+                      className="w-full h-full rounded-[10px] object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full rounded-[14px] flex items-center justify-center text-white font-black text-2xl"
+                    <div className="w-full h-full rounded-[10px] flex items-center justify-center text-white font-black text-lg"
                       style={{ background: themeColors.gradient }}>
                       {getInitials()}
                     </div>
@@ -267,24 +267,24 @@ const Account = () => {
                 </div>
                 <button
                   onClick={() => navigate('/user/update-profile')}
-                  className="absolute -bottom-1 -right-1 p-1.5 bg-gray-900 text-white rounded-[8px] border-2 border-white shadow-lg active:scale-95 transition-transform"
+                  className="absolute -bottom-1 -right-1 p-1 bg-gray-900 text-white rounded-[6px] border-2 border-white shadow-md active:scale-95 transition-transform"
                 >
-                  <FiEdit3 className="w-3.5 h-3.5" />
+                  <FiEdit3 className="w-3 h-3" />
                 </button>
               </div>
 
               <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-black text-gray-900 truncate mb-1">
+                <h2 className="text-base font-black text-gray-900 truncate mb-0.5">
                   {userProfile.name}
                 </h2>
-                <div className="flex items-center gap-2 mb-3">
-                  <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest">
                     {userProfile.phone ? formatPhoneNumber(userProfile.phone) : 'No phone linked'}
                   </p>
                 </div>
                 <button
                   onClick={() => navigate('/user/update-profile')}
-                  className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-wider rounded-xl transition-colors"
+                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[9px] font-black uppercase tracking-wider rounded-lg transition-colors"
                 >
                   Edit Profile
                 </button>
@@ -333,34 +333,34 @@ const Account = () => {
           )}
 
           {/* Quick Actions Grid */}
-          <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 mb-6">
+          <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 mb-4">
             <button
               onClick={() => navigate('/user/wallet')}
-              className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all text-left group"
+              className="bg-white p-3.5 rounded-[20px] border border-gray-100 shadow-sm hover:shadow-md transition-all text-left group"
             >
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"
                 style={{ backgroundColor: `${themeColors.brand.teal}15`, color: themeColors.brand.teal }}
               >
-                <MdAccountBalanceWallet className="w-5 h-5" />
+                <MdAccountBalanceWallet className="w-4.5 h-4.5" />
               </div>
-              <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Balance</span>
-              <p className={`text-lg font-black mt-0.5 ${userProfile.walletBalance < 0 ? 'text-red-500' : 'text-gray-900'}`}>
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Balance</span>
+              <p className={`text-base font-black mt-0.5 ${userProfile.walletBalance < 0 ? 'text-red-500' : 'text-gray-900'}`}>
                 ₹{Math.abs(userProfile.walletBalance || 0).toLocaleString('en-IN')}
-                {userProfile.walletBalance < 0 && <span className="text-xs font-normal ml-1">(Penalty)</span>}
+                {userProfile.walletBalance < 0 && <span className="text-[10px] font-normal ml-1">(Penalty)</span>}
               </p>
             </button>
             <button
               onClick={() => navigate('/user/rewards')}
-              className="bg-gray-900 p-4 rounded-3xl shadow-lg shadow-gray-200 hover:shadow-xl transition-all text-left relative overflow-hidden group"
+              className="bg-gray-900 p-3.5 rounded-[20px] shadow-md shadow-gray-200 hover:shadow-lg transition-all text-left relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black opacity-50"></div>
               <div className="relative z-10 h-full flex flex-col justify-between">
-                <div className="w-10 h-10 bg-white/10 text-yellow-400 rounded-2xl flex items-center justify-center mb-3 backdrop-blur-sm group-hover:scale-110 transition-transform">
-                  <FiGift className="w-5 h-5" />
+                <div className="w-8 h-8 bg-white/10 text-yellow-400 rounded-xl flex items-center justify-center mb-2 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                  <FiGift className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <span className="text-xs text-white/60 font-bold uppercase tracking-wider">Rewards</span>
-                  <p className="text-lg font-black text-white mt-0.5">Refer & Earn</p>
+                  <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Rewards</span>
+                  <p className="text-base font-black text-white mt-0.5">Refer & Earn</p>
                 </div>
               </div>
             </button>

@@ -123,6 +123,8 @@ const Login = () => {
     }
   };
 
+  const [focusedIndex, setFocusedIndex] = useState(null);
+
   // Auto-verify as last digit enters
   useEffect(() => {
     const otpValue = otp.join('');
@@ -283,7 +285,10 @@ const Login = () => {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-gray-300 rounded-xl focus:ring-[#FF9F45] focus:border-[#FF9F45] transition-all duration-300 shadow-sm border focus:-translate-y-1 hover:border-gray-400"
+                    onFocus={() => setFocusedIndex(index)}
+                    onBlur={() => setFocusedIndex(null)}
+                    placeholder={focusedIndex === index ? "_" : ""}
+                    className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-gray-300 rounded-xl focus:ring-[#FF9F45] focus:border-[#FF9F45] placeholder-[#FF9F45] transition-all duration-300 shadow-sm border focus:-translate-y-1 hover:border-gray-400"
                     style={{ caretColor: brandColor }}
                   />
                 ))}
