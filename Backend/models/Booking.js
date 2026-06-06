@@ -423,8 +423,17 @@ const bookingSchema = new mongoose.Schema({
   isSelfJob: {
     type: Boolean,
     default: false
-  }
-
+  },
+  dynamicFields: [{
+    fieldId: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceField' },
+    name: { type: String },
+    label: { type: String },
+    value: { type: mongoose.Schema.Types.Mixed }
+  }],
+  visits: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'BookingVisit' 
+  }]
 }, {
   timestamps: true
 });

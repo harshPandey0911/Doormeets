@@ -8,6 +8,7 @@ import { themeColors } from '../../../../theme';
 import AddressSelectionModal from './components/AddressSelectionModal';
 import TimeSlotModal from './components/TimeSlotModal';
 import VendorSearchModal from './components/VendorSearchModal';
+import api from '../../../../services/api';
 import { bookingService } from '../../../../services/bookingService';
 import { paymentService } from '../../../../services/paymentService';
 import { cartService } from '../../../../services/cartService';
@@ -69,6 +70,13 @@ const Checkout = () => {
   const [visitedFee, setVisitedFee] = useState(0);
   const [gstPercentage, setGstPercentage] = useState(18);
   const [bookingType, setBookingType] = useState('instant'); // 'instant' | 'scheduled'
+
+  // Dynamic Builder States
+  const [dynamicFieldsConfig, setDynamicFieldsConfig] = useState([]);
+  const [pricingRules, setPricingRules] = useState([]);
+  const [serviceWorkflow, setServiceWorkflow] = useState(null);
+  const [dynamicAnswers, setDynamicAnswers] = useState({});
+  const [uploadingFiles, setUploadingFiles] = useState({});
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -264,6 +272,35 @@ const Checkout = () => {
               });
             }
             setCartItems(items);
+
+            // Fetch dynamic fields if there are items
+            if (items.length > 0) {
+              const firstItem = items[0];
+              const serviceId = typeof firstItem.serviceId === 'object'
+                ? firstItem.serviceId._id || firstItem.serviceId.id
+                : firstItem.serviceId;
+              
+              if (serviceId) {
+                try {
+                  const detailsRes = await api.get(`/public/services/${serviceId}/dynamic-details`);
+                  if (detailsRes.data.success) {
+                    setDynamicFieldsConfig((detailsRes.data.fields || []).filter(f => f.showToUser !== false));
+                    setPricingRules(detailsRes.data.pricingRules || []);
+                    setServiceWorkflow(detailsRes.data.workflow || null);
+                    
+                    // Initialize dynamic field answers
+                    const initialAnswers = {};
+                    (detailsRes.data.fields || []).filter(f => f.showToUser !== false).forEach(f => {
+                      const existingAnswer = firstItem.dynamicFields?.find(df => df.name === f.name);
+                      initialAnswers[f.name] = existingAnswer ? existingAnswer.value : (f.defaultValue || '');
+                    });
+                    setDynamicAnswers(initialAnswers);
+                  }
+                } catch (detailsErr) {
+                  console.error('Error fetching dynamic service details:', detailsErr);
+                }
+              }
+            }
           }
         }
       } catch (error) {
@@ -419,6 +456,15 @@ const Checkout = () => {
         finalTime = "ASAP";
         finalTimeSlot = { start: "Now", end: "45 mins" };
       }
+      const dynamicFieldsPayload = Object.keys(dynamicAnswers).map(key => {
+        const field = dynamicFieldsConfig.find(f => f.name === key);
+        return {
+          fieldId: field?._id || field?.id,
+          name: key,
+          label: field?.label || key,
+          value: dynamicAnswers[key]
+        };
+      });
 
       const response = await bookingService.create({
         bookingType, // 'instant' or 'scheduled'
@@ -457,7 +503,8 @@ const Checkout = () => {
         },
 
         paymentMethod: 'online',
-        bookedItems: bookedItemsData
+        bookedItems: bookedItemsData,
+        dynamicFields: dynamicFieldsPayload
       });
 
       if (response.success) {
@@ -705,6 +752,16 @@ const Checkout = () => {
 
 
 
+      const dynamicFieldsPayload = Object.keys(dynamicAnswers).map(key => {
+        const field = dynamicFieldsConfig.find(f => f.name === key);
+        return {
+          fieldId: field?._id || field?.id,
+          name: key,
+          label: field?.label || key,
+          value: dynamicAnswers[key]
+        };
+      });
+
       const bookingResponse = await bookingService.create({
         bookingType, // 'instant' or 'scheduled'
         serviceId: serviceId,
@@ -730,7 +787,8 @@ const Checkout = () => {
         brandIcon: firstItem.sectionIcon || null,
         isConsultation: firstItem.isConsultation || false,
 
-        bookedItems: bookedItemsData
+        bookedItems: bookedItemsData,
+        dynamicFields: dynamicFieldsPayload
       });
 
       if (!bookingResponse.success) {
@@ -1155,7 +1213,62 @@ const Checkout = () => {
     return item.price || 0;
   };
 
-  const itemTotal = cartItems.reduce((sum, item) => sum + calculateItemPrice(item), 0);
+  const itemTotalBase = cartItems.reduce((sum, item) => sum + calculateItemPrice(item), 0);
+
+  const evaluateLocalPricing = () => {
+    let price = itemTotalBase;
+    if (pricingRules.length === 0) return price;
+
+    const formulaRule = pricingRules.find(r => r.ruleType === 'formula');
+    const conditionalRules = pricingRules.filter(r => r.ruleType === 'conditional');
+
+    if (formulaRule && formulaRule.formulaString) {
+      try {
+        let formula = formulaRule.formulaString;
+        const vars = { basePrice: itemTotalBase, ...dynamicAnswers };
+        Object.keys(vars).forEach(key => {
+          const val = parseFloat(vars[key]) || 0;
+          const regex = new RegExp(`\\b${key}\\b`, 'g');
+          formula = formula.replace(regex, val);
+        });
+        const safeFormula = formula.replace(/[^0-9\s+\-*/().]/g, '');
+        const evaluated = new Function(`return (${safeFormula})`)();
+        if (typeof evaluated === 'number' && !isNaN(evaluated)) {
+          price = evaluated;
+        }
+      } catch (e) {
+        console.error('Error evaluating local formula:', e);
+      }
+    }
+
+    conditionalRules.forEach(rule => {
+      const userVal = dynamicAnswers[rule.fieldName];
+      if (userVal === undefined) return;
+
+      let isMatch = false;
+      if (rule.operator === 'equals') {
+        isMatch = String(userVal).toLowerCase() === String(rule.value).toLowerCase();
+      } else if (rule.operator === 'greater_than') {
+        isMatch = parseFloat(userVal) > parseFloat(rule.value);
+      } else if (rule.operator === 'less_than') {
+        isMatch = parseFloat(userVal) < parseFloat(rule.value);
+      }
+
+      if (isMatch) {
+        if (rule.priceModifierType === 'add') {
+          price += rule.modifierValue;
+        } else if (rule.priceModifierType === 'multiply') {
+          price *= rule.modifierValue;
+        } else if (rule.priceModifierType === 'fixed') {
+          price = rule.modifierValue;
+        }
+      }
+    });
+
+    return Math.max(0, price);
+  };
+
+  const itemTotal = dynamicFieldsConfig.length > 0 ? evaluateLocalPricing() : itemTotalBase;
   // Calculate savings including Plan Savings
   const totalOriginalPrice = cartItems.reduce((sum, item) => {
     const original = (item.originalPrice || item.unitPrice || (item.price / (item.serviceCount || 1))) * (item.serviceCount || 1);
@@ -1320,6 +1433,45 @@ const Checkout = () => {
     toast.success('Wait request sent to vendor. Searching for 5 mins.');
   };
 
+  const handleFileUpload = async (fieldName, file) => {
+    try {
+      setUploadingFiles(prev => ({ ...prev, [fieldName]: true }));
+      const { uploadToCloudinary } = await import('../../../../utils/cloudinaryUpload');
+      const url = await uploadToCloudinary(file, 'user_bookings');
+      if (url) {
+        setDynamicAnswers(prev => ({
+          ...prev,
+          [fieldName]: url
+        }));
+        toast.success('File uploaded successfully!');
+      } else {
+        toast.error('Failed to upload file');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Upload failed');
+    } finally {
+      setUploadingFiles(prev => ({ ...prev, [fieldName]: false }));
+    }
+  };
+
+  const fetchCurrentLocation = (fieldName) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = `${position.coords.latitude}, ${position.coords.longitude}`;
+          setDynamicAnswers(prev => ({ ...prev, [fieldName]: coords }));
+          toast.success('Location coordinates captured!');
+        },
+        (error) => {
+          toast.error('Failed to get current location. Please enter manually.');
+        }
+      );
+    } else {
+      toast.error('Geolocation is not supported by your browser.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white pb-80">
       {/* Header */}
@@ -1461,6 +1613,168 @@ const Checkout = () => {
             )
           })}
         </div>
+
+        {/* Dynamic Fields Section */}
+        {dynamicFieldsConfig.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="p-1 bg-indigo-50 text-indigo-600 rounded">
+                <FiSliders className="w-4 h-4" />
+              </span>
+              Service Details
+            </h3>
+            <div className="space-y-4">
+              {dynamicFieldsConfig.map((field) => {
+                const value = dynamicAnswers[field.name] || '';
+                return (
+                  <div key={field._id || field.name} className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      {field.label} {field.isRequired && <span className="text-red-500">*</span>}
+                    </label>
+                    
+                    {/* Render inputs based on type */}
+                    {field.fieldType === 'text' && (
+                      <input
+                        type="text"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'number' && (
+                      <input
+                        type="number"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'textarea' && (
+                      <textarea
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        rows={3}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'dropdown' && (
+                      <select
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      >
+                        <option value="">Select Option</option>
+                        {(field.options || []).map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {field.fieldType === 'radio' && (
+                      <div className="flex flex-wrap gap-3 pt-1">
+                        {(field.options || []).map(opt => (
+                          <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={field.name}
+                              value={opt}
+                              checked={value === opt}
+                              onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {field.fieldType === 'checkbox' && (
+                      <label className="flex items-center gap-2 py-1 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.checked }))}
+                        />
+                        Enable this Option
+                      </label>
+                    )}
+
+                    {field.fieldType === 'date' && (
+                      <input
+                        type="date"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'time' && (
+                      <input
+                        type="time"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {/* File / Image Uploader with progress indicator */}
+                    {(field.fieldType === 'image' || field.fieldType === 'file') && (
+                      <div className="flex flex-col gap-2 pt-1">
+                        <input
+                          type="file"
+                          accept={field.fieldType === 'image' ? 'image/*' : '*'}
+                          disabled={uploadingFiles[field.name]}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleFileUpload(field.name, e.target.files[0]);
+                            }
+                          }}
+                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                        />
+                        {uploadingFiles[field.name] && <p className="text-[10px] text-indigo-600 animate-pulse">Uploading file to Cloudinary...</p>}
+                        {value && (
+                          <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-150">
+                            <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-150">UPLOADED</span>
+                            <a href={value} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline truncate flex-1">{value}</a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Location Picker */}
+                    {field.fieldType === 'location' && (
+                      <div className="flex gap-2 pt-1">
+                        <input
+                          type="text"
+                          placeholder="Latitude, Longitude coordinates"
+                          className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                          value={value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                          required={field.isRequired}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fetchCurrentLocation(field.name)}
+                          className="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-semibold border border-indigo-150"
+                        >
+                          Locate Me
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ... */}
 

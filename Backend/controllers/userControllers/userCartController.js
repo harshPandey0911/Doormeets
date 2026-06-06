@@ -61,7 +61,8 @@ const addToCart = async (req, res) => {
       sectionTitle, // Brand name
       sectionIcon,  // Brand logo URL
       card,          // Card details snapshot
-      isPriceDisclosed
+      isPriceDisclosed,
+      dynamicFields
     } = req.body;
 
     console.log(`[AddToCart] Request details - Title: ${title}, Section: ${sectionTitle}`);
@@ -101,6 +102,9 @@ const addToCart = async (req, res) => {
 
       cart.items[existingItemIndex].serviceCount = newCount;
       cart.items[existingItemIndex].price = newPrice;
+      if (dynamicFields) {
+        cart.items[existingItemIndex].dynamicFields = dynamicFields;
+      }
     } else {
       // Add new item
       const newItem = {
@@ -118,7 +122,8 @@ const addToCart = async (req, res) => {
         sectionTitle: sectionTitle || '',
         sectionIcon: sectionIcon || null,
         card: card || null,
-        isPriceDisclosed: isPriceDisclosed !== undefined ? isPriceDisclosed : true
+        isPriceDisclosed: isPriceDisclosed !== undefined ? isPriceDisclosed : true,
+        dynamicFields: dynamicFields || []
       };
 
       // Only add serviceId and categoryId if they are provided

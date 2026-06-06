@@ -7,9 +7,9 @@ const { body } = require('express-validator');
 
 const pricingValidation = [
   body('categoryId').notEmpty().withMessage('Category ID is required'),
-  body('subCategoryId').notEmpty().withMessage('SubCategory ID is required'),
+  body('subCategoryId').optional({ checkFalsy: true }).isMongoId().withMessage('Valid SubCategory ID is required'),
   body('serviceId').notEmpty().withMessage('Service ID is required'),
-  body('brandId').notEmpty().withMessage('Brand ID is required'),
+  body('brandId').optional({ checkFalsy: true }).isMongoId().withMessage('Valid Brand ID is required'),
   body('basePrice').isNumeric().withMessage('Base Price is required and must be a number'),
   body('gstPercentage').isNumeric().withMessage('GST Percentage must be a number'),
   body('vendorProfit').isNumeric().withMessage('Vendor Profit must be a number')

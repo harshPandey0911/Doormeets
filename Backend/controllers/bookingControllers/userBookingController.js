@@ -51,7 +51,8 @@ const createBooking = async (req, res) => {
       brandIcon: reqBrandIcon,
       bookingType, // Extract bookingType
       isConsultation,
-      promoCode
+      promoCode,
+      dynamicFields
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -280,7 +281,26 @@ const createBooking = async (req, res) => {
         if (!visitingCharges) visitingCharges = 0;
         const serviceBase = service.basePrice || 500;
         const serviceDiscount = service.discountPrice ? (serviceBase - service.discountPrice) : 0;
-        const netBase = serviceBase - serviceDiscount;
+        let netBase = serviceBase - serviceDiscount;
+
+        // Dynamic Pricing Rule calculation:
+        try {
+          const PricingRule = require('../../models/PricingRule');
+          const rules = await PricingRule.find({ serviceId });
+          if (rules && rules.length > 0) {
+            const fieldInputs = {};
+            if (Array.isArray(dynamicFields)) {
+              dynamicFields.forEach(f => {
+                fieldInputs[f.name] = f.value;
+              });
+            }
+            const { evaluatePricingRules } = require('../../utils/pricingEngine');
+            netBase = evaluatePricingRules(netBase, rules, fieldInputs);
+          }
+        } catch (ruleErr) {
+          console.error('[CreateBooking] Dynamic pricing evaluation failed:', ruleErr);
+        }
+
         basePrice = netBase;
         discount = serviceDiscount;
         tax = parseFloat((netBase * 0.18).toFixed(2));
@@ -391,14 +411,23 @@ const createBooking = async (req, res) => {
       paymentStatus: isBiddingRequired ? PAYMENT_STATUS.PENDING : bookingPaymentStatus,
       isBidding: isBiddingRequired,
       biddingDeadline: biddingDeadline,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes search limit (sequential takes time)
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes search limit (sequential takes time)
+      dynamicFields: dynamicFields || []
     });
+
+    // Generate visits for this booking based on its workflow configuration
+    try {
+      const { scheduleVisitsForBooking } = require('../../services/workflowScheduler');
+      await scheduleVisitsForBooking(booking);
+    } catch (schedErr) {
+      console.error('[CreateBooking] Workflow visits scheduling failed:', schedErr);
+    }
 
     // --- IMMEDIATE RESPONSE ---
     // Send immediate response to the client. All subsequent operations will run in the background.
-    res.status(201).json({
+    const responsePayload = {
       success: true,
-      message: 'Booking created successfully. We are finding vendors for you.',
+      message: nearbyVendors.length === 0 ? 'No vendors available at the moment.' : 'Booking created successfully. We are finding vendors for you.',
       data: {
         _id: booking._id,
         bookingNumber: booking.bookingNumber,
@@ -413,7 +442,13 @@ const createBooking = async (req, res) => {
         brandName: booking.brandName,
         brandIcon: booking.brandIcon,
       }
-    });
+    };
+
+    if (nearbyVendors.length === 0) {
+      responsePayload.noVendorsFound = true;
+    }
+
+    res.status(201).json(responsePayload);
 
     // --- DEFERRED POST-BOOKING OPERATIONS ---
     // All operations below will run non-blocking after the HTTP response has been sent.
