@@ -100,8 +100,9 @@ api.interceptors.response.use(
       const refreshToken = sessionStorage.getItem(refresh) || localStorage.getItem(refresh);
 
       if (!refreshToken) {
-        // No refresh token, logout
-        handleLogout(role);
+        // No refresh token — do NOT auto-logout.
+        // Silently reject; user will stay on page.
+        isRefreshing = false;
         return Promise.reject(error);
       }
 
@@ -138,10 +139,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         console.error('RefreshToken failed:', refreshError);
-        // Refresh failed, logout
+        // Refresh failed — do NOT auto-logout.
+        // Just reject silently; user stays on page.
         processQueue(refreshError, null);
         isRefreshing = false;
-        handleLogout(role);
         return Promise.reject(refreshError);
       }
     }
