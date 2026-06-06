@@ -311,7 +311,7 @@ const PremiumCategoryPage = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28 w-full overflow-x-hidden">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 pt-[76px] pb-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-3 rounded-[28px] border border-gray-100 bg-white p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
             <div>

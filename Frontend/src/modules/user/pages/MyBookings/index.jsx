@@ -184,7 +184,7 @@ const MyBookings = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/[0.03] px-4 py-4 flex items-center justify-between">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/80 border-b border-black/[0.03] px-4 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -200,7 +200,7 @@ const MyBookings = () => {
         </header>
 
         {/* Filter Tabs */}
-        <div className="bg-white border-b border-slate-100 sticky top-[61px] z-20 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)]">
+        <div className="bg-white border-b border-slate-100 fixed top-[72px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
           <div className="flex overflow-x-auto px-4 py-3 gap-2.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: 'all', label: 'All Bookings' },
@@ -225,7 +225,7 @@ const MyBookings = () => {
         </div>
 
         {/* Bookings List */}
-        <main className="px-4 py-5 max-w-lg mx-auto w-full">
+        <main className="px-4 pt-[150px] pb-5 max-w-lg mx-auto w-full">
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (

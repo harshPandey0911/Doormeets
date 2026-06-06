@@ -115,7 +115,7 @@ const PremiumHome = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f7f1ff_0%,#ffffff_40%,#ffffff_100%)] text-gray-900">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/account')} />
 
-      <main className="mx-auto max-w-7xl pb-28">
+      <main className="mx-auto max-w-7xl pb-28 pt-[70px]">
         <div className="px-4 pt-4 md:px-6">
           <SearchBar value={query} onChange={setQuery} />
         </div>

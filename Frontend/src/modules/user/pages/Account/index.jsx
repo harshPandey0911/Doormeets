@@ -216,7 +216,7 @@ const Account = () => {
 
       <div className="relative z-10">
         {/* Premium Transparent Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/[0.03] px-5 py-5 flex items-center justify-between">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/80 border-b border-black/[0.03] px-5 py-5 flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -234,7 +234,7 @@ const Account = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="px-4 pt-6 max-w-lg mx-auto"
+          className="px-4 pt-[96px] max-w-lg mx-auto"
         >
           {/* Elevated Profile Card */}
           <motion.div

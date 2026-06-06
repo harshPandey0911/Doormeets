@@ -577,8 +577,8 @@ const Home = () => {
       >
         <motion.div
           variants={itemVariants}
-          className="backdrop-blur-xl sticky top-0 z-50 border-b border-black/[0.03] shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300"
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}
+          className="backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b border-black/[0.03] shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300 w-full"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
         >
           <Header
             location={address}
@@ -589,7 +589,7 @@ const Home = () => {
           </div>
         </motion.div>
 
-        <main className="pt-6 space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
+        <main className="pt-[180px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">

@@ -42,7 +42,7 @@ const PremiumCartPage = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f6f6f6_0%,#ffffff_40%,#ffffff_100%)] pb-44">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
-      <div className="mx-auto max-w-4xl px-4 py-5 md:px-6">
+      <div className="mx-auto max-w-4xl px-4 pt-[80px] pb-5 md:px-6">
         <div className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
           <div className="flex items-center gap-3">
             <div className="rounded-2xl bg-gray-100 p-3 text-gray-900"><FiMapPin /></div>

@@ -106,7 +106,7 @@ const PremiumBrandPage = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f7f1ff_0%,#ffffff_40%,#ffffff_100%)] pb-24">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
-      <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
+      <div className="mx-auto max-w-7xl px-4 pt-[80px] pb-4 md:px-6">
         <button type="button" onClick={() => navigate(-1)} className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-900 shadow-sm border border-gray-100">
           <FiArrowLeft /> Back
         </button>
