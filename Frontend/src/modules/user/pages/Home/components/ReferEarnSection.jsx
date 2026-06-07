@@ -1,10 +1,10 @@
 import React from 'react';
 import { themeColors } from '../../../../../theme';
 
-const ReferEarnSection = ({ onReferClick }) => {
+const ReferEarnSection = ({ onReferClick, className = "rounded-2xl overflow-hidden shadow-lg mx-4 mt-2 bg-white" }) => {
   return (
     <div
-      className="rounded-2xl overflow-hidden shadow-lg mx-4 mt-2 bg-white"
+      className={className}
       style={{
         background: `linear-gradient(135deg, ${themeColors.brand.teal}14 0%, ${themeColors.brand.yellow}14 100%)`,
         border: `2px solid ${themeColors.brand.teal}33`

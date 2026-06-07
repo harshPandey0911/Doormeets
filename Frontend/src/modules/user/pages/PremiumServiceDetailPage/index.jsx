@@ -203,15 +203,17 @@ const PremiumServiceDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f7f1ff_0%,#ffffff_40%,#ffffff_100%)] pb-28">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28">
       <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
-      <div className="mx-auto max-w-4xl px-4 pt-[80px] pb-4 md:px-6">
-        <button type="button" onClick={() => navigate(-1)} className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-900 shadow-sm border border-gray-100">
-          <FiArrowLeft /> Back
-        </button>
+      <div className="mx-auto max-w-4xl pt-[80px] pb-4 md:px-6">
+        <div className="px-4 md:px-0">
+          <button type="button" onClick={() => navigate(-1)} className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-normal text-gray-900 shadow-sm border border-gray-100">
+            <FiArrowLeft /> Back
+          </button>
+        </div>
 
-        <div className="overflow-hidden rounded-4xl border border-gray-100 bg-white shadow-[0_18px_60px_rgba(17,24,39,0.08)]">
+        <div className="overflow-hidden bg-white shadow-[0_18px_60px_rgba(17,24,39,0.08)] md:rounded-4xl md:border md:border-gray-100">
           <div className="relative h-80 md:h-[460px]">
             <img src={service.image ? toAssetUrl(service.image) : service.image} alt={service.title} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
@@ -220,9 +222,11 @@ const PremiumServiceDetailPage = () => {
               <button className="rounded-full bg-black/25 p-3 backdrop-blur"><FiShare2 /></button>
             </div>
             <div className="absolute bottom-5 left-5 right-5 text-white">
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">Service detail</p>
-              <h1 className="mt-2 text-3xl font-black md:text-5xl">{service.title}</h1>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-bold text-white/90">
+              <p className="text-xs font-normal tracking-[0.1em] text-white/80">Service detail</p>
+              <h1 className="mt-2 text-3xl font-normal md:text-5xl">
+                {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
+              </h1>
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-normal text-white/90">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiStar className="text-amber-300" /> {service.rating || 4.8}</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiClock /> 45 mins</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiShield /> Verified</span>
@@ -231,21 +235,23 @@ const PremiumServiceDetailPage = () => {
           </div>
         </div>
 
+        <div className="px-4 md:px-0">
+
         <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
           <div className="flex items-center justify-between gap-3">
             <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} />
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - calculatedPrice) / service.originalPrice) * 100) : 25}%</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-normal text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - calculatedPrice) / service.originalPrice) * 100) : 25}%</span>
           </div>
-          <p className="mt-4 text-sm leading-7 text-gray-600">{service.description}</p>
+          <p className="mt-4 text-sm leading-7 text-gray-600 font-normal">{service.description}</p>
         </section>
 
         {fields.filter(f => f.showToUser !== false).length > 0 && (
           <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-6 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
             <div className="flex items-center gap-2 mb-4">
-              <span className="p-1.5 bg-purple-50 text-purple-600 rounded-lg">
+              <span className="p-1.5 bg-orange-50 text-[#FF9F45] rounded-lg">
                 <FiSliders className="w-5 h-5" />
               </span>
-              <h2 className="text-xl font-black text-gray-900">Custom Options</h2>
+              <h2 className="text-xl font-normal text-gray-900">Custom Options</h2>
             </div>
             
             <div className="space-y-4">
@@ -261,7 +267,7 @@ const PremiumServiceDetailPage = () => {
                     {field.fieldType === 'text' && (
                       <input
                         type="text"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -271,7 +277,7 @@ const PremiumServiceDetailPage = () => {
                     {field.fieldType === 'number' && (
                       <input
                         type="number"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -280,7 +286,7 @@ const PremiumServiceDetailPage = () => {
 
                     {field.fieldType === 'textarea' && (
                       <textarea
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                         rows={3}
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
@@ -290,7 +296,7 @@ const PremiumServiceDetailPage = () => {
 
                     {field.fieldType === 'dropdown' && (
                       <select
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-purple-500 outline-none"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-orange-300 outline-none"
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -333,7 +339,7 @@ const PremiumServiceDetailPage = () => {
                     {field.fieldType === 'date' && (
                       <input
                         type="date"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -343,7 +349,7 @@ const PremiumServiceDetailPage = () => {
                     {field.fieldType === 'time' && (
                       <input
                         type="time"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -362,13 +368,13 @@ const PremiumServiceDetailPage = () => {
                               handleFileUpload(field.name, e.target.files[0]);
                             }
                           }}
-                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#FF9F45] hover:file:bg-orange-100/50"
                         />
-                        {uploadingFiles[field.name] && <p className="text-[10px] text-purple-600 animate-pulse">Uploading file...</p>}
+                        {uploadingFiles[field.name] && <p className="text-[10px] text-[#FF9F45] animate-pulse">Uploading file...</p>}
                         {value && (
-                          <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-150">
-                            <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-150">UPLOADED</span>
-                            <a href={value} target="_blank" rel="noreferrer" className="text-xs text-purple-600 hover:underline truncate flex-1">{value}</a>
+                          <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
+                            <a href={value} target="_blank" rel="noreferrer" className="text-xs text-orange-500 hover:underline truncate flex-1">{value}</a>
                           </div>
                         )}
                       </div>
@@ -380,7 +386,7 @@ const PremiumServiceDetailPage = () => {
                         <input
                           type="text"
                           placeholder="Latitude, Longitude coordinates"
-                          className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none"
+                          className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
@@ -388,7 +394,7 @@ const PremiumServiceDetailPage = () => {
                         <button
                           type="button"
                           onClick={() => fetchCurrentLocation(field.name)}
-                          className="px-3 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl text-xs font-semibold border border-purple-150"
+                          className="px-3 bg-orange-50 hover:bg-orange-100/50 text-[#FF9F45] rounded-xl text-xs font-semibold border border-orange-150"
                         >
                           Locate Me
                         </button>
@@ -402,60 +408,61 @@ const PremiumServiceDetailPage = () => {
         )}
 
         <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
-          <h2 className="mt-1 text-xl font-black text-gray-900">What you get</h2>
+          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Included</p>
+          <h2 className="mt-1 text-xl font-normal text-gray-900">What you get</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {features.length > 0 ? features.map((feature) => (
-              <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
+              <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-2 text-sm font-normal text-[#FF9F45]">
                 <FiCheckCircle /> {feature}
               </span>
-            )) : <span className="text-sm text-gray-500">No included features listed.</span>}
+            )) : <span className="text-sm text-gray-500 font-normal">No included features listed.</span>}
           </div>
         </section>
 
         <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
-          <h2 className="mt-1 text-xl font-black text-gray-900">How it works</h2>
+          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Process</p>
+          <h2 className="mt-1 text-xl font-normal text-gray-900">How it works</h2>
           <div className="mt-4 space-y-3">
             {steps.length > 0 ? steps.map((step, index) => (
-              <div key={step} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{index + 1}</div>
+              <div key={step} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-orange-50/20 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-sm font-normal text-white">{index + 1}</div>
                 <div>
-                  <div className="font-black text-gray-900">{step}</div>
-                  <p className="text-sm text-gray-500">Smooth and transparent service delivery.</p>
+                  <div className="font-normal text-gray-900">{step}</div>
+                  <p className="text-sm text-gray-500 font-normal">Smooth and transparent service delivery.</p>
                 </div>
               </div>
-            )) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No steps listed for this service.</div>}
+            )) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 font-normal">No steps listed for this service.</div>}
           </div>
         </section>
 
-        <section className="mt-6 rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
+        <section className="mt-6 rounded-[30px] border border-orange-100/20 bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] p-5 text-white shadow-[0_18px_60px_rgba(255,159,69,0.15)]">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">Professional badge</p>
-              <h3 className="text-xl font-black">Verified Professional</h3>
+              <p className="text-xs font-normal tracking-[0.1em] text-white/75">Professional badge</p>
+              <h3 className="text-xl font-normal">Verified Professional</h3>
             </div>
           </div>
-          <p className="mt-3 text-sm text-white/85">Certified experts, clean work, and support-backed service experience.</p>
+          <p className="mt-3 text-sm text-white/85 font-normal">Certified experts, clean work, and support-backed service experience.</p>
         </section>
 
         <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Reviews</p>
-          <h2 className="mt-1 text-xl font-black text-gray-900">User feedback</h2>
+          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Reviews</p>
+          <h2 className="mt-1 text-xl font-normal text-gray-900">User feedback</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 md:col-span-3">No reviews available yet.</div>
+            <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 md:col-span-3 font-normal">No reviews available yet.</div>
           </div>
         </section>
+        </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-purple-100 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border border-purple-100 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(124,58,237,0.12)]">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100/50 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border border-orange-100/60 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-gray-400">Price</div>
+            <div className="text-[11px] font-normal tracking-[0.1em] text-gray-400">Price</div>
             <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
-          <button type="button" onClick={handleAdd} className="rounded-2xl bg-linear-to-r from-purple-600 to-fuchsia-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-purple-200 transition-transform hover:scale-[1.02]">
+          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">
             Add to cart
           </button>
         </div>

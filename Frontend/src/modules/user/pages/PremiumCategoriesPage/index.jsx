@@ -1,0 +1,236 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FiArrowLeft, FiShoppingBag } from 'react-icons/fi';
+import Navbar from '../../components/premium/Navbar';
+import SearchBar from '../../components/premium/SearchBar';
+import { useCity } from '../../../../context/CityContext';
+import { useCart } from '../../../../context/CartContext';
+import { publicCatalogService } from '../../../../services/catalogService';
+import { toAssetUrl } from '../../components/premium/cartUtils';
+
+const PremiumCategoriesPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentCity } = useCity();
+  const { cartCount } = useCart();
+
+  const [query, setQuery] = useState('');
+  const [categoriesWithSubs, setCategoriesWithSubs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCategoriesAndSubs = async () => {
+      try {
+        setLoading(true);
+        const cityId = currentCity?._id || currentCity?.id;
+        const categoriesRes = await publicCatalogService.getCategories(cityId);
+
+        if (categoriesRes?.success && Array.isArray(categoriesRes.categories)) {
+          const mapped = categoriesRes.categories.map((cat) => ({
+            id: cat.id || cat._id,
+            title: cat.title,
+            slug: cat.slug || cat.title?.toLowerCase().replace(/\s+/g, '-'),
+            icon: toAssetUrl(cat.icon || cat.homeIconUrl),
+            status: cat.status || 'active',
+          }));
+
+          const activeCats = mapped.filter((cat) => cat.status !== 'coming_soon');
+
+          // Fetch subcategories for all active categories in parallel
+          const withSubs = await Promise.all(
+            activeCats.map(async (cat) => {
+              try {
+                const subRes = await publicCatalogService.getSubCategories({ categoryId: cat.id });
+                return {
+                  ...cat,
+                  subCategories: subRes?.success && Array.isArray(subRes.subCategories) ? subRes.subCategories : [],
+                };
+              } catch (err) {
+                console.error(`Error loading subcategories for ${cat.title}:`, err);
+                return { ...cat, subCategories: [] };
+              }
+            })
+          );
+
+          setCategoriesWithSubs(withSubs);
+        }
+      } catch (error) {
+        console.error('Error fetching categories list:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategoriesAndSubs();
+  }, [currentCity]);
+
+  // Smooth scroll to selected category from home page
+  useEffect(() => {
+    if (!loading && location.state?.category) {
+      const catId = location.state.category.id || location.state.category._id;
+      setTimeout(() => {
+        const element = document.getElementById(`category-${catId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+      // Clear state
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [loading, location.state, location.pathname]);
+
+  // Filter categories and subcategories based on search query
+  const filteredData = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return categoriesWithSubs;
+
+    return categoriesWithSubs
+      .map((cat) => {
+        // Match either category title or its subcategory titles
+        const matchesCat = cat.title.toLowerCase().includes(term);
+        const filteredSubs = cat.subCategories.filter((sub) =>
+          sub.title.toLowerCase().includes(term)
+        );
+
+        if (matchesCat || filteredSubs.length > 0) {
+          return {
+            ...cat,
+            // If the category itself matched but no subcategories matched, keep all subcategories.
+            // Otherwise, filter to only the matching subcategories.
+            subCategories: filteredSubs.length > 0 ? filteredSubs : cat.subCategories,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }, [categoriesWithSubs, query]);
+
+  const handleSubCategoryClick = (category, subCategory) => {
+    navigate(`/user/category/${category.slug || category.id}`, {
+      state: { category, subCategory }
+    });
+  };
+
+  const getSubDummyImage = (title) => {
+    const t = (title || '').toLowerCase();
+    if (t.includes('ac') || t.includes('conditioner')) return 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=150&auto=format&fit=crop&q=80';
+    if (t.includes('washing') || t.includes('machine') || t.includes('dryer')) return 'https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=150&auto=format&fit=crop&q=80';
+    if (t.includes('tv') || t.includes('television') || t.includes('screen')) return 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=150&auto=format&fit=crop&q=80';
+    if (t.includes('plumb') || t.includes('leak') || t.includes('pipe')) return 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=150&auto=format&fit=crop&q=80';
+    if (t.includes('clean') || t.includes('dust') || t.includes('sofa')) return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=150&auto=format&fit=crop&q=80';
+    if (t.includes('pest') || t.includes('insect') || t.includes('ant')) return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=150&auto=format&fit=crop&q=80';
+    return 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
+  };
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28 w-full overflow-x-hidden">
+      {/* Premium Navbar */}
+      <Navbar
+        locationLabel={currentCity?.name || 'Select location'}
+        cartCount={cartCount}
+        onSearchClick={() => {}}
+        onLocationClick={() => navigate('/user/home')}
+      />
+
+      <main className="mx-auto max-w-5xl px-4 pt-[76px] pb-4">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-full hover:bg-orange-50 transition-colors"
+            >
+              <FiArrowLeft className="w-6 h-6 text-gray-700" />
+            </button>
+            <h1 className="text-2xl font-black text-gray-900">All Categories</h1>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <SearchBar
+            value={query}
+            onChange={setQuery}
+            placeholder="Search categories or subcategories..."
+          />
+        </div>
+
+        {/* Categories & Subcategories List */}
+        {loading ? (
+          <div className="space-y-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse space-y-4">
+                <div className="h-6 w-48 bg-orange-50/50 rounded-md" />
+                <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+                  {[1, 2, 3, 4].map((j) => (
+                    <div key={j} className="flex flex-col items-center space-y-2">
+                      <div className="w-20 h-20 bg-orange-50/30 rounded-2xl" />
+                      <div className="h-4 w-16 bg-orange-50/30 rounded" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {filteredData.map((category) => (
+              <div key={category.id} id={`category-${category.id}`} className="space-y-3 scroll-mt-24">
+                {/* Category Header */}
+                <div className="flex justify-between items-center px-1">
+                  <h2 className="text-lg font-black text-gray-900">
+                    {category.title}
+                  </h2>
+                  <button
+                    onClick={() => navigate(`/user/category/${category.slug || category.id}`, { state: { category } })}
+                    className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors"
+                  >
+                    See all
+                  </button>
+                </div>
+
+                {/* Subcategory Grid */}
+                {category.subCategories.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3.5 sm:grid-cols-4 md:grid-cols-5 py-1 px-1">
+                    {category.subCategories.map((sub, index) => (
+                      <motion.button
+                        key={sub.id || sub._id}
+                        onClick={() => handleSubCategoryClick(category, sub)}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex flex-col items-center p-3.5 bg-gray-50/70 border border-gray-200/50 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-orange-200 transition-all duration-300 group"
+                      >
+                        {/* Image directly rendered with rounded corners */}
+                        <img
+                          src={toAssetUrl(sub.iconUrl) || getSubDummyImage(sub.title)}
+                          alt={sub.title}
+                          className="w-16 h-16 object-cover rounded-xl mb-2.5 transition-transform duration-300 group-hover:scale-105"
+                        />
+                        {/* Subcategory Title */}
+                        <span className="text-[11px] font-normal text-gray-700 text-center line-clamp-2 transition-colors duration-200 group-hover:text-orange-500">
+                          {sub.title ? sub.title.charAt(0).toUpperCase() + sub.title.slice(1).toLowerCase() : ''}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-[24px] border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 text-center">
+                    No subcategories available.
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {filteredData.length === 0 && (
+              <div className="rounded-[28px] border border-dashed border-gray-200 bg-white p-8 text-sm text-gray-500 text-center">
+                No matching categories found.
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default PremiumCategoriesPage;

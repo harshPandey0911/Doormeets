@@ -28,6 +28,7 @@ import {
 import { MdAccountBalanceWallet } from 'react-icons/md';
 import NotificationBell from '../../components/common/NotificationBell';
 import Logo from '../../../../components/common/Logo';
+import ReferEarnSection from '../Home/components/ReferEarnSection';
 
 const Account = () => {
   const navigate = useNavigate();
@@ -364,6 +365,14 @@ const Account = () => {
                 </div>
               </div>
             </button>
+          </motion.div>
+
+          {/* Refer & Earn Section */}
+          <motion.div variants={itemVariants} className="mb-6">
+            <ReferEarnSection 
+              className="rounded-2xl overflow-hidden shadow-lg bg-white" 
+              onReferClick={() => navigate('/user/rewards')} 
+            />
           </motion.div>
 
           {/* Menu Groups */}

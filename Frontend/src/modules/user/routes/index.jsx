@@ -75,6 +75,7 @@ const AboutCleaningExpert = lazyLoad(() => import('../pages/AboutCleaningExpert'
 const UpdateProfile = lazyLoad(() => import('../pages/UpdateProfile'));
 const Welcome = lazyLoad(() => import('../pages/Welcome'));
 const CategoryPage = lazyLoad(() => import('../pages/PremiumCategoryPage'));
+const CategoriesPage = lazyLoad(() => import('../pages/PremiumCategoriesPage'));
 const BrandPage = lazyLoad(() => import('../pages/PremiumBrandPage'));
 const ServiceDetailPage = lazyLoad(() => import('../pages/PremiumServiceDetailPage'));
 const Login = lazyLoad(() => import('../pages/login'));
@@ -101,7 +102,7 @@ const UserRoutes = () => {
   // useAppNotifications('user');
 
   // Pages where BottomNav should be shown
-  const bottomNavPages = ['/user/home', '/user/my-bookings', '/user/cart', '/user/account'];
+  const bottomNavPages = ['/user/home', '/user/my-bookings', '/user/cart', '/user/account', '/user/categories'];
   
   // Normalize path by removing trailing slash (except for root /user)
   const normalizedPath = location.pathname.length > 5 && location.pathname.endsWith('/') 
@@ -149,6 +150,7 @@ const UserRoutes = () => {
               <Route path="/my-plan" element={<ProtectedRoute userType="user"><MyPlan /></ProtectedRoute>} />
               <Route path="/my-plan/:id" element={<ProtectedRoute userType="user"><PlanDetails /></ProtectedRoute>} />
               <Route path="/category/:slug" element={<ProtectedRoute userType="user"><CategoryPage /></ProtectedRoute>} />
+              <Route path="/categories" element={<ProtectedRoute userType="user"><CategoriesPage /></ProtectedRoute>} />
               <Route path="/brand/:slug" element={<ProtectedRoute userType="user"><BrandPage /></ProtectedRoute>} />
               <Route path="/service/:slug" element={<ProtectedRoute userType="user"><ServiceDetailPage /></ProtectedRoute>} />
               <Route path="/my-rating" element={<ProtectedRoute userType="user"><MyRating /></ProtectedRoute>} />

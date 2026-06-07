@@ -420,8 +420,7 @@ const Home = () => {
       setComingSoonCategory(category);
       return;
     }
-    const slug = category.slug || category.id || category._id;
-    navigate(`/user/category/${encodeURIComponent(slug)}`, { state: { category } });
+    navigate('/user/categories', { state: { category } });
   };
 
   const handlePromoClick = (promo) => {
