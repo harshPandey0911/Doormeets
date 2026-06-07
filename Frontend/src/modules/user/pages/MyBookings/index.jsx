@@ -158,7 +158,7 @@ const MyBookings = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 relative bg-white">
+    <div className="min-h-screen pb-24 relative bg-transparent">
       {/* Refined Brand Mesh Gradient Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
@@ -184,7 +184,7 @@ const MyBookings = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/80 border-b border-black/[0.03] px-4 py-4 flex items-center justify-between w-full">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-black/[0.03] px-4 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -192,7 +192,7 @@ const MyBookings = () => {
             >
               <FiArrowLeft className="w-5 h-5 text-gray-800" />
             </button>
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">My Bookings</h1>
+            <h1 className="text-xl font-bold text-[#111827] tracking-tight">My Bookings</h1>
           </div>
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/[0.02] relative">
             <NotificationBell />
@@ -313,13 +313,13 @@ const MyBookings = () => {
                           #{booking.bookingNumber || (booking._id || booking.id).substring(0, 8)}
                         </span>
                         {booking.serviceCategory && (
-                          <span className="text-[8px] font-extrabold text-[#FF9F45] bg-[#FF9F45]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          <span className="text-[8px] font-bold text-[#FF9F45] bg-[#FF9F45]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {booking.serviceCategory}
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-sm font-extrabold text-slate-800 leading-tight line-clamp-1 group-hover:text-[#FF9F45] transition-colors">
+                      <h3 className="text-sm font-bold text-[#111827] leading-tight line-clamp-1 group-hover:text-[#FF9F45] transition-colors">
                         {(booking.serviceName || 'Service Request')}
                       </h3>
 
@@ -343,7 +343,7 @@ const MyBookings = () => {
                   <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2.5 text-[11px] text-slate-500 border-t border-slate-100/80 pt-2">
                     <div className="flex items-center gap-1">
                       <FiCalendar className="w-3.5 h-3.5 text-[#FF9F45] shrink-0" />
-                      <span className="font-bold text-slate-700">{formatDate(booking.scheduledDate)}</span>
+                      <span className="font-semibold text-slate-700">{formatDate(booking.scheduledDate)}</span>
                       <span className="text-slate-300">•</span>
                       <span className="text-slate-600">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</span>
                     </div>
@@ -358,7 +358,7 @@ const MyBookings = () => {
                   <div className="relative z-10 flex items-center justify-between pt-2 border-t border-slate-100/80">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Payable:</span>
-                      <p className="text-base font-extrabold text-slate-900 flex items-baseline gap-0.5">
+                      <p className="text-base font-bold text-[#111827] flex items-baseline gap-0.5">
                         <span className="text-xs font-semibold text-slate-400">₹</span>
                         {(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}
                       </p>

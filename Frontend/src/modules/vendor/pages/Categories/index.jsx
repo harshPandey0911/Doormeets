@@ -86,14 +86,16 @@ const Categories = () => {
         <div className="flex bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-sm border border-white/50 mb-5">
           <button
             onClick={() => setActiveTab('browse')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'browse' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-500'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all ${activeTab === 'browse' ? 'text-white shadow-md' : 'text-gray-500'}`}
+            style={activeTab === 'browse' ? { backgroundColor: themeColors.primary } : {}}
           >
             <FiGrid className="w-4 h-4" />
             Browse
           </button>
           <button
             onClick={() => setActiveTab('requests')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all relative ${activeTab === 'requests' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-500'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all relative ${activeTab === 'requests' ? 'text-white shadow-md' : 'text-gray-500'}`}
+            style={activeTab === 'requests' ? { backgroundColor: themeColors.primary } : {}}
           >
             <FiInbox className="w-4 h-4" />
             My Requests
@@ -112,10 +114,10 @@ const Categories = () => {
           /* ── Browse Categories ── */
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-gray-800">Service Categories</h2>
+              <h2 className="text-lg font-bold text-gray-800">Service Categories</h2>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs text-white shadow-md active:scale-95 transition-transform"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-xs text-white shadow-md active:scale-95 transition-transform"
                 style={{ background: `linear-gradient(135deg, ${themeColors.button}, ${themeColors.button}cc)` }}
               >
                 <FiPlus className="w-3.5 h-3.5" />
@@ -138,21 +140,21 @@ const Categories = () => {
                     className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 p-4 hover:shadow-md active:scale-[0.98] transition-all text-left"
                   >
                     {/* Icon */}
-                    <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center bg-teal-50 border border-teal-100">
+                    <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center bg-orange-50 border border-orange-100">
                       {cat.imageUrl ? (
                         <img src={cat.imageUrl} alt={cat.title} className="w-full h-full object-cover" />
                       ) : (
-                        <FiGrid className="w-6 h-6 text-teal-600" />
+                        <FiGrid className="w-6 h-6 text-orange-500" />
                       )}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-black text-gray-900 truncate text-base">{cat.title}</h3>
+                      <h3 className="font-semibold text-gray-900 truncate text-base">{cat.title}</h3>
                       {cat.description && (
                         <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{cat.description}</p>
                       )}
-                      <span className="inline-block mt-1.5 px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-black rounded uppercase tracking-wider">
+                      <span className="inline-block mt-1.5 px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded uppercase tracking-wider">
                         Service
                       </span>
                     </div>
@@ -185,10 +187,10 @@ const Categories = () => {
           /* ── My Requests ── */
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-gray-800">My Requests</h2>
+              <h2 className="text-lg font-bold text-gray-800">My Requests</h2>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs text-white shadow-md active:scale-95 transition-transform"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-xs text-white shadow-md active:scale-95 transition-transform"
                 style={{ background: `linear-gradient(135deg, ${themeColors.button}, ${themeColors.button}cc)` }}
               >
                 <FiPlus className="w-3.5 h-3.5" />
@@ -211,20 +213,20 @@ const Categories = () => {
                     <div key={req.id} className={`bg-white rounded-2xl border p-4 shadow-sm ${cfg.border}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-black text-gray-900 text-base truncate">{req.categoryName}</h3>
+                          <h3 className="font-semibold text-gray-900 text-base truncate">{req.categoryName}</h3>
                           {req.reason && (
                             <p className="text-xs text-gray-500 mt-1 line-clamp-2">{req.reason}</p>
                           )}
                           {req.adminNote && (
                             <div className={`mt-2 px-3 py-2 rounded-xl text-xs font-semibold ${cfg.bg} ${cfg.color}`}>
-                              <span className="font-black">Admin note: </span>{req.adminNote}
+                              <span className="font-bold">Admin note: </span>{req.adminNote}
                             </div>
                           )}
                           <p className="text-[10px] text-gray-400 mt-2">
                             {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </p>
                         </div>
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black ${cfg.bg} ${cfg.color} flex-shrink-0`}>
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${cfg.bg} ${cfg.color} flex-shrink-0`}>
                           <StatusIcon className="w-3.5 h-3.5" />
                           {cfg.label}
                         </div>
@@ -245,7 +247,7 @@ const Categories = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div>
-                <h3 className="text-lg font-black text-gray-900">Request New Category</h3>
+                <h3 className="text-lg font-bold text-gray-900">Request New Category</h3>
                 <p className="text-xs text-gray-400 mt-0.5">Admin will review and respond</p>
               </div>
               <button
@@ -258,7 +260,7 @@ const Categories = () => {
 
             <form onSubmit={handleSubmitRequest} className="p-5 space-y-4 overflow-y-auto flex-1">
               <div>
-                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                   Category Name *
                 </label>
                 <input
@@ -266,13 +268,13 @@ const Categories = () => {
                   value={form.categoryName}
                   onChange={e => setForm({ ...form, categoryName: e.target.value })}
                   placeholder="e.g. Solar Panel Installation"
-                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                   Reason / Description (Optional)
                 </label>
                 <textarea
@@ -280,7 +282,7 @@ const Categories = () => {
                   onChange={e => setForm({ ...form, reason: e.target.value })}
                   placeholder="Why do you need this category? Any additional details..."
                   rows={3}
-                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition resize-none"
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition resize-none"
                 />
               </div>
 
@@ -288,14 +290,14 @@ const Categories = () => {
                 <button
                   type="button"
                   onClick={() => { setIsModalOpen(false); setForm({ categoryName: '', reason: '' }); }}
-                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-black rounded-2xl hover:bg-gray-200 transition text-sm"
+                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-semibold rounded-2xl hover:bg-gray-200 transition text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-3.5 text-white font-black rounded-2xl transition text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="flex-1 py-3.5 text-white font-semibold rounded-2xl transition text-sm flex items-center justify-center gap-2 disabled:opacity-60"
                   style={{ background: `linear-gradient(135deg, ${themeColors.button}, ${themeColors.button}cc)` }}
                 >
                   {isSubmitting ? (

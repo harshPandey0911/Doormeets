@@ -160,7 +160,7 @@ const Notifications = () => {
   return (
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient || '#f9fafb' }}>
       {/* Header */}
-      <div className="bg-white sticky top-0 z-50 border-b border-gray-100 px-4 py-3 flex items-center justify-between shadow-sm">
+      <div className="bg-transparent backdrop-blur-xl sticky top-0 z-50 border-b border-black/[0.03] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}

@@ -64,7 +64,7 @@ const Header = ({ location, onLocationClick }) => {
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-1">
               Location
             </span>
-            <span className="text-base font-extrabold text-gray-900 leading-tight truncate max-w-[200px] sm:max-w-[300px]">
+            <span className="text-base font-bold text-gray-900 leading-tight truncate max-w-[200px] sm:max-w-[300px]">
               {displayLocation}
             </span>
           </div>

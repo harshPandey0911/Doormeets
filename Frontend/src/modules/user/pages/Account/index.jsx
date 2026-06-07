@@ -191,7 +191,7 @@ const Account = () => {
   }
 
   return (
-    <div className="min-h-screen pb-32 relative bg-white">
+    <div className="min-h-screen pb-32 relative bg-transparent">
       {/* Refined Brand Mesh Gradient Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
@@ -217,7 +217,7 @@ const Account = () => {
 
       <div className="relative z-10">
         {/* Premium Transparent Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/80 border-b border-black/[0.03] px-5 py-5 flex items-center justify-between w-full">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-black/[0.03] px-5 py-5 flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -226,7 +226,7 @@ const Account = () => {
             >
               <FiArrowLeft className="w-5 h-5 text-gray-800" />
             </motion.button>
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Account</h1>
+            <h1 className="text-xl font-bold text-[#111827] tracking-tight">Account</h1>
           </div>
           <NotificationBell />
         </header>
@@ -260,7 +260,7 @@ const Account = () => {
                       className="w-full h-full rounded-[10px] object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full rounded-[10px] flex items-center justify-center text-white font-black text-lg"
+                    <div className="w-full h-full rounded-[10px] flex items-center justify-center text-white font-bold text-lg"
                       style={{ background: themeColors.gradient }}>
                       {getInitials()}
                     </div>
@@ -275,17 +275,17 @@ const Account = () => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <h2 className="text-base font-black text-gray-900 truncate mb-0.5">
+                <h2 className="text-base font-bold text-[#111827] tracking-tight truncate mb-0.5">
                   {userProfile.name}
                 </h2>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest">
+                  <p className="text-[11px] text-gray-500 font-semibold uppercase tracking-widest">
                     {userProfile.phone ? formatPhoneNumber(userProfile.phone) : 'No phone linked'}
                   </p>
                 </div>
                 <button
                   onClick={() => navigate('/user/update-profile')}
-                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[9px] font-black uppercase tracking-wider rounded-lg transition-colors"
+                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[9px] font-bold uppercase tracking-wider rounded-lg transition-colors"
                 >
                   Edit Profile
                 </button>
@@ -312,9 +312,9 @@ const Account = () => {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <FiShield className="w-4 h-4 text-white/80" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">Membership Status</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">Membership Status</span>
                   </div>
-                  <h3 className="text-2xl font-black mb-1">{userProfile.plans.name}</h3>
+                  <h3 className="text-2xl font-bold mb-1">{userProfile.plans.name}</h3>
                   <div className="flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit mt-3 border border-white/10">
                     <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
                     <span className="text-[10px] font-bold uppercase tracking-wider">Expires: {new Date(userProfile.plans.expiry).toLocaleDateString()}</span>
@@ -345,7 +345,7 @@ const Account = () => {
                 <MdAccountBalanceWallet className="w-4.5 h-4.5" />
               </div>
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Balance</span>
-              <p className={`text-base font-black mt-0.5 ${userProfile.walletBalance < 0 ? 'text-red-500' : 'text-gray-900'}`}>
+              <p className={`text-base font-bold mt-0.5 ${userProfile.walletBalance < 0 ? 'text-red-500' : 'text-gray-900'}`}>
                 ₹{Math.abs(userProfile.walletBalance || 0).toLocaleString('en-IN')}
                 {userProfile.walletBalance < 0 && <span className="text-[10px] font-normal ml-1">(Penalty)</span>}
               </p>
@@ -361,7 +361,7 @@ const Account = () => {
                 </div>
                 <div>
                   <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Rewards</span>
-                  <p className="text-base font-black text-white mt-0.5">Refer & Earn</p>
+                  <p className="text-base font-bold text-white mt-0.5">Refer & Earn</p>
                 </div>
               </div>
             </button>
@@ -438,7 +438,7 @@ const Account = () => {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 p-4 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-red-200 transition-all mb-3"
+              className="w-full flex items-center justify-center gap-2 p-4 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-bold uppercase tracking-wider rounded-2xl shadow-lg shadow-red-200 transition-all mb-3"
             >
               <FiLogOut className="w-5 h-5" />
               <span>Log out</span>

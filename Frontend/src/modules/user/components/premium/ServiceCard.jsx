@@ -46,7 +46,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         {quantity > 0 ? (
           <QuantityButton quantity={quantity} onIncrement={() => onIncrease?.(service)} onDecrement={() => onDecrease?.(service)} />
         ) : (
-          <button type="button" onClick={() => onAdd?.(service)} className="inline-flex items-center gap-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-3.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-normal text-white shadow-lg shadow-orange-100 transition-transform hover:scale-[1.02]">
+          <button type="button" onClick={(e) => onAdd?.(service, e)} className="inline-flex items-center gap-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-3.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-normal text-white shadow-lg shadow-orange-100 transition-transform hover:scale-[1.02]">
             <FiPlus /> Add
           </button>
         )}

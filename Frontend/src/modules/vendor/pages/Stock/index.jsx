@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiBox, FiClock, FiCheckCircle, FiXCircle, FiTruck, FiChevronRight, FiSearch, FiMinus, FiAlertCircle } from 'react-icons/fi';
+import { FiPlus, FiBox, FiClock, FiCheckCircle, FiXCircle, FiTruck, FiChevronRight, FiSearch, FiMinus } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
@@ -142,7 +142,7 @@ const StockManagement = () => {
                   <FiPlus className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Request New Stock</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Request New Stock</h3>
                   <p className="text-xs text-gray-500">Ask admin for inventory replenishment</p>
                 </div>
               </div>
@@ -151,12 +151,12 @@ const StockManagement = () => {
 
             {/* Request History */}
             <div className="space-y-4">
-              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2">Request History</h4>
+              <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] px-2">Request History</h4>
               
               {requests.length === 0 ? (
                 <div className="bg-white/50 rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
                   <FiBox className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-gray-400">No requests yet</p>
+                  <p className="text-sm font-semibold text-gray-400">No requests yet</p>
                 </div>
               ) : (
                 requests.map(req => (
@@ -167,11 +167,11 @@ const StockManagement = () => {
                           {getStatusIcon(req.status)}
                         </div>
                         <div>
-                          <p className="font-black text-sm text-gray-800 uppercase tracking-wide">#{req._id.slice(-6)}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">{new Date(req.createdAt).toLocaleDateString()}</p>
+                          <p className="font-semibold text-sm text-gray-800 uppercase tracking-wide">#{req._id.slice(-6)}</p>
+                          <p className="text-[10px] text-gray-400 font-semibold uppercase">{new Date(req.createdAt).toLocaleDateString()}</p>
                         </div>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                      <div className={`px-3 py-1 rounded-full text-[9px] font-semibold uppercase tracking-widest ${
                         req.status === 'delivered' ? 'bg-green-50 text-green-600' :
                         req.status === 'pending' ? 'bg-amber-50 text-amber-600' :
                         req.status === 'shipped' ? 'bg-purple-50 text-purple-600' :
@@ -182,13 +182,13 @@ const StockManagement = () => {
                     </div>
                     
                     <div className="space-y-2 mb-4">
-                      <p className="text-[11px] font-bold text-gray-500 flex items-center gap-2">
+                      <p className="text-[11px] font-medium text-gray-500 flex items-center gap-2">
                         <span className="w-1 h-1 bg-blue-500 rounded-full"></span>
                         {req.totalItems} Items requested
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {req.items.map((item, i) => (
-                          <span key={i} className="text-[9px] font-bold bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md border border-gray-100">
+                          <span key={i} className="text-[9px] font-medium bg-gray-50 text-gray-600 px-2 py-0.5 rounded-md border border-gray-100">
                             {item.name} (x{item.quantity})
                           </span>
                         ))}
@@ -197,7 +197,7 @@ const StockManagement = () => {
 
                     {req.adminNotes && (
                       <div className="bg-blue-50/50 rounded-2xl p-3 border border-blue-50">
-                        <p className="text-[9px] font-black text-blue-600 uppercase mb-1">Admin Remark</p>
+                        <p className="text-[9px] font-semibold text-blue-600 uppercase mb-1">Admin Remark</p>
                         <p className="text-[11px] text-blue-800 font-medium italic">"{req.adminNotes}"</p>
                       </div>
                     )}
@@ -211,7 +211,7 @@ const StockManagement = () => {
           <div className="space-y-6">
             <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-blue-50">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black text-gray-900">Request Stock</h3>
+                <h3 className="text-xl font-semibold text-gray-900">Request Stock</h3>
                 <button 
                   onClick={() => setShowRequestForm(false)}
                   className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all"
@@ -228,7 +228,7 @@ const StockManagement = () => {
                   placeholder="Search inventory items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent focus:border-blue-300 focus:bg-white rounded-2xl text-sm font-bold text-gray-800 outline-none transition-all shadow-inner"
+                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-transparent focus:border-blue-300 focus:bg-white rounded-2xl text-sm font-medium text-gray-800 outline-none transition-all shadow-inner"
                 />
               </div>
 
@@ -242,8 +242,8 @@ const StockManagement = () => {
                     return (
                       <div key={part._id} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl transition-all hover:border-blue-200 hover:shadow-md">
                         <div className="flex-1">
-                          <p className="text-sm font-black text-gray-800">{part.name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">{part.categoryId?.title || 'Part'}</p>
+                          <p className="text-sm font-semibold text-gray-800">{part.name}</p>
+                          <p className="text-[10px] text-gray-400 font-medium uppercase">{part.categoryId?.title || 'Part'}</p>
                         </div>
                         
                         {cartItem ? (
@@ -254,7 +254,7 @@ const StockManagement = () => {
                             >
                               <FiMinus className="w-4 h-4" />
                             </button>
-                            <span className="text-sm font-black text-blue-700 w-4 text-center">{cartItem.quantity}</span>
+                            <span className="text-sm font-semibold text-blue-700 w-4 text-center">{cartItem.quantity}</span>
                             <button 
                               onClick={() => updateQuantity(part._id, 1)}
                               className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blue-600 shadow-sm active:scale-90"
@@ -264,7 +264,7 @@ const StockManagement = () => {
                           </div>
                         ) : (
                           <button 
-                            onClick={() => addToCart(part)}
+                             onClick={() => addToCart(part)}
                             className="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg active:scale-90 transition-all"
                           >
                             <FiPlus className="w-5 h-5" />
@@ -280,25 +280,25 @@ const StockManagement = () => {
             {/* Summary & Notes */}
             {cart.length > 0 && (
               <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-blue-50 animate-in fade-in slide-in-from-bottom-4">
-                <h4 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <FiBox className="text-blue-600" /> Request Summary
                 </h4>
                 
                 <div className="space-y-4 mb-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Additional Notes</label>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest ml-1">Additional Notes</label>
                     <textarea 
                       value={vendorNotes}
                       onChange={(e) => setVendorNotes(e.target.value)}
                       placeholder="e.g. Urgent requirement for upcoming jobs..."
-                      className="w-full px-4 py-4 bg-gray-50 rounded-2xl text-xs font-bold text-gray-800 outline-none border border-transparent focus:border-blue-200 transition-all min-h-[100px]"
+                      className="w-full px-4 py-4 bg-gray-50 rounded-2xl text-xs font-semibold text-gray-800 outline-none border border-transparent focus:border-blue-200 transition-all min-h-[100px]"
                     />
                   </div>
 
                   <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
                     <div className="flex justify-between items-center text-blue-800">
-                      <span className="text-xs font-bold uppercase tracking-wider">Total Items</span>
-                      <span className="text-xl font-black">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider">Total Items</span>
+                      <span className="text-xl font-semibold">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -306,7 +306,7 @@ const StockManagement = () => {
                 <button
                   onClick={handleSubmitRequest}
                   disabled={isSubmitting}
-                  className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-[13px] uppercase tracking-[0.2em] shadow-xl hover:shadow-2xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                  className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-semibold text-[13px] uppercase tracking-[0.2em] shadow-xl hover:shadow-2xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   {isSubmitting ? 'Submitting...' : 'Send Request'}
                   {!isSubmitting && <FiTruck className="w-5 h-5" />}

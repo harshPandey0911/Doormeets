@@ -259,11 +259,19 @@ const PremiumCategoryPage = () => {
     refetchServices();
   }, [activeCategoryId, activeSubCategoryId, activeBrandId, cityId]);
 
+  const getCartItemServiceId = (item) => {
+    if (!item) return null;
+    if (typeof item.serviceId === 'object' && item.serviceId) {
+      return item.serviceId._id || item.serviceId.id;
+    }
+    return item.serviceId || item.id || item._id;
+  };
+
   const quantities = useMemo(() => {
     const map = {};
     cartItems.forEach((item) => {
-      const id = item.serviceId?.id || item.serviceId || item.id;
-      map[id] = item.serviceCount || 1;
+      const id = getCartItemServiceId(item);
+      if (id) map[id] = item.serviceCount || 1;
     });
     return map;
   }, [cartItems]);
@@ -276,21 +284,47 @@ const PremiumCategoryPage = () => {
     });
   }, [search, services]);
 
-  const handleAdd = async (service) => {
+  const [flyingItems, setFlyingItems] = useState([]);
+
+  const handleAdd = async (service, event) => {
+    // Capture the button coordinates synchronously before the async await call clears the event
+    const buttonRect = event?.currentTarget?.getBoundingClientRect();
+
     const response = await addToCart(buildCartItemData({ service, category: activeCategory, brand: activeBrand }));
-    if (response?.success) {
-      navigate('/user/cart');
+    
+    if (response?.success && buttonRect) {
+      const cartIcon = document.getElementById('nav-cart-icon');
+      
+      if (cartIcon) {
+        const cartRect = cartIcon.getBoundingClientRect();
+        const id = Date.now() + Math.random();
+        
+        const newItem = {
+          id,
+          startX: buttonRect.left + buttonRect.width / 2,
+          startY: buttonRect.top + buttonRect.height / 2,
+          endX: cartRect.left + cartRect.width / 2,
+          endY: cartRect.top + cartRect.height / 2,
+          image: service.image
+        };
+        
+        setFlyingItems((prev) => [...prev, newItem]);
+        
+        setTimeout(() => {
+          setFlyingItems((prev) => prev.filter((item) => item.id !== id));
+        }, 800);
+      }
     }
   };
 
   const handleIncrease = async (service) => {
-    const item = cartItems.find((entry) => (entry.serviceId?.id || entry.serviceId || entry.id) === service.id);
+    const item = cartItems.find((entry) => getCartItemServiceId(entry) === service.id);
     if (!item) return handleAdd(service);
     await updateItem(item._id || item.id, (item.serviceCount || 1) + 1);
   };
 
   const handleDecrease = async (service) => {
-    const item = cartItems.find((entry) => (entry.serviceId?.id || entry.serviceId || entry.id) === service.id);
+    const item = cartItems.find((entry) => getCartItemServiceId(entry) === service.id);
     if (!item) return;
     if ((item.serviceCount || 1) <= 1) {
       await removeItem(item._id || item.id);
@@ -300,7 +334,7 @@ const PremiumCategoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 pt-[76px] pb-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
@@ -403,7 +437,7 @@ const PremiumCategoryPage = () => {
                 <div className="mb-3 flex items-end justify-between gap-3">
                   <div>
                     <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Brands</p>
-                    <h3 className="text-xl font-normal text-gray-900">Top options in this category</h3>
+                    <h3 className="text-base font-bold text-[#111827] tracking-tight">Top options in this category</h3>
                   </div>
                 </div>
                 {brandsLoading ? (
@@ -459,7 +493,43 @@ const PremiumCategoryPage = () => {
         </section>
       </div>
 
-
+      {flyingItems.map((item) => (
+        <motion.div
+          key={item.id}
+          initial={{
+            position: 'fixed',
+            left: item.startX - 20,
+            top: item.startY - 20,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            backgroundColor: '#FF9F45',
+            zIndex: 9999,
+            opacity: 0.9,
+            scale: 1,
+            pointerEvents: 'none'
+          }}
+          animate={{
+            left: item.endX - 10,
+            top: item.endY - 10,
+            width: 20,
+            height: 20,
+            opacity: 0.2,
+            scale: 0.5
+          }}
+          transition={{
+            duration: 0.8,
+            ease: [0.25, 1, 0.5, 1]
+          }}
+          className="shadow-lg flex items-center justify-center overflow-hidden border border-white"
+        >
+          {item.image ? (
+            <img src={item.image} alt="" className="h-full w-full object-cover rounded-full" />
+          ) : (
+            <div className="h-full w-full bg-[#FF9F45]" />
+          )}
+        </motion.div>
+      ))}
     </div>
   );
 };

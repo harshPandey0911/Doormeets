@@ -124,7 +124,7 @@ const PremiumCategoriesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
       {/* Premium Navbar */}
       <Navbar
         locationLabel={currentCity?.name || 'Select location'}
@@ -143,7 +143,7 @@ const PremiumCategoriesPage = () => {
             >
               <FiArrowLeft className="w-6 h-6 text-gray-700" />
             </button>
-            <h1 className="text-2xl font-black text-gray-900">All Categories</h1>
+            <h1 className="text-2xl font-bold text-gray-900">All Categories</h1>
           </div>
         </div>
 
@@ -179,7 +179,7 @@ const PremiumCategoriesPage = () => {
               <div key={category.id} id={`category-${category.id}`} className="space-y-3 scroll-mt-24">
                 {/* Category Header */}
                 <div className="flex justify-between items-center px-1">
-                  <h2 className="text-lg font-black text-gray-900">
+                  <h2 className="text-base font-bold text-[#111827] tracking-tight">
                     {category.title}
                   </h2>
                   <button

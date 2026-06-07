@@ -6,7 +6,7 @@ import NotificationBell from '../common/NotificationBell';
 
 const Navbar = ({ locationLabel = 'Select location', cartCount = 0, onSearchClick, onLocationClick }) => {
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-xl w-full">
+    <header className="fixed top-0 left-0 right-0 z-40 border-b border-black/[0.03] bg-transparent backdrop-blur-xl w-full">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 w-full">
         <Link to="/user/home" className="shrink-0">
           <Logo className="h-9 w-auto" />
@@ -29,7 +29,7 @@ const Navbar = ({ locationLabel = 'Select location', cartCount = 0, onSearchClic
 
         <div className="flex items-center gap-2 shrink-0 ml-auto">
           <NotificationBell />
-          <Link to="/user/cart" className="relative rounded-2xl border border-gray-200 bg-white p-3 shadow-sm hover:border-gray-300 hover:shadow-md transition-all">
+          <Link id="nav-cart-icon" to="/user/cart" className="relative rounded-2xl border border-gray-200 bg-white p-3 shadow-sm hover:border-gray-300 hover:shadow-md transition-all">
             <FiShoppingBag className="text-gray-800" />
             {cartCount > 0 ? (
               <span className="absolute -right-1 -top-1 min-w-5 h-5 rounded-full bg-black px-1 text-[10px] font-black leading-5 text-white text-center">

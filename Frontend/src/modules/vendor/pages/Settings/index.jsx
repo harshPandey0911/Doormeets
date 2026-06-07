@@ -124,14 +124,14 @@ const Settings = () => {
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           }}
         >
-          <h3 className="font-bold text-gray-800 mb-4">Notifications</h3>
+          <h3 className="font-semibold text-gray-800 mb-4">Notifications</h3>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FiBell className="w-5 h-5" style={{ color: themeColors.icon }} />
                 <div>
-                  <p className="font-semibold text-gray-800">Push Notifications</p>
+                  <p className="font-medium text-gray-800">Push Notifications</p>
                   <p className="text-sm text-gray-600">Receive booking alerts</p>
                 </div>
               </div>
@@ -151,7 +151,7 @@ const Settings = () => {
               <div className="flex items-center gap-3">
                 <FiVolume2 className="w-5 h-5" style={{ color: themeColors.icon }} />
                 <div>
-                  <p className="font-semibold text-gray-800">Sound Alerts</p>
+                  <p className="font-medium text-gray-800">Sound Alerts</p>
                   <p className="text-sm text-gray-600">Play sound for new bookings</p>
                 </div>
               </div>
@@ -181,7 +181,7 @@ const Settings = () => {
             <div className="flex items-center gap-3">
               <FiMapPin className="w-5 h-5" style={{ color: themeColors.icon }} />
               <div>
-                <p className="font-semibold text-gray-800">Manage Address</p>
+                <p className="font-medium text-gray-800">Manage Address</p>
                 <p className="text-sm text-gray-600">Set your business location</p>
               </div>
             </div>
@@ -203,7 +203,7 @@ const Settings = () => {
             <div className="flex items-center gap-3">
               <FiInfo className="w-5 h-5 text-blue-500" />
               <div>
-                <p className="font-semibold text-gray-800">Helpdesk & Support</p>
+                <p className="font-medium text-gray-800">Helpdesk & Support</p>
                 <p className="text-sm text-gray-600">Raise a ticket or view status</p>
               </div>
             </div>
@@ -222,7 +222,7 @@ const Settings = () => {
         >
           <div className="flex items-center gap-3 mb-4">
             <FiGlobe className="w-5 h-5" style={{ color: themeColors.icon }} />
-            <h3 className="font-bold text-gray-800">Language</h3>
+            <h3 className="font-semibold text-gray-800">Language</h3>
           </div>
 
           <div className="space-y-2">
@@ -234,8 +234,8 @@ const Settings = () => {
                 key={lang.code}
                 onClick={() => handleLanguageChange(lang.code)}
                 className={`w-full py-3 px-4 rounded-lg text-left transition-all ${settings.language === lang.code
-                  ? 'text-white'
-                  : 'bg-gray-50 text-gray-700'
+                  ? 'text-white font-medium'
+                  : 'bg-gray-50 text-gray-700 font-medium'
                   }`}
                 style={
                   settings.language === lang.code
@@ -261,7 +261,7 @@ const Settings = () => {
         >
           <div className="flex items-center gap-3 mb-4">
             <FiInfo className="w-5 h-5" style={{ color: themeColors.icon }} />
-            <h3 className="font-bold text-gray-800">About</h3>
+            <h3 className="font-semibold text-gray-800">About</h3>
           </div>
 
           <div className="space-y-3">

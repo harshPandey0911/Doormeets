@@ -126,53 +126,53 @@ const Wallet = () => {
       <Header title="Wallet & Ledger" />
 
       <main className="px-4 py-6">
-        {/* Earnings Card (Green) */}
-        <div className="rounded-2xl p-6 shadow-xl relative overflow-hidden mb-4 bg-gradient-to-br from-green-600 to-green-800">
-          <div className="relative z-10 text-white">
+        {/* Earnings Card (Light Green) */}
+        <div className="rounded-2xl p-6 shadow-lg border border-green-100 relative overflow-hidden mb-4 bg-green-50/80">
+          <div className="relative z-10">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-white/80 text-sm font-medium mb-1">Available Earnings</p>
-                <p className="text-3xl font-bold mb-4">₹{wallet.earnings?.toLocaleString() || 0}</p>
+                <p className="text-green-600 text-sm font-semibold mb-1">Available Earnings</p>
+                <p className="text-3xl font-extrabold text-green-900 mb-4">₹{wallet.earnings?.toLocaleString() || 0}</p>
               </div>
-              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                <FiDollarSign className="w-6 h-6 text-white" />
+              <div className="bg-green-100/80 p-2 rounded-lg">
+                <FiDollarSign className="w-6 h-6 text-green-600" />
               </div>
             </div>
 
             <button
               onClick={() => navigate('/vendor/wallet/withdraw')}
-              className="w-full bg-white text-green-700 py-3 rounded-xl font-bold text-sm hover:bg-green-50 active:scale-95 transition-all shadow-sm"
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 active:scale-95 transition-all shadow-md"
             >
               Request Withdrawal
             </button>
           </div>
         </div>
 
-        {/* Dues Card (Red) */}
-        <div className="rounded-2xl p-6 shadow-xl relative overflow-hidden mb-6 bg-gradient-to-br from-red-600 to-red-800">
-          <div className="relative z-10 text-white">
+        {/* Dues Card (Light Red) */}
+        <div className="rounded-2xl p-6 shadow-lg border border-red-100 relative overflow-hidden mb-6 bg-red-50/80">
+          <div className="relative z-10">
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="text-white/80 text-sm font-medium">Amount Due to Admin</p>
-                  {wallet.dues > 0 && <FiAlertCircle className="w-4 h-4 text-red-200 animate-pulse" />}
+                  <p className="text-red-600 text-sm font-semibold">Amount Due to Admin</p>
+                  {wallet.dues > 0 && <FiAlertCircle className="w-4 h-4 text-red-500 animate-pulse" />}
                 </div>
-                <p className="text-3xl font-bold mb-4">₹{wallet.dues?.toLocaleString() || 0}</p>
+                <p className="text-3xl font-extrabold text-red-900 mb-4">₹{wallet.dues?.toLocaleString() || 0}</p>
               </div>
-              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                <FiArrowDown className="w-6 h-6 text-white" />
+              <div className="bg-red-100/80 p-2 rounded-lg">
+                <FiArrowDown className="w-6 h-6 text-red-600" />
               </div>
             </div>
 
             {wallet.dues > 0 ? (
               <button
                 onClick={() => navigate('/vendor/wallet/settle')}
-                className="w-full bg-white text-red-700 py-3 rounded-xl font-bold text-sm hover:bg-red-50 active:scale-95 transition-all shadow-sm"
+                className="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-red-700 active:scale-95 transition-all shadow-md"
               >
                 Pay Now
               </button>
             ) : (
-              <div className="w-full bg-white/10 text-white py-3 rounded-xl font-medium text-sm text-center border border-white/20">
+              <div className="w-full bg-red-100/40 text-red-600 py-3 rounded-xl font-bold text-sm text-center border border-red-200/30">
                 No Dues Pending
               </div>
             )}

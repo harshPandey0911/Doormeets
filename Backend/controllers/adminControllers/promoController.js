@@ -202,3 +202,22 @@ exports.applyPromo = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error while validating promo code' });
   }
 };
+
+// Get Active Promo Codes (Public)
+exports.getActivePublicPromos = async (req, res) => {
+  try {
+    const today = new Date();
+    const promos = await PromoCode.find({
+      isActive: true,
+      expiryDate: { $gt: today }
+    })
+      .populate('serviceId', 'title')
+      .populate('categoryId', 'title')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: promos });
+  } catch (error) {
+    console.error('Get public active promos error:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching active promo codes' });
+  }
+};

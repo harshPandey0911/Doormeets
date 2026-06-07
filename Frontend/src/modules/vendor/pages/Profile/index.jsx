@@ -166,12 +166,12 @@ const Profile = () => {
       <Header title="Profile" />
 
       <main className="px-4 pt-4 pb-6">
-        {/* Profile Header Card with Phone & Email */}
+        {/* Profile Header Card with Phone & Email (Light Orange Theme) */}
         <div
           className="rounded-[2rem] p-4 mb-4 shadow-xl relative overflow-hidden border border-white/60"
           style={{
-            background: 'linear-gradient(90deg, rgba(213, 181, 235, 1) 0%, rgba(240, 203, 242, 1) 90%)',
-            boxShadow: '0 15px 30px rgba(150, 52, 247, 0.12)',
+            background: 'linear-gradient(135deg, #FFF5EB 0%, #FFEBD6 100%)',
+            boxShadow: '0 15px 30px rgba(255, 159, 69, 0.12)',
           }}
         >
           {/* Decorative Patterns */}
@@ -182,7 +182,7 @@ const Profile = () => {
               transform: 'translate(30px, -30px)',
             }}
           />
-
+ 
           <div className="relative z-10">
             <div className="flex items-center gap-4">
               {/* Profile Photo - Circle with Rating Below */}
@@ -192,7 +192,7 @@ const Profile = () => {
                   style={{
                     background: 'rgba(255, 255, 255, 0.6)',
                     backdropFilter: 'blur(10px)',
-                    boxShadow: '0 8px 16px rgba(150, 52, 247, 0.15), inset 0 2px 6px rgba(255, 255, 255, 0.8)',
+                    boxShadow: '0 8px 16px rgba(255, 159, 69, 0.15), inset 0 2px 6px rgba(255, 255, 255, 0.8)',
                     border: '3px solid white',
                     width: '70px',
                     height: '70px',
@@ -205,53 +205,53 @@ const Profile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <FiUser className="w-8 h-8 text-purple-600" />
+                    <FiUser className="w-8 h-8 text-orange-500" />
                   )}
                 </div>
                 {/* Star Rating Below Photo */}
                 {profile.rating > 0 && (
                   <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/50 backdrop-blur-md border border-white/50">
                     <FiStar className="w-3 h-3 text-amber-500 fill-amber-500" />
-                    <span className="text-[10px] font-black text-purple-900">{profile.rating.toFixed(1)}</span>
+                    <span className="text-[10px] font-black text-orange-900">{profile.rating.toFixed(1)}</span>
                   </div>
                 )}
               </div>
-
+ 
               {/* Name and Info */}
               <div className="flex-1 min-w-0 flex flex-col">
-                <h2 className="text-xl font-black text-purple-950 mb-0 break-words tracking-tight leading-tight">{profile.name}</h2>
-                <p className="text-purple-900/70 text-[10px] mb-2 font-bold break-words tracking-wide uppercase">{profile.businessName}</p>
-
+                <h2 className="text-xl font-black text-orange-950 mb-0 break-words tracking-tight leading-tight">{profile.name}</h2>
+                <p className="text-orange-900/70 text-[10px] mb-2 font-bold break-words tracking-wide uppercase">{profile.businessName}</p>
+ 
                 {/* Phone and Email */}
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <div className="p-1 rounded-lg bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
-                      <FiPhone className="w-3 h-3 text-purple-800" />
+                      <FiPhone className="w-3 h-3 text-orange-800" />
                     </div>
-                    <span className="text-xs text-purple-950 font-bold tracking-tight">{profile.phone}</span>
+                    <span className="text-xs text-orange-950 font-bold tracking-tight">{profile.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="p-1 rounded-lg bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
-                      <FiMail className="w-3 h-3 text-purple-800" />
+                      <FiMail className="w-3 h-3 text-orange-800" />
                     </div>
-                    <span className="text-xs text-purple-950 font-bold tracking-tight truncate max-w-[150px]">{profile.email}</span>
+                    <span className="text-xs text-orange-950 font-bold tracking-tight truncate max-w-[150px]">{profile.email}</span>
                   </div>
                 </div>
               </div>
-
+ 
               {/* Navigate Button */}
               <button
                 onClick={() => navigate('/vendor/profile/details')}
                 className="p-3.5 rounded-2xl flex-shrink-0 transition-all duration-500 active:scale-90 group bg-white shadow-lg"
               >
-                <FiArrowRight className="w-5 h-5 text-purple-700 group-hover:translate-x-1 transition-transform" />
+                <FiArrowRight className="w-5 h-5 text-orange-600 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Three Cards Section - Horizontal */}
-        <div className="px-4 mb-5">
+        <div className="mb-5">
           <div className="grid grid-cols-3 gap-3">
             {/* Active Jobs */}
             <button
@@ -355,7 +355,7 @@ const Profile = () => {
         </div>
 
         {/* Menu List Section */}
-        <div className="px-4 mb-4 space-y-3">
+        <div className="mb-4 space-y-3">
           {menuItems.map((item) => {
             const IconComponent = item.icon;
             return (
@@ -398,7 +398,7 @@ const Profile = () => {
         </div>
 
         {/* Logout Button */}
-        <div className="px-4 mb-3">
+        <div className="mb-3">
           <button
             type="button"
             onClick={async (e) => {

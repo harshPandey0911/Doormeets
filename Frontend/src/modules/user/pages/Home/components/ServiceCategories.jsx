@@ -33,7 +33,7 @@ const ServiceCategories = React.memo(({
 
       {/* Title Header */}
       <div className="mb-4">
-        <h2 className="text-base font-extrabold text-[#111827] tracking-tight">
+        <h2 className="text-base font-bold text-[#111827] tracking-tight">
           {title}
         </h2>
       </div>

@@ -145,8 +145,16 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         console.error('RefreshToken failed:', refreshError);
-        // Refresh failed — do NOT auto-logout.
-        // Just reject silently; user stays on page.
+        if (refreshError.response) {
+          console.error('RefreshToken response data:', refreshError.response.data);
+        }
+        
+        // If the refresh token itself is invalid or expired (401), log the user out
+        if (refreshError.response?.status === 401) {
+          console.warn('Refresh token invalid or expired. Logging out...');
+          handleLogout(role);
+        }
+
         processQueue(refreshError, null);
         isRefreshing = false;
         return Promise.reject(refreshError);
