@@ -3,14 +3,14 @@ import { FiPlus, FiEdit2, FiTrash2, FiMapPin } from 'react-icons/fi';
 import api from '../../../../../services/api';
 import { cityService } from '../../../services/cityService';
 
-const PricingMatrixPage = () => {
+const PricingMatrixPage = ({ selectedCity }) => {
   const [pricings, setPricings] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [brands, setBrands] = useState([]);
   const [cities, setCities] = useState([]);
-  const [cityFilter, setCityFilter] = useState('');
+
   
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,6 +28,8 @@ const PricingMatrixPage = () => {
     isActive: true 
   });
   const [globalGst, setGlobalGst] = useState(18);
+  const [vendorCgstRate, setVendorCgstRate] = useState(2.5);
+  const [vendorSgstRate, setVendorSgstRate] = useState(2.5);
 
   useEffect(() => {
     fetchData();
@@ -59,6 +61,8 @@ const PricingMatrixPage = () => {
 
       if (settingsRes?.data?.settings) {
         setGlobalGst(settingsRes.data.settings.serviceGstPercentage ?? 18);
+        setVendorCgstRate(settingsRes.data.settings.vendorCgstPercentage ?? 2.5);
+        setVendorSgstRate(settingsRes.data.settings.vendorSgstPercentage ?? 2.5);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -75,15 +79,14 @@ const PricingMatrixPage = () => {
         serviceId: pricing.serviceId?._id || '',
         brandId: pricing.brandId?._id || '',
         cityId: pricing.cityId?._id || pricing.cityId || '',
-        basePrice: pricing.basePrice,
-        gstPercentage: pricing.gstPercentage,
-        vendorProfit: pricing.vendorProfit,
+        finalCustomerPrice: pricing.finalCustomerPrice || pricing.basePrice || '',
+        vendorLevel: 10,
         isActive: pricing.isActive
       });
     } else {
       setFormData({ 
         categoryId: '', subCategoryId: '', serviceId: '', brandId: '', cityId: '',
-        basePrice: '', gstPercentage: globalGst, vendorProfit: '', isActive: true 
+        finalCustomerPrice: '', vendorLevel: 10, isActive: true 
       });
     }
     setIsModalOpen(true);
@@ -104,11 +107,13 @@ const PricingMatrixPage = () => {
         }
       }
 
+      const total = Number(formData.finalCustomerPrice);
       const payload = {
         ...formData,
-        basePrice: Number(formData.basePrice),
-        gstPercentage: Number(formData.gstPercentage),
-        vendorProfit: Number(formData.vendorProfit)
+        basePrice: total,
+        gstPercentage: 0,
+        vendorProfit: 0,
+        finalCustomerPrice: total
       };
 
       if (currentPricing) {
@@ -139,11 +144,21 @@ const PricingMatrixPage = () => {
   };
 
   // Compute calculated fields for preview
-  const previewGstAmount = formData.basePrice ? (Number(formData.basePrice) * Number(formData.gstPercentage)) / 100 : 0;
-  const previewFinalPrice = formData.basePrice ? Number(formData.basePrice) + previewGstAmount + Number(formData.vendorProfit || 0) : 0;
+  const totalBill = Number(formData.finalCustomerPrice || 0);
+  const platformFee = totalBill * 0.20;
+  const vendorShare = totalBill * 0.80;
+  
+  const vendorTaxFactor = (Number(vendorCgstRate) + Number(vendorSgstRate)) / 100;
+  const platformGstFactor = globalGst / 100;
+  
+  const govtTax = platformFee ? (vendorShare * vendorTaxFactor) + ((platformFee - (vendorShare * vendorTaxFactor)) * platformGstFactor / (1 + platformGstFactor)) : 0;
+  const adminBaseFee = platformFee - govtTax;
+  const commissionAmount = vendorShare * (Number(formData.vendorLevel) / 100);
+  const vendorNet = vendorShare - commissionAmount;
+  const adminNet = adminBaseFee + commissionAmount;
 
-  const filteredPricings = cityFilter
-    ? pricings.filter(prc => prc.cityId?._id === cityFilter || prc.cityId === cityFilter)
+  const filteredPricings = selectedCity
+    ? pricings.filter(prc => prc.cityId?._id === selectedCity || prc.cityId === selectedCity)
     : pricings;
 
   return (
@@ -154,18 +169,6 @@ const PricingMatrixPage = () => {
           <p className="text-sm text-gray-500">Manage deep hierarchy pricing combinations</p>
         </div>
         <div className="flex items-center gap-3">
-          {cities.length > 0 && (
-            <select
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer"
-            >
-              <option value="">All Cities / Global</option>
-              {cities.map(city => (
-                <option key={city._id || city.id} value={city._id || city.id}>{city.name}</option>
-              ))}
-            </select>
-          )}
           <button 
             onClick={() => handleOpenModal()} 
             className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700"
@@ -184,19 +187,19 @@ const PricingMatrixPage = () => {
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="p-4 font-semibold text-gray-600">Hierarchy</th>
                 <th className="p-4 font-semibold text-gray-600">City</th>
-                <th className="p-4 font-semibold text-gray-600">Base Price</th>
-                <th className="p-4 font-semibold text-gray-600">GST %</th>
-                <th className="p-4 font-semibold text-gray-600">Vendor Profit</th>
-                <th className="p-4 font-semibold text-gray-600 bg-green-50">Final Price (User)</th>
+                <th className="p-4 font-semibold text-gray-600">Customer Bill</th>
+                <th className="p-4 font-semibold text-gray-600">Vendor Share (80%)</th>
+                <th className="p-4 font-semibold text-gray-600">Platform Fee (20%)</th>
+                <th className="p-4 font-semibold text-gray-600 bg-green-50">Admin Net (est. L1)</th>
                 <th className="p-4 font-semibold text-gray-600">Status</th>
                 <th className="p-4 font-semibold text-gray-600 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPricings.map((prc) => (
-                <tr key={prc._id} className="border-b border-gray-50 hover:bg-gray-50">
+              {filteredPricings.map(prc => (
+                <tr key={prc._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                   <td className="p-4">
-                    <div className="text-sm font-medium text-gray-800">{prc.serviceId?.title} {prc.brandId ? `- ${prc.brandId.title}` : ''}</div>
+                    <div className="font-semibold text-gray-800">{prc.serviceId?.title}</div>
                     <div className="text-xs text-gray-500">{prc.categoryId?.title} {prc.subCategoryId ? `> ${prc.subCategoryId.title}` : ''}</div>
                   </td>
                   <td className="p-4">
@@ -204,10 +207,12 @@ const PricingMatrixPage = () => {
                       {prc.cityId?.name || 'All Cities (Global)'}
                     </span>
                   </td>
-                  <td className="p-4">₹{prc.basePrice}</td>
-                  <td className="p-4">{prc.gstPercentage}%</td>
-                  <td className="p-4 text-blue-600 font-medium">₹{prc.vendorProfit}</td>
-                  <td className="p-4 bg-green-50 font-bold text-green-700">₹{prc.finalCustomerPrice}</td>
+                  <td className="p-4 font-bold text-gray-800">₹{prc.finalCustomerPrice || prc.basePrice}</td>
+                  <td className="p-4 text-blue-600 font-medium">₹{((prc.finalCustomerPrice || prc.basePrice) * 0.8).toFixed(2)}</td>
+                  <td className="p-4 text-purple-600 font-medium">₹{((prc.finalCustomerPrice || prc.basePrice) * 0.2).toFixed(2)}</td>
+                  <td className="p-4 bg-green-50 font-bold text-green-700">
+                    ₹{(((prc.finalCustomerPrice || prc.basePrice) * 0.2 * 0.8474) + ((prc.finalCustomerPrice || prc.basePrice) * 0.8 * 0.1)).toFixed(2)}
+                  </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${prc.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {prc.isActive ? 'Active' : 'Inactive'}
@@ -335,53 +340,78 @@ const PricingMatrixPage = () => {
 
                 <hr className="my-4" />
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (₹)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Customer Price (₹)</label>
                     <input 
                       type="number" 
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={formData.basePrice}
-                      onChange={(e) => setFormData({...formData, basePrice: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold"
+                      value={formData.finalCustomerPrice}
+                      onChange={(e) => setFormData({...formData, finalCustomerPrice: e.target.value})}
                       required
                       min="0"
+                      placeholder="e.g. 1000"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">GST (%)</label>
-                    <input 
-                      type="number" 
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={formData.gstPercentage}
-                      onChange={(e) => setFormData({...formData, gstPercentage: e.target.value})}
-                      required
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Vendor Profit (₹)</label>
-                    <input 
-                      type="number" 
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={formData.vendorProfit}
-                      onChange={(e) => setFormData({...formData, vendorProfit: e.target.value})}
-                      required
-                      min="0"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Preview Vendor Level Commission</label>
+                    <select 
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={formData.vendorLevel}
+                      onChange={(e) => setFormData({...formData, vendorLevel: e.target.value})}
+                    >
+                      <option value="10">Level 1 (10% Commission)</option>
+                      <option value="15">Level 2 (15% Commission)</option>
+                      <option value="20">Level 3 (20% Commission)</option>
+                    </select>
                   </div>
                 </div>
 
-                <div className="bg-slate-100 p-4 rounded-lg mt-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm text-slate-500">Calculated Final Price (Shown to User):</p>
-                    <div className="text-xs text-slate-400 mt-1">
-                      Base ({formData.basePrice || 0}) + GST ({previewGstAmount.toFixed(2)}) + Profit ({formData.vendorProfit || 0})
+                <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl mt-4">
+                  <h4 className="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Live Split Calculation</h4>
+                  
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                    {/* Left Column */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm border-b pb-2">
+                        <span className="text-slate-500">Total Customer Bill</span>
+                        <span className="font-bold text-slate-800">₹{totalBill.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-500">Platform Fee (20%)</span>
+                        <span className="font-semibold text-purple-600">₹{platformFee.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-500">Vendor Share (80%)</span>
+                        <span className="font-semibold text-blue-600">₹{vendorShare.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm border-t pt-2 mt-2">
+                        <span className="text-slate-500">L{formData.vendorLevel === '10' ? '1' : formData.vendorLevel === '15' ? '2' : '3'} Commission ({formData.vendorLevel}%) <br/><span className="text-xs italic">deducted from Vendor Share</span></span>
+                        <span className="font-semibold text-red-500">-₹{commissionAmount.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-3 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                      <div className="flex justify-between items-center text-sm mb-2">
+                        <span className="text-slate-500 text-xs uppercase font-bold">Net Payouts</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600">Govt Taxes (Est.)</span>
+                        <span className="font-semibold text-orange-500">₹{govtTax.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600">Vendor Net Earnings</span>
+                        <span className="font-bold text-green-600 text-lg">₹{vendorNet.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600">Admin Net Profit</span>
+                        <span className="font-bold text-blue-700 text-lg">₹{adminNet.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-green-600">
-                    ₹{previewFinalPrice.toFixed(2)}
-                  </div>
                 </div>
+
 
                 <div className="mt-4">
                   <label className="flex items-center gap-2 cursor-pointer">

@@ -139,8 +139,18 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         console.error('RefreshToken failed:', refreshError);
-        // Refresh failed — do NOT auto-logout.
-        // Just reject silently; user stays on page.
+        
+        // If refresh fails with 401/403, the token is dead. Clear it to prevent infinite loops.
+        if (refreshError.response?.status === 401 || refreshError.response?.status === 403 || refreshError.response?.status === 400) {
+            sessionStorage.removeItem(access);
+            sessionStorage.removeItem(refresh);
+            localStorage.removeItem(access);
+            localStorage.removeItem(refresh);
+            
+            // Redirect or reload to force app state update
+            window.location.reload();
+        }
+
         processQueue(refreshError, null);
         isRefreshing = false;
         return Promise.reject(refreshError);

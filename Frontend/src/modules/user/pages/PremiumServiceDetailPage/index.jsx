@@ -20,8 +20,27 @@ const PremiumServiceDetailPage = () => {
   const brand = location.state?.brand || null;
   const category = location.state?.category || null;
 
-  const features = useMemo(() => service?.features || [], [service]);
-  const steps = service?.steps || [];
+  const [pageBlocks, setPageBlocks] = useState([]);
+
+  const features = useMemo(() => {
+    if (pageBlocks.length > 0) {
+      const whatsIncluded = pageBlocks.find(b => b.blockType === 'whats_included');
+      if (whatsIncluded?.data?.items?.length) {
+        return whatsIncluded.data.items;
+      }
+    }
+    return service?.features || [];
+  }, [service, pageBlocks]);
+
+  const steps = useMemo(() => {
+    if (pageBlocks.length > 0) {
+      const processBlock = pageBlocks.find(b => b.blockType === 'process');
+      if (processBlock?.data?.steps?.length) {
+        return processBlock.data.steps.map(s => s.title || s);
+      }
+    }
+    return service?.steps || [];
+  }, [service, pageBlocks]);
 
   const [fields, setFields] = useState([]);
   const [pricingRules, setPricingRules] = useState([]);
@@ -38,6 +57,7 @@ const PremiumServiceDetailPage = () => {
         if (res.data.success) {
           setFields(res.data.fields || []);
           setPricingRules(res.data.pricingRules || []);
+          setPageBlocks(res.data.pageBlocks || []);
           
           const initialAnswers = {};
           (res.data.fields || []).forEach(f => {
@@ -401,44 +421,144 @@ const PremiumServiceDetailPage = () => {
           </section>
         )}
 
-        <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
-          <h2 className="mt-1 text-xl font-black text-gray-900">What you get</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {features.length > 0 ? features.map((feature) => (
-              <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
-                <FiCheckCircle /> {feature}
-              </span>
-            )) : <span className="text-sm text-gray-500">No included features listed.</span>}
+        {/* DYNAMIC PAGE BLOCKS */}
+        {pageBlocks.length > 0 ? (
+          <div className="mt-6 space-y-6">
+            {pageBlocks.filter(b => b.isVisible).map((block, i) => {
+              const data = block.data || {};
+              switch (block.blockType) {
+                case 'heading_text':
+                  return (
+                    <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                      <h2 className="text-xl font-black text-gray-900">{data.heading}</h2>
+                      <p className="mt-2 text-sm leading-6 text-gray-600 whitespace-pre-line">{data.text}</p>
+                    </section>
+                  );
+                case 'warranty':
+                  return (
+                    <section key={i} className="rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">{data.duration} Warranty</p>
+                          <h3 className="text-xl font-black">{data.title}</h3>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-sm text-white/85">{data.description}</p>
+                    </section>
+                  );
+                case 'whats_included':
+                  return (
+                    <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                      <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
+                      <h2 className="mt-1 text-xl font-black text-gray-900">{data.title}</h2>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {(data.items || []).map((item, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
+                            <FiCheckCircle /> {item}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'process':
+                case 'how_it_works':
+                  return (
+                    <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                      <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
+                      <h2 className="mt-1 text-xl font-black text-gray-900">{data.title}</h2>
+                      <div className="mt-4 space-y-3">
+                        {(data.steps || []).map((step, idx) => (
+                          <div key={idx} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{idx + 1}</div>
+                            <div>
+                              <div className="font-black text-gray-900">{step.title}</div>
+                              {step.desc && <p className="text-sm text-gray-500">{step.desc}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'please_note':
+                  return (
+                    <section key={i} className="rounded-[30px] border border-amber-100 bg-amber-50 p-5 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <FiInfo className="text-amber-600 w-5 h-5" />
+                        <h2 className="text-lg font-black text-amber-900">{data.title}</h2>
+                      </div>
+                      <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-amber-800">
+                        {(data.notes || []).map((note, idx) => (
+                          <li key={idx}>{note}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                case 'faq':
+                  return (
+                    <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                      <h2 className="text-xl font-black text-gray-900">FAQ</h2>
+                      <div className="mt-4 space-y-3">
+                        {(data.faqs || []).map((faq, idx) => (
+                          <div key={idx} className="rounded-2xl border border-gray-100 p-4 bg-gray-50">
+                            <h4 className="font-bold text-gray-900">{faq.question}</h4>
+                            <p className="mt-1 text-sm text-gray-600">{faq.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                default:
+                  return null;
+              }
+            })}
           </div>
-        </section>
+        ) : (
+          <>
+            <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
+              <h2 className="mt-1 text-xl font-black text-gray-900">What you get</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {features.length > 0 ? features.map((feature, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
+                    <FiCheckCircle /> {feature}
+                  </span>
+                )) : <span className="text-sm text-gray-500">No included features listed.</span>}
+              </div>
+            </section>
 
-        <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
-          <h2 className="mt-1 text-xl font-black text-gray-900">How it works</h2>
-          <div className="mt-4 space-y-3">
-            {steps.length > 0 ? steps.map((step, index) => (
-              <div key={step} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{index + 1}</div>
+            <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
+              <h2 className="mt-1 text-xl font-black text-gray-900">How it works</h2>
+              <div className="mt-4 space-y-3">
+                {steps.length > 0 ? steps.map((step, index) => {
+                  const stepTitle = typeof step === 'object' ? step.title : step;
+                  const stepDesc = typeof step === 'object' ? step.desc : 'Smooth and transparent service delivery.';
+                  return (
+                    <div key={index} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{index + 1}</div>
+                      <div>
+                        <div className="font-black text-gray-900">{stepTitle}</div>
+                        <p className="text-sm text-gray-500">{stepDesc}</p>
+                      </div>
+                    </div>
+                  );
+                }) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No steps listed for this service.</div>}
+              </div>
+            </section>
+
+            <section className="mt-6 rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
                 <div>
-                  <div className="font-black text-gray-900">{step}</div>
-                  <p className="text-sm text-gray-500">Smooth and transparent service delivery.</p>
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">Professional badge</p>
+                  <h3 className="text-xl font-black">Verified Professional</h3>
                 </div>
               </div>
-            )) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No steps listed for this service.</div>}
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">Professional badge</p>
-              <h3 className="text-xl font-black">Verified Professional</h3>
-            </div>
-          </div>
-          <p className="mt-3 text-sm text-white/85">Certified experts, clean work, and support-backed service experience.</p>
-        </section>
+              <p className="mt-3 text-sm text-white/85">Certified experts, clean work, and support-backed service experience.</p>
+            </section>
+          </>
+        )}
 
         <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
           <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Reviews</p>

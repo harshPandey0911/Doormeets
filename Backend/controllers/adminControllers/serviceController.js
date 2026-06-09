@@ -1,5 +1,6 @@
 const Service = require('../../models/Service');
 const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+const ServicePageBlock = require('../../models/ServicePageBlock');
 const { validationResult } = require('express-validator');
 const { SERVICE_STATUS } = require('../../utils/constants');
 
@@ -9,12 +10,19 @@ const { SERVICE_STATUS } = require('../../utils/constants');
  */
 const getAllServices = async (req, res) => {
   try {
-    const { status, categoryId, subCategoryId } = req.query;
+    const { status, categoryId, subCategoryId, cityId } = req.query;
 
     const query = {};
     if (status) query.status = status;
     if (categoryId) query.categoryId = categoryId;
     if (subCategoryId) query.subCategoryId = subCategoryId;
+    if (cityId) {
+      query.$or = [
+        { cityIds: cityId },
+        { cityIds: { $exists: false } },
+        { cityIds: { $size: 0 } }
+      ];
+    }
 
     const services = await Service.find(query)
       .populate('categoryId', 'title')
@@ -135,7 +143,18 @@ const createService = async (req, res) => {
       discountPrice,
       fields,
       workflow,
-      rules
+      rules,
+      cityIds,
+      // NEW: service type fields
+      serviceType,
+      pricePerMinute,
+      minimumMinutes,
+      packages,
+      quoteInstructions,
+      maxImageUploads,
+      pageBlocks,
+      features,
+      steps
     } = req.body;
 
     const cleanedCategoryId = (categoryId === '' || !categoryId) ? null : categoryId;
@@ -146,22 +165,21 @@ const createService = async (req, res) => {
       subCategoryId: cleanedSubCategoryId,
       title,
       description,
+      features: Array.isArray(features) ? features : [],
+      steps: Array.isArray(steps) ? steps : [],
       status: status || SERVICE_STATUS.ACTIVE,
-      iconUrl
+      iconUrl,
+      cityIds: Array.isArray(cityIds) ? cityIds : [],
+      // Service type fields
+      serviceType: serviceType || 'package_base',
+      pricePerMinute: serviceType === 'minute_base' ? (Number(pricePerMinute) || null) : null,
+      minimumMinutes: serviceType === 'minute_base' ? (Number(minimumMinutes) || 30) : 30,
+      packages: serviceType === 'package_base' && Array.isArray(packages) ? packages : [],
+      quoteInstructions: serviceType === 'image_base' ? (quoteInstructions || null) : null,
+      maxImageUploads: serviceType === 'image_base' ? (Number(maxImageUploads) || 5) : 5
     });
 
-    if (basePrice !== undefined && cleanedCategoryId) {
-      await ServiceBrandPricing.create({
-        categoryId: cleanedCategoryId,
-        subCategoryId: cleanedSubCategoryId || null,
-        serviceId: service._id,
-        brandId: brandId || null,
-        basePrice: Number(basePrice),
-        gstPercentage: Number(gstPercentage || 18),
-        vendorProfit: 0, // Admin can update this later via Pricing Matrix
-        isActive: true
-      });
-    }
+    // basePrice and gstPercentage handling removed. Prices are strictly managed from Pricing Matrix.
 
     // Dynamic Fields (Step 2)
     if (Array.isArray(fields) && fields.length > 0) {
@@ -205,7 +223,7 @@ const createService = async (req, res) => {
       }
     }
 
-    // Pricing Rules (Step 4)
+    // Pricing Rules (Step 5)
     if (Array.isArray(rules) && rules.length > 0) {
       const PricingRule = require('../../models/PricingRule');
       for (const rule of rules) {
@@ -218,6 +236,20 @@ const createService = async (req, res) => {
           value: rule.value || '',
           priceModifierType: rule.priceModifierType || '',
           modifierValue: Number(rule.modifierValue) || 0
+        });
+      }
+    }
+
+    // Page Builder Blocks (Step 4)
+    if (Array.isArray(pageBlocks) && pageBlocks.length > 0) {
+      for (let i = 0; i < pageBlocks.length; i++) {
+        const block = pageBlocks[i];
+        await ServicePageBlock.create({
+          serviceId: service._id,
+          blockType: block.blockType,
+          order: block.order !== undefined ? block.order : i,
+          isVisible: block.isVisible !== false,
+          data: block.data || {}
         });
       }
     }
@@ -269,8 +301,31 @@ const updateService = async (req, res) => {
       service.subCategoryId = (updates.subCategoryId === '' || !updates.subCategoryId) ? null : updates.subCategoryId;
     }
     if (updates.description !== undefined) service.description = updates.description;
+    if (updates.features !== undefined) {
+      service.features = Array.isArray(updates.features) ? updates.features : [];
+      service.markModified('features');
+    }
+    if (updates.steps !== undefined) {
+      service.steps = Array.isArray(updates.steps) ? updates.steps : [];
+      service.markModified('steps');
+    }
     if (updates.status) service.status = updates.status;
     if (updates.iconUrl !== undefined) service.iconUrl = updates.iconUrl;
+    if (updates.cityIds !== undefined) {
+      service.cityIds = Array.isArray(updates.cityIds) ? updates.cityIds : [];
+      service.markModified('cityIds');
+    }
+    // Service type updates
+    if (updates.serviceType) service.serviceType = updates.serviceType;
+    if (updates.pricePerMinute !== undefined) service.pricePerMinute = updates.pricePerMinute;
+    if (updates.minimumMinutes !== undefined) service.minimumMinutes = updates.minimumMinutes;
+    if (updates.packages !== undefined) {
+      service.packages = Array.isArray(updates.packages) ? updates.packages : [];
+      service.markModified('packages');
+    }
+    if (updates.quoteInstructions !== undefined) service.quoteInstructions = updates.quoteInstructions;
+    if (updates.maxImageUploads !== undefined) service.maxImageUploads = updates.maxImageUploads;
+
 
     await service.save();
 
@@ -434,10 +489,70 @@ const deleteService = async (req, res) => {
   }
 };
 
+/**
+ * Get page blocks for a service
+ * GET /api/admin/services/:id/page-blocks
+ */
+const getPageBlocks = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blocks = await ServicePageBlock.find({ serviceId: id }).sort({ order: 1 });
+    res.status(200).json({ success: true, blocks });
+  } catch (error) {
+    console.error('Get page blocks error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch page blocks' });
+  }
+};
+
+/**
+ * Save (replace all) page blocks for a service
+ * PUT /api/admin/services/:id/page-blocks
+ */
+const savePageBlocks = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { blocks } = req.body;
+
+    const service = await Service.findById(id);
+    if (!service) {
+      return res.status(404).json({ success: false, message: 'Service not found' });
+    }
+
+    // Delete all existing blocks and replace with new ones
+    await ServicePageBlock.deleteMany({ serviceId: id });
+
+    const savedBlocks = [];
+    if (Array.isArray(blocks) && blocks.length > 0) {
+      for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+        const saved = await ServicePageBlock.create({
+          serviceId: id,
+          blockType: block.blockType,
+          order: block.order !== undefined ? block.order : i,
+          isVisible: block.isVisible !== false,
+          data: block.data || {}
+        });
+        savedBlocks.push(saved);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Page blocks saved successfully',
+      blocks: savedBlocks
+    });
+  } catch (error) {
+    console.error('Save page blocks error:', error);
+    res.status(500).json({ success: false, message: 'Failed to save page blocks' });
+  }
+};
+
 module.exports = {
   getAllServices,
   getServiceById,
   createService,
   updateService,
-  deleteService
+  deleteService,
+  getPageBlocks,
+  savePageBlocks
 };

@@ -100,7 +100,8 @@ const getChildRoute = (parentRoute, childName) => {
       "Manage SubCategories": "/admin/user-categories/subcategories",
       "Manage Services": "/admin/user-categories/sections",
       "Manage Brands": "/admin/user-categories/brands",
-      "Pricing Matrix": "/admin/user-categories/pricing"
+      "Pricing Matrix": "/admin/user-categories/pricing",
+      "Featured Sections": "/admin/user-categories/featured-sections"
     },
     "/admin/payments": {
       "Payment Overview": "/admin/payments/overview",

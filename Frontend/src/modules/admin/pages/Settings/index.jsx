@@ -14,6 +14,8 @@ const AdminSettings = () => {
   const [financialSettings, setFinancialSettings] = useState({
     visitedCharges: 0,
     serviceGstPercentage: 18,
+    vendorCgstPercentage: 2.5,
+    vendorSgstPercentage: 2.5,
     partsGstPercentage: 18,
     servicePayoutPercentage: 90,
     partsPayoutPercentage: 100,
@@ -119,6 +121,8 @@ const AdminSettings = () => {
           setFinancialSettings({
             visitedCharges: res.settings.visitedCharges || 0,
             serviceGstPercentage: res.settings.serviceGstPercentage ?? 18,
+            vendorCgstPercentage: res.settings.vendorCgstPercentage ?? 2.5,
+            vendorSgstPercentage: res.settings.vendorSgstPercentage ?? 2.5,
             partsGstPercentage: res.settings.partsGstPercentage ?? 18,
             servicePayoutPercentage: res.settings.servicePayoutPercentage ?? 90,
             partsPayoutPercentage: res.settings.partsPayoutPercentage ?? 100,
@@ -641,11 +645,25 @@ const AdminSettings = () => {
                 <form onSubmit={handleFinancialSave} className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Service GST (%)</label>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Platform GST (%)</label>
                       <input type="number" name="serviceGstPercentage" value={financialSettings.serviceGstPercentage} onChange={handleFinancialChange}
                         min="0" max="100"
                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
-                      <p className="text-[10px] text-gray-400 mt-1">Global GST rate applied to every service</p>
+                      <p className="text-[10px] text-gray-400 mt-1">GST applied to Platform Commission</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Vendor CGST (%)</label>
+                        <input type="number" name="vendorCgstPercentage" value={financialSettings.vendorCgstPercentage} onChange={handleFinancialChange}
+                          min="0" max="100" step="0.1"
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Vendor SGST (%)</label>
+                        <input type="number" name="vendorSgstPercentage" value={financialSettings.vendorSgstPercentage} onChange={handleFinancialChange}
+                          min="0" max="100" step="0.1"
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Global Search Radius (Km)</label>

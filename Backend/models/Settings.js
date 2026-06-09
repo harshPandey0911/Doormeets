@@ -23,6 +23,18 @@ const settingsSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
+  vendorCgstPercentage: {
+    type: Number,
+    default: 2.5,
+    min: 0,
+    max: 100
+  },
+  vendorSgstPercentage: {
+    type: Number,
+    default: 2.5,
+    min: 0,
+    max: 100
+  },
   servicePayoutPercentage: {
     type: Number,
     default: 90, // Vendor gets 90% of service base price
@@ -43,7 +55,7 @@ const settingsSchema = new mongoose.Schema({
   },
   platformFeePercentage: {
     type: Number,
-    default: 1, // 1% default platform fee
+    default: 0, // 0% — platform fee disabled
     min: 0,
     max: 100
   },
@@ -53,9 +65,9 @@ const settingsSchema = new mongoose.Schema({
     level3: { type: Number, default: 20 }
   },
   platformFeeRates: {
-    level1: { type: Number, default: 0.5 },
-    level2: { type: Number, default: 1.0 },
-    level3: { type: Number, default: 2.0 }
+    level1: { type: Number, default: 0 },
+    level2: { type: Number, default: 0 },
+    level3: { type: Number, default: 0 }
   },
   vendorCashLimit: {
     type: Number,

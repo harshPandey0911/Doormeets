@@ -118,7 +118,8 @@
       "Manage SubCategories",
       "Manage Brands",
       "Manage Services",
-      "Pricing Matrix"
+      "Pricing Matrix",
+      "Featured Sections"
     ]
   },
   {
@@ -130,15 +131,7 @@
     ],
     "children": []
   },
-  {
-    "title": "Vendor Parts",
-    "route": "/admin/user-categories/vendor-parts",
-    "allowedRoles": [
-      "super_admin",
-      "admin"
-    ],
-    "children": []
-  },
+
   {
     "title": "Reports",
     "route": "/admin/reports",

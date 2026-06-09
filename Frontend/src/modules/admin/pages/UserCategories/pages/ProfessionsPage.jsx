@@ -5,7 +5,7 @@ import CardShell from "../components/CardShell";
 import Modal from "../components/Modal";
 import { professionService, categoryService } from "../../../../../services/catalogService";
 
-const ProfessionsPage = () => {
+const ProfessionsPage = ({ selectedCity }) => {
   const [professions, setProfessions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -133,11 +133,27 @@ const ProfessionsPage = () => {
     });
   };
 
+  const filteredProfessions = selectedCity
+    ? professions.filter(p => {
+        if (!p.categories || p.categories.length === 0) return false;
+        
+        return p.categories.some(cat => {
+          const category = categories.find(c => String(c.id || c._id) === String(cat._id || cat));
+          if (!category) return false;
+          
+          const catCityIds = category.cityIds || [];
+          if (catCityIds.length === 0) return false;
+          
+          return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
+        });
+      })
+    : professions;
+
   return (
     <div className="space-y-6">
       <CardShell icon={FiGrid}>
         <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">{professions.length} Professions</div>
+          <div className="text-sm text-gray-600">{filteredProfessions.length} Professions</div>
           <button
             onClick={() => { reset(); setIsModalOpen(true); }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold flex items-center gap-2 shadow-md hover:bg-blue-700 transition-all"
@@ -149,7 +165,7 @@ const ProfessionsPage = () => {
 
         {fetching ? (
           <div className="text-center py-8 text-gray-500">Loading professions...</div>
-        ) : professions.length === 0 ? (
+        ) : filteredProfessions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">No professions yet</div>
         ) : (
           <div className="overflow-x-auto">
@@ -163,7 +179,7 @@ const ProfessionsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {professions.map((p) => (
+                {filteredProfessions.map((p) => (
                   <tr key={p._id || p.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-4 px-4 font-semibold text-gray-900">{p.name}</td>
                     <td className="py-4 px-4 text-sm text-gray-600">

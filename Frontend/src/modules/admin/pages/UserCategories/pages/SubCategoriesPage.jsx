@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import api from '../../../../../services/api';
 
-const SubCategoriesPage = () => {
+const SubCategoriesPage = ({ selectedCity }) => {
   const [subCategories, setSubCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +70,19 @@ const SubCategoriesPage = () => {
     }
   };
 
+  const filteredSubCategories = selectedCity
+    ? subCategories.filter(sub => {
+        const parentCatId = sub.categoryId?._id || sub.categoryId;
+        const parentCategory = categories.find(c => String(c._id) === String(parentCatId) || String(c.id) === String(parentCatId));
+        if (!parentCategory) return false; // Hide if parent category not found
+        
+        const catCityIds = parentCategory.cityIds || [];
+        if (catCityIds.length === 0) return false; // Strict match: hide if parent is "All Cities"
+        
+        return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
+      })
+    : subCategories;
+
   return (
     <div className="p-6 bg-white rounded-xl shadow-sm">
       <div className="flex justify-between items-center mb-6">
@@ -96,7 +109,7 @@ const SubCategoriesPage = () => {
               </tr>
             </thead>
             <tbody>
-              {subCategories.map((sub) => (
+              {filteredSubCategories.map((sub) => (
                 <tr key={sub._id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="p-4">{sub.title}</td>
                   <td className="p-4 text-gray-600">{sub.categoryId?.title || 'Unknown'}</td>
@@ -111,7 +124,7 @@ const SubCategoriesPage = () => {
                   </td>
                 </tr>
               ))}
-              {subCategories.length === 0 && (
+              {filteredSubCategories.length === 0 && (
                 <tr>
                   <td colSpan="4" className="p-8 text-center text-gray-500">No subcategories found.</td>
                 </tr>

@@ -29,6 +29,7 @@ import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
 import ScrapPromotionCard from './components/ScrapPromotionCard';
+import FeaturedSection from '../../components/premium/FeaturedSection';
 
 
 
@@ -890,6 +891,17 @@ const Home = () => {
                   </div>
                 </motion.section>
               )}
+
+              {/* ─── Featured Sections (Admin Curated) ─── */}
+              {homeContent?.isFeaturedSectionsVisible !== false &&
+                Array.isArray(homeContent?.featuredSections) &&
+                homeContent.featuredSections.length > 0 &&
+                homeContent.featuredSections.map((section, idx) => (
+                  <motion.div key={idx} variants={itemVariants}>
+                    <FeaturedSection section={section} />
+                  </motion.div>
+                ))
+              }
 
               {/* Curated Services */}
               {homeContent?.isCuratedVisible !== false && (

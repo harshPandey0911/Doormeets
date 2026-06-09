@@ -37,12 +37,12 @@ const VendorInfoModal = ({ isOpen, onClose, vendor }) => {
         >
           {/* Header Image/Background */}
           <div className="h-24 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
-             <button 
+            <button
               onClick={onClose}
               className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors"
-             >
-               <FiX className="w-5 h-5" />
-             </button>
+            >
+              <FiX className="w-5 h-5" />
+            </button>
           </div>
 
           <div className="px-6 pb-8 -mt-12 relative text-center">
@@ -60,7 +60,7 @@ const VendorInfoModal = ({ isOpen, onClose, vendor }) => {
             </div>
 
             <h3 className="text-xl font-black text-gray-900 mb-1">{vendor.businessName || vendor.name}</h3>
-            
+
             {/* Verification Badge */}
             <div className="flex justify-center mb-4">
               <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-600 rounded-full border border-green-100 text-[11px] font-bold uppercase tracking-wider">
@@ -97,7 +97,7 @@ const VendorInfoModal = ({ isOpen, onClose, vendor }) => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <div className="mt-1 w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
                   <FiCheckCircle className="w-4 h-4 text-teal-500" />
@@ -109,7 +109,7 @@ const VendorInfoModal = ({ isOpen, onClose, vendor }) => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={onClose}
               className="w-full mt-8 py-3.5 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-gray-800 active:scale-95 transition-all"
             >
@@ -123,7 +123,7 @@ const VendorInfoModal = ({ isOpen, onClose, vendor }) => {
 };
 
 const SubCategoryCard = ({ subCategory, onClick }) => (
-  <div 
+  <div
     onClick={() => onClick(subCategory)}
     className="group flex flex-col items-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
   >
@@ -174,7 +174,7 @@ const BrandCard = ({ brand, onClick, onInfoClick }) => (
         <span className="text-[8px] font-medium text-gray-400 truncate max-w-[70px]">
           by {brand.vendor?.businessName || brand.vendor?.name || 'Pro'}
         </span>
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation();
             onInfoClick(brand.vendor);
@@ -202,7 +202,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
   const [services, setServices] = useState([]); // Sub-services
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
+
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
 
@@ -293,7 +293,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         cityId: cityId
       };
       if (subCatId) params.subCategoryId = subCatId;
-      
+
       const response = await publicCatalogService.getBrands(params);
       if (response.success) {
         setBrands(response.brands || []);
@@ -316,7 +316,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
       if (subCatId || selectedSubCategory?.id || selectedSubCategory?._id) {
         params.subCategoryId = subCatId || selectedSubCategory?.id || selectedSubCategory?._id;
       }
-      
+
       const response = await publicCatalogService.getServices(params);
       if (response.success) {
         setServices(response.services || []);
@@ -345,7 +345,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
     setView('services');
     fetchServices(brand.id || brand._id);
   };
-  
+
   const handleVendorInfo = (vendor) => {
     if (vendor) {
       setSelectedVendor(vendor);
@@ -376,7 +376,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
   const handleBookingTypeSelect = async (isConsultation) => {
     const service = selectedServiceForType;
     if (!service) return;
-    
+
     // Add to cart logic
     try {
       const cartItemData = {
@@ -519,8 +519,8 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                       <div>
                         <h1 className="text-xl font-bold text-gray-900">
                           {view === 'subcategories' ? (category?.title || 'Categories') :
-                           view === 'brands' ? (selectedSubCategory?.title || category?.title || 'Brands') : 
-                           (selectedBrand?.title || 'Services')}
+                            view === 'brands' ? (selectedSubCategory?.title || category?.title || 'Brands') :
+                              (selectedBrand?.title || 'Services')}
                         </h1>
                         {view === 'services' && <p className="text-xs text-gray-500">Select a service to add</p>}
                       </div>
@@ -544,10 +544,10 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                           subCategories.length > 0 ? (
                             <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
                               {subCategories.map((subCat) => (
-                                <SubCategoryCard 
-                                  key={subCat.id || subCat._id} 
-                                  subCategory={subCat} 
-                                  onClick={handleSubCategoryClick} 
+                                <SubCategoryCard
+                                  key={subCat.id || subCat._id}
+                                  subCategory={subCat}
+                                  onClick={handleSubCategoryClick}
                                 />
                               ))}
                             </div>
@@ -565,10 +565,10 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                                   </h3>
                                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
                                     {brands.filter(b => b.type === 'service').map((brand) => (
-                                      <BrandCard 
-                                        key={brand.id || brand._id} 
-                                        brand={brand} 
-                                        onClick={handleBrandClick} 
+                                      <BrandCard
+                                        key={brand.id || brand._id}
+                                        brand={brand}
+                                        onClick={handleBrandClick}
                                         onInfoClick={handleVendorInfo}
                                       />
                                     ))}
@@ -585,10 +585,10 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                                   </h3>
                                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
                                     {brands.filter(b => b.type === 'product').map((brand) => (
-                                      <BrandCard 
-                                        key={brand.id || brand._id} 
-                                        brand={brand} 
-                                        onClick={handleBrandClick} 
+                                      <BrandCard
+                                        key={brand.id || brand._id}
+                                        brand={brand}
+                                        onClick={handleBrandClick}
                                         onInfoClick={handleVendorInfo}
                                       />
                                     ))}
@@ -618,7 +618,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                                       <h3 className="font-black text-gray-900 text-[15px] leading-snug">{svc.title}</h3>
                                       <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-bold text-gray-400 uppercase">by {svc.vendor?.businessName || svc.vendor?.name || 'Pro'}</span>
-                                        <button 
+                                        <button
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             handleVendorInfo(svc.vendor);
@@ -650,7 +650,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                                   </button>
                                 </div>
                               ))}
-                              
+
                               {/* Bottom Disclaimer */}
                               <div className="mt-8 pt-4 border-t border-gray-50 flex items-start gap-3 bg-gray-50/50 p-4 rounded-2xl">
                                 <div className="mt-0.5 text-gray-400">
@@ -685,10 +685,10 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         )}
       </AnimatePresence>
 
-      <VendorInfoModal 
-        isOpen={isVendorModalOpen} 
-        onClose={() => setIsVendorModalOpen(false)} 
-        vendor={selectedVendor} 
+      <VendorInfoModal
+        isOpen={isVendorModalOpen}
+        onClose={() => setIsVendorModalOpen(false)}
+        vendor={selectedVendor}
       />
 
       {/* Booking Type Selection Modal */}

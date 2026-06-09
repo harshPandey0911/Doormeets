@@ -260,7 +260,39 @@ const homeContentSchema = new mongoose.Schema({
   isNoteworthyVisible: { type: Boolean, default: true },
   isBookedVisible: { type: Boolean, default: true },
   isCategorySectionsVisible: { type: Boolean, default: true },
-  isCategoriesVisible: { type: Boolean, default: true }
+  isCategoriesVisible: { type: Boolean, default: true },
+  isFeaturedSectionsVisible: { type: Boolean, default: true },
+
+  // Featured Sections — Admin-curated brand/category showcase below "Order Again"
+  featuredSections: [{
+    sectionTitle: {
+      type: String,
+      default: 'Top Brands'
+    },
+    type: {
+      type: String,
+      enum: ['brand', 'category'],
+      default: 'brand'
+    },
+    isVisible: {
+      type: Boolean,
+      default: true
+    },
+    order: {
+      type: Number,
+      default: 0
+    },
+    items: [{
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: null
+      },
+      order: {
+        type: Number,
+        default: 0
+      }
+    }]
+  }]
 }, {
   timestamps: true
 });

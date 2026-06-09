@@ -43,7 +43,8 @@ const bookingSchema = new mongoose.Schema({
   // ==========================================
   potentialVendors: [{
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
-    distance: { type: Number } // in km
+    distance: { type: Number }, // in km
+    wave: { type: Number } // wave assignment level
   }],
   currentWave: {
     type: Number,

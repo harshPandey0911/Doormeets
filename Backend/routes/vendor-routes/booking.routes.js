@@ -20,7 +20,8 @@ const {
   payWorker,
   getVendorRatings,
   getPendingBookings,
-  reconfirmBooking
+  reconfirmBooking,
+  cancelAcceptedBooking
 } = require('../../controllers/bookingControllers/vendorBookingController');
 
 // Validation rules
@@ -52,6 +53,7 @@ router.get('/', authenticate, isVendor, getVendorBookings);
 router.get('/:id', authenticate, isVendor, getBookingById);
 router.post('/:id/accept', authenticate, isVendor, acceptBooking);
 router.post('/:id/reject', authenticate, isVendor, rejectBookingValidation, rejectBooking);
+router.post('/:id/cancel-accepted', authenticate, isVendor, cancelAcceptedBooking);
 router.post('/:id/assign-worker', authenticate, isVendor, assignWorkerValidation, assignWorker);
 router.put('/:id/status', authenticate, isVendor, updateStatusValidation, updateBookingStatus);
 router.post('/:id/notes', authenticate, isVendor, addNotesValidation, addVendorNotes);

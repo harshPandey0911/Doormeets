@@ -279,6 +279,12 @@ export const homeContentService = {
 
     const response = await api.put(`/admin/home-content${queryParams.toString() ? `?${queryParams.toString()}` : ''}`, data);
     return response.data;
+  },
+
+  // Get available brands/categories for featured sections dropdown
+  getAvailableItems: async (type = 'brand') => {
+    const response = await api.get(`/admin/home-content/available-items?type=${type}`);
+    return response.data;
   }
 };
 

@@ -29,7 +29,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [professions, setProfessions] = useState([]);
-  const [cityFilter, setCityFilter] = useState('');
+
 
   const [form, setForm] = useState({
     title: "",
@@ -513,10 +513,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
     setDraggedItem(null);
   };
 
-  const filteredCategories = cityFilter
+  const filteredCategories = selectedCity
     ? categories.filter(c => {
         if (!c.cityIds || c.cityIds.length === 0) return false;
-        return c.cityIds.includes(cityFilter);
+        return c.cityIds.some(id => String(id) === String(selectedCity) || String(id._id) === String(selectedCity));
       })
     : categories;
 
@@ -527,28 +527,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
           <div className="text-center py-4 text-gray-500">Loading categories...</div>
         )}
 
-        {/* City Filter Dropdown */}
-        {cities.length > 0 && (
-          <div className="flex items-center gap-3 mb-4">
-            <label className="text-sm font-bold text-gray-600 whitespace-nowrap">Filter by city:</label>
-            <select
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer"
-            >
-              <option value="">All Cities</option>
-              {cities.map(city => {
-                const cid = city._id || city.id;
-                return <option key={cid} value={cid}>{city.name}</option>;
-              })}
-            </select>
-            {cityFilter && (
-              <span className="text-xs text-gray-400">
-                {filteredCategories.length} of {categories.length} categories
-              </span>
-            )}
-          </div>
-        )}
+
 
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">{filteredCategories.length} categories</div>
@@ -586,7 +565,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
 
         {filteredCategories.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            {cityFilter ? 'No categories for this city. Try "All Cities" or add one.' : 'No categories yet'}
+            {selectedCity ? 'No categories for this city. Try "All Cities" or add one.' : 'No categories yet'}
           </div>
         ) : (
           <div className="overflow-x-auto">

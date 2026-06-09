@@ -13,7 +13,7 @@ const schema = z.object({
   categoryId: z.string().min(1, "Category is required")
 });
 
-const VendorServicesPage = () => {
+const VendorServicesPage = ({ selectedCity }) => {
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -134,7 +134,24 @@ const VendorServicesPage = () => {
       (s.categoryId?._id === selectedCategoryFilter) ||
       (s.categoryId === selectedCategoryFilter) ||
       (s.categoryId?.id === selectedCategoryFilter); // Handle populated or raw ID
-    return matchesSearch && matchesCategory;
+      
+    let matchesCity = true;
+    if (selectedCity) {
+      const catId = s.categoryId?._id || s.categoryId;
+      const parentCategory = categories.find(c => String(c.id || c._id) === String(catId));
+      if (!parentCategory) {
+        matchesCity = false;
+      } else {
+        const catCityIds = parentCategory.cityIds || [];
+        if (catCityIds.length === 0) {
+          matchesCity = false;
+        } else {
+          matchesCity = catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
+        }
+      }
+    }
+    
+    return matchesSearch && matchesCategory && matchesCity;
   });
 
   return (

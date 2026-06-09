@@ -11,6 +11,7 @@ import SubCategoriesPage from "./pages/SubCategoriesPage";
 import PricingMatrixPage from "./pages/PricingMatrixPage";
 import VendorServicesPage from "./pages/VendorServicesPage";
 import VendorPartsPage from "./pages/VendorPartsPage";
+import FeaturedSectionsManager from "../Services/FeaturedSectionsManager";
 
 import { cityService } from "../../services/cityService";
 
@@ -54,6 +55,7 @@ const UserCategories = () => {
                     setSelectedCity(cityId);
                   }
                 } else {
+                  // For super admin, we can default to global '' or the first city. Let's keep first city as default for backward compatibility.
                   setSelectedCity(cityId);
                 }
               } catch (e) {
@@ -82,21 +84,51 @@ const UserCategories = () => {
 
   return (
     <div className="space-y-4">
-      {/* Global City Filter Header - Visible only to Super Admin */}
-      {/* Global City Filter Header - Removed per user request */}
-
+      {/* Global City Filter Header - Restored for Super Admin */}
+      {isAdminSuper && cities.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-gray-800">City Selection</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Select a city to manage its catalog and features</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-600">Current City:</span>
+            <select
+              value={selectedCity}
+              onChange={(e) => {
+                setSelectedCity(e.target.value);
+                try {
+                  const storedAdmin = JSON.parse(sessionStorage.getItem('adminData') || localStorage.getItem('adminData') || '{}');
+                  if (storedAdmin && storedAdmin.role === 'city_admin') {
+                    localStorage.setItem('adminSelectedCity', e.target.value);
+                  }
+                } catch (err) {}
+              }}
+              className="bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block p-2.5 font-semibold outline-none"
+            >
+              <option value="">All Cities / Global</option>
+              {cities.map((city) => (
+                <option key={city._id || city.id} value={city._id || city.id}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
         <Routes>
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<HomePage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
-          <Route path="professions" element={<ProfessionsPage />} />
+          <Route path="professions" element={<ProfessionsPage selectedCity={selectedCity} />} />
           <Route path="categories" element={<CategoriesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
-          <Route path="sections" element={<ServicesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
+          <Route path="sections" element={<ServicesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
           <Route path="subcategories" element={<SubCategoriesPage selectedCity={selectedCity} />} />
           <Route path="pricing" element={<PricingMatrixPage selectedCity={selectedCity} />} />
           <Route path="brands" element={<BrandsPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
-          <Route path="vendor-services" element={<VendorServicesPage />} />
-          <Route path="vendor-parts" element={<VendorPartsPage />} />
+          <Route path="vendor-services" element={<VendorServicesPage selectedCity={selectedCity} />} />
+          <Route path="vendor-parts" element={<VendorPartsPage selectedCity={selectedCity} />} />
+          <Route path="featured-sections" element={<FeaturedSectionsManager cityId={selectedCity} />} />
           <Route path="*" element={<Navigate to="home" replace />} />
         </Routes>
       </motion.div>
