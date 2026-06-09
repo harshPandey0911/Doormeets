@@ -191,9 +191,9 @@ const VendorLogin = () => {
   const brandColor = themeColors.brand?.teal || '#9634f7';
 
   return (
-    <div className="min-h-[100dvh] flex flex-col justify-start sm:justify-center pt-8 pb-12 sm:px-6 lg:px-8 relative overflow-x-hidden" style={{ background: 'linear-gradient(90deg, rgba(213, 181, 235, 1) 0%, rgba(240, 203, 242, 1) 90%)' }}>
+    <div className="min-h-[100dvh] flex flex-col justify-start sm:justify-center pt-8 pb-12 sm:px-6 lg:px-8 relative overflow-x-hidden bg-white">
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#9634f7] opacity-[0.03] rounded-full blur-3xl animate-floating" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#FF9F45] opacity-[0.03] rounded-full blur-3xl animate-floating" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-4 relative z-10 animate-fade-in">
@@ -208,7 +208,7 @@ const VendorLogin = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0 relative z-10">
         <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#9634f7] via-[#b87cff] to-[#9634f7]" />
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FF9F45] via-[#FFB86C] to-[#FF9F45]" />
 
           {step === 'phone' ? (
             <form onSubmit={handlePhoneSubmit} className="space-y-6">
@@ -217,7 +217,7 @@ const VendorLogin = () => {
                   Phone Number
                 </label>
                 <div className="relative rounded-xl shadow-sm group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#9634f7] transition-colors">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#FF9F45] transition-colors">
                     <FiPhone className="h-5 w-5 text-gray-400" />
                   </div>
                   <div className="absolute inset-y-0 left-10 flex items-center pointer-events-none">
@@ -269,7 +269,7 @@ const VendorLogin = () => {
                   setStep('phone');
                   setResendTimer(0);
                 }}
-                className="flex items-center text-sm text-gray-500 hover:text-[#9634f7] transition-colors mb-4 animate-stagger-1 animate-fade-in"
+                className="flex items-center text-sm text-gray-500 hover:text-[#FF9F45] transition-colors mb-4 animate-stagger-1 animate-fade-in"
               >
                 <FiChevronLeft className="mr-1" /> Edit number
               </button>
@@ -313,7 +313,7 @@ const VendorLogin = () => {
                       }
                     }}
                     disabled={resendTimer > 0}
-                    className="text-sm font-medium hover:text-[#b87cff] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-sm font-medium hover:text-[#FFB86C] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: brandColor }}
                   >
                     {resendTimer > 0
@@ -348,7 +348,7 @@ const VendorLogin = () => {
 
         <p className="mt-8 text-center text-sm text-gray-500 animate-fade-in animate-stagger-5">
           Don't have a vendor account?{' '}
-          <Link to="/vendor/signup" className="font-medium text-[#9634f7] hover:text-[#b87cff] transition-colors duration-300">
+          <Link to="/vendor/signup" className="font-medium text-[#FF9F45] hover:text-[#FFB86C] transition-colors duration-300">
             Register Now
           </Link>
         </p>

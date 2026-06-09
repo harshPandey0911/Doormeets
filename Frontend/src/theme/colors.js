@@ -20,7 +20,7 @@ const brand = {
 
 // User Theme Colors
 const userTheme = {
-  backgroundGradient: 'linear-gradient(180deg, #FFF8F1 0%, #FFFDFB 15%, #FFFFFF 30%)',
+  backgroundGradient: 'linear-gradient(180deg, #FFEBD6 0%, #FFF5EB 40%, #FFFFFF 100%)',
   gradient: brand.gradient,
   headerGradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 50%, #FFD8A8 100%)',
   headerBg: '#FFF8F1',

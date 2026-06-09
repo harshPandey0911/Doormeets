@@ -49,7 +49,11 @@ const verifyAccessToken = (token) => {
  * @returns {Object} - Decoded token
  */
 const verifyRefreshToken = (token) => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  try {
+    return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  } catch (error) {
+    return null;
+  }
 };
 
 module.exports = {

@@ -81,8 +81,8 @@ const BottomNav = memo(() => {
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
         borderTop: '2px solid rgba(0, 0, 0, 0.35)',
-        borderTopLeftRadius: '20px',
-        borderTopRightRadius: '20px',
+        borderTopLeftRadius: '0px',
+        borderTopRightRadius: '0px',
         boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15), 0 -4px 12px rgba(0, 0, 0, 0.1), 0 -2px 6px rgba(0, 0, 0, 0.08)',
         background: 'linear-gradient(to top, #FFFFFF 0%, #FAFAFA 100%)',
       }}

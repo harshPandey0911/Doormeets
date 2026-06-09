@@ -13,6 +13,14 @@ export const promoService = {
     } catch (error) {
       throw error.response?.data || { success: false, message: 'Failed to apply promo code' };
     }
+  },
+  getActivePromos: async () => {
+    try {
+      const response = await api.get('/public/promos');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { success: false, message: 'Failed to fetch active promo codes' };
+    }
   }
 };
 

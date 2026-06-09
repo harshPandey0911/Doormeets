@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiHome, FiGift, FiShoppingCart, FiUser, FiTrash2, FiCalendar, FiShoppingBag } from 'react-icons/fi';
-import { HiHome, HiGift, HiShoppingCart, HiUser, HiTrash, HiCalendar } from 'react-icons/hi';
+import { FiHome, FiGift, FiShoppingCart, FiUser, FiTrash2, FiCalendar, FiShoppingBag, FiGrid } from 'react-icons/fi';
+import { HiHome, HiGift, HiShoppingCart, HiUser, HiTrash, HiCalendar, HiViewGrid } from 'react-icons/hi';
 import { FaHardHat } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../../../../context/CartContext';
@@ -9,34 +9,40 @@ import { useCart } from '../../../../context/CartContext';
 // Colorful theme for each nav item
 const navItemColors = {
   home: {
-    primary: '#3B82F6', // Blue
-    gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
-    bg: 'rgba(59, 130, 246, 0.1)',
-    shadow: 'rgba(59, 130, 246, 0.4)'
+    primary: '#FF9F45', // Orange
+    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    bg: 'rgba(255, 159, 69, 0.1)',
+    shadow: 'rgba(255, 159, 69, 0.4)'
+  },
+  categories: {
+    primary: '#FF9F45', // Orange
+    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    bg: 'rgba(255, 159, 69, 0.1)',
+    shadow: 'rgba(255, 159, 69, 0.4)'
   },
   bookings: {
-    primary: '#10B981', // Emerald
-    gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-    bg: 'rgba(16, 185, 129, 0.1)',
-    shadow: 'rgba(16, 185, 129, 0.4)'
+    primary: '#FF9F45', // Orange
+    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    bg: 'rgba(255, 159, 69, 0.1)',
+    shadow: 'rgba(255, 159, 69, 0.4)'
   },
   scrap: {
-    primary: '#A855F7', // Purple
-    gradient: 'linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)',
-    bg: 'rgba(168, 85, 247, 0.1)',
-    shadow: 'rgba(168, 85, 247, 0.4)'
+    primary: '#FF9F45', // Orange
+    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    bg: 'rgba(255, 159, 69, 0.1)',
+    shadow: 'rgba(255, 159, 69, 0.4)'
   },
   cart: {
-    primary: '#EC4899', // Pink
-    gradient: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)',
-    bg: 'rgba(236, 72, 153, 0.1)',
-    shadow: 'rgba(236, 72, 153, 0.4)'
+    primary: '#FF9F45', // Orange
+    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    bg: 'rgba(255, 159, 69, 0.1)',
+    shadow: 'rgba(255, 159, 69, 0.4)'
   },
   account: {
-    primary: '#8B5CF6', // Violet
-    gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-    bg: 'rgba(139, 92, 246, 0.1)',
-    shadow: 'rgba(139, 92, 246, 0.4)'
+    primary: '#FF9F45', // Orange
+    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    bg: 'rgba(255, 159, 69, 0.1)',
+    shadow: 'rgba(255, 159, 69, 0.4)'
   },
 };
 
@@ -49,6 +55,7 @@ const BottomNav = React.memo(() => {
 
   const navItems = useMemo(() => [
     { id: 'home', label: 'Home', icon: FiHome, filledIcon: HiHome, path: '/user/home' },
+    { id: 'categories', label: 'Category', icon: FiGrid, filledIcon: HiViewGrid, path: '/user/categories' },
     { id: 'bookings', label: 'Bookings', icon: FiCalendar, filledIcon: HiCalendar, path: '/user/my-bookings' },
     { id: 'cart', label: 'Cart', icon: FiShoppingCart, filledIcon: HiShoppingCart, path: '/user/cart', isCart: true },
     { id: 'account', label: 'Account', icon: FiUser, filledIcon: HiUser, path: '/user/account' },
@@ -56,6 +63,7 @@ const BottomNav = React.memo(() => {
 
   const getActiveTab = () => {
     if (location.pathname === '/user/home' || location.pathname === '/user/home/') return 'home';
+    if (location.pathname === '/user/categories') return 'categories';
     if (location.pathname === '/user/my-bookings') return 'bookings';
     if (location.pathname === '/user/cart') return 'cart';
     if (location.pathname === '/user/account') return 'account';
@@ -110,7 +118,7 @@ const BottomNav = React.memo(() => {
 
           {/* Animated Sliding Indicator */}
           <motion.div
-            className="absolute -top-3 h-[3px] rounded-full"
+            className="absolute -top-1.5 h-[3px] rounded-full"
             animate={{
               left: indicatorStyle.left,
               width: indicatorStyle.width,
@@ -165,7 +173,7 @@ const BottomNav = React.memo(() => {
                     <IconComponent
                       className="w-6 h-6 transition-colors duration-200"
                       style={{
-                        color: isActive ? '#000000' : '#9CA3AF',
+                        color: isActive ? activeColor.primary : '#9CA3AF',
                       }}
                     />
                     {item.isCart && cartCount > 0 && (
@@ -180,7 +188,7 @@ const BottomNav = React.memo(() => {
                   </motion.div>
                   <motion.span
                     animate={{
-                      color: isActive ? '#000000' : '#6B7280',
+                      color: isActive ? activeColor.primary : '#6B7280',
                       fontWeight: isActive ? 700 : 500
                     }}
                     className="text-[10px]"

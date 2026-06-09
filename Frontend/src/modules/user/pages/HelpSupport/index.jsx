@@ -174,18 +174,18 @@ const HelpSupport = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-6">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-6">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white shadow-sm">
+      <div className="sticky top-0 z-30 bg-transparent backdrop-blur-xl border-b border-black/[0.03]">
         <div className="px-4 py-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-orange-50 rounded-full transition-colors"
             >
               <FiArrowLeft className="w-5 h-5 text-gray-700" />
             </button>
-            <h1 className="text-xl font-bold text-gray-900">Help & Support</h1>
+            <h1 className="text-xl font-bold text-[#111827] tracking-tight">Help & Support</h1>
           </div>
         </div>
 
@@ -198,7 +198,7 @@ const HelpSupport = () => {
               placeholder="Search for help..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
             />
           </div>
         </div>
@@ -207,7 +207,7 @@ const HelpSupport = () => {
       <main className="px-4 pt-4">
         {/* Quick Actions */}
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">Contact Us</h2>
+          <h2 className="text-lg font-bold text-[#111827] tracking-tight mb-3">Contact Us</h2>
           <div className="grid grid-cols-1 gap-3">
             {quickActions.map(action => {
               let href = null;
@@ -237,7 +237,7 @@ const HelpSupport = () => {
                     <action.icon className="w-6 h-6" style={{ color: action.color }} />
                   </div>
                   <div className="flex-1 text-left">
-                    <h3 className="font-semibold text-gray-900">{action.title}</h3>
+                    <h3 className="font-semibold text-[#111827]">{action.title}</h3>
                     <p className="text-sm text-gray-600">{action.subtitle}</p>
                   </div>
                   <FiChevronRight className="w-5 h-5 text-gray-400" />
@@ -250,7 +250,7 @@ const HelpSupport = () => {
         {/* Submit a Request Button */}
         <button
           onClick={() => setShowContactForm(true)}
-          className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl p-4 font-semibold shadow-lg hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2"
         >
           <FiSend className="w-5 h-5" />
           Submit a Request
@@ -259,7 +259,7 @@ const HelpSupport = () => {
         {/* FAQ Categories */}
         {searchQuery === '' && (
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Browse by Category</h2>
+            <h2 className="text-lg font-bold text-[#111827] tracking-tight mb-3">Browse by Category</h2>
             <div className="space-y-3">
               {categories.map(category => (
                 <button
@@ -288,7 +288,7 @@ const HelpSupport = () => {
                       {category.questions.map((item, idx) => (
                         <div key={idx} className="text-left">
                           <div className="flex items-start gap-2 mb-2">
-                            <FiHelpCircle className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                            <FiHelpCircle className="w-4 h-4 text-[#FF9F45] mt-0.5 shrink-0" />
                             <p className="font-medium text-gray-900 text-sm">{item.q}</p>
                           </div>
                           <p className="text-sm text-gray-600 ml-6">{item.a}</p>
@@ -305,7 +305,7 @@ const HelpSupport = () => {
         {/* Search Results */}
         {searchQuery !== '' && (
           <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-3">
+            <h2 className="text-lg font-bold text-[#111827] tracking-tight mb-3">
               Search Results ({filteredQuestions.length})
             </h2>
             {filteredQuestions.length === 0 ? (
@@ -330,7 +330,7 @@ const HelpSupport = () => {
                       </span>
                     </div>
                     <div className="flex items-start gap-2 mb-2">
-                      <FiHelpCircle className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                      <FiHelpCircle className="w-4 h-4 text-[#FF9F45] mt-0.5 shrink-0" />
                       <p className="font-medium text-gray-900 text-sm">{item.q}</p>
                     </div>
                     <p className="text-sm text-gray-600 ml-6">{item.a}</p>
@@ -365,7 +365,7 @@ const HelpSupport = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
                   placeholder="Your name"
                 />
               </div>
@@ -376,7 +376,7 @@ const HelpSupport = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
                   placeholder="your.email@example.com"
                 />
               </div>
@@ -387,7 +387,7 @@ const HelpSupport = () => {
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
                   placeholder="Brief description of your issue"
                 />
               </div>
@@ -398,14 +398,14 @@ const HelpSupport = () => {
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   rows={6}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none resize-none"
                   placeholder="Describe your issue in detail..."
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl p-4 font-semibold shadow-lg hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2"
               >
                 <FiSend className="w-5 h-5" />
                 Submit Request

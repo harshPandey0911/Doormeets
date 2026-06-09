@@ -42,18 +42,18 @@ const MyRating = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-24">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-30">
+      <header className="bg-transparent backdrop-blur-xl border-b border-black/[0.03] sticky top-0 z-30">
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-orange-50 rounded-full transition-colors"
             >
               <FiArrowLeft className="w-5 h-5 text-black" />
             </button>
-            <h1 className="text-xl font-black text-black">My Reviews</h1>
+            <h1 className="text-xl font-bold text-[#111827] tracking-tight">My Reviews</h1>
           </div>
         </div>
       </header>
@@ -61,7 +61,7 @@ const MyRating = () => {
       <main className="px-4 py-6 space-y-6">
         {isLoading && pagination.page === 1 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <FiLoader className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+            <FiLoader className="w-10 h-10 text-[#FF9F45] animate-spin mb-4" />
             <p className="text-gray-500 font-medium">Fetching your reviews...</p>
           </div>
         ) : ratings.length > 0 ? (
@@ -73,15 +73,15 @@ const MyRating = () => {
               >
                 <div className="flex justify-between items-start">
                   <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center overflow-hidden border border-blue-100/50">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center overflow-hidden border border-orange-100/50">
                       {rating.vendorId?.profilePhoto ? (
                         <img src={rating.vendorId.profilePhoto} alt={rating.vendorId.name} className="w-full h-full object-cover" />
                       ) : (
-                        <FiUser className="w-6 h-6 text-blue-400" />
+                        <FiUser className="w-6 h-6 text-orange-400" />
                       )}
                     </div>
                     <div>
-                      <h4 className="font-black text-gray-900">{rating.vendorId?.businessName || rating.vendorId?.name || 'Service Provider'}</h4>
+                      <h4 className="font-bold text-[#111827] tracking-tight">{rating.vendorId?.businessName || rating.vendorId?.name || 'Service Provider'}</h4>
                       <div className="flex items-center gap-2 mt-0.5">
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((s) => (
@@ -95,13 +95,13 @@ const MyRating = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                    <span className="text-[10px] font-black text-blue-600 uppercase">{rating.serviceName || rating.serviceId?.title}</span>
+                  <div className="bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
+                    <span className="text-[10px] font-bold text-[#FF9F45] uppercase">{rating.serviceName || rating.serviceId?.title}</span>
                   </div>
                 </div>
 
                 {rating.review && (
-                  <p className="text-gray-600 text-sm leading-relaxed font-medium pl-2 border-l-4 border-blue-500/20">
+                  <p className="text-gray-600 text-sm leading-relaxed font-medium pl-2 border-l-4 border-[#FF9F45]/20">
                     "{rating.review}"
                   </p>
                 )}
@@ -121,7 +121,7 @@ const MyRating = () => {
                   </div>
                   <button
                     onClick={() => navigate(`/user/booking/${rating._id}`)}
-                    className="text-[11px] font-black text-blue-600 hover:underline"
+                    className="text-[11px] font-bold text-[#FF9F45] hover:underline"
                   >
                     View Details
                   </button>
@@ -133,7 +133,7 @@ const MyRating = () => {
             {pagination.total > ratings.length && (
               <button
                 onClick={() => fetchRatings(pagination.page + 1)}
-                className="w-full py-4 bg-white rounded-2xl border-2 border-gray-100 text-gray-600 font-black flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                className="w-full py-4 bg-white rounded-2xl border-2 border-gray-100 text-gray-600 font-bold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
               >
                 {isLoading ? <FiLoader className="animate-spin" /> : 'Load More Reviews'}
               </button>
@@ -144,13 +144,13 @@ const MyRating = () => {
             <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-6 mx-auto">
               <FiStar className="w-12 h-12 text-gray-200" />
             </div>
-            <h3 className="text-lg font-black text-gray-900 mb-2">No Reviews Yet</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">No Reviews Yet</h3>
             <p className="text-gray-500 text-sm font-medium">
               You haven't reviewed any services yet. After completing a booking, you can rate your experience!
             </p>
             <button
               onClick={() => navigate('/user/bookings')}
-              className="mt-6 px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-blue-200 active:scale-95 transition-all"
+              className="mt-6 px-8 py-3 bg-[#FF9F45] text-white rounded-2xl font-bold text-sm shadow-lg shadow-orange-100 active:scale-95 transition-all"
             >
               Go to My Bookings
             </button>

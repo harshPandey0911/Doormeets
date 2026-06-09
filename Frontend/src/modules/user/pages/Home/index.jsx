@@ -29,7 +29,12 @@ import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
 import ScrapPromotionCard from './components/ScrapPromotionCard';
+<<<<<<< HEAD
 import FeaturedSection from '../../components/premium/FeaturedSection';
+=======
+import PromoTicker from './components/PromoTicker';
+import promoService from '../../../../services/promoService';
+>>>>>>> 4cdc0fed8a0cec2a6a6b7132c71399e3109fa0c1
 
 
 
@@ -246,6 +251,7 @@ const Home = () => {
   const [productBrands, setProductBrands] = useState([]); // New state for direct product listing
   const [homeContent, setHomeContent] = useState(null);
   const [offerBanners, setOfferBanners] = useState([]);
+  const [activePromos, setActivePromos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Handle scroll separately (only when needed)
@@ -327,8 +333,20 @@ const Home = () => {
       }
     };
 
+    const fetchPromos = async () => {
+      try {
+        const response = await promoService.getActivePromos();
+        if (response.success && Array.isArray(response.data)) {
+          setActivePromos(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching active promos:', error);
+      }
+    };
+
     fetchData();
     fetchBanners();
+    fetchPromos();
   }, [currentCity]);
 
   // Fetch user bookings for "Order Again" section
@@ -421,8 +439,7 @@ const Home = () => {
       setComingSoonCategory(category);
       return;
     }
-    const slug = category.slug || category.id || category._id;
-    navigate(`/user/category/${encodeURIComponent(slug)}`, { state: { category } });
+    navigate('/user/categories', { state: { category } });
   };
 
   const handlePromoClick = (promo) => {
@@ -579,7 +596,7 @@ const Home = () => {
         <motion.div
           variants={itemVariants}
           className="backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b border-black/[0.03] shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300 w-full"
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
+          style={{ backgroundColor: 'rgba(255, 248, 241, 0.95)' }}
         >
           <Header
             location={address}
@@ -617,6 +634,7 @@ const Home = () => {
           ) : (
             <>
               {/* Sliding Offer Banners */}
+              {!isSearchOpen && activePromos.length > 0 && <PromoTicker promos={activePromos} />}
               {!isSearchOpen && <OfferBannerSlider banners={offerBanners} />}
 
               {/* Hero Section - Promo Carousel */}
@@ -675,7 +693,7 @@ const Home = () => {
                 return (
                   <motion.section variants={itemVariants} className="px-5 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-base font-extrabold text-[#111827] tracking-tight">
+                      <h2 className="text-base font-bold text-[#111827] tracking-tight">
                         Upcoming Services
                       </h2>
                       <span className="text-xs font-bold text-[#FF9F45] bg-[#FF9F45]/10 px-2.5 py-1 rounded-full animate-pulse">
@@ -815,7 +833,7 @@ const Home = () => {
               {!pastServicesLoading && pastServices.length > 0 && (
                 <motion.section variants={itemVariants} className="px-5 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-base font-extrabold text-[#111827] tracking-tight">
+                    <h2 className="text-base font-bold text-[#111827] tracking-tight">
                       Order again
                     </h2>
                     <button 
@@ -1002,12 +1020,7 @@ const Home = () => {
 
 
 
-              {/* Refer & Earn Section */}
-              <motion.div variants={itemVariants}>
-                <Suspense fallback={<div className="h-32 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
-                  <ReferEarnSection onReferClick={handleReferClick} />
-                </Suspense>
-              </motion.div>
+
             </>
           )}
         </main>
@@ -1097,9 +1110,9 @@ const Home = () => {
               className={`w-full py-3.5 px-6 rounded-2xl font-bold shadow-md transition-all ${
                 comingSoonCategory.isInterested 
                   ? 'bg-green-500 text-white cursor-default shadow-none'
-                  : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
+                  : 'bg-[#FF9F45] text-white hover:bg-[#FFB86C] hover:shadow-lg'
               }`}
-              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#2874f0' }}
+              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#FF9F45' }}
             >
               {comingSoonCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
             </button>

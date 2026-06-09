@@ -85,18 +85,18 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-20">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-30">
+      <header className="bg-transparent backdrop-blur-xl border-b border-black/[0.03] sticky top-0 z-30">
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-orange-50 rounded-full transition-colors"
             >
-              <FiArrowLeft className="w-5 h-5 text-black" />
+              <FiArrowLeft className="w-5 h-5 text-[#111827]" />
             </button>
-            <h1 className="text-xl font-bold text-black">Settings</h1>
+            <h1 className="text-xl font-bold text-[#111827] tracking-tight">Settings</h1>
           </div>
         </div>
       </header>
@@ -104,7 +104,7 @@ const Settings = () => {
       <main className="px-4 py-4">
         {/* Order Related Messages Section */}
         <div className="mb-6">
-          <h2 className="text-base font-bold text-black mb-2">Order related messages</h2>
+          <h2 className="text-base font-bold text-[#111827] tracking-tight mb-2">Order related messages</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
             Order related messages can't be turned off as they are important for service experience.
           </p>
@@ -112,13 +112,13 @@ const Settings = () => {
 
         {/* Notifications & Reminders Section */}
         <div className="mb-6">
-          <h2 className="text-base font-bold text-black mb-4">Notifications & reminders</h2>
+          <h2 className="text-base font-bold text-[#111827] tracking-tight mb-4">Notifications & reminders</h2>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {/* Push Notifications */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 166, 166, 0.1)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 159, 69, 0.1)' }}>
                   <FiBell className="w-5 h-5" style={{ color: themeColors.button }} />
                 </div>
                 <span className="text-sm font-medium text-black">Push Notifications</span>
@@ -139,7 +139,7 @@ const Settings = () => {
             {/* Email */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 166, 166, 0.1)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 159, 69, 0.1)' }}>
                   <FiMail className="w-5 h-5" style={{ color: themeColors.button }} />
                 </div>
                 <span className="text-sm font-medium text-black">Email</span>
@@ -161,7 +161,7 @@ const Settings = () => {
 
         {/* Account Actions Section */}
         <div className="mb-6">
-          <h2 className="text-base font-bold text-black mb-4">Account</h2>
+          <h2 className="text-base font-bold text-[#111827] tracking-tight mb-4">Account</h2>
           <div className="space-y-3">
             <button
               onClick={async () => {
@@ -211,10 +211,10 @@ const Settings = () => {
             className="w-full bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between hover:bg-gray-50 active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 166, 166, 0.1)' }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 159, 69, 0.1)' }}>
                 <FiShield className="w-5 h-5" style={{ color: themeColors.button }} />
               </div>
-              <span className="text-sm font-medium text-black">Privacy & data</span>
+              <span className="text-sm font-medium text-[#111827]">Privacy & data</span>
             </div>
             <FiChevronRight className="w-5 h-5 text-gray-400" />
           </button>

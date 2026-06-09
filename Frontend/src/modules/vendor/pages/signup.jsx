@@ -82,11 +82,11 @@ const VendorSignup = () => {
   const brandColor = themeColors.brand?.teal || '#9634f7';
 
   return (
-    <div className="min-h-screen flex flex-col pt-8 pb-8 px-4 sm:px-6 lg:px-8 relative" style={{ background: 'linear-gradient(90deg, rgba(213, 181, 235, 1) 0%, rgba(240, 203, 242, 1) 90%)' }}>
+    <div className="min-h-screen flex flex-col pt-8 pb-8 px-4 sm:px-6 lg:px-8 relative bg-white">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#9634f7] opacity-[0.05] rounded-full blur-3xl animate-floating" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#9634f7] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#FF9F45] opacity-[0.05] rounded-full blur-3xl animate-floating" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#FF9F45] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-6 relative z-10 animate-fade-in">
@@ -101,14 +101,14 @@ const VendorSignup = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#9634f7] via-[#b87cff] to-[#9634f7]" />
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FF9F45] via-[#FFB86C] to-[#FF9F45]" />
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4 animate-stagger-1 animate-fade-in">
               <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#9634f7] transition-colors">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#FF9F45] transition-colors">
                     <FiUser className="text-gray-400" />
                   </div>
                   <input
@@ -145,7 +145,7 @@ const VendorSignup = () => {
               <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Profession</label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#9634f7] transition-colors">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#FF9F45] transition-colors">
                     <FiBriefcase className="text-gray-400" />
                   </div>
                   <select
@@ -194,7 +194,7 @@ const VendorSignup = () => {
 
         <p className="mt-6 text-center text-sm text-gray-600 animate-fade-in animate-stagger-4">
           Already registered?{' '}
-          <Link to="/vendor/login" className="font-semibold hover:text-[#b87cff] transition-colors" style={{ color: brandColor }}>
+          <Link to="/vendor/login" className="font-semibold hover:text-[#FFB86C] transition-colors" style={{ color: brandColor }}>
             Login here
           </Link>
         </p>

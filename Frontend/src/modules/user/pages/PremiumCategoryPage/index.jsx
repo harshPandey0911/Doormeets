@@ -56,7 +56,7 @@ const PremiumCategoryPage = () => {
   const [subCategories, setSubCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [services, setServices] = useState([]);
-  const [activeSubCategory, setActiveSubCategory] = useState(null);
+  const [activeSubCategory, setActiveSubCategory] = useState(location.state?.subCategory || null);
   const [activeBrand, setActiveBrand] = useState(null);
 
   // Loading states to prevent flickering / blinking of empty placeholders
@@ -116,28 +116,67 @@ const PremiumCategoryPage = () => {
     const loadCategoryData = async () => {
       try {
         setSubCategoriesLoading(true);
-        setBrandsLoading(true);
-        setServicesLoading(true);
+        setBrandsLoading(false);
+        setServicesLoading(false);
+        setBrands([]);
+        setServices([]);
+        setActiveBrand(null);
 
-        // Parallel fetch subcategories and brands
-        const [subRes, brandRes] = await Promise.all([
-          publicCatalogService.getSubCategories({ categoryId: activeCategoryId }),
-          publicCatalogService.getBrands({ categoryId: activeCategoryId, subCategoryId: '', cityId })
-        ]);
-
-        let defaultSub = null;
-        let defaultBrand = null;
+        const subRes = await publicCatalogService.getSubCategories({ categoryId: activeCategoryId });
 
         if (subRes?.success && Array.isArray(subRes.subCategories)) {
           setSubCategories(subRes.subCategories);
-          if (subRes.subCategories.length > 0) {
-            defaultSub = subRes.subCategories[0];
-          }
+          setActiveSubCategory(prev => {
+            if (prev && subRes.subCategories.some(sub => (sub.id || sub._id) === (prev.id || prev._id))) {
+              return prev;
+            }
+            return location.state?.subCategory || subRes.subCategories[0] || null;
+          });
         } else {
           setSubCategories([]);
+          setActiveSubCategory(null);
         }
+      } catch (err) {
+        console.error("Error loading subcategories:", err);
+      } finally {
+        setSubCategoriesLoading(false);
+      }
+    };
 
-        let mappedBrands = [];
+    loadCategoryData();
+  }, [activeCategoryId, cityId]);
+
+  // Fetch brands when subcategory changes
+  useEffect(() => {
+    if (!activeCategoryId) return;
+
+    if (!activeSubCategoryId) {
+      setBrands([]);
+      setActiveBrand(null);
+      setServices([]);
+      return;
+    }
+
+    const loadBrandsData = async () => {
+      try {
+        setBrandsLoading(true);
+        setServices([]);
+
+        const brandRes = await publicCatalogService.getBrands({
+          categoryId: activeCategoryId,
+          subCategoryId: activeSubCategoryId,
+          cityId
+        });
+
+        const allOption = {
+          id: 'all',
+          title: 'All',
+          slug: 'all',
+          rating: 4.8,
+          subtitle: 'All Brands',
+          image: ''
+        };
+
         if (brandRes?.success && Array.isArray(brandRes.brands)) {
           const filtered = brandRes.brands.filter((brand) => {
             const catIdStr = String(activeCategoryId);
@@ -146,7 +185,7 @@ const PremiumCategoryPage = () => {
             if (Array.isArray(brand.categoryIds) && brand.categoryIds.map(String).includes(catIdStr)) return true;
             return false;
           });
-          mappedBrands = filtered.map((brand) => ({
+          const mappedBrands = filtered.map((brand) => ({
             id: brand.id || brand._id,
             title: brand.title,
             slug: brand.slug || brand.title?.toLowerCase().replace(/\s+/g, '-'),
@@ -154,92 +193,45 @@ const PremiumCategoryPage = () => {
             subtitle: brand.type === 'service' ? 'Services' : 'Parts',
             image: toAssetUrl(brand.iconUrl || brand.icon)
           }));
-          setBrands(mappedBrands);
-          if (mappedBrands.length > 0) {
-            defaultBrand = mappedBrands[0];
-          }
+          setBrands([allOption, ...mappedBrands]);
+          setActiveBrand(allOption);
         } else {
-          setBrands([]);
+          setBrands([allOption]);
+          setActiveBrand(allOption);
         }
-
-        // Set subcategory and brand states simultaneously to avoid multiple render cascades
-        setActiveSubCategory(defaultSub);
-        setActiveBrand(defaultBrand);
-
-        // Fetch services with the resolved defaults immediately
-        const serviceRes = await publicCatalogService.getServices({
-          categoryId: activeCategoryId,
-          subCategoryId: defaultSub ? (defaultSub.id || defaultSub._id) : '',
-          brandId: defaultBrand ? defaultBrand.id : '',
-          cityId
-        });
-
-        if (serviceRes?.success && Array.isArray(serviceRes.services)) {
-          let rawServices = serviceRes.services;
-          if (defaultSub) {
-            const subIdStr = String(defaultSub.id || defaultSub._id);
-            rawServices = rawServices.filter(s => {
-              if (!s) return false;
-              if (s.subCategoryId && String(s.subCategoryId) === subIdStr) return true;
-              if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === subIdStr) return true;
-              return false;
-            });
-          }
-          setServices(rawServices.map((service, index) => ({
-            id: service.id || service._id || `service-${index}`,
-            title: service.title,
-            description: service.description || 'Premium service with trusted experts.',
-            image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
-            rating: service.rating || 4.8,
-            reviews: service.reviewCount || 120,
-            price: service.discountPrice || service.basePrice || service.price || 0,
-            originalPrice: service.basePrice || null,
-            features: service.features || [],
-            brandId: service.brandId,
-            vendorId: service.vendorId
-          })));
-        } else {
-          setServices([]);
-        }
-
       } catch (err) {
-        console.error("Error loading category data in parallel:", err);
+        console.error("Error loading brands:", err);
       } finally {
-        setSubCategoriesLoading(false);
         setBrandsLoading(false);
-        setServicesLoading(false);
       }
     };
 
-    loadCategoryData();
-  }, [activeCategoryId, cityId]);
+    loadBrandsData();
+  }, [activeCategoryId, activeSubCategoryId, cityId]);
 
-  // Handle manual subcategory or brand selection changes after initial loading is done
+  // Fetch services when brand changes
   useEffect(() => {
-    // Avoid double refetch during initial full category load
-    if (!activeCategoryId || subCategoriesLoading) return;
+    if (!activeCategoryId || !activeSubCategoryId) return;
 
     const refetchServices = async () => {
       try {
         setServicesLoading(true);
         const serviceRes = await publicCatalogService.getServices({
           categoryId: activeCategoryId,
-          subCategoryId: activeSubCategoryId || '',
-          brandId: activeBrandId || '',
+          subCategoryId: activeSubCategoryId,
+          brandId: (activeBrandId && activeBrandId !== 'all') ? activeBrandId : '',
           cityId
         });
 
         if (serviceRes?.success && Array.isArray(serviceRes.services)) {
           let rawServices = serviceRes.services;
-          if (activeSubCategoryId) {
-            const subIdStr = String(activeSubCategoryId);
-            rawServices = rawServices.filter(s => {
-              if (!s) return false;
-              if (s.subCategoryId && String(s.subCategoryId) === subIdStr) return true;
-              if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === subIdStr) return true;
-              return false;
-            });
-          }
+          const subIdStr = String(activeSubCategoryId);
+          rawServices = rawServices.filter(s => {
+            if (!s) return false;
+            if (s.subCategoryId && String(s.subCategoryId) === subIdStr) return true;
+            if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === subIdStr) return true;
+            return false;
+          });
 
           setServices(rawServices.map((service, index) => ({
             id: service.id || service._id || `service-${index}`,
@@ -265,13 +257,21 @@ const PremiumCategoryPage = () => {
     };
 
     refetchServices();
-  }, [activeSubCategoryId, activeBrandId]);
+  }, [activeCategoryId, activeSubCategoryId, activeBrandId, cityId]);
+
+  const getCartItemServiceId = (item) => {
+    if (!item) return null;
+    if (typeof item.serviceId === 'object' && item.serviceId) {
+      return item.serviceId._id || item.serviceId.id;
+    }
+    return item.serviceId || item.id || item._id;
+  };
 
   const quantities = useMemo(() => {
     const map = {};
     cartItems.forEach((item) => {
-      const id = item.serviceId?.id || item.serviceId || item.id;
-      map[id] = item.serviceCount || 1;
+      const id = getCartItemServiceId(item);
+      if (id) map[id] = item.serviceCount || 1;
     });
     return map;
   }, [cartItems]);
@@ -284,21 +284,47 @@ const PremiumCategoryPage = () => {
     });
   }, [search, services]);
 
-  const handleAdd = async (service) => {
+  const [flyingItems, setFlyingItems] = useState([]);
+
+  const handleAdd = async (service, event) => {
+    // Capture the button coordinates synchronously before the async await call clears the event
+    const buttonRect = event?.currentTarget?.getBoundingClientRect();
+
     const response = await addToCart(buildCartItemData({ service, category: activeCategory, brand: activeBrand }));
-    if (response?.success) {
-      navigate('/user/cart');
+    
+    if (response?.success && buttonRect) {
+      const cartIcon = document.getElementById('nav-cart-icon');
+      
+      if (cartIcon) {
+        const cartRect = cartIcon.getBoundingClientRect();
+        const id = Date.now() + Math.random();
+        
+        const newItem = {
+          id,
+          startX: buttonRect.left + buttonRect.width / 2,
+          startY: buttonRect.top + buttonRect.height / 2,
+          endX: cartRect.left + cartRect.width / 2,
+          endY: cartRect.top + cartRect.height / 2,
+          image: service.image
+        };
+        
+        setFlyingItems((prev) => [...prev, newItem]);
+        
+        setTimeout(() => {
+          setFlyingItems((prev) => prev.filter((item) => item.id !== id));
+        }, 800);
+      }
     }
   };
 
   const handleIncrease = async (service) => {
-    const item = cartItems.find((entry) => (entry.serviceId?.id || entry.serviceId || entry.id) === service.id);
+    const item = cartItems.find((entry) => getCartItemServiceId(entry) === service.id);
     if (!item) return handleAdd(service);
     await updateItem(item._id || item.id, (item.serviceCount || 1) + 1);
   };
 
   const handleDecrease = async (service) => {
-    const item = cartItems.find((entry) => (entry.serviceId?.id || entry.serviceId || entry.id) === service.id);
+    const item = cartItems.find((entry) => getCartItemServiceId(entry) === service.id);
     if (!item) return;
     if ((item.serviceCount || 1) <= 1) {
       await removeItem(item._id || item.id);
@@ -308,7 +334,7 @@ const PremiumCategoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 pt-[76px] pb-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
@@ -335,13 +361,6 @@ const PremiumCategoryPage = () => {
         <section className="space-y-5 min-w-0 w-full max-w-full overflow-hidden">
           <div className="lg:hidden space-y-3 w-full max-w-full overflow-hidden">
             <SearchBar value={search} onChange={setSearch} placeholder="Search this category" />
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {categories.map((category) => (
-                <button key={category.id || category.slug} type="button" onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${activeCategory?.id === category.id ? 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white shadow-lg shadow-orange-100' : 'bg-white text-gray-700 border border-gray-200'}`}>
-                  {category.title}
-                </button>
-              ))}
-            </div>
             {activeCategory?.status !== 'coming_soon' && !subCategoriesLoading && !subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No subcategories available.</div> : null}
           </div>
 
@@ -410,89 +429,107 @@ const PremiumCategoryPage = () => {
               Cart
             </button>
           </div>
+          <div className="space-y-6 px-1">
 
-          <div className="rounded-[30px] border border-orange-100 bg-white p-4 shadow-[0_18px_60px_rgba(255,159,69,0.08)]">
-            <div className="mb-4 flex items-end justify-between gap-3">
+            {/* Brands Subsection */}
+            {activeSubCategory ? (
               <div>
-                <p className="text-xs font-normal tracking-[0.1em] text-[#FF9F45]">Subcategories</p>
-                <h3 className="text-2xl font-normal text-gray-900">{activeCategory?.title}</h3>
-              </div>
-            </div>
-            {subCategoriesLoading ? (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-orange-50/50" />
-                ))}
-              </div>
-            ) : (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {(subCategories.length ? subCategories : [{ title: 'All' }]).map((sub) => (
-                  <button
-                    key={sub.id || sub._id || sub.title}
-                    type="button"
-                    onClick={() => setActiveSubCategory(sub)}
-                    className={`shrink-0 rounded-full px-4 py-2 text-sm font-normal transition-all ${activeSubCategory?.id === sub.id ? 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white shadow-lg shadow-orange-100' : 'bg-orange-50 text-[#FF9F45] hover:bg-orange-100/50'}`}
-                  >
-                    {sub.title ? sub.title.charAt(0).toUpperCase() + sub.title.slice(1).toLowerCase() : ''}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-[30px] border border-gray-100 bg-white p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Brands</p>
-                <h3 className="text-xl font-normal text-gray-900">Top options in this category</h3>
-              </div>
-            </div>
-            {brandsLoading ? (
-              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-28 w-28 shrink-0 animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                  {brands.map((brand) => (
-                    <BrandCard key={brand.id || brand.slug} brand={brand} active={(activeBrand?.id || activeBrand?.slug) === (brand.id || brand.slug)} onClick={() => setActiveBrand(brand)} />
-                  ))}
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Brands</p>
+                    <h3 className="text-base font-bold text-[#111827] tracking-tight">Top options in this category</h3>
+                  </div>
                 </div>
-                {!brands.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No brands available.</div> : null}
-              </>
+                {brandsLoading ? (
+                  <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-28 w-28 shrink-0 animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                      {brands.map((brand) => (
+                        <BrandCard key={brand.id || brand.slug} brand={brand} active={(activeBrand?.id || activeBrand?.slug) === (brand.id || brand.slug)} onClick={() => setActiveBrand(brand)} />
+                      ))}
+                    </div>
+                    {!brands.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No brands available.</div> : null}
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-[28px] border border-dashed border-orange-100 bg-orange-50/20 p-6 text-center text-sm text-gray-500">
+                Please select a subcategory to see available brands.
+              </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {servicesLoading ? (
-              [1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-32 w-full animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
-              ))
-            ) : (
-              <>
-                {filteredServices.map((service) => (
-                  <ServiceCard
-                    key={service.id}
-                    service={service}
-                    quantity={quantities[service.id] || 0}
-                    onAdd={handleAdd}
-                    onIncrease={handleIncrease}
-                    onDecrease={handleDecrease}
-                    onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory, brand: activeBrand } })}
-                  />
-                ))}
-                {!filteredServices.length ? <div className="col-span-full rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 text-center">No services available.</div> : null}
-              </>
-            )}
-          </div>
+          {activeSubCategory ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {servicesLoading ? (
+                [1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-32 w-full animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
+                ))
+              ) : (
+                <>
+                  {filteredServices.map((service) => (
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      quantity={quantities[service.id] || 0}
+                      onAdd={handleAdd}
+                      onIncrease={handleIncrease}
+                      onDecrease={handleDecrease}
+                      onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory, brand: activeBrand } })}
+                    />
+                  ))}
+                  {!filteredServices.length ? <div className="col-span-full rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 text-center">No services available.</div> : null}
+                </>
+              )}
+            </div>
+          ) : null}
         </>
       )}
         </section>
       </div>
 
-
+      {flyingItems.map((item) => (
+        <motion.div
+          key={item.id}
+          initial={{
+            position: 'fixed',
+            left: item.startX - 20,
+            top: item.startY - 20,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            backgroundColor: '#FF9F45',
+            zIndex: 9999,
+            opacity: 0.9,
+            scale: 1,
+            pointerEvents: 'none'
+          }}
+          animate={{
+            left: item.endX - 10,
+            top: item.endY - 10,
+            width: 20,
+            height: 20,
+            opacity: 0.2,
+            scale: 0.5
+          }}
+          transition={{
+            duration: 0.8,
+            ease: [0.25, 1, 0.5, 1]
+          }}
+          className="shadow-lg flex items-center justify-center overflow-hidden border border-white"
+        >
+          {item.image ? (
+            <img src={item.image} alt="" className="h-full w-full object-cover rounded-full" />
+          ) : (
+            <div className="h-full w-full bg-[#FF9F45]" />
+          )}
+        </motion.div>
+      ))}
     </div>
   );
 };

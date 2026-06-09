@@ -313,9 +313,9 @@ const CategoryPage = () => {
             className={`w-full py-4 px-6 rounded-2xl font-bold shadow-md transition-all ${
               category.isInterested 
                 ? 'bg-green-500 text-white cursor-default shadow-none'
-                : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
+                : 'bg-[#FF9F45] text-white hover:bg-[#FFB86C] hover:shadow-lg'
             }`}
-            style={{ backgroundColor: category.isInterested ? '#22c55e' : '#2874f0' }}
+            style={{ backgroundColor: category.isInterested ? '#22c55e' : '#FF9F45' }}
           >
             {category.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
           </button>
