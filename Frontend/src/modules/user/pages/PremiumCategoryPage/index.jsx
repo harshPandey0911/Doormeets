@@ -16,6 +16,9 @@ import { publicCatalogService } from '../../../../services/catalogService';
 
 const getServiceDummyImage = (title) => {
   const t = (title || '').toLowerCase();
+  if (t.includes('massage') || t.includes('spa') || t.includes('wellness') || t.includes('therapy')) {
+    return 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=500&auto=format&fit=crop&q=80';
+  }
   if (t.includes('screen') || t.includes('display') || t.includes('glass')) {
     return 'https://images.unsplash.com/photo-1597740985671-2a8a3b80502e?w=300&auto=format&fit=crop&q=80';
   }
@@ -130,7 +133,8 @@ const PremiumCategoryPage = () => {
             if (prev && subRes.subCategories.some(sub => (sub.id || sub._id) === (prev.id || prev._id))) {
               return prev;
             }
-            return location.state?.subCategory || subRes.subCategories[0] || null;
+            const isInitialCategory = location.state?.category && String(location.state.category.id || location.state.category._id) === String(activeCategoryId);
+            return (isInitialCategory ? location.state?.subCategory : null) || subRes.subCategories[0] || null;
           });
         } else {
           setSubCategories([]);
@@ -350,7 +354,10 @@ const PremiumCategoryPage = () => {
                   key={category.id || category.slug}
                   category={category}
                   active={(activeCategory?.id || activeCategory?.slug) === (category.id || category.slug)}
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => {
+                    setActiveCategory(category);
+                    navigate(`/user/category/${category.slug || category.id}`);
+                  }}
                 />
               ))}
             </div>
@@ -430,6 +437,34 @@ const PremiumCategoryPage = () => {
             </button>
           </div>
           <div className="space-y-6 px-1">
+
+            {/* Subcategories Subsection */}
+            {subCategories.length > 0 && (
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.15em] text-gray-400 mb-2">Subcategories</p>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {subCategories.map((sub) => {
+                    const isActive = (activeSubCategory?.id || activeSubCategory?._id) === (sub.id || sub._id);
+                    return (
+                      <button
+                        key={sub.id || sub._id}
+                        onClick={() => {
+                          setActiveSubCategory(sub);
+                          setActiveBrand(null); // Reset brand selection when subcategory changes
+                        }}
+                        className={`shrink-0 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all duration-300 border ${
+                          isActive
+                            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-[0_4px_12px_rgba(255,159,69,0.2)] scale-105'
+                            : 'bg-white text-gray-700 border-gray-100 hover:border-orange-200 hover:bg-orange-50/30'
+                        }`}
+                      >
+                        {sub.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Brands Subsection */}
             {activeSubCategory ? (

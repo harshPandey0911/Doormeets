@@ -1,12 +1,6 @@
 import React from 'react';
 
-const toAssetUrl = (url) => {
-  if (!url) return '';
-  const clean = url.replace('/api/upload', '/upload');
-  if (clean.startsWith('http')) return clean;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/api$/, '');
-  return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
-};
+import DynamicIcon from '../../../../../components/DynamicIcon';
 
 const ServiceCategories = React.memo(({ 
   categories, 
@@ -20,7 +14,7 @@ const ServiceCategories = React.memo(({
 
   const displayCategories = categories.map(cat => ({
     ...cat,
-    icon: toAssetUrl(cat.icon || cat.image),
+    icon: cat.icon || cat.image,
   }));
 
   return (
@@ -52,11 +46,10 @@ const ServiceCategories = React.memo(({
             >
               {category.icon ? (
                 <div className="w-16 h-16 rounded-full bg-white border border-gray-100/80 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-all duration-300 overflow-hidden">
-                  <img
-                    src={category.icon}
+                  <DynamicIcon
+                    icon={category.icon}
                     alt={category.title}
                     className="w-9 h-9 object-contain transition-transform duration-300"
-                    loading="lazy"
                   />
                 </div>
               ) : (

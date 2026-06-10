@@ -275,7 +275,7 @@ const getPublicBrands = async (req, res) => {
 
     let brands = await Brand.find(query)
       .select('title slug iconUrl logo imageUrl badge categoryIds basePrice discountPrice sections type isPriceDisclosed')
-      .sort({ createdAt: -1 })
+      .sort({ order: 1, createdAt: -1 })
       .lean();
 
     // Find all online and available vendors, filtered by city if cityId provided
@@ -834,6 +834,9 @@ const getPublicServices = async (req, res) => {
         brandName: targetBrand ? targetBrand.title : null,
         brandIcon: targetBrand ? targetBrand.iconUrl : null,
         type: svc.type || 'service',
+        serviceType: svc.serviceType || 'package_base',
+        minimumMinutes: svc.minimumMinutes || 30,
+        pricePerMinute: svc.pricePerMinute || null,
         isPriceDisclosed: svc.isPriceDisclosed ?? true
       }))
     });
@@ -1348,6 +1351,31 @@ const getPublicServiceDynamicDetails = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Service not found' });
     }
 
+    const { cityId } = req.query;
+    const PricingConfig = require('../../models/PricingConfig');
+    let pricing = null;
+    if (cityId) {
+      pricing = await PricingConfig.findOne({ serviceId: id, cityId }).lean();
+    }
+    if (!pricing) {
+      pricing = await PricingConfig.findOne({ serviceId: id, cityId: null }).lean();
+    }
+    if (!pricing) {
+      pricing = await PricingConfig.findOne({ serviceId: id }).lean();
+    }
+
+    let resolvedService = { ...service };
+    if (pricing) {
+      resolvedService.basePrice = pricing.customerPrice;
+      resolvedService.pricePerMinute = pricing.pricePerMinute;
+      resolvedService.minimumMinutes = pricing.minimumMinutes;
+      resolvedService.gstPercentage = pricing.gstPercentage || 18;
+    } else {
+      resolvedService.basePrice = service.price || service.pricePerMinute || 0;
+      resolvedService.pricePerMinute = service.pricePerMinute || 0;
+      resolvedService.minimumMinutes = service.minimumMinutes || 30;
+    }
+
     const fields = await ServiceField.find({ serviceId: id }).sort({ order: 1 }).lean();
     const workflow = await ServiceWorkflow.findOne({ serviceId: id }).lean();
     let steps = [];
@@ -1359,7 +1387,7 @@ const getPublicServiceDynamicDetails = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      service,
+      service: resolvedService,
       fields,
       workflow: workflow ? { ...workflow, steps } : null,
       pricingRules,

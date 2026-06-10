@@ -451,3 +451,18 @@ export const publicCatalogService = {
     apiCache.invalidatePrefix('public:');
   }
 };
+
+/**
+ * Category Template API calls
+ */
+export const categoryTemplateService = {
+  getAll: async () => {
+    const response = await api.get('/admin/category-templates');
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/admin/category-templates/${id}`, data);
+    return response.data;
+  }
+};
+

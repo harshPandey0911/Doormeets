@@ -12,10 +12,18 @@ const OfferBannerSlider = ({ banners }) => {
 
   const handleBannerClick = (banner) => {
     if (banner.link) {
-      if (banner.link.startsWith('http')) {
-        window.open(banner.link, '_blank');
+      const cleanLink = banner.link.trim();
+      if (cleanLink.startsWith('http')) {
+        window.open(cleanLink, '_blank');
+      } else if (cleanLink.startsWith('/')) {
+        navigate(cleanLink);
+      } else if (cleanLink.startsWith('user/')) {
+        navigate('/' + cleanLink);
+      } else if (cleanLink.includes('/')) {
+        navigate('/' + cleanLink);
       } else {
-        navigate(banner.link);
+        // It's a simple category/service slug, route to category page
+        navigate(`/user/category/${cleanLink}`);
       }
     }
   };

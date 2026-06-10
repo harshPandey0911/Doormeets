@@ -168,6 +168,31 @@ exports.updateSettings = async (req, res, next) => {
       );
     }
 
+    // Propagate updated commission rates to all existing PricingConfig records if updated
+    if (commissionRates !== undefined || commissionPercentage !== undefined) {
+      try {
+        const PricingConfig = require('../../models/PricingConfig');
+        const globalPlat = commissionPercentage !== undefined ? Number(commissionPercentage) : settings.commissionPercentage;
+        const globalL1 = (commissionRates && commissionRates.level1 !== undefined) ? Number(commissionRates.level1) : settings.commissionRates.level1;
+        const globalL2 = (commissionRates && commissionRates.level2 !== undefined) ? Number(commissionRates.level2) : settings.commissionRates.level2;
+        const globalL3 = (commissionRates && commissionRates.level3 !== undefined) ? Number(commissionRates.level3) : settings.commissionRates.level3;
+
+        console.log(`Propagating commission settings to PricingConfigs: Plat=${globalPlat}%, L1=${globalL1}%, L2=${globalL2}%, L3=${globalL3}%`);
+        
+        // Find all pricing configurations
+        const pricings = await PricingConfig.find({});
+        for (const prc of pricings) {
+          prc.platformCommission = globalPlat;
+          prc.l1Commission = globalL1;
+          prc.l2Commission = globalL2;
+          prc.l3Commission = globalL3;
+          await prc.save(); // Save individually to trigger mongoose post-save hooks for synchronization
+        }
+      } catch (propError) {
+        console.error('Error propagating commission rates to PricingConfig:', propError);
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: 'System settings updated successfully',

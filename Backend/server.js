@@ -225,6 +225,7 @@ app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/categoryManagement.routes'));
 app.use('/api/admin/professions', require('./routes/admin-routes/profession.routes'));
 app.use('/api/admin/subcategories', require('./routes/admin-routes/subCategoryManagement.routes'));
+app.use('/api/admin/category-templates', require('./routes/admin-routes/categoryTemplate.routes'));
 app.use('/api/admin/pricing', require('./routes/admin-routes/pricingManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/brandManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/serviceManagement.routes'));

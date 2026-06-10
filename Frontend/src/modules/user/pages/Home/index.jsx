@@ -29,12 +29,9 @@ import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
 import ScrapPromotionCard from './components/ScrapPromotionCard';
-<<<<<<< HEAD
 import FeaturedSection from '../../components/premium/FeaturedSection';
-=======
 import PromoTicker from './components/PromoTicker';
 import promoService from '../../../../services/promoService';
->>>>>>> 4cdc0fed8a0cec2a6a6b7132c71399e3109fa0c1
 
 
 
@@ -635,7 +632,18 @@ const Home = () => {
             <>
               {/* Sliding Offer Banners */}
               {!isSearchOpen && activePromos.length > 0 && <PromoTicker promos={activePromos} />}
-              {!isSearchOpen && <OfferBannerSlider banners={offerBanners} />}
+              {!isSearchOpen && (
+                <OfferBannerSlider 
+                  banners={homeContent?.banners && homeContent.banners.length > 0 
+                    ? homeContent.banners.map(b => ({
+                        ...b,
+                        imageUrl: toAssetUrl(b.imageUrl),
+                        link: b.link || b.slug || ''
+                      }))
+                    : offerBanners
+                  } 
+                />
+              )}
 
               {/* Hero Section - Promo Carousel */}
               {homeContent?.isPromosVisible !== false && (

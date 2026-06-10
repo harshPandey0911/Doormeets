@@ -7,6 +7,7 @@ import ToggleSwitch from "../components/ToggleSwitch"; // Import ToggleSwitch
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
 
 import { homeContentService, serviceService, categoryService, publicCatalogService } from "../../../../../services/catalogService";
+import adminBannerService from "../../../../../services/adminBannerService";
 
 const RedirectionSelector = ({
   targetCategoryId,
@@ -187,8 +188,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     return [...list].sort((a, b) => {
       const ao = Number.isFinite(a.homeOrder) ? a.homeOrder : 0;
       const bo = Number.isFinite(b.homeOrder) ? b.homeOrder : 0;
-      if (ao !== bo) return ao - bo;
-      return (a.title || "").localeCompare(b.title || "");
+      return ao - bo;
     });
   }, [catalog]);
 
@@ -201,9 +201,10 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         const params = {};
         if (selectedCity) params.cityId = selectedCity;
 
-        const [homeRes, catRes] = await Promise.all([
+        const [homeRes, catRes, bannerRes] = await Promise.all([
           homeContentService.get(params),
-          categoryService.getAll()
+          categoryService.getAll(params),
+          adminBannerService.getBanners().catch(() => ({ success: false, data: [] }))
         ]);
 
         let next = ensureIds(catalog);
@@ -231,7 +232,14 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           };
 
           next.home = {
-            banners: addIds(hc.banners || []),
+            banners: bannerRes.success && bannerRes.data ? bannerRes.data.map(b => ({
+              id: b._id || b.id,
+              imageUrl: b.imageUrl,
+              text: b.title,
+              link: b.link || '',
+              priority: b.priority || 0,
+              isActive: b.isActive !== false
+            })) : [],
             promoCarousel: addIds(hc.promos || []), // API returns 'promos', component expects 'promoCarousel'
             curatedServices: addIds(hc.curated || []), // API returns 'curated', component expects 'curatedServices'
             newAndNoteworthy: addIds(hc.noteworthy || []), // API returns 'noteworthy', component expects 'newAndNoteworthy'
@@ -260,7 +268,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             categoryType: cat.categoryType || "service",
             vendorId: cat.vendorId || null,
             status: cat.status || "active",
-            interestedCount: cat.interestedCount || 0
+            interestedCount: cat.interestedCount || 0,
+            homeOrder: cat.homeOrder !== undefined ? cat.homeOrder : 0
           }));
         }
 
@@ -357,6 +366,26 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     saveCatalog(next);
   };
 
+  const removeCategory = async (id) => {
+    if (!window.confirm("Delete this category? This will also delete its subcategories and services. Continue?")) return;
+
+    try {
+      const response = await categoryService.delete(id);
+      if (response.success) {
+        const next = { ...catalog, categories: catalog.categories.filter((c) => c.id !== id) };
+        setCatalog(next);
+        saveCatalog(next);
+        publicCatalogService.invalidateCache();
+        toast.success("Category deleted successfully");
+      } else {
+        throw new Error(response.message || 'Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Delete category error:', error);
+      toast.error(error.message || 'Failed to delete category.');
+    }
+  };
+
   const syncHomeToBackend = async (homeData) => {
     setIsSyncing(true);
     try {
@@ -388,12 +417,40 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     }
   };
 
-  const setHomeBanners = async (banners) => {
-    const next = ensureIds(catalog);
-    next.home = { ...(next.home || { banners: [] }), banners };
-    setCatalog(next);
-    saveCatalog(next);
-    return await syncHomeToBackend(next.home);
+  const setHomeBanners = async (newBanners) => {
+    const currentBanners = home?.banners || [];
+    const deleted = currentBanners.find(cb => !newBanners.some(nb => nb.id === cb.id));
+    if (deleted) {
+      try {
+        setIsSyncing(true);
+        await adminBannerService.deleteBanner(deleted.id);
+        toast.success('Banner deleted');
+      } catch (err) {
+        toast.error('Failed to delete banner');
+        setIsSyncing(false);
+        return;
+      }
+    }
+    try {
+      const response = await adminBannerService.getBanners();
+      if (response.success) {
+        const next = ensureIds(catalog);
+        next.home.banners = response.data.map(b => ({
+          id: b._id || b.id,
+          imageUrl: b.imageUrl,
+          text: b.title,
+          link: b.link || '',
+          priority: b.priority || 0,
+          isActive: b.isActive !== false
+        }));
+        setCatalog(next);
+        saveCatalog(next);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const patchHome = async (patch) => {
@@ -413,15 +470,43 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
 
   const saveBanner = async () => {
     try {
-      const banners = home?.banners || [];
+      setIsSyncing(true);
+      let response;
+      const payload = {
+        title: bannerForm.text || 'Offer Banner',
+        link: bannerForm.link || bannerForm.slug || '',
+        priority: bannerForm.priority || 0,
+        image: bannerForm.imageUrl
+      };
+
       if (editingBannerId) {
-        await setHomeBanners(banners.map((b) => (b.id === editingBannerId ? { ...b, ...bannerForm } : b)));
+        response = await adminBannerService.updateBanner(editingBannerId, payload);
       } else {
-        await setHomeBanners([...banners, { id: `hbnr-${Date.now()}`, ...bannerForm }]);
+        response = await adminBannerService.addBanner(payload);
       }
-      resetBannerForm();
+
+      if (response.success) {
+        toast.success(editingBannerId ? 'Banner updated' : 'Banner added');
+        resetBannerForm();
+        const bannerRes = await adminBannerService.getBanners();
+        if (bannerRes.success) {
+          const next = ensureIds(catalog);
+          next.home.banners = bannerRes.data.map(b => ({
+            id: b._id || b.id,
+            imageUrl: b.imageUrl,
+            text: b.title,
+            link: b.link || '',
+            priority: b.priority || 0,
+            isActive: b.isActive !== false
+          }));
+          setCatalog(next);
+          saveCatalog(next);
+        }
+      }
     } catch (error) {
-      // Error already toasted in sync function
+      toast.error(error.response?.data?.message || 'Failed to save banner');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -649,10 +734,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="text-sm text-gray-600">
-                          {b.slug
-                            ? `Service: ${allServices.find(s => s.slug === b.slug)?.title || b.slug}`
-                            : (b.targetCategoryId ? getCategoryTitle(b.targetCategoryId) : "—")
-                          }
+                          {b.link || b.slug || "—"}
                         </div>
                       </td>
                       <td className="py-2.5 px-3">
@@ -1295,6 +1377,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Badge</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-32">Status</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-40">Order</th>
+                  <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-24">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1343,27 +1426,57 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                         </div>
                       )}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-2 px-4">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => moveCategory(c.id, "up")}
-                          className="px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-xs font-semibold"
-                          title="Move up"
-                          disabled={idx === 0}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveCategory(c.id, "down")}
-                          className="px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-xs font-semibold"
-                          title="Move down"
-                          disabled={idx === categories.length - 1}
-                        >
-                          ↓
-                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          defaultValue={c.homeOrder !== undefined ? c.homeOrder : 0}
+                          key={`${c.id}-${c.homeOrder}`}
+                          onKeyDown={async (e) => {
+                            if (e.key === "Enter") {
+                              e.target.blur();
+                            }
+                          }}
+                          onBlur={async (e) => {
+                            const val = parseInt(e.target.value, 10);
+                            const newOrder = isNaN(val) ? 0 : Math.max(0, val);
+                            if (newOrder === c.homeOrder) return;
+
+                            // Optimistic update
+                            const next = ensureIds(catalog);
+                            next.categories = next.categories.map((cat) =>
+                              cat.id === c.id ? { ...cat, homeOrder: newOrder } : cat
+                            );
+                            setCatalog(next);
+
+                            try {
+                              const response = await categoryService.updateOrder(c.id, newOrder);
+                              if (response.success) {
+                                saveCatalog(next);
+                                toast.success("Order updated!");
+                              } else {
+                                throw new Error(response.message || 'Failed to update order');
+                              }
+                            } catch (err) {
+                              console.error('Failed to update category order inline:', err);
+                              toast.error('Failed to save order change');
+                              window.location.reload();
+                            }
+                          }}
+                        />
                       </div>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => removeCategory(c.id)}
+                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}

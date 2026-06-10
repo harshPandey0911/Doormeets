@@ -86,7 +86,7 @@ const serviceSchema = new mongoose.Schema({
   // multi_visit: multiple visits (Pest Control, Physiotherapy)
   serviceType: {
     type: String,
-    enum: ['minute_base', 'package_base', 'image_base', 'multi_visit'],
+    enum: ['minute_base', 'package_base', 'image_base', 'multi_visit', 'dynamic_base'],
     default: 'package_base',
     index: true
   },

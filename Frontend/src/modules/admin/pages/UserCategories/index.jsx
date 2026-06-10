@@ -12,6 +12,8 @@ import PricingMatrixPage from "./pages/PricingMatrixPage";
 import VendorServicesPage from "./pages/VendorServicesPage";
 import VendorPartsPage from "./pages/VendorPartsPage";
 import FeaturedSectionsManager from "../Services/FeaturedSectionsManager";
+import CategoryTemplatesPage from "./pages/CategoryTemplatesPage";
+import TemplateCatalogManager from "./pages/TemplateCatalogManager";
 
 import { cityService } from "../../services/cityService";
 
@@ -55,11 +57,11 @@ const UserCategories = () => {
                     setSelectedCity(cityId);
                   }
                 } else {
-                  // For super admin, we can default to global '' or the first city. Let's keep first city as default for backward compatibility.
-                  setSelectedCity(cityId);
+                  // For super admin, default to global '' (All Cities)
+                  setSelectedCity('');
                 }
               } catch (e) {
-                setSelectedCity(cityId);
+                setSelectedCity('');
               }
             }
           }
@@ -122,6 +124,8 @@ const UserCategories = () => {
           <Route path="home" element={<HomePage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
           <Route path="professions" element={<ProfessionsPage selectedCity={selectedCity} />} />
           <Route path="categories" element={<CategoriesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
+          <Route path="templates" element={<CategoryTemplatesPage />} />
+          <Route path="templates/:code/manage" element={<TemplateCatalogManager catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
           <Route path="sections" element={<ServicesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
           <Route path="subcategories" element={<SubCategoriesPage selectedCity={selectedCity} />} />
           <Route path="pricing" element={<PricingMatrixPage selectedCity={selectedCity} />} />

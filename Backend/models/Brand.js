@@ -104,6 +104,11 @@ const brandSchema = new mongoose.Schema({
   isPriceDisclosed: {
     type: Boolean,
     default: true
+  },
+  order: {
+    type: Number,
+    default: 0,
+    min: [0, 'Order cannot be negative']
   }
   // basePrice and discountPrice moved to ServiceBrandPricing
 }, {

@@ -114,11 +114,7 @@
     "children": [
       "Home",
       "Manage Professions",
-      "Manage Categories",
-      "Manage SubCategories",
-      "Manage Brands",
-      "Manage Services",
-      "Pricing Matrix",
+      "Category Templates",
       "Featured Sections"
     ]
   },

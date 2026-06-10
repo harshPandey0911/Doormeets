@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate, useParams } from 'react-router-dom';
 import PageTransition from '../components/common/PageTransition';
 import BottomNav from '../components/layout/BottomNav';
 import Footer from '../components/layout/Footer';
@@ -94,6 +94,11 @@ const LoadingFallback = () => (
 // Import Live Booking Card
 import LiveBookingCard from '../components/booking/LiveBookingCard';
 
+const HomeSlugRedirect = () => {
+  const { slug } = useParams();
+  return <Navigate to={`/user/category/${slug}`} replace />;
+};
+
 const UserRoutes = () => {
   const location = useLocation();
 
@@ -133,6 +138,7 @@ const UserRoutes = () => {
 
               {/* Protected routes (auth required) */}
               <Route path="/home" element={<ProtectedRoute userType="user"><Home /></ProtectedRoute>} />
+              <Route path="/home/:slug" element={<ProtectedRoute userType="user"><HomeSlugRedirect /></ProtectedRoute>} />
               <Route path="/native" element={<ProtectedRoute userType="user"><Native /></ProtectedRoute>} />
 
               <Route path="/rewards" element={<ProtectedRoute userType="user"><Rewards /></ProtectedRoute>} />

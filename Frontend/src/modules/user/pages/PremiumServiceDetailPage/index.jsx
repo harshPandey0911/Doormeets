@@ -8,15 +8,38 @@ import BottomCheckoutBar from '../../components/premium/BottomCheckoutBar';
 import PriceTag from '../../components/premium/PriceTag';
 import { buildCartItemData, toAssetUrl } from '../../components/premium/cartUtils';
 import { useCart } from '../../../../context/CartContext';
+import { useCity } from '../../../../context/CityContext';
 import api from '../../../../services/api';
 
+const getDetailDummyImage = (title) => {
+  const t = (title || '').toLowerCase();
+  if (t.includes('massage') || t.includes('spa') || t.includes('wellness') || t.includes('therapy')) {
+    return 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('screen') || t.includes('display') || t.includes('glass')) {
+    return 'https://images.unsplash.com/photo-1597740985671-2a8a3b80502e?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('motherboard') || t.includes('board') || t.includes('circuit') || t.includes('ic') || t.includes('repair')) {
+    return 'https://images.unsplash.com/photo-1517059224940-d4af9eec41b7?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('switch') || t.includes('socket') || t.includes('button') || t.includes('plug') || t.includes('board connection')) {
+    return 'https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('cleaning') || t.includes('wash') || t.includes('service')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=800&auto=format&fit=crop&q=80';
+};
+
 const PremiumServiceDetailPage = () => {
+  const { currentCity } = useCity();
+  const cityId = currentCity?._id || currentCity?.id;
   const { slug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { addToCart, cartCount } = useCart();
 
-  const service = location.state?.service || null;
+  const [service, setService] = useState(location.state?.service || null);
   const brand = location.state?.brand || null;
   const category = location.state?.category || null;
 
@@ -45,16 +68,51 @@ const PremiumServiceDetailPage = () => {
   const [fields, setFields] = useState([]);
   const [pricingRules, setPricingRules] = useState([]);
   const [dynamicAnswers, setDynamicAnswers] = useState({});
-  const [calculatedPrice, setCalculatedPrice] = useState(service?.price || 0);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [calculatedPrice, setCalculatedPrice] = useState(0);
+
+  const [selectedDuration, setSelectedDuration] = useState(30);
+
+  useEffect(() => {
+    if (service?.serviceType === 'package_base' && service?.packages?.length > 0) {
+      const popular = service.packages.find(p => p.isPopular);
+      setSelectedPackage(popular || service.packages[0]);
+    }
+    if (service?.serviceType === 'minute_base') {
+      setSelectedDuration(Number(service.minimumMinutes) || 30);
+    }
+  }, [service?._id, service?.id]);
+
+  const durationOptions = useMemo(() => {
+    const minMins = Number(service?.minimumMinutes) || 30;
+    const options = [minMins];
+    [45, 60, 90, 120, 150, 180, 240].forEach(mins => {
+      if (mins > minMins && !options.includes(mins)) {
+        options.push(mins);
+      }
+    });
+    return options.sort((a, b) => a - b);
+  }, [service?._id, service?.id, service?.minimumMinutes]);
+
+  const formatDurationText = (mins) => {
+    if (mins < 60) return `${mins} Mins`;
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    if (rem === 0) return `${hrs} Hour${hrs > 1 ? 's' : ''}`;
+    return `${hrs} Hr ${rem} Min`;
+  };
   const [uploadingFiles, setUploadingFiles] = useState({});
 
   useEffect(() => {
     const fetchDynamicDetails = async () => {
-      if (!service?._id && !service?.id) return;
-      const sId = service._id || service.id;
+      const sId = service?._id || service?.id || slug;
+      if (!sId) return;
       try {
-        const res = await api.get(`/public/services/${sId}/dynamic-details`);
+        const res = await api.get(`/public/services/${sId}/dynamic-details${cityId ? `?cityId=${cityId}` : ''}`);
         if (res.data.success) {
+          if (res.data.service) {
+            setService(res.data.service);
+          }
           setFields(res.data.fields || []);
           setPricingRules(res.data.pricingRules || []);
           setPageBlocks(res.data.pageBlocks || []);
@@ -70,11 +128,31 @@ const PremiumServiceDetailPage = () => {
       }
     };
     fetchDynamicDetails();
-  }, [service]);
+  }, [slug, cityId]);
 
   useEffect(() => {
     if (!service) return;
-    let price = service.price || 0;
+
+    let basePrice = 0;
+    if (service.serviceType === 'package_base' && service.packages && service.packages.length > 0) {
+      basePrice = selectedPackage?.price || 0;
+    } else if (service.serviceType === 'dynamic_base') {
+      basePrice = 0;
+    } else if (service.serviceType === 'minute_base') {
+      const minPrice = Number(service.basePrice || service.price || 0);
+      const minMins = Number(service.minimumMinutes || 30);
+      const extraRatePer10Mins = Number(service.pricePerMinute || 0);
+      if (selectedDuration <= minMins) {
+        basePrice = minPrice;
+      } else {
+        const extraMins = selectedDuration - minMins;
+        basePrice = minPrice + (extraRatePer10Mins * (extraMins / 10));
+      }
+    } else {
+      basePrice = Number(service.basePrice || service.price || service.pricePerMinute || 0);
+    }
+
+    let price = basePrice;
     if (pricingRules.length === 0) {
       setCalculatedPrice(price);
       return;
@@ -86,7 +164,7 @@ const PremiumServiceDetailPage = () => {
     if (formulaRule && formulaRule.formulaString) {
       try {
         let formula = formulaRule.formulaString;
-        const vars = { basePrice: service.price || 0, ...dynamicAnswers };
+        const vars = { basePrice, ...dynamicAnswers };
         Object.keys(vars).forEach(key => {
           const val = parseFloat(vars[key]) || 0;
           const regex = new RegExp(`\\b${key}\\b`, 'g');
@@ -127,7 +205,7 @@ const PremiumServiceDetailPage = () => {
     });
 
     setCalculatedPrice(Math.max(0, price));
-  }, [dynamicAnswers, pricingRules, service]);
+  }, [dynamicAnswers, pricingRules, service, selectedPackage, selectedDuration]);
 
   const handleFileUpload = async (fieldName, file) => {
     try {
@@ -195,6 +273,23 @@ const PremiumServiceDetailPage = () => {
       });
 
     const cartData = buildCartItemData({ service, category, brand });
+    if (service?.serviceType === 'package_base' && selectedPackage) {
+      cartData.card.title = `${service.title} - ${selectedPackage.title}`;
+      if (selectedPackage.duration) cartData.card.duration = selectedPackage.duration;
+      dynamicFieldsPayload.push({
+        name: 'Selected Package',
+        label: 'Selected Package',
+        value: selectedPackage.title
+      });
+    }
+    if (service?.serviceType === 'minute_base') {
+      cartData.card.duration = `${selectedDuration} Minutes`;
+      dynamicFieldsPayload.push({
+        name: 'Duration',
+        label: 'Duration',
+        value: `${selectedDuration} Minutes`
+      });
+    }
     cartData.price = calculatedPrice;
     cartData.unitPrice = calculatedPrice;
     if (cartData.card) {
@@ -230,7 +325,7 @@ const PremiumServiceDetailPage = () => {
 
         <div className="overflow-hidden bg-white shadow-[0_18px_60px_rgba(17,24,39,0.08)] md:rounded-4xl md:border md:border-gray-100">
           <div className="relative h-80 md:h-[460px]">
-            <img src={service.image ? toAssetUrl(service.image) : service.image} alt={service.title} className="h-full w-full object-cover" />
+            <img src={service.image ? toAssetUrl(service.image) : getDetailDummyImage(service.title)} alt={service.title} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute left-5 top-5 flex gap-2 text-white">
               <button className="rounded-full bg-black/25 p-3 backdrop-blur"><FiHeart /></button>
@@ -241,11 +336,7 @@ const PremiumServiceDetailPage = () => {
               <h1 className="mt-2 text-3xl font-normal md:text-5xl">
                 {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
               </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-normal text-white/90">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiStar className="text-amber-300" /> {service.rating || 4.8}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiClock /> 45 mins</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiShield /> Verified</span>
-              </div>
+
             </div>
           </div>
         </div>
@@ -254,11 +345,81 @@ const PremiumServiceDetailPage = () => {
 
         <section className="mt-3 py-2 px-1">
           <div className="flex items-center justify-between gap-3">
-            <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} />
+            <div className="flex items-baseline gap-2">
+              <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} />
+              {service.serviceType === 'minute_base' && (
+                <span className="text-xs font-semibold text-gray-500">
+                  for {selectedDuration} Mins
+                </span>
+              )}
+            </div>
             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-normal text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - calculatedPrice) / service.originalPrice) * 100) : 25}%</span>
           </div>
           <p className="mt-2 text-sm leading-7 text-gray-600 font-normal">{service.description}</p>
         </section>
+
+        {service?.serviceType === 'minute_base' && (
+          <section className="mt-4 py-3 px-4 bg-orange-50/10 border border-orange-100 rounded-2xl">
+            <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <FiClock className="text-[#FF9F45]" /> Select Massage Duration
+            </h2>
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              Standard base charge is <span className="font-bold text-[#FF9F45]">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {durationOptions.map((mins) => {
+                const minPrice = Number(service.basePrice || 0);
+                const minMins = Number(service.minimumMinutes || 30);
+                const extraRatePer10Mins = Number(service.pricePerMinute || 0);
+                const currentDurationPrice = mins <= minMins 
+                  ? minPrice 
+                  : minPrice + (extraRatePer10Mins * ((mins - minMins) / 10));
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setSelectedDuration(mins)}
+                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${selectedDuration === mins ? 'border-[#FF9F45] bg-orange-50/50 text-[#FF9F45] font-bold shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-gray-200'}`}
+                  >
+                    <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
+                    <span className="text-xs mt-1 text-gray-400 font-medium">₹{currentDurationPrice.toFixed(0)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
+          <section className="mt-3 py-2 px-1">
+            <h2 className="text-lg font-bold text-gray-900 mb-3">Select Package</h2>
+            <div className="space-y-3">
+              {service.packages.map((pkg, idx) => (
+                <div 
+                  key={idx} 
+                  onClick={() => setSelectedPackage(pkg)}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedPackage?.title === pkg.title ? 'border-[#FF9F45] bg-orange-50/30' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="flex gap-2 items-center">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedPackage?.title === pkg.title ? 'border-[#FF9F45]' : 'border-gray-300'}`}>
+                        {selectedPackage?.title === pkg.title && <div className="w-2 h-2 bg-[#FF9F45] rounded-full" />}
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-sm">{pkg.title}</h3>
+                      {pkg.isPopular && <span className="text-[9px] font-black uppercase bg-[#FF9F45] text-white px-2 py-0.5 rounded-full">Popular</span>}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-black text-[#111827]">₹{pkg.price}</div>
+                      {pkg.originalPrice && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                    </div>
+                  </div>
+                  {pkg.duration && <div className="text-xs text-gray-500 mb-2 pl-6"><FiClock className="inline mr-1" />{pkg.duration}</div>}
+                  {pkg.description && <p className="text-xs text-gray-600 pl-6 leading-relaxed">{pkg.description}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {fields.filter(f => f.showToUser !== false).length > 0 && (
           <section className="mt-3 py-2 px-1">
@@ -422,7 +583,7 @@ const PremiumServiceDetailPage = () => {
           </section>
         )}
 
-<<<<<<< HEAD
+
         {/* DYNAMIC PAGE BLOCKS */}
         {pageBlocks.length > 0 ? (
           <div className="mt-6 space-y-6">
@@ -514,17 +675,7 @@ const PremiumServiceDetailPage = () => {
                   return null;
               }
             })}
-=======
-        <section className="mt-3 py-2 px-1">
-          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Included</p>
-          <h2 className="text-base font-bold text-[#111827] tracking-tight">What you get</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {features.length > 0 ? features.map((feature) => (
-              <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-2 text-sm font-normal text-[#FF9F45]">
-                <FiCheckCircle /> {feature}
-              </span>
-            )) : <span className="text-sm text-gray-500 font-normal">No included features listed.</span>}
->>>>>>> 4cdc0fed8a0cec2a6a6b7132c71399e3109fa0c1
+
           </div>
         ) : (
           <>
@@ -540,7 +691,7 @@ const PremiumServiceDetailPage = () => {
               </div>
             </section>
 
-<<<<<<< HEAD
+
             <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
               <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
               <h2 className="mt-1 text-xl font-black text-gray-900">How it works</h2>
@@ -573,34 +724,7 @@ const PremiumServiceDetailPage = () => {
             </section>
           </>
         )}
-=======
-        <section className="mt-3 py-2 px-1">
-          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Process</p>
-          <h2 className="text-base font-bold text-[#111827] tracking-tight">How it works</h2>
-          <div className="mt-4 space-y-3">
-            {steps.length > 0 ? steps.map((step, index) => (
-              <div key={step} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-orange-50/20 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-sm font-normal text-white">{index + 1}</div>
-                <div>
-                  <div className="font-normal text-gray-900">{step}</div>
-                  <p className="text-sm text-gray-500 font-normal">Smooth and transparent service delivery.</p>
-                </div>
-              </div>
-            )) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 font-normal">No steps listed for this service.</div>}
-          </div>
-        </section>
 
-        <section className="mt-3 rounded-[20px] border border-orange-100/20 bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] p-5 text-white shadow-[0_18px_60px_rgba(255,159,69,0.15)]">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
-            <div>
-              <p className="text-xs font-normal tracking-[0.1em] text-white/75">Professional badge</p>
-              <h3 className="text-base font-bold text-white">Verified Professional</h3>
-            </div>
-          </div>
-          <p className="mt-3 text-sm text-white/85 font-normal">Certified experts, clean work, and support-backed service experience.</p>
-        </section>
->>>>>>> 4cdc0fed8a0cec2a6a6b7132c71399e3109fa0c1
 
         <section className="mt-3 py-2 px-1">
           <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Reviews</p>
@@ -615,7 +739,9 @@ const PremiumServiceDetailPage = () => {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100/50 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border border-orange-100/60 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]">
           <div>
-            <div className="text-[11px] font-normal tracking-[0.1em] text-gray-400">Price</div>
+            <div className="text-[11px] font-normal tracking-[0.1em] text-gray-400">
+              Price {service.serviceType === 'minute_base' && `(${selectedDuration} Mins)`}
+            </div>
             <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
           <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">

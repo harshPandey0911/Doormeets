@@ -148,7 +148,12 @@ const CategoryPage = () => {
 
   useEffect(() => {
     if (category) {
-      fetchSubCategories();
+      if (category.hasSubCategory === false) {
+        setView('brands');
+        fetchBrands();
+      } else {
+        fetchSubCategories();
+      }
     }
   }, [category]);
 

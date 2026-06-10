@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiSliders, FiSave, FiX, FiChevronRight, FiChevronLeft, FiArrowUp, FiArrowDown, FiEye, FiEyeOff } from 'react-icons/fi';
 import { MdTimer, MdInventory, MdPhotoCamera, MdRepeat, MdDragHandle } from 'react-icons/md';
 import api from '../../../../../services/api';
+import { toAssetUrl } from '../utils';
 
 // ────────────────────────────────────────────────────────────────────
 // SERVICE TYPE CONFIG
@@ -31,6 +32,14 @@ const SERVICE_TYPES = [
     color: 'purple',
     desc: 'User uploads images, gets a quote',
     example: 'Repair estimate, Civil work'
+  },
+  {
+    key: 'dynamic_base',
+    label: 'Dynamic / Calculator Base',
+    icon: FiSliders,
+    color: 'orange',
+    desc: 'Price calculated dynamically from user inputs (sq ft, rooms)',
+    example: 'sq ft × ₹12'
   },
   {
     key: 'multi_visit',
@@ -149,6 +158,22 @@ const TEMPLATES = {
   }
 };
 
+// Helper to edit array of items
+const EditableList = ({ items = [], onChange: onListChange, placeholder = 'Add item...' }) => {
+  const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 outline-none';
+  return (
+    <div className="space-y-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex gap-2">
+          <input className={inputCls} placeholder={placeholder} value={item} onChange={e => { const n = [...items]; n[i] = e.target.value; onListChange(n); }} />
+          <button type="button" onClick={() => onListChange(items.filter((_, idx) => idx !== i))} className="text-red-500 font-bold px-2">✕</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onListChange([...items, ''])} className="text-blue-600 text-xs font-bold hover:underline">+ Add Item</button>
+    </div>
+  );
+};
+
 // ────────────────────────────────────────────────────────────────────
 // BLOCK EDITOR COMPONENTS (inline for all 15 types)
 // ────────────────────────────────────────────────────────────────────
@@ -160,18 +185,6 @@ const BlockDataEditor = ({ block, onChange }) => {
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 outline-none';
   const labelCls = 'block text-xs font-bold text-gray-600 mb-1';
 
-  // Helper to edit array of items
-  const EditableList = ({ items = [], onChange: onListChange, placeholder = 'Add item...' }) => (
-    <div className="space-y-2">
-      {items.map((item, i) => (
-        <div key={i} className="flex gap-2">
-          <input className={inputCls} value={item} onChange={e => { const n = [...items]; n[i] = e.target.value; onListChange(n); }} />
-          <button type="button" onClick={() => onListChange(items.filter((_, idx) => idx !== i))} className="text-red-500 font-bold px-2">✕</button>
-        </div>
-      ))}
-      <button type="button" onClick={() => onListChange([...items, ''])} className="text-blue-600 text-xs font-bold hover:underline">+ Add Item</button>
-    </div>
-  );
 
   const [uploading, setUploading] = useState(false);
 
@@ -498,7 +511,7 @@ const ServicePageBuilder = ({ blocks, setBlocks }) => {
 // ────────────────────────────────────────────────────────────────────
 // MAIN SERVICES PAGE COMPONENT
 // ────────────────────────────────────────────────────────────────────
-const ServicesPage = ({ selectedCity, cities = [] }) => {
+const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const [services, setServices] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -506,12 +519,14 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState(null);
   const [activeStep, setActiveStep] = useState(0); // 0-4
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState({
     categoryId: '',
     subCategoryId: '',
     title: '',
     description: '',
+    iconUrl: '',
     status: 'active',
     templateType: '',
     allCities: true,
@@ -530,25 +545,30 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
   const [maxImageUploads, setMaxImageUploads] = useState(5);
 
   // Builder States
+  const [features, setFeatures] = useState([]);
+  const [steps, setSteps] = useState([]);
   const [builderFields, setBuilderFields] = useState([]);
   const [builderWorkflow, setBuilderWorkflow] = useState({ workflowType: 'single_visit', totalVisits: 1, frequency: 'none' });
   const [builderWorkflowSteps, setBuilderWorkflowSteps] = useState([]);
   const [builderRules, setBuilderRules] = useState([]);
   const [pageBlocks, setPageBlocks] = useState([]);
+  const [templates, setTemplates] = useState([]);
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [srvRes, subRes, catRes] = await Promise.all([
+      const [srvRes, subRes, catRes, tempRes] = await Promise.all([
         api.get('/admin/services'),
         api.get('/admin/subcategories'),
-        api.get('/admin/categories')
+        api.get('/admin/categories'),
+        api.get('/admin/category-templates').catch(() => ({ data: { templates: [] } }))
       ]);
       setServices(srvRes.data.services || []);
       setSubCategories(subRes.data.data || subRes.data.subCategories || []);
       setCategories(catRes.data.categories || catRes.data.data || []);
+      setTemplates(tempRes.data?.templates || tempRes.data?.data || []);
     } catch (error) { console.error('Error fetching data:', error); }
     setLoading(false);
   };
@@ -560,11 +580,51 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
     setPackages([]);
     setQuoteInstructions('');
     setMaxImageUploads(5);
+    setFeatures([]);
+    setSteps([]);
     setBuilderFields([]);
     setBuilderWorkflow({ workflowType: 'single_visit', totalVisits: 1, frequency: 'none' });
     setBuilderWorkflowSteps([]);
     setBuilderRules([]);
     setPageBlocks([]);
+  };
+
+  const handleCategoryChange = (catId) => {
+    setFormData(prev => ({ ...prev, categoryId: catId, subCategoryId: '' }));
+    setActiveStep(0);
+    if (!catId) {
+      resetBuilderState();
+      return;
+    }
+
+    const selectedCat = categories.find(c => (c.id || c._id) === catId);
+    if (selectedCat) {
+      const template = templates.find(t => (t._id || t.id) === selectedCat.templateId);
+      if (template) {
+        let derivedType = 'package_base';
+        if (template.code === 'MINUTE_BASED') derivedType = 'minute_base';
+        else if (template.code === 'PACKAGE_BASED' || template.code === 'SERVICE_PAGE') derivedType = 'package_base';
+        else if (template.code === 'IMAGE_CONSULTANT') derivedType = 'image_base';
+        else if (template.code === 'MULTI_VISIT') derivedType = 'multi_visit';
+
+        setServiceType(derivedType);
+
+        if (template.code === 'SERVICE_PAGE' && template.blocks) {
+          setPageBlocks(template.blocks.map((b, i) => ({
+            _tempId: Date.now() + '_' + i,
+            blockType: b.blockType || b.id,
+            order: i,
+            isVisible: b.enabled !== false,
+            data: b.data || getDefaultBlockData(b.blockType || b.id || '')
+          })));
+        } else {
+          setPageBlocks([]);
+        }
+      } else {
+        setServiceType('package_base');
+        setPageBlocks([]);
+      }
+    }
   };
 
   const handleOpenWizard = async (srv = null) => {
@@ -576,6 +636,7 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
         subCategoryId: srv.subCategoryId?._id || srv.subCategoryId || '',
         title: srv.title,
         description: srv.description || '',
+        iconUrl: srv.iconUrl || '',
         status: srv.status,
         templateType: '',
         allCities: !srv.cityIds || srv.cityIds.length === 0,
@@ -585,6 +646,8 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
       setPricePerMinute(srv.pricePerMinute || '');
       setMinimumMinutes(srv.minimumMinutes || 30);
       setPackages(srv.packages || []);
+      setFeatures(srv.features || []);
+      setSteps(srv.steps || []);
       setQuoteInstructions(srv.quoteInstructions || '');
       setMaxImageUploads(srv.maxImageUploads || 5);
       try {
@@ -607,8 +670,14 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
       } catch (err) { console.error('Failed to load sub-details:', err); }
     } else {
       const defaultCityIds = selectedCity ? [selectedCity] : [];
-      setFormData({ categoryId: '', subCategoryId: '', title: '', description: '', status: 'active', templateType: '', allCities: !selectedCity, cityIds: defaultCityIds });
+      const defaultCatId = filterTemplateId
+        ? (categories.find(c => String(c.templateId || c.template) === String(filterTemplateId))?._id || categories.find(c => String(c.templateId || c.template) === String(filterTemplateId))?.id || '')
+        : '';
+      setFormData({ categoryId: defaultCatId, subCategoryId: '', title: '', description: '', iconUrl: '', status: 'active', templateType: '', allCities: !selectedCity, cityIds: defaultCityIds });
       resetBuilderState();
+      if (defaultCatId) {
+        handleCategoryChange(defaultCatId);
+      }
     }
     setIsModalOpen(true);
   };
@@ -654,6 +723,8 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
       packages: serviceType === 'package_base' ? packages : [],
       quoteInstructions: serviceType === 'image_base' ? quoteInstructions : null,
       maxImageUploads: serviceType === 'image_base' ? maxImageUploads : 5,
+      features,
+      steps,
       fields: builderFields.map(f => ({ ...f, options: typeof f.options === 'string' ? f.options.split(',').map(s => s.trim()).filter(Boolean) : (Array.isArray(f.options) ? f.options : []) })),
       workflow: { ...builderWorkflow, steps: builderWorkflowSteps },
       rules: builderRules,
@@ -694,10 +765,25 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
   const addField = () => setBuilderFields([...builderFields, { label: 'New Field', name: 'new_field_' + Date.now(), fieldType: 'text', isRequired: false, options: '', defaultValue: '', order: builderFields.length + 1 }]);
   const updateField = (i, k, v) => { const u = [...builderFields]; u[i][k] = v; setBuilderFields(u); };
   const removeField = (i) => setBuilderFields(builderFields.filter((_, idx) => idx !== i));
+
   // ── Workflow ops
-  const addWorkflowStep = () => setBuilderWorkflowSteps([...builderWorkflowSteps, { title: 'New Visit', daysAfterPreviousVisit: 1, schedulingType: 'auto_offset' }]);
+  const addWorkflowStep = () => {
+    const nextIdx = builderWorkflowSteps.length;
+    setBuilderWorkflowSteps([...builderWorkflowSteps, {
+      title: `Visit #${nextIdx + 1}`,
+      daysAfterPreviousVisit: nextIdx === 0 ? 0 : 15,
+      schedulingType: 'auto_offset'
+    }]);
+    setBuilderWorkflow(prev => ({ ...prev, totalVisits: nextIdx + 1 }));
+  };
   const updateWorkflowStep = (i, k, v) => { const u = [...builderWorkflowSteps]; u[i][k] = v; setBuilderWorkflowSteps(u); };
-  const removeWorkflowStep = (i) => setBuilderWorkflowSteps(builderWorkflowSteps.filter((_, idx) => idx !== i));
+  const removeWorkflowStep = (i) => {
+    const nextSteps = builderWorkflowSteps.filter((_, idx) => idx !== i);
+    setBuilderWorkflowSteps(nextSteps);
+    setBuilderWorkflow(prev => ({ ...prev, totalVisits: nextSteps.length }));
+  };
+
+
   // ── Pricing ops
   const addPricingRule = (type = 'conditional') => {
     if (type === 'formula') { if (builderRules.some(r => r.ruleType === 'formula')) { alert('Only one formula rule allowed'); return; } setBuilderRules([...builderRules, { ruleType: 'formula', formulaString: 'basePrice + 100' }]); }
@@ -710,13 +796,26 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
   const updatePackage = (i, k, v) => { const u = [...packages]; u[i][k] = v; setPackages(u); };
   const removePackage = (i) => setPackages(packages.filter((_, idx) => idx !== i));
 
-  const STEPS = [
-    { title: '1. Basic Info', key: 'basic' },
-    { title: '2. Service Type', key: 'type' },
-    { title: '3. Checkout Fields', key: 'fields' },
-    { title: '4. Page Builder', key: 'page' },
-    { title: '5. Workflow & Pricing', key: 'workflow' }
-  ];
+  const getSteps = () => {
+    const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+    const template = selectedCat ? templates.find(t => (t._id || t.id) === selectedCat.templateId) : null;
+
+    const baseSteps = [
+      { title: 'Basic Info', key: 'basic' },
+      { title: 'Configuration', key: 'type' }
+    ];
+
+    if (template && template.code === 'SERVICE_PAGE') {
+      baseSteps.push({ title: 'Page Builder', key: 'page' });
+    }
+
+    baseSteps.push({ title: 'Workflow & Pricing', key: 'workflow' });
+
+    return baseSteps.map((step, idx) => ({
+      ...step,
+      title: `${idx + 1}. ${step.title}`
+    }));
+  };
 
   const filteredServices = selectedCity
     ? services.filter(srv => {
@@ -733,6 +832,18 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
         return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
       })
     : services;
+
+  const finalFilteredServices = filterTemplateId
+    ? filteredServices.filter(srv => {
+        const catId = srv.categoryId?._id || srv.categoryId;
+        const category = categories.find(c => (c.id === catId || c._id === catId));
+        return category && String(category.templateId || category.template) === String(filterTemplateId);
+      })
+    : filteredServices;
+
+  const filteredCategoriesForForm = filterTemplateId
+    ? categories.filter(c => String(c.templateId || c.template) === String(filterTemplateId))
+    : categories;
 
   const typeColors = { minute_base: 'bg-blue-100 text-blue-700', package_base: 'bg-emerald-100 text-emerald-700', image_base: 'bg-purple-100 text-purple-700', multi_visit: 'bg-orange-100 text-orange-700' };
   const typeLabels = { minute_base: '⏱ Minute Base', package_base: '📦 Package', image_base: '📸 Image Quote', multi_visit: '🔄 Multi-Visit' };
@@ -764,7 +875,7 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredServices.map((srv) => (
+              {finalFilteredServices.map((srv) => (
                 <tr key={srv._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                   <td className="p-4 font-bold text-gray-800">{srv.title}</td>
                   <td className="p-4 text-gray-600 text-sm">{srv.categoryId?.title || 'Unknown'} &gt; {srv.subCategoryId?.title || '—'}</td>
@@ -782,7 +893,7 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                   </td>
                 </tr>
               ))}
-              {filteredServices.length === 0 && (
+              {finalFilteredServices.length === 0 && (
                 <tr><td colSpan="5" className="p-8 text-center text-gray-500">No services found.</td></tr>
               )}
             </tbody>
@@ -794,11 +905,12 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
       {isModalOpen && createPortal(
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden my-8">
+
             {/* Modal Header */}
             <div className="p-6 bg-gray-50 border-b border-gray-150 flex justify-between items-center">
               <div>
                 <h3 className="text-xl font-extrabold text-gray-800">{currentService ? 'Edit Service Configuration' : 'Create New Service'}</h3>
-                <p className="text-sm text-gray-500">5-step service builder with designable page</p>
+                <p className="text-sm text-gray-500">Service builder with designable page</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition-colors"><FiX className="w-5 h-5" /></button>
             </div>
@@ -806,7 +918,7 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
             <div className="flex flex-col md:flex-row" style={{ height: '600px' }}>
               {/* Sidebar */}
               <div className="w-full md:w-52 bg-gray-50 border-r border-gray-150 p-4 space-y-1 shrink-0">
-                {STEPS.map((step, idx) => (
+                {getSteps().map((step, idx) => (
                   <button key={idx} onClick={() => setActiveStep(idx)}
                     className={`w-full text-left px-4 py-2.5 text-sm font-bold rounded-xl transition-all flex items-center justify-between ${activeStep === idx ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}>
                     <span>{step.title}</span>
@@ -816,21 +928,39 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
               </div>
 
               {/* Step Content */}
-              <div className="flex-1 p-6 overflow-y-auto bg-white">
+              {(() => {
+                const wizardSteps = getSteps();
+                const safeActiveStep = activeStep >= wizardSteps.length ? wizardSteps.length - 1 : activeStep;
+                const currentStepKey = wizardSteps[safeActiveStep]?.key;
 
-                {/* ── STEP 1: BASIC INFO ── */}
-                {activeStep === 0 && (
-                  <div className="space-y-4">
-                    <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 1: Service Basics</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Category *</label>
-                        <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
-                          value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value, subCategoryId: '' })}>
-                          <option value="">Select Category</option>
-                          {categories.map(cat => (<option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.title}</option>))}
-                        </select>
-                      </div>
+                return (
+                  <div className="flex-1 p-6 overflow-y-auto bg-white">
+
+                    {/* ── STEP 1: BASIC INFO ── */}
+                    {currentStepKey === 'basic' && (
+                      <div className="space-y-4">
+                        <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 1: Service Basics</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Category *</label>
+                            <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
+                              value={formData.categoryId} onChange={e => handleCategoryChange(e.target.value)}>
+                              <option value="">Select Category</option>
+                              {filteredCategoriesForForm.map(cat => (<option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.title}</option>))}
+                            </select>
+                            {(() => {
+                              const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+                              if (!selectedCat) return null;
+                              const template = templates.find(t => (t._id || t.id) === selectedCat.templateId);
+                              return (
+                                <div className="mt-1.5">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold">
+                                    📋 Inherited Template: <span className="underline">{template ? template.name : 'No template configured'}</span>
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                          </div>
                       {(() => {
                         const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
                         if (!selectedCat || selectedCat.hasSubCategory === false) return null;
@@ -838,7 +968,7 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">SubCategory</label>
                             <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
-                              value={formData.subCategoryId} onChange={e => setFormData({ ...formData, subCategoryId: e.target.value })}>
+                                value={formData.subCategoryId} onChange={e => setFormData({ ...formData, subCategoryId: e.target.value })}>
                               <option value="">Select SubCategory</option>
                               {subCategories.filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId).map(sub => (
                                 <option key={sub._id} value={sub._id}>{sub.title}</option>
@@ -853,24 +983,71 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                       <input type="text" className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
                         value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Room Deep Cleaning" />
                     </div>
-                    {!currentService && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Quick Template (Optional)</label>
-                        <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
-                          value={formData.templateType} onChange={e => handleTemplateChange(e.target.value)}>
-                          <option value="">No template (start blank)</option>
-                          <option value="home_cleaning">🏠 Home Cleaning Template</option>
-                          <option value="pest_control">🐜 Pest Control Template</option>
-                          <option value="massage">💆 Massage Template</option>
-                          <option value="amc">🔧 AMC Services Template</option>
-                        </select>
-                        <p className="text-[11px] text-gray-400 mt-1">Templates auto-fill Steps 2–5. You can customize everything.</p>
-                      </div>
-                    )}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
                       <textarea className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
                         value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} placeholder="Explain this service..." />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Service Image</label>
+                      <div className="flex items-center gap-4 border border-dashed border-gray-200 p-4 rounded-xl bg-gray-50/50">
+                        {formData.iconUrl ? (
+                          <div className="relative w-20 h-20 bg-white border border-gray-150 rounded-lg overflow-hidden shrink-0 shadow-sm group">
+                            <img src={formData.iconUrl.startsWith('http') ? formData.iconUrl : toAssetUrl(formData.iconUrl)} alt="" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, iconUrl: '' })}
+                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold text-xs transition-opacity"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-20 h-20 bg-white border-2 border-dashed border-gray-200 rounded-lg shrink-0 flex items-center justify-center text-gray-400 text-xs font-semibold">
+                            No Image
+                          </div>
+                        )}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id="service-image-file"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                try {
+                                  setUploadingImage(true);
+                                  const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+                                  const url = await uploadToCloudinary(file, 'services');
+                                  if (url) {
+                                    setFormData(prev => ({ ...prev, iconUrl: url }));
+                                  }
+                                } catch (err) {
+                                  alert('Upload failed: ' + err.message);
+                                } finally {
+                                  setUploadingImage(false);
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor="service-image-file"
+                              className={`px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 rounded-lg text-xs font-bold cursor-pointer transition-colors ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}
+                            >
+                              {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                            </label>
+                            <span className="text-xs text-gray-455 font-semibold">Or enter URL directly:</span>
+                          </div>
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-400"
+                            value={formData.iconUrl}
+                            onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -882,6 +1059,20 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                         </select>
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">What you get (Features)</label>
+                        <p className="text-xs text-gray-500 mb-2">List the items included in this service</p>
+                        <EditableList items={features} onChange={setFeatures} placeholder="e.g. 30 Mins full body massage" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">How it works (Process Steps)</label>
+                        <p className="text-xs text-gray-500 mb-2">List the steps involved in service delivery</p>
+                        <EditableList items={steps} onChange={setSteps} placeholder="e.g. Therapist arrives with products" />
+                      </div>
+                    </div>
+
                     {/* City Availability */}
                     <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
                       <label className="block text-base font-bold text-gray-900 mb-3">🏙️ City Availability</label>
@@ -910,172 +1101,43 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                   </div>
                 )}
 
-                {/* ── STEP 2: SERVICE TYPE ── */}
-                {activeStep === 1 && (
+                {/* ── STEP 2: SERVICE CONFIGURATION ── */}
+                {currentStepKey === 'type' && (
                   <div className="space-y-4">
-                    <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 2: Select Service Type</h4>
-                    <p className="text-sm text-gray-500">Choose how this service is priced and delivered to customers.</p>
+                    <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 2: Service Configuration</h4>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {SERVICE_TYPES.map(type => {
-                        const Icon = type.icon;
-                        const isSelected = serviceType === type.key;
-                        const colorMap = {
-                          blue: { border: 'border-blue-500 bg-blue-50', badge: 'bg-blue-600', text: 'text-blue-700', ring: 'ring-blue-300' },
-                          emerald: { border: 'border-emerald-500 bg-emerald-50', badge: 'bg-emerald-600', text: 'text-emerald-700', ring: 'ring-emerald-300' },
-                          purple: { border: 'border-purple-500 bg-purple-50', badge: 'bg-purple-600', text: 'text-purple-700', ring: 'ring-purple-300' },
-                          orange: { border: 'border-orange-500 bg-orange-50', badge: 'bg-orange-600', text: 'text-orange-700', ring: 'ring-orange-300' }
-                        };
-                        const c = colorMap[type.color];
-                        return (
-                          <button key={type.key} type="button" onClick={() => setServiceType(type.key)}
-                            className={`p-4 border-2 rounded-xl text-left transition-all ${isSelected ? `${c.border} ring-2 ${c.ring} shadow-md` : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? c.badge : 'bg-gray-200'}`}>
-                                <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-500'}`} />
-                              </div>
-                              <span className={`font-bold text-sm ${isSelected ? c.text : 'text-gray-700'}`}>{type.label}</span>
-                              {isSelected && <span className="ml-auto text-green-500 font-black text-lg">✓</span>}
-                            </div>
-                            <p className="text-xs text-gray-500">{type.desc}</p>
-                            <p className={`text-xs font-semibold mt-1 ${isSelected ? c.text : 'text-gray-400'}`}>{type.example}</p>
-                          </button>
-                        );
-                      })}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+                      <div className="text-2xl">⚙️</div>
+                      <div>
+                        <h5 className="font-bold text-blue-900 text-sm">Inherited Service Configuration</h5>
+                        <p className="text-xs text-blue-700 mt-0.5">
+                          This service is configured as <span className="font-extrabold uppercase">{serviceType.replace(/_/g, ' ')}</span>, automatically inherited from its category template.
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Type-specific fields */}
-                    <div className="mt-4">
-                      {serviceType === 'minute_base' && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
-                          <h5 className="font-bold text-blue-800 text-sm">⏱ Minute Base Configuration</h5>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-bold text-blue-700 mb-1">Price per Minute (₹)</label>
-                              <input type="number" className="w-full p-2.5 border border-blue-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
-                                value={pricePerMinute} onChange={e => setPricePerMinute(e.target.value)} placeholder="e.g. 5" />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-bold text-blue-700 mb-1">Minimum Minutes</label>
-                              <input type="number" className="w-full p-2.5 border border-blue-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
-                                value={minimumMinutes} onChange={e => setMinimumMinutes(parseInt(e.target.value) || 30)} placeholder="30" />
-                            </div>
-                          </div>
-                          <p className="text-xs text-blue-600">Customer will be charged ₹{pricePerMinute || 0} × minutes spent at the job site. Min booking = {minimumMinutes} min.</p>
-                        </div>
-                      )}
-
-                      {serviceType === 'package_base' && (
-                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
-                          <div className="flex justify-between items-center">
-                            <h5 className="font-bold text-emerald-800 text-sm">📦 Package Configuration</h5>
-                            <button type="button" onClick={addPackage} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">+ Add Package</button>
-                          </div>
-                          {packages.length === 0 && <p className="text-xs text-emerald-600 text-center py-3">No packages yet. Click "Add Package" to create pricing tiers.</p>}
-                          {packages.map((pkg, i) => (
-                            <div key={i} className="p-3 bg-white border border-emerald-200 rounded-lg space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs font-bold text-emerald-600">Package #{i + 1}</span>
-                                <div className="flex items-center gap-2">
-                                  <label className="flex items-center gap-1 text-xs">
-                                    <input type="checkbox" checked={pkg.isPopular} onChange={e => updatePackage(i, 'isPopular', e.target.checked)} /> Popular
-                                  </label>
-                                  <button type="button" onClick={() => removePackage(i)} className="text-xs font-bold text-red-500 hover:text-red-700">Remove</button>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <input className="p-2 border border-gray-300 rounded-lg text-xs" value={pkg.title} placeholder="Package title" onChange={e => updatePackage(i, 'title', e.target.value)} />
-                                <input className="p-2 border border-gray-300 rounded-lg text-xs" value={pkg.duration} placeholder="Duration (e.g. 2-3 hrs)" onChange={e => updatePackage(i, 'duration', e.target.value)} />
-                                <input type="number" className="p-2 border border-gray-300 rounded-lg text-xs" value={pkg.price} placeholder="Price ₹" onChange={e => updatePackage(i, 'price', parseFloat(e.target.value) || 0)} />
-                                <input type="number" className="p-2 border border-gray-300 rounded-lg text-xs" value={pkg.originalPrice || ''} placeholder="Original Price ₹ (strikethrough)" onChange={e => updatePackage(i, 'originalPrice', parseFloat(e.target.value) || null)} />
-                              </div>
-                              <input className="w-full p-2 border border-gray-300 rounded-lg text-xs" value={pkg.description} placeholder="Short description" onChange={e => updatePackage(i, 'description', e.target.value)} />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {serviceType === 'image_base' && (
-                        <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-3">
-                          <h5 className="font-bold text-purple-800 text-sm">📸 Image Quote Configuration</h5>
-                          <div>
-                            <label className="block text-xs font-bold text-purple-700 mb-1">Instructions for User</label>
-                            <textarea className="w-full p-2.5 border border-purple-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-purple-400" rows={3}
-                              value={quoteInstructions} onChange={e => setQuoteInstructions(e.target.value)}
-                              placeholder="e.g. Please upload clear images of the area that needs work. Include multiple angles." />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-purple-700 mb-1">Max Image Uploads</label>
-                            <input type="number" min={1} max={10} className="w-32 p-2 border border-purple-300 rounded-lg text-sm bg-white outline-none"
-                              value={maxImageUploads} onChange={e => setMaxImageUploads(parseInt(e.target.value) || 5)} />
-                          </div>
-                          <p className="text-xs text-purple-600">User uploads photos → Vendor reviews → Sends quote → Customer confirms & pays.</p>
-                        </div>
-                      )}
-
-                      {serviceType === 'multi_visit' && (
-                        <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                          <h5 className="font-bold text-orange-800 text-sm">🔄 Multi-Visit Service</h5>
-                          <p className="text-xs text-orange-600 mt-1">Configure visit schedule and workflow in Step 5 (Workflow & Pricing).</p>
-                        </div>
-                      )}
+                    {/* All pricing is managed in Pricing Matrix tab */}
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
+                      <div className="text-2xl mt-0.5">💰</div>
+                      <div>
+                        <h5 className="font-bold text-green-800 text-sm">Configure Pricing in the Pricing Matrix tab</h5>
+                        <p className="text-xs text-green-700 mt-1">
+                          All pricing for this service (price per minute, fixed rates, GST, commissions) is managed from the <strong>Pricing Matrix</strong> tab — a single consistent source of truth for all prices across templates.
+                        </p>
+                        <p className="text-xs text-green-600 mt-1.5 font-semibold">
+                          After saving this service → go to Pricing Matrix → Add Pricing Config
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* ── STEP 3: CHECKOUT FIELDS ── */}
-                {activeStep === 2 && (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <h4 className="text-base font-bold text-gray-800">Step 3: Dynamic Checkout Fields</h4>
-                      <button onClick={addField} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">+ Add Field</button>
-                    </div>
-                    <div className="space-y-4">
-                      {builderFields.map((field, idx) => (
-                        <div key={idx} className="p-4 border border-gray-200 rounded-xl bg-gray-50 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-indigo-600">Field #{idx + 1}</span>
-                            <button onClick={() => removeField(idx)} className="text-xs font-bold text-red-600 hover:text-red-800">Delete</button>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div><label className="block text-[10px] font-bold text-gray-700 mb-1">Label (shown to user)</label>
-                              <input type="text" className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white" value={field.label} onChange={e => updateField(idx, 'label', e.target.value)} /></div>
-                            <div><label className="block text-[10px] font-bold text-gray-700 mb-1">Variable Name</label>
-                              <input type="text" className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-mono" value={field.name} onChange={e => updateField(idx, 'name', e.target.value)} /></div>
-                            <div><label className="block text-[10px] font-bold text-gray-700 mb-1">Field Type</label>
-                              <select className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white" value={field.fieldType} onChange={e => updateField(idx, 'fieldType', e.target.value)}>
-                                <option value="text">Text Input</option>
-                                <option value="number">Number Input</option>
-                                <option value="dropdown">Dropdown</option>
-                                <option value="radio">Radio Buttons</option>
-                                <option value="checkbox">Checkbox</option>
-                                <option value="image">Image Upload</option>
-                                <option value="location">Location Picker</option>
-                              </select></div>
-                          </div>
-                          {(field.fieldType === 'dropdown' || field.fieldType === 'radio') && (
-                            <div><label className="block text-[10px] font-bold text-gray-700 mb-1">Options (comma separated)</label>
-                              <input type="text" placeholder="Option 1, Option 2, Option 3" className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white"
-                                value={typeof field.options === 'string' ? field.options : (Array.isArray(field.options) ? field.options.join(', ') : '')}
-                                onChange={e => updateField(idx, 'options', e.target.value)} /></div>
-                          )}
-                          <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
-                              <input type="checkbox" checked={field.isRequired} onChange={e => updateField(idx, 'isRequired', e.target.checked)} /> Required
-                            </label>
-                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
-                              <input type="checkbox" checked={field.showToUser !== false} onChange={e => updateField(idx, 'showToUser', e.target.checked)} /> Show to User
-                            </label>
-                          </div>
-                        </div>
-                      ))}
-                      {builderFields.length === 0 && <div className="text-center py-6 text-gray-400 text-sm">No checkout fields yet. Click "+ Add Field".</div>}
-                    </div>
-                  </div>
-                )}
+
+
+
 
                 {/* ── STEP 4: PAGE BUILDER ── */}
-                {activeStep === 3 && (
+                {currentStepKey === 'page' && (
                   <div className="space-y-3">
                     <div className="border-b pb-2">
                       <h4 className="text-base font-bold text-gray-800">Step 4: Design Your Service Page</h4>
@@ -1086,21 +1148,56 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                 )}
 
                 {/* ── STEP 5: WORKFLOW & PRICING ── */}
-                {activeStep === 4 && (
+                {currentStepKey === 'workflow' && (
                   <div className="space-y-4">
                     <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 5: Scheduling Workflow</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div><label className="block text-xs font-semibold text-gray-700 mb-1">Workflow Type</label>
                         <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none"
-                          value={builderWorkflow.workflowType} onChange={e => setBuilderWorkflow({ ...builderWorkflow, workflowType: e.target.value })}>
+                          value={builderWorkflow.workflowType} onChange={e => {
+                            const val = e.target.value;
+                            setBuilderWorkflow(prev => ({ ...prev, workflowType: val }));
+                            if (val === 'multi_visit' && builderWorkflowSteps.length === 0) {
+                              const count = builderWorkflow.totalVisits || 2;
+                              const initialSteps = [];
+                              for (let i = 0; i < count; i++) {
+                                initialSteps.push({
+                                  title: `Visit #${i + 1}`,
+                                  daysAfterPreviousVisit: i === 0 ? 0 : 15,
+                                  schedulingType: 'auto_offset'
+                                });
+                              }
+                              setBuilderWorkflowSteps(initialSteps);
+                            }
+                          }}>
                           <option value="single_visit">Single Visit</option>
                           <option value="multi_visit">Multi-Visit</option>
                           <option value="recurring">Recurring (AMC)</option>
                         </select></div>
                       {builderWorkflow.workflowType !== 'single_visit' && (
                         <div><label className="block text-xs font-semibold text-gray-700 mb-1">Total Visits</label>
-                          <input type="number" className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none"
-                            value={builderWorkflow.totalVisits} onChange={e => setBuilderWorkflow({ ...builderWorkflow, totalVisits: parseInt(e.target.value) || 1 })} /></div>
+                          <input type="number" min={1} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none"
+                            value={builderWorkflow.totalVisits} onChange={e => {
+                              const count = parseInt(e.target.value) || 1;
+                              setBuilderWorkflow(prev => ({ ...prev, totalVisits: count }));
+                              if (builderWorkflow.workflowType === 'multi_visit') {
+                                setBuilderWorkflowSteps(prev => {
+                                  const currentSteps = [...prev];
+                                  if (currentSteps.length < count) {
+                                    for (let i = currentSteps.length; i < count; i++) {
+                                      currentSteps.push({
+                                        title: `Visit #${i + 1}`,
+                                        daysAfterPreviousVisit: i === 0 ? 0 : 15,
+                                        schedulingType: 'auto_offset'
+                                      });
+                                    }
+                                  } else if (currentSteps.length > count) {
+                                    return currentSteps.slice(0, count);
+                                  }
+                                  return currentSteps;
+                                });
+                              }
+                            }} /></div>
                       )}
                       {builderWorkflow.workflowType === 'recurring' && (
                         <div><label className="block text-xs font-semibold text-gray-700 mb-1">Frequency</label>
@@ -1176,8 +1273,9 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                     </div>
                   </div>
                 )}
-
               </div>
+            );
+          })()}
             </div>
 
             {/* Modal Footer */}
@@ -1189,7 +1287,7 @@ const ServicesPage = ({ selectedCity, cities = [] }) => {
                     <FiChevronLeft /> Back
                   </button>
                 )}
-                {activeStep < 4 ? (
+                {activeStep < getSteps().length - 1 ? (
                   <button type="button" onClick={() => setActiveStep(activeStep + 1)} className="px-5 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-md flex items-center gap-1 font-bold text-sm">
                     Next <FiChevronRight />
                   </button>

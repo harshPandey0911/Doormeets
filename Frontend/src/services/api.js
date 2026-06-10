@@ -145,27 +145,14 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         console.error('RefreshToken failed:', refreshError);
-<<<<<<< HEAD
-        
-        // If refresh fails with 401/403, the token is dead. Clear it to prevent infinite loops.
-        if (refreshError.response?.status === 401 || refreshError.response?.status === 403 || refreshError.response?.status === 400) {
-            sessionStorage.removeItem(access);
-            sessionStorage.removeItem(refresh);
-            localStorage.removeItem(access);
-            localStorage.removeItem(refresh);
-            
-            // Redirect or reload to force app state update
-            window.location.reload();
-=======
         if (refreshError.response) {
           console.error('RefreshToken response data:', refreshError.response.data);
         }
         
-        // If the refresh token itself is invalid or expired (401), log the user out
-        if (refreshError.response?.status === 401) {
+        // If refresh fails with 401/403/400, the token is dead. Clear it to prevent infinite loops.
+        if (refreshError.response?.status === 401 || refreshError.response?.status === 403 || refreshError.response?.status === 400) {
           console.warn('Refresh token invalid or expired. Logging out...');
           handleLogout(role);
->>>>>>> 4cdc0fed8a0cec2a6a6b7132c71399e3109fa0c1
         }
 
         processQueue(refreshError, null);

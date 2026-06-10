@@ -52,24 +52,30 @@ function App() {
               <Toaster
                 position="top-center"
                 reverseOrder={false}
+                containerStyle={{ zIndex: 999999 }}
                 toastOptions={{
-                  duration: 2000, // Global default (reduced from 3000)
+                  duration: 2000,
                   style: {
                     background: '#333',
                     color: '#fff',
                     borderRadius: '10px',
                     padding: '12px 20px',
+                    zIndex: 999999,
                   },
                   success: {
-                    duration: 1000, // 1 second as requested
+                    duration: 1000,
                     style: {
                       background: '#10B981',
+                      color: '#fff',
+                      zIndex: 999999,
                     },
                   },
                   error: {
-                    duration: 2000, // Reduced from 4000
+                    duration: 3000,
                     style: {
                       background: '#EF4444',
+                      color: '#fff',
+                      zIndex: 999999,
                     },
                   },
                 }}
