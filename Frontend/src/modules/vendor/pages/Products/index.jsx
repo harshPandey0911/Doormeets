@@ -146,8 +146,8 @@ const ServicesPage = () => {
               <div key={p.id} className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 flex gap-4 items-center shadow-sm border border-gray-100 hover:shadow-md transition-all">
                 <div className="relative">
                    <img src={p.iconUrl || 'https://via.placeholder.com/100'} alt={p.title} className="w-16 h-16 rounded-2xl object-cover bg-gray-50 shadow-inner border border-gray-100" />
-                   <span className={`absolute -top-1 -right-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter shadow-sm ${p.type === 'product' ? 'bg-blue-500 text-white' : 'bg-teal-500 text-white'}`}>
-                     {p.type || 'Service'}
+                   <span className={`absolute -top-1 -right-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter shadow-sm bg-teal-500 text-white`}>
+                     Service
                    </span>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -193,31 +193,11 @@ const ServicesPage = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Type Selection */}
-                <div className="flex bg-gray-100 p-1 rounded-xl">
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setForm({...form, type: 'service', categoryId: '', isPriceDisclosed: true});
-                    }}
-                    className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${form.type === 'service' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-400'}`}
-                  >
-                    Service
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setForm({...form, type: 'product', categoryId: ''});
-                    }}
-                    className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${form.type === 'product' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}
-                  >
-                    Product / Material
-                  </button>
-                </div>
+
 
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">Item Name / Title *</label>
-                  <input type="text" required value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all shadow-inner" placeholder={form.type === 'service' ? "e.g. AC Deep Cleaning" : "e.g. Reti (1 Tractor)"} />
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">Service Name / Title *</label>
+                  <input type="text" required value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all shadow-inner" placeholder="e.g. AC Deep Cleaning" />
                 </div>
 
                 <div>
@@ -230,7 +210,7 @@ const ServicesPage = () => {
                   >
                     <option value="">Select Category</option>
                     {categories
-                      .filter(c => c.categoryType === form.type)
+                      .filter(c => c.categoryType === 'service' || !c.categoryType)
                       .map(c => (
                         <option key={c.id} value={c.id}>{c.title}</option>
                       ))
@@ -238,25 +218,7 @@ const ServicesPage = () => {
                   </select>
                 </div>
 
-                {/* Price Disclosure Toggle - Only for Products */}
-                {form.type === 'product' && (
-                  <div className="flex bg-gray-50 border border-gray-100 p-1 rounded-2xl shadow-inner animate-in fade-in zoom-in-95 duration-300">
-                    <button 
-                      type="button" 
-                      onClick={() => setForm({...form, isPriceDisclosed: true})}
-                      className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${form.isPriceDisclosed ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
-                    >
-                      Selling Price
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setForm({...form, isPriceDisclosed: false, basePrice: 0, discountPrice: 0})}
-                      className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${!form.isPriceDisclosed ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
-                    >
-                      Not Disclosed
-                    </button>
-                  </div>
-                )}
+
 
                 {form.isPriceDisclosed && (
                   <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -294,7 +256,7 @@ const ServicesPage = () => {
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Publishing...</span>
                     </div>
-                  ) : `Publish ${form.type === 'service' ? 'Service' : 'Product'}`}
+                  ) : `Publish Service`}
                 </button>
               </form>
             </div>

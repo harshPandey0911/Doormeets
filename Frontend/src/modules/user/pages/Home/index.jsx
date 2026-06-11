@@ -29,6 +29,7 @@ import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
 import ScrapPromotionCard from './components/ScrapPromotionCard';
+import FeaturedSection from '../../components/premium/FeaturedSection';
 import PromoTicker from './components/PromoTicker';
 import promoService from '../../../../services/promoService';
 
@@ -631,7 +632,18 @@ const Home = () => {
             <>
               {/* Sliding Offer Banners */}
               {!isSearchOpen && activePromos.length > 0 && <PromoTicker promos={activePromos} />}
-              {!isSearchOpen && <OfferBannerSlider banners={offerBanners} />}
+              {!isSearchOpen && (
+                <OfferBannerSlider 
+                  banners={homeContent?.banners && homeContent.banners.length > 0 
+                    ? homeContent.banners.map(b => ({
+                        ...b,
+                        imageUrl: toAssetUrl(b.imageUrl),
+                        link: b.link || b.slug || ''
+                      }))
+                    : offerBanners
+                  } 
+                />
+              )}
 
               {/* Hero Section - Promo Carousel */}
               {homeContent?.isPromosVisible !== false && (
@@ -905,6 +917,17 @@ const Home = () => {
                   </div>
                 </motion.section>
               )}
+
+              {/* ─── Featured Sections (Admin Curated) ─── */}
+              {homeContent?.isFeaturedSectionsVisible !== false &&
+                Array.isArray(homeContent?.featuredSections) &&
+                homeContent.featuredSections.length > 0 &&
+                homeContent.featuredSections.map((section, idx) => (
+                  <motion.div key={idx} variants={itemVariants}>
+                    <FeaturedSection section={section} />
+                  </motion.div>
+                ))
+              }
 
               {/* Curated Services */}
               {homeContent?.isCuratedVisible !== false && (

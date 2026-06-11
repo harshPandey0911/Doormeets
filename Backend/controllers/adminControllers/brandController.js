@@ -26,7 +26,7 @@ const getAllBrands = async (req, res) => {
     const brands = await Brand.find(query)
       // .populate('categoryIds', 'title slug')
       .select('-__v')
-      .sort({ createdAt: -1 })
+      .sort({ order: 1, createdAt: -1 })
       .lean();
 
     // Helper function to clean MongoDB _id fields from nested objects
@@ -81,6 +81,7 @@ const getAllBrands = async (req, res) => {
           badge: brand.badge,
           routePath: brand.routePath,
           status: brand.status,
+          order: brand.order !== undefined ? brand.order : 0,
           isPopular: brand.isPopular,
           isFeatured: brand.isFeatured,
           rating: brand.rating,
@@ -154,6 +155,7 @@ const getBrandById = async (req, res) => {
         badge: brand.badge,
         routePath: brand.routePath,
         status: brand.status,
+        order: brand.order !== undefined ? brand.order : 0,
         isPopular: brand.isPopular,
         isFeatured: brand.isFeatured,
         rating: brand.rating,
@@ -201,7 +203,8 @@ const createBrand = async (req, res) => {
       page,
       sections,
       cityIds,
-      subCategoryIds
+      subCategoryIds,
+      order
     } = req.body;
 
     // Validate cities if provided
@@ -279,6 +282,7 @@ const createBrand = async (req, res) => {
         existingBrand.page = sanitizedPage;
         existingBrand.sections = sanitizedSections;
         existingBrand.cityIds = cityIds || [];
+        existingBrand.order = order !== undefined ? Number(order) : 0;
         existingBrand.status = SERVICE_STATUS.ACTIVE;
         existingBrand.createdBy = req.user.id;
         
@@ -297,6 +301,7 @@ const createBrand = async (req, res) => {
             logo: existingBrand.logo,
             badge: existingBrand.badge,
             routePath: existingBrand.routePath,
+            order: existingBrand.order,
             page: existingBrand.page,
             sections: existingBrand.sections,
             createdAt: existingBrand.createdAt,
@@ -322,6 +327,7 @@ const createBrand = async (req, res) => {
       page: sanitizedPage,
       sections: sanitizedSections,
       cityIds: cityIds || [],
+      order: order !== undefined ? Number(order) : 0,
       status: SERVICE_STATUS.ACTIVE,
       createdBy: req.user.id
     });
@@ -339,6 +345,7 @@ const createBrand = async (req, res) => {
         logo: brand.logo,
         badge: brand.badge,
         routePath: brand.routePath,
+        order: brand.order,
         page: brand.page,
         sections: brand.sections,
         createdAt: brand.createdAt,
@@ -393,7 +400,8 @@ const updateBrand = async (req, res) => {
       sections,
       status,
       cityIds: updateCityIds,
-      subCategoryIds
+      subCategoryIds,
+      order
     } = req.body;
 
     const categoryIds = providedCategoryIds || (categoryId ? [categoryId] : undefined);
@@ -470,6 +478,7 @@ const updateBrand = async (req, res) => {
         brand.sections = sections;
       }
     }
+    if (order !== undefined) brand.order = Number(order);
     if (status !== undefined) brand.status = status;
 
     await brand.save();
@@ -486,6 +495,7 @@ const updateBrand = async (req, res) => {
         logo: brand.logo,
         badge: brand.badge,
         routePath: brand.routePath,
+        order: brand.order,
         page: brand.page,
         sections: brand.sections,
         createdAt: brand.createdAt,

@@ -96,11 +96,8 @@ const getChildRoute = (parentRoute, childName) => {
     "/admin/user-categories": {
       "Home": "/admin/user-categories/home",
       "Manage Professions": "/admin/user-categories/professions",
-      "Manage Categories": "/admin/user-categories/categories",
-      "Manage SubCategories": "/admin/user-categories/subcategories",
-      "Manage Services": "/admin/user-categories/sections",
-      "Manage Brands": "/admin/user-categories/brands",
-      "Pricing Matrix": "/admin/user-categories/pricing"
+      "Category Templates": "/admin/user-categories/templates",
+      "Featured Sections": "/admin/user-categories/featured-sections"
     },
     "/admin/payments": {
       "Payment Overview": "/admin/payments/overview",

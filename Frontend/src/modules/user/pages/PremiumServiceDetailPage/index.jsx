@@ -8,37 +8,115 @@ import BottomCheckoutBar from '../../components/premium/BottomCheckoutBar';
 import PriceTag from '../../components/premium/PriceTag';
 import { buildCartItemData, toAssetUrl } from '../../components/premium/cartUtils';
 import { useCart } from '../../../../context/CartContext';
+import { useCity } from '../../../../context/CityContext';
 import api from '../../../../services/api';
 
+const getDetailDummyImage = (title) => {
+  const t = (title || '').toLowerCase();
+  if (t.includes('massage') || t.includes('spa') || t.includes('wellness') || t.includes('therapy')) {
+    return 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('screen') || t.includes('display') || t.includes('glass')) {
+    return 'https://images.unsplash.com/photo-1597740985671-2a8a3b80502e?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('motherboard') || t.includes('board') || t.includes('circuit') || t.includes('ic') || t.includes('repair')) {
+    return 'https://images.unsplash.com/photo-1517059224940-d4af9eec41b7?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('switch') || t.includes('socket') || t.includes('button') || t.includes('plug') || t.includes('board connection')) {
+    return 'https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=800&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('cleaning') || t.includes('wash') || t.includes('service')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=800&auto=format&fit=crop&q=80';
+};
+
 const PremiumServiceDetailPage = () => {
+  const { currentCity } = useCity();
+  const cityId = currentCity?._id || currentCity?.id;
   const { slug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { addToCart, cartCount } = useCart();
 
-  const service = location.state?.service || null;
+  const [service, setService] = useState(location.state?.service || null);
   const brand = location.state?.brand || null;
   const category = location.state?.category || null;
 
-  const features = useMemo(() => service?.features || [], [service]);
-  const steps = service?.steps || [];
+  const [pageBlocks, setPageBlocks] = useState([]);
+
+  const features = useMemo(() => {
+    if (pageBlocks.length > 0) {
+      const whatsIncluded = pageBlocks.find(b => b.blockType === 'whats_included');
+      if (whatsIncluded?.data?.items?.length) {
+        return whatsIncluded.data.items;
+      }
+    }
+    return service?.features || [];
+  }, [service, pageBlocks]);
+
+  const steps = useMemo(() => {
+    if (pageBlocks.length > 0) {
+      const processBlock = pageBlocks.find(b => b.blockType === 'process');
+      if (processBlock?.data?.steps?.length) {
+        return processBlock.data.steps.map(s => s.title || s);
+      }
+    }
+    return service?.steps || [];
+  }, [service, pageBlocks]);
 
   const [fields, setFields] = useState([]);
   const [pricingRules, setPricingRules] = useState([]);
   const [dynamicAnswers, setDynamicAnswers] = useState({});
-  const [calculatedPrice, setCalculatedPrice] = useState(service?.price || 0);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [calculatedPrice, setCalculatedPrice] = useState(0);
+
+  const [selectedDuration, setSelectedDuration] = useState(30);
+
+  useEffect(() => {
+    if (service?.serviceType === 'package_base' && service?.packages?.length > 0) {
+      const popular = service.packages.find(p => p.isPopular);
+      setSelectedPackage(popular || service.packages[0]);
+    }
+    if (service?.serviceType === 'minute_base') {
+      setSelectedDuration(Number(service.minimumMinutes) || 30);
+    }
+  }, [service?._id, service?.id]);
+
+  const durationOptions = useMemo(() => {
+    const minMins = Number(service?.minimumMinutes) || 30;
+    const options = [minMins];
+    [45, 60, 90, 120, 150, 180, 240].forEach(mins => {
+      if (mins > minMins && !options.includes(mins)) {
+        options.push(mins);
+      }
+    });
+    return options.sort((a, b) => a - b);
+  }, [service?._id, service?.id, service?.minimumMinutes]);
+
+  const formatDurationText = (mins) => {
+    if (mins < 60) return `${mins} Mins`;
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    if (rem === 0) return `${hrs} Hour${hrs > 1 ? 's' : ''}`;
+    return `${hrs} Hr ${rem} Min`;
+  };
   const [uploadingFiles, setUploadingFiles] = useState({});
 
   useEffect(() => {
     const fetchDynamicDetails = async () => {
-      if (!service?._id && !service?.id) return;
-      const sId = service._id || service.id;
+      const sId = service?._id || service?.id || slug;
+      if (!sId) return;
       try {
-        const res = await api.get(`/public/services/${sId}/dynamic-details`);
+        const res = await api.get(`/public/services/${sId}/dynamic-details${cityId ? `?cityId=${cityId}` : ''}`);
         if (res.data.success) {
+          if (res.data.service) {
+            setService(res.data.service);
+          }
           setFields(res.data.fields || []);
           setPricingRules(res.data.pricingRules || []);
-          
+          setPageBlocks(res.data.pageBlocks || []);
+
           const initialAnswers = {};
           (res.data.fields || []).forEach(f => {
             initialAnswers[f.name] = f.defaultValue || '';
@@ -50,11 +128,31 @@ const PremiumServiceDetailPage = () => {
       }
     };
     fetchDynamicDetails();
-  }, [service]);
+  }, [slug, cityId]);
 
   useEffect(() => {
     if (!service) return;
-    let price = service.price || 0;
+
+    let basePrice = 0;
+    if (service.serviceType === 'package_base' && service.packages && service.packages.length > 0) {
+      basePrice = selectedPackage?.price || 0;
+    } else if (service.serviceType === 'dynamic_base') {
+      basePrice = 0;
+    } else if (service.serviceType === 'minute_base') {
+      const minPrice = Number(service.basePrice || service.price || 0);
+      const minMins = Number(service.minimumMinutes || 30);
+      const extraRatePer10Mins = Number(service.pricePerMinute || 0);
+      if (selectedDuration <= minMins) {
+        basePrice = minPrice;
+      } else {
+        const extraMins = selectedDuration - minMins;
+        basePrice = minPrice + (extraRatePer10Mins * (extraMins / 10));
+      }
+    } else {
+      basePrice = Number(service.basePrice || service.price || service.pricePerMinute || 0);
+    }
+
+    let price = basePrice;
     if (pricingRules.length === 0) {
       setCalculatedPrice(price);
       return;
@@ -66,7 +164,7 @@ const PremiumServiceDetailPage = () => {
     if (formulaRule && formulaRule.formulaString) {
       try {
         let formula = formulaRule.formulaString;
-        const vars = { basePrice: service.price || 0, ...dynamicAnswers };
+        const vars = { basePrice, ...dynamicAnswers };
         Object.keys(vars).forEach(key => {
           const val = parseFloat(vars[key]) || 0;
           const regex = new RegExp(`\\b${key}\\b`, 'g');
@@ -107,7 +205,7 @@ const PremiumServiceDetailPage = () => {
     });
 
     setCalculatedPrice(Math.max(0, price));
-  }, [dynamicAnswers, pricingRules, service]);
+  }, [dynamicAnswers, pricingRules, service, selectedPackage, selectedDuration]);
 
   const handleFileUpload = async (fieldName, file) => {
     try {
@@ -175,6 +273,23 @@ const PremiumServiceDetailPage = () => {
       });
 
     const cartData = buildCartItemData({ service, category, brand });
+    if (service?.serviceType === 'package_base' && selectedPackage) {
+      cartData.card.title = `${service.title} - ${selectedPackage.title}`;
+      if (selectedPackage.duration) cartData.card.duration = selectedPackage.duration;
+      dynamicFieldsPayload.push({
+        name: 'Selected Package',
+        label: 'Selected Package',
+        value: selectedPackage.title
+      });
+    }
+    if (service?.serviceType === 'minute_base') {
+      cartData.card.duration = `${selectedDuration} Minutes`;
+      dynamicFieldsPayload.push({
+        name: 'Duration',
+        label: 'Duration',
+        value: `${selectedDuration} Minutes`
+      });
+    }
     cartData.price = calculatedPrice;
     cartData.unitPrice = calculatedPrice;
     if (cartData.card) {
@@ -191,7 +306,7 @@ const PremiumServiceDetailPage = () => {
   if (!service) {
     return (
       <div className="min-h-screen bg-white p-6">
-        <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
+        <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/home')} />
         <div className="mx-auto max-w-3xl px-4 py-12 text-center">
           <div className="rounded-[28px] border border-dashed border-gray-200 bg-white p-10 shadow-sm">
             <h1 className="text-2xl font-black text-gray-900">Service not available</h1>
@@ -204,13 +319,13 @@ const PremiumServiceDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#ffffff_38%,#ffffff_100%)] pb-28">
-      <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
+      <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto max-w-4xl pt-[8px] pb-4 md:px-6">
 
         <div className="overflow-hidden bg-white shadow-[0_18px_60px_rgba(17,24,39,0.08)] md:rounded-4xl md:border md:border-gray-100">
-          <div className="relative h-screen md:h-[460px]">
-            <img src={service.image ? toAssetUrl(service.image) : service.image} alt={service.title} className="h-full w-full object-cover" />
+          <div className="relative h-80 md:h-[460px]">
+            <img src={service.image ? toAssetUrl(service.image) : getDetailDummyImage(service.title)} alt={service.title} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute left-5 top-5 flex gap-2 text-white">
               <button className="rounded-full bg-black/25 p-3 backdrop-blur"><FiHeart /></button>
@@ -221,240 +336,412 @@ const PremiumServiceDetailPage = () => {
               <h1 className="mt-2 text-3xl font-normal md:text-5xl">
                 {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
               </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-normal text-white/90">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiStar className="text-amber-300" /> {service.rating || 4.8}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiClock /> 45 mins</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 backdrop-blur"><FiShield /> Verified</span>
-              </div>
+
             </div>
           </div>
         </div>
 
         <div className="px-4 md:px-0">
 
-        <section className="mt-3 py-2 px-1">
-          <div className="flex items-center justify-between gap-3">
-            <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} />
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-normal text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - calculatedPrice) / service.originalPrice) * 100) : 25}%</span>
-          </div>
-          <p className="mt-2 text-sm leading-7 text-gray-600 font-normal">{service.description}</p>
-        </section>
-
-        {fields.filter(f => f.showToUser !== false).length > 0 && (
           <section className="mt-3 py-2 px-1">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="p-1.5 bg-orange-50 text-[#B33A35] rounded-lg">
-                <FiSliders className="w-5 h-5" />
-              </span>
-              <h2 className="text-xl font-normal text-gray-900">Custom Options</h2>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-baseline gap-2">
+                <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} />
+                {service.serviceType === 'minute_base' && (
+                  <span className="text-xs font-semibold text-gray-500">
+                    for {selectedDuration} Mins
+                  </span>
+                )}
+              </div>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-normal text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - calculatedPrice) / service.originalPrice) * 100) : 25}%</span>
             </div>
-            
-            <div className="space-y-4">
-              {fields.filter(f => f.showToUser !== false).map((field) => {
-                const value = dynamicAnswers[field.name] || '';
-                return (
-                  <div key={field._id || field.name} className="space-y-1">
-                    <label className="block text-xs font-semibold text-gray-700">
-                      {field.label} {field.isRequired && <span className="text-red-500">*</span>}
-                    </label>
-                    
-                    {/* Render inputs based on type */}
-                    {field.fieldType === 'text' && (
-                      <input
-                        type="text"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                        value={value}
-                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                        required={field.isRequired}
-                      />
-                    )}
+            <p className="mt-2 text-sm leading-7 text-gray-600 font-normal">{service.description}</p>
+          </section>
 
-                    {field.fieldType === 'number' && (
-                      <input
-                        type="number"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                        value={value}
-                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                        required={field.isRequired}
-                      />
-                    )}
+          {service?.serviceType === 'minute_base' && (
+            <section className="mt-4 py-3 px-4 bg-orange-50/10 border border-orange-100 rounded-2xl">
+              <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                <FiClock className="text-[#FF9F45]" /> Select Massage Duration
+              </h2>
+              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                Standard base charge is <span className="font-bold text-[#FF9F45]">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {durationOptions.map((mins) => {
+                  const minPrice = Number(service.basePrice || 0);
+                  const minMins = Number(service.minimumMinutes || 30);
+                  const extraRatePer10Mins = Number(service.pricePerMinute || 0);
+                  const currentDurationPrice = mins <= minMins
+                    ? minPrice
+                    : minPrice + (extraRatePer10Mins * ((mins - minMins) / 10));
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setSelectedDuration(mins)}
+                      className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${selectedDuration === mins ? 'border-[#FF9F45] bg-orange-50/50 text-[#FF9F45] font-bold shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-gray-200'}`}
+                    >
+                      <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
+                      <span className="text-xs mt-1 text-gray-400 font-medium">₹{currentDurationPrice.toFixed(0)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
-                    {field.fieldType === 'textarea' && (
-                      <textarea
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                        rows={3}
-                        value={value}
-                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                        required={field.isRequired}
-                      />
-                    )}
-
-                    {field.fieldType === 'dropdown' && (
-                      <select
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-orange-300 outline-none"
-                        value={value}
-                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                        required={field.isRequired}
-                      >
-                        <option value="">Select Option</option>
-                        {(field.options || []).map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    )}
-
-                    {field.fieldType === 'radio' && (
-                      <div className="flex flex-wrap gap-3 pt-1">
-                        {(field.options || []).map(opt => (
-                          <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
-                            <input
-                              type="radio"
-                              name={field.name}
-                              value={opt}
-                              checked={value === opt}
-                              onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                            />
-                            {opt}
-                          </label>
-                        ))}
+          {service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
+            <section className="mt-3 py-2 px-1">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">Select Package</h2>
+              <div className="space-y-3">
+                {service.packages.map((pkg, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedPackage(pkg)}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedPackage?.title === pkg.title ? 'border-[#FF9F45] bg-orange-50/30' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="flex gap-2 items-center">
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedPackage?.title === pkg.title ? 'border-[#FF9F45]' : 'border-gray-300'}`}>
+                          {selectedPackage?.title === pkg.title && <div className="w-2 h-2 bg-[#FF9F45] rounded-full" />}
+                        </div>
+                        <h3 className="font-bold text-gray-900 text-sm">{pkg.title}</h3>
+                        {pkg.isPopular && <span className="text-[9px] font-black uppercase bg-[#FF9F45] text-white px-2 py-0.5 rounded-full">Popular</span>}
                       </div>
-                    )}
+                      <div className="text-right">
+                        <div className="font-black text-[#111827]">₹{pkg.price}</div>
+                        {pkg.originalPrice && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                      </div>
+                    </div>
+                    {pkg.duration && <div className="text-xs text-gray-500 mb-2 pl-6"><FiClock className="inline mr-1" />{pkg.duration}</div>}
+                    {pkg.description && <p className="text-xs text-gray-600 pl-6 leading-relaxed">{pkg.description}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-                    {field.fieldType === 'checkbox' && (
-                      <label className="flex items-center gap-2 py-1 text-sm text-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={!!value}
-                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.checked }))}
-                        />
-                        Enable this Option
+          {fields.filter(f => f.showToUser !== false).length > 0 && (
+            <section className="mt-3 py-2 px-1">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="p-1.5 bg-orange-50 text-[#B33A35] rounded-lg">
+                  <FiSliders className="w-5 h-5" />
+                </span>
+                <h2 className="text-xl font-normal text-gray-900">Custom Options</h2>
+              </div>
+
+              <div className="space-y-4">
+                {fields.filter(f => f.showToUser !== false).map((field) => {
+                  const value = dynamicAnswers[field.name] || '';
+                  return (
+                    <div key={field._id || field.name} className="space-y-1">
+                      <label className="block text-xs font-semibold text-gray-700">
+                        {field.label} {field.isRequired && <span className="text-red-500">*</span>}
                       </label>
-                    )}
 
-                    {field.fieldType === 'date' && (
-                      <input
-                        type="date"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                        value={value}
-                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                        required={field.isRequired}
-                      />
-                    )}
-
-                    {field.fieldType === 'time' && (
-                      <input
-                        type="time"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                        value={value}
-                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                        required={field.isRequired}
-                      />
-                    )}
-
-                    {/* File / Image Uploader with progress indicator */}
-                    {(field.fieldType === 'image' || field.fieldType === 'file') && (
-                      <div className="flex flex-col gap-2 pt-1">
-                        <input
-                          type="file"
-                          accept={field.fieldType === 'image' ? 'image/*' : '*'}
-                          disabled={uploadingFiles[field.name]}
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              handleFileUpload(field.name, e.target.files[0]);
-                            }
-                          }}
-                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#B33A35] hover:file:bg-orange-100/50"
-                        />
-                        {uploadingFiles[field.name] && <p className="text-[10px] text-[#B33A35] animate-pulse">Uploading file...</p>}
-                        {value && (
-                          <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-100">
-                            <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
-                            <a href={value} target="_blank" rel="noreferrer" className="text-xs text-orange-500 hover:underline truncate flex-1">{value}</a>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Location Picker */}
-                    {field.fieldType === 'location' && (
-                      <div className="flex gap-2 pt-1">
+                      {/* Render inputs based on type */}
+                      {field.fieldType === 'text' && (
                         <input
                           type="text"
-                          placeholder="Latitude, Longitude coordinates"
-                          className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
                         />
-                        <button
-                          type="button"
-                          onClick={() => fetchCurrentLocation(field.name)}
-                          className="px-3 bg-orange-50 hover:bg-orange-100/50 text-[#B33A35] rounded-xl text-xs font-semibold border border-orange-150"
+                      )}
+
+                      {field.fieldType === 'number' && (
+                        <input
+                          type="number"
+                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          value={value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                          required={field.isRequired}
+                        />
+                      )}
+
+                      {field.fieldType === 'textarea' && (
+                        <textarea
+                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          rows={3}
+                          value={value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                          required={field.isRequired}
+                        />
+                      )}
+
+                      {field.fieldType === 'dropdown' && (
+                        <select
+                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-orange-300 outline-none"
+                          value={value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                          required={field.isRequired}
                         >
-                          Locate Me
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
+                          <option value="">Select Option</option>
+                          {(field.options || []).map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {field.fieldType === 'radio' && (
+                        <div className="flex flex-wrap gap-3 pt-1">
+                          {(field.options || []).map(opt => (
+                            <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={field.name}
+                                value={opt}
+                                checked={value === opt}
+                                onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                              />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {field.fieldType === 'checkbox' && (
+                        <label className="flex items-center gap-2 py-1 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!value}
+                            onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.checked }))}
+                          />
+                          Enable this Option
+                        </label>
+                      )}
+
+                      {field.fieldType === 'date' && (
+                        <input
+                          type="date"
+                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          value={value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                          required={field.isRequired}
+                        />
+                      )}
+
+                      {field.fieldType === 'time' && (
+                        <input
+                          type="time"
+                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          value={value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                          required={field.isRequired}
+                        />
+                      )}
+
+                      {/* File / Image Uploader with progress indicator */}
+                      {(field.fieldType === 'image' || field.fieldType === 'file') && (
+                        <div className="flex flex-col gap-2 pt-1">
+                          <input
+                            type="file"
+                            accept={field.fieldType === 'image' ? 'image/*' : '*'}
+                            disabled={uploadingFiles[field.name]}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleFileUpload(field.name, e.target.files[0]);
+                              }
+                            }}
+                            className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#B33A35] hover:file:bg-orange-100/50"
+                          />
+                          {uploadingFiles[field.name] && <p className="text-[10px] text-[#B33A35] animate-pulse">Uploading file...</p>}
+                          {value && (
+                            <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                              <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
+                              <a href={value} target="_blank" rel="noreferrer" className="text-xs text-orange-500 hover:underline truncate flex-1">{value}</a>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Location Picker */}
+                      {field.fieldType === 'location' && (
+                        <div className="flex gap-2 pt-1">
+                          <input
+                            type="text"
+                            placeholder="Latitude, Longitude coordinates"
+                            className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                            value={value}
+                            onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                            required={field.isRequired}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => fetchCurrentLocation(field.name)}
+                            className="px-3 bg-orange-50 hover:bg-orange-100/50 text-[#B33A35] rounded-xl text-xs font-semibold border border-orange-150"
+                          >
+                            Locate Me
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+
+          {/* DYNAMIC PAGE BLOCKS */}
+          {pageBlocks.length > 0 ? (
+            <div className="mt-6 space-y-6">
+              {pageBlocks.filter(b => b.isVisible).map((block, i) => {
+                const data = block.data || {};
+                switch (block.blockType) {
+                  case 'heading_text':
+                    return (
+                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                        <h2 className="text-xl font-black text-gray-900">{data.heading}</h2>
+                        <p className="mt-2 text-sm leading-6 text-gray-600 whitespace-pre-line">{data.text}</p>
+                      </section>
+                    );
+                  case 'warranty':
+                    return (
+                      <section key={i} className="rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">{data.duration} Warranty</p>
+                            <h3 className="text-xl font-black">{data.title}</h3>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-sm text-white/85">{data.description}</p>
+                      </section>
+                    );
+                  case 'whats_included':
+                    return (
+                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
+                        <h2 className="mt-1 text-xl font-black text-gray-900">{data.title}</h2>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {(data.items || []).map((item, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
+                              <FiCheckCircle /> {item}
+                            </span>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  case 'process':
+                  case 'how_it_works':
+                    return (
+                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
+                        <h2 className="mt-1 text-xl font-black text-gray-900">{data.title}</h2>
+                        <div className="mt-4 space-y-3">
+                          {(data.steps || []).map((step, idx) => (
+                            <div key={idx} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{idx + 1}</div>
+                              <div>
+                                <div className="font-black text-gray-900">{step.title}</div>
+                                {step.desc && <p className="text-sm text-gray-500">{step.desc}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  case 'please_note':
+                    return (
+                      <section key={i} className="rounded-[30px] border border-amber-100 bg-amber-50 p-5 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <FiInfo className="text-amber-600 w-5 h-5" />
+                          <h2 className="text-lg font-black text-amber-900">{data.title}</h2>
+                        </div>
+                        <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-amber-800">
+                          {(data.notes || []).map((note, idx) => (
+                            <li key={idx}>{note}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    );
+                  case 'faq':
+                    return (
+                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                        <h2 className="text-xl font-black text-gray-900">FAQ</h2>
+                        <div className="mt-4 space-y-3">
+                          {(data.faqs || []).map((faq, idx) => (
+                            <div key={idx} className="rounded-2xl border border-gray-100 p-4 bg-gray-50">
+                              <h4 className="font-bold text-gray-900">{faq.question}</h4>
+                              <p className="mt-1 text-sm text-gray-600">{faq.answer}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  default:
+                    return null;
+                }
               })}
+
+            </div>
+          ) : (
+            <>
+              <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
+                <h2 className="mt-1 text-xl font-black text-gray-900">What you get</h2>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {features.length > 0 ? features.map((feature, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
+                      <FiCheckCircle /> {feature}
+                    </span>
+                  )) : <span className="text-sm text-gray-500">No included features listed.</span>}
+                </div>
+              </section>
+
+
+              <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
+                <h2 className="mt-1 text-xl font-black text-gray-900">How it works</h2>
+                <div className="mt-4 space-y-3">
+                  {steps.length > 0 ? steps.map((step, index) => {
+                    const stepTitle = typeof step === 'object' ? step.title : step;
+                    const stepDesc = typeof step === 'object' ? step.desc : 'Smooth and transparent service delivery.';
+                    return (
+                      <div key={index} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{index + 1}</div>
+                        <div>
+                          <div className="font-black text-gray-900">{stepTitle}</div>
+                          <p className="text-sm text-gray-500">{stepDesc}</p>
+                        </div>
+                      </div>
+                    );
+                  }) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No steps listed for this service.</div>}
+                </div>
+              </section>
+
+              <section className="mt-6 rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">Professional badge</p>
+                    <h3 className="text-xl font-black">Verified Professional</h3>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm text-white/85">Certified experts, clean work, and support-backed service experience.</p>
+              </section>
+            </>
+          )}
+
+
+          <section className="mt-3 py-2 px-1">
+            <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Reviews</p>
+            <h2 className="text-base font-bold text-[#111827] tracking-tight">User feedback</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 md:col-span-3 font-normal">No reviews available yet.</div>
             </div>
           </section>
-        )}
-
-        <section className="mt-3 py-2 px-1">
-          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Included</p>
-          <h2 className="text-base font-bold text-[#111827] tracking-tight">What you get</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {features.length > 0 ? features.map((feature) => (
-              <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-2 text-sm font-normal text-[#B33A35]">
-                <FiCheckCircle /> {feature}
-              </span>
-            )) : <span className="text-sm text-gray-500 font-normal">No included features listed.</span>}
-          </div>
-        </section>
-
-        <section className="mt-3 py-2 px-1">
-          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Process</p>
-          <h2 className="text-base font-bold text-[#111827] tracking-tight">How it works</h2>
-          <div className="mt-4 space-y-3">
-            {steps.length > 0 ? steps.map((step, index) => (
-              <div key={step} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-orange-50/20 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-sm font-normal text-white">{index + 1}</div>
-                <div>
-                  <div className="font-normal text-gray-900">{step}</div>
-                  <p className="text-sm text-gray-500 font-normal">Smooth and transparent service delivery.</p>
-                </div>
-              </div>
-            )) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 font-normal">No steps listed for this service.</div>}
-          </div>
-        </section>
-
-        <section className="mt-3 rounded-[20px] border border-orange-100/20 bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] p-5 text-white shadow-[0_18px_60px_rgba(255,159,69,0.15)]">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
-            <div>
-              <p className="text-xs font-normal tracking-[0.1em] text-white/75">Professional badge</p>
-              <h3 className="text-base font-bold text-white">Verified Professional</h3>
-            </div>
-          </div>
-          <p className="mt-3 text-sm text-white/85 font-normal">Certified experts, clean work, and support-backed service experience.</p>
-        </section>
-
-        <section className="mt-3 py-2 px-1">
-          <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Reviews</p>
-          <h2 className="text-base font-bold text-[#111827] tracking-tight">User feedback</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 md:col-span-3 font-normal">No reviews available yet.</div>
-          </div>
-        </section>
         </div>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100/50 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border border-orange-100/60 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]">
           <div>
-            <div className="text-[11px] font-normal tracking-[0.1em] text-gray-400">Price</div>
+            <div className="text-[11px] font-normal tracking-[0.1em] text-gray-400">
+              Price {service.serviceType === 'minute_base' && `(${selectedDuration} Mins)`}
+            </div>
             <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
           <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">

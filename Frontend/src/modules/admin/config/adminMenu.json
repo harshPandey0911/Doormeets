@@ -114,11 +114,8 @@
     "children": [
       "Home",
       "Manage Professions",
-      "Manage Categories",
-      "Manage SubCategories",
-      "Manage Brands",
-      "Manage Services",
-      "Pricing Matrix"
+      "Category Templates",
+      "Featured Sections"
     ]
   },
   {
@@ -130,15 +127,7 @@
     ],
     "children": []
   },
-  {
-    "title": "Vendor Parts",
-    "route": "/admin/user-categories/vendor-parts",
-    "allowedRoles": [
-      "super_admin",
-      "admin"
-    ],
-    "children": []
-  },
+
   {
     "title": "Reports",
     "route": "/admin/reports",

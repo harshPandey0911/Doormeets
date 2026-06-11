@@ -275,7 +275,7 @@ const getPublicBrands = async (req, res) => {
 
     let brands = await Brand.find(query)
       .select('title slug iconUrl logo imageUrl badge categoryIds basePrice discountPrice sections type isPriceDisclosed')
-      .sort({ createdAt: -1 })
+      .sort({ order: 1, createdAt: -1 })
       .lean();
 
     // Find all online and available vendors, filtered by city if cityId provided
@@ -456,8 +456,7 @@ const getPublicBrandBySlug = async (req, res) => {
       status: 'active'
     }).populate('vendorId', 'name businessName isOnline availability workStatus location address geoLocation').lean();
 
-    // Determine the closest brand/vendor if location is provided
-    const { lat, lng } = req.query;
+    const { lat, lng, cityId } = req.query;
     const userLoc = (lat && lng) ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
     
     let closestBrand = brand;
@@ -481,7 +480,15 @@ const getPublicBrandBySlug = async (req, res) => {
 
     // Fetch ALL services in the same category that have the same title as any service in this brand
     // This is more robust than just looking at brand IDs
-    const initialServices = await Service.find({ brandId: brand._id, status: 'active' }).select('title categoryId');
+    const initialServicesQuery = { brandId: brand._id, status: 'active' };
+    if (cityId) {
+      initialServicesQuery.$or = [
+        { cityIds: cityId },
+        { cityIds: { $exists: false } },
+        { cityIds: { $size: 0 } }
+      ];
+    }
+    const initialServices = await Service.find(initialServicesQuery).select('title categoryId');
     const serviceTitles = [...new Set(initialServices.map(s => s.title.toLowerCase().trim()))];
     
     // Fallback to brand title if no services found yet
@@ -489,10 +496,19 @@ const getPublicBrandBySlug = async (req, res) => {
       serviceTitles.push(brand.title.toLowerCase().trim());
     }
 
-    const allServices = await Service.find({
-      title: { $in: serviceTitles.map(t => new RegExp(`${t}`, 'i')) },
+    const allServicesQuery = {
+      title: { $in: serviceTitles.map(t => new RegExp(`^${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')) },
       status: 'active'
-    })
+    };
+    if (cityId) {
+      allServicesQuery.$or = [
+        { cityIds: cityId },
+        { cityIds: { $exists: false } },
+        { cityIds: { $size: 0 } }
+      ];
+    }
+
+    const allServices = await Service.find(allServicesQuery)
       .populate('vendorId', 'name businessName isOnline availability workStatus location address geoLocation')
       .lean();
 
@@ -557,7 +573,8 @@ const getPublicBrandBySlug = async (req, res) => {
         rating: "4.8", 
         reviews: "1k+",
         image: svc.iconUrl || closestBrand.iconUrl || '', // Changed to 'image' for ServiceWithRatingCard
-        features: svc.description ? [svc.description] : [],
+        features: svc.features && svc.features.length > 0 ? svc.features : (svc.description ? [svc.description] : []),
+        steps: svc.steps || [],
         duration: "60 min",
         type: svc.type || 'service',
         isPriceDisclosed: svc.isPriceDisclosed ?? true
@@ -615,12 +632,27 @@ const getPublicBrandBySlug = async (req, res) => {
 
 const getPublicServices = async (req, res) => {
   try {
-    const { brandId, brandSlug, categoryId, subCategoryId, lat, lng } = req.query;
+    const { brandId, brandSlug, categoryId, subCategoryId, lat, lng, cityId } = req.query;
 
     const query = { status: 'active' };
+    if (cityId) {
+      query.$or = [
+        { cityIds: cityId },
+        { cityIds: { $exists: false } },
+        { cityIds: { $size: 0 } }
+      ];
+    }
 
     // Find all active categories from DB (source of truth — admin status wins over vendor status)
-    const activeCategories = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
+    const activeCategoriesQuery = { status: { $in: ['active', 'coming_soon'] } };
+    if (cityId) {
+      activeCategoriesQuery.$or = [
+        { cityIds: cityId },
+        { cityIds: { $exists: false } },
+        { cityIds: { $size: 0 } }
+      ];
+    }
+    const activeCategories = await Category.find(activeCategoriesQuery).select('_id title');
     const activeCatIds = activeCategories.map(c => c._id);
     const dbActiveCatIds = new Set(activeCategories.map(c => c._id.toString()));
     const dbActiveCatTitles = new Set(activeCategories.map(c => c.title.toLowerCase().trim()));
@@ -683,10 +715,9 @@ const getPublicServices = async (req, res) => {
 
     // Find online vendors filtered by city (if provided) so cross-city bleed doesn't happen
     let svcVendorFilter = { isOnline: true, workStatus: 'available' };
-    const { cityId: svcCityId } = req.query;
-    if (svcCityId) {
+    if (cityId) {
       const City = require('../../models/City');
-      const svcCityDoc = await City.findById(svcCityId).select('name').lean();
+      const svcCityDoc = await City.findById(cityId).select('name').lean();
       if (svcCityDoc && svcCityDoc.name) {
         svcVendorFilter['address.city'] = new RegExp(`^${svcCityDoc.name.trim()}$`, 'i');
       }
@@ -797,10 +828,15 @@ const getPublicServices = async (req, res) => {
         discountPrice: svc.discountPrice || 0,
         gstPercentage: svc.gstPercentage,
         description: svc.description,
+        features: svc.features || [],
+        steps: svc.steps || [],
         brandId: targetBrand ? targetBrand._id : null,
         brandName: targetBrand ? targetBrand.title : null,
         brandIcon: targetBrand ? targetBrand.iconUrl : null,
         type: svc.type || 'service',
+        serviceType: svc.serviceType || 'package_base',
+        minimumMinutes: svc.minimumMinutes || 30,
+        pricePerMinute: svc.pricePerMinute || null,
         isPriceDisclosed: svc.isPriceDisclosed ?? true
       }))
     });
@@ -1143,7 +1179,42 @@ const getPublicHomeData = async (req, res) => {
         isNoteworthyVisible: contentObj.isNoteworthyVisible ?? true,
         isBookedVisible: contentObj.isBookedVisible ?? true,
         isCategorySectionsVisible: contentObj.isCategorySectionsVisible ?? true,
-        isCategoriesVisible: contentObj.isCategoriesVisible ?? true
+        isCategoriesVisible: contentObj.isCategoriesVisible ?? true,
+        isFeaturedSectionsVisible: contentObj.isFeaturedSectionsVisible ?? true,
+        featuredSections: await Promise.all(
+          (contentObj.featuredSections || [])
+            .filter(section => section.isVisible)
+            .sort((a, b) => a.order - b.order)
+            .map(async (section) => {
+              const populatedItems = await Promise.all(
+                (section.items || []).map(async (item) => {
+                  if (!item.refId) return null;
+                  try {
+                    let doc;
+                    if (section.type === 'brand') {
+                      doc = await Brand.findById(item.refId).select('_id title slug iconUrl').lean();
+                    } else {
+                      doc = await Category.findById(item.refId).select('_id title slug homeIconUrl').lean();
+                    }
+                    if (!doc) return null;
+                    return {
+                      refId: item.refId.toString(),
+                      order: item.order,
+                      title: doc.title,
+                      slug: doc.slug,
+                      iconUrl: section.type === 'brand' ? (doc.iconUrl || '') : (doc.homeIconUrl || '')
+                    };
+                  } catch { return null; }
+                })
+              );
+              return {
+                sectionTitle: section.sectionTitle,
+                type: section.type,
+                order: section.order,
+                items: populatedItems.filter(Boolean).sort((a, b) => a.order - b.order)
+              };
+            })
+        )
       };
     }
 
@@ -1273,10 +1344,36 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const ServiceWorkflow = require('../../models/ServiceWorkflow');
     const ServiceWorkflowStep = require('../../models/ServiceWorkflowStep');
     const PricingRule = require('../../models/PricingRule');
+    const ServicePageBlock = require('../../models/ServicePageBlock');
 
     const service = await Service.findById(id).lean();
     if (!service) {
       return res.status(404).json({ success: false, message: 'Service not found' });
+    }
+
+    const { cityId } = req.query;
+    const PricingConfig = require('../../models/PricingConfig');
+    let pricing = null;
+    if (cityId) {
+      pricing = await PricingConfig.findOne({ serviceId: id, cityId }).lean();
+    }
+    if (!pricing) {
+      pricing = await PricingConfig.findOne({ serviceId: id, cityId: null }).lean();
+    }
+    if (!pricing) {
+      pricing = await PricingConfig.findOne({ serviceId: id }).lean();
+    }
+
+    let resolvedService = { ...service };
+    if (pricing) {
+      resolvedService.basePrice = pricing.customerPrice;
+      resolvedService.pricePerMinute = pricing.pricePerMinute;
+      resolvedService.minimumMinutes = pricing.minimumMinutes;
+      resolvedService.gstPercentage = pricing.gstPercentage || 18;
+    } else {
+      resolvedService.basePrice = service.price || service.pricePerMinute || 0;
+      resolvedService.pricePerMinute = service.pricePerMinute || 0;
+      resolvedService.minimumMinutes = service.minimumMinutes || 30;
     }
 
     const fields = await ServiceField.find({ serviceId: id }).sort({ order: 1 }).lean();
@@ -1286,13 +1383,15 @@ const getPublicServiceDynamicDetails = async (req, res) => {
       steps = await ServiceWorkflowStep.find({ workflowId: workflow._id }).sort({ sequence: 1 }).lean();
     }
     const pricingRules = await PricingRule.find({ serviceId: id }).lean();
+    const pageBlocks = await ServicePageBlock.find({ serviceId: id, isVisible: true }).sort({ order: 1 }).lean();
 
     res.status(200).json({
       success: true,
-      service,
+      service: resolvedService,
       fields,
       workflow: workflow ? { ...workflow, steps } : null,
-      pricingRules
+      pricingRules,
+      pageBlocks
     });
   } catch (error) {
     console.error('Get public service dynamic details error:', error);

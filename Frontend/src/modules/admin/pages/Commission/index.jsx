@@ -20,7 +20,8 @@ const CommissionSettings = () => {
       level2: 1.0,
       level3: 2.0
     },
-    tdsPercentage: 1
+    tdsPercentage: 1,
+    commissionPercentage: 20
   });
 
   useEffect(() => {
@@ -36,7 +37,8 @@ const CommissionSettings = () => {
         setSettings({
           commissionRates: s.commissionRates || { level1: 10, level2: 15, level3: 20 },
           platformFeeRates: s.platformFeeRates || { level1: 0.5, level2: 1.0, level3: 2.0 },
-          tdsPercentage: s.tdsPercentage || 1
+          tdsPercentage: s.tdsPercentage || 1,
+          commissionPercentage: s.commissionPercentage !== undefined ? s.commissionPercentage : 20
         });
       }
     } catch (error) {
@@ -62,6 +64,13 @@ const CommissionSettings = () => {
     setSettings(prev => ({
       ...prev,
       tdsPercentage: parseFloat(value) || 0
+    }));
+  };
+
+  const handlePlatformCommissionChange = (value) => {
+    setSettings(prev => ({
+      ...prev,
+      commissionPercentage: parseFloat(value) || 0
     }));
   };
 
@@ -140,6 +149,22 @@ const CommissionSettings = () => {
             </p>
 
             <div className="space-y-4">
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-bold text-blue-800">Platform Commission</span>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={settings.commissionPercentage}
+                      onChange={(e) => handlePlatformCommissionChange(e.target.value)}
+                      className="w-24 pl-4 pr-8 py-2 bg-white border border-blue-200 rounded-lg font-bold text-blue-800 focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 font-bold">%</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-blue-600 font-medium">Standard percentage taken by the platform from orders.</p>
+              </div>
+
               <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
                 <div className="flex justify-between items-center mb-3">
                   <span className="font-bold text-emerald-800">TDS Deduction</span>

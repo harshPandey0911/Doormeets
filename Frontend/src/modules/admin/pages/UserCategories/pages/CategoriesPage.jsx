@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FiGrid, FiPlus, FiEdit2, FiTrash2, FiSave, FiChevronUp, FiChevronDown, FiMove, FiX } from "react-icons/fi";
+import DynamicIcon from "../../../../../components/DynamicIcon";
 import { toast } from "react-hot-toast";
 import CardShell from "../components/CardShell";
 import Modal from "../components/Modal";
 import ModeSelector from "../components/ModeSelector";
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
 
-import { categoryService, serviceService, professionService, publicCatalogService } from "../../../../../services/catalogService";
+import { categoryService, serviceService, professionService, publicCatalogService, categoryTemplateService } from "../../../../../services/catalogService";
 import { z } from "zod";
 
 // Define Zod schema
@@ -22,15 +23,18 @@ const categorySchema = z.object({
   hasBrand: z.boolean().default(true),
   categoryType: z.enum(["service", "product"]).default("service"),
   status: z.enum(["active", "inactive", "coming_soon"]).default("active"),
+  templateId: z.string().optional().nullable(),
+  enableBrands: z.boolean().default(false),
+  brandRequired: z.boolean().default(false),
+  enableConsultantBooking: z.boolean().default(false),
+  enableWarranty: z.boolean().default(false),
+  enableMultiVisit: z.boolean().default(false),
+  enablePricingMatrix: z.boolean().default(true),
 });
 
-const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
+const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filterTemplateId, filterTemplateCode }) => {
   const [editingId, setEditingId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [professions, setProfessions] = useState([]);
-  const [cityFilter, setCityFilter] = useState('');
-
+  const [templates, setTemplates] = useState([]);
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -38,8 +42,15 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
     homeBadge: "",
     hasSaleBadge: false,
     hasBrands: true,
-    hasSubCategory: true,
-    hasBrand: true,
+    hasSubCategory: false,
+    hasBrand: false,
+    templateId: filterTemplateId || "",
+    enableBrands: false,
+    brandRequired: false,
+    enableConsultantBooking: false,
+    enableWarranty: false,
+    enableMultiVisit: false,
+    enablePricingMatrix: true,
     showOnHome: true,
     categoryType: "service",
     professionId: "",
@@ -59,6 +70,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
   const categories = (catalog.categories || []).sort((a, b) => (a.homeOrder || 0) - (b.homeOrder || 0));
   const editing = useMemo(() => categories.find((c) => c.id === editingId) || null, [categories, editingId]);
 
+  const [professions, setProfessions] = useState([]);
+  const [fetching, setFetching] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   // Fetch categories from API on mount
   useEffect(() => {
     const fetchCategories = async () => {
@@ -68,9 +83,14 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
 
         const response = await categoryService.getAll(params);
         const profRes = await professionService.getAll();
+        const tempRes = await categoryTemplateService.getAll();
         
         if (profRes.success) {
           setProfessions(profRes.data || []);
+        }
+
+        if (tempRes.success) {
+          setTemplates(tempRes.templates || []);
         }
 
         if (response.success && response.categories) {
@@ -85,12 +105,22 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
             hasBrands: cat.hasBrands ?? true,
             hasSubCategory: cat.hasSubCategory ?? true,
             hasBrand: cat.hasBrand ?? true,
+            templateId: cat.templateId
+              ? (typeof cat.templateId === 'object' ? (cat.templateId._id || cat.templateId.id || cat.templateId.toString()) : String(cat.templateId))
+              : null,
+            enableBrands: cat.enableBrands || false,
+            brandRequired: cat.brandRequired || false,
+            enableConsultantBooking: cat.enableConsultantBooking || false,
+            enableWarranty: cat.enableWarranty || false,
+            enableMultiVisit: cat.enableMultiVisit || false,
+            enablePricingMatrix: cat.enablePricingMatrix !== false,
             showOnHome: cat.showOnHome !== false,
             categoryType: cat.categoryType || "service",
             vendorId: cat.vendorId || null,
             status: cat.status || "active",
             interestedCount: cat.interestedCount || 0,
-            cityIds: (cat.cityIds || []).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
+            homeOrder: cat.homeOrder || 0,
+            cityIds: (cat.cityIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
           }));
 
           // Update catalog with fetched categories
@@ -107,7 +137,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
     };
 
     fetchCategories();
-  }, []); // Fetch once on mount
+  }, [filterTemplateId]); // Fetch when template changes
 
   useEffect(() => {
     if (!editing) {
@@ -120,6 +150,13 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
         hasBrands: true,
         hasSubCategory: true,
         hasBrand: true,
+        templateId: filterTemplateId || "",
+        enableBrands: false,
+        brandRequired: false,
+        enableConsultantBooking: false,
+        enableWarranty: false,
+        enableMultiVisit: false,
+        enablePricingMatrix: true,
         showOnHome: true,
         categoryType: "service",
         professionId: "",
@@ -130,7 +167,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
       return;
     }
     const safe = ensureIds({ ...catalog, categories: [editing] }).categories[0];
-    const existingCityIds = (safe.cityIds || []).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)));
+    const existingCityIds = (safe.cityIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)));
     setForm({
       title: safe.title || "",
       slug: safe.slug || "",
@@ -140,6 +177,13 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
       hasBrands: safe.hasBrands ?? true,
       hasSubCategory: safe.hasSubCategory ?? true,
       hasBrand: safe.hasBrand ?? true,
+      templateId: safe.templateId || filterTemplateId || "",
+      enableBrands: safe.enableBrands || false,
+      brandRequired: safe.brandRequired || false,
+      enableConsultantBooking: safe.enableConsultantBooking || false,
+      enableWarranty: safe.enableWarranty || false,
+      enableMultiVisit: safe.enableMultiVisit || false,
+      enablePricingMatrix: safe.enablePricingMatrix !== false,
       showOnHome: safe.showOnHome !== false,
       categoryType: safe.categoryType || "service",
       professionId: "",
@@ -160,8 +204,15 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
       homeBadge: "",
       hasSaleBadge: false,
       hasBrands: true,
-      hasSubCategory: true,
-      hasBrand: true,
+      hasSubCategory: false,
+      hasBrand: false,
+      templateId: filterTemplateId || "",
+      enableBrands: false,
+      brandRequired: false,
+      enableConsultantBooking: false,
+      enableWarranty: false,
+      enableMultiVisit: false,
+      enablePricingMatrix: true,
       showOnHome: true,
       categoryType: "service",
       professionId: "",
@@ -194,29 +245,45 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
   };
 
   const upsert = async () => {
+    // Defensive string handling
+    const titleVal = (form.title || '').trim();
+    const homeIconUrlVal = (form.homeIconUrl || '').trim();
+    const homeBadgeVal = (form.homeBadge || '').trim();
+
+    if (!titleVal || titleVal.length < 2) {
+      toast.error('Category title must be at least 2 characters');
+      return;
+    }
+
     // Validate form with Zod
     const validationResult = categorySchema.safeParse({
-      title: form.title.trim(),
-      slug: slugify(form.title.trim()), // derived
-      homeIconUrl: form.homeIconUrl.trim(),
-      homeBadge: form.homeBadge.trim(),
+      title: titleVal,
+      slug: slugify(titleVal),
+      homeIconUrl: homeIconUrlVal,
+      homeBadge: homeBadgeVal,
       hasSaleBadge: Boolean(form.hasSaleBadge),
       hasBrands: Boolean(form.hasBrands),
       hasSubCategory: Boolean(form.hasSubCategory),
       hasBrand: Boolean(form.hasBrand),
       showOnHome: Boolean(form.showOnHome),
-      categoryType: form.categoryType,
-      status: form.status,
+      categoryType: form.categoryType || 'service',
+      status: form.status || 'active',
+      templateId: form.templateId || null,
+      enableBrands: Boolean(form.enableBrands),
+      brandRequired: Boolean(form.brandRequired),
+      enableConsultantBooking: Boolean(form.enableConsultantBooking),
+      enableWarranty: Boolean(form.enableWarranty),
+      enableMultiVisit: Boolean(form.enableMultiVisit),
+      enablePricingMatrix: Boolean(form.enablePricingMatrix),
     });
 
     if (!validationResult.success) {
-      // Show first error in toast
       const firstError = validationResult.error.errors[0];
       toast.error(firstError.message);
       return;
     }
 
-    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, showOnHome, categoryType, status } = validationResult.data;
+    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, templateId, enableBrands, brandRequired, enableConsultantBooking, enableWarranty, enableMultiVisit, enablePricingMatrix, showOnHome, categoryType, status } = validationResult.data;
 
     try {
       setLoading(true);
@@ -249,6 +316,13 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
         hasBrands,
         hasSubCategory,
         hasBrand,
+        templateId: templateId || null,
+        enableBrands: Boolean(enableBrands),
+        brandRequired: Boolean(brandRequired),
+        enableConsultantBooking: Boolean(enableConsultantBooking),
+        enableWarranty: Boolean(enableWarranty),
+        enableMultiVisit: Boolean(enableMultiVisit),
+        enablePricingMatrix: Boolean(enablePricingMatrix),
         showOnHome,
         homeOrder,
         categoryType,
@@ -265,24 +339,36 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
         }
       }
 
-      const mapSavedCategory = (cat) => ({
-        id: cat.id,
-        title: cat.title,
-        slug: cat.slug,
-        homeIconUrl: cat.homeIconUrl || "",
-        homeBadge: cat.homeBadge || "",
-        hasSaleBadge: cat.hasSaleBadge || false,
-        hasBrands: cat.hasBrands ?? true,
-        hasSubCategory: cat.hasSubCategory ?? true,
-        hasBrand: cat.hasBrand ?? true,
-        showOnHome: cat.showOnHome !== false,
-        homeOrder: cat.homeOrder || 0,
-        categoryType: cat.categoryType || "service",
-        vendorId: cat.vendorId || null,
-        status: cat.status || "active",
-        interestedCount: cat.interestedCount || 0,
-        cityIds: (cat.cityIds || []).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
-      });
+      const mapSavedCategory = (cat) => {
+        // Merge with existing local category to preserve fields missing from API response
+        const existing = categories.find(c => c.id === (cat.id || String(cat._id)));
+        return {
+          id: cat.id || String(cat._id),
+          title: cat.title || existing?.title || "",
+          slug: cat.slug || existing?.slug || "",
+          homeIconUrl: cat.homeIconUrl ?? existing?.homeIconUrl ?? "",
+          homeBadge: cat.homeBadge ?? existing?.homeBadge ?? "",
+          hasSaleBadge: cat.hasSaleBadge !== undefined ? cat.hasSaleBadge : (existing?.hasSaleBadge || false),
+          hasBrands: cat.hasBrands !== undefined ? cat.hasBrands : (existing?.hasBrands ?? true),
+          hasSubCategory: cat.hasSubCategory !== undefined ? cat.hasSubCategory : (existing?.hasSubCategory ?? true),
+          hasBrand: cat.hasBrand !== undefined ? cat.hasBrand : (existing?.hasBrand ?? true),
+          templateId: cat.templateId !== undefined ? cat.templateId : (existing?.templateId || null),
+          enableBrands: cat.enableBrands !== undefined ? cat.enableBrands : (existing?.enableBrands || false),
+          brandRequired: cat.brandRequired !== undefined ? cat.brandRequired : (existing?.brandRequired || false),
+          enableConsultantBooking: cat.enableConsultantBooking !== undefined ? cat.enableConsultantBooking : (existing?.enableConsultantBooking || false),
+          enableWarranty: cat.enableWarranty !== undefined ? cat.enableWarranty : (existing?.enableWarranty || false),
+          enableMultiVisit: cat.enableMultiVisit !== undefined ? cat.enableMultiVisit : (existing?.enableMultiVisit || false),
+          enablePricingMatrix: cat.enablePricingMatrix !== undefined ? cat.enablePricingMatrix : (existing?.enablePricingMatrix !== false),
+          showOnHome: cat.showOnHome !== undefined ? cat.showOnHome !== false : (existing?.showOnHome !== false),
+          homeOrder: cat.homeOrder ?? existing?.homeOrder ?? 0,
+          categoryType: cat.categoryType || existing?.categoryType || "service",
+          vendorId: cat.vendorId ?? existing?.vendorId ?? null,
+          status: cat.status || existing?.status || "active",
+          interestedCount: cat.interestedCount ?? existing?.interestedCount ?? 0,
+          cityIds: (cat.cityIds || existing?.cityIds || []).filter(Boolean).map(id => typeof id === 'object' ? (id._id || String(id)) : String(id)),
+        };
+      };
+
 
       let savedCategory;
       if (editingId && editingId.startsWith('ucat-')) {
@@ -513,12 +599,30 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
     setDraggedItem(null);
   };
 
-  const filteredCategories = cityFilter
-    ? categories.filter(c => {
-        if (!c.cityIds || c.cityIds.length === 0) return false;
-        return c.cityIds.includes(cityFilter);
-      })
-    : categories;
+  // Merge unassigned categories into the main filtered list
+  let filteredCategories = categories;
+  if (filterTemplateId) {
+    const filterIdStr = String(filterTemplateId);
+    const matched = [];
+    const unassigned = [];
+    categories.forEach(c => {
+      if (!c.templateId) {
+        unassigned.push(c); // include unassigned at bottom
+      } else {
+        const catTemplateId = typeof c.templateId === 'object'
+          ? String(c.templateId._id || c.templateId.id || c.templateId)
+          : String(c.templateId);
+        if (catTemplateId === filterIdStr) matched.push(c);
+      }
+    });
+    filteredCategories = [...matched, ...unassigned];
+  }
+  if (selectedCity) {
+    filteredCategories = filteredCategories.filter(c => {
+      if (!c.cityIds || c.cityIds.length === 0) return false;
+      return c.cityIds.some(id => String(id) === String(selectedCity) || String(id._id) === String(selectedCity));
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -527,28 +631,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
           <div className="text-center py-4 text-gray-500">Loading categories...</div>
         )}
 
-        {/* City Filter Dropdown */}
-        {cities.length > 0 && (
-          <div className="flex items-center gap-3 mb-4">
-            <label className="text-sm font-bold text-gray-600 whitespace-nowrap">Filter by city:</label>
-            <select
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer"
-            >
-              <option value="">All Cities</option>
-              {cities.map(city => {
-                const cid = city._id || city.id;
-                return <option key={cid} value={cid}>{city.name}</option>;
-              })}
-            </select>
-            {cityFilter && (
-              <span className="text-xs text-gray-400">
-                {filteredCategories.length} of {categories.length} categories
-              </span>
-            )}
-          </div>
-        )}
+
 
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">{filteredCategories.length} categories</div>
@@ -586,7 +669,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
 
         {filteredCategories.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            {cityFilter ? 'No categories for this city. Try "All Cities" or add one.' : 'No categories yet'}
+            {selectedCity ? 'No categories for this city. Try "All Cities" or add one.' : 'No categories yet'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -617,13 +700,15 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
                   <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-4 text-sm font-semibold text-gray-600">{idx + 1}</td>
                     <td className="py-4 px-4">
+                      <div className="flex justify-center">
                       {c.homeIconUrl ? (
-                        <img src={toAssetUrl(c.homeIconUrl)} alt={c.title} className="h-10 w-10 object-contain rounded bg-gray-50 border border-gray-100" />
+                        <DynamicIcon icon={c.homeIconUrl} alt={c.title} className="h-10 w-10 object-contain rounded bg-gray-50 border border-gray-100" />
                       ) : (
-                        <div className="h-12 w-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                        <div className="h-10 w-10 rounded bg-gray-50 border border-gray-100 flex items-center justify-center">
                           <span className="text-xs text-gray-400">No icon</span>
                         </div>
                       )}
+                      </div>
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex flex-col">
@@ -643,9 +728,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
                       <div className="flex flex-wrap gap-1 max-w-[160px]">
                         {(!c.cityIds || c.cityIds.length === 0)
                           ? <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">All Cities</span>
-                          : c.cityIds.map(cid => (
+                          : c.cityIds.filter(Boolean).map(cid => (
                               <span key={cid} className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                                {(cities.find(ci => (ci._id || ci.id) === cid) || {}).name || cid.slice(-4)}
+                                {(cities.find(ci => (ci?._id || ci?.id) === cid) || {}).name || (typeof cid === 'string' ? cid.slice(-4) : String(cid))}
                               </span>
                             ))
                         }
@@ -657,14 +742,20 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
                       ) : (
                         <span className="text-sm text-gray-400">—</span>
                       )}
-                      <div className="mt-1 flex flex-col gap-1">
-                        <span className={`inline-block px-2 py-0.5 text-[9px] font-semibold rounded uppercase tracking-wider ${c.hasSubCategory !== false ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
-                          {c.hasSubCategory !== false ? 'Subcategory' : 'No Subcategory'}
-                        </span>
-                        <span className={`inline-block px-2 py-0.5 text-[9px] font-semibold rounded uppercase tracking-wider ${c.hasBrand !== false ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>
-                          {c.hasBrand !== false ? 'Brand' : 'No Brand'}
-                        </span>
-                      </div>
+                      {(c.hasSubCategory || c.hasBrand) && (
+                        <div className="mt-1 flex flex-col gap-1">
+                          {c.hasSubCategory && (
+                            <span className="inline-block px-2 py-0.5 text-[9px] font-semibold rounded uppercase tracking-wider bg-purple-100 text-purple-700">
+                              Subcategory
+                            </span>
+                          )}
+                          {c.hasBrand && (
+                            <span className="inline-block px-2 py-0.5 text-[9px] font-semibold rounded uppercase tracking-wider bg-indigo-100 text-indigo-700">
+                              Brand
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-center">
                       <div className="flex items-center justify-center gap-1">
@@ -744,6 +835,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
         onClose={reset}
         title={editing ? "Edit Category" : "Add Category"}
       >
+
+
         <div className="space-y-4">
           <div>
             <label className="block text-base font-bold text-gray-900 mb-2">Title</label>
@@ -756,6 +849,156 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
               placeholder="e.g. Electricity, Salon for Women"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Category Icon / Image</label>
+            <div className="flex items-center gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+              <div className="h-16 w-16 bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                {form.homeIconUrl ? (
+                  <DynamicIcon icon={form.homeIconUrl} alt="Preview" className="w-full h-full object-contain p-1" />
+                ) : (
+                  <div className="text-gray-400 text-xs font-semibold">No Image</div>
+                )}
+              </div>
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*,.svg"
+                  disabled={uploadingIcon}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setUploadingIcon(true);
+                      try {
+                        const categorySlug = form.slug || form.title?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                        const folder = `Doormeets/${categorySlug}/icons`;
+                        const response = await serviceService.uploadImage(file, folder);
+                        if (response.success && response.imageUrl) {
+                          setForm((p) => ({ ...p, homeIconUrl: response.imageUrl }));
+                          toast.success("Icon uploaded successfully");
+                        } else {
+                          toast.error("Upload failed");
+                        }
+                      } catch (error) {
+                        toast.error("Failed to upload image");
+                      } finally {
+                        setUploadingIcon(false);
+                      }
+                    }
+                  }}
+                  className="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">PNG, JPG, SVG up to 2MB</p>
+              </div>
+            </div>
+          </div>
+
+          {!filterTemplateId && (
+            <div>
+              <label className="block text-base font-bold text-gray-900 mb-2">Category Template</label>
+              <select
+                value={form.templateId}
+                onChange={(e) => setForm((p) => ({ ...p, templateId: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">-- No Inherited Template --</option>
+                {templates.map((temp) => (
+                  <option key={temp._id} value={temp._id}>
+                    {temp.name} ({temp.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Brands Selection Flags */}
+          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
+            <label className="block text-base font-bold text-gray-900">🏷️ Brand Configuration</label>
+            <div className="flex items-center gap-3">
+              <input
+                id="enableBrands"
+                type="checkbox"
+                checked={form.enableBrands}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setForm(p => ({ ...p, enableBrands: checked, hasBrand: checked, hasBrands: checked }));
+                }}
+                className="h-4 w-4 accent-blue-600"
+              />
+              <label htmlFor="enableBrands" className="text-sm font-semibold text-gray-850">
+                Enable Brands (Brands support for this category)
+              </label>
+            </div>
+            {form.enableBrands && (
+              <div className="flex items-center gap-3 pl-6">
+                <input
+                  id="brandRequired"
+                  type="checkbox"
+                  checked={form.brandRequired}
+                  onChange={(e) => setForm(p => ({ ...p, brandRequired: e.target.checked }))}
+                  className="h-4 w-4 accent-blue-600"
+                />
+                <label htmlFor="brandRequired" className="text-sm font-semibold text-gray-800">
+                  Brand Required (Cannot add service without brand)
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Feature flags selection */}
+          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
+            <label className="block text-base font-bold text-gray-900">⚙️ Category Settings & Feature Flags</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center gap-3">
+                <input
+                  id="enableConsultantBooking"
+                  type="checkbox"
+                  checked={form.enableConsultantBooking}
+                  onChange={(e) => setForm(p => ({ ...p, enableConsultantBooking: e.target.checked }))}
+                  className="h-4 w-4 accent-blue-600"
+                />
+                <label htmlFor="enableConsultantBooking" className="text-sm font-semibold text-gray-800">
+                  Enable Consultant Booking
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  id="enableWarranty"
+                  type="checkbox"
+                  checked={form.enableWarranty}
+                  onChange={(e) => setForm(p => ({ ...p, enableWarranty: e.target.checked }))}
+                  className="h-4 w-4 accent-blue-600"
+                />
+                <label htmlFor="enableWarranty" className="text-sm font-semibold text-gray-800">
+                  Enable Warranty
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  id="enableMultiVisit"
+                  type="checkbox"
+                  checked={form.enableMultiVisit}
+                  onChange={(e) => setForm(p => ({ ...p, enableMultiVisit: e.target.checked }))}
+                  className="h-4 w-4 accent-blue-600"
+                />
+                <label htmlFor="enableMultiVisit" className="text-sm font-semibold text-gray-800">
+                  Enable Multi Visit
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  id="enablePricingMatrix"
+                  type="checkbox"
+                  checked={form.enablePricingMatrix}
+                  onChange={(e) => setForm(p => ({ ...p, enablePricingMatrix: e.target.checked }))}
+                  className="h-4 w-4 accent-blue-600"
+                />
+                <label htmlFor="enablePricingMatrix" className="text-sm font-semibold text-gray-800">
+                  Enable Pricing Matrix
+                </label>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -839,73 +1082,6 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">Home Icon</label>
-            <div className="space-y-3">
-              <input
-                type="file"
-                accept="image/*"
-                disabled={uploadingIcon}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setUploadingIcon(true);
-                    try {
-                      const categorySlug = form.slug || form.title?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                      const folder = `Doormeets/${categorySlug}/icons`;
-                      const response = await serviceService.uploadImage(file, folder);
-                      if (response.success && response.imageUrl) {
-                        setForm((p) => ({ ...p, homeIconUrl: response.imageUrl }));
-                        toast.success("Icon uploaded successfully");
-                      } else {
-                        toast.error("Upload failed");
-                      }
-                    } catch (error) {
-                      console.error('Category icon upload error:', error);
-                      toast.error("Failed to upload image");
-                    } finally {
-                      setUploadingIcon(false);
-                    }
-                  }
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              {uploadingIcon && (
-                <div className="flex items-center gap-2 text-blue-600">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  <span className="text-sm font-medium">Uploading...</span>
-                </div>
-              )}
-              {form.homeIconUrl && !uploadingIcon && (
-                <img src={toAssetUrl(form.homeIconUrl)} alt="Icon Preview" className="h-16 w-16 object-cover rounded-lg border border-gray-200" />
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Home Badge (optional)</label>
-              <input
-                value={form.homeBadge}
-                onChange={(e) => setForm((p) => ({ ...p, homeBadge: e.target.value }))}
-                placeholder="NEW / SALE / etc."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <div className="flex items-center gap-3 pt-8">
-              <input
-                id="hasSaleBadge"
-                type="checkbox"
-                checked={form.hasSaleBadge}
-                onChange={(e) => setForm((p) => ({ ...p, hasSaleBadge: e.target.checked }))}
-                className="h-4 w-4"
-              />
-              <label htmlFor="hasSaleBadge" className="text-base font-semibold text-gray-800">
-                Show sale badge on home card
-              </label>
-            </div>
-          </div>
-
           <div className="flex items-center gap-3 pt-2">
             <input
               id="hasSubCategory"
@@ -919,37 +1095,12 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
             </label>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
-            <input
-              id="hasBrand"
-              type="checkbox"
-              checked={form.hasBrand}
-              onChange={(e) => setForm((p) => ({ ...p, hasBrand: e.target.checked }))}
-              className="h-4 w-4"
-            />
-            <label htmlFor="hasBrand" className="text-base font-semibold text-gray-800">
-              Has Brand
-            </label>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            <input
-              id="showOnHome"
-              type="checkbox"
-              checked={form.showOnHome}
-              onChange={(e) => setForm((p) => ({ ...p, showOnHome: e.target.checked }))}
-              className="h-4 w-4"
-            />
-            <label htmlFor="showOnHome" className="text-base font-semibold text-gray-800">
-              Show this category on home
-            </label>
-          </div>
-
           <div className="flex gap-3 pt-4">
             <button
+              type="button"
               onClick={upsert}
               disabled={loading}
-              className="flex-1 py-3.5 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiSave className="w-5 h-5" />
               {loading ? "Saving..." : (editing ? "Update Category" : "Add Category")}
@@ -995,10 +1146,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [] }) => {
                 </div>
 
                 {category.homeIconUrl ? (
-                  <img
-                    src={toAssetUrl(category.homeIconUrl)}
-                    alt={category.title}
-                    className="w-8 h-8 object-contain rounded"
+                  <DynamicIcon
+                    icon={category.homeIconUrl}
+                    className="w-8 h-8 object-cover"
                   />
                 ) : (
                   <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">

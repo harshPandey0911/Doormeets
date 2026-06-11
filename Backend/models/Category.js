@@ -55,6 +55,36 @@ const categorySchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  templateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CategoryTemplate',
+    default: null,
+    index: true
+  },
+  enableBrands: {
+    type: Boolean,
+    default: false
+  },
+  brandRequired: {
+    type: Boolean,
+    default: false
+  },
+  enableConsultantBooking: {
+    type: Boolean,
+    default: false
+  },
+  enableWarranty: {
+    type: Boolean,
+    default: false
+  },
+  enableMultiVisit: {
+    type: Boolean,
+    default: false
+  },
+  enablePricingMatrix: {
+    type: Boolean,
+    default: true
+  },
   isBiddingEnabled: {
     type: Boolean,
     default: false

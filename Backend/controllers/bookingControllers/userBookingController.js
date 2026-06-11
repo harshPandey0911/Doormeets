@@ -502,55 +502,71 @@ const createBooking = async (req, res) => {
           console.log(`User ${userId} upgraded to Plus Membership until ${expiryDate}`);
         }
 
-        // Sort qualified vendors by Level (L1 -> L2 -> L3) first, then by Distance (closest first)
+        // Group qualified vendors by Level (L1 -> Wave 1, L2 -> Wave 2, L3 -> Wave 3)
+        // Also sort them internally by distance
+        const getPriority = (v) => {
+          const cLevel = String(v.currentLevel || '').toUpperCase();
+          if (cLevel === 'L1' || v.level === 1) return 1;
+          if (cLevel === 'L2' || v.level === 2) return 2;
+          return 3;
+        };
+
         const sortedVendors = nearbyVendors.sort((a, b) => {
-          const getPriority = (v) => {
-            const cLevel = String(v.currentLevel || '').toUpperCase();
-            if (cLevel === 'L1' || v.level === 1) return 1;
-            if (cLevel === 'L2' || v.level === 2) return 2;
-            return 3;
-          };
           const pA = getPriority(a);
           const pB = getPriority(b);
           if (pA !== pB) return pA - pB;
           return (a.distance || 0) - (b.distance || 0);
         });
 
-        // Wave 1 Configuration:
-        // - Products/Materials: Broadcast to ALL vendors immediately
-        // Determine if this is a Product (Broadcast) or Service (Sequential)
-        // Check service type, booking type, AND category type for robustness
+        // Determine if this is a Product (Broadcast to all) or Service (Wave based)
         const categoryForBackground = await Category.findById(serviceForBackground.categoryId);
         const isProduct = 
           serviceForBackground.type === 'product' || 
           bookingForBackground.serviceType === 'product' ||
           categoryForBackground?.categoryType === 'product';
 
-        const WAVE_1_COUNT = isProduct ? sortedVendors.length : 1;
-        const wave1Vendors = sortedVendors.slice(0, WAVE_1_COUNT);
+        // Assign waves to vendors
+        const potentialVendorsWithWaves = sortedVendors.map((v, index) => {
+          return {
+            vendorId: v._id,
+            distance: v.distance || 0,
+            wave: isProduct ? 1 : (index + 1) // strictly sequential: 1 by 1
+          };
+        });
 
-        console.log(`[CreateBooking] ${isProduct ? 'PRODUCT' : 'SERVICE'} Flow: Wave 1 will notify ${wave1Vendors.length} vendors`);
+        // Find the lowest wave that has vendors
+        const initialWave = potentialVendorsWithWaves.length > 0 
+          ? Math.min(...potentialVendorsWithWaves.map(v => v.wave)) 
+          : 1;
+
+        // Get initial wave vendors
+        const initialWaveVendorsDetails = potentialVendorsWithWaves.filter(v => v.wave === initialWave);
+        const initialWaveVendorsIds = initialWaveVendorsDetails.map(v => v.vendorId);
+        const initialWaveVendors = sortedVendors.filter(v => initialWaveVendorsIds.some(id => id.toString() === v._id.toString()));
+
+        console.log(`[CreateBooking] ${isProduct ? 'PRODUCT' : 'SERVICE'} Flow: Wave ${initialWave} will notify ${initialWaveVendors.length} vendors`);
 
         // Store all potential vendors in booking for scheduler to use
-        bookingForBackground.potentialVendors = sortedVendors.map(v => ({
-          vendorId: v._id,
-          distance: v.distance || 0
+        bookingForBackground.potentialVendors = potentialVendorsWithWaves.map(v => ({
+          vendorId: v.vendorId,
+          distance: v.distance,
+          wave: v.wave
         }));
-        bookingForBackground.currentWave = 1;
+        bookingForBackground.currentWave = initialWave;
         bookingForBackground.waveStartedAt = new Date();
-        bookingForBackground.notifiedVendors = wave1Vendors.map(v => v._id);
+        bookingForBackground.notifiedVendors = initialWaveVendors.map(v => v._id);
         await bookingForBackground.save();
 
-        if (wave1Vendors.length > 0) {
-          console.log(`[CreateBooking] Wave 1: Alerting ${wave1Vendors.length} closest vendors (of ${sortedVendors.length} total)`);
+        if (initialWaveVendors.length > 0) {
+          console.log(`[CreateBooking] Wave ${initialWave}: Alerting ${initialWaveVendors.length} closest vendors (of ${sortedVendors.length} total)`);
 
-          // Create BookingRequest entries for Wave 1 vendors
+          // Create BookingRequest entries for initial wave vendors
           const BookingRequest = require('../../models/BookingRequest');
-          const bookingRequests = wave1Vendors.map(vendor => ({
+          const bookingRequests = initialWaveVendors.map(vendor => ({
             bookingId: bookingForBackground._id,
             vendorId: vendor._id,
             status: 'PENDING',
-            wave: 1,
+            wave: initialWave,
             distance: vendor.distance || null,
             sentAt: new Date(),
             expiresAt: new Date(Date.now() + 60 * 60 * 1000) // Expires in 1 hour
@@ -570,15 +586,15 @@ const createBooking = async (req, res) => {
           await bookingForBackground.save();
         }
 
-        // Send notifications to Wave 1 vendors ONLY
+        // Send notifications to initial wave vendors ONLY
         // 1. Emit Socket.IO event FIRST (Instant & Reliable)
         const { getIO } = require('../../sockets');
         const io = getIO();
         if (io) {
-          console.log(`[CreateBooking] Emitting Socket.IO events to ${wave1Vendors.length} vendors in Wave 1...`);
-          wave1Vendors.forEach(vendor => {
+          console.log(`[CreateBooking] Emitting Socket.IO events to ${initialWaveVendors.length} vendors in Wave ${initialWave}...`);
+          initialWaveVendors.forEach(vendor => {
             const vendorRoom = `vendor_${vendor._id.toString()}`;
-            console.log(`[Wave 1] Emitting to ${vendorRoom} (dist: ${vendor.distance?.toFixed(1) || 'N/A'}km)`);
+            console.log(`[Wave ${initialWave}] Emitting to ${vendorRoom} (dist: ${vendor.distance?.toFixed(1) || 'N/A'}km)`);
             io.to(vendorRoom).emit('new_booking_request', {
               bookingId: bookingForBackground._id,
               serviceName: serviceForBackground.title,
@@ -604,7 +620,7 @@ const createBooking = async (req, res) => {
 
         // 2. Send Firebase/FCM notifications (External service - call AFTER socket)
         try {
-          const vendorNotifications = wave1Vendors.map(vendor =>
+          const vendorNotifications = initialWaveVendors.map(vendor =>
             createNotification({
               vendorId: vendor._id,
               type: 'booking_request',
@@ -770,9 +786,10 @@ const getBookingById = async (req, res) => {
       });
     }
 
-    const allowedStatuses = ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
-    const isAccepted = allowedStatuses.includes(booking.status);
-    if (!isAccepted) {
+    const phoneRevealedStatuses = ['visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
+    const canSeePhone = phoneRevealedStatuses.includes(booking.status);
+    
+    if (!canSeePhone) {
       if (booking.vendorId) {
         booking.vendorId.phone = undefined;
         booking.vendorId.email = undefined;
@@ -847,15 +864,13 @@ const cancelBooking = async (req, res) => {
       });
     }
 
-    // Cancelation window check: Maximum 2 minutes after vendor acceptance
-    if (booking.vendorId && booking.acceptedAt) {
-      const timeSinceAcceptanceMs = Date.now() - new Date(booking.acceptedAt).getTime();
-      if (timeSinceAcceptanceMs > 2 * 60 * 1000) { // 2 minutes in ms
-        return res.status(400).json({
-          success: false,
-          message: 'Cannot cancel booking after 2 minutes of vendor acceptance.'
-        });
-      }
+    // Cancellation window check: strictly 3 minutes from booking creation
+    const timeSinceBookingMs = Date.now() - new Date(booking.createdAt).getTime();
+    if (timeSinceBookingMs > 3 * 60 * 1000) { // 3 minutes in ms
+      return res.status(400).json({
+        success: false,
+        message: 'You can only cancel a booking within 3 minutes of creating it.'
+      });
     }
 
     // --- REFUND & CANCELLATION FEE LOGIC ---

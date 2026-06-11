@@ -35,16 +35,8 @@ let MAX_SEARCH_TIME_MS = 5 * 60 * 1000; // 5 mins fallback
 const ACTIVE_INTERVAL_MS = 5000;  // Poll every 5s when bookings exist
 const IDLE_INTERVAL_MS = 30000;   // Poll every 30s when no active bookings (circuit breaker)
 
-// Calculate vendor index range for a wave
-const getVendorRange = (wave) => {
-  let start = 0;
-  for (let i = 1; i < wave; i++) {
-    start += WAVE_CONFIG[i]?.count || 0;
-  }
-  const config = WAVE_CONFIG[wave] || WAVE_CONFIG[5];
-  const end = config.count === Infinity ? Infinity : start + config.count;
-  return { start, end };
-};
+// Helper not needed anymore for count-based logic
+// We use booking.potentialVendors.filter(v => v.wave === currentWave)
 
 class BookingScheduler {
   constructor(io) {
@@ -178,17 +170,22 @@ class BookingScheduler {
             if (waveConfig.duration === 0 || waveElapsed < waveConfig.duration) return;
 
             const nextWave = currentWave + 1;
-            const { start, end } = getVendorRange(nextWave);
 
-            // Get vendors to notify in this wave
-            let vendorsToNotify = booking.potentialVendors.slice(
-              start,
-              end === Infinity ? undefined : end
-            );
+            // Get all vendors for the NEXT wave
+            let vendorsToNotify = booking.potentialVendors.filter(v => v.wave === nextWave);
 
-            if (vendorsToNotify.length === 0) {
-              console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: No vendors left in Wave ${nextWave}`);
+            if (vendorsToNotify.length === 0 && nextWave <= 3) {
+              // If there are no vendors in this wave, advance silently to the next wave immediately
+              // We'll update DB and let the next polling cycle pick it up, or we can just update currentWave
+              console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: No vendors in Wave ${nextWave}, skipping...`);
+              await Booking.findByIdAndUpdate(booking._id, {
+                $set: { currentWave: nextWave, waveStartedAt: new Date(now - waveConfig.duration) } // Subtract duration so next cycle triggers immediately
+              });
               return;
+            } else if (vendorsToNotify.length === 0) {
+               // Next wave > 3 and no more vendors
+               console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: Exhausted all waves.`);
+               return;
             }
 
             // Filter to only online+available vendors (single batch find for this booking)

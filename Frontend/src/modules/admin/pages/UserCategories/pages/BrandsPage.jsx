@@ -7,6 +7,7 @@ import BrandServicesModal from "../components/BrandServicesModal";
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
 import { brandService, categoryService, subCategoryService } from "../../../../../services/catalogService";
 import { z } from "zod";
+import DynamicIcon from "../../../../../components/DynamicIcon";
 
 // Zod schema for Brand Form
 const brandSchema = z.object({
@@ -15,9 +16,10 @@ const brandSchema = z.object({
   subCategoryIds: z.array(z.string()).optional(),
   iconUrl: z.string().optional(),
   badge: z.string().optional(),
+  order: z.number().min(0, "Order must be non-negative"),
 });
 
-const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
+const BrandsPage = ({ catalog, setCatalog, selectedCity, filterTemplateId }) => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
@@ -40,6 +42,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
     categoryIds: [],
     subCategoryIds: [],
     cityIds: [],
+    order: 0,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,11 +51,29 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
   const [selectedBrandForServices, setSelectedBrandForServices] = useState(null);
 
+  const filteredCategoriesForForm = useMemo(() => {
+    if (!filterTemplateId) return categories;
+    return categories.filter(c => String(c.templateId || c.template) === String(filterTemplateId));
+  }, [categories, filterTemplateId]);
+
+  const activeServices = useMemo(() => {
+    if (!filterTemplateId) return services;
+    const templateCategoryIds = new Set(
+      categories
+        .filter(c => String(c.templateId || c.template) === String(filterTemplateId))
+        .map(c => String(c.id || c._id))
+    );
+    return services.filter(s => {
+      const brandCatIds = s.categoryIds || (s.categoryId ? [s.categoryId] : []);
+      return brandCatIds.some(catId => templateCategoryIds.has(String(catId)));
+    });
+  }, [services, categories, filterTemplateId]);
+
   // Filter brands based on selected category
   const filteredBrands = useMemo(() => {
-    if (selectedCategoryFilter === "all") return services;
+    if (selectedCategoryFilter === "all") return activeServices;
 
-    return services.filter(s => {
+    return activeServices.filter(s => {
       const filterId = String(selectedCategoryFilter);
       // Check both categoryId (legacy) and categoryIds (array)
       if (s.categoryIds && s.categoryIds.length > 0) {
@@ -60,7 +81,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       }
       return String(s.categoryId) === filterId;
     });
-  }, [services, selectedCategoryFilter]);
+  }, [activeServices, selectedCategoryFilter]);
 
   // Helper to extract string ID from various formats
   const getStrId = (item) => {
@@ -116,6 +137,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
             page: svc.page || {},
             sections: svc.sections || [],
             cityIds: (svc.cityIds || []).map(id => getStrId(id)).filter(Boolean),
+            order: svc.order !== undefined ? Number(svc.order) : 0,
           };
         });
       }
@@ -159,8 +181,12 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
   useEffect(() => {
     if (!editingId) {
       // In create mode, if selectedCity changes, update cityIds but preserve other fields
+      const defaultCats = filterTemplateId
+        ? (categories.find(c => String(c.templateId || c.template) === String(filterTemplateId)) ? [String(categories.find(c => String(c.templateId || c.template) === String(filterTemplateId)).id || categories.find(c => String(c.templateId || c.template) === String(filterTemplateId))._id)] : [])
+        : [];
       setForm(prev => ({
         ...prev,
+        categoryIds: defaultCats,
         cityIds: selectedCity ? [selectedCity] : [],
       }));
       return;
@@ -174,18 +200,23 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
       categoryIds: service.categoryIds || (service.categoryId ? [service.categoryId] : []),
       subCategoryIds: service.subCategoryIds || [],
       cityIds: service.cityIds || [],
+      order: service.order !== undefined ? Number(service.order) : 0,
     });
   }, [editingId, services, selectedCity]);
 
   const reset = () => {
     setEditingId(null);
+    const defaultCats = filterTemplateId
+      ? (categories.find(c => String(c.templateId || c.template) === String(filterTemplateId)) ? [String(categories.find(c => String(c.templateId || c.template) === String(filterTemplateId)).id || categories.find(c => String(c.templateId || c.template) === String(filterTemplateId))._id)] : [])
+      : [];
     setForm({
       title: "",
       iconUrl: "",
       badge: "",
-      categoryIds: [],
+      categoryIds: defaultCats,
       subCategoryIds: [],
       cityIds: selectedCity ? [selectedCity] : [],
+      order: 0,
     });
     setIsModalOpen(false);
   };
@@ -230,6 +261,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
         subCategoryIds: form.subCategoryIds || [],
         iconUrl: (form.iconUrl || "").trim(),
         badge: (form.badge || "").trim(),
+        order: Number(form.order || 0),
       });
 
       if (!validationResult.success) {
@@ -238,7 +270,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
         return;
       }
 
-      const { title, categoryIds, subCategoryIds, iconUrl, badge } = validationResult.data;
+      const { title, categoryIds, subCategoryIds, iconUrl, badge, order } = validationResult.data;
       const slug = slugify(title);
 
       setLoading(true);
@@ -252,6 +284,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
         badge: badge || null,
         // Add cityId if selected, using form state which is synchronized
         cityIds: form.cityIds,
+        order,
         // Default empty structures for legacy compatibility
         page: { banners: [], paymentOffers: [], serviceCategoriesGrid: [] },
         sections: []
@@ -318,6 +351,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
     badge: brand.badge || "",
     routePath: brand.routePath || `/user/${brand.slug}`,
     cityIds: brand.cityIds || [],
+    order: brand.order !== undefined ? Number(brand.order) : 0,
   });
 
   return (
@@ -353,7 +387,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium text-gray-700 shadow-sm cursor-pointer"
               >
                 <option value="all">All Categories</option>
-                {categories.map((cat) => (
+                {filteredCategoriesForForm.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.title}
                   </option>
@@ -392,6 +426,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
                   <th className="text-left py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="text-left py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Categories</th>
                   <th className="text-left py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Badge</th>
+                  <th className="text-left py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Order</th>
                   <th className="text-center py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Services</th>
                   <th className="text-right py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Actions</th>
                 </tr>
@@ -404,7 +439,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
                       <td className="py-4 px-4 text-sm font-semibold text-gray-600">{idx + 1}</td>
                       <td className="py-4 px-4">
                         {s.iconUrl ? (
-                          <img src={toAssetUrl(s.iconUrl)} alt={s.title} className="h-10 w-10 object-contain rounded-md border border-gray-200 bg-white" />
+                           <DynamicIcon icon={s.iconUrl} alt={s.title} className="h-10 w-10 object-contain rounded-md border border-gray-200 bg-white p-1" />
                         ) : (
                           <div className="h-10 w-10 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center">
                             <FiImage className="text-gray-400" />
@@ -452,6 +487,46 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
+                      </td>
+                      <td className="py-2 px-4">
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          value={s.order !== undefined ? s.order : 0}
+                          onChange={async (e) => {
+                            const val = parseInt(e.target.value, 10);
+                            const newOrder = isNaN(val) ? 0 : Math.max(0, val);
+                            
+                            // Optimistic UI update
+                            setCatalog(prev => {
+                              const updatedServices = prev.services.map(svc => 
+                                svc.id === s.id ? { ...svc, order: newOrder } : svc
+                              );
+                              return { ...prev, services: updatedServices };
+                            });
+
+                            try {
+                              const response = await brandService.update(s.id, {
+                                title: s.title,
+                                categoryIds: s.categoryIds,
+                                subCategoryIds: s.subCategoryIds,
+                                iconUrl: s.iconUrl,
+                                badge: s.badge,
+                                cityIds: s.cityIds,
+                                order: newOrder
+                              });
+                              if (!response.success) {
+                                throw new Error(response.message || 'Failed to update order');
+                              }
+                            } catch (err) {
+                              console.error('Failed to update brand order inline:', err);
+                              toast.error('Failed to save order change');
+                              // Revert backend state
+                              refreshData();
+                            }
+                          }}
+                        />
                       </td>
                       <td className="py-4 px-4 text-center">
                         <button
@@ -509,7 +584,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Categories (Select Logic)</label>
             <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50">
-              {categories.map((cat) => (
+              {filteredCategoriesForForm.map((cat) => (
                 <label key={cat.id} className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
                   <input
                     type="checkbox"
@@ -561,18 +636,27 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Brand Icon</label>
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
-                {form.iconUrl ? (
-                  <img src={toAssetUrl(form.iconUrl)} alt="Preview" className="w-full h-full object-contain" />
-                ) : (
-                  <FiImage className="text-gray-400 w-6 h-6" />
-                )}
+            <div className="space-y-3">
+              <textarea
+                value={form.iconUrl?.startsWith('<svg') ? form.iconUrl : ''}
+                onChange={(e) => setForm({ ...form, iconUrl: e.target.value })}
+                placeholder="Paste raw SVG code here... OR upload an image below"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white font-mono text-xs"
+                rows="2"
+              />
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
+                  {form.iconUrl ? (
+                    <DynamicIcon icon={form.iconUrl} alt="Preview" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <FiImage className="text-gray-400 w-6 h-6" />
+                  )}
+                </div>
+                <label className="cursor-pointer px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors text-sm shadow-sm">
+                  <input type="file" className="hidden" accept="image/*,.svg" onChange={handleFileUpload} />
+                  {uploadingBrandIcon ? "Uploading..." : "Upload New Icon"}
+                </label>
               </div>
-              <label className="cursor-pointer px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors text-sm shadow-sm">
-                <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                {uploadingBrandIcon ? "Uploading..." : "Upload New Icon"}
-              </label>
             </div>
           </div>
 
@@ -584,6 +668,21 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity }) => {
               placeholder="e.g. Popular"
               value={form.badge}
               onChange={(e) => setForm({ ...form, badge: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Display Order (Minimum 0)</label>
+            <input
+              type="number"
+              min="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              placeholder="e.g. 0"
+              value={form.order}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                setForm({ ...form, order: isNaN(val) ? 0 : Math.max(0, val) });
+              }}
             />
           </div>
 

@@ -279,6 +279,12 @@ export const homeContentService = {
 
     const response = await api.put(`/admin/home-content${queryParams.toString() ? `?${queryParams.toString()}` : ''}`, data);
     return response.data;
+  },
+
+  // Get available brands/categories for featured sections dropdown
+  getAvailableItems: async (type = 'brand') => {
+    const response = await api.get(`/admin/home-content/available-items?type=${type}`);
+    return response.data;
   }
 };
 
@@ -445,3 +451,18 @@ export const publicCatalogService = {
     apiCache.invalidatePrefix('public:');
   }
 };
+
+/**
+ * Category Template API calls
+ */
+export const categoryTemplateService = {
+  getAll: async () => {
+    const response = await api.get('/admin/category-templates');
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/admin/category-templates/${id}`, data);
+    return response.data;
+  }
+};
+

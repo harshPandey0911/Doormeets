@@ -10,9 +10,9 @@ const pricingValidation = [
   body('subCategoryId').optional({ checkFalsy: true }).isMongoId().withMessage('Valid SubCategory ID is required'),
   body('serviceId').notEmpty().withMessage('Service ID is required'),
   body('brandId').optional({ checkFalsy: true }).isMongoId().withMessage('Valid Brand ID is required'),
-  body('basePrice').isNumeric().withMessage('Base Price is required and must be a number'),
+  body('customerPrice').isNumeric().withMessage('Customer Price is required and must be a number'),
   body('gstPercentage').isNumeric().withMessage('GST Percentage must be a number'),
-  body('vendorProfit').isNumeric().withMessage('Vendor Profit must be a number')
+  body('platformCommission').isNumeric().withMessage('Platform Commission percentage must be a number')
 ];
 
 router.use(authenticate, isAdmin);

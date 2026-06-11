@@ -33,22 +33,44 @@ const PremiumCategoriesPage = () => {
             slug: cat.slug || cat.title?.toLowerCase().replace(/\s+/g, '-'),
             icon: toAssetUrl(cat.icon || cat.homeIconUrl),
             status: cat.status || 'active',
+            hasSubCategory: cat.hasSubCategory !== false,
           }));
 
           const activeCats = mapped.filter((cat) => cat.status !== 'coming_soon');
 
-          // Fetch subcategories for all active categories in parallel
+          // Fetch subcategories or services for all active categories in parallel
           const withSubs = await Promise.all(
             activeCats.map(async (cat) => {
               try {
+                if (cat.hasSubCategory === false) {
+                  const servicesRes = await publicCatalogService.getServices({ categoryId: cat.id });
+                  return {
+                    ...cat,
+                    subCategories: [],
+                    services: servicesRes?.success && Array.isArray(servicesRes.services) ? servicesRes.services : [],
+                  };
+                }
+
                 const subRes = await publicCatalogService.getSubCategories({ categoryId: cat.id });
+                const subCategories = subRes?.success && Array.isArray(subRes.subCategories) ? subRes.subCategories : [];
+
+                if (subCategories.length === 0) {
+                  const servicesRes = await publicCatalogService.getServices({ categoryId: cat.id });
+                  return {
+                    ...cat,
+                    subCategories: [],
+                    services: servicesRes?.success && Array.isArray(servicesRes.services) ? servicesRes.services : [],
+                  };
+                }
+
                 return {
                   ...cat,
-                  subCategories: subRes?.success && Array.isArray(subRes.subCategories) ? subRes.subCategories : [],
+                  subCategories,
+                  services: [],
                 };
               } catch (err) {
-                console.error(`Error loading subcategories for ${cat.title}:`, err);
-                return { ...cat, subCategories: [] };
+                console.error(`Error loading details for ${cat.title}:`, err);
+                return { ...cat, subCategories: [], services: [] };
               }
             })
           );
@@ -80,25 +102,29 @@ const PremiumCategoriesPage = () => {
     }
   }, [loading, location.state, location.pathname]);
 
-  // Filter categories and subcategories based on search query
+  // Filter categories, subcategories, and services based on search query
   const filteredData = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return categoriesWithSubs;
 
     return categoriesWithSubs
       .map((cat) => {
-        // Match either category title or its subcategory titles
+        // Match either category title, its subcategory titles, or its service titles
         const matchesCat = cat.title.toLowerCase().includes(term);
-        const filteredSubs = cat.subCategories.filter((sub) =>
+        const filteredSubs = (cat.subCategories || []).filter((sub) =>
           sub.title.toLowerCase().includes(term)
         );
+        const filteredServices = (cat.services || []).filter((svc) =>
+          svc.title.toLowerCase().includes(term)
+        );
 
-        if (matchesCat || filteredSubs.length > 0) {
+        if (matchesCat || filteredSubs.length > 0 || filteredServices.length > 0) {
           return {
             ...cat,
-            // If the category itself matched but no subcategories matched, keep all subcategories.
-            // Otherwise, filter to only the matching subcategories.
+            // If the category itself matched but no children matched, keep all children.
+            // Otherwise, filter to only the matching children.
             subCategories: filteredSubs.length > 0 ? filteredSubs : cat.subCategories,
+            services: filteredServices.length > 0 ? filteredServices : cat.services,
           };
         }
         return null;
@@ -109,6 +135,12 @@ const PremiumCategoriesPage = () => {
   const handleSubCategoryClick = (category, subCategory) => {
     navigate(`/user/category/${category.slug || category.id}`, {
       state: { category, subCategory }
+    });
+  };
+
+  const handleServiceClick = (category, service) => {
+    navigate(`/user/category/${category.slug || category.id}`, {
+      state: { category, selectedService: service }
     });
   };
 
@@ -190,8 +222,8 @@ const PremiumCategoriesPage = () => {
                   </button>
                 </div>
 
-                {/* Subcategory Grid */}
-                {category.subCategories.length > 0 ? (
+                {/* Subcategory Grid or Services Grid */}
+                {category.subCategories && category.subCategories.length > 0 ? (
                   <div className="grid grid-cols-3 gap-3.5 sm:grid-cols-4 md:grid-cols-5 py-1 px-1">
                     {category.subCategories.map((sub, index) => (
                       <motion.button
@@ -213,9 +245,29 @@ const PremiumCategoriesPage = () => {
                       </motion.button>
                     ))}
                   </div>
+                ) : category.services && category.services.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3.5 sm:grid-cols-4 md:grid-cols-5 py-1 px-1">
+                    {category.services.map((service, index) => (
+                      <motion.button
+                        key={service.id || service._id}
+                        onClick={() => handleServiceClick(category, service)}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex flex-col items-center p-3.5 bg-gray-50/70 border border-gray-200/50 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-orange-200 transition-all duration-300 group"
+                      >
+                        <img
+                          src={toAssetUrl(service.iconUrl || service.icon) || getSubDummyImage(service.title)}
+                          alt={service.title}
+                          className="w-16 h-16 object-cover rounded-xl mb-2.5 transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <span className="text-[11px] font-normal text-gray-700 text-center line-clamp-2 transition-colors duration-200 group-hover:text-orange-500">
+                          {service.title}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
                 ) : (
                   <div className="rounded-[24px] border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 text-center">
-                    No subcategories available.
+                    No services or subcategories available.
                   </div>
                 )}
               </div>

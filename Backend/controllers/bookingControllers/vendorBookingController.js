@@ -189,9 +189,10 @@ const getBookingById = async (req, res) => {
     const existingBid = await Bid.findOne({ bookingId: id, vendorId });
 
     const bookingData = booking.toObject();
-    const allowedStatuses = ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
-    const isAccepted = allowedStatuses.includes(booking.status) && booking.vendorId && booking.vendorId._id.toString() === vendorId.toString();
-    if (!isAccepted) {
+    const phoneRevealedStatuses = ['visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
+    const canSeePhone = phoneRevealedStatuses.includes(booking.status) && booking.vendorId && booking.vendorId._id.toString() === vendorId.toString();
+    
+    if (!canSeePhone) {
       if (bookingData.userId) {
         bookingData.userId.phone = undefined;
         bookingData.userId.email = undefined;
@@ -618,6 +619,90 @@ const rejectBooking = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to reject booking. Please try again.'
+    });
+  }
+};
+
+/**
+ * Cancel Accepted Booking (Vendor)
+ * Only allowed within 3 minutes of acceptance
+ */
+const cancelAcceptedBooking = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+
+    const booking = await Booking.findOne({ _id: id, vendorId });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or not accepted by you'
+      });
+    }
+
+    if (!booking.acceptedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking has no acceptance timestamp'
+      });
+    }
+
+    const timeSinceAcceptanceMs = Date.now() - new Date(booking.acceptedAt).getTime();
+    if (timeSinceAcceptanceMs > 3 * 60 * 1000) { // 3 minutes
+      return res.status(400).json({
+        success: false,
+        message: 'You can only cancel an accepted booking within 3 minutes of accepting it.'
+      });
+    }
+
+    // Reset booking to SEARCHING
+    booking.vendorId = null;
+    booking.workerId = null;
+    booking.isSelfJob = false;
+    booking.status = BOOKING_STATUS.SEARCHING;
+    booking.acceptedAt = null;
+    booking.assignedAt = null;
+    booking.currentWave = 1; // Restart waves
+    booking.waveStartedAt = new Date(); // Start wave timer now
+    // Remove this vendor from potential vendors so they don't get pinged again
+    booking.potentialVendors = booking.potentialVendors.filter(v => v.vendorId?.toString() !== vendorId.toString());
+    
+    // Also remove from notified vendors so they don't get the 'booking_taken' later
+    booking.notifiedVendors = booking.notifiedVendors.filter(v => v.toString() !== vendorId.toString());
+
+    await booking.save();
+
+    // Reset Vendor availability
+    const Vendor = require('../../models/Vendor');
+    await Vendor.findByIdAndUpdate(vendorId, {
+      workStatus: 'available',
+      availabilityStatus: 'ONLINE',
+      availability: 'AVAILABLE',
+      reservedBookingId: null,
+      reservedFrom: null
+    });
+
+    // Notify user
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+        bookingId: booking._id,
+        status: BOOKING_STATUS.SEARCHING,
+        message: 'Vendor had to cancel. We are searching for another vendor...'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking cancelled successfully and returned to search pool.'
+    });
+
+  } catch (error) {
+    console.error('Cancel accepted booking error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel booking. Please try again.'
     });
   }
 };
@@ -2081,5 +2166,6 @@ module.exports = {
   payWorker,
   getVendorRatings,
   getPendingBookings,
-  reconfirmBooking
+  reconfirmBooking,
+  cancelAcceptedBooking
 };

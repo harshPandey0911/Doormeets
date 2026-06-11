@@ -55,6 +55,7 @@ const PremiumBrandPage = () => {
             price: service.discountPrice || service.basePrice || service.price || 0,
             originalPrice: service.basePrice || null,
             features: service.features || [],
+            steps: service.steps || [],
             vendorId: service.vendorId || brand.vendorId,
             brandId
           })));

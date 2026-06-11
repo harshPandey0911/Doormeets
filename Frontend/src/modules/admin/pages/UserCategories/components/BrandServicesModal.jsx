@@ -21,7 +21,10 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
     basePrice: '',
     gstPercentage: 18,
     discountPrice: '',
-    subCategoryId: ''
+    subCategoryId: '',
+    description: '',
+    features: '',
+    steps: ''
   });
 
   useEffect(() => {
@@ -55,19 +58,24 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
       basePrice: '',
       gstPercentage: 18,
       discountPrice: '',
-      subCategoryId: ''
+      subCategoryId: '',
+      description: '',
+      features: '',
+      steps: ''
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Parse numbers
     const data = {
       title: form.title,
       basePrice: Number(form.basePrice),
       gstPercentage: Number(form.gstPercentage),
-      discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined
+      discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
+      description: form.description,
+      features: form.features ? form.features.split('\n').filter(f => f.trim()) : [],
+      steps: form.steps ? form.steps.split('\n').filter(s => s.trim()) : []
     };
 
     if (!form.subCategoryId) {
@@ -138,7 +146,10 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
       basePrice: service.basePrice,
       gstPercentage: service.gstPercentage || 18,
       discountPrice: service.discountPrice || '',
-      subCategoryId: service.subCategoryId?._id || service.subCategoryId || ''
+      subCategoryId: service.subCategoryId?._id || service.subCategoryId || '',
+      description: service.description || '',
+      features: service.features ? service.features.join('\n') : '',
+      steps: service.steps ? service.steps.join('\n') : ''
     });
   };
 
@@ -179,6 +190,36 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
                 onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                 placeholder="e.g. AC Filter Cleaning"
                 className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+            </div>
+            <div className="sm:col-span-4">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
+              <textarea
+                value={form.description}
+                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                placeholder="Short description of the service"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                rows="2"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Features (One per line)</label>
+              <textarea
+                value={form.features}
+                onChange={e => setForm(p => ({ ...p, features: e.target.value }))}
+                placeholder="Eco-friendly supplies\nProfessional staff"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                rows="3"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Steps (One per line)</label>
+              <textarea
+                value={form.steps}
+                onChange={e => setForm(p => ({ ...p, steps: e.target.value }))}
+                placeholder="Book online\nExpert arrives\nService completed"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+                rows="3"
               />
             </div>
             <div>

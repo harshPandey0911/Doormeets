@@ -42,6 +42,13 @@ const getAllCategories = async (req, res) => {
         hasBrands: cat.hasBrands ?? true,
         hasSubCategory: cat.hasSubCategory ?? true,
         hasBrand: cat.hasBrand ?? true,
+        templateId: cat.templateId ? cat.templateId.toString() : null,
+        enableBrands: cat.enableBrands || false,
+        brandRequired: cat.brandRequired || false,
+        enableConsultantBooking: cat.enableConsultantBooking || false,
+        enableWarranty: cat.enableWarranty || false,
+        enableMultiVisit: cat.enableMultiVisit || false,
+        enablePricingMatrix: cat.enablePricingMatrix !== false,
         showOnHome: cat.showOnHome,
         homeOrder: cat.homeOrder,
         description: cat.description,
@@ -96,6 +103,13 @@ const getCategoryById = async (req, res) => {
         hasBrands: category.hasBrands ?? true,
         hasSubCategory: category.hasSubCategory ?? true,
         hasBrand: category.hasBrand ?? true,
+        templateId: category.templateId,
+        enableBrands: category.enableBrands || false,
+        brandRequired: category.brandRequired || false,
+        enableConsultantBooking: category.enableConsultantBooking || false,
+        enableWarranty: category.enableWarranty || false,
+        enableMultiVisit: category.enableMultiVisit || false,
+        enablePricingMatrix: category.enablePricingMatrix !== false,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,
@@ -145,6 +159,13 @@ const createCategory = async (req, res) => {
       hasBrands,
       hasSubCategory,
       hasBrand,
+      templateId,
+      enableBrands,
+      brandRequired,
+      enableConsultantBooking,
+      enableWarranty,
+      enableMultiVisit,
+      enablePricingMatrix,
       showOnHome,
       homeOrder,
       description,
@@ -214,6 +235,13 @@ const createCategory = async (req, res) => {
         existingCategory.metaDescription = metaDescription?.trim() || null;
         existingCategory.cityIds = cityIds || [];
         existingCategory.categoryType = categoryType || 'service';
+        existingCategory.templateId = templateId || null;
+        existingCategory.enableBrands = enableBrands !== undefined ? Boolean(enableBrands) : false;
+        existingCategory.brandRequired = brandRequired !== undefined ? Boolean(brandRequired) : false;
+        existingCategory.enableConsultantBooking = enableConsultantBooking !== undefined ? Boolean(enableConsultantBooking) : false;
+        existingCategory.enableWarranty = enableWarranty !== undefined ? Boolean(enableWarranty) : false;
+        existingCategory.enableMultiVisit = enableMultiVisit !== undefined ? Boolean(enableMultiVisit) : false;
+        existingCategory.enablePricingMatrix = enablePricingMatrix !== undefined ? Boolean(enablePricingMatrix) : true;
         existingCategory.createdBy = req.user.id;
         
         await existingCategory.save();
@@ -270,6 +298,13 @@ const createCategory = async (req, res) => {
       metaDescription: metaDescription?.trim() || null,
       cityIds: cityIds || [],
       categoryType: categoryType || 'service',
+      templateId: templateId || null,
+      enableBrands: enableBrands !== undefined ? Boolean(enableBrands) : false,
+      brandRequired: brandRequired !== undefined ? Boolean(brandRequired) : false,
+      enableConsultantBooking: enableConsultantBooking !== undefined ? Boolean(enableConsultantBooking) : false,
+      enableWarranty: enableWarranty !== undefined ? Boolean(enableWarranty) : false,
+      enableMultiVisit: enableMultiVisit !== undefined ? Boolean(enableMultiVisit) : false,
+      enablePricingMatrix: enablePricingMatrix !== undefined ? Boolean(enablePricingMatrix) : true,
       createdBy: req.user.id
     });
 
@@ -293,6 +328,14 @@ const createCategory = async (req, res) => {
         status: category.status,
         isPopular: category.isPopular,
         categoryType: category.categoryType,
+        templateId: category.templateId ? category.templateId.toString() : null,
+        enableBrands: category.enableBrands || false,
+        brandRequired: category.brandRequired || false,
+        enableConsultantBooking: category.enableConsultantBooking || false,
+        enableWarranty: category.enableWarranty || false,
+        enableMultiVisit: category.enableMultiVisit || false,
+        enablePricingMatrix: category.enablePricingMatrix !== false,
+        cityIds: category.cityIds || [],
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
@@ -350,7 +393,14 @@ const updateCategory = async (req, res) => {
       metaTitle,
       metaDescription,
       cityIds: updateCityIds,
-      categoryType
+      categoryType,
+      templateId,
+      enableBrands,
+      brandRequired,
+      enableConsultantBooking,
+      enableWarranty,
+      enableMultiVisit,
+      enablePricingMatrix
     } = req.body;
 
     const category = await Category.findById(id);
@@ -414,6 +464,13 @@ const updateCategory = async (req, res) => {
     if (metaTitle !== undefined) category.metaTitle = metaTitle?.trim() || null;
     if (metaDescription !== undefined) category.metaDescription = metaDescription?.trim() || null;
     if (categoryType !== undefined) category.categoryType = categoryType;
+    if (templateId !== undefined) category.templateId = templateId || null;
+    if (enableBrands !== undefined) category.enableBrands = Boolean(enableBrands);
+    if (brandRequired !== undefined) category.brandRequired = Boolean(brandRequired);
+    if (enableConsultantBooking !== undefined) category.enableConsultantBooking = Boolean(enableConsultantBooking);
+    if (enableWarranty !== undefined) category.enableWarranty = Boolean(enableWarranty);
+    if (enableMultiVisit !== undefined) category.enableMultiVisit = Boolean(enableMultiVisit);
+    if (enablePricingMatrix !== undefined) category.enablePricingMatrix = Boolean(enablePricingMatrix);
 
     if (updateCityIds !== undefined) {
       category.cityIds = updateCityIds;
@@ -435,6 +492,13 @@ const updateCategory = async (req, res) => {
         hasBrands: category.hasBrands ?? true,
         hasSubCategory: category.hasSubCategory ?? true,
         hasBrand: category.hasBrand ?? true,
+        templateId: category.templateId ? category.templateId.toString() : null,
+        enableBrands: category.enableBrands || false,
+        brandRequired: category.brandRequired || false,
+        enableConsultantBooking: category.enableConsultantBooking || false,
+        enableWarranty: category.enableWarranty || false,
+        enableMultiVisit: category.enableMultiVisit || false,
+        enablePricingMatrix: category.enablePricingMatrix !== false,
         showOnHome: category.showOnHome,
         homeOrder: category.homeOrder,
         description: category.description,
@@ -443,6 +507,7 @@ const updateCategory = async (req, res) => {
         isPopular: category.isPopular,
         categoryType: category.categoryType,
         vendorId: category.vendorId,
+        cityIds: (category.cityIds || []).map(id => id.toString()),
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
@@ -487,9 +552,46 @@ const deleteCategory = async (req, res) => {
     category.status = SERVICE_STATUS.DELETED;
     await category.save();
 
+    // Delete associated subcategories
+    const SubCategory = require('../../models/SubCategory');
+    await SubCategory.deleteMany({ categoryId: id });
+
+    // Delete associated services
+    const Service = require('../../models/Service');
+    const services = await Service.find({ categoryId: id });
+    const serviceIds = services.map(s => s._id);
+    await Service.deleteMany({ categoryId: id });
+
+    // Delete associated pricing configurations
+    const PricingConfig = require('../../models/PricingConfig');
+    await PricingConfig.deleteMany({ categoryId: id });
+
+    // Delete associated service brand pricings
+    const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+    await ServiceBrandPricing.deleteMany({ categoryId: id });
+
+    // Delete dynamic details (page blocks, workflows, etc.) for those services
+    if (serviceIds.length > 0) {
+      const ServiceField = require('../../models/ServiceField');
+      const ServiceWorkflow = require('../../models/ServiceWorkflow');
+      const ServiceWorkflowStep = require('../../models/ServiceWorkflowStep');
+      const PricingRule = require('../../models/PricingRule');
+      const ServicePageBlock = require('../../models/ServicePageBlock');
+
+      await ServiceField.deleteMany({ serviceId: { $in: serviceIds } });
+      const workflows = await ServiceWorkflow.find({ serviceId: { $in: serviceIds } });
+      const workflowIds = workflows.map(w => w._id);
+      await ServiceWorkflow.deleteMany({ serviceId: { $in: serviceIds } });
+      if (workflowIds.length > 0) {
+        await ServiceWorkflowStep.deleteMany({ workflowId: { $in: workflowIds } });
+      }
+      await PricingRule.deleteMany({ serviceId: { $in: serviceIds } });
+      await ServicePageBlock.deleteMany({ serviceId: { $in: serviceIds } });
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Category deleted successfully'
+      message: 'Category and all associated subcategories, services and pricings deleted successfully'
     });
   } catch (error) {
     console.error('Delete category error:', error);
