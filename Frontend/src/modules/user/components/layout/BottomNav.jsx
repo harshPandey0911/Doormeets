@@ -9,38 +9,38 @@ import { useCart } from '../../../../context/CartContext';
 // Colorful theme for each nav item
 const navItemColors = {
   home: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   categories: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   bookings: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   scrap: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   cart: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   account: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
@@ -122,7 +122,7 @@ const BottomNav = React.memo(() => {
             animate={{
               left: indicatorStyle.left,
               width: indicatorStyle.width,
-              background: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+              background: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
             }}
             transition={{
               type: "spring",

@@ -39,7 +39,7 @@ const PremiumCartPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-44">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-44">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto max-w-4xl px-4 pt-[80px] pb-5 md:px-6">
@@ -105,7 +105,7 @@ const PremiumCartPage = () => {
               </div>
               <div className="text-base font-bold text-[#111827]">Your cart is empty</div>
               <p className="mt-2 text-xs text-gray-500">Add a service from home, category or brand page.</p>
-              <button type="button" onClick={() => navigate('/user/home')} className="mt-4 rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-5 py-3 text-xs font-bold text-white shadow-lg shadow-orange-100/50 hover:opacity-90 active:scale-95 transition-all">
+              <button type="button" onClick={() => navigate('/user/home')} className="mt-4 rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-5 py-3 text-xs font-bold text-white shadow-lg shadow-orange-100/50 hover:opacity-90 active:scale-95 transition-all">
                 Browse services
               </button>
             </div>

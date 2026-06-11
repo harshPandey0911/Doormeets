@@ -42,7 +42,7 @@ const MyRating = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-24">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-24">
       {/* Header */}
       <header className="bg-transparent backdrop-blur-xl border-b border-black/[0.03] sticky top-0 z-30">
         <div className="px-4 pt-4 pb-3">
@@ -61,7 +61,7 @@ const MyRating = () => {
       <main className="px-4 py-6 space-y-6">
         {isLoading && pagination.page === 1 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <FiLoader className="w-10 h-10 text-[#FF9F45] animate-spin mb-4" />
+            <FiLoader className="w-10 h-10 text-[#B33A35] animate-spin mb-4" />
             <p className="text-gray-500 font-medium">Fetching your reviews...</p>
           </div>
         ) : ratings.length > 0 ? (
@@ -96,12 +96,12 @@ const MyRating = () => {
                     </div>
                   </div>
                   <div className="bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
-                    <span className="text-[10px] font-bold text-[#FF9F45] uppercase">{rating.serviceName || rating.serviceId?.title}</span>
+                    <span className="text-[10px] font-bold text-[#B33A35] uppercase">{rating.serviceName || rating.serviceId?.title}</span>
                   </div>
                 </div>
 
                 {rating.review && (
-                  <p className="text-gray-600 text-sm leading-relaxed font-medium pl-2 border-l-4 border-[#FF9F45]/20">
+                  <p className="text-gray-600 text-sm leading-relaxed font-medium pl-2 border-l-4 border-[#B33A35]/20">
                     "{rating.review}"
                   </p>
                 )}
@@ -121,7 +121,7 @@ const MyRating = () => {
                   </div>
                   <button
                     onClick={() => navigate(`/user/booking/${rating._id}`)}
-                    className="text-[11px] font-bold text-[#FF9F45] hover:underline"
+                    className="text-[11px] font-bold text-[#B33A35] hover:underline"
                   >
                     View Details
                   </button>
@@ -150,7 +150,7 @@ const MyRating = () => {
             </p>
             <button
               onClick={() => navigate('/user/bookings')}
-              className="mt-6 px-8 py-3 bg-[#FF9F45] text-white rounded-2xl font-bold text-sm shadow-lg shadow-orange-100 active:scale-95 transition-all"
+              className="mt-6 px-8 py-3 bg-[#B33A35] text-white rounded-2xl font-bold text-sm shadow-lg shadow-orange-100 active:scale-95 transition-all"
             >
               Go to My Bookings
             </button>

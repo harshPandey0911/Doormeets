@@ -81,8 +81,8 @@ const MyBookings = () => {
       case 'in-progress':
       case 'journey_started':
       case 'visited':
-        return '!border-l-[#FFB86C]';
-      case 'completed': return '!border-l-[#FF9F45]';
+        return '!border-l-[#9E2E2A]';
+      case 'completed': return '!border-l-[#B33A35]';
       case 'cancelled':
       case 'rejected': return '!border-l-rose-500';
       case 'awaiting_payment': return '!border-l-amber-500';
@@ -98,9 +98,9 @@ const MyBookings = () => {
       case 'in-progress':
       case 'journey_started':
       case 'visited':
-        return 'bg-[#FFB86C] text-white border-transparent ring-[#FFB86C]';
+        return 'bg-[#9E2E2A] text-white border-transparent ring-[#9E2E2A]';
       case 'completed':
-        return 'bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white border-transparent ring-[#FF9F45]';
+        return 'bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white border-transparent ring-[#B33A35]';
       case 'cancelled':
       case 'rejected':
         return 'bg-rose-500 text-white border-transparent ring-rose-500';
@@ -300,7 +300,7 @@ const MyBookings = () => {
                     }
                   }}
                   onClick={() => handleBookingClick(booking)}
-                  className={`group relative bg-white rounded-xl p-3 border border-slate-200 border-l-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_16px_-6px_rgba(0,0,0,0.06)] hover:border-[#FF9F45]/30 active:scale-[0.99] transition-all duration-300 cursor-pointer overflow-hidden ${getStatusBorderColor(booking.status)}`}
+                  className={`group relative bg-white rounded-xl p-3 border border-slate-200 border-l-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_16px_-6px_rgba(0,0,0,0.06)] hover:border-[#B33A35]/30 active:scale-[0.99] transition-all duration-300 cursor-pointer overflow-hidden ${getStatusBorderColor(booking.status)}`}
                 >
                   {/* Decorative Elements */}
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-slate-50 via-transparent to-transparent -z-0 opacity-35" />
@@ -313,13 +313,13 @@ const MyBookings = () => {
                           #{booking.bookingNumber || (booking._id || booking.id).substring(0, 8)}
                         </span>
                         {booking.serviceCategory && (
-                          <span className="text-[8px] font-bold text-[#FF9F45] bg-[#FF9F45]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          <span className="text-[8px] font-bold text-[#B33A35] bg-[#B33A35]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
                             {booking.serviceCategory}
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-sm font-bold text-[#111827] leading-tight line-clamp-1 group-hover:text-[#FF9F45] transition-colors">
+                      <h3 className="text-sm font-bold text-[#111827] leading-tight line-clamp-1 group-hover:text-[#B33A35] transition-colors">
                         {(booking.serviceName || 'Service Request')}
                       </h3>
 
@@ -342,14 +342,14 @@ const MyBookings = () => {
                   {/* Inline Details Row */}
                   <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2.5 text-[11px] text-slate-500 border-t border-slate-100/80 pt-2">
                     <div className="flex items-center gap-1">
-                      <FiCalendar className="w-3.5 h-3.5 text-[#FF9F45] shrink-0" />
+                      <FiCalendar className="w-3.5 h-3.5 text-[#B33A35] shrink-0" />
                       <span className="font-semibold text-slate-700">{formatDate(booking.scheduledDate)}</span>
                       <span className="text-slate-300">•</span>
                       <span className="text-slate-600">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</span>
                     </div>
                     <div className="hidden sm:inline text-slate-300">|</div>
                     <div className="flex items-center gap-1 min-w-0 flex-1 sm:flex-initial">
-                      <FiMapPin className="w-3.5 h-3.5 text-[#FFB86C] shrink-0" />
+                      <FiMapPin className="w-3.5 h-3.5 text-[#9E2E2A] shrink-0" />
                       <span className="truncate max-w-[200px] sm:max-w-xs">{getAddressString(booking.address)}</span>
                     </div>
                   </div>
@@ -365,7 +365,7 @@ const MyBookings = () => {
                     </div>
 
                     <button
-                      className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-lg bg-orange-50 border border-orange-100 text-[#FF9F45] font-bold text-[11px] hover:bg-[#FF9F45] hover:border-[#FF9F45] hover:text-white transition-all shadow-sm active:scale-95"
+                      className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-lg bg-orange-50 border border-orange-100 text-[#B33A35] font-bold text-[11px] hover:bg-[#B33A35] hover:border-[#B33A35] hover:text-white transition-all shadow-sm active:scale-95"
                     >
                       View Details
                       <FiChevronRight className="w-3 h-3" />

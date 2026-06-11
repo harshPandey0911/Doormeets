@@ -174,7 +174,7 @@ const HelpSupport = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-6">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-6">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-transparent backdrop-blur-xl border-b border-black/[0.03]">
         <div className="px-4 py-4">
@@ -250,7 +250,7 @@ const HelpSupport = () => {
         {/* Submit a Request Button */}
         <button
           onClick={() => setShowContactForm(true)}
-          className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2"
         >
           <FiSend className="w-5 h-5" />
           Submit a Request
@@ -288,7 +288,7 @@ const HelpSupport = () => {
                       {category.questions.map((item, idx) => (
                         <div key={idx} className="text-left">
                           <div className="flex items-start gap-2 mb-2">
-                            <FiHelpCircle className="w-4 h-4 text-[#FF9F45] mt-0.5 shrink-0" />
+                            <FiHelpCircle className="w-4 h-4 text-[#B33A35] mt-0.5 shrink-0" />
                             <p className="font-medium text-gray-900 text-sm">{item.q}</p>
                           </div>
                           <p className="text-sm text-gray-600 ml-6">{item.a}</p>
@@ -330,7 +330,7 @@ const HelpSupport = () => {
                       </span>
                     </div>
                     <div className="flex items-start gap-2 mb-2">
-                      <FiHelpCircle className="w-4 h-4 text-[#FF9F45] mt-0.5 shrink-0" />
+                      <FiHelpCircle className="w-4 h-4 text-[#B33A35] mt-0.5 shrink-0" />
                       <p className="font-medium text-gray-900 text-sm">{item.q}</p>
                     </div>
                     <p className="text-sm text-gray-600 ml-6">{item.a}</p>
@@ -405,7 +405,7 @@ const HelpSupport = () => {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2"
               >
                 <FiSend className="w-5 h-5" />
                 Submit Request

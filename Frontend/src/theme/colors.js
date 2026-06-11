@@ -11,24 +11,24 @@
 
 // Doormeets Core Brand Colors
 const brand = {
-  teal: '#FF9F45', // Primary Orange
-  yellow: '#FFB86C', // Secondary Orange
-  orange: '#FFD8A8', // Accent Orange
-  gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 50%, #FFD8A8 100%)',
-  conic: 'conic-gradient(from 0deg, #FF9F45, #FFB86C, #FFD8A8)'
+  teal: '#B33A35', // Primary Red/Rust
+  yellow: '#9E2E2A', // Primary Hover
+  orange: '#D56C67', // Primary Light / Accent
+  gradient: 'linear-gradient(135deg, #B33A35 0%, #D56C67 50%, #9E2E2A 100%)',
+  conic: 'conic-gradient(from 0deg, #B33A35, #D56C67, #9E2E2A)'
 };
 
 // User Theme Colors
 const userTheme = {
-  backgroundGradient: 'linear-gradient(180deg, #FFEBD6 0%, #FFF5EB 40%, #FFFFFF 100%)',
+  backgroundGradient: 'linear-gradient(180deg, #FFFFFF 0%, #F8F9FA 100%)',
   gradient: brand.gradient,
-  headerGradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 50%, #FFD8A8 100%)',
-  headerBg: '#FFF8F1',
+  headerGradient: 'linear-gradient(135deg, #B33A35 0%, #D56C67 50%, #9E2E2A 100%)',
+  headerBg: '#FFFFFF',
   button: brand.teal,
   primary: brand.teal,
   icon: brand.teal,
-  cardShadow: '0 8px 16px -2px rgba(255, 159, 69, 0.15), 0 4px 8px -1px rgba(255, 159, 69, 0.1)',
-  cardBorder: '1px solid #EAEAEA',
+  cardShadow: '0 8px 16px -2px rgba(179, 58, 53, 0.15), 0 4px 8px -1px rgba(179, 58, 53, 0.1)',
+  cardBorder: '1px solid #E5E7EB',
   brand: brand
 };
 

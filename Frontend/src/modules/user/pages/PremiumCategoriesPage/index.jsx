@@ -124,7 +124,7 @@ const PremiumCategoriesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
       {/* Premium Navbar */}
       <Navbar
         locationLabel={currentCity?.name || 'Select location'}

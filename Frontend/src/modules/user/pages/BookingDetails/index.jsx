@@ -239,9 +239,9 @@ const BookingDetails = () => {
       case 'journey_started':
         return <FiLoader className="w-5 h-5 text-blue-500 animate-spin" />;
       case 'visited':
-        return <FiMapPin className="w-5 h-5 text-[#FFB86C]" />;
+        return <FiMapPin className="w-5 h-5 text-[#9E2E2A]" />;
       case 'completed':
-        return <FiCheckCircle className="w-5 h-5 text-[#FF9F45]" />;
+        return <FiCheckCircle className="w-5 h-5 text-[#B33A35]" />;
       case 'cancelled':
         return <FiXCircle className="w-5 h-5 text-red-500" />;
       case 'awaiting_payment':
@@ -266,9 +266,9 @@ const BookingDetails = () => {
       case 'journey_started':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'visited':
-        return 'bg-orange-50 text-[#FFB86C] border-orange-200';
+        return 'bg-orange-50 text-[#9E2E2A] border-orange-200';
       case 'completed':
-        return 'bg-orange-50 text-[#FF9F45] border-orange-200';
+        return 'bg-orange-50 text-[#B33A35] border-orange-200';
       case 'cancelled':
         return 'bg-red-50 text-red-700 border-red-200';
       case 'awaiting_payment':
@@ -664,7 +664,7 @@ const BookingDetails = () => {
                 {/* Step 1: Booked */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['pending', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#FF9F45] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
                     }`}>
                     <FiCheckCircle className="w-4 h-4" />
                   </div>
@@ -674,7 +674,7 @@ const BookingDetails = () => {
                 {/* Step 2: Assigned */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#FF9F45] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
                     }`}>
                     2
                   </div>
@@ -684,7 +684,7 @@ const BookingDetails = () => {
                 {/* Step 3: In Progress */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#FF9F45] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
                     }`}>
                     3
                   </div>
@@ -694,7 +694,7 @@ const BookingDetails = () => {
                 {/* Step 4: Done */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#FF9F45] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
                     }`}>
                     4
                   </div>
@@ -703,7 +703,7 @@ const BookingDetails = () => {
               </div>
               {/* Connect lines */}
               <div className="absolute top-18 left-[15%] right-[15%] h-0.5 bg-gray-100 z-0">
-                <div className="h-full bg-[#FF9F45] transition-all duration-1000" style={{
+                <div className="h-full bg-[#B33A35] transition-all duration-1000" style={{
                   width:
                     ['work_done', 'completed'].includes(booking.status?.toLowerCase()) ? '100%' :
                       ['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? '66%' :

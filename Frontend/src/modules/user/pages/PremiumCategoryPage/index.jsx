@@ -334,7 +334,7 @@ const PremiumCategoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 pt-[76px] pb-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
@@ -409,9 +409,9 @@ const PremiumCategoryPage = () => {
                 className={`w-full max-w-xs py-3 px-5 rounded-2xl font-bold shadow-md transition-all ${
                   activeCategory.isInterested 
                     ? 'bg-green-500 text-white cursor-default shadow-none'
-                    : 'bg-[#FF9F45] text-white hover:bg-[#FFB86C] hover:shadow-lg'
+                    : 'bg-[#B33A35] text-white hover:bg-[#9E2E2A] hover:shadow-lg'
                 }`}
-                style={{ backgroundColor: activeCategory.isInterested ? '#22c55e' : '#FF9F45' }}
+                style={{ backgroundColor: activeCategory.isInterested ? '#22c55e' : '#B33A35' }}
               >
                 {activeCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
               </button>
@@ -503,7 +503,7 @@ const PremiumCategoryPage = () => {
             width: 40,
             height: 40,
             borderRadius: '50%',
-            backgroundColor: '#FF9F45',
+            backgroundColor: '#B33A35',
             zIndex: 9999,
             opacity: 0.9,
             scale: 1,
@@ -526,7 +526,7 @@ const PremiumCategoryPage = () => {
           {item.image ? (
             <img src={item.image} alt="" className="h-full w-full object-cover rounded-full" />
           ) : (
-            <div className="h-full w-full bg-[#FF9F45]" />
+            <div className="h-full w-full bg-[#B33A35]" />
           )}
         </motion.div>
       ))}

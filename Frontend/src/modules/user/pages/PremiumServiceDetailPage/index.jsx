@@ -203,13 +203,13 @@ const PremiumServiceDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff8f1_0%,#ffffff_38%,#ffffff_100%)] pb-28">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#ffffff_38%,#ffffff_100%)] pb-28">
       <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto max-w-4xl pt-[8px] pb-4 md:px-6">
 
         <div className="overflow-hidden bg-white shadow-[0_18px_60px_rgba(17,24,39,0.08)] md:rounded-4xl md:border md:border-gray-100">
-          <div className="relative h-80 md:h-[460px]">
+          <div className="relative h-screen md:h-[460px]">
             <img src={service.image ? toAssetUrl(service.image) : service.image} alt={service.title} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute left-5 top-5 flex gap-2 text-white">
@@ -243,7 +243,7 @@ const PremiumServiceDetailPage = () => {
         {fields.filter(f => f.showToUser !== false).length > 0 && (
           <section className="mt-3 py-2 px-1">
             <div className="flex items-center gap-2 mb-4">
-              <span className="p-1.5 bg-orange-50 text-[#FF9F45] rounded-lg">
+              <span className="p-1.5 bg-orange-50 text-[#B33A35] rounded-lg">
                 <FiSliders className="w-5 h-5" />
               </span>
               <h2 className="text-xl font-normal text-gray-900">Custom Options</h2>
@@ -363,9 +363,9 @@ const PremiumServiceDetailPage = () => {
                               handleFileUpload(field.name, e.target.files[0]);
                             }
                           }}
-                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#FF9F45] hover:file:bg-orange-100/50"
+                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#B33A35] hover:file:bg-orange-100/50"
                         />
-                        {uploadingFiles[field.name] && <p className="text-[10px] text-[#FF9F45] animate-pulse">Uploading file...</p>}
+                        {uploadingFiles[field.name] && <p className="text-[10px] text-[#B33A35] animate-pulse">Uploading file...</p>}
                         {value && (
                           <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-100">
                             <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
@@ -389,7 +389,7 @@ const PremiumServiceDetailPage = () => {
                         <button
                           type="button"
                           onClick={() => fetchCurrentLocation(field.name)}
-                          className="px-3 bg-orange-50 hover:bg-orange-100/50 text-[#FF9F45] rounded-xl text-xs font-semibold border border-orange-150"
+                          className="px-3 bg-orange-50 hover:bg-orange-100/50 text-[#B33A35] rounded-xl text-xs font-semibold border border-orange-150"
                         >
                           Locate Me
                         </button>
@@ -407,7 +407,7 @@ const PremiumServiceDetailPage = () => {
           <h2 className="text-base font-bold text-[#111827] tracking-tight">What you get</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {features.length > 0 ? features.map((feature) => (
-              <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-2 text-sm font-normal text-[#FF9F45]">
+              <span key={feature} className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-2 text-sm font-normal text-[#B33A35]">
                 <FiCheckCircle /> {feature}
               </span>
             )) : <span className="text-sm text-gray-500 font-normal">No included features listed.</span>}
@@ -420,7 +420,7 @@ const PremiumServiceDetailPage = () => {
           <div className="mt-4 space-y-3">
             {steps.length > 0 ? steps.map((step, index) => (
               <div key={step} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-orange-50/20 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-sm font-normal text-white">{index + 1}</div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-sm font-normal text-white">{index + 1}</div>
                 <div>
                   <div className="font-normal text-gray-900">{step}</div>
                   <p className="text-sm text-gray-500 font-normal">Smooth and transparent service delivery.</p>
@@ -430,7 +430,7 @@ const PremiumServiceDetailPage = () => {
           </div>
         </section>
 
-        <section className="mt-3 rounded-[20px] border border-orange-100/20 bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] p-5 text-white shadow-[0_18px_60px_rgba(255,159,69,0.15)]">
+        <section className="mt-3 rounded-[20px] border border-orange-100/20 bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] p-5 text-white shadow-[0_18px_60px_rgba(255,159,69,0.15)]">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
             <div>
@@ -457,7 +457,7 @@ const PremiumServiceDetailPage = () => {
             <div className="text-[11px] font-normal tracking-[0.1em] text-gray-400">Price</div>
             <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
-          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">
+          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">
             Add to cart
           </button>
         </div>

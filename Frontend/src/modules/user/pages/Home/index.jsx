@@ -692,7 +692,7 @@ const Home = () => {
                       <h2 className="text-base font-bold text-[#111827] tracking-tight">
                         Upcoming Services
                       </h2>
-                      <span className="text-xs font-bold text-[#FF9F45] bg-[#FF9F45]/10 px-2.5 py-1 rounded-full animate-pulse">
+                      <span className="text-xs font-bold text-[#B33A35] bg-[#B33A35]/10 px-2.5 py-1 rounded-full animate-pulse">
                         {upcomingCategories.length} Coming Soon
                       </span>
                     </div>
@@ -704,12 +704,12 @@ const Home = () => {
                       <div className="relative z-10">
                         {/* Third Layer Card (Deepest) */}
                         {upcomingCategories.length > 2 && (
-                          <div className="absolute left-5 right-5 bottom-0 h-full bg-[#FF9F45]/25 rounded-[24px] shadow-sm transform translate-y-3 z-0 pointer-events-none border border-white/5" />
+                          <div className="absolute left-5 right-5 bottom-0 h-full bg-[#B33A35]/25 rounded-[24px] shadow-sm transform translate-y-3 z-0 pointer-events-none border border-white/5" />
                         )}
                         
                         {/* Second Layer Card (Middle) */}
                         {upcomingCategories.length > 1 && (
-                          <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-[#FF9F45]/50 rounded-[24px] shadow-md transform translate-y-1.5 z-10 pointer-events-none border border-white/10" />
+                          <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-[#B33A35]/50 rounded-[24px] shadow-md transform translate-y-1.5 z-10 pointer-events-none border border-white/10" />
                         )}
 
                         {/* Main Card (Top) */}
@@ -722,7 +722,7 @@ const Home = () => {
                               handleCategoryClick(activeCat);
                             }
                           }}
-                          className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] rounded-[24px] p-5 relative overflow-hidden shadow-[0_12px_28px_rgba(255,159,69,0.22)] border border-white/20 active:scale-[0.98] hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
+                          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] rounded-[24px] p-5 relative overflow-hidden shadow-[0_12px_28px_rgba(255,159,69,0.22)] border border-white/20 active:scale-[0.98] hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
                         >
                           {/* Smooth glassmorphism-inspired highlights */}
                           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-white/30 to-transparent pointer-events-none" />
@@ -743,7 +743,7 @@ const Home = () => {
                                   />
                                 ) : (
                                   <div className="w-9 h-9 flex items-center justify-center bg-orange-50 rounded-full">
-                                    <svg className="w-5 h-5 text-[#FF9F45]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                    <svg className="w-5 h-5 text-[#B33A35]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
                                   </div>
@@ -814,7 +814,7 @@ const Home = () => {
                                 setCurrentStackIndex(dotIdx);
                               }}
                               className={`h-1.5 rounded-full transition-all duration-300 ${
-                                currentStackIndex === dotIdx ? 'w-5 bg-[#FF9F45]' : 'w-1.5 bg-gray-300'
+                                currentStackIndex === dotIdx ? 'w-5 bg-[#B33A35]' : 'w-1.5 bg-gray-300'
                               }`}
                             />
                           ))}
@@ -834,7 +834,7 @@ const Home = () => {
                     </h2>
                     <button 
                       onClick={() => navigate('/user/bookings')}
-                      className="text-xs font-bold text-gray-500 hover:text-[#FF9F45] transition-colors"
+                      className="text-xs font-bold text-gray-500 hover:text-[#B33A35] transition-colors"
                     >
                       see all
                     </button>
@@ -858,7 +858,7 @@ const Home = () => {
                               <h3 className="text-xs font-extrabold text-gray-800 truncate leading-tight">
                                 {service.title}
                               </h3>
-                              <span className="shrink-0 bg-[#FF9F45]/10 text-[#FF9F45] text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              <span className="shrink-0 bg-[#B33A35]/10 text-[#B33A35] text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                 ★ {service.rating}
                               </span>
                             </div>
@@ -868,7 +868,7 @@ const Home = () => {
                             </p>
 
                             <div className="flex items-baseline gap-1.5 pt-1">
-                              <span className="text-sm font-extrabold text-[#FF9F45]">
+                              <span className="text-sm font-extrabold text-[#B33A35]">
                                 ₹{(service.price || 0).toLocaleString('en-IN')}
                               </span>
                               {service.originalPrice && service.originalPrice > service.price && (
@@ -894,7 +894,7 @@ const Home = () => {
                                 loading="lazy"
                               />
                             ) : (
-                              <svg className="w-8 h-8 text-[#FF9F45]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                              <svg className="w-8 h-8 text-[#B33A35]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
                             )}
@@ -1095,9 +1095,9 @@ const Home = () => {
               className={`w-full py-3.5 px-6 rounded-2xl font-bold shadow-md transition-all ${
                 comingSoonCategory.isInterested 
                   ? 'bg-green-500 text-white cursor-default shadow-none'
-                  : 'bg-[#FF9F45] text-white hover:bg-[#FFB86C] hover:shadow-lg'
+                  : 'bg-[#B33A35] text-white hover:bg-[#9E2E2A] hover:shadow-lg'
               }`}
-              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#FF9F45' }}
+              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#B33A35' }}
             >
               {comingSoonCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
             </button>

@@ -19,7 +19,7 @@ const BrandCard = ({ brand, active = false, onClick }) => {
         {brand.image ? (
           <img src={brand.image} alt={brand.title} className="w-7 h-7 sm:w-12 sm:h-12 object-contain" />
         ) : (
-          <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-gradient-to-br from-[#FF9F45] to-[#FFB86C] text-white flex items-center justify-center font-black text-[10px] sm:text-base">
+          <div className="w-7 h-7 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-gradient-to-br from-[#B33A35] to-[#9E2E2A] text-white flex items-center justify-center font-black text-[10px] sm:text-base">
             {brand.title?.[0]}
           </div>
         )}

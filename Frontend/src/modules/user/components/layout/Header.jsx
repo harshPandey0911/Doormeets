@@ -57,8 +57,8 @@ const Header = ({ location, onLocationClick }) => {
           className="flex items-center gap-3 cursor-pointer select-none"
         >
           {/* Orange Pin Icon matching theme */}
-          <div className="w-10 h-10 rounded-full bg-[#FF9F45]/10 flex items-center justify-center border border-[#FF9F45]/20 shadow-sm shrink-0">
-            <HiLocationMarker className="w-5 h-5 text-[#FF9F45]" />
+          <div className="w-10 h-10 rounded-full bg-[#B33A35]/10 flex items-center justify-center border border-[#B33A35]/20 shadow-sm shrink-0">
+            <HiLocationMarker className="w-5 h-5 text-[#B33A35]" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-1">
