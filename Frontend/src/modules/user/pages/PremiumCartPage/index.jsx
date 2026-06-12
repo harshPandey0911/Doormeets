@@ -39,7 +39,7 @@ const PremiumCartPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-44">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#F8F9FA_100%)] pb-44">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto max-w-4xl px-4 pt-[80px] pb-5 md:px-6">

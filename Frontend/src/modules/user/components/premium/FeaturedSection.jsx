@@ -28,7 +28,7 @@ const FeaturedSection = ({ section }) => {
       {/* Section Header */}
       <div className="mb-4 flex items-end justify-between">
         <div>
-          <h2 className="text-lg font-black text-gray-900">{sectionTitle}</h2>
+          <h2 className="text-[17px] font-semibold text-[#1f2937]">{sectionTitle}</h2>
           <p className="text-sm text-gray-500">
             {type === 'brand' ? 'Top rated service partners' : 'Browse popular categories'}
           </p>

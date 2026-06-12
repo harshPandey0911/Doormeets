@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { useNavigate } from 'react-router-dom';
 import DynamicIcon from '../../../../../components/DynamicIcon';
 
 const ServiceCategories = React.memo(({ 
@@ -8,58 +8,82 @@ const ServiceCategories = React.memo(({
   title = "Categories",
   subtitle = "Premium Home Services"
 }) => {
+  const navigate = useNavigate();
+
   if (!Array.isArray(categories) || categories.length === 0) {
     return null;
   }
 
-  const displayCategories = categories.map(cat => ({
-    ...cat,
-    icon: cat.icon || cat.image,
-  }));
+  // Soft modern pastel color palettes for category tiles
+  const cardColors = [
+    { bg: '#FEFBE8', border: '#FEF08A', text: '#854D0E' }, // Yellow/Gold
+    { bg: '#FAE8FF', border: '#F5D0FE', text: '#86198F' }, // Purple/Lavender
+    { bg: '#FFE4E6', border: '#FECDD3', text: '#9F1239' }, // Rose/Pink
+    { bg: '#FFF1F2', border: '#FEE2E2', text: '#991B1B' }, // Soft Red
+    { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534' }, // Green
+    { bg: '#E0F2FE', border: '#BAE6FD', text: '#075985' }, // Light Blue
+    { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' }, // Indigo
+    { bg: '#FEF3C7', border: '#FDE68A', text: '#92400E' }, // Amber/Warm
+    { bg: '#EFF6FF', border: '#BFDBFE', text: '#1E40AF' }  // Royal Blue
+  ];
+
+  const displayCategories = categories.map((cat, idx) => {
+    const colorScheme = cardColors[idx % cardColors.length];
+    return {
+      ...cat,
+      icon: cat.icon || cat.image,
+      colorScheme
+    };
+  }).slice(0, 9); // Keep a clean 3x3 grid matching the layout
 
   return (
     <div className="px-5 w-full">
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-
-      {/* Title Header */}
-      <div className="mb-4">
-        <h2 className="text-base font-bold text-[#111827] tracking-tight">
+      {/* Title Header with "See all" */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">
           {title}
         </h2>
+        <button
+          onClick={() => navigate('/user/categories')}
+          className="text-xs font-bold text-[#B33A35] hover:text-[#9E2E2A] transition-colors"
+        >
+          See all
+        </button>
       </div>
 
-      {/* Horizontal Scroll Layout - Circular design */}
-      <div 
-        className="flex gap-5 overflow-x-auto pb-3 -mx-5 px-5 no-scrollbar"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
+      {/* Grid Layout of Rounded rectangular cards */}
+      <div className="grid grid-cols-3 gap-3">
         {displayCategories.map((category, index) => {
           return (
             <div
               key={category.id || index}
               onClick={() => onCategoryClick?.(category)}
-              className="flex flex-col items-center flex-shrink-0 cursor-pointer active:scale-95 transition-all duration-200 w-16"
+              className="flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.01] transition-all duration-200 border text-center aspect-square shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+              style={{
+                backgroundColor: category.colorScheme.bg,
+                borderColor: category.colorScheme.border
+              }}
             >
               {category.icon ? (
-                <div className="w-16 h-16 rounded-full bg-white border border-gray-100/80 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-all duration-300 overflow-hidden">
+                <div className="w-10 h-10 flex items-center justify-center mb-2 overflow-hidden">
                   <DynamicIcon
                     icon={category.icon}
                     alt={category.title}
-                    className="w-9 h-9 object-contain transition-transform duration-300"
+                    className="w-full h-full object-contain transition-transform duration-300"
+                    style={{ filter: `drop-shadow(0 1px 2px rgba(0,0,0,0.02))` }}
                   />
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-full bg-blue-50/50 border border-gray-100 flex items-center justify-center shadow-sm">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
+                <div className="w-10 h-10 flex items-center justify-center mb-2">
+                  <svg className="w-6 h-6" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
               )}
-              <span className="text-[11px] font-semibold text-gray-700 text-center tracking-tight truncate w-full mt-2">
+              <span 
+                className="text-[11px] font-semibold tracking-tight truncate w-full"
+                style={{ color: '#1F2937' }}
+              >
                 {category.title}
               </span>
             </div>

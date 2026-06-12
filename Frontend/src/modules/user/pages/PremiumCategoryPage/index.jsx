@@ -338,7 +338,7 @@ const PremiumCategoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#F8F9FA_100%)] pb-28 w-full overflow-x-hidden">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 pt-[76px] pb-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">

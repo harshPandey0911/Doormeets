@@ -174,7 +174,7 @@ const HelpSupport = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-6">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#F8F9FA_100%)] pb-6">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-transparent backdrop-blur-xl border-b border-black/[0.03]">
         <div className="px-4 py-4">

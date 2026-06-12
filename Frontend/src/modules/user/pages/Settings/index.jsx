@@ -85,7 +85,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-20">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#F8F9FA_100%)] pb-20">
       {/* Header */}
       <header className="bg-transparent backdrop-blur-xl border-b border-black/[0.03] sticky top-0 z-30">
         <div className="px-4 pt-4 pb-3">

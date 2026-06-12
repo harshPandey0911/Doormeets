@@ -561,24 +561,17 @@ const Home = () => {
 
   return (
     <div className="min-h-screen pb-20 relative bg-white">
-      {/* Refined Brand Mesh Gradient Background */}
+      {/* Refined Premium Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
           style={{
-            background: `
-              radial-gradient(at 0% 0%, ${themeColors?.brand?.teal || '#347989'}25 0%, transparent 70%),
-              radial-gradient(at 100% 0%, ${themeColors?.brand?.yellow || '#D68F35'}20 0%, transparent 70%),
-              radial-gradient(at 100% 100%, ${themeColors?.brand?.orange || '#BB5F36'}15 0%, transparent 75%),
-              radial-gradient(at 0% 100%, ${themeColors?.brand?.teal || '#347989'}10 0%, transparent 70%),
-              radial-gradient(at 50% 50%, ${themeColors?.brand?.teal || '#347989'}03 0%, transparent 100%),
-              #FFFFFF
-            `
+            background: 'radial-gradient(circle at top, #FFFFFF 0%, #F8F9FA 100%)'
           }}
         />
         {/* Elegant Dot Grid Pattern */}
-        <div className="absolute inset-0 opacity-[0.04]"
+        <div className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#347989'} 0.8px, transparent 0.8px)`,
+            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#B33A35'} 0.8px, transparent 0.8px)`,
             backgroundSize: '32px 32px'
           }}
         />
@@ -599,12 +592,28 @@ const Home = () => {
             location={address}
             onLocationClick={handleLocationClick}
           />
-          <div className="px-5 pb-5 pt-1 max-w-lg lg:max-w-2xl mx-auto w-full">
-            <SearchBar onInputClick={() => setIsSearchOpen(true)} />
+          <div className="px-5 pb-5 pt-1 max-w-lg lg:max-w-2xl mx-auto w-full flex items-center gap-3">
+            <div className="flex-1">
+              <SearchBar onInputClick={() => setIsSearchOpen(true)} />
+            </div>
+            <button 
+              onClick={() => navigate('/user/categories')}
+              className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-300"
+              style={{
+                backgroundColor: themeColors.brand.teal,
+                borderColor: themeColors.brand.teal,
+                color: '#FFFFFF',
+                boxShadow: `0 4px 14px ${themeColors.brand.teal}33`
+              }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+              </svg>
+            </button>
           </div>
         </motion.div>
 
-        <main className="pt-[180px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
+        <main className="pt-[205px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -701,7 +710,7 @@ const Home = () => {
                 return (
                   <motion.section variants={itemVariants} className="px-5 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-base font-bold text-[#111827] tracking-tight">
+                      <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">
                         Upcoming Services
                       </h2>
                       <span className="text-xs font-bold text-[#B33A35] bg-[#B33A35]/10 px-2.5 py-1 rounded-full animate-pulse">
@@ -841,7 +850,7 @@ const Home = () => {
               {!pastServicesLoading && pastServices.length > 0 && (
                 <motion.section variants={itemVariants} className="px-5 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-base font-bold text-[#111827] tracking-tight">
+                    <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">
                       Order again
                     </h2>
                     <button 

@@ -79,9 +79,9 @@ const SearchBar = ({ onInputClick }) => {
             }}
           >
             {/* Placeholder text with typing animation */}
-            <span className="text-[15px] text-gray-400 tracking-wide font-light flex items-center gap-1 whitespace-nowrap overflow-hidden">
+            <span className="text-[15px] text-gray-400 tracking-wide font-light flex items-center gap-1 whitespace-nowrap overflow-hidden w-full">
               Search for <span
-                className="font-medium whitespace-nowrap overflow-hidden text-ellipsis"
+                className="font-medium truncate max-w-[120px] xs:max-w-[180px] sm:max-w-[280px]"
                 style={{
                   background: themeColors.gradient,
                   WebkitBackgroundClip: 'text',
@@ -89,8 +89,9 @@ const SearchBar = ({ onInputClick }) => {
                   color: 'transparent'
                 }}
               >
-                {displayedText}<span className="animate-pulse ml-0.5" style={{ WebkitTextFillColor: themeColors.brand.teal, color: themeColors.brand.teal }}>|</span>
+                {displayedText}
               </span>
+              <span className="animate-pulse -ml-0.5" style={{ color: themeColors.brand.teal }}>|</span>
             </span>
           </div>
         </div>

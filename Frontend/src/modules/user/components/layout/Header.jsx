@@ -48,31 +48,27 @@ const Header = ({ location, onLocationClick }) => {
     : 'Select Location';
 
   return (
-    <header className="w-full bg-transparent px-5 pt-5 pb-3">
-      <div className="max-w-lg lg:max-w-2xl mx-auto flex items-center justify-between">
+    <header className="w-full bg-transparent px-5 pt-6 pb-2">
+      <div className="max-w-lg lg:max-w-2xl mx-auto flex items-start justify-between">
         
-        {/* Left Side: Pin Icon and Location Label */}
-        <div 
-          onClick={onLocationClick}
-          className="flex items-center gap-3 cursor-pointer select-none"
-        >
-          {/* Orange Pin Icon matching theme */}
-          <div className="w-10 h-10 rounded-full bg-[#B33A35]/10 flex items-center justify-center border border-[#B33A35]/20 shadow-sm shrink-0">
-            <HiLocationMarker className="w-5 h-5 text-[#B33A35]" />
+        {/* Left Side: Location Selector & Bold Heading */}
+        <div className="flex flex-col min-w-0">
+          <div 
+            onClick={onLocationClick}
+            className="flex items-center gap-1 cursor-pointer select-none text-[13px] text-gray-500 hover:text-gray-700 transition-colors capitalize font-medium"
+          >
+            <span>{displayLocation}</span>
+            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider leading-none mb-1">
-              Location
-            </span>
-            <span className="text-base font-bold text-gray-900 leading-tight truncate max-w-[200px] sm:max-w-[300px]">
-              {displayLocation}
-            </span>
-          </div>
+          <h1 className="text-[21px] font-semibold text-[#1f2937] leading-[1.25] tracking-tight mt-1.5 max-w-[280px]">
+            What you are looking for today
+          </h1>
         </div>
 
         {/* Right Side: Notification Bell */}
-        <div className="flex items-center gap-3.5 shrink-0">
-          {/* Dynamic premium notification bell */}
+        <div className="flex items-center gap-3.5 shrink-0 pt-1">
           <NotificationBell notificationCount={unreadCount} />
         </div>
 
