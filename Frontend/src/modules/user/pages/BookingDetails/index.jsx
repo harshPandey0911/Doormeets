@@ -231,7 +231,7 @@ const BookingDetails = () => {
   }, [socket, id]);
 
   const getStatusIcon = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'confirmed':
       case 'accepted':
         return <FiCheckCircle className="w-5 h-5 text-green-500" />;
@@ -241,7 +241,7 @@ const BookingDetails = () => {
       case 'visited':
         return <FiMapPin className="w-5 h-5 text-[#9E2E2A]" />;
       case 'completed':
-        return <FiCheckCircle className="w-5 h-5 text-[#B33A35]" />;
+        return <FiCheckCircle className="w-5 h-5 text-white" />;
       case 'cancelled':
         return <FiXCircle className="w-5 h-5 text-red-500" />;
       case 'awaiting_payment':
@@ -258,7 +258,7 @@ const BookingDetails = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'confirmed':
       case 'accepted':
         return 'bg-green-50 text-green-700 border-green-200';
@@ -268,12 +268,12 @@ const BookingDetails = () => {
       case 'visited':
         return 'bg-orange-50 text-[#9E2E2A] border-orange-200';
       case 'completed':
-        return 'bg-orange-50 text-[#B33A35] border-orange-200';
+        return 'bg-brand text-white border-transparent';
       case 'cancelled':
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-red-500/10 text-red-500 border-red-500/20';
       case 'awaiting_payment':
       case 'work_done':
-        return 'bg-orange-50 text-orange-700 border-orange-200';
+        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
       case 'requested':
       case 'searching':
         return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -285,7 +285,7 @@ const BookingDetails = () => {
   };
 
   const getStatusLabel = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'confirmed':
       case 'accepted': return 'Confirmed';
       case 'journey_started': return 'Agent En Route';
@@ -483,25 +483,25 @@ const BookingDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50/50 pb-32">
+      <div className="min-h-screen bg-light-bg pb-32">
         {/* Skeleton Header */}
-        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100">
+        <header className="bg-card-bg/80 backdrop-blur-md sticky top-0 z-40 border-b border-border-color">
           <div className="px-4 py-3">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
               <div className="flex-1 space-y-2">
-                <div className="h-5 w-32 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-3 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-5 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
               </div>
             </div>
           </div>
         </header>
         {/* Skeleton Body */}
         <main className="max-w-xl mx-auto px-4 py-6 space-y-6">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-24 animate-pulse"></div>
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-32 animate-pulse"></div>
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-48 animate-pulse"></div>
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-64 animate-pulse"></div>
+          <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color h-24 animate-pulse"></div>
+          <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color h-32 animate-pulse"></div>
+          <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color h-48 animate-pulse"></div>
+          <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color h-64 animate-pulse"></div>
         </main>
       </div>
     );
@@ -509,19 +509,12 @@ const BookingDetails = () => {
 
   if (!booking) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative bg-white">
-        {/* Refined Brand Mesh Gradient Background */}
+      <div className="min-h-screen flex items-center justify-center relative bg-light-bg">
+        {/* Clean Theme Background */}
         <div className="fixed inset-0 z-0 pointer-events-none">
           <div className="absolute inset-0"
             style={{
-              background: `
-                radial-gradient(at 0% 0%, ${themeColors?.brand?.teal || '#347989'}25 0%, transparent 70%),
-                radial-gradient(at 100% 0%, ${themeColors?.brand?.yellow || '#D68F35'}20 0%, transparent 70%),
-                radial-gradient(at 100% 100%, ${themeColors?.brand?.orange || '#BB5F36'}15 0%, transparent 75%),
-                radial-gradient(at 0% 100%, ${themeColors?.brand?.teal || '#347989'}10 0%, transparent 70%),
-                radial-gradient(at 50% 50%, ${themeColors?.brand?.teal || '#347989'}03 0%, transparent 100%),
-                #FFFFFF
-              `
+              background: 'var(--background)'
             }}
           />
         </div>
@@ -603,43 +596,29 @@ const BookingDetails = () => {
   // --------------------------------------
 
   return (
-    <div className="min-h-screen pb-32 relative bg-white">
-      {/* Refined Brand Mesh Gradient Background */}
+    <div className="min-h-screen pb-32 relative bg-light-bg text-dark-text">
+      {/* Clean Theme Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
           style={{
-            background: `
-              radial-gradient(at 0% 0%, ${themeColors?.brand?.teal || '#347989'}25 0%, transparent 70%),
-              radial-gradient(at 100% 0%, ${themeColors?.brand?.yellow || '#D68F35'}20 0%, transparent 70%),
-              radial-gradient(at 100% 100%, ${themeColors?.brand?.orange || '#BB5F36'}15 0%, transparent 75%),
-              radial-gradient(at 0% 100%, ${themeColors?.brand?.teal || '#347989'}10 0%, transparent 70%),
-              radial-gradient(at 50% 50%, ${themeColors?.brand?.teal || '#347989'}03 0%, transparent 100%),
-              #FFFFFF
-            `
-          }}
-        />
-        {/* Elegant Dot Grid Pattern */}
-        <div className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#347989'} 0.8px, transparent 0.8px)`,
-            backgroundSize: '32px 32px'
+            background: 'var(--background)'
           }}
         />
       </div>
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/3 px-4 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-40 backdrop-blur-xl bg-card-bg/40 border-b border-border-color px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/user/my-bookings')}
-              className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/2"
+              className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color"
             >
-              <FiArrowLeft className="w-5 h-5 text-gray-800" />
+              <FiArrowLeft className="w-5 h-5 text-dark-text" />
             </button>
             <div className="flex-1">
-              <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Booking Details</h1>
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mt-0.5">
+              <h1 className="text-xl font-semibold text-dark-text tracking-tight">Booking Details</h1>
+              <p className="text-[10px] text-secondary-text font-semibold uppercase tracking-widest mt-0.5">
                 ID: <span className="font-mono">{booking.bookingNumber || booking._id?.slice(-8).toUpperCase()}</span>
               </p>
             </div>
@@ -659,50 +638,50 @@ const BookingDetails = () => {
               <p className="font-medium text-sm">This booking has been {booking.status.toLowerCase()}.</p>
             </div>
           ) : (
-            <div className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100">
+            <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color">
               <div className="flex justify-between relative z-10">
                 {/* Step 1: Booked */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['pending', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     <FiCheckCircle className="w-4 h-4" />
                   </div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide text-center">Booked</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Booked</p>
                 </div>
 
                 {/* Step 2: Assigned */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     2
                   </div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide text-center">Assigned</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Assigned</p>
                 </div>
 
                 {/* Step 3: In Progress */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     3
                   </div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide text-center">Started</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Started</p>
                 </div>
 
                 {/* Step 4: Done */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-gray-100 text-gray-400'
+                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     4
                   </div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide text-center">Done</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Done</p>
                 </div>
               </div>
               {/* Connect lines */}
-              <div className="absolute top-18 left-[15%] right-[15%] h-0.5 bg-gray-100 z-0">
+              <div className="absolute top-18 left-[15%] right-[15%] h-0.5 bg-divider z-0">
                 <div className="h-full bg-[#B33A35] transition-all duration-1000" style={{
                   width:
                     ['work_done', 'completed'].includes(booking.status?.toLowerCase()) ? '100%' :
@@ -723,30 +702,30 @@ const BookingDetails = () => {
 
           {/* Broadcast/Searching State Card */}
           {!booking.workerId && !booking.assignedTo && ['requested', 'searching', 'bidding'].includes(booking.status?.toLowerCase()) && (
-            <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-amber-100 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
+            <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
 
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100 shadow-sm">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-sm">
                     <FiSearch className="w-6 h-6 text-amber-500 animate-pulse" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-gray-900 leading-tight">Finding Your Expert</h3>
+                    <h3 className="text-lg font-black text-dark-text leading-tight">Finding Your Expert</h3>
                     <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
                       {booking.status?.toLowerCase() === 'bidding' ? 'Accepting Quotes' : 'Broadcast in Progress'}
                     </p>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed font-medium">
+                <p className="text-sm text-secondary-text mb-4 leading-relaxed font-medium">
                   {booking.status?.toLowerCase() === 'bidding' 
                     ? "Vendors are now submitting their best prices for your request. View the quotes below and pick the best one!"
                     : "We've sent your request to all verified experts in your area. You'll be notified automatically as soon as someone accepts."}
                 </p>
 
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <div className="flex items-center gap-2 text-xs text-secondary-text bg-light-bg rounded-xl p-3 border border-border-color">
                     <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping"></span>
                     <span>Waiting for quotes from nearby partners...</span>
                   </div>
@@ -769,7 +748,7 @@ const BookingDetails = () => {
 
           {/* Service Partner Card */}
           {(booking.workerId || booking.assignedTo || booking.vendorId) && ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done'].includes(booking.status?.toLowerCase()) && (
-            <div className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+            <div className="bg-card-bg rounded-3xl p-5 shadow-sm border border-border-color transition-all">
               <div className="flex justify-between items-start mb-4">
                 {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? (
                   <div className="flex items-center gap-2">
@@ -780,7 +759,7 @@ const BookingDetails = () => {
                     <p className="text-xs font-bold text-green-600 tracking-wider">LIVE TRACKING ACTIVE</p>
                   </div>
                 ) : (
-                  <p className="text-xs font-bold text-gray-400 tracking-wider uppercase">Your Professional</p>
+                  <p className="text-xs font-bold text-secondary-text tracking-wider uppercase">Your Professional</p>
                 )}
 
                 <button
@@ -792,8 +771,8 @@ const BookingDetails = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full p-1 bg-linear-to-tr from-gray-100 to-gray-50 shrink-0">
-                  <div className="w-full h-full rounded-full overflow-hidden relative bg-white">
+                <div className="w-16 h-16 rounded-full p-1 bg-divider shrink-0">
+                  <div className="w-full h-full rounded-full overflow-hidden relative bg-card-bg">
                     {(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto) ? (
                       <>
                         <img
@@ -802,28 +781,28 @@ const BookingDetails = () => {
                           className="w-full h-full object-cover"
                           onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.querySelector('.fallback-icon').style.display = 'block'; }}
                         />
-                        <FiUser className="w-8 h-8 text-gray-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 fallback-icon hidden" />
+                        <FiUser className="w-8 h-8 text-secondary-text absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 fallback-icon hidden" />
                       </>
                     ) : (
-                      <FiUser className="w-8 h-8 text-gray-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                      <FiUser className="w-8 h-8 text-secondary-text absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                     )}
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 text-lg truncate">
+                  <h3 className="font-bold text-dark-text text-lg truncate">
                     {booking.workerId?.name || booking.assignedTo?.name || booking.vendorId?.name || 'Service Partner'}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-md border border-yellow-100">
+                    <div className="flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded-md border border-yellow-500/20">
                       <FiStar className="w-3 h-3 text-yellow-500 fill-current" />
-                      <span className="text-xs font-bold text-yellow-700">
+                      <span className="text-xs font-bold text-yellow-500">
                         {(booking.workerId?.rating || booking.assignedTo?.rating || booking.vendorId?.rating || 0) > 0
                           ? (booking.workerId?.rating || booking.assignedTo?.rating || booking.vendorId?.rating).toFixed(1)
                           : 'New'}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-400 font-medium">• Verified</span>
+                    <span className="text-xs text-secondary-text font-medium">• Verified</span>
                   </div>
                 </div>
 
@@ -831,7 +810,7 @@ const BookingDetails = () => {
                 {(booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone) && (
                   <a
                     href={`tel:${booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone}`}
-                    className="w-10 h-10 bg-green-50 text-green-600 rounded-full flex items-center justify-center hover:bg-green-100 transition-colors active:scale-95 border border-green-100"
+                    className="w-10 h-10 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center hover:bg-green-500/20 transition-colors active:scale-95 border border-green-500/20"
                   >
                     <FiPhone className="w-5 h-5" />
                   </a>
@@ -898,14 +877,14 @@ const BookingDetails = () => {
 
           {/* Waiting for Vendor to initiate Payment */}
           {!booking.customerConfirmationOTP && ['work_done'].includes(booking.status?.toLowerCase()) && !booking.cashCollected && (
-            <div className="bg-white rounded-3xl p-6 shadow-lg border border-teal-100 mb-6 flex items-center gap-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-full -translate-y-12 translate-x-12 blur-2xl"></div>
-              <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center shrink-0 border border-teal-100">
-                <FiLoader className="w-6 h-6 text-teal-600 animate-spin" />
+            <div className="bg-card-bg rounded-3xl p-6 shadow-lg border border-border-color mb-6 flex items-center gap-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-brand/5 rounded-full -translate-y-12 translate-x-12 blur-2xl"></div>
+              <div className="w-12 h-12 rounded-2xl bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20">
+                <FiLoader className="w-6 h-6 text-brand animate-spin" />
               </div>
               <div className="relative z-10">
-                <h3 className="font-bold text-gray-900">Finalizing Bill</h3>
-                <p className="text-sm text-gray-500">Professional is finalizing payment details. Please wait a moment...</p>
+                <h3 className="font-bold text-dark-text">Finalizing Bill</h3>
+                <p className="text-sm text-secondary-text">Professional is finalizing payment details. Please wait a moment...</p>
               </div>
             </div>
           )}
@@ -1106,42 +1085,42 @@ const BookingDetails = () => {
               </>
             )}
 
-            <div className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100">
+            <div className="bg-card-bg rounded-3xl p-5 shadow-sm border border-border-color">
               <div className="flex items-start gap-4 mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 flex items-center justify-center shrink-0">
-                  <FiMapPin className="w-5 h-5 text-teal-600" />
+                <div className="w-10 h-10 rounded-2xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20">
+                  <FiMapPin className="w-5 h-5 text-teal-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Service Address</p>
-                  <p className="text-sm font-medium text-gray-900 leading-relaxed">{getAddressString(booking.address)}</p>
+                  <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Service Address</p>
+                  <p className="text-sm font-medium text-dark-text leading-relaxed">{getAddressString(booking.address)}</p>
                 </div>
               </div>
-              <div className="w-full h-px bg-gray-50 mb-4"></div>
+              <div className="w-full h-px bg-divider mb-4"></div>
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center shrink-0">
-                  <FiCalendar className="w-5 h-5 text-indigo-600" />
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
+                  <FiCalendar className="w-5 h-5 text-indigo-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Slot</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Slot</p>
+                  <p className="text-sm font-medium text-dark-text">
                     {formatDate(booking.scheduledDate)}
                   </p>
-                  <p className="text-sm text-gray-500">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</p>
+                  <p className="text-sm text-secondary-text">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</p>
                 </div>
               </div>
             </div>
           </section>
 
           {/* Service Details */}
-          <section className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">
-              <h3 className="font-semibold text-gray-900">Order Summary</h3>
+          <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+            <div className="px-5 py-4 border-b border-border-color bg-light-bg/50">
+              <h3 className="font-semibold text-dark-text">Order Summary</h3>
             </div>
 
             <div className="p-5 space-y-4">
               {/* 1. Service Category */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 border border-teal-100 overflow-hidden">
+                <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20 overflow-hidden">
                   {booking.categoryIcon ? (
                     <img src={booking.categoryIcon} alt="" className="w-6 h-6 object-contain" />
                   ) : (
@@ -1149,8 +1128,8 @@ const BookingDetails = () => {
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Service Category</p>
-                  <p className="text-sm font-semibold text-gray-800">{booking.serviceCategory || booking.serviceName || 'Service'}</p>
+                  <p className="text-[10px] font-semibold text-secondary-text uppercase tracking-widest">Service Category</p>
+                  <p className="text-sm font-semibold text-dark-text">{booking.serviceCategory || booking.serviceName || 'Service'}</p>
                 </div>
               </div>
 
@@ -1160,17 +1139,17 @@ const BookingDetails = () => {
                 const brandIcon = booking.brandIcon || booking.bookedItems?.[0]?.brandIcon;
                 if (!brandName) return null;
                 return (
-                  <div className="flex items-center gap-3 pt-3 border-t border-dashed border-gray-100">
-                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden">
+                  <div className="flex items-center gap-3 pt-3 border-t border-dashed border-border-color">
+                    <div className="w-10 h-10 rounded-xl bg-divider flex items-center justify-center shrink-0 border border-border-color overflow-hidden">
                       {brandIcon ? (
                         <img src={brandIcon} alt={brandName} className="w-7 h-7 object-contain" />
                       ) : (
-                        <span className="text-lg font-black text-slate-400">{brandName.charAt(0)}</span>
+                        <span className="text-lg font-black text-secondary-text">{brandName.charAt(0)}</span>
                       )}
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Brand</p>
-                      <p className="text-sm font-semibold text-gray-800">{brandName}</p>
+                      <p className="text-[10px] font-semibold text-secondary-text uppercase tracking-widest">Brand</p>
+                      <p className="text-sm font-semibold text-dark-text">{brandName}</p>
                     </div>
                   </div>
                 );
@@ -1178,19 +1157,19 @@ const BookingDetails = () => {
 
               {/* 3. Service Cards */}
               {booking.bookedItems && booking.bookedItems.length > 0 && (
-                <div className="pt-3 border-t border-dashed border-gray-100 space-y-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Services Booked</p>
+                <div className="pt-3 border-t border-dashed border-border-color space-y-2">
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-widest mb-2">Services Booked</p>
                   {booking.bookedItems.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-start bg-gray-50 rounded-xl p-3">
+                    <div key={idx} className="flex justify-between items-start bg-light-bg rounded-xl p-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">×{item.quantity}</span>
-                          <span className="text-sm font-semibold text-gray-900 truncate">{item.card?.title || 'Service'}</span>
+                          <span className="text-xs font-bold text-teal-600 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">×{item.quantity}</span>
+                          <span className="text-sm font-semibold text-dark-text truncate">{item.card?.title || 'Service'}</span>
                         </div>
-                        {item.card?.subtitle && <p className="text-xs text-gray-400 mt-0.5 ml-8 line-clamp-1">{item.card.subtitle}</p>}
-                        {item.card?.duration && <p className="text-xs text-gray-400 mt-0.5 ml-8">⏱ {item.card.duration}</p>}
+                        {item.card?.subtitle && <p className="text-xs text-secondary-text mt-0.5 ml-8 line-clamp-1">{item.card.subtitle}</p>}
+                        {item.card?.duration && <p className="text-xs text-secondary-text mt-0.5 ml-8">⏱ {item.card.duration}</p>}
                       </div>
-                      <span className="text-sm font-bold text-gray-900 ml-3 shrink-0">₹{((item.card?.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</span>
+                      <span className="text-sm font-bold text-dark-text ml-3 shrink-0">₹{((item.card?.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</span>
                     </div>
                   ))}
                 </div>
@@ -1200,18 +1179,18 @@ const BookingDetails = () => {
 
           {/* Payment Summary - Only show if payment is completed/collected OR if a payment request is active (Work Done) */}
           {(['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
-            <section className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 overflow-hidden">
+            <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
               <div className="p-5">
-                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-                  <div className={`p-2 rounded-lg ${booking.paymentMethod === 'plan_benefit' ? 'bg-amber-100' : 'bg-green-50'}`}>
+                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border-color">
+                  <div className={`p-2 rounded-lg ${booking.paymentMethod === 'plan_benefit' ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'}`}>
                     {booking.paymentMethod === 'plan_benefit' ? (
-                      <FiAward className="w-5 h-5 text-amber-600" />
+                      <FiAward className="w-5 h-5" />
                     ) : (
-                      <FiDollarSign className="w-5 h-5 text-green-600" />
+                      <FiDollarSign className="w-5 h-5" />
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900">
+                    <h3 className="font-bold text-dark-text">
                       {booking.paymentMethod === 'plan_benefit' ? 'Membership Benefit' : 'Payment Summary'}
                     </h3>
                   </div>
@@ -1223,35 +1202,35 @@ const BookingDetails = () => {
                     <div className="space-y-4">
                       {/* Services Section */}
                       <div>
-                        <h4 className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                        <h4 className="flex items-center gap-2 text-xs font-bold text-secondary-text uppercase tracking-wide mb-2">
                           <FiCheckCircle className="w-3.5 h-3.5" /> Services
                         </h4>
                         <div className="space-y-2 pl-1">
                           {/* Original Base */}
-                          <div className="flex justify-between items-center text-gray-600">
+                          <div className="flex justify-between items-center text-secondary-text">
                             <span>Original Booking : {originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
                             {isPlanBenefit ? (
                               <div className="flex items-center gap-2">
-                                <span className="line-through text-gray-400 text-xs">₹{originalBase.toLocaleString('en-IN')}</span>
-                                <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">FREE</span>
+                                <span className="line-through text-secondary-text opacity-50 text-xs">₹{originalBase.toLocaleString('en-IN')}</span>
+                                <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
                               </div>
                             ) : (
-                              <span className="font-medium text-gray-900">₹{originalBase.toLocaleString('en-IN')}</span>
+                              <span className="font-medium text-dark-text">₹{originalBase.toLocaleString('en-IN')}</span>
                             )}
                           </div>
 
                           {/* Extra Services */}
                           {services.map((s, i) => (
-                            <div key={i} className="flex justify-between items-center text-gray-600">
-                              <span>{s.name} <span className="text-gray-400 text-xs">x{s.quantity}</span></span>
-                              <span className="font-mono text-xs">₹{((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1)).toFixed(2)}</span>
+                            <div key={i} className="flex justify-between items-center text-secondary-text">
+                              <span>{s.name} <span className="text-secondary-text opacity-50 text-xs">x{s.quantity}</span></span>
+                              <span className="font-mono text-xs text-dark-text">₹{((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1)).toFixed(2)}</span>
                             </div>
                           ))}
 
                           {/* Service GST block removed */}
 
                           {/* Service Subtotal */}
-                          <div className="flex justify-between font-bold text-gray-800 pt-1">
+                          <div className="flex justify-between font-bold text-dark-text pt-1">
                             <span>Total Service</span>
                             <span>₹{(originalBase + extraServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
                           </div>
@@ -1261,30 +1240,30 @@ const BookingDetails = () => {
                       {/* Parts Section */}
                       {(parts.length > 0 || customItems.length > 0) && (
                         <div>
-                          <h4 className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 mt-4">
+                          <h4 className="flex items-center gap-2 text-xs font-bold text-secondary-text uppercase tracking-wide mb-2 mt-4">
                             <FiPackage className="w-3.5 h-3.5 text-orange-500" /> Parts & Material
                           </h4>
                           <div className="space-y-2 pl-1">
                             {parts.map((p, i) => (
-                              <div key={`p-${i}`} className="flex justify-between items-center text-gray-600">
-                                <span>{p.name} <span className="text-gray-400 text-xs">x{p.quantity}</span></span>
-                                <span className="font-mono text-xs">₹{(p.price * p.quantity).toFixed(2)}</span>
+                              <div key={`p-${i}`} className="flex justify-between items-center text-secondary-text">
+                                <span>{p.name} <span className="text-secondary-text opacity-50 text-xs">x{p.quantity}</span></span>
+                                <span className="font-mono text-xs text-dark-text">₹{(p.price * p.quantity).toFixed(2)}</span>
                               </div>
                             ))}
                             {customItems.map((c, i) => (
-                              <div key={`c-${i}`} className="flex justify-between items-center text-gray-600">
+                              <div key={`c-${i}`} className="flex justify-between items-center text-secondary-text">
                                 <div>
-                                  <span>{c.name} <span className="text-gray-400 text-xs">x{c.quantity}</span></span>
-                                  {c.hsnCode && <span className="block text-[9px] text-gray-400">HSN: {c.hsnCode}</span>}
+                                  <span>{c.name} <span className="text-secondary-text opacity-50 text-xs">x{c.quantity}</span></span>
+                                  {c.hsnCode && <span className="block text-[9px] text-secondary-text">HSN: {c.hsnCode}</span>}
                                 </div>
-                                <span className="font-mono text-xs">₹{(c.price * c.quantity).toFixed(2)}</span>
+                                <span className="font-mono text-xs text-dark-text">₹{(c.price * c.quantity).toFixed(2)}</span>
                               </div>
                             ))}
 
                             {/* Parts GST block removed */}
 
                             {/* Parts Subtotal */}
-                            <div className="flex justify-between font-bold text-gray-800 pt-1">
+                            <div className="flex justify-between font-bold text-dark-text pt-1">
                               <span>Total Parts</span>
                               <span>₹{(partsBase + partsGST).toFixed(2)}</span>
                             </div>
@@ -1296,8 +1275,8 @@ const BookingDetails = () => {
 
                       {/* Transport Charges */}
                       {bill?.transportCharges > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-100">
-                          <div className="flex justify-between text-xs font-bold text-gray-600">
+                        <div className="mt-2 pt-2 border-t border-border-color">
+                          <div className="flex justify-between text-xs font-bold text-secondary-text">
                             <span className="flex items-center gap-2 uppercase tracking-wide">
                               <FiPackage className="w-3.5 h-3.5 text-blue-400" /> Transport Charges
                             </span>
@@ -1307,13 +1286,13 @@ const BookingDetails = () => {
                       )}
 
                       {(booking.paymentMethod || booking.paymentStatus === 'success') && (
-                        <div className="mt-2 pt-2 border-t border-gray-100">
-                          <div className="flex justify-between text-xs font-bold text-gray-600">
+                        <div className="mt-2 pt-2 border-t border-border-color">
+                          <div className="flex justify-between text-xs font-bold text-secondary-text">
                             <span className="flex items-center gap-2 uppercase tracking-wide">
                               {booking.paymentMethod === 'cash collected' ? <FiDollarSign className="text-emerald-500" /> : <MdQrCode className="text-blue-500" />}
                               Payment Method
                             </span>
-                            <span className={`${booking.paymentMethod === 'cash collected' ? 'text-emerald-600' : 'text-blue-600'} uppercase`}>
+                            <span className={`${booking.paymentMethod === 'cash collected' ? 'text-emerald-500' : 'text-blue-500'} uppercase`}>
                               {booking.paymentMethod === 'cash collected' ? 'Cash Collected' :
                                 booking.paymentMethod === 'Qr online' ? 'QR Online' :
                                   booking.paymentMethod === 'online' ? 'Online Paid' :
@@ -1324,9 +1303,9 @@ const BookingDetails = () => {
                         </div>
                       )}
 
-                      <div className="pt-4 mt-2 border-t-2 border-gray-100 flex justify-between items-center">
-                        <span className="font-bold text-gray-900 text-lg">Grand Total</span>
-                        <span className="font-black text-teal-700 text-2xl">
+                      <div className="pt-4 mt-2 border-t-2 border-border-color flex justify-between items-center">
+                        <span className="font-bold text-dark-text text-lg">Grand Total</span>
+                        <span className="font-black text-brand text-2xl">
                           ₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -1335,15 +1314,15 @@ const BookingDetails = () => {
                     // OLD SIMPLE BREAKDOWN (Fallback)
                     <>
                       {/* Base Items */}
-                      <div className="flex justify-between items-center text-gray-600">
+                      <div className="flex justify-between items-center text-secondary-text">
                         <span>Base Price</span>
                         {booking.paymentMethod === 'plan_benefit' ? (
                           <div className="flex items-center gap-2">
-                            <span className="line-through text-gray-400 text-xs">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
-                            <span className="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">FREE ✓</span>
+                            <span className="line-through text-secondary-text opacity-50 text-xs">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
+                            <span className="text-emerald-500 font-bold text-xs bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">FREE ✓</span>
                           </div>
                         ) : (
-                          <span className="font-medium text-gray-900">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
+                          <span className="font-medium text-dark-text">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
                         )}
                       </div>
 
@@ -1353,26 +1332,26 @@ const BookingDetails = () => {
 
                       {booking.paymentMethod !== 'plan_benefit' && booking.discount > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-green-600">Discount</span>
-                          <span className="font-medium text-green-600">-₹{booking.discount.toLocaleString('en-IN')}</span>
+                          <span className="text-green-500">Discount</span>
+                          <span className="font-medium text-green-500">-₹{booking.discount.toLocaleString('en-IN')}</span>
                         </div>
                       )}
 
                       {/* Extra Charges Section */}
                       {booking.extraCharges && booking.extraCharges.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
-                          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Extra Charges</p>
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-100">
+                        <div className="mt-3 pt-3 border-t border-border-color">
+                          <p className="text-xs font-bold text-secondary-text uppercase tracking-wide mb-2">Extra Charges</p>
+                          <div className="bg-light-bg rounded-lg p-3 space-y-2 border border-border-color">
                             {booking.extraCharges.map((item, idx) => (
-                              <div key={idx} className="flex justify-between text-gray-700 text-sm">
+                              <div key={idx} className="flex justify-between text-secondary-text text-sm">
                                 <span className="flex items-center gap-2">
-                                  <span className="text-xs font-bold bg-white border px-1.5 rounded text-gray-500">x{item.quantity || 1}</span>
+                                  <span className="text-xs font-bold bg-card-bg border border-border-color px-1.5 rounded text-secondary-text">x{item.quantity || 1}</span>
                                   <span>{item.name}</span>
                                 </span>
                                 <span className="font-medium">+₹{(item.total || item.price || 0).toLocaleString('en-IN')}</span>
                               </div>
                             ))}
-                            <div className="flex justify-between font-bold text-blue-600 pt-2 mt-2 border-t border-gray-200">
+                            <div className="flex justify-between font-bold text-blue-500 pt-2 mt-2 border-t border-border-color">
                               <span>Total Extras</span>
                               <span>+₹{(booking.extraChargesTotal || 0).toLocaleString('en-IN')}</span>
                             </div>
@@ -1380,9 +1359,9 @@ const BookingDetails = () => {
                         </div>
                       )}
 
-                      <div className="pt-4 mt-2 border-t border-gray-100 flex justify-between items-center">
-                        <span className="font-bold text-gray-900 text-lg">Total Payable</span>
-                        <span className="font-black text-gray-900 text-xl">
+                      <div className="pt-4 mt-2 border-t border-border-color flex justify-between items-center">
+                        <span className="font-bold text-dark-text text-lg">Total Payable</span>
+                        <span className="font-black text-dark-text text-xl">
                           ₹{(booking.paymentMethod === 'plan_benefit'
                             ? (booking.userPayableAmount || booking.extraChargesTotal || 0)
                             : (booking.finalAmount || booking.totalAmount || 0)
@@ -1395,14 +1374,14 @@ const BookingDetails = () => {
               </div>
 
               {/* Payment Status Footer */}
-              <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Payment Status</span>
-                <span className={`px-2.5 py-1 rounded-md text-xs font-bold capitalize ${['success', 'collected_by_vendor', 'paid'].includes(booking.paymentStatus?.toLowerCase()) ? 'bg-green-100 text-green-700' :
-                  booking.paymentStatus === 'pending' || booking.paymentStatus === 'plan_covered' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+              <div className="bg-light-bg px-5 py-3 border-t border-border-color flex justify-between items-center">
+                <span className="text-xs font-bold text-secondary-text uppercase tracking-wide">Payment Status</span>
+                <span className={`px-2.5 py-1 rounded-md text-xs font-bold capitalize ${['success', 'collected_by_vendor', 'paid'].includes(booking.paymentStatus?.toLowerCase()) ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                  booking.paymentStatus === 'pending' || booking.paymentStatus === 'plan_covered' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
                   }`}>
                   {['success', 'collected_by_vendor', 'paid', 'paid_online'].includes(booking.paymentStatus?.toLowerCase()) ? 'Paid' :
                     booking.paymentStatus === 'plan_covered' ? 'Processing Bill' :
-                      booking.paymentStatus?.replace(/_/g, ' ') || 'Pending'}
+                    booking.paymentStatus?.replace(/_/g, ' ') || 'Pending'}
                 </span>
               </div>
             </section>
@@ -1410,20 +1389,19 @@ const BookingDetails = () => {
 
           {/* Action Card for Awaiting Payment */}
           {booking.status === 'awaiting_payment' && (
-            <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 p-6 space-y-4">
+            <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color p-6 space-y-4">
               <div className="text-center mb-4">
-                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <FiDollarSign className="w-8 h-8 text-orange-600" />
+                <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-brand/20">
+                  <FiDollarSign className="w-8 h-8 text-brand" />
                 </div>
-                <h3 className="text-lg font-bold text-black">Payment Required</h3>
-                <p className="text-sm text-gray-500">The professional has completed the work. Please choose a payment method to verify and close your booking.</p>
+                <h3 className="text-lg font-bold text-dark-text">Payment Required</h3>
+                <p className="text-sm text-secondary-text">The professional has completed the work. Please choose a payment method to verify and close your booking.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
                 <button
                   onClick={handleOnlinePayment}
-                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
-                  style={{ background: themeColors.button }}
+                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform bg-brand hover:bg-brand-light"
                 >
                   <FiDollarSign className="w-5 h-5" />
                   Pay Online (Razorpay/UPI)
@@ -1431,7 +1409,7 @@ const BookingDetails = () => {
 
                 <button
                   onClick={handlePayAtHome}
-                  className="w-full py-4 rounded-xl font-bold text-gray-700 bg-gray-100 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                  className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
                 >
                   <FiHome className="w-5 h-5" />
                   Pay at Home (After Service)
@@ -1440,15 +1418,13 @@ const BookingDetails = () => {
             </div>
           )}
 
-          {/* Action Buttons */}
+           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Support */}
             {/* Support */}
             <button
               onClick={() => {
                 const phone = supportInfo.phone || '+919999999999';
                 if (phone) {
-                  // Use native anchor click for better WebView compatibility
                   const link = document.createElement('a');
                   link.href = `tel:${phone.replace(/[^\d+]/g, '')}`;
                   document.body.appendChild(link);
@@ -1458,10 +1434,10 @@ const BookingDetails = () => {
                   toast.error('Support phone number not available');
                 }
               }}
-              className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95"
+              className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-2xl hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
             >
-              <FiPhone className="w-6 h-6 text-gray-700" />
-              <span className="text-sm font-bold text-gray-700">Call Support</span>
+              <FiPhone className="w-6 h-6 text-secondary-text" />
+              <span className="text-sm font-bold">Call Support</span>
             </button>
             <button
               onClick={() => {
@@ -1472,10 +1448,10 @@ const BookingDetails = () => {
                 link.click();
                 document.body.removeChild(link);
               }}
-              className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95"
+              className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-2xl hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
             >
-              <FiMail className="w-6 h-6 text-gray-700" />
-              <span className="text-sm font-bold text-gray-700">Email Help</span>
+              <FiMail className="w-6 h-6 text-secondary-text" />
+              <span className="text-sm font-bold">Email Help</span>
             </button>
 
             {/* Cancel */}
@@ -1486,14 +1462,14 @@ const BookingDetails = () => {
                   onClick={handleCancelBooking}
                   className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors ${
                     (booking.vendorId && !cancellationTimeLeft)
-                      ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
-                      : 'text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 active:scale-95'
+                      ? 'bg-divider text-secondary-text border border-border-color cursor-not-allowed'
+                      : 'text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
                   }`}
                 >
                   Cancel Booking
                 </button>
                 {booking.vendorId && (
-                  <p className="text-[11px] text-center font-bold uppercase tracking-wider text-gray-400">
+                  <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
                     {cancellationTimeLeft 
                       ? '⚠️ Cancellation only allowed within 2 minutes of acceptance' 
                       : '🚫 Cancellation window expired (exceeded 2 mins)'}
@@ -1593,23 +1569,23 @@ const BidsList = ({ bookingId, onAccept }) => {
     }
   };
 
-  if (loading) return <div className="text-center py-4 text-gray-400 font-bold text-xs">Fetching quotes...</div>;
+  if (loading) return <div className="text-center py-4 text-secondary-text font-bold text-xs animate-pulse">Fetching quotes...</div>;
   if (bids.length === 0) return (
-    <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 text-center">
-      <FiLoader className="w-8 h-8 text-indigo-200 mx-auto mb-3 animate-spin" />
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Waiting for vendors to quote...</p>
+    <div className="bg-card-bg rounded-3xl p-8 border border-border-color text-center">
+      <FiLoader className="w-8 h-8 text-brand/35 mx-auto mb-3 animate-spin" />
+      <p className="text-xs font-bold text-secondary-text uppercase tracking-widest">Waiting for vendors to quote...</p>
     </div>
   );
 
   return (
     <div className="space-y-4">
       {bids.map(bid => (
-        <div key={bid._id} className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-gray-100 flex items-center gap-4 transition-all hover:shadow-lg">
-          <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-50 border-2 border-indigo-50 shrink-0">
+        <div key={bid._id} className="bg-card-bg rounded-3xl p-5 shadow-sm border border-border-color flex items-center gap-4 transition-all">
+          <div className="w-14 h-14 rounded-full overflow-hidden bg-light-bg border border-border-color shrink-0">
             {bid.vendorId?.profilePicture ? (
               <img src={bid.vendorId.profilePicture} alt={bid.vendorId.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-indigo-200">
+              <div className="w-full h-full flex items-center justify-center text-secondary-text">
                 <FiUser className="w-6 h-6" />
               </div>
             )}
@@ -1617,16 +1593,16 @@ const BidsList = ({ bookingId, onAccept }) => {
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <h4 className="font-black text-gray-900 truncate">{bid.vendorId?.businessName || bid.vendorId?.name}</h4>
-              <div className="flex items-center gap-0.5 text-xs font-black text-yellow-500 bg-yellow-50 px-1.5 py-0.5 rounded-md">
+              <h4 className="font-black text-dark-text truncate">{bid.vendorId?.businessName || bid.vendorId?.name}</h4>
+              <div className="flex items-center gap-0.5 text-xs font-black text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded-md border border-yellow-500/20">
                 <FiStar className="w-2.5 h-2.5 fill-current" />
                 <span>{bid.vendorId?.rating || '4.5'}</span>
               </div>
             </div>
-            {bid.note && <p className="text-[10px] text-gray-500 font-medium truncate mb-2">"{bid.note}"</p>}
+            {bid.note && <p className="text-[10px] text-secondary-text font-medium truncate mb-2">"{bid.note}"</p>}
             <div className="flex items-center gap-2">
-              <span className="text-lg font-black text-indigo-600">₹{bid.price}</span>
-              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Total Price</span>
+              <span className="text-lg font-black text-brand">₹{bid.price}</span>
+              <span className="text-[9px] text-secondary-text font-bold uppercase tracking-tighter">Total Price</span>
             </div>
           </div>
 
@@ -1634,7 +1610,7 @@ const BidsList = ({ bookingId, onAccept }) => {
             onClick={() => handleAccept(bid._id)}
             disabled={acceptingId !== null}
             className={`px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${
-              acceptingId === bid._id ? 'bg-gray-100 text-gray-400' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+              acceptingId === bid._id ? 'bg-divider text-secondary-text' : 'bg-brand text-white shadow-lg shadow-brand/10'
             }`}
           >
             {acceptingId === bid._id ? 'Wait...' : 'Accept'}

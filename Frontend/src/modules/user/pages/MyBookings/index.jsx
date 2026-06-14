@@ -197,11 +197,7 @@ const MyBookings = () => {
     <div className="min-h-screen pb-24 relative bg-transparent">
       {/* Refined Premium Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(circle at top, #FFFFFF 0%, #F8F9FA 100%)'
-          }}
-        />
+        <div className="absolute inset-0 bg-light-bg" />
         {/* Elegant Dot Grid Pattern */}
         <div className="absolute inset-0 opacity-[0.02]"
           style={{
@@ -213,23 +209,23 @@ const MyBookings = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-black/[0.03] px-4 py-4 flex items-center justify-between w-full">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-4 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/[0.02]"
+              className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color cursor-pointer text-dark-text"
             >
-              <FiArrowLeft className="w-5 h-5 text-gray-800" />
+              <FiArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-xl font-bold text-[#111827] tracking-tight">My Bookings</h1>
+            <h1 className="text-xl font-bold text-dark-text tracking-tight">My Bookings</h1>
           </div>
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/[0.02] relative">
+          <div className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color relative">
             <NotificationBell />
           </div>
         </header>
 
         {/* Filter Tabs */}
-        <div className="bg-white border-b border-slate-100 fixed top-[72px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
+        <div className="bg-card-bg border-b border-border-color fixed top-[72px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
           <div className="flex overflow-x-auto px-4 py-3 gap-2.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: 'all', label: 'All Bookings' },
@@ -241,9 +237,9 @@ const MyBookings = () => {
               <button
                 key={tab.id}
                 onClick={() => setFilter(tab.id)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 border ${filter === tab.id
+                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
                   ? 'border-transparent text-white shadow-lg shadow-blue-500/25 active:scale-95'
-                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
+                  : 'bg-card-bg border-border-color text-secondary-text hover:bg-gray-800/20 hover:border-border-color'
                   }`}
                 style={filter === tab.id ? { backgroundColor: themeColors.button } : {}}
               >
@@ -258,34 +254,34 @@ const MyBookings = () => {
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm animate-pulse">
-                  <div className="flex justify-between mb-4 border-b border-slate-100 pb-4">
-                    <div className="space-y-2">
-                      <div className="h-3 w-20 bg-slate-200 rounded"></div>
-                      <div className="h-5 w-48 bg-slate-200 rounded"></div>
+                  <div key={i} className="bg-card-bg rounded-2xl p-5 border border-border-color shadow-sm animate-pulse">
+                    <div className="flex justify-between mb-4 border-b border-divider pb-4">
+                      <div className="space-y-2">
+                        <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-5 w-48 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                      </div>
+                      <div className="h-6 w-24 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
                     </div>
-                    <div className="h-6 w-24 bg-slate-200 rounded-full"></div>
+                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-4 mb-5 p-3 rounded-xl bg-gray-100 dark:bg-gray-900/50 border border-border-color">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800"></div>
+                      <div className="space-y-1.5 py-1">
+                        <div className="h-2.5 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-3.5 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800"></div>
+                      <div className="space-y-1.5 py-1">
+                        <div className="h-2.5 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-3.5 w-40 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between pt-4 border-t border-border-color">
+                      <div className="space-y-1">
+                        <div className="h-2.5 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-6 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                      </div>
+                      <div className="h-9 w-28 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-4 mb-5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="w-8 h-8 rounded-full bg-slate-200"></div>
-                    <div className="space-y-1.5 py-1">
-                      <div className="h-2.5 w-16 bg-slate-200 rounded"></div>
-                      <div className="h-3.5 w-32 bg-slate-200 rounded"></div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-slate-200"></div>
-                    <div className="space-y-1.5 py-1">
-                      <div className="h-2.5 w-16 bg-slate-200 rounded"></div>
-                      <div className="h-3.5 w-40 bg-slate-200 rounded"></div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between pt-4 border-t border-slate-200">
-                    <div className="space-y-1">
-                      <div className="h-2.5 w-16 bg-slate-200 rounded"></div>
-                      <div className="h-6 w-24 bg-slate-200 rounded"></div>
-                    </div>
-                    <div className="h-9 w-28 bg-slate-200 rounded-lg"></div>
-                  </div>
-                </div>
               ))}
             </div>
           ) : bookings.length === 0 ? (
@@ -294,11 +290,11 @@ const MyBookings = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-24 text-center px-6"
             >
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100 shadow-sm">
-                <FiClock className="w-8 h-8 text-slate-300" />
+              <div className="w-20 h-20 bg-card-bg rounded-full flex items-center justify-center mb-6 border border-border-color shadow-sm">
+                <FiClock className="w-8 h-8 text-secondary-text" />
               </div>
-              <h3 className="text-slate-900 text-lg font-bold mb-2">No Bookings Found</h3>
-              <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
+              <h3 className="text-dark-text text-lg font-bold mb-2">No Bookings Found</h3>
+              <p className="text-secondary-text text-sm max-w-xs leading-relaxed">
                 {filter === 'all'
                   ? "Looks like you haven't booked any services yet. Explore our services to get started!"
                   : `You don't have any ${filter.replace('-', ' ')} bookings at the moment.`}
@@ -332,45 +328,45 @@ const MyBookings = () => {
                       }
                     }}
                     onClick={() => handleBookingClick(booking)}
-                    className="group flex gap-3.5 bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
+                    className="group flex gap-3.5 bg-card-bg rounded-[20px] p-4 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
                   >
                     {/* Booking Image */}
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-border-color bg-card-bg flex items-center justify-center">
                       <img 
                         src={bookingImage} 
                         alt={booking.serviceName || 'Service'} 
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
-
+ 
                     {/* Middle Section: Booking Details */}
                     <div className="flex-1 min-w-0 pr-2 flex flex-col justify-between py-0.5">
                       <div className="space-y-1">
                         {/* Booking ID & Category */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-medium text-gray-400">
+                          <span className="text-[10px] font-medium text-secondary-text">
                             #{booking.bookingNumber || (booking._id || booking.id).substring(0, 8)}
                           </span>
                           {booking.serviceCategory && (
-                            <span className="text-[8px] font-bold text-brand bg-orange-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            <span className="text-[8px] font-bold text-brand bg-orange-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
                               {booking.serviceCategory}
                             </span>
                           )}
                         </div>
-
+ 
                         {/* Booking Title */}
-                        <h3 className="text-sm font-semibold text-gray-900 leading-tight truncate group-hover:text-brand transition-colors">
+                        <h3 className="text-sm font-semibold text-dark-text leading-tight truncate group-hover:text-brand transition-colors">
                           {booking.serviceName || 'Service Request'}
                         </h3>
-
+ 
                         {/* Rating block matching mockup */}
-                        <div className="flex items-center gap-1 text-[11px] text-gray-500 font-medium leading-none">
+                        <div className="flex items-center gap-1 text-[11px] text-secondary-text font-medium leading-none">
                           <FiStar className="text-amber-500 fill-amber-500 w-3 h-3" />
                           <span>{booking.rating || booking.bookedItems?.[0]?.rating || '4.5'}</span>
-                          <span className="text-gray-400 font-normal">({booking.review ? 'Reviewed' : '1.2k reviews'})</span>
+                          <span className="text-secondary-text opacity-70 font-normal">({booking.review ? 'Reviewed' : '1.2k reviews'})</span>
                         </div>
                       </div>
-
+ 
                       {/* Write a review or Date/Time slot */}
                       <div className="mt-2">
                         {isCompleted ? (
@@ -385,15 +381,15 @@ const MyBookings = () => {
                             Write a review
                           </button>
                         ) : (
-                          <div className="text-[10px] text-gray-500 font-semibold flex items-center gap-1">
-                            <span className="text-gray-700">{formatDate(booking.scheduledDate)}</span>
-                            <span className="text-gray-300">•</span>
+                          <div className="text-[10px] text-secondary-text font-semibold flex items-center gap-1">
+                            <span className="text-dark-text">{formatDate(booking.scheduledDate)}</span>
+                            <span className="text-border-color">•</span>
                             <span>{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</span>
                           </div>
                         )}
                       </div>
                     </div>
-
+ 
                     {/* Right Section: Status badge, Price & Chevron */}
                     <div className="flex flex-col justify-between items-end shrink-0 py-0.5">
                       {/* Status Badge */}
@@ -402,15 +398,15 @@ const MyBookings = () => {
                           {getStatusLabel(booking.status)}
                         </span>
                       </div>
-
+ 
                       {/* Pricing and Arrow */}
                       <div className="flex items-center gap-1.5 mt-2">
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
+                          <p className="text-sm font-semibold text-dark-text">
                             ₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}
                           </p>
                         </div>
-                        <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-brand transition-colors" />
+                        <FiChevronRight className="w-4 h-4 text-secondary-text group-hover:text-brand transition-colors" />
                       </div>
                     </div>
                   </motion.div>

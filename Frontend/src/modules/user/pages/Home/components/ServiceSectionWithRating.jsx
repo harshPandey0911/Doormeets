@@ -82,12 +82,13 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
       <div ref={titleRef} className="px-4 mb-3 flex items-center justify-between" style={{ opacity: 1 }}>
         <div>
           <h2
-            className="text-[17px] font-semibold text-[#1f2937] tracking-tight"
+            className="text-[17px] font-semibold tracking-tight"
+            style={{ color: 'var(--text-primary)' }}
           >
             {title}
           </h2>
           {subtitle && (
-            <p className="text-sm font-medium text-gray-500">
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
               {subtitle}
             </p>
           )}

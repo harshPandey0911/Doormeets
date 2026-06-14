@@ -58,11 +58,11 @@ const MyPlan = () => {
 
     // Default
     return {
-      container: 'bg-white border-gray-200 text-gray-800',
+      container: 'bg-card-bg border-border-color text-dark-text',
       badge: 'bg-emerald-500 text-white',
-      includes: 'text-gray-500',
+      includes: 'text-secondary-text',
       check: 'text-primary-500',
-      price: 'text-gray-900',
+      price: 'text-dark-text',
       button: 'bg-primary-600 text-white hover:bg-primary-700'
     };
   };
@@ -98,24 +98,24 @@ const MyPlan = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
+    <div className="min-h-screen bg-light-bg pb-12">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-30">
+      <header className="bg-transparent border-b border-border-color sticky top-0 z-30">
         <div className="px-4 py-4 flex items-center gap-3 max-w-7xl mx-auto">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-800/10 rounded-full transition-colors"
           >
-            <FiArrowLeft className="w-5 h-5 text-gray-700" />
+            <FiArrowLeft className="w-5 h-5 text-dark-text" />
           </button>
-          <h1 className="text-xl font-bold text-gray-900">Subscription Plans</h1>
+          <h1 className="text-xl font-bold text-dark-text">Subscription Plans</h1>
         </div>
       </header>
 
       <main className="px-4 py-12 max-w-7xl mx-auto">
-        <div className="mb-12 bg-white/40 backdrop-blur-sm p-8 rounded-[2.5rem] border border-white shadow-sm">
-          <h2 className="text-4xl font-black text-slate-900 mb-3 tracking-tight">Pick Your Membership</h2>
-          <p className="text-slate-500 font-bold text-lg max-w-2xl leading-relaxed">
+        <div className="mb-12 bg-card-bg/40 backdrop-blur-sm p-8 rounded-[2.5rem] border border-border-color shadow-sm">
+          <h2 className="text-4xl font-black text-dark-text mb-3 tracking-tight">Pick Your Membership</h2>
+          <p className="text-secondary-text font-bold text-lg max-w-2xl leading-relaxed">
             Choose a plan that fits your home. Higher plans automatically include benefits from the tiers below them.
           </p>
         </div>
@@ -274,12 +274,12 @@ const MyPlan = () => {
                       <div className={`mb-8 p-4 rounded-2xl border-l-[4px] shadow-sm flex items-start gap-4 transition-all duration-300 transform group-hover:scale-[1.02] ${
                         plan.name.toLowerCase().includes('platinum') 
                           ? 'bg-white/5 border-emerald-400' 
-                          : 'bg-white/60 border-primary-500 backdrop-blur-md'
+                          : 'bg-card-bg/60 border-primary-500 backdrop-blur-md'
                       }`}>
                          <p className={`text-[12px] font-bold leading-relaxed ${
                             plan.name.toLowerCase().includes('platinum') 
                               ? 'text-slate-300' 
-                              : 'text-slate-600'
+                              : 'text-secondary-text'
                          }`}>
                            {plan.description}
                          </p>
@@ -305,9 +305,9 @@ const MyPlan = () => {
         )}
 
         {plans.length === 0 && !loading && (
-          <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-200 shadow-inner">
-            <FiStar className="h-12 w-12 text-gray-200 mx-auto mb-4" />
-            <p className="text-gray-400 font-bold">No subscription plans found at this time.</p>
+          <div className="text-center py-24 bg-card-bg rounded-3xl border border-dashed border-border-color shadow-inner">
+            <FiStar className="h-12 w-12 text-secondary-text mx-auto mb-4" />
+            <p className="text-secondary-text font-bold">No subscription plans found at this time.</p>
           </div>
         )}
       </main>

@@ -2,31 +2,81 @@
 @import "tailwindcss";
 
 
-@theme {
-  --color-brand: #B33A35;
-  --color-brand-light: #D56C67;
-  --color-brand-dark: #9E2E2A;
-  --color-primary-orange: #B33A35;
-  --color-secondary-orange: #9E2E2A;
-  --color-accent-orange: #D56C67;
-  --color-dark-text: #1F2937;
-  --color-secondary-text: #6B7280;
-  --color-light-bg: #FFFFFF;
-  --color-card-bg: #F8F9FA;
-  --color-border-color: #E5E7EB;
-  --color-divider: #F1F5F9;
+/* ============================================
+   LIGHT THEME (default)
+   ============================================ */
+:root {
+  --primary:        #B33A35;
+  --primary-hover:  #9E2E2A;
+  --background:     #FFFFFF;
+  --surface:        #FFFFFF;
+  --card-bg:        #F8F9FA;
+  --text-primary:   #1F2937;
+  --text-secondary: #6B7280;
+  --text-muted:     #9CA3AF;
+  --border:         #E5E7EB;
+  --divider:        #F1F5F9;
+  --shadow:         0 4px 12px rgba(0, 0, 0, 0.06);
 
-  /* Override Tailwind's orange family to map to primary theme shades */
-  --color-orange-50: #FDF2F2;
-  --color-orange-100: #FDE8E8;
-  --color-orange-200: #FBD5D5;
-  --color-orange-300: #F8B4B4;
-  --color-orange-400: #F98080;
-  --color-orange-500: #B33A35;
-  --color-orange-600: #9E2E2A;
-  --color-orange-700: #7E221F;
-  --color-orange-800: #631D1B;
-  --color-orange-900: #4B1615;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error:   #EF4444;
+  --info:    #3B82F6;
+}
+
+/* ============================================
+   DARK THEME — DoorMeets Palette
+   ============================================ */
+[data-theme="dark"] {
+  --primary:        #B33A35;
+  --primary-hover:  #C6544E;
+  --background:     #0A0911;
+  --surface:        #11141B;
+  --card-bg:        #11141B;
+  --text-primary:   #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted:     #94A3B8;
+  --border:         #232733;
+  --divider:        #1B1F27;
+  --shadow:         0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error:   #EF4444;
+  --info:    #3B82F6;
+}
+
+/* ============================================
+   TAILWIND v4 @theme — maps to CSS variables
+   ============================================ */
+@theme {
+  --color-brand:          var(--primary);
+  --color-brand-light:    var(--primary-hover);
+  --color-brand-dark:     var(--primary-hover);
+  --color-dark-text:      var(--text-primary);
+  --color-secondary-text: var(--text-secondary);
+  --color-muted-text:     var(--text-muted);
+  --color-light-bg:       var(--background);
+  --color-surface:        var(--surface);
+  --color-card-bg:        var(--card-bg);
+  --color-border-color:   var(--border);
+  --color-divider:        var(--divider);
+  --color-success:        var(--success);
+  --color-warning:        var(--warning);
+  --color-error:          var(--error);
+  --color-info:           var(--info);
+
+  /* Keep orange family mapped to brand shades */
+  --color-orange-50:  var(--primary-hover);
+  --color-orange-100: var(--primary-hover);
+  --color-orange-200: var(--primary-hover);
+  --color-orange-300: var(--primary-hover);
+  --color-orange-400: var(--primary-hover);
+  --color-orange-500: var(--primary);
+  --color-orange-600: var(--primary);
+  --color-orange-700: var(--primary-hover);
+  --color-orange-800: var(--primary-hover);
+  --color-orange-900: var(--primary-hover);
 }
 
 /* Slide up animation for modal */
@@ -252,11 +302,12 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: var(--background) !important;
+  background: var(--background) !important;
   background-attachment: fixed;
   overflow-x: hidden;
   max-width: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
@@ -265,16 +316,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   max-width: 100%;
-  color: #1F2937;
+  color: var(--text-primary);
 }
 
 #root,
 .App {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: var(--background) !important;
+  background: var(--background) !important;
   min-height: 100vh;
   overflow-x: hidden;
   max-width: 100%;
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Hide scrollbar for horizontal scroll */
@@ -306,29 +359,29 @@ html {
   transform: scale(0.98);
 }
 
-/* Custom brand color - Doormeets update */
+/* Custom brand color - uses CSS variable so it adapts per theme */
 .bg-brand {
-  background-color: #B33A35;
+  background-color: var(--primary);
 }
 
 .bg-brand-hover:hover {
-  background-color: #9E2E2A;
+  background-color: var(--primary-hover);
 }
 
 .text-brand {
-  color: #B33A35;
+  color: var(--primary);
 }
 
 .border-brand {
-  border-color: #B33A35;
+  border-color: var(--primary);
 }
 
 .bg-brand-light {
-  background-color: #D56C67;
+  background-color: var(--primary-hover);
 }
 
 .hover\:bg-brand-light:hover {
-  background-color: #9E2E2A;
+  background-color: var(--primary-hover);
 }
 
 /* Admin Panel Styles */

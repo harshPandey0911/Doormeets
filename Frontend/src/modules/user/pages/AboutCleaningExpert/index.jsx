@@ -61,7 +61,7 @@ const AboutDoormeets = () => {
   ];
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-white pb-10">
+    <div ref={containerRef} className="min-h-screen bg-light-bg pb-10">
       {/* SVG Gradient Definition */}
       <svg width="0" height="0" className="absolute">
         <linearGradient id="doormeets-about-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -70,15 +70,15 @@ const AboutDoormeets = () => {
           <stop offset="100%" stopColor="#D56C67" />
         </linearGradient>
       </svg>
-
+ 
       {/* Header */}
-      <header className="bg-transparent backdrop-blur-xl border-b border-black/[0.03] sticky top-0 z-30">
+      <header className="bg-transparent backdrop-blur-xl border-b border-border-color sticky top-0 z-30">
         <div className="px-4 py-4 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-orange-50 rounded-full transition-colors active:scale-95"
+            className="p-2 hover:bg-orange-50/10 rounded-full transition-colors active:scale-95 text-dark-text"
           >
-            <FiArrowLeft className="w-5 h-5 text-gray-700" />
+            <FiArrowLeft className="w-5 h-5 text-dark-text" />
           </button>
           <span className="text-xl font-semibold" style={doormeetsTextGradient}>About Doormeets</span>
         </div>
@@ -102,22 +102,22 @@ const AboutDoormeets = () => {
             </div>
           </div>
 
-          <h1 className="text-3xl font-semibold text-[#111827] tracking-tight mb-2">
+          <h1 className="text-3xl font-semibold text-dark-text tracking-tight mb-2">
             Welcome to <span style={doormeetsTextGradient}>Doormeets</span>
           </h1>
-          <p className="text-gray-500 max-w-xs mx-auto leading-relaxed text-sm">
+          <p className="text-secondary-text max-w-xs mx-auto leading-relaxed text-sm">
             Your trusted partner for premium home and personal care services.
           </p>
         </div>
 
         {/* Stats Row */}
-        <div className="animate-item flex justify-between bg-white rounded-2xl p-6 shadow-sm border border-gray-100 divide-x divide-gray-100">
+        <div className="animate-item flex justify-between bg-card-bg rounded-2xl p-6 shadow-sm border border-border-color divide-x divide-border-color">
           {stats.map((stat, idx) => (
             <div key={idx} className="flex-1 text-center px-2">
               <div className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-[#B33A35] to-[#9E2E2A]">
                 {stat.number}
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-gray-400 font-medium mt-1">
+              <div className="text-[10px] uppercase tracking-wider text-secondary-text font-medium mt-1">
                 {stat.label}
               </div>
             </div>
@@ -128,10 +128,10 @@ const AboutDoormeets = () => {
         <div className="animate-item">
           <div className="bg-gradient-to-br from-[#B33A35]/5 to-[#9E2E2A]/5 rounded-2xl p-6 border border-[#B33A35]/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5">
-              <FiGlobe className="w-24 h-24" />
+              <FiGlobe className="w-24 h-24 text-dark-text" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Our Mission</h3>
-            <p className="text-sm text-gray-600 leading-relaxed relative z-10 font-medium">
+            <h3 className="text-lg font-semibold text-dark-text mb-3">Our Mission</h3>
+            <p className="text-sm text-secondary-text leading-relaxed relative z-10 font-medium">
               Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
             </p>
           </div>
@@ -139,19 +139,19 @@ const AboutDoormeets = () => {
 
         {/* Why Choose Us Grid */}
         <div className="animate-item">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 px-1">Why Choose Doormeets?</h3>
+          <h3 className="text-lg font-semibold text-dark-text mb-4 px-1">Why Choose Doormeets?</h3>
           <div className="grid grid-cols-2 gap-3">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group"
+                className="bg-card-bg rounded-2xl p-4 shadow-sm border border-border-color hover:shadow-md transition-shadow group"
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300"
                   style={{ background: 'linear-gradient(135deg, rgba(255, 159, 69, 0.1), rgba(255, 184, 108, 0.1))' }}>
                   <feature.icon className="w-5 h-5" style={{ stroke: 'url(#doormeets-about-gradient)' }} />
                 </div>
-                <h4 className="text-sm font-semibold text-gray-800 mb-1">{feature.title}</h4>
-                <p className="text-xs text-gray-500 leading-relaxed">{feature.description}</p>
+                <h4 className="text-sm font-semibold text-dark-text mb-1">{feature.title}</h4>
+                <p className="text-xs text-secondary-text leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -159,21 +159,21 @@ const AboutDoormeets = () => {
 
         {/* How It Works */}
         <div className="animate-item">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 px-1">How We Work</h3>
-          <div className="bg-white rounded-2xl p-1 shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-dark-text mb-4 px-1">How We Work</h3>
+          <div className="bg-card-bg rounded-2xl p-1 shadow-sm border border-border-color">
             {[
               { title: 'Book Details', desc: 'Select service & schedule time', icon: FiSmartphone },
               { title: 'Get Matched', desc: 'We assign a top-rated pro', icon: FiUsers },
               { title: 'Relax', desc: 'Enjoy high-quality service', icon: FiSmile },
             ].map((step, i) => (
-              <div key={i} className="flex items-center p-4 border-b last:border-0 border-gray-50 relative">
+              <div key={i} className="flex items-center p-4 border-b last:border-0 border-border-color relative">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-4 shadow-sm text-white font-semibold text-lg relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#B33A35] to-[#9E2E2A]" />
                   <span className="relative z-10">{i + 1}</span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-800">{step.title}</h4>
-                  <p className="text-xs text-gray-500">{step.desc}</p>
+                  <h4 className="text-sm font-semibold text-dark-text">{step.title}</h4>
+                  <p className="text-xs text-secondary-text">{step.desc}</p>
                 </div>
               </div>
             ))}
@@ -181,10 +181,10 @@ const AboutDoormeets = () => {
         </div>
 
         {/* Footer Info */}
-        <div className="animate-item text-center pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-400 mb-1 font-medium">Designed & Developed by</p>
+        <div className="animate-item text-center pt-4 border-t border-border-color">
+          <p className="text-xs text-secondary-text mb-1 font-medium">Designed & Developed by</p>
           <span className="text-sm font-semibold tracking-wide" style={doormeetsTextGradient}>Doormeets Team</span>
-          <p className="text-[10px] text-gray-300 mt-4">v7.6.27 • Made with ❤️ in India</p>
+          <p className="text-[10px] text-secondary-text opacity-50 mt-4">v7.6.27 • Made with ❤️ in India</p>
         </div>
       </main>
 

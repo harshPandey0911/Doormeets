@@ -156,7 +156,7 @@ const PremiumCategoriesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#F8F9FA_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-light-bg pb-28 w-full overflow-x-hidden">
       {/* Premium Navbar */}
       <Navbar
         locationLabel={currentCity?.name || 'Select location'}
@@ -171,11 +171,11 @@ const PremiumCategoriesPage = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 rounded-full hover:bg-orange-50 transition-colors"
+              className="p-2 rounded-full hover:bg-orange-50/10 transition-colors"
             >
-              <FiArrowLeft className="w-6 h-6 text-gray-700" />
+              <FiArrowLeft className="w-6 h-6 text-dark-text" />
             </button>
-            <h1 className="text-2xl font-semibold text-gray-900">All Categories</h1>
+            <h1 className="text-2xl font-semibold text-dark-text">All Categories</h1>
           </div>
         </div>
 
@@ -211,7 +211,7 @@ const PremiumCategoriesPage = () => {
               <div key={category.id} id={`category-${category.id}`} className="space-y-3 scroll-mt-24">
                 {/* Category Header */}
                 <div className="flex justify-between items-center px-1">
-                  <h2 className="text-base font-semibold text-[#111827] tracking-tight">
+                  <h2 className="text-base font-semibold text-dark-text tracking-tight">
                     {category.title}
                   </h2>
                   <button
@@ -230,7 +230,7 @@ const PremiumCategoriesPage = () => {
                         key={sub.id || sub._id}
                         onClick={() => handleSubCategoryClick(category, sub)}
                         whileTap={{ scale: 0.95 }}
-                        className="flex flex-col items-center p-3.5 bg-gray-50/70 border border-gray-200/50 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-orange-200 transition-all duration-300 group"
+                        className="flex flex-col items-center p-3.5 bg-card-bg border border-border-color rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-orange-200 transition-all duration-300 group cursor-pointer"
                       >
                         {/* Image directly rendered with rounded corners */}
                         <img
@@ -239,7 +239,7 @@ const PremiumCategoriesPage = () => {
                           className="w-16 h-16 object-cover rounded-xl mb-2.5 transition-transform duration-300 group-hover:scale-105"
                         />
                         {/* Subcategory Title */}
-                        <span className="text-[11px] font-normal text-gray-700 text-center line-clamp-2 transition-colors duration-200 group-hover:text-orange-500">
+                        <span className="text-[11px] font-normal text-secondary-text text-center line-clamp-2 transition-colors duration-200 group-hover:text-orange-500">
                           {sub.title ? sub.title.charAt(0).toUpperCase() + sub.title.slice(1).toLowerCase() : ''}
                         </span>
                       </motion.button>
@@ -252,21 +252,21 @@ const PremiumCategoriesPage = () => {
                         key={service.id || service._id}
                         onClick={() => handleServiceClick(category, service)}
                         whileTap={{ scale: 0.95 }}
-                        className="flex flex-col items-center p-3.5 bg-gray-50/70 border border-gray-200/50 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-orange-200 transition-all duration-300 group"
+                        className="flex flex-col items-center p-3.5 bg-card-bg border border-border-color rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-orange-200 transition-all duration-300 group cursor-pointer"
                       >
                         <img
                           src={toAssetUrl(service.iconUrl || service.icon) || getSubDummyImage(service.title)}
                           alt={service.title}
                           className="w-16 h-16 object-cover rounded-xl mb-2.5 transition-transform duration-300 group-hover:scale-105"
                         />
-                        <span className="text-[11px] font-normal text-gray-700 text-center line-clamp-2 transition-colors duration-200 group-hover:text-orange-500">
+                        <span className="text-[11px] font-normal text-secondary-text text-center line-clamp-2 transition-colors duration-200 group-hover:text-orange-500">
                           {service.title}
                         </span>
                       </motion.button>
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-[24px] border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 text-center">
+                  <div className="rounded-[24px] border border-dashed border-border-color bg-card-bg p-6 text-sm text-secondary-text text-center">
                     No services or subcategories available.
                   </div>
                 )}
@@ -274,7 +274,7 @@ const PremiumCategoriesPage = () => {
             ))}
 
             {filteredData.length === 0 && (
-              <div className="rounded-[28px] border border-dashed border-gray-200 bg-white p-8 text-sm text-gray-500 text-center">
+              <div className="rounded-[28px] border border-dashed border-border-color bg-card-bg p-8 text-sm text-secondary-text text-center">
                 No matching categories found.
               </div>
             )}

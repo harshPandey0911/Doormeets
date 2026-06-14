@@ -338,15 +338,15 @@ const PremiumCategoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#F8F9FA_100%)] pb-28 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-light-bg pb-28 w-full overflow-x-hidden">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 pt-[76px] pb-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
         <aside className="hidden lg:block">
-          <div className="sticky top-24 space-y-3 rounded-[28px] border border-gray-100 bg-white p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+          <div className="sticky top-24 space-y-3 rounded-[28px] border border-border-color bg-card-bg p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-gray-400">Categories</p>
-              <h2 className="mt-1 text-xl font-black text-gray-900">Choose a service</h2>
+              <h2 className="mt-1 text-xl font-black text-dark-text">Choose a service</h2>
             </div>
             <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
               {categories.map((category) => (
@@ -361,25 +361,25 @@ const PremiumCategoryPage = () => {
                 />
               ))}
             </div>
-            {categories.length === 0 ? <div className="rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No categories available.</div> : null}
+            {categories.length === 0 ? <div className="rounded-[20px] border border-dashed border-border-color bg-card-bg p-4 text-sm text-secondary-text">No categories available.</div> : null}
           </div>
         </aside>
 
         <section className="space-y-5 min-w-0 w-full max-w-full overflow-hidden">
           <div className="lg:hidden space-y-3 w-full max-w-full overflow-hidden">
             <SearchBar value={search} onChange={setSearch} placeholder="Search this category" />
-            {activeCategory?.status !== 'coming_soon' && !subCategoriesLoading && !subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No subcategories available.</div> : null}
+            {activeCategory?.status !== 'coming_soon' && !subCategoriesLoading && !subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-border-color bg-card-bg p-4 text-sm text-secondary-text">No subcategories available.</div> : null}
           </div>
 
           {activeCategory?.status === 'coming_soon' ? (
-            <div className="flex flex-col items-center justify-center p-5 text-center rounded-[30px] border border-amber-100 bg-white shadow-[0_12px_40px_rgba(255,159,69,0.06)] py-8 max-w-md mx-auto">
+            <div className="flex flex-col items-center justify-center p-5 text-center rounded-[30px] border border-border-color bg-card-bg shadow-[0_12px_40px_rgba(255,159,69,0.06)] py-8 max-w-md mx-auto">
               <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4">
                 <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
               
-              <h1 className="text-2xl font-extrabold text-gray-900 mb-1.5">
+              <h1 className="text-2xl font-extrabold text-dark-text mb-1.5">
                 {activeCategory.title}
               </h1>
               
@@ -425,13 +425,13 @@ const PremiumCategoryPage = () => {
             </div>
           ) : (
             <>
-              <div className="hidden items-center gap-3 rounded-[28px] border border-gray-100 bg-white px-4 py-3 shadow-sm lg:flex">
+              <div className="hidden items-center gap-3 rounded-[28px] border border-border-color bg-card-bg px-4 py-3 shadow-sm lg:flex">
             <SearchBar value={search} onChange={setSearch} placeholder="Search services inside this category" />
-            <button type="button" className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-orange-200 hover:bg-orange-50">
+            <button type="button" className="rounded-2xl border border-border-color bg-card-bg px-4 py-3 text-sm font-bold text-secondary-text shadow-sm transition hover:border-orange-200 hover:bg-orange-50/10 cursor-pointer">
               <FiFilter />
               Filter
             </button>
-            <button type="button" onClick={() => navigate('/user/cart')} className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-orange-200 hover:bg-orange-50">
+            <button type="button" onClick={() => navigate('/user/cart')} className="rounded-2xl border border-border-color bg-card-bg px-4 py-3 text-sm font-bold text-secondary-text shadow-sm transition hover:border-orange-200 hover:bg-orange-50/10 cursor-pointer">
               <FiShoppingBag />
               Cart
             </button>
@@ -446,7 +446,7 @@ const PremiumCategoryPage = () => {
                 <div className="mb-3 flex items-end justify-between gap-3">
                   <div>
                     <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Brands</p>
-                    <h3 className="text-base font-bold text-[#111827] tracking-tight">Top options in this category</h3>
+                    <h3 className="text-base font-bold text-dark-text tracking-tight">Top options in this category</h3>
                   </div>
                 </div>
                 {brandsLoading ? (
@@ -462,12 +462,12 @@ const PremiumCategoryPage = () => {
                         <BrandCard key={brand.id || brand.slug} brand={brand} active={(activeBrand?.id || activeBrand?.slug) === (brand.id || brand.slug)} onClick={() => setActiveBrand(brand)} />
                       ))}
                     </div>
-                    {!brands.length ? <div className="mt-3 rounded-[20px] border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">No brands available.</div> : null}
+                    {!brands.length ? <div className="mt-3 rounded-[20px] border border-dashed border-border-color dark:border-dark-border-color bg-card-bg dark:bg-dark-card-bg p-4 text-sm text-secondary-text dark:text-gray-400">No brands available.</div> : null}
                   </>
                 )}
               </div>
             ) : (
-              <div className="rounded-[28px] border border-dashed border-orange-100 bg-orange-50/20 p-6 text-center text-sm text-gray-500">
+              <div className="rounded-[28px] border border-dashed border-border-color dark:border-dark-border-color bg-card-bg dark:bg-dark-card-bg p-6 text-center text-sm text-secondary-text dark:text-gray-400">
                 Please select a subcategory to see available brands.
               </div>
             )}
@@ -492,7 +492,7 @@ const PremiumCategoryPage = () => {
                       onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory, brand: activeBrand } })}
                     />
                   ))}
-                  {!filteredServices.length ? <div className="col-span-full rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 text-center">No services available.</div> : null}
+                  {!filteredServices.length ? <div className="col-span-full rounded-3xl border border-dashed border-border-color bg-card-bg p-6 text-sm text-secondary-text text-center">No services available.</div> : null}
                 </>
               )}
             </div>

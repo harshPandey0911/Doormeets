@@ -39,22 +39,22 @@ const PremiumCartPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#F8F9FA_100%)] pb-44">
+    <div className="min-h-screen bg-light-bg pb-44">
       <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
 
       <div className="mx-auto max-w-4xl px-4 pt-[80px] pb-5 md:px-6">
         <div className="py-4 px-1">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-gray-100 p-3 text-gray-900"><FiMapPin /></div>
+            <div className="rounded-2xl bg-card-bg border border-border-color p-3 text-dark-text"><FiMapPin /></div>
             <div>
-              <p className="text-[10px] font-normal uppercase tracking-[0.24em] text-gray-400">Address</p>
-              <h1 className="text-base font-normal text-[#111827] tracking-tight">{localStorage.getItem('currentAddress') || 'Select delivery address'}</h1>
+              <p className="text-[10px] font-normal uppercase tracking-[0.24em] text-secondary-text">Address</p>
+              <h1 className="text-base font-normal text-dark-text tracking-tight">{localStorage.getItem('currentAddress') || 'Select delivery address'}</h1>
             </div>
           </div>
         </div>
 
         {savings > 0 ? (
-          <div className="mt-4 rounded-[30px] border border-emerald-100 bg-emerald-50 px-5 py-4 text-emerald-800 shadow-sm">
+          <div className="mt-4 rounded-[30px] border border-emerald-100 bg-emerald-50 dark:border-emerald-500/10 dark:bg-emerald-950/20 px-5 py-4 text-emerald-800 dark:text-emerald-400 shadow-sm">
             <div className="text-xs font-normal uppercase tracking-[0.24em]">Savings banner</div>
             <div className="mt-1 text-sm font-normal">You save ₹{savings} on this booking</div>
           </div>
@@ -64,21 +64,21 @@ const PremiumCartPage = () => {
           {Object.entries(groupedItems).map(([category, items]) => (
             <div key={category} className="py-4 px-1">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-gray-100 p-3 text-gray-900"><FiPackage /></div>
+                <div className="rounded-2xl bg-card-bg border border-border-color p-3 text-dark-text"><FiPackage /></div>
                 <div>
-                  <p className="text-[10px] font-normal uppercase tracking-[0.24em] text-gray-400">Grouped services</p>
-                  <h3 className="text-base font-normal text-[#111827] tracking-tight">{category}</h3>
+                  <p className="text-[10px] font-normal uppercase tracking-[0.24em] text-secondary-text">Grouped services</p>
+                  <h3 className="text-base font-normal text-dark-text tracking-tight">{category}</h3>
                 </div>
               </div>
 
               <div className="mt-4 space-y-3">
                 {items.map((item) => (
-                  <div key={item._id || item.id} className="rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-gray-50 p-4">
+                  <div key={item._id || item.id} className="rounded-[22px] border border-border-color bg-card-bg p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-normal text-[#111827]">{item.card?.title || item.title}</div>
-                        <div className="mt-1 text-[11px] leading-5 text-gray-500">{item.card?.subtitle || item.description}</div>
-                        <div className="mt-2 text-sm font-normal text-gray-900">₹{item.card?.price || item.price}</div>
+                        <div className="text-sm font-normal text-dark-text">{item.card?.title || item.title}</div>
+                        <div className="mt-1 text-[11px] leading-5 text-secondary-text">{item.card?.subtitle || item.description}</div>
+                        <div className="mt-2 text-sm font-normal text-dark-text">₹{item.card?.price || item.price}</div>
                       </div>
                       <QuantityButton
                         quantity={item.serviceCount || 1}
@@ -99,12 +99,12 @@ const PremiumCartPage = () => {
           ))}
 
           {!cartItems.length ? (
-            <div className="rounded-[30px] border border-dashed border-gray-200 bg-white p-10 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-900">
+            <div className="rounded-[30px] border border-dashed border-border-color bg-card-bg p-10 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-light-bg border border-border-color text-dark-text">
                 <FiPackage className="text-2xl" />
               </div>
-              <div className="text-base font-normal text-[#111827]">Your cart is empty</div>
-              <p className="mt-2 text-xs text-gray-500">Add a service from home, category or brand page.</p>
+              <div className="text-base font-normal text-dark-text">Your cart is empty</div>
+              <p className="mt-2 text-xs text-secondary-text">Add a service from home, category or brand page.</p>
               <button type="button" onClick={() => navigate('/user/home')} className="mt-4 rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-5 py-3 text-xs font-normal text-white shadow-lg shadow-orange-100/50 hover:opacity-90 active:scale-95 transition-all">
                 Browse services
               </button>

@@ -40,12 +40,16 @@ const ServiceCategories = React.memo(({
     <div className="px-5 w-full">
       {/* Title Header with "See all" */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">
+        <h2
+          className="text-[17px] font-semibold tracking-tight"
+          style={{ color: 'var(--text-primary)' }}
+        >
           {title}
         </h2>
         <button
           onClick={() => navigate('/user/categories')}
-          className="text-xs font-bold text-[#B33A35] hover:text-[#9E2E2A] transition-colors"
+          className="text-xs font-bold transition-colors"
+          style={{ color: 'var(--primary)' }}
         >
           See all
         </button>

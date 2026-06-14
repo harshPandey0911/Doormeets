@@ -107,11 +107,11 @@ const BottomNav = React.memo(() => {
       <div
         className="w-full pb-4 pt-3 px-4 rounded-t-[28px]"
         style={{
-          background: 'rgba(255, 255, 255, 0.98)',
+          background: 'var(--background)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.08)',
-          borderTop: '1px solid rgba(229, 231, 235, 0.6)',
+          boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.15)',
+          borderTop: '1px solid var(--border)',
         }}
       >
         <div ref={navRef} className="flex items-center justify-between max-w-md mx-auto relative gap-1.5">
@@ -125,10 +125,14 @@ const BottomNav = React.memo(() => {
                 onClick={() => handleTabClick(item.path)}
                 whileTap={{ scale: 0.95 }}
                 className={`flex items-center justify-center transition-all duration-300 relative cursor-pointer ${
-                  isActive 
-                    ? 'bg-[#B33A35] text-white px-4 py-2.5 rounded-full flex-1 max-w-[135px]' 
-                    : 'w-11 h-11 bg-[#FFF5F5] text-[#B33A35] rounded-full flex-shrink-0'
+                  isActive
+                    ? 'bg-[#B33A35] text-white px-4 py-2.5 rounded-full flex-1 max-w-[135px]'
+                    : 'w-11 h-11 rounded-full flex-shrink-0'
                 }`}
+                style={isActive ? {} : {
+                  backgroundColor: 'rgba(179,58,53,0.12)',
+                  color: 'var(--primary)',
+                }}
               >
                 <div className="flex items-center gap-1.5">
                   <div className="relative">

@@ -554,12 +554,12 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 relative bg-white">
+  <div className="min-h-screen pb-20 relative" style={{ backgroundColor: 'var(--background)' }}>
       {/* Refined Premium Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
           style={{
-            background: 'radial-gradient(circle at top, #FFFFFF 0%, #F8F9FA 100%)'
+            background: 'var(--background)'
           }}
         />
         {/* Elegant Dot Grid Pattern */}
@@ -579,8 +579,8 @@ const Home = () => {
       >
         <motion.div
           variants={itemVariants}
-          className="backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b border-black/[0.03] shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300 w-full"
-          style={{ backgroundColor: 'rgba(255, 248, 241, 0.95)' }}
+          className="backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b shadow-[0_1px_0px_rgba(255,255,255,0.04)] transition-all duration-300 w-full"
+          style={{ backgroundColor: 'var(--background)', borderBottomColor: 'var(--border)' }}
         >
           <Header
             location={address}
@@ -675,7 +675,7 @@ const Home = () => {
                 <>
                   {/* Service Categories */}
                   <motion.section variants={itemVariants} className="relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent pointer-events-none -z-10" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent dark:hidden pointer-events-none -z-10" />
                     <ServiceCategories
                       categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
                       onCategoryClick={handleCategoryClick}
@@ -743,10 +743,16 @@ const Home = () => {
                 return (
                   <motion.section variants={itemVariants} className="px-5 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">
+                      <h2
+                        className="text-[17px] font-semibold tracking-tight"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
                         Upcoming Services
                       </h2>
-                      <span className="text-xs font-bold text-[#B33A35] bg-[#B33A35]/10 px-2.5 py-1 rounded-full animate-pulse">
+                      <span
+                        className="text-xs font-bold px-2.5 py-1 rounded-full animate-pulse"
+                        style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
+                      >
                         {upcomingCategories.length} Coming Soon
                       </span>
                     </div>
@@ -883,12 +889,16 @@ const Home = () => {
               {!pastServicesLoading && pastServices.length > 0 && (
                 <motion.section variants={itemVariants} className="px-5 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">
+                    <h2
+                      className="text-[17px] font-semibold tracking-tight"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
                       Order again
                     </h2>
-                    <button 
+                    <button
                       onClick={() => navigate('/user/bookings')}
-                      className="text-xs font-bold text-gray-500 hover:text-[#B33A35] transition-colors"
+                      className="text-xs font-bold transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
                     >
                       see all
                     </button>
@@ -904,30 +914,41 @@ const Home = () => {
                         <div
                           key={service.id || index}
                           onClick={() => handleAddClick(service)}
-                          className="flex-shrink-0 bg-white border border-gray-100/70 rounded-3xl p-5 flex items-center justify-between w-[285px] shadow-[0_4px_16px_rgba(0,0,0,0.015)] active:scale-[0.98] hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden"
+                          className="flex-shrink-0 rounded-3xl p-5 flex items-center justify-between w-[285px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
+                          style={{
+                            backgroundColor: 'var(--card-bg)',
+                            border: '1px solid var(--border)',
+                            boxShadow: 'var(--shadow)',
+                          }}
                         >
                           {/* Inner Content (Left Side) */}
                           <div className="flex-1 min-w-0 pr-3 space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <h3 className="text-xs font-extrabold text-gray-800 truncate leading-tight">
+                              <h3
+                                className="text-xs font-extrabold truncate leading-tight"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
                                 {service.title}
                               </h3>
-                              <span className="shrink-0 bg-[#B33A35]/10 text-[#B33A35] text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              <span
+                                className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5"
+                                style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
+                              >
                                 ★ {service.rating}
                               </span>
                             </div>
 
-                            <p className="text-[10px] text-gray-400 font-semibold truncate">
+                            <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
                               by {service.vendorName}
                             </p>
 
                             <div className="flex items-baseline gap-1.5 pt-1">
-                              <span className="text-sm font-extrabold text-[#B33A35]">
+                              <span className="text-sm font-extrabold" style={{ color: 'var(--primary)' }}>
                                 ₹{(service.price || 0).toLocaleString('en-IN')}
                               </span>
                               {service.originalPrice && service.originalPrice > service.price && (
                                 <>
-                                  <span className="text-[10px] text-gray-400 line-through">
+                                  <span className="text-[10px] line-through" style={{ color: 'var(--text-muted)' }}>
                                     ₹{service.originalPrice.toLocaleString('en-IN')}
                                   </span>
                                   <span className="text-[9px] font-extrabold text-green-500">
@@ -939,7 +960,10 @@ const Home = () => {
                           </div>
 
                           {/* Service Icon/Visual (Right Side) */}
-                          <div className="w-16 h-16 rounded-2xl bg-orange-50/50 flex items-center justify-center shrink-0 border border-orange-100/30 overflow-hidden">
+                          <div
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+                            style={{ backgroundColor: 'rgba(179,58,53,0.08)', border: '1px solid rgba(179,58,53,0.12)' }}
+                          >
                             {service.image ? (
                               <img
                                 src={service.image}
@@ -948,7 +972,7 @@ const Home = () => {
                                 loading="lazy"
                               />
                             ) : (
-                              <svg className="w-8 h-8 text-[#B33A35]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                              <svg className="w-8 h-8" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
                             )}
