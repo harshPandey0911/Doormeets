@@ -24,7 +24,7 @@ const FeaturedSection = ({ section }) => {
   };
 
   return (
-    <section className="px-4 pt-6 md:px-6">
+    <section className="px-5 w-full pt-1">
       {/* Section Header */}
       <div className="mb-4 flex items-end justify-between">
         <div>

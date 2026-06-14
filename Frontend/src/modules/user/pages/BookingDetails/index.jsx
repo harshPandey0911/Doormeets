@@ -638,8 +638,8 @@ const BookingDetails = () => {
               <FiArrowLeft className="w-5 h-5 text-gray-800" />
             </button>
             <div className="flex-1">
-              <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">Booking Details</h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+              <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Booking Details</h1>
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mt-0.5">
                 ID: <span className="font-mono">{booking.bookingNumber || booking._id?.slice(-8).toUpperCase()}</span>
               </p>
             </div>
@@ -1112,7 +1112,7 @@ const BookingDetails = () => {
                   <FiMapPin className="w-5 h-5 text-teal-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1">Service Address</p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Service Address</p>
                   <p className="text-sm font-medium text-gray-900 leading-relaxed">{getAddressString(booking.address)}</p>
                 </div>
               </div>
@@ -1122,7 +1122,7 @@ const BookingDetails = () => {
                   <FiCalendar className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wide mb-1">Slot</p>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Slot</p>
                   <p className="text-sm font-medium text-gray-900">
                     {formatDate(booking.scheduledDate)}
                   </p>
@@ -1135,7 +1135,7 @@ const BookingDetails = () => {
           {/* Service Details */}
           <section className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">
-              <h3 className="font-bold text-gray-900">Order Summary</h3>
+              <h3 className="font-semibold text-gray-900">Order Summary</h3>
             </div>
 
             <div className="p-5 space-y-4">
@@ -1149,8 +1149,8 @@ const BookingDetails = () => {
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Service Category</p>
-                  <p className="text-sm font-bold text-gray-800">{booking.serviceCategory || booking.serviceName || 'Service'}</p>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Service Category</p>
+                  <p className="text-sm font-semibold text-gray-800">{booking.serviceCategory || booking.serviceName || 'Service'}</p>
                 </div>
               </div>
 
@@ -1169,8 +1169,8 @@ const BookingDetails = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Brand</p>
-                      <p className="text-sm font-bold text-gray-800">{brandName}</p>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Brand</p>
+                      <p className="text-sm font-semibold text-gray-800">{brandName}</p>
                     </div>
                   </div>
                 );

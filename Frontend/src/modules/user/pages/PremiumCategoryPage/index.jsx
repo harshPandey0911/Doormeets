@@ -438,33 +438,7 @@ const PremiumCategoryPage = () => {
           </div>
           <div className="space-y-6 px-1">
 
-            {/* Subcategories Subsection */}
-            {subCategories.length > 0 && (
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.15em] text-gray-400 mb-2">Subcategories</p>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {subCategories.map((sub) => {
-                    const isActive = (activeSubCategory?.id || activeSubCategory?._id) === (sub.id || sub._id);
-                    return (
-                      <button
-                        key={sub.id || sub._id}
-                        onClick={() => {
-                          setActiveSubCategory(sub);
-                          setActiveBrand(null); // Reset brand selection when subcategory changes
-                        }}
-                        className={`shrink-0 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all duration-300 border ${
-                          isActive
-                            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-[0_4px_12px_rgba(255,159,69,0.2)] scale-105'
-                            : 'bg-white text-gray-700 border-gray-100 hover:border-orange-200 hover:bg-orange-50/30'
-                        }`}
-                      >
-                        {sub.title}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+
 
             {/* Brands Subsection */}
             {activeSubCategory ? (

@@ -43,6 +43,52 @@ const PremiumServiceDetailPage = () => {
   const brand = location.state?.brand || null;
   const category = location.state?.category || null;
 
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const serviceImages = useMemo(() => {
+    if (Array.isArray(service?.images) && service.images.length > 0) {
+      return service.images.map(img => toAssetUrl(img));
+    }
+    if (Array.isArray(service?.gallery) && service.gallery.length > 0) {
+      return service.gallery.map(img => toAssetUrl(img));
+    }
+    if (service?.image) {
+      return [toAssetUrl(service.image)];
+    }
+    return [getDetailDummyImage(service?.title)];
+  }, [service]);
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || serviceImages.length <= 1) return;
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50;
+    if (distance > minSwipeDistance) {
+      setActiveImageIndex((prev) => (prev + 1) % serviceImages.length);
+    } else if (distance < -minSwipeDistance) {
+      setActiveImageIndex((prev) => (prev - 1 + serviceImages.length) % serviceImages.length);
+    }
+  };
+
+  const cardColors = [
+    { bg: '#FEFBE8', border: '#FEF08A', text: '#854D0E' }, // Yellow/Gold
+    { bg: '#FAE8FF', border: '#F5D0FE', text: '#86198F' }, // Purple/Lavender
+    { bg: '#FFE4E6', border: '#FECDD3', text: '#9F1239' }, // Rose/Pink
+    { bg: '#FFF1F2', border: '#FEE2E2', text: '#991B1B' }, // Soft Red
+    { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534' }, // Green
+    { bg: '#E0F2FE', border: '#BAE6FD', text: '#075985' }  // Light Blue
+  ];
+
   const [pageBlocks, setPageBlocks] = useState([]);
 
   const features = useMemo(() => {
@@ -111,7 +157,10 @@ const PremiumServiceDetailPage = () => {
         const res = await api.get(`/public/services/${sId}/dynamic-details${cityId ? `?cityId=${cityId}` : ''}`);
         if (res.data.success) {
           if (res.data.service) {
-            setService(res.data.service);
+            setService(prev => ({
+              ...res.data.service,
+              image: res.data.service.image || prev?.image
+            }));
           }
           setFields(res.data.fields || []);
           setPricingRules(res.data.pricingRules || []);
@@ -309,7 +358,7 @@ const PremiumServiceDetailPage = () => {
         <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/home')} />
         <div className="mx-auto max-w-3xl px-4 py-12 text-center">
           <div className="rounded-[28px] border border-dashed border-gray-200 bg-white p-10 shadow-sm">
-            <h1 className="text-2xl font-black text-gray-900">Service not available</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Service not available</h1>
             <p className="mt-3 text-sm text-gray-500">Open this page from a brand or category service card so we can load the live service data.</p>
           </div>
         </div>
@@ -318,113 +367,193 @@ const PremiumServiceDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFFFFF_0%,#ffffff_38%,#ffffff_100%)] pb-28">
-      <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/home')} />
-
-      <div className="mx-auto max-w-4xl pt-[8px] pb-4 md:px-6">
-
-        <div className="overflow-hidden bg-white shadow-[0_18px_60px_rgba(17,24,39,0.08)] md:rounded-4xl md:border md:border-gray-100">
-          <div className="relative h-80 md:h-[460px]">
-            <img src={service.image ? toAssetUrl(service.image) : getDetailDummyImage(service.title)} alt={service.title} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
-            <div className="absolute left-5 top-5 flex gap-2 text-white">
-              <button className="rounded-full bg-black/25 p-3 backdrop-blur"><FiHeart /></button>
-              <button className="rounded-full bg-black/25 p-3 backdrop-blur"><FiShare2 /></button>
-            </div>
-            <div className="absolute bottom-5 left-5 right-5 text-white">
-              <p className="text-xs font-normal tracking-[0.1em] text-white/80">Service detail</p>
-              <h1 className="mt-2 text-3xl font-normal md:text-5xl">
-                {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
-              </h1>
-
-            </div>
+    <div className="min-h-screen bg-white pb-28">
+      {/* Header Image Section with Full-Bleed style on mobile */}
+      <div 
+        className="relative w-full h-[320px] md:h-[460px] overflow-hidden bg-gray-100 shadow-sm select-none"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <img
+          src={serviceImages[activeImageIndex]}
+          alt={service.title}
+          className="h-full w-full object-cover transition-all duration-300"
+          draggable="false"
+        />
+        {/* Soft Linear Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
+        
+        {/* Play Button Overlay (only if video exists) */}
+        {(service.video || service.videoUrl) && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-lg text-gray-800 hover:scale-105 active:scale-95 transition-all">
+              <svg className="w-6 h-6 fill-current ml-0.5 text-gray-800" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
           </div>
+        )}
+
+        {/* Back Button Overlay */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute left-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md text-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        >
+          <FiArrowLeft className="w-5 h-5" />
+        </button>
+
+        {/* Heart & Share Overlay */}
+        <div className="absolute right-5 top-5 flex gap-2 z-20">
+          <button className="rounded-full bg-black/20 p-2.5 backdrop-blur text-white hover:bg-black/30"><FiHeart /></button>
+          <button className="rounded-full bg-black/20 p-2.5 backdrop-blur text-white hover:bg-black/30"><FiShare2 /></button>
         </div>
 
-        <div className="px-4 md:px-0">
+        {/* Progress Bar / Dots (Dynamic: shows only if more than 1 image) */}
+        {serviceImages.length > 1 && (
+          <div className="absolute bottom-4 left-5 flex gap-1.5 z-20">
+            {serviceImages.map((_, dotIdx) => (
+              <button
+                key={dotIdx}
+                type="button"
+                onClick={() => setActiveImageIndex(dotIdx)}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  activeImageIndex === dotIdx ? 'w-8 bg-brand' : 'w-2 bg-white/40 hover:bg-white/60'
+                }`}
+                aria-label={`Go to slide ${dotIdx + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-          <section className="mt-3 py-2 px-1">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-baseline gap-2">
-                <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} />
-                {service.serviceType === 'minute_base' && (
-                  <span className="text-xs font-semibold text-gray-500">
-                    for {selectedDuration} Mins
-                  </span>
-                )}
-              </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-normal text-emerald-700">Save up to {service.originalPrice ? Math.round(((service.originalPrice - calculatedPrice) / service.originalPrice) * 100) : 25}%</span>
-            </div>
-            <p className="mt-2 text-sm leading-7 text-gray-600 font-normal">{service.description}</p>
-          </section>
+      <div className="mx-auto max-w-lg lg:max-w-2xl px-5 pt-6 pb-4">
+        {/* Title, Rating, and Description */}
+        <div className="space-y-2">
+          <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight leading-tight">
+            {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
+          </h1>
+          
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
+            <FiStar className="fill-amber-400 text-amber-400" />
+            <span className="text-gray-900 font-semibold">{service.rating || "4.5"}</span>
+            <span>({service.reviews || "1.2k reviews"})</span>
+          </div>
 
-          {service?.serviceType === 'minute_base' && (
-            <section className="mt-4 py-3 px-4 bg-orange-50/10 border border-orange-100 rounded-2xl">
-              <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                <FiClock className="text-[#FF9F45]" /> Select Massage Duration
-              </h2>
-              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                Standard base charge is <span className="font-bold text-[#FF9F45]">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {durationOptions.map((mins) => {
-                  const minPrice = Number(service.basePrice || 0);
-                  const minMins = Number(service.minimumMinutes || 30);
-                  const extraRatePer10Mins = Number(service.pricePerMinute || 0);
-                  const currentDurationPrice = mins <= minMins
-                    ? minPrice
-                    : minPrice + (extraRatePer10Mins * ((mins - minMins) / 10));
-                  return (
-                    <button
-                      key={mins}
-                      type="button"
-                      onClick={() => setSelectedDuration(mins)}
-                      className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${selectedDuration === mins ? 'border-[#FF9F45] bg-orange-50/50 text-[#FF9F45] font-bold shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-gray-200'}`}
-                    >
-                      <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
-                      <span className="text-xs mt-1 text-gray-400 font-medium">₹{currentDurationPrice.toFixed(0)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+          <p className="text-sm text-gray-500 font-normal leading-relaxed pt-1">
+            {service.description}
+          </p>
+        </div>
 
-          {service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
-            <section className="mt-3 py-2 px-1">
-              <h2 className="text-lg font-bold text-gray-900 mb-3">Select Package</h2>
-              <div className="space-y-3">
-                {service.packages.map((pkg, idx) => (
+        {/* Grid of features (pastel color cards) */}
+        {features.length > 0 && (
+          <div className="mt-8">
+            <div className="grid grid-cols-3 gap-3">
+              {features.map((feature, idx) => {
+                const colorScheme = cardColors[idx % cardColors.length];
+                return (
                   <div
                     key={idx}
-                    onClick={() => setSelectedPackage(pkg)}
-                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedPackage?.title === pkg.title ? 'border-[#FF9F45] bg-orange-50/30' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl border text-center aspect-square shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01]"
+                    style={{
+                      backgroundColor: colorScheme.bg,
+                      borderColor: colorScheme.border
+                    }}
                   >
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="flex gap-2 items-center">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedPackage?.title === pkg.title ? 'border-[#FF9F45]' : 'border-gray-300'}`}>
-                          {selectedPackage?.title === pkg.title && <div className="w-2 h-2 bg-[#FF9F45] rounded-full" />}
-                        </div>
-                        <h3 className="font-bold text-gray-900 text-sm">{pkg.title}</h3>
-                        {pkg.isPopular && <span className="text-[9px] font-black uppercase bg-[#FF9F45] text-white px-2 py-0.5 rounded-full">Popular</span>}
-                      </div>
-                      <div className="text-right">
-                        <div className="font-black text-[#111827]">₹{pkg.price}</div>
-                        {pkg.originalPrice && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
-                      </div>
+                    <div className="w-10 h-10 flex items-center justify-center mb-2 text-gray-800">
+                      <FiCheckCircle className="w-6 h-6 text-gray-700" />
                     </div>
-                    {pkg.duration && <div className="text-xs text-gray-500 mb-2 pl-6"><FiClock className="inline mr-1" />{pkg.duration}</div>}
-                    {pkg.description && <p className="text-xs text-gray-600 pl-6 leading-relaxed">{pkg.description}</p>}
+                    <span className="text-[11px] font-semibold tracking-tight text-gray-800 leading-tight line-clamp-2">
+                      {feature}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Pricing / Duration Base */}
+        {service?.serviceType === 'minute_base' && (
+          <section className="mt-8 py-4 px-4 bg-orange-50/10 border border-orange-100 rounded-3xl">
+            <h2 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <FiClock className="text-brand" /> Select Massage Duration
+            </h2>
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              Standard base charge is <span className="font-semibold text-brand">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {durationOptions.map((mins) => {
+                const minPrice = Number(service.basePrice || 0);
+                const minMins = Number(service.minimumMinutes || 30);
+                const extraRatePer10Mins = Number(service.pricePerMinute || 0);
+                const currentDurationPrice = mins <= minMins
+                  ? minPrice
+                  : minPrice + (extraRatePer10Mins * ((mins - minMins) / 10));
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setSelectedDuration(mins)}
+                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer ${selectedDuration === mins ? 'border-brand bg-orange-50 text-brand font-semibold shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-gray-200'}`}
+                  >
+                    <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
+                    <span className="text-xs mt-1 text-gray-400 font-medium">₹{currentDurationPrice.toFixed(0)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Packages Section */}
+        {service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
+          <section className="mt-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">Packages</h2>
+            </div>
+            <div className="space-y-3">
+              {service.packages.map((pkg, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedPackage(pkg)}
+                  className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${selectedPackage?.title === pkg.title ? 'border-brand bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                >
+                  <div className="flex-1 min-w-0 pr-3">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-semibold text-gray-800 text-sm leading-tight">{pkg.title}</h3>
+                      {pkg.isPopular && <span className="text-[9px] font-semibold uppercase bg-brand text-white px-2.5 py-0.5 rounded-full">Popular</span>}
+                    </div>
+                    {pkg.duration && <div className="text-[11px] font-semibold text-gray-400 mb-1.5 flex items-center gap-1"><FiClock /> {pkg.duration}</div>}
+                    {pkg.description && <p className="text-[11px] text-gray-500 font-normal leading-relaxed">{pkg.description}</p>}
+                  </div>
+                  
+                  <div className="flex flex-col items-end shrink-0 gap-2">
+                    <div className="text-right">
+                      <div className="font-semibold text-sm text-brand">₹{pkg.price}</div>
+                      {pkg.originalPrice && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                    </div>
+                    <button
+                      type="button"
+                      className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${
+                        selectedPackage?.title === pkg.title 
+                          ? 'bg-brand border-brand text-white' 
+                          : 'bg-white border-brand text-brand hover:bg-brand/5'
+                      }`}
+                    >
+                      {selectedPackage?.title === pkg.title ? 'Selected' : 'Select'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
           {fields.filter(f => f.showToUser !== false).length > 0 && (
             <section className="mt-3 py-2 px-1">
               <div className="flex items-center gap-2 mb-4">
-                <span className="p-1.5 bg-orange-50 text-[#B33A35] rounded-lg">
+                <span className="p-1.5 bg-orange-50 text-brand rounded-lg">
                   <FiSliders className="w-5 h-5" />
                 </span>
                 <h2 className="text-xl font-normal text-gray-900">Custom Options</h2>
@@ -544,9 +673,9 @@ const PremiumServiceDetailPage = () => {
                                 handleFileUpload(field.name, e.target.files[0]);
                               }
                             }}
-                            className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#B33A35] hover:file:bg-orange-100/50"
+                            className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-brand hover:file:bg-orange-100/50"
                           />
-                          {uploadingFiles[field.name] && <p className="text-[10px] text-[#B33A35] animate-pulse">Uploading file...</p>}
+                          {uploadingFiles[field.name] && <p className="text-[10px] text-brand animate-pulse">Uploading file...</p>}
                           {value && (
                             <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-100">
                               <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
@@ -570,7 +699,7 @@ const PremiumServiceDetailPage = () => {
                           <button
                             type="button"
                             onClick={() => fetchCurrentLocation(field.name)}
-                            className="px-3 bg-orange-50 hover:bg-orange-100/50 text-[#B33A35] rounded-xl text-xs font-semibold border border-orange-150"
+                            className="px-3 bg-orange-50 hover:bg-orange-100/50 text-brand rounded-xl text-xs font-semibold border border-orange-100"
                           >
                             Locate Me
                           </button>
@@ -592,32 +721,32 @@ const PremiumServiceDetailPage = () => {
                 switch (block.blockType) {
                   case 'heading_text':
                     return (
-                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-                        <h2 className="text-xl font-black text-gray-900">{data.heading}</h2>
-                        <p className="mt-2 text-sm leading-6 text-gray-600 whitespace-pre-line">{data.text}</p>
+                      <section key={i} className="mt-8 py-4 px-4 bg-gray-50/30 border border-gray-150 rounded-3xl">
+                        <h2 className="text-xl font-semibold text-gray-900">{data.heading}</h2>
+                        <p className="mt-2 text-sm leading-6 text-gray-600 whitespace-pre-line font-normal">{data.text}</p>
                       </section>
                     );
                   case 'warranty':
                     return (
-                      <section key={i} className="rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
+                      <section key={i} className="mt-8 py-4 px-4 bg-orange-50 border border-orange-200 rounded-3xl text-gray-900">
                         <div className="flex items-center gap-3">
-                          <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
+                          <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
                           <div>
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">{data.duration} Warranty</p>
-                            <h3 className="text-xl font-black">{data.title}</h3>
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">{data.duration} Warranty</p>
+                            <h3 className="text-lg font-semibold">{data.title}</h3>
                           </div>
                         </div>
-                        <p className="mt-3 text-sm text-white/85">{data.description}</p>
+                        <p className="mt-3 text-sm text-gray-600 leading-relaxed font-normal">{data.description}</p>
                       </section>
                     );
                   case 'whats_included':
                     return (
-                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
-                        <h2 className="mt-1 text-xl font-black text-gray-900">{data.title}</h2>
+                      <section key={i} className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
+                        <h2 className="mt-1 text-lg font-semibold text-gray-900">{data.title}</h2>
                         <div className="mt-4 flex flex-wrap gap-2">
                           {(data.items || []).map((item, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
+                            <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
                               <FiCheckCircle /> {item}
                             </span>
                           ))}
@@ -627,16 +756,16 @@ const PremiumServiceDetailPage = () => {
                   case 'process':
                   case 'how_it_works':
                     return (
-                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
-                        <h2 className="mt-1 text-xl font-black text-gray-900">{data.title}</h2>
+                      <section key={i} className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
+                        <h2 className="mt-1 text-lg font-semibold text-gray-900">{data.title}</h2>
                         <div className="mt-4 space-y-3">
                           {(data.steps || []).map((step, idx) => (
-                            <div key={idx} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{idx + 1}</div>
+                            <div key={idx} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{idx + 1}</div>
                               <div>
-                                <div className="font-black text-gray-900">{step.title}</div>
-                                {step.desc && <p className="text-sm text-gray-500">{step.desc}</p>}
+                                <div className="font-semibold text-gray-900 text-sm">{step.title}</div>
+                                {step.desc && <p className="text-xs text-gray-500 mt-0.5 leading-relaxed font-normal">{step.desc}</p>}
                               </div>
                             </div>
                           ))}
@@ -645,12 +774,12 @@ const PremiumServiceDetailPage = () => {
                     );
                   case 'please_note':
                     return (
-                      <section key={i} className="rounded-[30px] border border-amber-100 bg-amber-50 p-5 shadow-sm">
+                      <section key={i} className="mt-8 py-4 px-4 bg-amber-50/30 border border-amber-100/50 rounded-3xl">
                         <div className="flex items-center gap-2">
                           <FiInfo className="text-amber-600 w-5 h-5" />
-                          <h2 className="text-lg font-black text-amber-900">{data.title}</h2>
+                          <h2 className="text-base font-semibold text-amber-900">{data.title}</h2>
                         </div>
-                        <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-amber-800">
+                        <ul className="mt-3 list-inside list-disc space-y-1 text-xs text-amber-800 leading-relaxed font-normal">
                           {(data.notes || []).map((note, idx) => (
                             <li key={idx}>{note}</li>
                           ))}
@@ -659,13 +788,13 @@ const PremiumServiceDetailPage = () => {
                     );
                   case 'faq':
                     return (
-                      <section key={i} className="rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-                        <h2 className="text-xl font-black text-gray-900">FAQ</h2>
+                      <section key={i} className="mt-8 py-4 px-4 bg-gray-50/20 border border-gray-150 rounded-3xl">
+                        <h2 className="text-base font-semibold text-gray-900">FAQ</h2>
                         <div className="mt-4 space-y-3">
                           {(data.faqs || []).map((faq, idx) => (
-                            <div key={idx} className="rounded-2xl border border-gray-100 p-4 bg-gray-50">
-                              <h4 className="font-bold text-gray-900">{faq.question}</h4>
-                              <p className="mt-1 text-sm text-gray-600">{faq.answer}</p>
+                            <div key={idx} className="rounded-2xl border border-gray-100 p-3.5 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.005)]">
+                              <h4 className="font-semibold text-gray-900 text-sm">{faq.question}</h4>
+                              <p className="mt-1 text-xs text-gray-500 leading-relaxed font-normal">{faq.answer}</p>
                             </div>
                           ))}
                         </div>
@@ -675,52 +804,50 @@ const PremiumServiceDetailPage = () => {
                     return null;
                 }
               })}
-
             </div>
           ) : (
             <>
-              <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Included</p>
-                <h2 className="mt-1 text-xl font-black text-gray-900">What you get</h2>
+              <section className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
+                <h2 className="mt-1 text-lg font-semibold text-gray-900">What you get</h2>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {features.length > 0 ? features.map((feature, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700">
+                    <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
                       <FiCheckCircle /> {feature}
                     </span>
-                  )) : <span className="text-sm text-gray-500">No included features listed.</span>}
+                  )) : <span className="text-xs text-gray-500">No included features listed.</span>}
                 </div>
               </section>
 
-
-              <section className="mt-6 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Process</p>
-                <h2 className="mt-1 text-xl font-black text-gray-900">How it works</h2>
+              <section className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
+                <h2 className="mt-1 text-lg font-semibold text-gray-900">How it works</h2>
                 <div className="mt-4 space-y-3">
                   {steps.length > 0 ? steps.map((step, index) => {
                     const stepTitle = typeof step === 'object' ? step.title : step;
                     const stepDesc = typeof step === 'object' ? step.desc : 'Smooth and transparent service delivery.';
                     return (
-                      <div key={index} className="flex gap-4 rounded-[22px] border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-purple-600 to-fuchsia-500 text-sm font-black text-white">{index + 1}</div>
+                      <div key={index} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{index + 1}</div>
                         <div>
-                          <div className="font-black text-gray-900">{stepTitle}</div>
-                          <p className="text-sm text-gray-500">{stepDesc}</p>
+                          <div className="font-semibold text-gray-900 text-sm">{stepTitle}</div>
+                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed font-normal">{stepDesc}</p>
                         </div>
                       </div>
                     );
-                  }) : <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No steps listed for this service.</div>}
+                  }) : <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-xs text-gray-500">No steps listed for this service.</div>}
                 </div>
               </section>
 
-              <section className="mt-6 rounded-[30px] border border-purple-100 bg-linear-to-r from-purple-600 to-fuchsia-500 p-5 text-white shadow-[0_18px_60px_rgba(124,58,237,0.18)]">
+              <section className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl text-gray-900">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-white/15 p-3"><FiShield /></div>
+                  <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">Professional badge</p>
-                    <h3 className="text-xl font-black">Verified Professional</h3>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Professional badge</p>
+                    <h3 className="text-base font-semibold">Verified Professional</h3>
                   </div>
                 </div>
-                <p className="mt-3 text-sm text-white/85">Certified experts, clean work, and support-backed service experience.</p>
+                <p className="mt-3 text-sm text-gray-600 leading-relaxed font-normal">Certified experts, clean work, and support-backed service experience.</p>
               </section>
             </>
           )}
@@ -728,13 +855,12 @@ const PremiumServiceDetailPage = () => {
 
           <section className="mt-3 py-2 px-1">
             <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Reviews</p>
-            <h2 className="text-base font-bold text-[#111827] tracking-tight">User feedback</h2>
+            <h2 className="text-base font-semibold text-[#111827] tracking-tight">User feedback</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 md:col-span-3 font-normal">No reviews available yet.</div>
             </div>
           </section>
         </div>
-      </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100/50 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border border-orange-100/60 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]">
@@ -744,7 +870,7 @@ const PremiumServiceDetailPage = () => {
             </div>
             <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
-          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">
+          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">
             Add to cart
           </button>
         </div>

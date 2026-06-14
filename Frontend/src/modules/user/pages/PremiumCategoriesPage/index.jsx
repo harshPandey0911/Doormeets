@@ -175,7 +175,7 @@ const PremiumCategoriesPage = () => {
             >
               <FiArrowLeft className="w-6 h-6 text-gray-700" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">All Categories</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">All Categories</h1>
           </div>
         </div>
 
@@ -211,12 +211,12 @@ const PremiumCategoriesPage = () => {
               <div key={category.id} id={`category-${category.id}`} className="space-y-3 scroll-mt-24">
                 {/* Category Header */}
                 <div className="flex justify-between items-center px-1">
-                  <h2 className="text-base font-bold text-[#111827] tracking-tight">
+                  <h2 className="text-base font-semibold text-[#111827] tracking-tight">
                     {category.title}
                   </h2>
                   <button
                     onClick={() => navigate(`/user/category/${category.slug || category.id}`, { state: { category } })}
-                    className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors"
+                    className="text-xs font-semibold text-brand hover:text-brand-dark transition-colors"
                   >
                     See all
                   </button>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiClock, FiMapPin, FiCheckCircle, FiXCircle, FiLoader, FiCalendar, FiChevronRight } from 'react-icons/fi';
+import { FiArrowLeft, FiClock, FiMapPin, FiCheckCircle, FiXCircle, FiLoader, FiCalendar, FiChevronRight, FiStar } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -8,6 +8,42 @@ import NotificationBell from '../../components/common/NotificationBell';
 import { motion } from 'framer-motion';
 import { bookingService } from '../../../../services/bookingService';
 import api from '../../../../services/api';
+
+const toAssetUrl = (url) => {
+  if (!url) return '';
+  const clean = url.replace('/api/upload', '/upload');
+  if (clean.startsWith('http')) return clean;
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/api$/, '');
+  return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
+};
+
+const getBookingDummyImage = (title) => {
+  const t = (title || '').toLowerCase();
+  if (t.includes('massage') || t.includes('spa') || t.includes('wellness') || t.includes('therapy')) {
+    return 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=150&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('haircut') || t.includes('salon') || t.includes('hair') || t.includes('barber')) {
+    return 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=150&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('clean') || t.includes('wash') || t.includes('sofa') || t.includes('leak') || t.includes('plumb')) {
+    return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=150&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
+};
+
+const getBookingImage = (booking) => {
+  if (booking.serviceImage) {
+    return toAssetUrl(booking.serviceImage);
+  }
+  if (booking.bookedItems && booking.bookedItems.length > 0) {
+    const firstItem = booking.bookedItems[0];
+    if (firstItem.icon) return toAssetUrl(firstItem.icon);
+    if (firstItem.image) return toAssetUrl(firstItem.image);
+    if (firstItem.card?.icon) return toAssetUrl(firstItem.card.icon);
+    if (firstItem.card?.image) return toAssetUrl(firstItem.card.image);
+  }
+  return null;
+};
 
 const MyBookings = () => {
   const navigate = useNavigate();
@@ -281,91 +317,105 @@ const MyBookings = () => {
               }}
               className="space-y-4"
             >
-              {bookings.map((booking) => (
-                <motion.div
-                  key={booking._id || booking.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: {
-                      opacity: 1,
-                      y: 0,
-                      transition: { type: "spring", stiffness: 100, damping: 15 }
-                    }
-                  }}
-                  onClick={() => handleBookingClick(booking)}
-                  className={`group relative bg-white rounded-xl p-3 border border-slate-200 border-l-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_16px_-6px_rgba(0,0,0,0.06)] hover:border-[#B33A35]/30 active:scale-[0.99] transition-all duration-300 cursor-pointer overflow-hidden ${getStatusBorderColor(booking.status)}`}
-                >
-                  {/* Decorative Elements */}
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-slate-50 via-transparent to-transparent -z-0 opacity-35" />
+              {bookings.map((booking) => {
+                const bookingImage = getBookingImage(booking) || getBookingDummyImage(booking.serviceName);
+                const isCompleted = booking.status === 'completed';
+                return (
+                  <motion.div
+                    key={booking._id || booking.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: { type: "spring", stiffness: 100, damping: 15 }
+                      }
+                    }}
+                    onClick={() => handleBookingClick(booking)}
+                    className="group flex gap-3.5 bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
+                  >
+                    {/* Booking Image */}
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+                      <img 
+                        src={bookingImage} 
+                        alt={booking.serviceName || 'Service'} 
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
 
-                  {/* Header Section */}
-                  <div className="relative z-10 flex items-start justify-between mb-2">
-                    <div className="pr-3 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-[9px] font-bold text-slate-400">
-                          #{booking.bookingNumber || (booking._id || booking.id).substring(0, 8)}
-                        </span>
-                        {booking.serviceCategory && (
-                          <span className="text-[8px] font-bold text-[#B33A35] bg-[#B33A35]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            {booking.serviceCategory}
+                    {/* Middle Section: Booking Details */}
+                    <div className="flex-1 min-w-0 pr-2 flex flex-col justify-between py-0.5">
+                      <div className="space-y-1">
+                        {/* Booking ID & Category */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-medium text-gray-400">
+                            #{booking.bookingNumber || (booking._id || booking.id).substring(0, 8)}
                           </span>
-                        )}
+                          {booking.serviceCategory && (
+                            <span className="text-[8px] font-bold text-brand bg-orange-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                              {booking.serviceCategory}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Booking Title */}
+                        <h3 className="text-sm font-semibold text-gray-900 leading-tight truncate group-hover:text-brand transition-colors">
+                          {booking.serviceName || 'Service Request'}
+                        </h3>
+
+                        {/* Rating block matching mockup */}
+                        <div className="flex items-center gap-1 text-[11px] text-gray-500 font-medium leading-none">
+                          <FiStar className="text-amber-500 fill-amber-500 w-3 h-3" />
+                          <span>{booking.rating || booking.bookedItems?.[0]?.rating || '4.5'}</span>
+                          <span className="text-gray-400 font-normal">({booking.review ? 'Reviewed' : '1.2k reviews'})</span>
+                        </div>
                       </div>
 
-                      <h3 className="text-sm font-bold text-[#111827] leading-tight line-clamp-1 group-hover:text-[#B33A35] transition-colors">
-                        {(booking.serviceName || 'Service Request')}
-                      </h3>
-
-                      {booking.bookedItems && booking.bookedItems.length > 0 && (
-                        <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                          {booking.bookedItems.map(item => item.card?.title || item.title).join(', ')}
-                        </p>
-                      )}
+                      {/* Write a review or Date/Time slot */}
+                      <div className="mt-2">
+                        {isCompleted ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/user/my-rating`, { state: { booking } });
+                            }}
+                            className="text-xs font-semibold text-brand hover:underline cursor-pointer"
+                          >
+                            Write a review
+                          </button>
+                        ) : (
+                          <div className="text-[10px] text-gray-500 font-semibold flex items-center gap-1">
+                            <span className="text-gray-700">{formatDate(booking.scheduledDate)}</span>
+                            <span className="text-gray-300">•</span>
+                            <span>{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className={`shrink-0 px-2 py-0.5 rounded-full border ring-1 ring-inset flex items-center gap-1 shadow-sm ${getStatusColor(booking.status)}`}>
-                      {getStatusIcon(booking.status)}
-                      <span className="text-[9px] font-bold uppercase tracking-wide">
-                        {getStatusLabel(booking.status)}
-                      </span>
-                    </div>
-                  </div>
+                    {/* Right Section: Status badge, Price & Chevron */}
+                    <div className="flex flex-col justify-between items-end shrink-0 py-0.5">
+                      {/* Status Badge */}
+                      <div className={`px-2 py-0.5 rounded-full border ring-1 ring-inset flex items-center gap-1 shadow-sm ${getStatusColor(booking.status)}`}>
+                        <span className="text-[8px] font-semibold uppercase tracking-wide">
+                          {getStatusLabel(booking.status)}
+                        </span>
+                      </div>
 
-                  {/* Inline Details Row */}
-                  <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 mb-2.5 text-[11px] text-slate-500 border-t border-slate-100/80 pt-2">
-                    <div className="flex items-center gap-1">
-                      <FiCalendar className="w-3.5 h-3.5 text-[#B33A35] shrink-0" />
-                      <span className="font-semibold text-slate-700">{formatDate(booking.scheduledDate)}</span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-slate-600">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</span>
+                      {/* Pricing and Arrow */}
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">
+                            ₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                        <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-brand transition-colors" />
+                      </div>
                     </div>
-                    <div className="hidden sm:inline text-slate-300">|</div>
-                    <div className="flex items-center gap-1 min-w-0 flex-1 sm:flex-initial">
-                      <FiMapPin className="w-3.5 h-3.5 text-[#9E2E2A] shrink-0" />
-                      <span className="truncate max-w-[200px] sm:max-w-xs">{getAddressString(booking.address)}</span>
-                    </div>
-                  </div>
-
-                  {/* Footer Section */}
-                  <div className="relative z-10 flex items-center justify-between pt-2 border-t border-slate-100/80">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Payable:</span>
-                      <p className="text-base font-bold text-[#111827] flex items-baseline gap-0.5">
-                        <span className="text-xs font-semibold text-slate-400">₹</span>
-                        {(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-
-                    <button
-                      className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-lg bg-orange-50 border border-orange-100 text-[#B33A35] font-bold text-[11px] hover:bg-[#B33A35] hover:border-[#B33A35] hover:text-white transition-all shadow-sm active:scale-95"
-                    >
-                      View Details
-                      <FiChevronRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </motion.div>
           )}
         </main>

@@ -19,8 +19,8 @@ const Navbar = ({ locationLabel = 'Select location', cartCount = 0, onSearchClic
         >
           <FiMapPin className="text-gray-900" />
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">Location</div>
-            <div className="flex items-center gap-1 text-xs font-semibold text-gray-900 truncate max-w-44">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-normal">Location</div>
+            <div className="flex items-center gap-1 text-xs font-normal text-gray-900 truncate max-w-44">
               <span className="truncate">{locationLabel}</span>
               <FiChevronDown className="text-gray-400" />
             </div>

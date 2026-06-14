@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiPhone, FiArrowRight, FiCheckCircle, FiChevronLeft } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -6,7 +6,7 @@ import { themeColors } from '../../../theme';
 import { userAuthService } from '../../../services/authService';
 import Logo from '../../../components/common/Logo';
 import LogoLoader from '../../../components/common/LogoLoader';
-
+import loginIllustration from '../../../assets/images/loginpage.png';
 
 import { z } from "zod";
 
@@ -193,63 +193,12 @@ const Login = () => {
             <span>✕</span>
           </button>
 
-          {/* Inline Premium Illustration */}
-          <svg width="150" height="122" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mt-3">
-            {/* Background Lavender Circle */}
-            <circle cx="90" cy="75" r="42" fill="#E4E2F5" />
-            
-            {/* Dotted Circles/Arcs */}
-            <circle cx="120" cy="48" r="24" stroke="#4B4A5A" strokeWidth="1.2" strokeDasharray="3 3" fill="none" opacity="0.6"/>
-            <circle cx="58" cy="98" r="20" stroke="#4B4A5A" strokeWidth="1.2" strokeDasharray="3 3" fill="none" opacity="0.6"/>
-
-            {/* Top-Left Dots Grid */}
-            <circle cx="62" cy="38" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="68" cy="38" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="74" cy="38" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="62" cy="44" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="68" cy="44" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="74" cy="44" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-
-            {/* Bottom-Right Dots Grid */}
-            <circle cx="118" cy="90" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="124" cy="90" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="130" cy="90" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="118" cy="96" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="124" cy="96" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-            <circle cx="130" cy="96" r="1.2" fill="#4B4A5A" opacity="0.5"/>
-
-            {/* Desk / Base Line */}
-            <line x1="40" y1="110" x2="140" y2="110" stroke="#1E1C2A" strokeWidth="3" strokeLinecap="round" />
-
-            {/* Girl Torso (Purple Sweater) */}
-            <path d="M64 110 C64 92, 74 84, 90 84 C106 84, 116 92, 116 110 Z" fill="#5E4CB8" stroke="#1E1C2A" strokeWidth="1.5" />
-            <rect x="80" y="80" width="20" height="6" rx="3" fill="#4C3AA3" stroke="#1E1C2A" strokeWidth="1.5" />
-
-            {/* Neck */}
-            <rect x="84" y="72" width="12" height="10" fill="#FCE1D4" />
-
-            {/* Face */}
-            <circle cx="90" cy="60" r="13" fill="#FCE1D4" stroke="#1E1C2A" strokeWidth="1.5" />
-
-            {/* Face Details */}
-            <circle cx="85" cy="58" r="1" fill="#1E1C2A" />
-            <circle cx="95" cy="58" r="1" fill="#1E1C2A" />
-            <path d="M87 63 C87 66, 93 66, 93 63" stroke="#1E1C2A" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-
-            {/* Hair */}
-            <circle cx="90" cy="40" r="7" fill="#1E1C2A" />
-            <path d="M77 58 C77 46, 103 46, 103 58 Z" fill="#1E1C2A" />
-            <path d="M77 58 C77 50, 103 50, 103 58 C103 58, 102 52, 92 52 C82 52, 77 58, 77 58 Z" fill="#1E1C2A" />
-
-            {/* Headphones */}
-            <rect x="73" y="52" width="5" height="12" rx="2.5" fill="#FFFFFF" stroke="#1E1C2A" strokeWidth="1.5" />
-            <rect x="102" y="52" width="5" height="12" rx="2.5" fill="#FFFFFF" stroke="#1E1C2A" strokeWidth="1.5" />
-            <path d="M75 52 C75 40, 105 40, 105 52" stroke="#1E1C2A" strokeWidth="1.5" fill="none" />
-
-            {/* Laptop Back Lid (Facing Away) */}
-            <rect x="73" y="85" width="34" height="22" rx="3" fill="#FFFFFF" stroke="#1E1C2A" strokeWidth="1.5" />
-            <circle cx="90" cy="96" r="1.5" fill="#1E1C2A" />
-          </svg>
+          {/* Illustration */}
+          <img
+            src={loginIllustration}
+            alt="Login Illustration"
+            className="mx-auto mt-3 h-[200px] w-auto object-contain"
+          />
         </div>
 
         {/* Bottom Section: Form Fields */}

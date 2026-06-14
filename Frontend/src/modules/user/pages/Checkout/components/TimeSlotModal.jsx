@@ -80,7 +80,7 @@ const TimeSlotModal = ({
                 >
                   <FiArrowLeft className="w-5 h-5 text-black" />
                 </button>
-                <h1 className="text-xl font-bold text-black">Select Time Slot</h1>
+                <h1 className="text-xl font-normal text-black">Select Time Slot</h1>
               </div>
               <button
                 onClick={handleClose}
@@ -99,7 +99,7 @@ const TimeSlotModal = ({
               overscrollBehavior: 'contain'
             }}
           >
-            <h2 className="text-xl font-bold text-black mb-1">When should the professional arrive?</h2>
+            <h2 className="text-xl font-normal text-black mb-1">When should the professional arrive?</h2>
             <p className="text-sm text-gray-600 mb-4">Service will take approx. 45 mins</p>
 
             {/* Date Selection */}
@@ -111,7 +111,7 @@ const TimeSlotModal = ({
                   <button
                     key={index}
                     onClick={() => onDateSelect(date)}
-                    className="shrink-0 px-4 py-3 rounded-lg border-2 transition-all"
+                    className="shrink-0 px-4 py-1.5 rounded-lg border-2 transition-all"
                     style={isSelected ? {
                       backgroundColor: `${themeColors.brand.teal}1A`,
                       borderColor: themeColors.button,
@@ -123,8 +123,8 @@ const TimeSlotModal = ({
                     }}
                   >
                     <div className="flex flex-col items-center">
-                      <span className="text-xs font-medium mb-1">{day}</span>
-                      <span className="text-base font-semibold">{dateNum}</span>
+                      <span className="text-xs font-normal mb-1">{day}</span>
+                      <span className="text-base font-normal">{dateNum}</span>
                     </div>
                   </button>
                 );
@@ -141,10 +141,10 @@ const TimeSlotModal = ({
 
             {/* Time Selection */}
             <div className="mb-4">
-              <h3 className="text-base font-semibold text-black mb-3">Select start time of service</h3>
+              <h3 className="text-base font-normal text-black mb-3">Select start time of service</h3>
               {getTimeSlots().length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                  <p className="text-gray-500 font-medium mb-1">No time slots available</p>
+                  <p className="text-gray-500 font-normal mb-1">No time slots available</p>
                   <p className="text-sm text-gray-400">Please select a different date</p>
                 </div>
               ) : (
@@ -163,7 +163,7 @@ const TimeSlotModal = ({
                       <button
                         key={index}
                         onClick={() => onTimeSelect(slot.value)}
-                        className="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-all"
+                        className="px-3 py-2.5 rounded-lg border-2 text-sm font-normal transition-all"
                         style={isSelected ? {
                           backgroundColor: `${themeColors.brand.teal}1A`,
                           borderColor: themeColors.button,
@@ -196,7 +196,7 @@ const TimeSlotModal = ({
             <button
               onClick={() => onSave(selectedDate, selectedTime)}
               disabled={!selectedDate || !selectedTime}
-              className="w-full py-3.5 rounded-lg text-base font-semibold transition-colors mb-4"
+              className="w-full py-3.5 rounded-lg text-base font-normal transition-colors mb-4"
               style={selectedDate && selectedTime ? {
                 backgroundColor: themeColors.button,
                 color: 'white'

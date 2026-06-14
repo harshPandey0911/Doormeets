@@ -61,7 +61,7 @@ const AboutDoormeets = () => {
   ];
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[radial-gradient(circle_at_top,#FDE8E8_0%,#FDF2F2_40%,#FFFFFF_100%)] pb-10">
+    <div ref={containerRef} className="min-h-screen bg-white pb-10">
       {/* SVG Gradient Definition */}
       <svg width="0" height="0" className="absolute">
         <linearGradient id="doormeets-about-gradient" x1="0%" y1="0%" x2="100%" y2="100%">

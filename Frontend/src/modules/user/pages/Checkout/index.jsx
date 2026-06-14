@@ -1380,7 +1380,7 @@ const Checkout = () => {
               >
                 <FiArrowLeft className="w-6 h-6 text-black" />
               </button>
-              <h1 className="text-xl font-bold text-black">Your cart</h1>
+              <h1 className="text-xl font-normal text-black">Your cart</h1>
             </div>
           </div>
           <div className="border-b border-gray-200"></div>
@@ -1388,7 +1388,7 @@ const Checkout = () => {
         <main className="px-4 py-4">
           <div className="flex flex-col items-center justify-center py-20">
             <FiShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg font-medium">Your cart is empty</p>
+            <p className="text-gray-500 text-lg font-normal">Your cart is empty</p>
             <p className="text-gray-400 text-sm mt-2">Add services to get started</p>
           </div>
         </main>
@@ -1484,7 +1484,7 @@ const Checkout = () => {
             >
               <FiArrowLeft className="w-6 h-6 text-black" />
             </button>
-            <h1 className="text-xl font-bold text-black">
+            <h1 className="text-xl font-normal text-black">
               {category ? `${category} Checkout` : 'Your cart'}
             </h1>
           </div>
@@ -1501,14 +1501,14 @@ const Checkout = () => {
                 <MdStar className="text-white w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-bold text-green-600 uppercase tracking-wider">Smart Choice!</p>
-                <p className="text-sm font-black text-slate-900">
+                <p className="text-xs font-normal text-green-600 uppercase tracking-wider">Smart Choice!</p>
+                <p className="text-sm font-normal text-slate-900">
                   You're saving ₹{savings.toLocaleString('en-IN')}
                 </p>
               </div>
             </div>
             <div className="bg-white px-3 py-1 rounded-full shadow-sm border border-green-100">
-              <span className="text-[10px] font-black text-green-600">BEST PRICE</span>
+              <span className="text-[10px] font-normal text-green-600">BEST PRICE</span>
             </div>
           </div>
         )}
@@ -1527,12 +1527,12 @@ const Checkout = () => {
                     {item.sectionIcon ? (
                       <img src={toAssetUrl(item.sectionIcon)} className="w-5 h-5 rounded-md object-cover border border-gray-100" alt="" />
                     ) : (
-                      <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                      <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-[10px] font-normal text-gray-500">
                         {(brandName || "B").charAt(0)}
                       </div>
                     )}
                     <div className="flex flex-col leading-none">
-                      {brandName && <span className="text-xs font-bold text-gray-900">{brandName}</span>}
+                      {brandName && <span className="text-xs font-normal text-gray-900">{brandName}</span>}
                       {categoryName && <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mt-0.5">{categoryName}</span>}
                     </div>
                   </div>
@@ -1540,7 +1540,7 @@ const Checkout = () => {
 
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 pr-4">
-                    <h3 className="text-base font-bold text-gray-900 mb-1 leading-snug">{item.title}</h3>
+                    <h3 className="text-base font-normal text-gray-900 mb-1 leading-snug">{item.title}</h3>
                     {item.description && (
                       <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
                     )}
@@ -1560,7 +1560,7 @@ const Checkout = () => {
                         >
                           <FiMinus className="w-3.5 h-3.5 text-gray-600" />
                         </button>
-                        <span className="w-6 text-center text-sm font-bold text-gray-900">{item.serviceCount || 1}</span>
+                        <span className="w-6 text-center text-sm font-normal text-gray-900">{item.serviceCount || 1}</span>
                         <button
                           onClick={() => handleQuantityChange(item._id, 1)}
                           className="p-1.5 hover:bg-white rounded-md transition-all shadow-sm"
@@ -1580,9 +1580,9 @@ const Checkout = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-black">
+                  <span className="text-base font-normal text-black">
                     {item.isPriceDisclosed === false ? (
-                      <span className="text-[11px] text-gray-400 font-black uppercase tracking-tighter bg-gray-50 px-2 py-0.5 rounded border border-gray-100">Not Disclosed</span>
+                      <span className="text-[11px] text-gray-400 font-normal uppercase tracking-tighter bg-gray-50 px-2 py-0.5 rounded border border-gray-100">Not Disclosed</span>
                     ) : calculateItemPrice(item) === 0 ? (
                       <span className="text-green-600">Free</span>
                     ) : (
@@ -1590,7 +1590,7 @@ const Checkout = () => {
                     )}
                   </span>
                   {calculateItemPrice(item) === 0 && (
-                    <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                    <span className="text-[10px] font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
                       WITH PLAN
                     </span>
                   )}
@@ -1617,7 +1617,7 @@ const Checkout = () => {
         {/* Dynamic Fields Section */}
         {dynamicFieldsConfig.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-normal text-gray-900 mb-4 flex items-center gap-2">
               <span className="p-1 bg-indigo-50 text-indigo-600 rounded">
                 <FiSliders className="w-4 h-4" />
               </span>
@@ -1628,7 +1628,7 @@ const Checkout = () => {
                 const value = dynamicAnswers[field.name] || '';
                 return (
                   <div key={field._id || field.name} className="space-y-1">
-                    <label className="block text-xs font-semibold text-gray-700">
+                    <label className="block text-xs font-normal text-gray-700">
                       {field.label} {field.isRequired && <span className="text-red-500">*</span>}
                     </label>
                     
@@ -1804,19 +1804,19 @@ const Checkout = () => {
             <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
               <FiCheckCircle className="w-4 h-4" />
             </span>
-            <h3 className="text-sm font-bold text-gray-900">Promo Code</h3>
+            <h3 className="text-sm font-normal text-gray-900">Promo Code</h3>
           </div>
 
           {appliedPromo ? (
             <div className="bg-green-50 border border-green-100 rounded-xl p-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-green-500 rounded-lg flex items-center justify-center text-white font-black text-sm shrink-0">
+                <div className="w-9 h-9 bg-green-500 rounded-lg flex items-center justify-center text-white font-normal text-sm shrink-0">
                   %
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-slate-900 tracking-wide uppercase">{appliedPromo.code}</span>
-                    <span className="text-[10px] font-black text-green-700 bg-green-100 px-2 py-0.5 rounded-full uppercase">APPLIED</span>
+                    <span className="text-sm font-normal text-slate-900 tracking-wide uppercase">{appliedPromo.code}</span>
+                    <span className="text-[10px] font-normal text-green-700 bg-green-100 px-2 py-0.5 rounded-full uppercase">APPLIED</span>
                   </div>
                   <p className="text-xs text-slate-600 mt-0.5">
                     Saved ₹{appliedPromo.discountAmount} extra!
@@ -1826,7 +1826,7 @@ const Checkout = () => {
               <button
                 type="button"
                 onClick={handleRemovePromo}
-                className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline px-2.5 py-1.5 rounded-lg transition-all"
+                className="text-xs font-normal text-red-600 hover:text-red-700 hover:underline px-2.5 py-1.5 rounded-lg transition-all"
               >
                 Remove
               </button>
@@ -1871,7 +1871,7 @@ const Checkout = () => {
           {/* Decorative Background for Header */}
           <div className="absolute top-0 left-0 right-0 h-1" style={{ background: themeColors.gradient }}></div>
 
-          <h3 className="text-lg font-bold text-slate-900 mb-5 flex items-center gap-2">
+          <h3 className="text-lg font-normal text-slate-900 mb-5 flex items-center gap-2">
             <FiShoppingCart className="w-5 h-5" style={{ color: themeColors.button }} />
             Payment Summary
           </h3>
@@ -1912,24 +1912,20 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* Taxes (Removed since it is included in Base Price) */}
-
-            {/* Visited Fee (Convenience Fee) removed per user request */}
-
             {/* Divider */}
             <div className="border-t border-slate-200 pt-4 mt-2">
               <div className="flex justify-between items-center">
-                <span className="text-base font-bold text-slate-900">Total Payable</span>
+                <span className="text-base font-normal text-slate-900">Total Payable</span>
                 <div className="flex flex-col items-end">
                   {totalAmount === 0 ? (
                     <>
                       <span className="text-sm font-medium text-slate-400 line-through">
                         ₹{Math.round(totalOriginalPrice + displayTax + displayFee).toLocaleString('en-IN')}
                       </span>
-                      <span className="text-xl font-black text-green-600">FREE</span>
+                      <span className="text-xl font-normal text-green-600">FREE</span>
                     </>
                   ) : (
-                    <span className="text-xl font-black text-slate-900">
+                    <span className="text-xl font-normal text-slate-900">
                       ₹{totalAmount.toLocaleString('en-IN')}
                     </span>
                   )}
@@ -1945,7 +1941,7 @@ const Checkout = () => {
             <FiInfo className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-blue-900 mb-1">Note</h4>
+            <h4 className="text-sm font-normal text-blue-900 mb-1">Note</h4>
             <p className="text-sm text-blue-800 leading-relaxed font-medium">
               This is a base booking cost. Additional service cost is decided by the vendor after service bill preparation.
             </p>
@@ -1960,9 +1956,9 @@ const Checkout = () => {
                 <FiCheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-green-800 mb-1">Covered by {planBenefits.name}</h3>
+                <h3 className="text-lg font-normal text-green-800 mb-1">Covered by {planBenefits.name}</h3>
                 <p className="text-sm text-green-700 leading-relaxed font-medium opacity-90">
-                  You save <span className="font-bold">₹{Math.round(totalOriginalPrice + displayTax + displayFee).toLocaleString('en-IN')}</span> on this booking!
+                  You save <span className="font-normal">₹{Math.round(totalOriginalPrice + displayTax + displayFee).toLocaleString('en-IN')}</span> on this booking!
                   Your plan covers all costs.
                 </p>
               </div>
@@ -1972,7 +1968,7 @@ const Checkout = () => {
 
         {/* Cancellation Policy */}
         <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-          <h3 className="text-base font-bold text-black mb-2">Cancellation policy</h3>
+          <h3 className="text-base font-normal text-black mb-2">Cancellation policy</h3>
           <p className="text-sm text-gray-700 mb-2">
             Free cancellations if done more than 12 hrs before the service or if a professional isn't assigned. A fee will be charged otherwise.
           </p>
@@ -1996,20 +1992,20 @@ const Checkout = () => {
           <div className="flex bg-gray-100 p-1 rounded-xl mb-1">
             <button
               onClick={() => setBookingType('instant')}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${bookingType === 'instant' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
+              className={`flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2 ${bookingType === 'instant' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
             >
               <span className="text-yellow-500">⚡</span> Book
             </button>
             <button
               onClick={() => setBookingType('scheduled')}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${bookingType === 'scheduled' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
+              className={`flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2 ${bookingType === 'scheduled' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
             >
               <span>📅</span> Slot
             </button>
           </div>
           {bookingType === 'instant' && (
             <p className="text-xs text-center text-green-600 font-medium mt-1 mb-1">
-              <span className="font-bold">⚡ Priority Service:</span> Vendor arrives in ~45 mins
+              <span className="font-normal">⚡ Priority Service:</span> Vendor arrives in ~45 mins
             </p>
           )}
         </div>
@@ -2076,7 +2072,7 @@ const Checkout = () => {
                   <FiHome className="w-5 h-5 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-red-900">Delivery Address Missing</p>
+                  <p className="text-sm font-normal text-red-900">Delivery Address Missing</p>
                   <p className="text-xs text-red-600">Please add address to see availability</p>
                 </div>
               </div>
