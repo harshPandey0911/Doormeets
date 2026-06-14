@@ -925,7 +925,9 @@ const getPublicHomeContent = async (req, res) => {
       isNoteworthyVisible: contentObj.isNoteworthyVisible ?? true,
       isBookedVisible: contentObj.isBookedVisible ?? true,
       isCategorySectionsVisible: contentObj.isCategorySectionsVisible ?? true,
-      isCategoriesVisible: contentObj.isCategoriesVisible ?? true
+      isCategoriesVisible: contentObj.isCategoriesVisible ?? true,
+      popularServices: contentObj.popularServices || [],
+      isPopularServicesVisible: contentObj.isPopularServicesVisible ?? true
     };
 
     res.status(200).json({
@@ -1214,7 +1216,59 @@ const getPublicHomeData = async (req, res) => {
                 items: populatedItems.filter(Boolean).sort((a, b) => a.order - b.order)
               };
             })
-        )
+        ),
+        popularServices: await (async () => {
+          const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+          let popServicesIds = contentObj.popularServices || [];
+          
+          // Fallback to global popular services if city-specific popular services is empty
+          if (popServicesIds.length === 0 && cityId) {
+            const defaultHomeContent = await HomeContent.findOne({ cityId: null }).lean();
+            if (defaultHomeContent) {
+              popServicesIds = defaultHomeContent.popularServices || [];
+            }
+          }
+
+          const popDocs = await Service.find({
+            _id: { $in: popServicesIds },
+            status: 'active'
+          }).lean();
+
+          const serviceIds = popDocs.map(s => s._id);
+          const pricings = await ServiceBrandPricing.find({
+            serviceId: { $in: serviceIds },
+            isActive: true
+          }).lean();
+
+          return popDocs.map(svc => {
+            const pricing = pricings.find(p => p.serviceId.toString() === svc._id.toString());
+            return {
+              id: svc._id.toString(),
+              serviceId: svc._id.toString(),
+              categoryId: svc.categoryId?.toString() || null,
+              subCategoryId: svc.subCategoryId?.toString() || null,
+              title: svc.title,
+              slug: svc.slug,
+              image: svc.iconUrl,
+              price: pricing ? (pricing.finalCustomerPrice || pricing.basePrice) : (svc.basePrice || 0),
+              originalPrice: pricing ? (pricing.originalPrice || pricing.basePrice) : (svc.originalPrice || null),
+              rating: "4.5",
+              reviews: "1.2k reviews",
+              discount: pricing && pricing.discountPrice ? `${pricing.discountPrice} off` : null,
+              type: svc.type || 'service',
+              serviceType: svc.serviceType || 'package_base'
+            };
+          });
+        })(),
+        isPopularServicesVisible: contentObj.isPopularServicesVisible !== undefined 
+          ? contentObj.isPopularServicesVisible 
+          : await (async () => {
+              if (cityId) {
+                const defaultHomeContent = await HomeContent.findOne({ cityId: null }).lean();
+                return defaultHomeContent ? (defaultHomeContent.isPopularServicesVisible ?? true) : true;
+              }
+              return true;
+            })()
       };
     }
 

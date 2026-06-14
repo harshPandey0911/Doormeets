@@ -245,6 +245,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             newAndNoteworthy: addIds(hc.noteworthy || []), // API returns 'noteworthy', component expects 'newAndNoteworthy'
             mostBooked: addIds(hc.booked || []), // API returns 'booked', component expects 'mostBooked'
             categorySections: addIds(hc.categorySections || []),
+            popularServices: (hc.popularServices || []).map(p => typeof p === 'object' ? (p.id || p._id) : p),
+            isPopularServicesVisible: hc.isPopularServicesVisible ?? true,
             isBannersVisible: hc.isBannersVisible ?? true,
             isPromosVisible: hc.isPromosVisible ?? true,
             isCuratedVisible: hc.isCuratedVisible ?? true,
@@ -396,6 +398,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         noteworthy: homeData.newAndNoteworthy,
         booked: homeData.mostBooked,
         categorySections: homeData.categorySections,
+        popularServices: homeData.popularServices || [],
+        isPopularServicesVisible: homeData.isPopularServicesVisible !== false,
         isBannersVisible: homeData.isBannersVisible,
         isPromosVisible: homeData.isPromosVisible,
         isCuratedVisible: homeData.isCuratedVisible,
@@ -1353,7 +1357,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         </div>
       </CardShell>
       )}
-
       <CardShell icon={FiGrid} title="Home Categories">
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">{categories.length} categories</div>

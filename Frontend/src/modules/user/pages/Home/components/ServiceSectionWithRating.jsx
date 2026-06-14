@@ -3,7 +3,7 @@ import { createOptimizedScrollAnimation, createOptimizedStaggerAnimation } from 
 import ServiceWithRatingCard from '../../../components/common/ServiceWithRatingCard';
 import { themeColors } from '../../../../../theme';
 
-const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeAllClick, onServiceClick, onAddClick, showTopBorder = true }) => {
+const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeAllClick, onServiceClick, onAddClick, showTopBorder = true, compact = false }) => {
   const sectionRef = useRef(null);
   const titleRef = useRef(null);
   const cardsRef = useRef(null);
@@ -79,10 +79,10 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
 
   return (
     <div ref={sectionRef} className="mb-6">
-      <div ref={titleRef} className="px-4 mb-5 flex items-center justify-between" style={{ opacity: 1 }}>
+      <div ref={titleRef} className="px-4 mb-3 flex items-center justify-between" style={{ opacity: 1 }}>
         <div>
           <h2
-            className="text-xl font-bold mb-1 text-gray-900 tracking-tight"
+            className="text-[17px] font-semibold text-[#1f2937] tracking-tight"
           >
             {title}
           </h2>
@@ -105,6 +105,7 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
             originalPrice={service.originalPrice}
             discount={service.discount}
             image={service.image}
+            compact={compact}
             onClick={() => onServiceClick?.(service)}
             onAddClick={() => onAddClick?.(service)}
           />

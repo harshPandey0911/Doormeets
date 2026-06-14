@@ -14,6 +14,7 @@ import VendorPartsPage from "./pages/VendorPartsPage";
 import FeaturedSectionsManager from "../Services/FeaturedSectionsManager";
 import CategoryTemplatesPage from "./pages/CategoryTemplatesPage";
 import TemplateCatalogManager from "./pages/TemplateCatalogManager";
+import PopularServicesPage from "./pages/PopularServicesPage";
 
 import { cityService } from "../../services/cityService";
 
@@ -130,6 +131,7 @@ const UserCategories = () => {
           <Route path="subcategories" element={<SubCategoriesPage selectedCity={selectedCity} />} />
           <Route path="pricing" element={<PricingMatrixPage selectedCity={selectedCity} />} />
           <Route path="brands" element={<BrandsPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
+          <Route path="popular-services" element={<PopularServicesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
           <Route path="vendor-services" element={<VendorServicesPage selectedCity={selectedCity} />} />
           <Route path="vendor-parts" element={<VendorPartsPage selectedCity={selectedCity} />} />
           <Route path="featured-sections" element={<FeaturedSectionsManager cityId={selectedCity} />} />

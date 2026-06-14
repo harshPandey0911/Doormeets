@@ -113,6 +113,7 @@
     ],
     "children": [
       "Home",
+      "Popular Services",
       "Manage Professions",
       "Category Templates",
       "Featured Sections"

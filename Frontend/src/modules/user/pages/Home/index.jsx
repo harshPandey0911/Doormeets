@@ -108,9 +108,6 @@ const Home = () => {
       if (!cityLoading && currentId && matchedId !== currentId) {
         selectCity(matchedCity);
         toast.success(`Location updated to ${matchedCity.name}`);
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
       }
     } else {
       setIsLocationSupported(false);
@@ -163,9 +160,6 @@ const Home = () => {
         }
 
         toast.success(`Location set to ${city}`);
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
       }
     }
     setHouseNumber(savedHouseNumber);
@@ -703,6 +697,44 @@ const Home = () => {
                   )}
 
                 </>
+              )}
+
+              {/* Popular Services Section */}
+              {homeContent?.isPopularServicesVisible !== false && 
+               Array.isArray(homeContent?.popularServices) && 
+               homeContent.popularServices.length > 0 && (
+                <motion.div variants={itemVariants}>
+                  <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
+                    <ServiceSectionWithRating
+                      title="Popular services"
+                      subtitle="Most demanded home services"
+                      compact={true}
+                      services={homeContent.popularServices.map((service, index) => ({
+                        id: service.id || service._id || index,
+                        serviceId: service.serviceId || service.id || service._id,
+                        categoryId: service.categoryId,
+                        title: service.title,
+                        rating: service.rating || "4.5",
+                        reviews: service.reviews || "1.2k reviews",
+                        price: service.price,
+                        originalPrice: service.originalPrice,
+                        discount: service.discount,
+                        image: toAssetUrl(service.image),
+                        slug: service.slug
+                      }))}
+                      onSeeAllClick={() => navigate('/user/categories')}
+                      onServiceClick={(service) => {
+                        if (service.categoryId) {
+                          const cat = categories.find(c => c.id === service.categoryId);
+                          if (cat) handleCategoryClick(cat);
+                        } else {
+                          navigate('/user/categories');
+                        }
+                      }}
+                      onAddClick={handleAddClick}
+                    />
+                  </Suspense>
+                </motion.div>
               )}
 
               {/* Upcoming Categories Section (Replacing Smart Protect Blue Banner) */}

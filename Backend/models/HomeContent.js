@@ -262,6 +262,12 @@ const homeContentSchema = new mongoose.Schema({
   isCategorySectionsVisible: { type: Boolean, default: true },
   isCategoriesVisible: { type: Boolean, default: true },
   isFeaturedSectionsVisible: { type: Boolean, default: true },
+  popularServices: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service',
+    default: []
+  }],
+  isPopularServicesVisible: { type: Boolean, default: true },
 
   // Featured Sections — Admin-curated brand/category showcase below "Order Again"
   featuredSections: [{
