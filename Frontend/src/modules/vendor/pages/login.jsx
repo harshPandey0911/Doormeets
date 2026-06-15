@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiPhone, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import { vendorTheme as themeColors } from '../../../theme';
 import { sendOTP, verifyLogin } from '../services/authService';
 import Logo from '../../../components/common/Logo';
 
@@ -188,170 +187,176 @@ const VendorLogin = () => {
     }
   };
 
-  const brandColor = themeColors.brand?.teal || '#9634f7';
-
   return (
-    <div className="min-h-[100dvh] flex flex-col justify-start sm:justify-center pt-8 pb-12 sm:px-6 lg:px-8 relative overflow-x-hidden bg-white">
-      {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#FF9F45] opacity-[0.03] rounded-full blur-3xl animate-floating" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+    <div className="min-h-[100dvh] bg-[#F4F5F8] md:bg-gray-100 flex flex-col justify-start md:justify-center md:py-12 md:px-6 lg:px-8 relative overflow-x-hidden font-['Montserrat']">
+      <div className="w-full max-w-md mx-auto bg-white md:rounded-3xl md:shadow-2xl md:border md:border-gray-100 overflow-hidden flex flex-col min-h-[100dvh] md:min-h-0 relative animate-fade-in">
+        
+        {/* Top Section: Header Banner with Logo */}
+        <div className="w-full bg-[#F4F5F8] py-8 px-6 relative flex items-center justify-center select-none border-b border-gray-100">
+          {/* Close X Button */}
+          <button
+            onClick={() => navigate('/')}
+            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors z-20 cursor-pointer text-base"
+            aria-label="Close"
+          >
+            <span>✕</span>
+          </button>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-4 relative z-10 animate-fade-in">
-        <Logo className="h-16 w-auto mx-auto transform hover:scale-110 transition-transform duration-500" />
-        <h2 className="mt-[-8px] text-3xl font-bold text-gray-900 tracking-tight">
-          {step === 'phone' ? 'Vendor Sign In' : 'Verify Identity'}
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 animate-stagger-1 animate-fade-in">
-          {step === 'phone' ? 'Manage your services and bookings' : `We've sent a 6-digit code to ${phoneNumber}`}
-        </p>
-      </div>
+          <Logo className="h-16 w-auto mx-auto transform hover:scale-105 transition-transform duration-500" />
+        </div>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0 relative z-10">
-        <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FF9F45] via-[#FFB86C] to-[#FF9F45]" />
+        {/* Bottom Section: Form Fields */}
+        <div className="flex-1 bg-white px-7 py-6 flex flex-col justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
+              {step === 'phone' ? 'Vendor Sign In' : 'Verify Identity'}
+            </h2>
+            <p className="mt-1.5 text-sm text-gray-500 font-normal">
+              {step === 'phone'
+                ? 'Manage your services and bookings'
+                : `We've sent a 6-digit code to ${phoneNumber}`
+              }
+            </p>
 
-          {step === 'phone' ? (
-            <form onSubmit={handlePhoneSubmit} className="space-y-6">
-              <div className="animate-stagger-1 animate-fade-in">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <div className="relative rounded-xl shadow-sm group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#FF9F45] transition-colors">
-                    <FiPhone className="h-5 w-5 text-gray-400" />
+            <div className="mt-6">
+              {step === 'phone' ? (
+                <form className="space-y-6" onSubmit={handlePhoneSubmit}>
+                  <div>
+                    <label htmlFor="phone" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                      Phone Number
+                    </label>
+                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span className="text-gray-500 font-medium text-sm border-r border-gray-200 pr-3">+91</span>
+                      </div>
+                      <input
+                        ref={phoneInputRef}
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        id="phone"
+                        className="block w-full pl-16 pr-4 py-3.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                        placeholder="98765 43210"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      />
+                    </div>
                   </div>
-                  <div className="absolute inset-y-0 left-10 flex items-center pointer-events-none">
-                    <span className="text-gray-500 font-medium border-r border-gray-300 pr-2">+91</span>
-                  </div>
-                  <input
-                    ref={phoneInputRef}
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="block w-full pl-24 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
-                    placeholder="9876543210"
-                    style={{ '--tw-ring-color': brandColor }}
-                  />
-                </div>
-              </div>
 
-              <div className="animate-stagger-2 animate-fade-in">
-                <button
-                  type="submit"
-                  disabled={isLoading || !phoneNumber || phoneNumber.length < 10}
-                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-semibold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 overflow-hidden"
-                  style={{
-                    backgroundColor: brandColor,
-                    boxShadow: `0 10px 15px -3px ${brandColor}4D`
-                  }}
-                >
-                  <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
-                  {isLoading ? 'Sending OTP...' : (
-                    <span className="flex items-center relative z-10">
-                      Get Started
-                      <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  )}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-6">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setOtp(['', '', '', '', '', '']);
-                  setOtpToken('');
-                  setStep('phone');
-                  setResendTimer(0);
-                }}
-                className="flex items-center text-sm text-gray-500 hover:text-[#FF9F45] transition-colors mb-4 animate-stagger-1 animate-fade-in"
-              >
-                <FiChevronLeft className="mr-1" /> Edit number
-              </button>
-
-              <form onSubmit={handleOtpSubmit} className="space-y-8">
-                <div className="flex justify-between gap-2 sm:gap-4 animate-stagger-2 animate-fade-in">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => (otpInputRefs.current[index] = el)}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-full h-14 text-center text-xl font-bold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
-                      style={{
-                        '--tw-ring-color': brandColor,
-                        caretColor: brandColor,
-                        backgroundColor: digit ? `${brandColor}05` : 'white'
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="text-center animate-stagger-3 animate-fade-in">
                   <button
-                    type="button"
-                    onClick={async () => {
-                      if (resendTimer > 0) return;
-                      try {
-                        const response = await sendOTP(phoneNumber.replace(/\D/g, ''));
-                        if (response.success) {
-                          setOtpToken(response.token);
-                          setResendTimer(120);
-                          toast.success('New code sent!');
-                        }
-                      } catch (error) {
-                        toast.error('Failed to resend code');
-                      }
-                    }}
-                    disabled={resendTimer > 0}
-                    className="text-sm font-medium hover:text-[#FFB86C] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ color: brandColor }}
+                    type="submit"
+                    disabled={isLoading || phoneNumber.length < 10}
+                    className="w-full py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
                   >
-                    {resendTimer > 0
-                      ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
-                      : 'Resend code'}
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Get Started</span>
+                        <FiArrowRight />
+                      </>
+                    )}
                   </button>
-                </div>
+                </form>
+              ) : (
+                <form className="space-y-6" onSubmit={handleOtpSubmit}>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 text-center">
+                      Enter OTP Code
+                    </label>
+                    <div className="flex justify-between gap-2.5 py-2">
+                      {otp.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(el) => (otpInputRefs.current[index] = el)}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleOtpChange(index, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          className="w-full h-12 text-center text-xl font-semibold bg-[#FFF5F5] border border-[#FCD7D9] rounded-xl focus:bg-white focus:border-[#B33A35] focus:ring-1 focus:ring-[#B33A35] outline-none transition-all text-[#B33A35]"
+                        />
+                      ))}
+                    </div>
+                  </div>
 
-                <div className="animate-stagger-4 animate-fade-in">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setOtp(['', '', '', '', '', '']);
+                        setOtpToken('');
+                        setStep('phone');
+                        setResendTimer(0);
+                      }}
+                      className="flex items-center text-gray-500 hover:text-[#B33A35] transition-colors gap-0.5 cursor-pointer"
+                    >
+                      <FiChevronLeft /> Edit number
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (isLoading || resendTimer > 0) return;
+                        try {
+                          setIsLoading(true);
+                          const response = await sendOTP(phoneNumber.replace(/\D/g, ''));
+                          if (response.success) {
+                            setOtpToken(response.token);
+                            setResendTimer(120);
+                            toast.success('New code sent!');
+                          }
+                        } catch (err) {
+                          toast.error('Error sending OTP');
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                      disabled={isLoading || resendTimer > 0}
+                      className="text-[#B33A35] hover:text-[#9E2E2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {resendTimer > 0
+                        ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
+                        : 'Resend OTP'}
+                    </button>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={isLoading || otp.join('').length !== 6}
-                    className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-semibold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 overflow-hidden"
-                    style={{
-                      backgroundColor: brandColor,
-                      boxShadow: `0 10px 15px -3px ${brandColor}4D`
-                    }}
+                    className="w-full py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
                   >
-                    <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
-                    {isLoading ? 'Verifying...' : (
-                      <span className="flex items-center relative z-10">
-                        Login to Dashboard
-                        <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                      </span>
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Login to Dashboard</span>
+                        <FiArrowRight />
+                      </>
                     )}
                   </button>
-                </div>
-              </form>
+                </form>
+              )}
             </div>
-          )}
-        </div>
+          </div>
 
-        <p className="mt-8 text-center text-sm text-gray-500 animate-fade-in animate-stagger-5">
-          Don't have a vendor account?{' '}
-          <Link to="/vendor/signup" className="font-medium text-[#FF9F45] hover:text-[#FFB86C] transition-colors duration-300">
-            Register Now
-          </Link>
-        </p>
+          {/* Footer Navigation */}
+          <div className="mt-5">
+            {step === 'phone' && (
+              <p className="text-center text-sm text-gray-500 font-medium">
+                Don't have a vendor account?{' '}
+                <Link to="/vendor/signup" className="text-[#B33A35] hover:text-[#9E2E2A] font-semibold transition-colors">
+                  Register Now
+                </Link>
+              </p>
+            )}
+            <p className="mt-3 text-center text-xs text-gray-400 font-normal">
+              &copy; {new Date().getFullYear()} Doormeets. All rights reserved.
+            </p>
+          </div>
+        </div>
 
       </div>
     </div>

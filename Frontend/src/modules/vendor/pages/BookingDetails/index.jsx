@@ -1118,13 +1118,13 @@ export default function BookingDetails() {
           </div>
         </div>
 
-        {/* Payment Invoice Card - Dark Header Style (Exact Match with Billing) */}
+        {/* Payment Invoice Card - Light Header Style */}
         <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 mb-6">
-          <div className="bg-gray-900 px-6 py-6 text-white text-center">
-            <p className="text-gray-400 text-xs font-medium uppercase tracking-widest mb-1">TOTAL INVOICE AMOUNT</p>
-            <h2 className="text-4xl font-black">₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+          <div className="bg-slate-50 px-6 py-6 text-center border-b border-gray-100">
+            <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest mb-1">TOTAL INVOICE AMOUNT</p>
+            <h2 className="text-4xl font-black text-gray-900">₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
             {isPlanBenefit && (
-              <span className="inline-block mt-2 bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">
+              <span className="inline-block mt-2 bg-amber-500/10 text-amber-700 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">
                 Plan Benefit Applied
               </span>
             )}

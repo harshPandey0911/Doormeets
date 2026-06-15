@@ -730,8 +730,8 @@ const Dashboard = memo(() => {
               <div className="space-y-3">
                 {recentJobs.map((job, index) => {
                   // Alternating colors
-                  const isDarkBlue = index % 2 === 0;
-                  const accentColor = isDarkBlue ? '#001947' : '#406788';
+                  const isDarkRed = index % 2 === 0;
+                  const accentColor = isDarkRed ? '#B33A35' : '#D56C67';
 
                   return (
                     <div

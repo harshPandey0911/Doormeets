@@ -6,21 +6,24 @@ const LOGO_URL = '/cleaning-expert-logo.png';
 /**
  * LogoLoader Component — Doormeets branded loader
  * @param {boolean} fullScreen - If true, shows a full-screen overlay
- * @param {boolean} overlay - If true with fullScreen, uses solid white background
+ * @param {boolean} overlay - If true with fullScreen, uses solid background
  * @param {boolean} inline - For inline use (e.g. buttons)
  * @param {string} size - Size classes for the logo
  */
 const LogoLoader = ({ fullScreen = false, overlay = false, inline = false, size = "w-20 h-20" }) => {
   const containerClasses = fullScreen
     ? overlay
-      ? "fixed inset-0 flex items-center justify-center bg-white z-[9999]"
-      : "fixed inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-[100]"
+      ? "fixed inset-0 flex items-center justify-center bg-white dark:bg-light-bg z-[9999]"
+      : "fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-light-bg/85 backdrop-blur-sm z-[100]"
     : inline
       ? "flex items-center justify-center"
-      : "flex items-center justify-center w-full min-h-[60vh] pb-20";
+      : "flex items-center justify-center w-full min-h-[85vh] pb-20";
 
   return (
-    <div className={containerClasses}>
+    <div 
+      className={containerClasses}
+      style={!inline ? { backgroundColor: 'var(--background)' } : {}}
+    >
       <div className="flex flex-col items-center gap-4">
         <motion.div
           initial={{ scale: 0.9, opacity: 0.7 }}
@@ -67,7 +70,7 @@ const LogoLoader = ({ fullScreen = false, overlay = false, inline = false, size 
               fontFamily: "'Montserrat', sans-serif",
               fontWeight: 700,
               fontSize: '13px',
-              color: '#1B3A6B',
+              color: 'var(--text-primary)',
               letterSpacing: '0.08em',
             }}
           >
@@ -80,3 +83,4 @@ const LogoLoader = ({ fullScreen = false, overlay = false, inline = false, size 
 };
 
 export default LogoLoader;
+

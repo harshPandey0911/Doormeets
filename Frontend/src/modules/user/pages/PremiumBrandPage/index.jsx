@@ -104,74 +104,85 @@ const PremiumBrandPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f7f1ff_0%,#ffffff_40%,#ffffff_100%)] pb-24">
-      <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
-
-      <div className="mx-auto max-w-7xl px-4 pt-[80px] pb-4 md:px-6">
-        <button type="button" onClick={() => navigate(-1)} className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-900 shadow-sm border border-gray-100">
-          <FiArrowLeft /> Back
+    <div className="min-h-screen pb-24" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Full width Cover Image (Spans edge-to-edge) */}
+      <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] md:h-[400px] overflow-hidden">
+        {heroImage ? (
+          <img src={heroImage} alt={brand.title || brand.businessName} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-900 text-gray-400">No brand image available</div>
+        )}
+        
+        {/* Floating controls positioned at top-4 */}
+        <button 
+          type="button" 
+          onClick={() => navigate(-1)} 
+          className="absolute left-4 top-4 z-10 w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-900 shadow-md border border-gray-100 hover:scale-105 active:scale-95 transition-all"
+        >
+          <FiArrowLeft className="w-5 h-5" />
         </button>
+ 
+        <div className="absolute right-4 top-4 z-10 flex gap-2">
+          <button className="w-10 h-10 rounded-full bg-black/35 text-white flex items-center justify-center backdrop-blur-md hover:scale-105 active:scale-95 transition-all">
+            <FiHeart className="w-4 h-4" />
+          </button>
+          <button className="w-10 h-10 rounded-full bg-black/35 text-white flex items-center justify-center backdrop-blur-md hover:scale-105 active:scale-95 transition-all">
+            <FiShare2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
-        <div className="overflow-hidden rounded-4xl border border-gray-100 bg-white shadow-[0_18px_60px_rgba(17,24,39,0.08)]">
-          <div className="relative h-72 md:h-96">
-            {heroImage ? (
-              <img src={heroImage} alt={brand.title || brand.businessName} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-purple-50 to-white text-gray-400">No brand image available</div>
-            )}
-            <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/15 to-transparent" />
-            <div className="absolute left-5 top-5 flex gap-2 text-white">
-              <button className="rounded-full bg-black/25 p-3 backdrop-blur">
-                <FiHeart />
-              </button>
-              <button className="rounded-full bg-black/25 p-3 backdrop-blur">
-                <FiShare2 />
-              </button>
-            </div>
-            <div className="absolute bottom-5 left-5 right-5 text-white">
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">Brand page</p>
-              <h1 className="mt-2 text-3xl font-black md:text-5xl">{brand.title || brand.businessName}</h1>
-              <p className="mt-2 max-w-2xl text-sm text-white/85 md:text-base">{brand.description || brand.tagline || 'Premium service partner with trusted technicians and transparent pricing.'}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 text-sm font-bold backdrop-blur"><FiStar className="text-amber-300" /> {brand.rating || 4.8}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 text-sm font-bold backdrop-blur"><FiClock /> 30-45 min</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 text-sm font-bold backdrop-blur"><FiShield /> Verified</span>
-              </div>
-            </div>
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+        {/* Brand details section below the image */}
+        <div className="mb-6">
+          <p className="text-[10px] font-medium uppercase tracking-[0.24em]" style={{ color: 'var(--primary)' }}>Brand page</p>
+          <h1 className="mt-1 text-2xl font-semibold md:text-3xl" style={{ color: 'var(--text-primary)' }}>{brand.title || brand.businessName}</h1>
+          <p className="mt-2 max-w-2xl text-xs md:text-sm" style={{ color: 'var(--text-secondary)' }}>{brand.description || brand.tagline || 'Premium service partner with trusted technicians and transparent pricing.'}</p>
+          
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium border" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}><FiStar className="text-amber-300" /> {brand.rating || 4.8}</span>
+            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium border" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}><FiClock /> 30-45 min</span>
+            <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium border" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}><FiShield /> Verified</span>
           </div>
         </div>
 
-        <section className="mt-6 rounded-[30px] border border-purple-100 bg-white p-5 shadow-[0_18px_60px_rgba(124,58,237,0.08)]">
+        <section className="mt-6 rounded-[30px] border p-5 shadow-[0_18px_60px_rgba(17,24,39,0.04)]" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}>
           <div className="mb-4 flex items-end justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-purple-400">Top services</p>
-              <h2 className="text-xl font-black text-gray-900">Starts from</h2>
+              <p className="text-[10px] font-medium uppercase tracking-[0.24em]" style={{ color: 'var(--primary)' }}>Top services</p>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Starts from</h2>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {topServices.map((service) => (
-              <button key={service.id} type="button" onClick={() => navigate(`/user/service/${service.id}`, { state: { service, brand } })} className="rounded-3xl border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4 text-left shadow-sm transition hover:-translate-y-1">
+              <button 
+                key={service.id} 
+                type="button" 
+                onClick={() => navigate(`/user/service/${service.id}`, { state: { service, brand } })} 
+                className="rounded-3xl border p-4 text-left shadow-sm transition hover:-translate-y-1"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}
+              >
                 <div className="flex items-center gap-3">
-                  <div className="h-16 w-16 overflow-hidden rounded-2xl bg-white border border-purple-100">
+                  <div className="h-16 w-16 overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border" style={{ borderColor: 'var(--border)' }}>
                     <img src={service.image} alt={service.title} className="h-full w-full object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-black text-gray-900 line-clamp-1">{service.title}</div>
-                    <div className="mt-1 text-xs text-gray-500 line-clamp-2">{service.description}</div>
+                    <div className="text-sm font-semibold line-clamp-1" style={{ color: 'var(--text-primary)' }}>{service.title}</div>
+                    <div className="mt-1 text-xs line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{service.description}</div>
                     <PriceTag price={service.price} originalPrice={service.originalPrice} className="mt-2" />
                   </div>
                 </div>
-                <div className="mt-3 inline-flex rounded-2xl bg-linear-to-r from-purple-600 to-fuchsia-500 px-4 py-2 text-sm font-black text-white shadow-lg shadow-purple-200">View details</div>
+                <div className="mt-3 inline-flex rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-500/10">View details</div>
               </button>
             ))}
           </div>
-          {topServices.length === 0 ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No services available for this brand.</div> : null}
+          {topServices.length === 0 ? <div className="rounded-3xl border border-dashed p-5 text-sm" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-muted)' }}>No services available for this brand.</div> : null}
         </section>
 
         <section className="mt-6 space-y-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">All services</p>
-            <h2 className="text-xl font-black text-gray-900">Choose and add</h2>
+            <p className="text-[10px] font-medium uppercase tracking-[0.24em]" style={{ color: 'var(--text-muted)' }}>All services</p>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Choose and add</h2>
           </div>
           <div className="grid gap-4">
             {serviceCards.map((service) => (
@@ -184,26 +195,26 @@ const PremiumBrandPage = () => {
               />
             ))}
           </div>
-          {serviceCards.length === 0 ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No services available right now.</div> : null}
+          {serviceCards.length === 0 ? <div className="rounded-3xl border border-dashed p-5 text-sm" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-muted)' }}>No services available right now.</div> : null}
         </section>
 
-        <section className="mt-8 rounded-[30px] border border-gray-100 bg-white p-5 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
+        <section className="mt-8 rounded-[30px] border p-5 shadow-[0_18px_60px_rgba(17,24,39,0.04)]" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}>
           <div className="mb-4">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Reviews</p>
-            <h2 className="text-xl font-black text-gray-900">What users say</h2>
+            <p className="text-[10px] font-medium uppercase tracking-[0.24em]" style={{ color: 'var(--text-muted)' }}>Reviews</p>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>What users say</h2>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {reviews.map((review) => (
-              <div key={review.id} className="rounded-3xl border border-gray-100 bg-linear-to-br from-white to-purple-50 p-4">
+              <div key={review.id} className="rounded-3xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}>
                 <div className="flex items-center justify-between">
-                  <div className="font-black text-gray-900">{review.name}</div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700"><FiStar /> {review.rating}</span>
+                  <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{review.name}</div>
+                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B' }}><FiStar /> {review.rating}</span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-gray-600">{review.comment}</p>
+                <p className="mt-3 text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>{review.comment}</p>
               </div>
             ))}
           </div>
-          {reviews.length === 0 ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500">No reviews available yet.</div> : null}
+          {reviews.length === 0 ? <div className="rounded-3xl border border-dashed p-5 text-sm" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-muted)' }}>No reviews available yet.</div> : null}
         </section>
       </div>
     </div>

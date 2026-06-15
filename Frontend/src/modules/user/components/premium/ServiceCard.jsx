@@ -8,10 +8,17 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
   return (
     <motion.article
       whileHover={{ y: -3 }}
-      className="rounded-[20px] sm:rounded-[24px] border border-gray-100 bg-white p-3 sm:p-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)] transition-all"
+      className="rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)] dark:shadow-none transition-all"
+      style={{
+        backgroundColor: 'var(--card-bg)',
+        borderColor: 'var(--border)'
+      }}
     >
       <div onClick={() => onOpen?.(service)} className="flex w-full items-start gap-3 sm:gap-4 text-left cursor-pointer">
-        <div className="h-16 w-16 sm:h-24 sm:w-24 shrink-0 overflow-hidden rounded-xl sm:rounded-[20px] bg-gradient-to-br from-orange-50/40 to-white border border-orange-100/70">
+        <div 
+          className="h-16 w-16 sm:h-24 sm:w-24 shrink-0 overflow-hidden rounded-xl sm:rounded-[20px] bg-gradient-to-br from-orange-50/40 to-white dark:from-gray-800 dark:to-gray-900 border"
+          style={{ borderColor: 'var(--border)' }}
+        >
           {service.image ? (
             <img src={service.image} alt={service.title} className="h-full w-full object-cover" />
           ) : null}
@@ -21,23 +28,23 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-normal text-amber-500">
                 <span>★ {service.rating || 4.8}</span>
-                <span className="text-gray-300">|</span>
-                <span>{service.reviews || 0} reviews</span>
+                <span style={{ color: 'var(--border)' }}>|</span>
+                <span style={{ color: 'var(--text-muted)' }}>{service.reviews || 0} reviews</span>
               </div>
-              <h3 className="mt-0.5 text-sm sm:text-[15px] font-normal leading-snug text-gray-900 line-clamp-2">
+              <h3 className="mt-0.5 text-sm sm:text-[15px] font-normal leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
                 {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
               </h3>
             </div>
-            <div className="flex gap-1 text-gray-400">
-              <button type="button" onClick={(e) => { e.stopPropagation(); onWishlist?.(service); }} className="rounded-full p-1.5 sm:p-2 hover:bg-orange-50 hover:text-[#B33A35] transition-colors">
+            <div className="flex gap-1 text-gray-400 dark:text-gray-500">
+              <button type="button" onClick={(e) => { e.stopPropagation(); onWishlist?.(service); }} className="rounded-full p-1.5 sm:p-2 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-[#B33A35] transition-colors">
                 <FiHeart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
-              <button type="button" onClick={(e) => { e.stopPropagation(); onShare?.(service); }} className="rounded-full p-1.5 sm:p-2 hover:bg-orange-50 hover:text-[#B33A35] transition-colors">
+              <button type="button" onClick={(e) => { e.stopPropagation(); onShare?.(service); }} className="rounded-full p-1.5 sm:p-2 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-[#B33A35] transition-colors">
                 <FiShare2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
-          <p className="mt-1 text-[11px] sm:text-sm leading-normal text-gray-500 line-clamp-2">{service.description}</p>
+          <p className="mt-1 text-[11px] sm:text-sm leading-normal line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{service.description}</p>
         </div>
       </div>
 
@@ -56,3 +63,5 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
 };
 
 export default ServiceCard;
+
+

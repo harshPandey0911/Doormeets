@@ -1359,10 +1359,10 @@ const Checkout = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white pb-32 flex items-center justify-center">
+      <div className="min-h-screen pb-32 flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4" style={{ borderColor: themeColors.button }}></div>
-          <p className="text-gray-500">Loading checkout details...</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Loading checkout details...</p>
         </div>
       </div>
     );
@@ -1370,26 +1370,27 @@ const Checkout = () => {
 
   if (cartItems.length === 0 && currentStep === 'details' && !searchingVendors && !showVendorModal) {
     return (
-      <div className="min-h-screen bg-white pb-32">
-        <header className="bg-white">
+      <div className="min-h-screen pb-32" style={{ backgroundColor: 'var(--background)' }}>
+        <header style={{ backgroundColor: 'var(--background)' }}>
           <div className="px-4 pt-4 pb-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleBack}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1 rounded-full transition-colors"
+                style={{ color: 'var(--text-primary)' }}
               >
-                <FiArrowLeft className="w-6 h-6 text-black" />
+                <FiArrowLeft className="w-6 h-6" />
               </button>
-              <h1 className="text-xl font-normal text-black">Your cart</h1>
+              <h1 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>Your cart</h1>
             </div>
           </div>
-          <div className="border-b border-gray-200"></div>
+          <div className="border-b" style={{ borderColor: 'var(--border)' }}></div>
         </header>
         <main className="px-4 py-4">
           <div className="flex flex-col items-center justify-center py-20">
-            <FiShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg font-normal">Your cart is empty</p>
-            <p className="text-gray-400 text-sm mt-2">Add services to get started</p>
+            <FiShoppingCart className="w-16 h-16 mb-4" style={{ color: 'var(--text-muted)' }} />
+            <p className="text-lg font-normal" style={{ color: 'var(--text-secondary)' }}>Your cart is empty</p>
+            <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Add services to get started</p>
           </div>
         </main>
       </div>
@@ -1473,23 +1474,24 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white pb-80">
+    <div className="min-h-screen pb-80" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
-      <header className="bg-white">
+      <header style={{ backgroundColor: 'var(--background)' }}>
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center gap-3">
             <button
               onClick={handleBack}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-1 rounded-full transition-colors"
+              style={{ color: 'var(--text-primary)' }}
             >
-              <FiArrowLeft className="w-6 h-6 text-black" />
+              <FiArrowLeft className="w-6 h-6" />
             </button>
-            <h1 className="text-xl font-normal text-black">
+            <h1 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>
               {category ? `${category} Checkout` : 'Your cart'}
             </h1>
           </div>
         </div>
-        <div className="border-b border-gray-200"></div>
+        <div className="border-b" style={{ borderColor: 'var(--border)' }}></div>
       </header>
 
       <main className="px-4 py-4">
@@ -1520,32 +1522,32 @@ const Checkout = () => {
             const categoryName = item.categoryTitle || item.category;
 
             return (
-              <div key={item._id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
+              <div key={item._id} className="border rounded-xl p-4 shadow-sm relative overflow-hidden" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                 {/* Brand Header */}
                 {(brandName || categoryName) && (
-                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-50">
+                  <div className="flex items-center gap-2 mb-3 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
                     {item.sectionIcon ? (
-                      <img src={toAssetUrl(item.sectionIcon)} className="w-5 h-5 rounded-md object-cover border border-gray-100" alt="" />
+                      <img src={toAssetUrl(item.sectionIcon)} className="w-5 h-5 rounded-md object-cover border" style={{ borderColor: 'var(--border)' }} alt="" />
                     ) : (
-                      <div className="w-5 h-5 rounded-md bg-gray-100 flex items-center justify-center text-[10px] font-normal text-gray-500">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-normal" style={{ backgroundColor: 'var(--background)', color: 'var(--text-secondary)' }}>
                         {(brandName || "B").charAt(0)}
                       </div>
                     )}
                     <div className="flex flex-col leading-none">
-                      {brandName && <span className="text-xs font-normal text-gray-900">{brandName}</span>}
-                      {categoryName && <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mt-0.5">{categoryName}</span>}
+                      {brandName && <span className="text-xs font-normal" style={{ color: 'var(--text-primary)' }}>{brandName}</span>}
+                      {categoryName && <span className="text-[10px] font-medium uppercase tracking-wide mt-0.5" style={{ color: 'var(--text-secondary)' }}>{categoryName}</span>}
                     </div>
                   </div>
                 )}
 
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 pr-4">
-                    <h3 className="text-base font-normal text-gray-900 mb-1 leading-snug">{item.title}</h3>
+                    <h3 className="text-base font-normal mb-1 leading-snug" style={{ color: 'var(--text-primary)' }}>{item.title}</h3>
                     {item.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+                      <p className="text-sm line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{item.description}</p>
                     )}
                     {item.duration && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                         <FiClock className="w-3 h-3" />
                         {item.duration}
                       </div>
@@ -1553,19 +1555,21 @@ const Checkout = () => {
                   </div>
                   {!item.isPlan && (
                     <div className="flex flex-col items-end gap-2">
-                      <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-0.5">
+                      <div className="flex items-center gap-1 rounded-lg p-0.5 border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
                         <button
                           onClick={() => handleQuantityChange(item._id, -1)}
-                          className="p-1.5 hover:bg-white rounded-md transition-all shadow-sm"
+                          className="p-1.5 rounded-md transition-all shadow-sm"
+                          style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}
                         >
-                          <FiMinus className="w-3.5 h-3.5 text-gray-600" />
+                          <FiMinus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="w-6 text-center text-sm font-normal text-gray-900">{item.serviceCount || 1}</span>
+                        <span className="w-6 text-center text-sm font-normal" style={{ color: 'var(--text-primary)' }}>{item.serviceCount || 1}</span>
                         <button
                           onClick={() => handleQuantityChange(item._id, 1)}
-                          className="p-1.5 hover:bg-white rounded-md transition-all shadow-sm"
+                          className="p-1.5 rounded-md transition-all shadow-sm"
+                          style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}
                         >
-                          <FiPlus className="w-3.5 h-3.5 text-gray-900" />
+                          <FiPlus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -1573,18 +1577,18 @@ const Checkout = () => {
                   {!item.isPlan && (
                     <button
                       onClick={() => handleRemoveItem(item._id)}
-                      className="absolute top-3 right-3 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 rounded-full transition-colors"
                     >
                       <FiTrash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-normal text-black">
+                  <span className="text-base font-normal" style={{ color: 'var(--text-primary)' }}>
                     {item.isPriceDisclosed === false ? (
-                      <span className="text-[11px] text-gray-400 font-normal uppercase tracking-tighter bg-gray-50 px-2 py-0.5 rounded border border-gray-100">Not Disclosed</span>
+                      <span className="text-[11px] font-normal uppercase tracking-tighter px-2 py-0.5 rounded border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>Not Disclosed</span>
                     ) : calculateItemPrice(item) === 0 ? (
-                      <span className="text-green-600">Free</span>
+                      <span className="text-green-600 font-semibold">Free</span>
                     ) : (
                       `₹${(item.price || 0).toLocaleString('en-IN')}`
                     )}
@@ -1616,8 +1620,8 @@ const Checkout = () => {
 
         {/* Dynamic Fields Section */}
         {dynamicFieldsConfig.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4 shadow-sm">
-            <h3 className="text-sm font-normal text-gray-900 mb-4 flex items-center gap-2">
+          <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <h3 className="text-sm font-normal mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               <span className="p-1 bg-indigo-50 text-indigo-600 rounded">
                 <FiSliders className="w-4 h-4" />
               </span>
@@ -1628,7 +1632,7 @@ const Checkout = () => {
                 const value = dynamicAnswers[field.name] || '';
                 return (
                   <div key={field._id || field.name} className="space-y-1">
-                    <label className="block text-xs font-normal text-gray-700">
+                    <label className="block text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>
                       {field.label} {field.isRequired && <span className="text-red-500">*</span>}
                     </label>
                     
@@ -1636,7 +1640,8 @@ const Checkout = () => {
                     {field.fieldType === 'text' && (
                       <input
                         type="text"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -1646,7 +1651,8 @@ const Checkout = () => {
                     {field.fieldType === 'number' && (
                       <input
                         type="number"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -1655,7 +1661,8 @@ const Checkout = () => {
 
                     {field.fieldType === 'textarea' && (
                       <textarea
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         rows={3}
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
@@ -1665,14 +1672,15 @@ const Checkout = () => {
 
                     {field.fieldType === 'dropdown' && (
                       <select
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
                       >
-                        <option value="">Select Option</option>
+                        <option value="" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>Select Option</option>
                         {(field.options || []).map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
+                          <option key={opt} value={opt} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>{opt}</option>
                         ))}
                       </select>
                     )}
@@ -1680,7 +1688,7 @@ const Checkout = () => {
                     {field.fieldType === 'radio' && (
                       <div className="flex flex-wrap gap-3 pt-1">
                         {(field.options || []).map(opt => (
-                          <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                          <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                             <input
                               type="radio"
                               name={field.name}
@@ -1695,7 +1703,7 @@ const Checkout = () => {
                     )}
 
                     {field.fieldType === 'checkbox' && (
-                      <label className="flex items-center gap-2 py-1 text-sm text-gray-700 cursor-pointer">
+                      <label className="flex items-center gap-2 py-1 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                         <input
                           type="checkbox"
                           checked={!!value}
@@ -1708,7 +1716,8 @@ const Checkout = () => {
                     {field.fieldType === 'date' && (
                       <input
                         type="date"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -1718,7 +1727,8 @@ const Checkout = () => {
                     {field.fieldType === 'time' && (
                       <input
                         type="time"
-                        className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                        style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         value={value}
                         onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                         required={field.isRequired}
@@ -1734,14 +1744,14 @@ const Checkout = () => {
                           disabled={uploadingFiles[field.name]}
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                              handleFileUpload(field.name, e.target.files[0]);
+                                handleFileUpload(field.name, e.target.files[0]);
                             }
                           }}
                           className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                         />
                         {uploadingFiles[field.name] && <p className="text-[10px] text-indigo-600 animate-pulse">Uploading file to Cloudinary...</p>}
                         {value && (
-                          <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-150">
+                          <div className="flex items-center gap-2 p-1.5 rounded-lg border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
                             <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-150">UPLOADED</span>
                             <a href={value} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline truncate flex-1">{value}</a>
                           </div>
@@ -1755,7 +1765,8 @@ const Checkout = () => {
                         <input
                           type="text"
                           placeholder="Latitude, Longitude coordinates"
-                          className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                          className="flex-1 p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                          style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
@@ -1776,16 +1787,13 @@ const Checkout = () => {
           </div>
         )}
 
-        {/* ... */}
-
-
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+        <div className="border rounded-lg p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <FiPhone className="w-5 h-5 text-gray-600" />
+              <FiPhone className="w-5 h-5 text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-black">{contactDetails.name || JSON.parse(localStorage.getItem('userData'))?.name || 'Verified Customer'}</p>
-                <p className="text-xs text-gray-600">{contactDetails.phone || userPhone || 'Loading...'}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{contactDetails.name || JSON.parse(localStorage.getItem('userData'))?.name || 'Verified Customer'}</p>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{contactDetails.phone || userPhone || 'Loading...'}</p>
               </div>
             </div>
             <button
@@ -1799,12 +1807,12 @@ const Checkout = () => {
         </div>
 
         {/* Promo Code Application Panel */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4 shadow-sm">
+        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-2 mb-3">
             <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
               <FiCheckCircle className="w-4 h-4" />
             </span>
-            <h3 className="text-sm font-normal text-gray-900">Promo Code</h3>
+            <h3 className="text-sm font-normal" style={{ color: 'var(--text-primary)' }}>Promo Code</h3>
           </div>
 
           {appliedPromo ? (
@@ -1815,10 +1823,10 @@ const Checkout = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-normal text-slate-900 tracking-wide uppercase">{appliedPromo.code}</span>
+                    <span className="text-sm font-normal tracking-wide uppercase" style={{ color: 'var(--text-primary)' }}>{appliedPromo.code}</span>
                     <span className="text-[10px] font-normal text-green-700 bg-green-100 px-2 py-0.5 rounded-full uppercase">APPLIED</span>
                   </div>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                     Saved ₹{appliedPromo.discountAmount} extra!
                   </p>
                 </div>
@@ -1844,7 +1852,8 @@ const Checkout = () => {
                       setPromoError('');
                     }}
                     disabled={promoLoading}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all uppercase"
+                    className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-semibold placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all uppercase"
+                    style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                   />
                 </div>
                 <button
@@ -1867,11 +1876,11 @@ const Checkout = () => {
         </div>
 
         {/* Payment Summary */}
-        <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 mb-6 shadow-sm overflow-hidden relative">
+        <div className="border-2 rounded-2xl p-5 mb-6 shadow-sm overflow-hidden relative" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           {/* Decorative Background for Header */}
           <div className="absolute top-0 left-0 right-0 h-1" style={{ background: themeColors.gradient }}></div>
 
-          <h3 className="text-lg font-normal text-slate-900 mb-5 flex items-center gap-2">
+          <h3 className="text-lg font-normal mb-5 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
             <FiShoppingCart className="w-5 h-5" style={{ color: themeColors.button }} />
             Payment Summary
           </h3>
@@ -1879,8 +1888,8 @@ const Checkout = () => {
           <div className="space-y-3">
             {/* Original Price (before plan) */}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600">Item Total</span>
-              <span className="text-sm font-medium text-slate-900">
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Item Total</span>
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                 ₹{totalOriginalPrice.toLocaleString('en-IN')}
               </span>
             </div>
@@ -1913,19 +1922,19 @@ const Checkout = () => {
             )}
 
             {/* Divider */}
-            <div className="border-t border-slate-200 pt-4 mt-2">
+            <div className="border-t pt-4 mt-2" style={{ borderColor: 'var(--border)' }}>
               <div className="flex justify-between items-center">
-                <span className="text-base font-normal text-slate-900">Total Payable</span>
+                <span className="text-base font-normal" style={{ color: 'var(--text-primary)' }}>Total Payable</span>
                 <div className="flex flex-col items-end">
                   {totalAmount === 0 ? (
                     <>
-                      <span className="text-sm font-medium text-slate-400 line-through">
+                      <span className="text-sm font-medium text-gray-400 line-through">
                         ₹{Math.round(totalOriginalPrice + displayTax + displayFee).toLocaleString('en-IN')}
                       </span>
                       <span className="text-xl font-normal text-green-600">FREE</span>
                     </>
                   ) : (
-                    <span className="text-xl font-normal text-slate-900">
+                    <span className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>
                       ₹{totalAmount.toLocaleString('en-IN')}
                     </span>
                   )}
@@ -1936,13 +1945,13 @@ const Checkout = () => {
         </div>
 
         {/* Important Note regarding Base Price */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex items-start gap-4 shadow-sm">
-          <div className="bg-blue-100 p-2 rounded-full shrink-0 mt-0.5">
+        <div className="bg-blue-50/10 border border-blue-100/30 rounded-xl p-4 mb-6 flex items-start gap-4 shadow-sm">
+          <div className="bg-blue-100/20 p-2 rounded-full shrink-0 mt-0.5">
             <FiInfo className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h4 className="text-sm font-normal text-blue-900 mb-1">Note</h4>
-            <p className="text-sm text-blue-800 leading-relaxed font-medium">
+            <h4 className="text-sm font-normal text-blue-600 mb-1">Note</h4>
+            <p className="text-sm leading-relaxed font-medium" style={{ color: 'var(--text-secondary)' }}>
               This is a base booking cost. Additional service cost is decided by the vendor after service bill preparation.
             </p>
           </div>
@@ -1950,14 +1959,14 @@ const Checkout = () => {
 
         {/* Free Plan Benefit Card */}
         {totalAmount === 0 && (
-          <div className="bg-linear-to-br from-green-50 to-emerald-100/50 border border-green-200 rounded-2xl p-5 mb-6 relative overflow-hidden">
+          <div className="bg-linear-to-br from-green-50/10 to-emerald-100/10 border border-green-200/30 rounded-2xl p-5 mb-6 relative overflow-hidden">
             <div className="flex items-start gap-4 z-10 relative">
               <div className="bg-green-500 rounded-full p-2 shadow-lg shadow-green-200 shrink-0">
                 <FiCheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-normal text-green-800 mb-1">Covered by {planBenefits.name}</h3>
-                <p className="text-sm text-green-700 leading-relaxed font-medium opacity-90">
+                <h3 className="text-lg font-normal text-green-600 mb-1">Covered by {planBenefits.name}</h3>
+                <p className="text-sm leading-relaxed font-medium opacity-90" style={{ color: 'var(--text-secondary)' }}>
                   You save <span className="font-normal">₹{Math.round(totalOriginalPrice + displayTax + displayFee).toLocaleString('en-IN')}</span> on this booking!
                   Your plan covers all costs.
                 </p>
@@ -1967,9 +1976,9 @@ const Checkout = () => {
         )}
 
         {/* Cancellation Policy */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-          <h3 className="text-base font-normal text-black mb-2">Cancellation policy</h3>
-          <p className="text-sm text-gray-700 mb-2">
+        <div className="border rounded-lg p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+          <h3 className="text-base font-normal mb-2" style={{ color: 'var(--text-primary)' }}>Cancellation policy</h3>
+          <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
             Free cancellations if done more than 12 hrs before the service or if a professional isn't assigned. A fee will be charged otherwise.
           </p>
           <button
@@ -1985,20 +1994,22 @@ const Checkout = () => {
       </main>
 
       {/* Bottom Action Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
 
         {/* Booking Type Toggle */}
         <div className="px-4 pt-3 pb-0">
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-1">
+          <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
             <button
               onClick={() => setBookingType('instant')}
-              className={`flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2 ${bookingType === 'instant' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
+              className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
+              style={bookingType === 'instant' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
             >
               <span className="text-yellow-500">⚡</span> Book
             </button>
             <button
               onClick={() => setBookingType('scheduled')}
-              className={`flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2 ${bookingType === 'scheduled' ? 'bg-white shadow-sm text-black' : 'text-gray-500'}`}
+              className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
+              style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
             >
               <span>📅</span> Slot
             </button>
@@ -2011,7 +2022,7 @@ const Checkout = () => {
         </div>
 
         {/* Address and Slot Display */}
-        <div className="px-4 pt-2 pb-2 border-b border-gray-100">
+        <div className="px-4 pt-2 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
           {(houseNumber || addressDetails) ? (
             <div className="space-y-2.5">
               {/* Address */}
@@ -2020,16 +2031,17 @@ const Checkout = () => {
                   <FiHome className="w-4 h-4" style={{ color: themeColors.button }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600 mb-0.5">Address</p>
-                  <p className="text-sm font-medium text-black truncate">
+                  <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Address</p>
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                     {houseNumber ? `${houseNumber}, ` : ''}{address || 'Select Address'}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowAddressModal(true)}
-                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors shrink-0 mt-0.5"
+                  className="p-1.5 rounded-full transition-colors shrink-0 mt-0.5"
+                  style={{ color: 'var(--text-primary)' }}
                 >
-                  <FiEdit2 className="w-4 h-4 text-gray-600" />
+                  <FiEdit2 className="w-4 h-4" />
                 </button>
               </div>
 
@@ -2040,8 +2052,8 @@ const Checkout = () => {
                     <FiClock className="w-4 h-4" style={{ color: themeColors.button }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-600 mb-0.5">Time Slot</p>
-                    <p className="text-sm font-medium text-black">
+                    <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Time Slot</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                       {selectedDate ? (() => {
                         const { day, date: dateNum } = formatDate(selectedDate);
                         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -2055,9 +2067,10 @@ const Checkout = () => {
                   </div>
                   <button
                     onClick={() => setShowTimeSlotModal(true)}
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors shrink-0 mt-0.5"
+                    className="p-1.5 rounded-full transition-colors shrink-0 mt-0.5"
+                    style={{ color: 'var(--text-primary)' }}
                   >
-                    <FiEdit2 className="w-4 h-4 text-gray-600" />
+                    <FiEdit2 className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -2065,15 +2078,15 @@ const Checkout = () => {
           ) : (
             <div
               onClick={() => setShowAddressModal(true)}
-              className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl cursor-pointer active:scale-[0.98] transition-all"
+              className="flex items-center justify-between p-3 bg-red-50/10 border border-red-100/30 rounded-xl cursor-pointer active:scale-[0.98] transition-all"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                   <FiHome className="w-5 h-5 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-normal text-red-900">Delivery Address Missing</p>
-                  <p className="text-xs text-red-600">Please add address to see availability</p>
+                  <p className="text-sm font-normal text-red-600">Delivery Address Missing</p>
+                  <p className="text-xs text-red-500">Please add address to see availability</p>
                 </div>
               </div>
               <FiEdit2 className="w-4 h-4 text-red-400" />
@@ -2131,25 +2144,26 @@ const Checkout = () => {
       {/* Contact Details Edit Modal */}
       {showContactModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl animate-scale-in">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Update Contact Details</h3>
-            <p className="text-sm text-gray-500 mb-4">These details will be used for this booking only.</p>
+          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl animate-scale-in border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Update Contact Details</h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>These details will be used for this booking only.</p>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Name</label>
+                <label className="text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>Name</label>
                 <input
                   type="text"
                   value={contactDetails.name}
                   onChange={(e) => setContactDetails(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full mt-1 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full mt-1 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                   placeholder="Enter name"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Phone Number</label>
+                <label className="text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>Phone Number</label>
                 <div className="flex gap-2">
-                  <span className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-medium select-none">+91</span>
+                  <span className="p-3 border rounded-xl font-medium select-none" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>+91</span>
                   <input
                     type="tel"
                     maxLength={10}
@@ -2158,7 +2172,8 @@ const Checkout = () => {
                       const val = e.target.value.replace(/\D/g, '');
                       setContactDetails(prev => ({ ...prev, phone: val }));
                     }}
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                     placeholder="9999999999"
                   />
                 </div>
@@ -2167,7 +2182,8 @@ const Checkout = () => {
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   onClick={() => setShowContactModal(false)}
-                  className="py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+                  className="py-3 rounded-xl font-bold transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Cancel
                 </button>

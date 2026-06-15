@@ -354,12 +354,12 @@ const PremiumServiceDetailPage = () => {
 
   if (!service) {
     return (
-      <div className="min-h-screen bg-white p-6">
+      <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--background)' }}>
         <Navbar locationLabel="Premium service" cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/home')} />
         <div className="mx-auto max-w-3xl px-4 py-12 text-center">
-          <div className="rounded-[28px] border border-dashed border-gray-200 bg-white p-10 shadow-sm">
-            <h1 className="text-2xl font-semibold text-gray-900">Service not available</h1>
-            <p className="mt-3 text-sm text-gray-500">Open this page from a brand or category service card so we can load the live service data.</p>
+          <div className="rounded-[28px] border border-dashed border-border-color bg-card-bg p-10 shadow-sm" style={{ borderColor: 'var(--border)' }}>
+            <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Service not available</h1>
+            <p className="mt-3 text-sm" style={{ color: 'var(--text-secondary)' }}>Open this page from a brand or category service card so we can load the live service data.</p>
           </div>
         </div>
       </div>
@@ -367,7 +367,7 @@ const PremiumServiceDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-28">
+    <div className="min-h-screen pb-28" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header Image Section with Full-Bleed style on mobile */}
       <div 
         className="relative w-full h-[320px] md:h-[460px] overflow-hidden bg-gray-100 shadow-sm select-none"
@@ -430,17 +430,17 @@ const PremiumServiceDetailPage = () => {
       <div className="mx-auto max-w-lg lg:max-w-2xl px-5 pt-6 pb-4">
         {/* Title, Rating, and Description */}
         <div className="space-y-2">
-          <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight leading-tight">
+          <h1 className="text-[22px] font-semibold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
             {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
           </h1>
           
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
+          <div className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
             <FiStar className="fill-amber-400 text-amber-400" />
-            <span className="text-gray-900 font-semibold">{service.rating || "4.5"}</span>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{service.rating || "4.5"}</span>
             <span>({service.reviews || "1.2k reviews"})</span>
           </div>
 
-          <p className="text-sm text-gray-500 font-normal leading-relaxed pt-1">
+          <p className="text-sm font-normal leading-relaxed pt-1" style={{ color: 'var(--text-secondary)' }}>
             {service.description}
           </p>
         </div>
@@ -475,11 +475,11 @@ const PremiumServiceDetailPage = () => {
 
         {/* Pricing / Duration Base */}
         {service?.serviceType === 'minute_base' && (
-          <section className="mt-8 py-4 px-4 bg-orange-50/10 border border-orange-100 rounded-3xl">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               <FiClock className="text-brand" /> Select Massage Duration
             </h2>
-            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+            <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Standard base charge is <span className="font-semibold text-brand">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -495,10 +495,17 @@ const PremiumServiceDetailPage = () => {
                     key={mins}
                     type="button"
                     onClick={() => setSelectedDuration(mins)}
-                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer ${selectedDuration === mins ? 'border-brand bg-orange-50 text-brand font-semibold shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-gray-200'}`}
+                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer ${
+                      selectedDuration === mins ? 'border-brand font-semibold shadow-sm' : ''
+                    }`}
+                    style={
+                      selectedDuration === mins
+                        ? { backgroundColor: 'rgba(255,159,69,0.12)', color: 'var(--primary)', borderColor: 'var(--primary)' }
+                        : { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }
+                    }
                   >
                     <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
-                    <span className="text-xs mt-1 text-gray-400 font-medium">₹{currentDurationPrice.toFixed(0)}</span>
+                    <span className="text-xs mt-1 font-medium" style={{ color: selectedDuration === mins ? 'var(--primary)' : 'var(--text-muted)' }}>₹{currentDurationPrice.toFixed(0)}</span>
                   </button>
                 );
               })}
@@ -510,22 +517,29 @@ const PremiumServiceDetailPage = () => {
         {service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
           <section className="mt-8 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-[17px] font-semibold text-[#1f2937] tracking-tight">Packages</h2>
+              <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Packages</h2>
             </div>
             <div className="space-y-3">
               {service.packages.map((pkg, idx) => (
                 <div
                   key={idx}
                   onClick={() => setSelectedPackage(pkg)}
-                  className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${selectedPackage?.title === pkg.title ? 'border-brand bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                  className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${
+                    selectedPackage?.title === pkg.title ? 'border-brand' : 'border-border-color hover:border-gray-300'
+                  }`}
+                  style={
+                    selectedPackage?.title === pkg.title
+                      ? { backgroundColor: 'rgba(255,159,69,0.1)' }
+                      : { backgroundColor: 'var(--card-bg)' }
+                  }
                 >
                   <div className="flex-1 min-w-0 pr-3">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="font-semibold text-gray-800 text-sm leading-tight">{pkg.title}</h3>
+                      <h3 className="font-semibold text-sm leading-tight" style={{ color: 'var(--text-primary)' }}>{pkg.title}</h3>
                       {pkg.isPopular && <span className="text-[9px] font-semibold uppercase bg-brand text-white px-2.5 py-0.5 rounded-full">Popular</span>}
                     </div>
                     {pkg.duration && <div className="text-[11px] font-semibold text-gray-400 mb-1.5 flex items-center gap-1"><FiClock /> {pkg.duration}</div>}
-                    {pkg.description && <p className="text-[11px] text-gray-500 font-normal leading-relaxed">{pkg.description}</p>}
+                    {pkg.description && <p className="text-[11px] font-normal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
                   </div>
                   
                   <div className="flex flex-col items-end shrink-0 gap-2">
@@ -537,9 +551,14 @@ const PremiumServiceDetailPage = () => {
                       type="button"
                       className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${
                         selectedPackage?.title === pkg.title 
-                          ? 'bg-brand border-brand text-white' 
-                          : 'bg-white border-brand text-brand hover:bg-brand/5'
+                          ? 'text-white' 
+                          : 'hover:bg-brand/5'
                       }`}
+                      style={
+                        selectedPackage?.title === pkg.title 
+                          ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)' }
+                          : { borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'transparent' }
+                      }
                     >
                       {selectedPackage?.title === pkg.title ? 'Selected' : 'Select'}
                     </button>
@@ -556,7 +575,7 @@ const PremiumServiceDetailPage = () => {
                 <span className="p-1.5 bg-orange-50 text-brand rounded-lg">
                   <FiSliders className="w-5 h-5" />
                 </span>
-                <h2 className="text-xl font-normal text-gray-900">Custom Options</h2>
+                <h2 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>Custom Options</h2>
               </div>
 
               <div className="space-y-4">
@@ -564,7 +583,7 @@ const PremiumServiceDetailPage = () => {
                   const value = dynamicAnswers[field.name] || '';
                   return (
                     <div key={field._id || field.name} className="space-y-1">
-                      <label className="block text-xs font-semibold text-gray-700">
+                      <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
                         {field.label} {field.isRequired && <span className="text-red-500">*</span>}
                       </label>
 
@@ -572,7 +591,8 @@ const PremiumServiceDetailPage = () => {
                       {field.fieldType === 'text' && (
                         <input
                           type="text"
-                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
@@ -582,7 +602,8 @@ const PremiumServiceDetailPage = () => {
                       {field.fieldType === 'number' && (
                         <input
                           type="number"
-                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
@@ -591,7 +612,8 @@ const PremiumServiceDetailPage = () => {
 
                       {field.fieldType === 'textarea' && (
                         <textarea
-                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           rows={3}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
@@ -601,14 +623,15 @@ const PremiumServiceDetailPage = () => {
 
                       {field.fieldType === 'dropdown' && (
                         <select
-                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm bg-white focus:ring-1 focus:ring-orange-300 outline-none"
+                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
                         >
-                          <option value="">Select Option</option>
+                          <option value="" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>Select Option</option>
                           {(field.options || []).map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
+                            <option key={opt} value={opt} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>{opt}</option>
                           ))}
                         </select>
                       )}
@@ -616,7 +639,7 @@ const PremiumServiceDetailPage = () => {
                       {field.fieldType === 'radio' && (
                         <div className="flex flex-wrap gap-3 pt-1">
                           {(field.options || []).map(opt => (
-                            <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                            <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                               <input
                                 type="radio"
                                 name={field.name}
@@ -631,7 +654,7 @@ const PremiumServiceDetailPage = () => {
                       )}
 
                       {field.fieldType === 'checkbox' && (
-                        <label className="flex items-center gap-2 py-1 text-sm text-gray-700 cursor-pointer">
+                        <label className="flex items-center gap-2 py-1 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                           <input
                             type="checkbox"
                             checked={!!value}
@@ -644,7 +667,8 @@ const PremiumServiceDetailPage = () => {
                       {field.fieldType === 'date' && (
                         <input
                           type="date"
-                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
@@ -654,7 +678,8 @@ const PremiumServiceDetailPage = () => {
                       {field.fieldType === 'time' && (
                         <input
                           type="time"
-                          className="w-full p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
@@ -677,7 +702,7 @@ const PremiumServiceDetailPage = () => {
                           />
                           {uploadingFiles[field.name] && <p className="text-[10px] text-brand animate-pulse">Uploading file...</p>}
                           {value && (
-                            <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <div className="flex items-center gap-2 p-1.5 rounded-lg border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                               <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
                               <a href={value} target="_blank" rel="noreferrer" className="text-xs text-orange-500 hover:underline truncate flex-1">{value}</a>
                             </div>
@@ -691,7 +716,8 @@ const PremiumServiceDetailPage = () => {
                           <input
                             type="text"
                             placeholder="Latitude, Longitude coordinates"
-                            className="flex-1 p-2.5 border border-gray-300 rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                            className="flex-1 p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                            style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                             value={value}
                             onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                             required={field.isRequired}
@@ -721,29 +747,29 @@ const PremiumServiceDetailPage = () => {
                 switch (block.blockType) {
                   case 'heading_text':
                     return (
-                      <section key={i} className="mt-8 py-4 px-4 bg-gray-50/30 border border-gray-150 rounded-3xl">
-                        <h2 className="text-xl font-semibold text-gray-900">{data.heading}</h2>
-                        <p className="mt-2 text-sm leading-6 text-gray-600 whitespace-pre-line font-normal">{data.text}</p>
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{data.heading}</h2>
+                        <p className="mt-2 text-sm leading-6 whitespace-pre-line font-normal" style={{ color: 'var(--text-secondary)' }}>{data.text}</p>
                       </section>
                     );
                   case 'warranty':
                     return (
-                      <section key={i} className="mt-8 py-4 px-4 bg-orange-50 border border-orange-200 rounded-3xl text-gray-900">
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
                         <div className="flex items-center gap-3">
                           <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">{data.duration} Warranty</p>
-                            <h3 className="text-lg font-semibold">{data.title}</h3>
+                            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h3>
                           </div>
                         </div>
-                        <p className="mt-3 text-sm text-gray-600 leading-relaxed font-normal">{data.description}</p>
+                        <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{data.description}</p>
                       </section>
                     );
                   case 'whats_included':
                     return (
-                      <section key={i} className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
-                        <h2 className="mt-1 text-lg font-semibold text-gray-900">{data.title}</h2>
+                        <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
                         <div className="mt-4 flex flex-wrap gap-2">
                           {(data.items || []).map((item, idx) => (
                             <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
@@ -756,16 +782,16 @@ const PremiumServiceDetailPage = () => {
                   case 'process':
                   case 'how_it_works':
                     return (
-                      <section key={i} className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
-                        <h2 className="mt-1 text-lg font-semibold text-gray-900">{data.title}</h2>
+                        <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
                         <div className="mt-4 space-y-3">
                           {(data.steps || []).map((step, idx) => (
                             <div key={idx} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
                               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{idx + 1}</div>
                               <div>
-                                <div className="font-semibold text-gray-900 text-sm">{step.title}</div>
-                                {step.desc && <p className="text-xs text-gray-500 mt-0.5 leading-relaxed font-normal">{step.desc}</p>}
+                                <div className="font-semibold text-sm" style={{ color: '#111827' }}>{step.title}</div>
+                                {step.desc && <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{step.desc}</p>}
                               </div>
                             </div>
                           ))}
@@ -774,12 +800,12 @@ const PremiumServiceDetailPage = () => {
                     );
                   case 'please_note':
                     return (
-                      <section key={i} className="mt-8 py-4 px-4 bg-amber-50/30 border border-amber-100/50 rounded-3xl">
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'rgba(217,119,6,0.05)', border: '1px solid rgba(217,119,6,0.2)' }}>
                         <div className="flex items-center gap-2">
                           <FiInfo className="text-amber-600 w-5 h-5" />
-                          <h2 className="text-base font-semibold text-amber-900">{data.title}</h2>
+                          <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
                         </div>
-                        <ul className="mt-3 list-inside list-disc space-y-1 text-xs text-amber-800 leading-relaxed font-normal">
+                        <ul className="mt-3 list-inside list-disc space-y-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>
                           {(data.notes || []).map((note, idx) => (
                             <li key={idx}>{note}</li>
                           ))}
@@ -788,13 +814,13 @@ const PremiumServiceDetailPage = () => {
                     );
                   case 'faq':
                     return (
-                      <section key={i} className="mt-8 py-4 px-4 bg-gray-50/20 border border-gray-150 rounded-3xl">
-                        <h2 className="text-base font-semibold text-gray-900">FAQ</h2>
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>FAQ</h2>
                         <div className="mt-4 space-y-3">
                           {(data.faqs || []).map((faq, idx) => (
-                            <div key={idx} className="rounded-2xl border border-gray-100 p-3.5 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.005)]">
-                              <h4 className="font-semibold text-gray-900 text-sm">{faq.question}</h4>
-                              <p className="mt-1 text-xs text-gray-500 leading-relaxed font-normal">{faq.answer}</p>
+                            <div key={idx} className="rounded-2xl border p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.005)]" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                              <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{faq.question}</h4>
+                              <p className="mt-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{faq.answer}</p>
                             </div>
                           ))}
                         </div>
@@ -807,9 +833,9 @@ const PremiumServiceDetailPage = () => {
             </div>
           ) : (
             <>
-              <section className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+              <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
-                <h2 className="mt-1 text-lg font-semibold text-gray-900">What you get</h2>
+                <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>What you get</h2>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {features.length > 0 ? features.map((feature, idx) => (
                     <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
@@ -819,9 +845,9 @@ const PremiumServiceDetailPage = () => {
                 </div>
               </section>
 
-              <section className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl">
+              <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
-                <h2 className="mt-1 text-lg font-semibold text-gray-900">How it works</h2>
+                <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>How it works</h2>
                 <div className="mt-4 space-y-3">
                   {steps.length > 0 ? steps.map((step, index) => {
                     const stepTitle = typeof step === 'object' ? step.title : step;
@@ -830,8 +856,8 @@ const PremiumServiceDetailPage = () => {
                       <div key={index} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{index + 1}</div>
                         <div>
-                          <div className="font-semibold text-gray-900 text-sm">{stepTitle}</div>
-                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed font-normal">{stepDesc}</p>
+                          <div className="font-semibold text-sm" style={{ color: '#111827' }}>{stepTitle}</div>
+                          <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{stepDesc}</p>
                         </div>
                       </div>
                     );
@@ -839,38 +865,38 @@ const PremiumServiceDetailPage = () => {
                 </div>
               </section>
 
-              <section className="mt-8 py-4 px-4 bg-orange-50 border border-orange-100 rounded-3xl text-gray-900">
+              <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-3">
                   <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Professional badge</p>
-                    <h3 className="text-base font-semibold">Verified Professional</h3>
+                    <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Verified Professional</h3>
                   </div>
                 </div>
-                <p className="mt-3 text-sm text-gray-600 leading-relaxed font-normal">Certified experts, clean work, and support-backed service experience.</p>
+                <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>Certified experts, clean work, and support-backed service experience.</p>
               </section>
             </>
           )}
 
 
           <section className="mt-3 py-2 px-1">
-            <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Reviews</p>
-            <h2 className="text-base font-semibold text-[#111827] tracking-tight">User feedback</h2>
+            <p className="text-xs font-normal tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>Reviews</p>
+            <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>User feedback</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-500 md:col-span-3 font-normal">No reviews available yet.</div>
+              <div className="rounded-3xl border border-dashed p-5 text-sm md:col-span-3 font-normal" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>No reviews available yet.</div>
             </div>
           </section>
         </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100/50 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border border-orange-100/60 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div>
-            <div className="text-[11px] font-normal tracking-[0.1em] text-gray-400">
+            <div className="text-[11px] font-normal tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
               Price {service.serviceType === 'minute_base' && `(${selectedDuration} Mins)`}
             </div>
             <PriceTag price={calculatedPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
-          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-5 py-3 text-sm font-normal text-white shadow-lg shadow-orange-100/50 transition-transform hover:scale-[1.02]">
+          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-5 py-3 text-sm font-normal text-white shadow-lg transition-transform hover:scale-[1.02]">
             Add to cart
           </button>
         </div>

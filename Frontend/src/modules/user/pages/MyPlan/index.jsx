@@ -108,14 +108,14 @@ const MyPlan = () => {
           >
             <FiArrowLeft className="w-5 h-5 text-dark-text" />
           </button>
-          <h1 className="text-xl font-bold text-dark-text">Subscription Plans</h1>
+          <h1 className="text-lg font-semibold text-dark-text">Subscription Plans</h1>
         </div>
       </header>
 
       <main className="px-4 py-12 max-w-7xl mx-auto">
         <div className="mb-12 bg-card-bg/40 backdrop-blur-sm p-8 rounded-[2.5rem] border border-border-color shadow-sm">
-          <h2 className="text-4xl font-black text-dark-text mb-3 tracking-tight">Pick Your Membership</h2>
-          <p className="text-secondary-text font-bold text-lg max-w-2xl leading-relaxed">
+          <h2 className="text-2xl font-semibold text-dark-text mb-3 tracking-tight">Pick Your Membership</h2>
+          <p className="text-secondary-text font-normal text-sm max-w-2xl leading-relaxed">
             Choose a plan that fits your home. Higher plans automatically include benefits from the tiers below them.
           </p>
         </div>
@@ -150,10 +150,10 @@ const MyPlan = () => {
                     {/* Top Row: Name and Status */}
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex flex-col">
-                        <h3 className="text-3xl font-black tracking-tight">{plan.name}</h3>
+                        <h3 className="text-2xl font-semibold tracking-tight">{plan.name}</h3>
                         {plan.tagline && (
                           <div className={`mt-2 flex items-center`}>
-                             <span className={`inline-block px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.15em] shadow-sm border ${
+                             <span className={`inline-block px-2.5 py-1 rounded-lg text-[9px] font-medium uppercase tracking-[0.15em] shadow-sm border ${
                                plan.name.toLowerCase().includes('platinum') 
                                ? 'bg-white/10 border-white/20 text-white' 
                                : 'bg-primary-50 border-primary-100 text-primary-600'
@@ -164,7 +164,7 @@ const MyPlan = () => {
                         )}
                       </div>
                       {isCurrent && (
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${style.badge}`}>
+                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-widest ${style.badge}`}>
                           Active
                         </span>
                       )}
@@ -172,8 +172,8 @@ const MyPlan = () => {
 
                     {/* Price and Duration */}
                     <div className="flex items-baseline mb-8">
-                      <span className={`text-4xl font-black ${style.price}`}>₹{plan.price}</span>
-                      <span className="text-sm font-bold opacity-40 ml-2">/ {plan.duration || '1'} Months</span>
+                      <span className={`text-3xl font-semibold ${style.price}`}>₹{plan.price}</span>
+                      <span className="text-xs font-normal opacity-40 ml-2">/ {plan.duration || '1'} Months</span>
                     </div>
 
                     {/* Benefits Section */}
@@ -182,7 +182,7 @@ const MyPlan = () => {
                         {(plan.freeCategories || []).map((cat, idx) => (
                           <li key={`cat-${idx}`} className="flex items-start gap-3">
                             <FiZap className="w-4 h-4 mt-1 shrink-0 text-amber-500 fill-amber-500" />
-                            <span className="text-[14px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Free {cat.title || cat.name}</span>
+                            <span className="text-[13px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Free {cat.title || cat.name}</span>
                           </li>
                         ))}
                         {((() => {
@@ -201,8 +201,8 @@ const MyPlan = () => {
                                 <FiZap className="w-4 h-4 mt-1 shrink-0 text-amber-500 fill-amber-500" />
                                 <div className="flex flex-col gap-0.5">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black uppercase text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">{catTitle}</span>
-                                    <span className="text-[14px] font-extrabold text-rose-600">Free {svc.title || svc.name}</span>
+                                    <span className="text-[10px] font-semibold uppercase text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">{catTitle}</span>
+                                    <span className="text-[13px] font-semibold text-rose-600">Free {svc.title || svc.name}</span>
                                   </div>
                                 </div>
                               </li>
@@ -222,14 +222,14 @@ const MyPlan = () => {
                           return (
                             <div className="mt-6 mb-2 p-3 bg-white/40 rounded-xl border border-dashed border-current opacity-80 flex items-center gap-2">
                               <FiGift className="w-4 h-4" />
-                              <p className="text-[10px] font-black uppercase tracking-wider">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider">
                                 Benefits from <span className="underline decoration-2">{prevName}</span> Tier Included
                               </p>
                             </div>
                           );
                         })()}
 
-                        {/* Grouped Previous Tier Benefit Display */}
+                        {/* Grouped Previous Tier Display */}
                         {(() => {
                           const groups = new Map();
                           (plan.bonusServices || []).forEach(bs => {
@@ -255,10 +255,10 @@ const MyPlan = () => {
                                 </div>
                                 <div className="flex flex-col gap-1">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[10px] font-black uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">{catTitle}</span>
-                                    <span className="text-[13px] font-extrabold text-amber-800">Free {svc.title}</span>
+                                    <span className="text-[10px] font-semibold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">{catTitle}</span>
+                                    <span className="text-[12px] font-semibold text-amber-800">Free {svc.title}</span>
                                   </div>
-                                  <span className="text-[10px] font-black uppercase tracking-[0.1em] text-[#854D0E] opacity-50 ml-1">Inherited from previous plan</span>
+                                  <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#854D0E] opacity-50 ml-1">Inherited from previous plan</span>
                                 </div>
                               </li>
                             );
@@ -276,7 +276,7 @@ const MyPlan = () => {
                           ? 'bg-white/5 border-emerald-400' 
                           : 'bg-card-bg/60 border-primary-500 backdrop-blur-md'
                       }`}>
-                         <p className={`text-[12px] font-bold leading-relaxed ${
+                         <p className={`text-[12px] font-normal leading-relaxed ${
                             plan.name.toLowerCase().includes('platinum') 
                               ? 'text-slate-300' 
                               : 'text-secondary-text'
@@ -290,12 +290,12 @@ const MyPlan = () => {
                         e.stopPropagation();
                         navigate(`/user/my-plan/${plan._id}`);
                       }}
-                      className={`w-full py-4 px-6 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 transform hover:translate-y-[-2px] ${style.button} ${isDisabled && !isCurrent ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                      className={`w-full py-4 px-6 rounded-2xl font-semibold text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 transform hover:translate-y-[-2px] ${style.button} ${isDisabled && !isCurrent ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                     >
                       {buttonText}
                     </button>
                     {isCurrent && (
-                       <p className="text-center text-[10px] font-bold uppercase tracking-widest opacity-30 mt-3">Membership In Good Standing</p>
+                       <p className="text-center text-[10px] font-semibold uppercase tracking-widest opacity-30 mt-3">Membership In Good Standing</p>
                     )}
                   </div>
                 </div>
@@ -307,7 +307,7 @@ const MyPlan = () => {
         {plans.length === 0 && !loading && (
           <div className="text-center py-24 bg-card-bg rounded-3xl border border-dashed border-border-color shadow-inner">
             <FiStar className="h-12 w-12 text-secondary-text mx-auto mb-4" />
-            <p className="text-secondary-text font-bold">No subscription plans found at this time.</p>
+            <p className="text-secondary-text font-normal text-sm">No subscription plans found at this time.</p>
           </div>
         )}
       </main>

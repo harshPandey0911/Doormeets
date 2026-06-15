@@ -15,24 +15,25 @@ const Navbar = ({ locationLabel = 'Select location', cartCount = 0, onSearchClic
         <button
           type="button"
           onClick={onLocationClick}
-          className="hidden md:flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-left shadow-sm hover:border-gray-300 hover:shadow-md transition-all"
+          className="hidden md:flex items-center gap-2 rounded-2xl border px-3 py-2 text-left shadow-sm transition-all"
+          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}
         >
-          <FiMapPin className="text-gray-900" />
+          <FiMapPin style={{ color: 'var(--text-primary)' }} />
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-normal">Location</div>
-            <div className="flex items-center gap-1 text-xs font-normal text-gray-900 truncate max-w-44">
+            <div className="text-[10px] uppercase tracking-[0.2em] font-normal" style={{ color: 'var(--text-muted)' }}>Location</div>
+            <div className="flex items-center gap-1 text-xs font-normal truncate max-w-44" style={{ color: 'var(--text-primary)' }}>
               <span className="truncate">{locationLabel}</span>
-              <FiChevronDown className="text-gray-400" />
+              <FiChevronDown style={{ color: 'var(--text-muted)' }} />
             </div>
           </div>
         </button>
 
         <div className="flex items-center gap-2 shrink-0 ml-auto">
           <NotificationBell />
-          <Link id="nav-cart-icon" to="/user/cart" className="relative rounded-2xl border border-gray-200 bg-white p-3 shadow-sm hover:border-gray-300 hover:shadow-md transition-all">
-            <FiShoppingBag className="text-gray-800" />
+          <Link id="nav-cart-icon" to="/user/cart" className="relative rounded-2xl border p-3 shadow-sm transition-all" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}>
+            <FiShoppingBag style={{ color: 'var(--text-primary)' }} />
             {cartCount > 0 ? (
-              <span className="absolute -right-1 -top-1 min-w-5 h-5 rounded-full bg-black px-1 text-[10px] font-black leading-5 text-white text-center">
+              <span className="absolute -right-1 -top-1 min-w-5 h-5 rounded-full px-1 text-[10px] font-black leading-5 text-white text-center" style={{ backgroundColor: 'var(--primary)' }}>
                 {cartCount}
               </span>
             ) : null}

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiStar, FiX, FiCheck, FiMessageSquare, FiArrowRight } from 'react-icons/fi';
-import { themeColors } from '../../../../theme';
+import { FiStar, FiX, FiMessageSquare, FiArrowRight } from 'react-icons/fi';
 
-const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => {
+const RatingModal = ({ isOpen, onClose, onSubmit, bookingName }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [review, setReview] = useState('');
@@ -24,7 +23,7 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => 
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -36,38 +35,36 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => 
 
         {/* Modal */}
         <motion.div
-          initial={{ y: "100%", opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: "100%", opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border"
+          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
         >
-          {/* Top Bar (Mobile Drag Handle) */}
-          <div className="flex justify-center py-3 sm:hidden">
-            <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
-          </div>
 
           <div className="p-6 sm:p-8">
             {/* Header */}
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h2 className="text-2xl font-black text-gray-900 leading-tight">Rate your experience</h2>
-                <p className="text-gray-500 text-sm mt-1">How was the {bookingName} service?</p>
+                <h2 className="text-xl font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>Rate your experience</h2>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>How was the {bookingName} service?</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
                 disabled={isSubmitting}
+                style={{ color: 'var(--text-muted)' }}
               >
-                <FiX className="w-6 h-6 text-gray-400" />
+                <FiX className="w-5 h-5" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Stars Card */}
-              <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100 shadow-inner">
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Tap to rate</p>
+              <div className="rounded-2xl p-6 text-center border shadow-inner" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>Tap to rate</p>
                 <div className="flex justify-center gap-3">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <motion.button
@@ -80,10 +77,11 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => 
                       className="focus:outline-none"
                     >
                       <FiStar
-                        className={`w-10 h-10 transition-colors duration-200 ${star <= (hover || rating)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300'
-                          }`}
+                        className="w-8 h-8 transition-colors duration-200"
+                        style={{
+                          fill: star <= (hover || rating) ? '#F59E0B' : 'none',
+                          color: star <= (hover || rating) ? '#F59E0B' : 'var(--text-muted)'
+                        }}
                       />
                     </motion.button>
                   ))}
@@ -92,7 +90,8 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => 
                   <motion.p
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 text-sm font-bold text-gray-700"
+                    className="mt-4 text-xs font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
                   >
                     {rating === 5 ? 'Excellent! 🌟' :
                       rating === 4 ? 'Good! 👍' :
@@ -103,9 +102,9 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => 
               </div>
 
               {/* Review Textarea */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-gray-700 font-bold">
-                  <FiMessageSquare className="w-5 h-5 text-teal-600" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  <FiMessageSquare className="w-4 h-4" style={{ color: 'var(--primary)' }} />
                   <span>Share your feedback</span>
                 </div>
                 <div className="relative group">
@@ -113,10 +112,15 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => 
                     value={review}
                     onChange={(e) => setReview(e.target.value)}
                     placeholder="Tell us what you liked or what could be better..."
-                    className="w-full bg-white border-2 border-gray-100 focus:border-teal-500 rounded-2xl p-4 text-sm min-h-[120px] transition-all outline-none resize-none placeholder:text-gray-400"
+                    className="w-full border rounded-2xl p-4 text-xs min-h-[100px] transition-all outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    style={{ 
+                      backgroundColor: 'var(--card-bg)', 
+                      borderColor: 'var(--border)', 
+                      color: 'var(--text-primary)' 
+                    }}
                     disabled={isSubmitting}
                   />
-                  <div className="absolute bottom-3 right-3 text-[10px] font-bold text-gray-300 uppercase letter-spacing-1">
+                  <div className="absolute bottom-3 right-3 text-[9px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                     {review.length} characters
                   </div>
                 </div>
@@ -126,27 +130,26 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName, workerName }) => 
               <button
                 onClick={handleSubmit}
                 disabled={rating === 0 || isSubmitting}
-                className={`w-full py-4 rounded-2xl font-black text-white text-lg flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 disabled:opacity-50 disabled:grayscale disabled:scale-100`}
-                style={{ background: rating > 0 ? themeColors.brand.gradient : '#CBD5E1' }}
+                className="w-full py-3.5 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:grayscale disabled:scale-100"
+                style={{ 
+                  backgroundColor: rating > 0 ? 'var(--primary)' : 'var(--border)',
+                  color: rating > 0 ? '#FFFFFF' : 'var(--text-muted)'
+                }}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     <span>Submitting...</span>
                   </div>
                 ) : (
                   <>
                     <span>Submit Review</span>
-                    <FiArrowRight className="w-5 h-5" />
+                    <FiArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
             </div>
           </div>
-
-          {/* Decorative Background */}
-          <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-teal-50 rounded-full blur-2xl opacity-50 pointer-events-none" />
-          <div className="absolute -top-12 -left-12 w-32 h-32 bg-yellow-50 rounded-full blur-2xl opacity-50 pointer-events-none" />
         </motion.div>
       </div>
     </AnimatePresence>

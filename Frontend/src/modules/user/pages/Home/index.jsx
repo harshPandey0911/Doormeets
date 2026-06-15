@@ -674,7 +674,11 @@ const Home = () => {
               {homeContent?.isCategoriesVisible !== false && (
                 <>
                   {/* Service Categories */}
-                  <motion.section variants={itemVariants} className="relative overflow-hidden">
+                  <motion.section 
+                    variants={itemVariants} 
+                    className="relative overflow-hidden py-2"
+                    style={{ backgroundColor: 'var(--background)' }}
+                  >
                     <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent dark:hidden pointer-events-none -z-10" />
                     <ServiceCategories
                       categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
@@ -683,10 +687,14 @@ const Home = () => {
                       subtitle="Premium Home Services"
                     />
                   </motion.section>
-
+ 
                   {/* Products & Materials Section */}
                   {categories.some(c => c.categoryType === 'product') && (
-                    <motion.section variants={itemVariants} className="relative overflow-hidden">
+                    <motion.section 
+                      variants={itemVariants} 
+                      className="relative overflow-hidden py-2"
+                      style={{ backgroundColor: 'var(--background)' }}
+                    >
                       <ServiceCategories
                         categories={categories.filter(c => c.categoryType === 'product' && c.status !== 'coming_soon')}
                         onCategoryClick={handleCategoryClick}
@@ -695,7 +703,7 @@ const Home = () => {
                       />
                     </motion.section>
                   )}
-
+ 
                 </>
               )}
 

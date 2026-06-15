@@ -60,9 +60,10 @@ const TimeSlotModal = ({
       <div className="fixed bottom-0 left-0 right-0 z-50">
         {/* Modal */}
         <div
-          className={`bg-white rounded-t-3xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'
+          className={`rounded-t-3xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'
             }`}
           style={{
+            backgroundColor: 'var(--card-bg)',
             maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
@@ -71,22 +72,24 @@ const TimeSlotModal = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10 shrink-0">
+          <div className="sticky top-0 border-b px-4 py-3 z-10 shrink-0" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleClose}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-1 rounded-full transition-colors"
+                  style={{ color: 'var(--text-primary)' }}
                 >
-                  <FiArrowLeft className="w-5 h-5 text-black" />
+                  <FiArrowLeft className="w-5 h-5" />
                 </button>
-                <h1 className="text-xl font-normal text-black">Select Time Slot</h1>
+                <h1 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>Select Time Slot</h1>
               </div>
               <button
                 onClick={handleClose}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 rounded-full transition-colors"
+                style={{ color: 'var(--text-primary)' }}
               >
-                <FiX className="w-5 h-5 text-black" />
+                <FiX className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -99,8 +102,8 @@ const TimeSlotModal = ({
               overscrollBehavior: 'contain'
             }}
           >
-            <h2 className="text-xl font-normal text-black mb-1">When should the professional arrive?</h2>
-            <p className="text-sm text-gray-600 mb-4">Service will take approx. 45 mins</p>
+            <h2 className="text-xl font-normal mb-1" style={{ color: 'var(--text-primary)' }}>When should the professional arrive?</h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>Service will take approx. 45 mins</p>
 
             {/* Date Selection */}
             <div className="flex flex-wrap gap-2 pb-2 mb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -117,9 +120,9 @@ const TimeSlotModal = ({
                       borderColor: themeColors.button,
                       color: themeColors.button
                     } : {
-                      backgroundColor: 'white',
-                      borderColor: '#e5e7eb',
-                      color: '#374151'
+                      backgroundColor: 'var(--card-bg)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-primary)'
                     }}
                   >
                     <div className="flex flex-col items-center">
@@ -133,19 +136,19 @@ const TimeSlotModal = ({
 
             {/* Payment Information */}
             <div className="flex items-center gap-2 mb-4 px-2">
-              <div className="w-4 h-4 rounded border flex items-center justify-center shrink-0" style={{ borderColor: '#9ca3af' }}>
-                <div className="w-2 h-2 rounded" style={{ backgroundColor: '#6b7280' }}></div>
+              <div className="w-4 h-4 rounded border flex items-center justify-center shrink-0" style={{ borderColor: 'var(--border)' }}>
+                <div className="w-2 h-2 rounded" style={{ backgroundColor: 'var(--text-muted)' }}></div>
               </div>
-              <p className="text-xs text-gray-600">Online payment only for selected date</p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Online payment only for selected date</p>
             </div>
 
             {/* Time Selection */}
             <div className="mb-4">
-              <h3 className="text-base font-normal text-black mb-3">Select start time of service</h3>
+              <h3 className="text-base font-normal mb-3" style={{ color: 'var(--text-primary)' }}>Select start time of service</h3>
               {getTimeSlots().length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                  <p className="text-gray-500 font-normal mb-1">No time slots available</p>
-                  <p className="text-sm text-gray-400">Please select a different date</p>
+                <div className="text-center py-8 rounded-xl border-2 border-dashed" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                  <p className="font-normal mb-1" style={{ color: 'var(--text-secondary)' }}>No time slots available</p>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Please select a different date</p>
                 </div>
               ) : (
                 <div
@@ -169,19 +172,9 @@ const TimeSlotModal = ({
                           borderColor: themeColors.button,
                           color: themeColors.button
                         } : {
-                          backgroundColor: 'white',
-                          borderColor: '#e5e7eb',
-                          color: '#374151'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) {
-                            e.target.style.backgroundColor = '#f9fafb';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) {
-                            e.target.style.backgroundColor = 'white';
-                          }
+                          backgroundColor: 'var(--card-bg)',
+                          borderColor: 'var(--border)',
+                          color: 'var(--text-primary)'
                         }}
                       >
                         {slot.display}
@@ -201,19 +194,9 @@ const TimeSlotModal = ({
                 backgroundColor: themeColors.button,
                 color: 'white'
               } : {
-                backgroundColor: '#e5e7eb',
-                color: '#9ca3af',
+                backgroundColor: 'var(--border)',
+                color: 'var(--text-muted)',
                 cursor: 'not-allowed'
-              }}
-              onMouseEnter={(e) => {
-                if (selectedDate && selectedTime) {
-                  e.target.style.backgroundColor = themeColors.button;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedDate && selectedTime) {
-                  e.target.style.backgroundColor = themeColors.button;
-                }
               }}
             >
               Proceed to checkout
