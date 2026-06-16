@@ -1555,19 +1555,22 @@ const Checkout = () => {
                   </div>
                   {!item.isPlan && (
                     <div className="flex flex-col items-end gap-2">
-                      <div className="flex items-center gap-1 rounded-lg p-0.5 border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                      <div
+                        className="flex items-center rounded-xl border overflow-hidden"
+                        style={{ borderColor: 'var(--primary)' }}
+                      >
                         <button
                           onClick={() => handleQuantityChange(item._id, -1)}
-                          className="p-1.5 rounded-md transition-all shadow-sm"
-                          style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                          className="w-8 h-8 flex items-center justify-center transition-all active:scale-90"
+                          style={{ color: 'var(--primary)' }}
                         >
                           <FiMinus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="w-6 text-center text-sm font-normal" style={{ color: 'var(--text-primary)' }}>{item.serviceCount || 1}</span>
+                        <span className="w-8 text-center text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{item.serviceCount || 1}</span>
                         <button
                           onClick={() => handleQuantityChange(item._id, 1)}
-                          className="p-1.5 rounded-md transition-all shadow-sm"
-                          style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                          className="w-8 h-8 flex items-center justify-center transition-all active:scale-90"
+                          style={{ color: 'var(--primary)' }}
                         >
                           <FiPlus className="w-3.5 h-3.5" />
                         </button>
@@ -1577,7 +1580,8 @@ const Checkout = () => {
                   {!item.isPlan && (
                     <button
                       onClick={() => handleRemoveItem(item._id)}
-                      className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-500 rounded-full transition-colors"
+                      className="absolute top-3 right-3 p-1.5 rounded-full transition-colors"
+                      style={{ color: 'var(--primary)' }}
                     >
                       <FiTrash2 className="w-4 h-4" />
                     </button>
@@ -1860,7 +1864,8 @@ const Checkout = () => {
                   type="button"
                   onClick={handleApplyPromo}
                   disabled={promoLoading || !promoCode.trim()}
-                  className="px-5 py-2.5 bg-black hover:bg-slate-800 disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl text-sm font-bold shadow-xs hover:shadow-md transition-all shrink-0"
+                  className="px-5 py-2.5 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all shrink-0 active:scale-95"
+                  style={{ backgroundColor: 'var(--primary)' }}
                 >
                   {promoLoading ? 'Applying...' : 'Apply'}
                 </button>

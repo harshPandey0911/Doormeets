@@ -430,7 +430,7 @@ const Home = () => {
       setComingSoonCategory(category);
       return;
     }
-    navigate('/user/categories', { state: { category } });
+    navigate(`/user/category/${category.slug || category.id}`, { state: { category } });
   };
 
   const handlePromoClick = (promo) => {

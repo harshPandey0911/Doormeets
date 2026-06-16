@@ -1,5 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+
+@variant dark (&:where(.dark, [data-theme="dark"]));
 
 
 /* ============================================
@@ -77,6 +79,11 @@
   --color-orange-700: var(--primary-hover);
   --color-orange-800: var(--primary-hover);
   --color-orange-900: var(--primary-hover);
+  /* Map font weights to look identical in boldness to Poppins */
+  --font-weight-medium:   600;
+  --font-weight-semibold: 700;
+  --font-weight-bold:     800;
+  --font-weight-black:    900;
 }
 
 /* Slide up animation for modal */
@@ -311,12 +318,21 @@ body {
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   max-width: 100%;
   color: var(--text-primary);
+}
+
+/* Force Inter on all elements including vendor/worker/admin panels */
+*, *::before, *::after {
+  font-family: inherit;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, button, input, textarea, label, a {
+  font-family: 'Inter', sans-serif;
 }
 
 #root,

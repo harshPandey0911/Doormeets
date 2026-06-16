@@ -1,18 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
-import { FiFilter, FiSearch, FiShoppingBag } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiArrowLeft, FiShoppingBag, FiPlus, FiMinus, FiPlay, FiStar } from 'react-icons/fi';
 import Navbar from '../../components/premium/Navbar';
 import SearchBar from '../../components/premium/SearchBar';
 import SidebarCategory from '../../components/premium/SidebarCategory';
-import BrandCard from '../../components/premium/BrandCard';
 import ServiceCard from '../../components/premium/ServiceCard';
 import BottomCheckoutBar from '../../components/premium/BottomCheckoutBar';
 import { buildCartItemData, toAssetUrl } from '../../components/premium/cartUtils';
 import { useCity } from '../../../../context/CityContext';
 import { useCart } from '../../../../context/CartContext';
 import { publicCatalogService } from '../../../../services/catalogService';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const getServiceDummyImage = (title) => {
   const t = (title || '').toLowerCase();
@@ -46,46 +46,38 @@ const getServiceDummyImage = (title) => {
   return 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=300&auto=format&fit=crop&q=80';
 };
 
+// Pastel card backgrounds for subcategories
+const pastelPalettes = [
+  { bg: '#FEFBE8', border: '#FEF08A', text: '#854D0E', darkBg: '#3E3A1A', darkBorder: '#635926', darkText: '#FEF08A' }, // Yellow
+  { bg: '#FAE8FF', border: '#F5D0FE', text: '#86198F', darkBg: '#3A1F41', darkBorder: '#5F2F6A', darkText: '#F5D0FE' }, // Purple
+  { bg: '#FFE4E6', border: '#FECDD3', text: '#9F1239', darkBg: '#451D24', darkBorder: '#70313C', darkText: '#FECDD3' }, // Rose
+  { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534', darkBg: '#1C3D28', darkBorder: '#2E5E3F', darkText: '#BBF7D0' }, // Green
+  { bg: '#E0F2FE', border: '#BAE6FD', text: '#075985', darkBg: '#1A334B', darkBorder: '#285375', darkText: '#BAE6FD' }, // Blue
+  { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', darkBg: '#21254D', darkBorder: '#343A7C', darkText: '#C7D2FE' }  // Indigo
+];
+
 const PremiumCategoryPage = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
   const location = useLocation();
   const { currentCity } = useCity();
+  const { isDark } = useTheme();
   const { cartCount, cartItems, addToCart, updateItem, removeItem } = useCart();
 
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(location.state?.category || null);
   const [subCategories, setSubCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [services, setServices] = useState([]);
-  const [activeSubCategory, setActiveSubCategory] = useState(location.state?.subCategory || null);
-  const [activeBrand, setActiveBrand] = useState(null);
 
-  // Loading states to prevent flickering / blinking of empty placeholders
-  const [subCategoriesLoading, setSubCategoriesLoading] = useState(true);
-  const [brandsLoading, setBrandsLoading] = useState(true);
-  const [servicesLoading, setServicesLoading] = useState(true);
-
-  console.log('--- RENDERING PremiumCategoryPage ---', {
-    slug,
-    currentCityId: currentCity?._id,
-    categoriesCount: categories.length,
-    activeCategory: activeCategory?.title,
-    subCategoriesCount: subCategories.length,
-    activeSubCategory: activeSubCategory?.title,
-    brandsCount: brands.length,
-    activeBrand: activeBrand?.title,
-    servicesCount: services.length
-  });
+  // Loading states
+  const [loading, setLoading] = useState(true);
 
   const cityId = currentCity?._id || currentCity?.id;
   const activeCategoryId = activeCategory?.id || activeCategory?._id;
-  const activeSubCategoryId = activeSubCategory?.id || activeSubCategory?._id;
-  const activeBrandId = activeBrand?.id || activeBrand?._id;
 
+  // Load parent categories
   useEffect(() => {
-    console.log('useEffect [loadCategory] triggered', { cityId, slug });
     const loadCategory = async () => {
       try {
         const homeRes = await publicCatalogService.getHomeData(cityId);
@@ -113,131 +105,26 @@ const PremiumCategoryPage = () => {
     loadCategory();
   }, [cityId, slug]);
 
+  // Load Subcategories and Services in Category
   useEffect(() => {
     if (!activeCategoryId) return;
 
     const loadCategoryData = async () => {
       try {
-        setSubCategoriesLoading(true);
-        setBrandsLoading(false);
-        setServicesLoading(false);
-        setBrands([]);
-        setServices([]);
-        setActiveBrand(null);
-
+        setLoading(true);
+        // Load subcategories
         const subRes = await publicCatalogService.getSubCategories({ categoryId: activeCategoryId });
+        const subs = subRes?.success && Array.isArray(subRes.subCategories) ? subRes.subCategories : [];
+        setSubCategories(subs);
 
-        if (subRes?.success && Array.isArray(subRes.subCategories)) {
-          setSubCategories(subRes.subCategories);
-          setActiveSubCategory(prev => {
-            if (prev && subRes.subCategories.some(sub => (sub.id || sub._id) === (prev.id || prev._id))) {
-              return prev;
-            }
-            const isInitialCategory = location.state?.category && String(location.state.category.id || location.state.category._id) === String(activeCategoryId);
-            return (isInitialCategory ? location.state?.subCategory : null) || subRes.subCategories[0] || null;
-          });
-        } else {
-          setSubCategories([]);
-          setActiveSubCategory(null);
-        }
-      } catch (err) {
-        console.error("Error loading subcategories:", err);
-      } finally {
-        setSubCategoriesLoading(false);
-      }
-    };
-
-    loadCategoryData();
-  }, [activeCategoryId, cityId]);
-
-  // Fetch brands when subcategory changes
-  useEffect(() => {
-    if (!activeCategoryId) return;
-
-    if (!activeSubCategoryId) {
-      setBrands([]);
-      setActiveBrand(null);
-      setServices([]);
-      return;
-    }
-
-    const loadBrandsData = async () => {
-      try {
-        setBrandsLoading(true);
-        setServices([]);
-
-        const brandRes = await publicCatalogService.getBrands({
-          categoryId: activeCategoryId,
-          subCategoryId: activeSubCategoryId,
-          cityId
-        });
-
-        const allOption = {
-          id: 'all',
-          title: 'All',
-          slug: 'all',
-          rating: 4.8,
-          subtitle: 'All Brands',
-          image: ''
-        };
-
-        if (brandRes?.success && Array.isArray(brandRes.brands)) {
-          const filtered = brandRes.brands.filter((brand) => {
-            const catIdStr = String(activeCategoryId);
-            if (brand.categoryId && String(brand.categoryId) === catIdStr) return true;
-            if (brand.category && (String(brand.category._id || brand.category.id) === catIdStr)) return true;
-            if (Array.isArray(brand.categoryIds) && brand.categoryIds.map(String).includes(catIdStr)) return true;
-            return false;
-          });
-          const mappedBrands = filtered.map((brand) => ({
-            id: brand.id || brand._id,
-            title: brand.title,
-            slug: brand.slug || brand.title?.toLowerCase().replace(/\s+/g, '-'),
-            rating: brand.rating || 4.8,
-            subtitle: brand.type === 'service' ? 'Services' : 'Parts',
-            image: toAssetUrl(brand.iconUrl || brand.icon)
-          }));
-          setBrands([allOption, ...mappedBrands]);
-          setActiveBrand(allOption);
-        } else {
-          setBrands([allOption]);
-          setActiveBrand(allOption);
-        }
-      } catch (err) {
-        console.error("Error loading brands:", err);
-      } finally {
-        setBrandsLoading(false);
-      }
-    };
-
-    loadBrandsData();
-  }, [activeCategoryId, activeSubCategoryId, cityId]);
-
-  // Fetch services when brand changes
-  useEffect(() => {
-    if (!activeCategoryId || !activeSubCategoryId) return;
-
-    const refetchServices = async () => {
-      try {
-        setServicesLoading(true);
+        // Load all services inside category
         const serviceRes = await publicCatalogService.getServices({
           categoryId: activeCategoryId,
-          subCategoryId: activeSubCategoryId,
-          brandId: (activeBrandId && activeBrandId !== 'all') ? activeBrandId : '',
           cityId
         });
 
         if (serviceRes?.success && Array.isArray(serviceRes.services)) {
-          let rawServices = serviceRes.services;
-          const subIdStr = String(activeSubCategoryId);
-          rawServices = rawServices.filter(s => {
-            if (!s) return false;
-            if (s.subCategoryId && String(s.subCategoryId) === subIdStr) return true;
-            if (s.subCategory && String(s.subCategory._id || s.subCategory.id) === subIdStr) return true;
-            return false;
-          });
-
-          setServices(rawServices.map((service, index) => ({
+          const mappedServices = serviceRes.services.map((service, index) => ({
             id: service.id || service._id || `service-${index}`,
             title: service.title,
             description: service.description || 'Premium service with trusted experts.',
@@ -248,20 +135,22 @@ const PremiumCategoryPage = () => {
             originalPrice: service.basePrice || null,
             features: service.features || [],
             brandId: service.brandId,
+            subCategoryId: service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id)),
             vendorId: service.vendorId
-          })));
+          }));
+          setServices(mappedServices);
         } else {
           setServices([]);
         }
-      } catch (error) {
-        console.error("Error refetching services:", error);
+      } catch (err) {
+        console.error("Error loading category details:", err);
       } finally {
-        setServicesLoading(false);
+        setLoading(false);
       }
     };
 
-    refetchServices();
-  }, [activeCategoryId, activeSubCategoryId, activeBrandId, cityId]);
+    loadCategoryData();
+  }, [activeCategoryId, cityId]);
 
   const getCartItemServiceId = (item) => {
     if (!item) return null;
@@ -271,6 +160,7 @@ const PremiumCategoryPage = () => {
     return item.serviceId || item.id || item._id;
   };
 
+  // Build quantities map
   const quantities = useMemo(() => {
     const map = {};
     cartItems.forEach((item) => {
@@ -280,45 +170,65 @@ const PremiumCategoryPage = () => {
     return map;
   }, [cartItems]);
 
-  const filteredServices = useMemo(() => {
-    return services.filter((service) => {
-      const value = search.trim().toLowerCase();
-      if (!value) return true;
-      return service.title.toLowerCase().includes(value) || service.description.toLowerCase().includes(value);
-    });
-  }, [search, services]);
-
-  const [flyingItems, setFlyingItems] = useState([]);
-
-  const handleAdd = async (service, event) => {
-    // Capture the button coordinates synchronously before the async await call clears the event
-    const buttonRect = event?.currentTarget?.getBoundingClientRect();
-
-    const response = await addToCart(buildCartItemData({ service, category: activeCategory, brand: activeBrand }));
-    
-    if (response?.success && buttonRect) {
-      const cartIcon = document.getElementById('nav-cart-icon');
-      
-      if (cartIcon) {
-        const cartRect = cartIcon.getBoundingClientRect();
-        const id = Date.now() + Math.random();
-        
-        const newItem = {
-          id,
-          startX: buttonRect.left + buttonRect.width / 2,
-          startY: buttonRect.top + buttonRect.height / 2,
-          endX: cartRect.left + cartRect.width / 2,
-          endY: cartRect.top + cartRect.height / 2,
-          image: service.image
-        };
-        
-        setFlyingItems((prev) => [...prev, newItem]);
-        
-        setTimeout(() => {
-          setFlyingItems((prev) => prev.filter((item) => item.id !== id));
-        }, 800);
+  // Group services by Subcategory ID
+  const groupedServices = useMemo(() => {
+    const groups = {};
+    services.forEach((service) => {
+      if (search.trim()) {
+        const matches = service.title.toLowerCase().includes(search.toLowerCase()) || 
+                        service.description.toLowerCase().includes(search.toLowerCase());
+        if (!matches) return;
       }
+
+      const subId = service.subCategoryId || 'other';
+      if (!groups[subId]) groups[subId] = [];
+      groups[subId].push(service);
+    });
+    return groups;
+  }, [services, search]);
+
+  // Generate dynamic package bundles for preview
+  const generatedPackages = useMemo(() => {
+    if (services.length < 2) return [];
+    // Bundle top services into packages
+    const topServices = services.slice(0, 3);
+    const totalPrice = topServices.reduce((sum, s) => sum + s.price, 0);
+    const bundlePrice = Math.round(totalPrice * 0.85); // 15% off
+    return [
+      {
+        id: 'pkg-combo-1',
+        title: topServices.map(s => s.title.split(' ')[0]).join(' + ') + ' Bundle',
+        rating: 4.8,
+        reviews: '1.2k',
+        price: bundlePrice,
+        originalPrice: totalPrice,
+        discount: '10% off *',
+        services: topServices,
+        description: `Enjoy a complete premium combo containing ${topServices.map(s => s.title.toLowerCase()).join(', ')}.`
+      }
+    ];
+  }, [services]);
+
+  // Scroll to subcategory helper
+  const handleScrollToSub = (subId) => {
+    const element = document.getElementById(`subcat-sec-${subId}`);
+    if (element) {
+      const offset = 80;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
+  };
+
+  const handleAdd = async (service) => {
+    await addToCart(buildCartItemData({ service, category: activeCategory }));
+    toast.success(`${service.title} added to cart!`);
   };
 
   const handleIncrease = async (service) => {
@@ -337,151 +247,196 @@ const PremiumCategoryPage = () => {
     }
   };
 
+  const cartTotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + (item.price * (item.serviceCount || 1)), 0);
+  }, [cartItems]);
+
+  const cartOriginalTotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + ((item.originalPrice || item.price) * (item.serviceCount || 1)), 0);
+  }, [cartItems]);
+
   return (
-    <div className="min-h-screen bg-light-bg pb-28 w-full overflow-x-hidden">
-      <Navbar locationLabel={currentCity?.name || 'Select location'} cartCount={cartCount} onSearchClick={() => {}} onLocationClick={() => navigate('/user/home')} />
+    <div className="min-h-screen pb-40 w-full bg-[var(--background)] text-[var(--text-primary)] transition-colors duration-300">
+      {/* Dynamic Header / Cover Banner */}
+      <div className="relative w-full h-[260px] md:h-[350px] overflow-hidden">
+        {/* Cover Image */}
+        <img
+          src={activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
+          alt={activeCategory?.title}
+          className="w-full h-full object-cover filter brightness-[0.85] dark:brightness-75 transition-all duration-300"
+        />
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 pt-[76px] pb-4 lg:grid-cols-[280px_1fr] lg:px-6 w-full">
-        <aside className="hidden lg:block">
-          <div className="sticky top-24 space-y-3 rounded-[28px] border border-border-color bg-card-bg p-4 shadow-[0_18px_60px_rgba(17,24,39,0.06)]">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-gray-400">Categories</p>
-              <h2 className="mt-1 text-xl font-black text-dark-text">Choose a service</h2>
-            </div>
-            <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-              {categories.map((category) => (
-                <SidebarCategory
-                  key={category.id || category.slug}
-                  category={category}
-                  active={(activeCategory?.id || activeCategory?.slug) === (category.id || category.slug)}
-                  onClick={() => {
-                    setActiveCategory(category);
-                    navigate(`/user/category/${category.slug || category.id}`);
-                  }}
-                />
-              ))}
-            </div>
-            {categories.length === 0 ? <div className="rounded-[20px] border border-dashed border-border-color bg-card-bg p-4 text-sm text-secondary-text">No categories available.</div> : null}
+        {/* Diagonal Gradient Cover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+
+        {/* Float Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-4 left-4 z-20 p-2.5 rounded-full bg-white/90 dark:bg-zinc-900/90 text-slate-900 dark:text-zinc-100 shadow-md hover:scale-105 active:scale-95 transition-all"
+        >
+          <FiArrowLeft className="w-5 h-5" />
+        </button>
+
+
+        {/* Carousel Indicator Dots */}
+        <div className="absolute bottom-4 left-4 flex gap-1.5 z-10">
+          <span className="w-6 h-1 rounded-full bg-white" />
+          <span className="w-1.5 h-1 rounded-full bg-white/40" />
+          <span className="w-1.5 h-1 rounded-full bg-white/40" />
+          <span className="w-1.5 h-1 rounded-full bg-white/40" />
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <main className="max-w-4xl mx-auto px-4 md:px-6 mt-6 relative z-10">
+        
+        {/* Category Description block in normal flow */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            {activeCategory?.title}
+          </h1>
+
+          <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-amber-500">
+            <FiStar className="fill-amber-500 w-4 h-4" />
+            <span>4.5</span>
+            <span style={{ color: 'var(--border)' }}>|</span>
+            <span style={{ color: 'var(--text-secondary)' }}>1.2k reviews</span>
           </div>
-        </aside>
 
-        <section className="space-y-5 min-w-0 w-full max-w-full overflow-hidden">
-          <div className="lg:hidden space-y-3 w-full max-w-full overflow-hidden">
-            <SearchBar value={search} onChange={setSearch} placeholder="Search this category" />
-            {activeCategory?.status !== 'coming_soon' && !subCategoriesLoading && !subCategories.length ? <div className="mt-3 rounded-[20px] border border-dashed border-border-color bg-card-bg p-4 text-sm text-secondary-text">No subcategories available.</div> : null}
+          <p className="mt-3 text-xs md:text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>
+            Our {activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages tailored for you.
+          </p>
+        </div>
+
+        {/* Subcategories Grid Cards */}
+        {subCategories.length > 0 && (
+          <div className="mb-8">
+            <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
+              {subCategories.map((sub, index) => {
+                const color = pastelPalettes[index % pastelPalettes.length];
+                const subImage = toAssetUrl(sub.iconUrl) || 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
+                return (
+                  <button
+                    key={sub.id || sub._id}
+                    onClick={() => handleScrollToSub(sub.id || sub._id)}
+                    className="relative flex flex-col items-center justify-center rounded-2xl border transition-all hover:scale-[1.02] active:scale-95 text-center aspect-square shadow-sm overflow-hidden p-0"
+                    style={{
+                      backgroundColor: isDark ? color.darkBg : color.bg,
+                      borderColor: isDark ? color.darkBorder : color.border,
+                    }}
+                  >
+                    <div className="absolute inset-0 w-full h-full">
+                      <img
+                        src={subImage}
+                        alt={sub.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                    </div>
+                    <span 
+                      className="absolute bottom-2 left-0 right-0 px-2 text-[10px] md:text-xs font-black tracking-tight truncate text-white z-10"
+                    >
+                      {sub.title}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+        )}
 
-          {activeCategory?.status === 'coming_soon' ? (
-            <div className="flex flex-col items-center justify-center p-5 text-center rounded-[30px] border border-border-color bg-card-bg shadow-[0_12px_40px_rgba(255,159,69,0.06)] py-8 max-w-md mx-auto">
-              <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+        {/* Packages Section */}
+        {generatedPackages.length > 0 && (
+          <div className="mb-8 p-5 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-3xl shadow-sm">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
+              <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
+              <span>10% off *</span>
+            </div>
+            
+            <div className="flex justify-between items-start mt-3">
+              <div>
+                <h3 className="text-[15px] font-bold text-slate-800 dark:text-pink-200">
+                  {generatedPackages[0].title}
+                </h3>
+                <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">
+                  {generatedPackages[0].description}
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-base font-bold text-slate-900 dark:text-white">${generatedPackages[0].price}</span>
+                  <span className="text-xs text-slate-400 line-through">${generatedPackages[0].originalPrice}</span>
+                </div>
               </div>
-              
-              <h1 className="text-2xl font-extrabold text-dark-text mb-1.5">
-                {activeCategory.title}
-              </h1>
-              
-              <div className="inline-block px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4">
-                Coming Soon
-              </div>
-              
-              <p className="text-sm text-gray-500 max-w-xs mb-5 font-medium leading-relaxed">
-                We are launching this category soon in your area. Click below to show your interest, and we'll notify you!
-              </p>
               
               <button
-                disabled={activeCategory.isInterested}
-                onClick={async () => {
-                  try {
-                    const res = await publicCatalogService.registerInterest(activeCategory.id || activeCategory._id);
-                    if (res.success) {
-                      toast.success(res.message);
-                      setCategories(prev => prev.map(c => 
-                        c.id === activeCategory.id 
-                          ? { ...c, isInterested: true, interestedCount: (c.interestedCount || 0) + 1 }
-                          : c
-                      ));
-                      setActiveCategory(prev => ({ ...prev, isInterested: true }));
-                    } else {
-                      toast.error(res.message || "Failed to register interest");
-                    }
-                  } catch (err) {
-                    console.error("Interest registration failed:", err);
-                    const msg = err.response?.data?.message || "Authentication required. Please login first.";
-                    toast.error(msg);
-                  }
+                onClick={() => {
+                  generatedPackages[0].services.forEach(s => handleAdd(s));
                 }}
-                className={`w-full max-w-xs py-3 px-5 rounded-2xl font-bold shadow-md transition-all ${
-                  activeCategory.isInterested 
-                    ? 'bg-green-500 text-white cursor-default shadow-none'
-                    : 'bg-[#B33A35] text-white hover:bg-[#9E2E2A] hover:shadow-lg'
-                }`}
-                style={{ backgroundColor: activeCategory.isInterested ? '#22c55e' : '#B33A35' }}
+                className="px-5 py-2.5 rounded-2xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
               >
-                {activeCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
+                Add Combo
               </button>
             </div>
-          ) : (
-            <>
-              <div className="hidden items-center gap-3 rounded-[28px] border border-border-color bg-card-bg px-4 py-3 shadow-sm lg:flex">
-            <SearchBar value={search} onChange={setSearch} placeholder="Search services inside this category" />
-            <button type="button" className="rounded-2xl border border-border-color bg-card-bg px-4 py-3 text-sm font-bold text-secondary-text shadow-sm transition hover:border-orange-200 hover:bg-orange-50/10 cursor-pointer">
-              <FiFilter />
-              Filter
-            </button>
-            <button type="button" onClick={() => navigate('/user/cart')} className="rounded-2xl border border-border-color bg-card-bg px-4 py-3 text-sm font-bold text-secondary-text shadow-sm transition hover:border-orange-200 hover:bg-orange-50/10 cursor-pointer">
-              <FiShoppingBag />
-              Cart
-            </button>
           </div>
-          <div className="space-y-6 px-1">
+        )}
 
+        {/* Search inside Category */}
+        <div className="mb-6">
+          <SearchBar value={search} onChange={setSearch} placeholder={`Search inside ${activeCategory?.title || 'category'}`} />
+        </div>
 
-
-            {/* Brands Subsection */}
-            {activeSubCategory ? (
-              <div>
-                <div className="mb-3 flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-normal tracking-[0.1em] text-gray-400">Brands</p>
-                    <h3 className="text-base font-bold text-dark-text tracking-tight">Top options in this category</h3>
-                  </div>
+        {/* Grouped Services List */}
+        {loading ? (
+          <div className="space-y-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="animate-pulse space-y-4">
+                <div className="h-6 w-36 bg-slate-200 dark:bg-zinc-800 rounded-md" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2].map((j) => (
+                    <div key={j} className="h-32 bg-slate-100 dark:bg-zinc-900 rounded-3xl" />
+                  ))}
                 </div>
-                {brandsLoading ? (
-                  <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-28 w-28 shrink-0 animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-10">
+            {subCategories.map((sub) => {
+              const subServices = groupedServices[sub.id || sub._id] || [];
+              if (subServices.length === 0) return null;
+
+              return (
+                <div key={sub.id || sub._id} id={`subcat-sec-${sub.id || sub._id}`} className="space-y-4 scroll-mt-20">
+                  <h3 className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {sub.title}
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {subServices.map((service) => (
+                      <div key={service.id} className="relative group">
+                        <ServiceCard
+                          service={service}
+                          quantity={quantities[service.id] || 0}
+                          onAdd={handleAdd}
+                          onIncrease={handleIncrease}
+                          onDecrease={handleDecrease}
+                          onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
+                        />
+                      </div>
                     ))}
                   </div>
-                ) : (
-                  <>
-                    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                      {brands.map((brand) => (
-                        <BrandCard key={brand.id || brand.slug} brand={brand} active={(activeBrand?.id || activeBrand?.slug) === (brand.id || brand.slug)} onClick={() => setActiveBrand(brand)} />
-                      ))}
-                    </div>
-                    {!brands.length ? <div className="mt-3 rounded-[20px] border border-dashed border-border-color dark:border-dark-border-color bg-card-bg dark:bg-dark-card-bg p-4 text-sm text-secondary-text dark:text-gray-400">No brands available.</div> : null}
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-[28px] border border-dashed border-border-color dark:border-dark-border-color bg-card-bg dark:bg-dark-card-bg p-6 text-center text-sm text-secondary-text dark:text-gray-400">
-                Please select a subcategory to see available brands.
-              </div>
-            )}
-          </div>
+                </div>
+              );
+            })}
 
-          {activeSubCategory ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {servicesLoading ? (
-                [1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-32 w-full animate-pulse rounded-[24px] bg-gray-50/70 border border-gray-100" />
-                ))
-              ) : (
-                <>
-                  {filteredServices.map((service) => (
+            {/* Other / Uncategorized services */}
+            {groupedServices['other'] && groupedServices['other'].length > 0 && (
+              <div id="subcat-sec-other" className="space-y-4 scroll-mt-20">
+                <h3 className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  General Services
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {groupedServices['other'].map((service) => (
                     <ServiceCard
                       key={service.id}
                       service={service}
@@ -489,56 +444,31 @@ const PremiumCategoryPage = () => {
                       onAdd={handleAdd}
                       onIncrease={handleIncrease}
                       onDecrease={handleDecrease}
-                      onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory, brand: activeBrand } })}
+                      onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
                     />
                   ))}
-                  {!filteredServices.length ? <div className="col-span-full rounded-3xl border border-dashed border-border-color bg-card-bg p-6 text-sm text-secondary-text text-center">No services available.</div> : null}
-                </>
-              )}
-            </div>
-          ) : null}
-        </>
-      )}
-        </section>
-      </div>
+                </div>
+              </div>
+            )}
 
-      {flyingItems.map((item) => (
-        <motion.div
-          key={item.id}
-          initial={{
-            position: 'fixed',
-            left: item.startX - 20,
-            top: item.startY - 20,
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            backgroundColor: '#B33A35',
-            zIndex: 9999,
-            opacity: 0.9,
-            scale: 1,
-            pointerEvents: 'none'
-          }}
-          animate={{
-            left: item.endX - 10,
-            top: item.endY - 10,
-            width: 20,
-            height: 20,
-            opacity: 0.2,
-            scale: 0.5
-          }}
-          transition={{
-            duration: 0.8,
-            ease: [0.25, 1, 0.5, 1]
-          }}
-          className="shadow-lg flex items-center justify-center overflow-hidden border border-white"
-        >
-          {item.image ? (
-            <img src={item.image} alt="" className="h-full w-full object-cover rounded-full" />
-          ) : (
-            <div className="h-full w-full bg-[#B33A35]" />
-          )}
-        </motion.div>
-      ))}
+            {services.length === 0 && (
+              <div className="py-12 text-center rounded-[30px] border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <p className="text-sm text-slate-400 dark:text-zinc-500">No services available in this category.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Bottom Checkout / Cart Summary Bar */}
+      {cartCount > 0 && (
+        <BottomCheckoutBar
+          total={cartTotal}
+          originalTotal={cartOriginalTotal}
+          buttonText="View Cart"
+          onClick={() => navigate('/user/cart')}
+        />
+      )}
     </div>
   );
 };

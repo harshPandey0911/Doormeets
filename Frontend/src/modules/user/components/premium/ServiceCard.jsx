@@ -1,67 +1,95 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FiHeart, FiShare2, FiPlus, FiTrash2 } from 'react-icons/fi';
-import QuantityButton from './QuantityButton';
-import PriceTag from './PriceTag';
+import { FiPlus, FiMinus, FiStar } from 'react-icons/fi';
 
-const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onOpen, onWishlist, onShare }) => {
+const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onOpen }) => {
   return (
     <motion.article
-      whileHover={{ y: -3 }}
-      className="rounded-[20px] sm:rounded-[24px] border p-3 sm:p-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)] dark:shadow-none transition-all"
+      whileHover={{ y: -2 }}
+      onClick={() => onOpen?.(service)}
+      className="rounded-xl border p-4 shadow-[0_4px_20px_rgba(17,24,39,0.02)] transition-all cursor-pointer flex justify-between items-center gap-4"
       style={{
         backgroundColor: 'var(--card-bg)',
         borderColor: 'var(--border)'
       }}
     >
-      <div onClick={() => onOpen?.(service)} className="flex w-full items-start gap-3 sm:gap-4 text-left cursor-pointer">
-        <div 
-          className="h-16 w-16 sm:h-24 sm:w-24 shrink-0 overflow-hidden rounded-xl sm:rounded-[20px] bg-gradient-to-br from-orange-50/40 to-white dark:from-gray-800 dark:to-gray-900 border"
-          style={{ borderColor: 'var(--border)' }}
-        >
-          {service.image ? (
-            <img src={service.image} alt={service.title} className="h-full w-full object-cover" />
-          ) : null}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-normal text-amber-500">
-                <span>★ {service.rating || 4.8}</span>
-                <span style={{ color: 'var(--border)' }}>|</span>
-                <span style={{ color: 'var(--text-muted)' }}>{service.reviews || 0} reviews</span>
-              </div>
-              <h3 className="mt-0.5 text-sm sm:text-[15px] font-normal leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-                {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
-              </h3>
-            </div>
-            <div className="flex gap-1 text-gray-400 dark:text-gray-500">
-              <button type="button" onClick={(e) => { e.stopPropagation(); onWishlist?.(service); }} className="rounded-full p-1.5 sm:p-2 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-[#B33A35] transition-colors">
-                <FiHeart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-              <button type="button" onClick={(e) => { e.stopPropagation(); onShare?.(service); }} className="rounded-full p-1.5 sm:p-2 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-[#B33A35] transition-colors">
-                <FiShare2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            </div>
+      {/* Left side details */}
+      <div className="flex-1 flex flex-col justify-between min-w-0">
+        <div>
+          <h3 className="text-sm sm:text-[15px] font-bold tracking-tight leading-snug line-clamp-1" style={{ color: 'var(--text-primary)' }}>
+            {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
+          </h3>
+
+          <div className="flex items-center gap-1 mt-0.5 text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>
+            <span className="flex items-center gap-0.5 font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <FiStar className="w-3 h-3" style={{ fill: 'var(--text-secondary)', color: 'var(--text-secondary)' }} />
+              {service.rating || 4.5}
+            </span>
+            <span>({service.reviews || '1.2k'} reviews)</span>
           </div>
-          <p className="mt-1 text-[11px] sm:text-sm leading-normal line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{service.description}</p>
+
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>₹{service.price}</span>
+            {service.originalPrice && (
+              <span className="text-xs line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Divider and description */}
+        <div className="mt-2.5">
+          <div className="border-t w-full my-1.5" style={{ borderColor: 'var(--border)' }} />
+          <p className="text-[11px] leading-relaxed line-clamp-2 font-normal" style={{ color: 'var(--text-secondary)' }}>
+            {service.description}
+          </p>
         </div>
       </div>
 
-      <div className="mt-2.5 sm:mt-4 flex items-center justify-between gap-3">
-        <PriceTag price={service.price} originalPrice={service.originalPrice} className="scale-[0.88] sm:scale-100 origin-left" />
-        {quantity > 0 ? (
-          <QuantityButton quantity={quantity} onIncrement={() => onIncrease?.(service)} onDecrement={() => onDecrease?.(service)} />
-        ) : (
-          <button type="button" onClick={(e) => onAdd?.(service, e)} className="inline-flex items-center gap-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-3.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-normal text-white shadow-lg shadow-orange-100 transition-transform hover:scale-[1.02]">
-            <FiPlus /> Add
-          </button>
-        )}
+      {/* Right side image + absolute button */}
+      <div className="relative w-24 h-24 shrink-0 rounded-xl overflow-visible">
+        <div className="w-full h-full rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border" style={{ borderColor: 'var(--border)' }}>
+          {service.image ? (
+            <img src={service.image} alt={service.title} className="h-full w-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-slate-200 dark:bg-zinc-700" />
+          )}
+        </div>
+
+        {/* Add/Quantity Button positioned on bottom center of image */}
+        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-[85%] z-10" onClick={(e) => e.stopPropagation()}>
+          {quantity > 0 ? (
+            <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-lg px-1 py-0.5 shadow-md">
+              <button 
+                type="button" 
+                onClick={() => onDecrease?.(service)} 
+                className="p-0.5 rounded text-slate-600 dark:text-zinc-300 transition-colors"
+              >
+                <FiMinus className="w-2.5 h-2.5" />
+              </button>
+              <span className="text-[10px] font-bold text-slate-800 dark:text-white">
+                {quantity}
+              </span>
+              <button 
+                type="button" 
+                onClick={() => onIncrease?.(service)} 
+                className="p-0.5 rounded text-slate-600 dark:text-zinc-300 transition-colors"
+              >
+                <FiPlus className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => onAdd?.(service, e)}
+              className="w-full py-1 bg-white dark:bg-zinc-900 text-indigo-700 dark:text-indigo-400 border border-slate-200 dark:border-zinc-800 rounded-lg text-[10px] font-extrabold shadow-md hover:scale-[1.02] active:scale-95 transition-all text-center"
+            >
+              Add
+            </button>
+          )}
+        </div>
       </div>
     </motion.article>
   );
 };
 
 export default ServiceCard;
-
-

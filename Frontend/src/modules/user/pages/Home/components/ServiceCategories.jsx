@@ -62,34 +62,43 @@ const ServiceCategories = React.memo(({
             <div
               key={category.id || index}
               onClick={() => onCategoryClick?.(category)}
-              className="flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.01] transition-all duration-200 border text-center aspect-square shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+              className="relative flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.01] transition-all duration-200 border text-center aspect-square shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden"
               style={{
                 backgroundColor: category.colorScheme.bg,
                 borderColor: category.colorScheme.border
               }}
             >
               {category.icon ? (
-                <div className="w-10 h-10 flex items-center justify-center mb-2 overflow-hidden">
-                  <DynamicIcon
-                    icon={category.icon}
-                    alt={category.title}
-                    className="w-full h-full object-contain transition-transform duration-300"
-                    style={{ filter: `drop-shadow(0 1px 2px rgba(0,0,0,0.02))` }}
-                  />
-                </div>
+                <>
+                  <div className="absolute inset-0 w-full h-full">
+                    <DynamicIcon
+                      icon={category.icon}
+                      alt={category.title}
+                      className="w-full h-full object-cover transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                  </div>
+                  <span 
+                    className="absolute bottom-2 left-0 right-0 px-2 text-[11px] font-bold tracking-tight truncate text-white z-10"
+                  >
+                    {category.title}
+                  </span>
+                </>
               ) : (
-                <div className="w-10 h-10 flex items-center justify-center mb-2">
-                  <svg className="w-6 h-6" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </div>
+                <>
+                  <div className="w-10 h-10 flex items-center justify-center mb-2">
+                    <svg className="w-6 h-6" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <span 
+                    className="text-[11px] font-semibold tracking-tight truncate w-full"
+                    style={{ color: '#1F2937' }}
+                  >
+                    {category.title}
+                  </span>
+                </>
               )}
-              <span 
-                className="text-[11px] font-semibold tracking-tight truncate w-full"
-                style={{ color: '#1F2937' }}
-              >
-                {category.title}
-              </span>
             </div>
           );
         })}
