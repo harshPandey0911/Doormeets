@@ -543,6 +543,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   // Image base
   const [quoteInstructions, setQuoteInstructions] = useState('');
   const [maxImageUploads, setMaxImageUploads] = useState(5);
+  // Variants (optional add-ons)
+  const [variants, setVariants] = useState([]);
 
   // Builder States
   const [features, setFeatures] = useState([]);
@@ -587,6 +589,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     setBuilderWorkflowSteps([]);
     setBuilderRules([]);
     setPageBlocks([]);
+    setVariants([]);
   };
 
   const handleCategoryChange = (catId) => {
@@ -646,6 +649,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       setPricePerMinute(srv.pricePerMinute || '');
       setMinimumMinutes(srv.minimumMinutes || 30);
       setPackages(srv.packages || []);
+      setVariants(srv.variants || []);
       setFeatures(srv.features || []);
       setSteps(srv.steps || []);
       setQuoteInstructions(srv.quoteInstructions || '');
@@ -723,6 +727,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       packages: serviceType === 'package_base' ? packages : [],
       quoteInstructions: serviceType === 'image_base' ? quoteInstructions : null,
       maxImageUploads: serviceType === 'image_base' ? maxImageUploads : 5,
+      variants,
       features,
       steps,
       fields: builderFields.map(f => ({ ...f, options: typeof f.options === 'string' ? f.options.split(',').map(s => s.trim()).filter(Boolean) : (Array.isArray(f.options) ? f.options : []) })),
@@ -795,6 +800,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const addPackage = () => setPackages([...packages, { title: 'New Package', description: '', price: 0, originalPrice: null, duration: '', isPopular: false, isActive: true }]);
   const updatePackage = (i, k, v) => { const u = [...packages]; u[i][k] = v; setPackages(u); };
   const removePackage = (i) => setPackages(packages.filter((_, idx) => idx !== i));
+
+  // ── Variant ops
+  const addVariant = () => setVariants([...variants, { title: '', extraPrice: 0, description: '', isActive: true }]);
+  const updateVariant = (i, k, v) => { const u = [...variants]; u[i][k] = v; setVariants(u); };
+  const removeVariant = (i) => setVariants(variants.filter((_, idx) => idx !== i));
 
   const getSteps = () => {
     const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
@@ -1128,6 +1138,88 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           After saving this service → go to Pricing Matrix → Add Pricing Config
                         </p>
                       </div>
+                    </div>
+
+                    {/* ── SERVICE VARIANTS ── */}
+                    <div className="pt-4 border-t space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h5 className="text-sm font-bold text-gray-800">🎨 Service Variants (Optional Add-ons)</h5>
+                          <p className="text-xs text-gray-500 mt-0.5">Add optional upgrades shown on the service page — e.g. Male Therapist, Aromatherapy Oil, Premium Oil.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={addVariant}
+                          className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 flex items-center gap-1"
+                        >
+                          <FiPlus /> Add Variant
+                        </button>
+                      </div>
+
+                      {variants.length === 0 && (
+                        <div className="text-center py-5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-xs">
+                          No variants yet. Click "Add Variant" to create one.
+                        </div>
+                      )}
+
+                      {variants.map((variant, idx) => (
+                        <div key={idx} className="p-3 border border-violet-100 rounded-xl bg-violet-50 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-violet-700">Variant #{idx + 1}</span>
+                            <div className="flex items-center gap-2">
+                              <label className="flex items-center gap-1 text-[10px] font-semibold text-gray-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={variant.isActive !== false}
+                                  onChange={e => updateVariant(idx, 'isActive', e.target.checked)}
+                                  className="accent-violet-600"
+                                />
+                                Active
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => removeVariant(idx)}
+                                className="text-red-500 text-xs font-bold hover:text-red-700"
+                              >
+                                ✕ Remove
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-600 mb-1">Variant Title *</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Male Therapist"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                value={variant.title}
+                                onChange={e => updateVariant(idx, 'title', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-600 mb-1">Extra Price (₹)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                placeholder="0"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                value={variant.extraPrice}
+                                onChange={e => updateVariant(idx, 'extraPrice', parseFloat(e.target.value) || 0)}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
+                            <input
+                              type="text"
+                              placeholder="Short description shown to the user"
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                              value={variant.description || ''}
+                              onChange={e => updateVariant(idx, 'description', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

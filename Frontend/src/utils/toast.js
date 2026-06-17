@@ -15,14 +15,6 @@ export const showToast = {
       toast.success(message, {
         duration: 3000,
         position: 'top-center',
-        style: {
-          background: '#10b981',
-          color: '#fff',
-          borderRadius: '8px',
-          padding: '12px 16px',
-          fontSize: '14px',
-          fontWeight: '500',
-        },
       });
     } else {
       // Fallback to alert if toast not initialized

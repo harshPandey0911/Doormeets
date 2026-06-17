@@ -79,8 +79,6 @@ function App() {
                   success: {
                     duration: 1000,
                     style: {
-                      background: '#10B981',
-                      color: '#fff',
                       zIndex: 999999,
                     },
                   },

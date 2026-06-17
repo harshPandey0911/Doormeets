@@ -58,21 +58,21 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         {/* Add/Quantity Button positioned on bottom center of image */}
         <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-[85%] z-10" onClick={(e) => e.stopPropagation()}>
           {quantity > 0 ? (
-            <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-lg px-1 py-0.5 shadow-md">
+            <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-lg px-1 py-0.5 shadow-md">
               <button 
                 type="button" 
                 onClick={() => onDecrease?.(service)} 
-                className="p-0.5 rounded text-slate-600 dark:text-zinc-300 transition-colors"
+                className="p-0.5 rounded text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
               >
                 <FiMinus className="w-2.5 h-2.5" />
               </button>
-              <span className="text-[10px] font-bold text-slate-800 dark:text-white">
-                {quantity}
+              <span className="text-[9px] font-extrabold text-emerald-800 dark:text-emerald-300">
+                Added ({quantity})
               </span>
               <button 
                 type="button" 
                 onClick={() => onIncrease?.(service)} 
-                className="p-0.5 rounded text-slate-600 dark:text-zinc-300 transition-colors"
+                className="p-0.5 rounded text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
               >
                 <FiPlus className="w-2.5 h-2.5" />
               </button>

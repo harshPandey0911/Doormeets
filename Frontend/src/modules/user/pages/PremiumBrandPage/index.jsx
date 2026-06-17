@@ -1,27 +1,44 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FiArrowLeft, FiClock, FiHeart, FiShare2, FiShield, FiStar } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiArrowLeft, FiClock, FiHeart, FiShare2, FiShield, FiStar, FiX, FiPlus, FiCheckCircle } from 'react-icons/fi';
 import Navbar from '../../components/premium/Navbar';
 import ServiceCard from '../../components/premium/ServiceCard';
 import PriceTag from '../../components/premium/PriceTag';
 import { buildCartItemData, toAssetUrl } from '../../components/premium/cartUtils';
 import { useCity } from '../../../../context/CityContext';
 import { useCart } from '../../../../context/CartContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { publicCatalogService } from '../../../../services/catalogService';
 import { bookingService } from '../../../../services/bookingService';
 import { toast } from 'react-hot-toast';
+import api from '../../../../services/api';
+
+const pastelPalettes = [
+  { bg: '#FEFBE8', border: '#FEF08A', text: '#854D0E', darkBg: '#59522B', darkBorder: '#7A703C', darkText: '#FEF08A' }, // Yellow
+  { bg: '#FAE8FF', border: '#F5D0FE', text: '#86198F', darkBg: '#593461', darkBorder: '#794785', darkText: '#F5D0FE' }, // Purple
+  { bg: '#FFE4E6', border: '#FECDD3', text: '#9F1239', darkBg: '#693541', darkBorder: '#8E4858', darkText: '#FECDD3' }, // Rose
+  { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534', darkBg: '#2A5C3D', darkBorder: '#3D8055', darkText: '#BBF7D0' }, // Green
+  { bg: '#E0F2FE', border: '#BAE6FD', text: '#075985', darkBg: '#264E72', darkBorder: '#376F9F', darkText: '#BAE6FD' }, // Blue
+  { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3', darkBg: '#343A7C', darkBorder: '#4E57B8', darkText: '#C7D2FE' }  // Indigo
+];
 
 const PremiumBrandPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { currentCity } = useCity();
-  const { cartCount, addToCart } = useCart();
+  const { isDark } = useTheme();
+  const { cartCount, cartItems, addToCart, updateItem, removeItem } = useCart();
 
   const [brand, setBrand] = useState(location.state?.vendor || null);
   const [services, setServices] = useState([]);
   const [reviews, setReviews] = useState([]);
+
+  // Variants popup states
+  const [showVariantPopup, setShowVariantPopup] = useState(false);
+  const [selectedServiceForPopup, setSelectedServiceForPopup] = useState(null);
+  const [selectedVariants, setSelectedVariants] = useState([]);
 
   useEffect(() => {
     const loadBrand = async () => {
@@ -90,10 +107,104 @@ const PremiumBrandPage = () => {
   const heroImage = brand?.coverImage || brand?.image || services[0]?.image || '';
   const topServices = services.slice(0, 2);
 
+  const toggleVariant = (variant) => {
+    setSelectedVariants(prev => {
+      const isSelected = prev.some(v => (v._id || v.title) === (variant._id || variant.title));
+      if (isSelected) return prev.filter(v => (v._id || v.title) !== (variant._id || variant.title));
+      return [...prev, variant];
+    });
+  };
+
+  const handleConfirmVariants = async () => {
+    if (!selectedServiceForPopup) return;
+
+    const dynamicFieldsPayload = [];
+    if (selectedVariants.length > 0) {
+      dynamicFieldsPayload.push({
+        name: 'Selected Variants',
+        label: 'Selected Variants',
+        value: selectedVariants.map(v => `${v.title}${v.extraPrice > 0 ? ` (+₹${v.extraPrice})` : ''}`).join(', ')
+      });
+    }
+
+    const cartData = buildCartItemData({ service: selectedServiceForPopup, brand });
+    const variantExtraTotal = selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0), 0);
+    const finalPrice = selectedServiceForPopup.price + variantExtraTotal;
+
+    cartData.price = finalPrice;
+    cartData.unitPrice = finalPrice;
+    const baseOriginalPrice = Number(selectedServiceForPopup.originalPrice || selectedServiceForPopup.price || 0);
+    cartData.originalPrice = baseOriginalPrice > 0 ? (baseOriginalPrice + variantExtraTotal) : finalPrice;
+    if (cartData.card) {
+      cartData.card.price = finalPrice;
+      cartData.card.originalPrice = cartData.originalPrice;
+    }
+    cartData.dynamicFields = dynamicFieldsPayload;
+
+    const response = await addToCart(cartData);
+    if (response?.success) {
+      toast.success('Added to cart');
+      setShowVariantPopup(false);
+      setSelectedServiceForPopup(null);
+      setSelectedVariants([]);
+    }
+  };
+
   const handleAdd = async (service) => {
+    try {
+      const sId = service.id || service._id;
+      const cityId = currentCity?._id || currentCity?.id;
+      const res = await api.get(`/public/services/${sId}/dynamic-details${cityId ? `?cityId=${cityId}` : ''}`);
+      if (res.data.success && Array.isArray(res.data.variants) && res.data.variants.length > 0) {
+        const serviceWithVariants = {
+          ...service,
+          variants: res.data.variants
+        };
+        setSelectedServiceForPopup(serviceWithVariants);
+        setSelectedVariants([]);
+        setShowVariantPopup(true);
+        return;
+      }
+    } catch (err) {
+      console.error("Error fetching service variants:", err);
+    }
+
     const response = await addToCart(buildCartItemData({ service, brand }));
     if (response?.success) {
       toast.success('Added to cart');
+    }
+  };
+
+  const getCartItemServiceId = (item) => {
+    if (!item) return null;
+    if (typeof item.serviceId === 'object' && item.serviceId) {
+      return item.serviceId._id || item.serviceId.id;
+    }
+    return item.serviceId || item.id || item._id;
+  };
+
+  const quantities = useMemo(() => {
+    const map = {};
+    cartItems.forEach((item) => {
+      const id = getCartItemServiceId(item);
+      if (id) map[id] = item.serviceCount || 1;
+    });
+    return map;
+  }, [cartItems]);
+
+  const handleIncrease = async (service) => {
+    const item = cartItems.find((entry) => getCartItemServiceId(entry) === service.id);
+    if (!item) return handleAdd(service);
+    await updateItem(item._id || item.id, (item.serviceCount || 1) + 1);
+  };
+
+  const handleDecrease = async (service) => {
+    const item = cartItems.find((entry) => getCartItemServiceId(entry) === service.id);
+    if (!item) return;
+    if ((item.serviceCount || 1) <= 1) {
+      await removeItem(item._id || item.id);
+    } else {
+      await updateItem(item._id || item.id, (item.serviceCount || 1) - 1);
     }
   };
 
@@ -189,8 +300,10 @@ const PremiumBrandPage = () => {
               <ServiceCard
                 key={service.id}
                 service={service}
-                quantity={0}
+                quantity={quantities[service.id] || 0}
                 onAdd={handleAdd}
+                onIncrease={handleIncrease}
+                onDecrease={handleDecrease}
                 onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, brand } })}
               />
             ))}
@@ -217,6 +330,159 @@ const PremiumBrandPage = () => {
           {reviews.length === 0 ? <div className="rounded-3xl border border-dashed p-5 text-sm" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-muted)' }}>No reviews available yet.</div> : null}
         </section>
       </div>
+
+      {/* Variant Selection Popup Bottom Sheet */}
+      <AnimatePresence>
+        {showVariantPopup && selectedServiceForPopup && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="variant-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+              onClick={() => {
+                setShowVariantPopup(false);
+                setSelectedServiceForPopup(null);
+                setSelectedVariants([]);
+              }}
+            />
+            {/* Bottom Sheet */}
+            <motion.div
+              key="variant-sheet"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              className="fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] shadow-2xl pb-[env(safe-area-inset-bottom)]"
+              style={{
+                backgroundColor: isDark ? '#0A0911' : '#FFFFFF',
+                borderTop: `1px solid ${isDark ? '#232733' : '#slate-100'}`
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="flex items-center justify-between px-5 pt-5 pb-4 border-b"
+                style={{ borderColor: isDark ? '#232733' : '#F1F5F9' }}
+              >
+                <div>
+                  <h3 className="text-lg font-semibold" style={{ color: isDark ? '#F8FAFC' : '#1F2937' }}>Select Variants</h3>
+                  <p className="text-xs mt-0.5" style={{ color: isDark ? '#94A3B8' : '#6B7280' }}>Optional add-ons for this service</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowVariantPopup(false);
+                    setSelectedServiceForPopup(null);
+                    setSelectedVariants([]);
+                  }}
+                  className="w-9 h-9 flex items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: isDark ? '#11141B' : '#F8F9FA',
+                    color: isDark ? '#CBD5E1' : '#6B7280'
+                  }}
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Variant Grid */}
+              <div className="px-5 py-4 max-h-[50vh] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-3 items-stretch">
+                  {(selectedServiceForPopup.variants || []).filter(v => v.isActive !== false).map((variant, idx) => {
+                    const isSelected = selectedVariants.some(v => (v._id || v.title) === (variant._id || variant.title));
+                    const color = pastelPalettes[idx % pastelPalettes.length];
+                    return (
+                      <button
+                        key={variant._id || idx}
+                        type="button"
+                        onClick={() => toggleVariant(variant)}
+                        className="flex flex-col items-center justify-between p-2 rounded-xl border text-center w-full min-h-[96px] shadow-[0_1px_4px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
+                        style={{
+                          backgroundColor: color.bg,
+                          borderColor: isSelected ? 'var(--primary)' : color.border,
+                          borderWidth: isSelected ? '2px' : '1px'
+                        }}
+                      >
+                        <div className="flex items-center justify-center mb-0.5">
+                          <span
+                            className="flex items-center justify-center w-5 h-5 rounded-full border-[1.5px] text-[9px] font-bold transition-all"
+                            style={isSelected
+                              ? { borderColor: 'var(--primary)', backgroundColor: 'var(--primary)', color: '#fff' }
+                              : { borderColor: color.text, color: color.text }
+                            }
+                          >
+                            {isSelected ? '✓' : <FiPlus className="w-2.5 h-2.5" />}
+                          </span>
+                        </div>
+                        <span 
+                          className="text-[10px] font-bold tracking-tight leading-tight line-clamp-1 my-0.5 flex-1 flex items-center justify-center" 
+                          style={{ color: color.text }}
+                        >
+                          {variant.title}
+                        </span>
+                        <span
+                          className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full transition-all shrink-0"
+                          style={isSelected
+                            ? { color: '#fff', backgroundColor: 'var(--primary)' }
+                            : { color: color.text, backgroundColor: 'rgba(255,255,255,0.6)' }
+                          }
+                        >
+                          {variant.extraPrice > 0 ? `+₹${variant.extraPrice}` : 'Free'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Price Breakdown + Confirm */}
+              <div 
+                className="px-5 pt-3 pb-6 border-t"
+                style={{ borderColor: isDark ? '#232733' : '#F1F5F9' }}
+              >
+                {/* Price Preview */}
+                <div 
+                  className="mb-4 p-3 rounded-2xl text-xs space-y-1"
+                  style={{ backgroundColor: isDark ? '#11141B' : '#F8F9FA' }}
+                >
+                  <div className="flex justify-between" style={{ color: isDark ? '#CBD5E1' : '#6B7280' }}>
+                    <span>Base price</span>
+                    <span className="font-semibold" style={{ color: isDark ? '#F8FAFC' : '#1F2937' }}>₹{selectedServiceForPopup.price}</span>
+                  </div>
+                  {selectedVariants.map((v, i) => (
+                    <div key={i} className="flex justify-between" style={{ color: isDark ? '#CBD5E1' : '#6B7280' }}>
+                      <span>{v.title}</span>
+                      <span className="font-semibold text-brand">+₹{v.extraPrice}</span>
+                    </div>
+                  ))}
+                  <div 
+                    className="flex justify-between pt-1 border-t" 
+                    style={{
+                      borderColor: isDark ? '#232733' : '#E5E7EB',
+                      color: isDark ? '#F8FAFC' : '#1F2937'
+                    }}
+                  >
+                    <span className="font-bold">Total</span>
+                    <span className="font-bold text-base text-brand">
+                      ₹{selectedServiceForPopup.price + selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0), 0)}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmVariants}
+                  className="w-full py-3.5 rounded-2xl font-semibold text-white text-sm shadow-lg transition-transform hover:scale-[1.01]"
+                  style={{ background: 'linear-gradient(to right, var(--primary), var(--primary-dark, #e08a30))' }}
+                >
+                  Add to Cart — ₹{selectedServiceForPopup.price + selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0), 0)}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

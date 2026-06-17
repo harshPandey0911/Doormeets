@@ -10,12 +10,25 @@ const ServiceCategories = React.memo(({
 }) => {
   const navigate = useNavigate();
 
+  // Detect current theme
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
   if (!Array.isArray(categories) || categories.length === 0) {
     return null;
   }
 
-  // Soft modern pastel color palettes for category tiles
-  const cardColors = [
+  // Theme-aware color palettes for category tiles
+  const cardColors = isDark ? [
+    { bg: 'rgba(253, 230, 0, 0.08)',  border: 'rgba(253, 230, 0, 0.18)',  text: '#FDE68A' }, // Yellow/Gold
+    { bg: 'rgba(168, 85, 247, 0.08)', border: 'rgba(168, 85, 247, 0.18)', text: '#C084FC' }, // Purple/Lavender
+    { bg: 'rgba(244, 63, 94, 0.08)',  border: 'rgba(244, 63, 94, 0.18)',  text: '#FDA4AF' }, // Rose/Pink
+    { bg: 'rgba(239, 68, 68, 0.08)',  border: 'rgba(239, 68, 68, 0.18)',  text: '#FCA5A5' }, // Soft Red
+    { bg: 'rgba(34, 197, 94, 0.08)',  border: 'rgba(34, 197, 94, 0.18)',  text: '#86EFAC' }, // Green
+    { bg: 'rgba(14, 165, 233, 0.08)', border: 'rgba(14, 165, 233, 0.18)', text: '#7DD3FC' }, // Light Blue
+    { bg: 'rgba(99, 102, 241, 0.08)', border: 'rgba(99, 102, 241, 0.18)', text: '#A5B4FC' }, // Indigo
+    { bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.18)', text: '#FCD34D' }, // Amber/Warm
+    { bg: 'rgba(59, 130, 246, 0.08)', border: 'rgba(59, 130, 246, 0.18)', text: '#93C5FD' }, // Royal Blue
+  ] : [
     { bg: '#FEFBE8', border: '#FEF08A', text: '#854D0E' }, // Yellow/Gold
     { bg: '#FAE8FF', border: '#F5D0FE', text: '#86198F' }, // Purple/Lavender
     { bg: '#FFE4E6', border: '#FECDD3', text: '#9F1239' }, // Rose/Pink
@@ -24,7 +37,7 @@ const ServiceCategories = React.memo(({
     { bg: '#E0F2FE', border: '#BAE6FD', text: '#075985' }, // Light Blue
     { bg: '#EEF2FF', border: '#C7D2FE', text: '#3730A3' }, // Indigo
     { bg: '#FEF3C7', border: '#FDE68A', text: '#92400E' }, // Amber/Warm
-    { bg: '#EFF6FF', border: '#BFDBFE', text: '#1E40AF' }  // Royal Blue
+    { bg: '#EFF6FF', border: '#BFDBFE', text: '#1E40AF' }, // Royal Blue
   ];
 
   const displayCategories = categories.map((cat, idx) => {

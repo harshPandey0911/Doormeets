@@ -108,7 +108,7 @@ const UserRoutes = () => {
   // useAppNotifications('user');
 
   // Pages where BottomNav should be shown
-  const bottomNavPages = ['/user/home', '/user/my-bookings', '/user/cart', '/user/account', '/user/categories'];
+  const bottomNavPages = ['/user/home', '/user/my-bookings', '/user/cart', '/user/account'];
   
   // Normalize path by removing trailing slash (except for root /user)
   const normalizedPath = location.pathname.length > 5 && location.pathname.endsWith('/') 
@@ -158,7 +158,7 @@ const UserRoutes = () => {
                 <Route path="/my-plan" element={<ProtectedRoute userType="user"><MyPlan /></ProtectedRoute>} />
                 <Route path="/my-plan/:id" element={<ProtectedRoute userType="user"><PlanDetails /></ProtectedRoute>} />
                 <Route path="/category/:slug" element={<ProtectedRoute userType="user"><CategoryPage /></ProtectedRoute>} />
-                <Route path="/categories" element={<ProtectedRoute userType="user"><CategoriesPage /></ProtectedRoute>} />
+                {/* <Route path="/categories" element={<ProtectedRoute userType="user"><CategoriesPage /></ProtectedRoute>} /> */}
                 <Route path="/brand/:slug" element={<ProtectedRoute userType="user"><BrandPage /></ProtectedRoute>} />
                 <Route path="/service/:slug" element={<ProtectedRoute userType="user"><ServiceDetailPage /></ProtectedRoute>} />
                 <Route path="/my-rating" element={<ProtectedRoute userType="user"><MyRating /></ProtectedRoute>} />

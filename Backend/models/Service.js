@@ -15,6 +15,17 @@ const packageSchema = new mongoose.Schema({
 }, { _id: true });
 
 /**
+ * Variant Schema — optional add-ons for a service (e.g. Male Therapist, Aromatherapy Oil)
+ */
+const variantSchema = new mongoose.Schema({
+  title: { type: String, required: true, trim: true },       // e.g. "Male Therapist"
+  extraPrice: { type: Number, default: 0 },                  // Extra ₹ added to base price
+  description: { type: String, trim: true, default: '' },    // Optional short description
+  isActive: { type: Boolean, default: true }
+}, { _id: true });
+
+
+/**
  * Service Model (New Structure)
  * Represents individual services strictly under a Brand
  */
@@ -104,6 +115,13 @@ const serviceSchema = new mongoose.Schema({
   // ─── Package Base fields ──────────────────────────────────────
   packages: {
     type: [packageSchema],
+    default: []
+  },
+
+  // ─── Service Variants (optional add-ons) ─────────────────────
+  // e.g. Male Therapist (+₹50), Aromatherapy Oil (+₹80), etc.
+  variants: {
+    type: [variantSchema],
     default: []
   },
 

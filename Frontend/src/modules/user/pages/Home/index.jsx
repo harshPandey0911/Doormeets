@@ -629,7 +629,7 @@ const Home = () => {
               )}
  
               {/* Search Bar Section */}
-              <div className="px-5 max-w-lg lg:max-w-2xl mx-auto w-full flex items-center gap-3">
+              <div className="mt-5 px-5 max-w-lg lg:max-w-2xl mx-auto w-full flex items-center gap-3">
                 <div className="flex-1">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>
@@ -679,7 +679,6 @@ const Home = () => {
                     className="relative overflow-hidden py-2"
                     style={{ backgroundColor: 'var(--background)' }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent dark:hidden pointer-events-none -z-10" />
                     <ServiceCategories
                       categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
                       onCategoryClick={handleCategoryClick}
@@ -712,7 +711,7 @@ const Home = () => {
                Array.isArray(homeContent?.popularServices) && 
                homeContent.popularServices.length > 0 && (
                 <motion.div variants={itemVariants}>
-                  <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
+                  <Suspense fallback={<div className="h-40 animate-pulse rounded-xl mx-4" style={{ backgroundColor: 'var(--surface)' }} />}>
                     <ServiceSectionWithRating
                       title="Popular services"
                       subtitle="Most demanded home services"

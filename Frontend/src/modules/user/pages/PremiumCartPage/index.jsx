@@ -4,10 +4,12 @@ import { FiMapPin, FiPackage, FiStar, FiMinus, FiPlus, FiShoppingBag, FiArrowLef
 import { toast } from 'react-hot-toast';
 import { useCart } from '../../../../context/CartContext';
 import { useCity } from '../../../../context/CityContext';
+import { useTheme } from '../../../../context/ThemeContext';
 
 const PremiumCartPage = () => {
   const navigate = useNavigate();
   const { currentCity } = useCity();
+  const { isDark } = useTheme();
   const { cartItems, removeItem, updateItem, cartCount } = useCart();
 
   const groupedItems = useMemo(() => {
@@ -157,8 +159,29 @@ const PremiumCartPage = () => {
                               </span>
                             </div>
 
+                            {/* Selected Add-Ons / Dynamic Fields */}
+                            {Array.isArray(item.dynamicFields) && item.dynamicFields.length > 0 && (
+                              <div 
+                                className="mt-2 space-y-1 p-2 rounded-xl border"
+                                style={{
+                                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB',
+                                  borderColor: isDark ? '#232733' : '#F1F5F9'
+                                }}
+                              >
+                                {item.dynamicFields.map((field, fIdx) => (
+                                  <p 
+                                    key={fIdx} 
+                                    className="text-[11px] leading-tight"
+                                    style={{ color: isDark ? '#CBD5E1' : '#6B7280' }}
+                                  >
+                                    <span className="font-semibold" style={{ color: isDark ? '#F8FAFC' : '#374151' }}>{field.label}:</span> {field.value}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+
                             {/* Price */}
-                            <div className="flex items-baseline gap-1.5 mt-1.5">
+                            <div className="flex items-baseline gap-1.5 mt-2">
                               <span
                                 className="text-sm font-bold"
                                 style={{ color: 'var(--text-primary)' }}

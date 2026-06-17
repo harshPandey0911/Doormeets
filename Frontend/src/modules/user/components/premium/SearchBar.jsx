@@ -24,7 +24,7 @@ const SearchBar = ({ value, onChange, onSubmit, placeholder = 'Search services, 
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
+          className="w-full bg-transparent outline-none text-sm text-[var(--text-primary)] placeholder:text-gray-400"
         />
       </label>
     </form>

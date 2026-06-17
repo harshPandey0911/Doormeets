@@ -1445,7 +1445,8 @@ const getPublicServiceDynamicDetails = async (req, res) => {
       fields,
       workflow: workflow ? { ...workflow, steps } : null,
       pricingRules,
-      pageBlocks
+      pageBlocks,
+      variants: (resolvedService.variants || []).filter(v => v.isActive !== false)
     });
   } catch (error) {
     console.error('Get public service dynamic details error:', error);

@@ -111,7 +111,7 @@ const addToCart = async (req, res) => {
         title,
         description: description || '',
         icon: icon || '',
-        category,
+        category: category || 'Service',
         price: price || unitPrice || 0,
         originalPrice: originalPrice || null,
         unitPrice: unitPrice || price || 0,
