@@ -97,11 +97,21 @@ const getCategoryBrands = async (req, res) => {
 const getBrandServicesAndPricing = async (req, res) => {
   try {
     const { categoryId, brandId } = req.params;
-    const pricings = await ServiceBrandPricing.find({
+    
+    const query = {
       categoryId: categoryId,
-      brandId: brandId,
       isActive: true
-    }).populate('serviceId', 'title slug duration warranty iconUrl status').lean();
+    };
+
+    if (brandId === 'null' || brandId === 'undefined' || !brandId) {
+      query.brandId = null;
+    } else {
+      query.brandId = brandId;
+    }
+
+    const pricings = await ServiceBrandPricing.find(query)
+      .populate('serviceId', 'title slug duration warranty iconUrl status')
+      .lean();
 
     const servicesWithPricing = pricings
       .filter(p => p.serviceId && p.serviceId.status === 'active')

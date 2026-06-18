@@ -26,7 +26,21 @@ const CategoryDetail = () => {
         setIsLoading(true);
         const res = await vendorCategoryService.getCategoryBrands(categoryId);
         if (res.success) {
-          setBrands(res.brands || []);
+          const fetchedBrands = res.brands || [];
+          setBrands(fetchedBrands);
+          if (fetchedBrands.length === 0) {
+            setIsLoadingServices(true);
+            try {
+              const resServices = await vendorCategoryService.getBrandServices(categoryId, 'null');
+              if (resServices.success) {
+                setServices(resServices.services || []);
+              }
+            } catch (err) {
+              console.error('Failed to fetch brand-less services:', err);
+            } finally {
+              setIsLoadingServices(false);
+            }
+          }
         }
       } catch (err) {
         console.error(err);
@@ -65,11 +79,11 @@ const CategoryDetail = () => {
         {/* Category Hero Section (Horizontal Layout) */}
         <div className="flex items-center gap-4 mb-6">
           {/* Left Side: Image/Icon */}
-          <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center bg-orange-50/80 border border-orange-100 flex-shrink-0 shadow-sm">
+          <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center bg-brand/10 border border-brand/20 flex-shrink-0 shadow-sm">
             {category.imageUrl ? (
-              <img src={category.imageUrl} alt={category.title} className="w-12 h-12 object-contain" />
+              <img src={category.imageUrl} alt={category.title} className="w-full h-full object-cover" />
             ) : (
-              <FiGrid className="w-8 h-8 text-orange-500" />
+              <FiGrid className="w-8 h-8 text-brand" />
             )}
           </div>
 
@@ -80,7 +94,7 @@ const CategoryDetail = () => {
               <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{category.description}</p>
             )}
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded uppercase tracking-wider">
+              <span className="px-2 py-0.5 bg-brand/10 text-brand text-[10px] font-bold rounded uppercase tracking-wider">
                 Service Category
               </span>
               <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-semibold rounded">
@@ -93,17 +107,64 @@ const CategoryDetail = () => {
         {/* Brands Section */}
         <div className="flex items-center gap-2 mb-4 px-1">
           <div className="w-1 h-5 rounded-full" style={{ background: themeColors.button }} />
-          <h3 className="text-base font-bold text-gray-800">Brands & Types</h3>
+          <h3 className="text-base font-bold text-gray-800">
+            {brands.length > 0 ? 'Brands & Types' : 'Services & Pricing'}
+          </h3>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-16"><LogoLoader /></div>
         ) : brands.length === 0 ? (
-          <div className="text-center py-16 bg-white/70 rounded-3xl border border-white/40">
-            <FiTag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-semibold">No brands listed yet</p>
-            <p className="text-gray-400 text-sm mt-1">Admin will add brands for this category soon</p>
-          </div>
+          isLoadingServices ? (
+            <div className="flex justify-center py-16"><LogoLoader /></div>
+          ) : services.length === 0 ? (
+            <div className="text-center py-16 bg-white/70 rounded-3xl border border-white/40">
+              <FiTag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 font-semibold">No services configured</p>
+              <p className="text-gray-400 text-sm mt-1">Admin has not set up pricing or services for this category yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {services.map(service => (
+                <div key={service.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 relative overflow-hidden text-left">
+                  {/* Decorative accent */}
+                  <div className="absolute top-0 left-0 w-1 h-full" style={{ background: themeColors.button }} />
+                  
+                  <div className="flex justify-between items-start">
+                    <div className="pl-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-gray-900 text-[14px]">{service.title}</h4>
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                          <FiCheckCircle className="w-2.5 h-2.5" />
+                          Active
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {service.duration && (
+                          <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">{service.duration} mins</span>
+                        )}
+                        {service.warranty && (
+                          <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">{service.warranty} warranty</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Compact Price Info Row */}
+                  <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-dashed border-gray-100">
+                    <div className="bg-gray-50 rounded-lg p-2 flex items-center justify-between border border-gray-100">
+                      <span className="text-[10px] font-semibold text-gray-400">Customer Pays</span>
+                      <span className="text-xs font-bold text-gray-800">₹{service.priceDetails?.finalCustomerPrice}</span>
+                    </div>
+                    <div className="rounded-lg p-2 flex items-center justify-between border" style={{ background: `${themeColors.button}08`, borderColor: `${themeColors.button}15` }}>
+                      <span className="text-[10px] font-bold" style={{ color: themeColors.button }}>Your Profit</span>
+                      <span className="text-xs font-bold" style={{ color: themeColors.button }}>₹{service.priceDetails?.vendorProfit}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {brands.map((brand) => (

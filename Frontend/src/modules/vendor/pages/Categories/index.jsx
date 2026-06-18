@@ -140,11 +140,11 @@ const Categories = () => {
                     className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 p-4 hover:shadow-md active:scale-[0.98] transition-all text-left"
                   >
                     {/* Icon */}
-                    <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center bg-orange-50 border border-orange-100">
+                    <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center bg-brand/10 border border-brand/20">
                       {cat.imageUrl ? (
                         <img src={cat.imageUrl} alt={cat.title} className="w-full h-full object-cover" />
                       ) : (
-                        <FiGrid className="w-6 h-6 text-orange-500" />
+                        <FiGrid className="w-6 h-6 text-brand" />
                       )}
                     </div>
 
@@ -154,7 +154,7 @@ const Categories = () => {
                       {cat.description && (
                         <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{cat.description}</p>
                       )}
-                      <span className="inline-block mt-1.5 px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                      <span className="inline-block mt-1.5 px-2 py-0.5 bg-brand/10 text-brand text-[10px] font-bold rounded uppercase tracking-wider">
                         Service
                       </span>
                     </div>
