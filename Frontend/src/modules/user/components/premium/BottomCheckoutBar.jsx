@@ -1,16 +1,40 @@
 import React from 'react';
 import PriceTag from './PriceTag';
 
-const BottomCheckoutBar = ({ total, originalTotal, buttonText = 'Checkout', onClick, note = 'Inclusive of taxes and charges' }) => {
+const BottomCheckoutBar = ({ total, originalTotal, buttonText = 'Checkout', onClick, note = 'Inclusive of taxes and charges', hasBottomNav = false }) => {
   return (
-    <div className="fixed inset-x-0 bottom-[68px] lg:bottom-0 z-30 border-t border-gray-100 bg-white/95 px-4 pb-3 lg:pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[28px] border border-gray-100 bg-white px-4 py-3 shadow-[0_12px_30px_rgba(17,24,39,0.08)]">
+    <div 
+      className={`fixed inset-x-0 ${hasBottomNav ? 'bottom-[68px] pb-3' : 'bottom-0 pb-[calc(env(safe-area-inset-bottom)+18px)]'} z-30 border-t px-4 pt-3 backdrop-blur-xl`}
+      style={{
+        backgroundColor: 'var(--background)',
+        borderColor: 'var(--border)'
+      }}
+    >
+      <div 
+        className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_8px_24px_rgba(17,24,39,0.06)]"
+        style={{
+          backgroundColor: 'var(--card-bg)',
+          borderColor: 'var(--border)'
+        }}
+      >
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400">Total payable</div>
-          <PriceTag price={total} originalPrice={originalTotal} className="mt-1" />
-          <div className="mt-1 text-[11px] text-gray-500">{note}</div>
+          <div className="text-[9px] font-medium uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>Total payable</div>
+          <div className="flex items-baseline gap-1.5 mt-0.5 font-black text-base" style={{ color: 'var(--text-primary)' }}>
+            <span>₹{total}</span>
+            {originalTotal && (
+              <span className="text-[11px] line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{originalTotal}</span>
+            )}
+          </div>
+          <div className="mt-0.5 text-[9px] leading-none" style={{ color: 'var(--text-secondary)' }}>{note}</div>
         </div>
-        <button type="button" onClick={onClick} className="rounded-2xl bg-black px-5 py-3 text-xs font-black text-white shadow-lg shadow-black/20 transition-transform hover:scale-[1.02]">
+        <button 
+          type="button" 
+          onClick={onClick} 
+          className="rounded-xl px-4 py-2 text-xs font-bold shadow-md transition-transform hover:scale-[1.02] text-white"
+          style={{
+            backgroundColor: 'var(--primary)'
+          }}
+        >
           {buttonText}
         </button>
       </div>
@@ -19,3 +43,5 @@ const BottomCheckoutBar = ({ total, originalTotal, buttonText = 'Checkout', onCl
 };
 
 export default BottomCheckoutBar;
+
+

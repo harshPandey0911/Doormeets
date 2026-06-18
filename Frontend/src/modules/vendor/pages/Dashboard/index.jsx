@@ -634,68 +634,68 @@ const Dashboard = memo(() => {
 
           {/* Performance Metrics */}
           <div>
-            <h2 className="text-lg font-black text-gray-800 mb-3 px-1">Performance</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <h2 className="text-base font-black text-gray-800 mb-2 px-1">Performance</h2>
+            <div className="grid grid-cols-2 gap-2.5">
               {/* Completed Jobs Card */}
               <div
-                className="rounded-2xl p-4 relative overflow-hidden transition-all duration-300 hover:shadow-lg group"
+                className="rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:shadow-md group"
                 style={{
                   background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
                   border: '1px solid rgba(16, 185, 129, 0.1)',
                 }}
               >
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 rounded-xl bg-white shadow-sm border border-green-100 group-hover:scale-105 transition-transform duration-300">
-                      <FiCheckCircle className="w-5 h-5 text-green-600" />
+                <div className="relative z-10 flex flex-col h-full justify-between">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="p-1.5 rounded-lg bg-white shadow-sm border border-green-100 group-hover:scale-105 transition-transform duration-300">
+                      <FiCheckCircle className="w-4 h-4 text-green-600" />
                     </div>
-                    <span className="text-[9px] font-black text-green-700 bg-green-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    <span className="text-[8px] font-black text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
                       Target Met
                     </span>
                   </div>
                   <div>
-                    <p className="text-2xl font-black text-green-900 leading-tight">
+                    <p className="text-lg font-black text-green-900 leading-tight">
                       {stats.completedJobs}
                     </p>
-                    <p className="text-[10px] font-bold text-green-700 uppercase tracking-tight opacity-70">
-                      Completed Jobs
+                    <p className="text-[9px] font-bold text-green-700 uppercase tracking-tight opacity-70">
+                      Completed Jobs (30 Days)
                     </p>
                   </div>
                 </div>
                 {/* Decorative blob */}
-                <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-green-500/5 rounded-full blur-2xl" />
+                <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-green-500/5 rounded-full blur-2xl" />
               </div>
 
               {/* Rating Card */}
               <div
-                className="rounded-2xl p-4 relative overflow-hidden transition-all duration-300 hover:shadow-lg group"
+                className="rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:shadow-md group"
                 style={{
                   background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
                   border: '1px solid rgba(245, 158, 11, 0.1)',
                 }}
               >
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 rounded-xl bg-white shadow-sm border border-amber-100 group-hover:scale-105 transition-transform duration-300">
-                      <FiTrendingUp className="w-5 h-5 text-amber-600" />
+                <div className="relative z-10 flex flex-col h-full justify-between">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="p-1.5 rounded-lg bg-white shadow-sm border border-amber-100 group-hover:scale-105 transition-transform duration-300">
+                      <FiTrendingUp className="w-4 h-4 text-amber-600" />
                     </div>
                     <div className="flex items-center gap-0.5 text-amber-600">
                       {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`text-[8px] ${i < Math.round(stats.rating || 0) ? 'opacity-100' : 'opacity-30'}`}>★</span>
+                        <span key={i} className={`text-[7px] ${i < Math.round(stats.rating || 0) ? 'opacity-100' : 'opacity-30'}`}>★</span>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-2xl font-black text-amber-900 leading-tight">
+                    <p className="text-lg font-black text-amber-900 leading-tight">
                       {stats.rating > 0 ? stats.rating.toFixed(1) : 'N/A'}
                     </p>
-                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-tight opacity-70">
+                    <p className="text-[9px] font-bold text-amber-700 uppercase tracking-tight opacity-70">
                       Average Rating
                     </p>
                   </div>
                 </div>
                 {/* Decorative blob */}
-                <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-amber-500/5 rounded-full blur-2xl" />
+                <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-amber-500/5 rounded-full blur-2xl" />
               </div>
             </div>
           </div>
@@ -730,8 +730,8 @@ const Dashboard = memo(() => {
               <div className="space-y-3">
                 {recentJobs.map((job, index) => {
                   // Alternating colors
-                  const isDarkBlue = index % 2 === 0;
-                  const accentColor = isDarkBlue ? '#001947' : '#406788';
+                  const isDarkRed = index % 2 === 0;
+                  const accentColor = isDarkRed ? '#B33A35' : '#D56C67';
 
                   return (
                     <div

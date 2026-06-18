@@ -21,16 +21,26 @@ const firebaseConfig = {
 
 // Initialize Firebase
 let app;
-let messaging;
-let db;
+let messaging = null;
+let db = null;
+
+const isFirebaseDummy = 
+  !firebaseConfig.apiKey || 
+  firebaseConfig.apiKey.includes('dummy') || 
+  !firebaseConfig.projectId || 
+  firebaseConfig.projectId.includes('dummy');
 
 try {
-  app = initializeApp(firebaseConfig);
-  messaging = getMessaging(app);
-  db = getDatabase(app);
-  console.log('✅ Firebase initialized successfully');
+  if (!isFirebaseDummy) {
+    app = initializeApp(firebaseConfig);
+    messaging = getMessaging(app);
+    db = getDatabase(app);
+    console.log('✅ Firebase initialized successfully');
+  } else {
+    console.log('ℹ️ Firebase is configured with dummy keys. Messaging and Database features are disabled.');
+  }
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error);
 }
 
-export { app, messaging, db, getToken, onMessage };
+export { app, messaging, db, getToken, onMessage, isFirebaseDummy };

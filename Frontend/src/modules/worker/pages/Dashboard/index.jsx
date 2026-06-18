@@ -225,8 +225,8 @@ const Dashboard = () => {
             className="rounded-2xl p-4 cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
             onClick={() => navigate('/worker/profile')}
             style={{
-              background: themeColors.button,
-              border: `2px solid ${themeColors.button}`,
+              background: '#D56C67',
+              border: '2px solid #D56C67',
             }}
           >
             {/* Decorative Pattern */}
@@ -374,178 +374,138 @@ const Dashboard = () => {
         {/* Stats Cards - Outside Gradient */}
         <div className="px-4 pt-4">
           <div className="grid grid-cols-2 gap-3 mb-4">
-            {/* Card 1: This Month Earnings - Dark Blue Gradient */}
+            {/* Card 1: This Month Earnings - Light Clean style */}
             <div
               onClick={() => navigate('/worker/jobs')}
-              className="rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-transform"
+              className="bg-white rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-200"
               style={{
-                background: 'linear-gradient(135deg, #001947 0%, #003b77 100%)',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                border: '1px solid rgba(179, 58, 53, 0.15)',
               }}
             >
-              {/* Decorative Pattern */}
-              <div
-                className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20"
-                style={{
-                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%)',
-                  transform: 'translate(20px, -20px)',
-                }}
-              />
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <p className="text-xs text-white font-semibold mb-1 opacity-90 uppercase tracking-wide">This Month</p>
-                    <p className="text-2xl font-bold text-white leading-tight">
+                    <p className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">This Month</p>
+                    <p className="text-2xl font-bold text-gray-800 leading-tight">
                       ₹{stats.thisMonthEarnings.toLocaleString()}
                     </p>
                   </div>
                   <div
-                    className="p-3 rounded-xl flex-shrink-0"
+                    className="p-2.5 rounded-xl flex-shrink-0"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.25)',
-                      backdropFilter: 'blur(10px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      background: 'rgba(179, 58, 53, 0.1)',
+                      border: '1px solid rgba(179, 58, 53, 0.15)',
                     }}
                   >
-                    <FaWallet className="w-6 h-6" style={{ color: '#FFFFFF' }} />
+                    <FaWallet className="w-5 h-5" style={{ color: '#B33A35' }} />
                   </div>
                 </div>
-                <div className="flex items-center gap-1 mt-2">
-                  <FiTrendingUp className="w-4 h-4 text-white opacity-80" />
-                  <span className="text-xs text-white opacity-80 font-medium">Earnings</span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <FiTrendingUp className="w-4 h-4 text-[#B33A35]" />
+                  <span className="text-xs text-gray-500 font-semibold">Earnings</span>
                 </div>
               </div>
             </div>
 
-            {/* Card 2: Pending Jobs - Light Blue Gradient */}
+            {/* Card 2: Pending Jobs - Light Clean style */}
             <div
               onClick={() => navigate('/worker/jobs')}
-              className="rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-transform"
+              className="bg-white rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-200"
               style={{
-                background: 'linear-gradient(135deg, #406788 0%, #304a63 100%)',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
               }}
             >
-              {/* Decorative Pattern */}
-              <div
-                className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20"
-                style={{
-                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%)',
-                  transform: 'translate(20px, -20px)',
-                }}
-              />
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <p className="text-xs text-white font-semibold mb-1 opacity-90 uppercase tracking-wide">Pending Jobs</p>
-                    <p className="text-2xl font-bold text-white leading-tight">
+                    <p className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">Pending Jobs</p>
+                    <p className="text-2xl font-bold text-gray-800 leading-tight">
                       {stats.pendingJobs}
                     </p>
                   </div>
                   <div
-                    className="p-3 rounded-xl flex-shrink-0"
+                    className="p-2.5 rounded-xl flex-shrink-0"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.25)',
-                      backdropFilter: 'blur(10px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      border: '1px solid rgba(245, 158, 11, 0.15)',
                     }}
                   >
-                    <FiClock className="w-6 h-6" style={{ color: '#FFFFFF' }} />
+                    <FiClock className="w-5 h-5" style={{ color: '#F59E0B' }} />
                   </div>
                 </div>
-                <div className="flex items-center gap-1 mt-2">
-                  <FiCheckCircle className="w-4 h-4 text-white opacity-80" />
-                  <span className="text-xs text-white opacity-80 font-medium">Waiting</span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <FiClock className="w-4 h-4 text-[#F59E0B]" />
+                  <span className="text-xs text-gray-500 font-semibold">Waiting</span>
                 </div>
               </div>
             </div>
 
-            {/* Card 3: Accepted Jobs - Light Blue Gradient */}
+            {/* Card 3: Accepted Jobs - Light Clean style */}
             <div
               onClick={() => navigate('/worker/jobs')}
-              className="rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-transform"
+              className="bg-white rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-200"
               style={{
-                background: 'linear-gradient(135deg, #406788 0%, #304a63 100%)',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
               }}
             >
-              {/* Decorative Pattern */}
-              <div
-                className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20"
-                style={{
-                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%)',
-                  transform: 'translate(20px, -20px)',
-                }}
-              />
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <p className="text-xs text-white font-semibold mb-1 opacity-90 uppercase tracking-wide">Accepted</p>
-                    <p className="text-2xl font-bold text-white leading-tight">
+                    <p className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">Accepted</p>
+                    <p className="text-2xl font-bold text-gray-800 leading-tight">
                       {stats.acceptedJobs}
                     </p>
                   </div>
                   <div
-                    className="p-3 rounded-xl flex-shrink-0"
+                    className="p-2.5 rounded-xl flex-shrink-0"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.25)',
-                      backdropFilter: 'blur(10px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      border: '1px solid rgba(16, 185, 129, 0.15)',
                     }}
                   >
-                    <FiCheckCircle className="w-6 h-6" style={{ color: '#FFFFFF' }} />
+                    <FiCheckCircle className="w-5 h-5" style={{ color: '#10B981' }} />
                   </div>
                 </div>
-                <div className="flex items-center gap-1 mt-2">
-                  <FiBriefcase className="w-4 h-4 text-white opacity-80" />
-                  <span className="text-xs text-white opacity-80 font-medium">Active</span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <FiBriefcase className="w-4 h-4 text-[#10B981]" />
+                  <span className="text-xs text-gray-500 font-semibold">Active</span>
                 </div>
               </div>
             </div>
 
-            {/* Card 4: Completed Jobs - Dark Blue Gradient */}
+            {/* Card 4: Completed Jobs - Light Clean style */}
             <div
               onClick={() => navigate('/worker/jobs')}
-              className="rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-transform"
+              className="bg-white rounded-xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-200"
               style={{
-                background: 'linear-gradient(135deg, #001947 0%, #003b77 100%)',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                border: '1px solid rgba(179, 58, 53, 0.15)',
               }}
             >
-              {/* Decorative Pattern */}
-              <div
-                className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20"
-                style={{
-                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%)',
-                  transform: 'translate(20px, -20px)',
-                }}
-              />
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <p className="text-xs text-white font-semibold mb-1 opacity-90 uppercase tracking-wide">Completed</p>
-                    <p className="text-2xl font-bold text-white leading-tight">
+                    <p className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">Completed</p>
+                    <p className="text-2xl font-bold text-gray-800 leading-tight">
                       {stats.completedJobs}
                     </p>
                   </div>
                   <div
-                    className="p-3 rounded-xl flex-shrink-0"
+                    className="p-2.5 rounded-xl flex-shrink-0"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.25)',
-                      backdropFilter: 'blur(10px)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      background: 'rgba(179, 58, 53, 0.1)',
+                      border: '1px solid rgba(179, 58, 53, 0.15)',
                     }}
                   >
-                    <FiBriefcase className="w-6 h-6" style={{ color: '#FFFFFF' }} />
+                    <FiBriefcase className="w-5 h-5" style={{ color: '#B33A35' }} />
                   </div>
                 </div>
-                <div className="flex items-center gap-1 mt-2">
-                  <FiCheckCircle className="w-4 h-4 text-white opacity-80" />
-                  <span className="text-xs text-white opacity-80 font-medium">Done</span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <FiCheckCircle className="w-4 h-4 text-[#B33A35]" />
+                  <span className="text-xs text-gray-500 font-semibold">Done</span>
                 </div>
               </div>
             </div>
@@ -581,8 +541,8 @@ const Dashboard = () => {
             <div className="space-y-3">
               {recentJobs.map((job, index) => {
                 // Alternating colors
-                const isDarkBlue = index % 2 === 0;
-                const accentColor = isDarkBlue ? '#001947' : '#406788';
+                const isDarkRed = index % 2 === 0;
+                const accentColor = isDarkRed ? '#B33A35' : '#D56C67';
 
                 return (
                   <div

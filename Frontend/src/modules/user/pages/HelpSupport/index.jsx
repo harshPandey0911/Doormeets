@@ -174,31 +174,31 @@ const HelpSupport = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#FFEBD6_0%,#FFF5EB_40%,#FFFFFF_100%)] pb-6">
+    <div className="min-h-screen bg-light-bg pb-6">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-transparent backdrop-blur-xl border-b border-black/[0.03]">
+      <div className="sticky top-0 z-30 bg-transparent backdrop-blur-xl border-b border-border-color">
         <div className="px-4 py-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-orange-50 rounded-full transition-colors"
+              className="p-2 hover:bg-orange-50/10 rounded-full transition-colors"
             >
-              <FiArrowLeft className="w-5 h-5 text-gray-700" />
+              <FiArrowLeft className="w-5 h-5 text-dark-text" />
             </button>
-            <h1 className="text-xl font-bold text-[#111827] tracking-tight">Help & Support</h1>
+            <h1 className="text-xl font-bold text-dark-text tracking-tight">Help & Support</h1>
           </div>
         </div>
 
         {/* Search Bar */}
         <div className="px-4 pb-4">
           <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-text" />
             <input
               type="text"
               placeholder="Search for help..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none transition-all"
             />
           </div>
         </div>
@@ -207,7 +207,7 @@ const HelpSupport = () => {
       <main className="px-4 pt-4">
         {/* Quick Actions */}
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-[#111827] tracking-tight mb-3">Contact Us</h2>
+          <h2 className="text-lg font-bold text-dark-text tracking-tight mb-3">Contact Us</h2>
           <div className="grid grid-cols-1 gap-3">
             {quickActions.map(action => {
               let href = null;
@@ -218,9 +218,9 @@ const HelpSupport = () => {
               } else if (action.id === 'call' && supportInfo.phone) {
                 href = `tel:${supportInfo.phone.replace(/\D/g, '')}`;
               }
-
+ 
               const Component = href ? 'a' : 'button';
-
+ 
               return (
                 <Component
                   key={action.id}
@@ -228,7 +228,7 @@ const HelpSupport = () => {
                   target={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? '_blank' : undefined}
                   rel={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? 'noopener noreferrer' : undefined}
                   onClick={!href ? action.action : undefined}
-                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 border border-gray-100 flex items-center gap-4 w-full"
+                  className="bg-card-bg rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 border border-border-color flex items-center gap-4 w-full cursor-pointer"
                 >
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
@@ -237,10 +237,10 @@ const HelpSupport = () => {
                     <action.icon className="w-6 h-6" style={{ color: action.color }} />
                   </div>
                   <div className="flex-1 text-left">
-                    <h3 className="font-semibold text-[#111827]">{action.title}</h3>
-                    <p className="text-sm text-gray-600">{action.subtitle}</p>
+                    <h3 className="font-semibold text-dark-text">{action.title}</h3>
+                    <p className="text-sm text-secondary-text">{action.subtitle}</p>
                   </div>
-                  <FiChevronRight className="w-5 h-5 text-gray-400" />
+                  <FiChevronRight className="w-5 h-5 text-secondary-text" />
                 </Component>
               );
             })}
@@ -250,7 +250,7 @@ const HelpSupport = () => {
         {/* Submit a Request Button */}
         <button
           onClick={() => setShowContactForm(true)}
-          className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-950/20 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2 cursor-pointer"
         >
           <FiSend className="w-5 h-5" />
           Submit a Request
@@ -259,13 +259,13 @@ const HelpSupport = () => {
         {/* FAQ Categories */}
         {searchQuery === '' && (
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-[#111827] tracking-tight mb-3">Browse by Category</h2>
+            <h2 className="text-lg font-bold text-dark-text tracking-tight mb-3">Browse by Category</h2>
             <div className="space-y-3">
               {categories.map(category => (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id === selectedCategory ? null : category.id)}
-                  className="w-full bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-100"
+                  className="w-full bg-card-bg rounded-xl p-4 shadow-sm hover:shadow-md transition-all border border-border-color cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -275,23 +275,23 @@ const HelpSupport = () => {
                       >
                         <category.icon className="w-5 h-5" style={{ color: category.color }} />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{category.title}</h3>
+                      <h3 className="font-semibold text-dark-text">{category.title}</h3>
                     </div>
                     <FiChevronRight
-                      className={`w-5 h-5 text-gray-400 transition-transform ${selectedCategory === category.id ? 'rotate-90' : ''}`}
+                      className={`w-5 h-5 text-secondary-text transition-transform ${selectedCategory === category.id ? 'rotate-90' : ''}`}
                     />
                   </div>
-
+ 
                   {/* Expanded Questions */}
                   {selectedCategory === category.id && (
-                    <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+                    <div className="mt-4 space-y-3 border-t border-border-color pt-4">
                       {category.questions.map((item, idx) => (
                         <div key={idx} className="text-left">
                           <div className="flex items-start gap-2 mb-2">
-                            <FiHelpCircle className="w-4 h-4 text-[#FF9F45] mt-0.5 shrink-0" />
-                            <p className="font-medium text-gray-900 text-sm">{item.q}</p>
+                            <FiHelpCircle className="w-4 h-4 text-[#B33A35] mt-0.5 shrink-0" />
+                            <p className="font-medium text-dark-text text-sm">{item.q}</p>
                           </div>
-                          <p className="text-sm text-gray-600 ml-6">{item.a}</p>
+                          <p className="text-sm text-secondary-text ml-6">{item.a}</p>
                         </div>
                       ))}
                     </div>
@@ -305,19 +305,19 @@ const HelpSupport = () => {
         {/* Search Results */}
         {searchQuery !== '' && (
           <div>
-            <h2 className="text-lg font-bold text-[#111827] tracking-tight mb-3">
+            <h2 className="text-lg font-bold text-dark-text tracking-tight mb-3">
               Search Results ({filteredQuestions.length})
             </h2>
             {filteredQuestions.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center">
-                <FiAlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600">No results found for "{searchQuery}"</p>
-                <p className="text-sm text-gray-500 mt-2">Try different keywords or contact support</p>
+              <div className="bg-card-bg border border-border-color rounded-xl p-8 text-center">
+                <FiAlertCircle className="w-12 h-12 text-secondary-text mx-auto mb-3" />
+                <p className="text-secondary-text">No results found for "{searchQuery}"</p>
+                <p className="text-sm text-secondary-text opacity-70 mt-2">Try different keywords or contact support</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {filteredQuestions.map((item, idx) => (
-                  <div key={idx} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                  <div key={idx} className="bg-card-bg rounded-xl p-4 shadow-sm border border-border-color">
                     <div className="flex items-start gap-2 mb-2">
                       <span
                         className="text-xs font-semibold px-2 py-1 rounded-full"
@@ -330,10 +330,10 @@ const HelpSupport = () => {
                       </span>
                     </div>
                     <div className="flex items-start gap-2 mb-2">
-                      <FiHelpCircle className="w-4 h-4 text-[#FF9F45] mt-0.5 shrink-0" />
-                      <p className="font-medium text-gray-900 text-sm">{item.q}</p>
+                      <FiHelpCircle className="w-4 h-4 text-[#B33A35] mt-0.5 shrink-0" />
+                      <p className="font-medium text-dark-text text-sm">{item.q}</p>
                     </div>
-                    <p className="text-sm text-gray-600 ml-6">{item.a}</p>
+                    <p className="text-sm text-secondary-text ml-6">{item.a}</p>
                   </div>
                 ))}
               </div>
@@ -344,68 +344,68 @@ const HelpSupport = () => {
 
       {/* Contact Form Modal */}
       {showContactForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-3xl">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-card-bg border border-border-color rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-card-bg border-b border-border-color px-6 py-4 rounded-t-3xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Submit a Request</h2>
+                <h2 className="text-xl font-bold text-dark-text">Submit a Request</h2>
                 <button
                   onClick={() => setShowContactForm(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-800/10 rounded-full transition-colors cursor-pointer text-dark-text"
                 >
                   <FiArrowLeft className="w-5 h-5" />
                 </button>
               </div>
             </div>
-
+ 
             <form onSubmit={handleContactSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <label className="block text-sm font-medium text-dark-text mb-2">Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
                   placeholder="Your name"
                 />
               </div>
-
+ 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <label className="block text-sm font-medium text-dark-text mb-2">Email</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
                   placeholder="your.email@example.com"
                 />
               </div>
-
+ 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                <label className="block text-sm font-medium text-dark-text mb-2">Subject</label>
                 <input
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
                   placeholder="Brief description of your issue"
                 />
               </div>
-
+ 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <label className="block text-sm font-medium text-dark-text mb-2">Message</label>
                 <textarea
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   rows={6}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none resize-none"
                   placeholder="Describe your issue in detail..."
                 />
               </div>
-
+ 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-100/50 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-950/20 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <FiSend className="w-5 h-5" />
                 Submit Request

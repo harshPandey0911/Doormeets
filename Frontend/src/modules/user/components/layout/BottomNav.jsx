@@ -9,38 +9,38 @@ import { useCart } from '../../../../context/CartContext';
 // Colorful theme for each nav item
 const navItemColors = {
   home: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   categories: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   bookings: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   scrap: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   cart: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
   account: {
-    primary: '#FF9F45', // Orange
-    gradient: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
+    primary: '#B33A35', // Orange
+    gradient: 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)',
     bg: 'rgba(255, 159, 69, 0.1)',
     shadow: 'rgba(255, 159, 69, 0.4)'
   },
@@ -55,7 +55,7 @@ const BottomNav = React.memo(() => {
 
   const navItems = useMemo(() => [
     { id: 'home', label: 'Home', icon: FiHome, filledIcon: HiHome, path: '/user/home' },
-    { id: 'categories', label: 'Category', icon: FiGrid, filledIcon: HiViewGrid, path: '/user/categories' },
+    // { id: 'categories', label: 'Category', icon: FiGrid, filledIcon: HiViewGrid, path: '/user/categories' },
     { id: 'bookings', label: 'Bookings', icon: FiCalendar, filledIcon: HiCalendar, path: '/user/my-bookings' },
     { id: 'cart', label: 'Cart', icon: FiShoppingCart, filledIcon: HiShoppingCart, path: '/user/cart', isCart: true },
     { id: 'account', label: 'Account', icon: FiUser, filledIcon: HiUser, path: '/user/account' },
@@ -105,35 +105,16 @@ const BottomNav = React.memo(() => {
       }}
     >
       <div
-        className="w-full pb-2 pt-1.5 px-2"
+        className="w-full pb-4 pt-3 px-4 rounded-t-[28px]"
         style={{
-          background: 'rgba(255, 255, 255, 0.98)',
+          background: 'var(--background)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.08)',
-          borderTop: '1px solid rgba(229, 231, 235, 0.6)',
+          boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.15)',
+          borderTop: '1px solid var(--border)',
         }}
       >
-        <div ref={navRef} className="flex items-center justify-around max-w-md mx-auto relative">
-
-          {/* Animated Sliding Indicator */}
-          <motion.div
-            className="absolute -top-1.5 h-[3px] rounded-full"
-            animate={{
-              left: indicatorStyle.left,
-              width: indicatorStyle.width,
-              background: 'linear-gradient(135deg, #FF9F45 0%, #FFB86C 100%)',
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 380,
-              damping: 30
-            }}
-            style={{
-              boxShadow: '0 2px 10px rgba(255, 159, 69, 0.6)',
-            }}
-          />
-
+        <div ref={navRef} className="flex items-center justify-between max-w-md mx-auto relative gap-1.5">
           {navItems.map((item) => {
             const IconComponent = activeTab === item.id ? item.filledIcon : item.icon;
             const isActive = activeTab === item.id;
@@ -142,59 +123,35 @@ const BottomNav = React.memo(() => {
               <motion.button
                 key={item.id}
                 onClick={() => handleTabClick(item.path)}
-                whileTap={{ scale: 0.9 }}
-                className="flex flex-col items-center justify-center w-16 h-12 rounded-2xl transition-all duration-200 relative"
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center justify-center transition-all duration-300 relative cursor-pointer ${
+                  isActive
+                    ? 'bg-[#B33A35] text-white px-4 py-2.5 rounded-full flex-1 max-w-[135px]'
+                    : 'w-11 h-11 rounded-full flex-shrink-0'
+                }`}
+                style={isActive ? {} : {
+                  backgroundColor: 'rgba(179,58,53,0.12)',
+                  color: 'var(--primary)',
+                }}
               >
-                {/* Active Background Glow */}
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute inset-1 rounded-xl"
-                      style={{
-                        background: 'rgba(255, 159, 69, 0.08)',
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-
-                <div className="relative z-10 flex flex-col items-center justify-center">
-                  <motion.div
-                    className="relative mb-1"
-                    animate={{
-                      scale: isActive ? 1.1 : 1,
-                      y: isActive ? -2 : 0
-                    }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <IconComponent
-                      className="w-6 h-6 transition-colors duration-200"
-                      style={{
-                        color: isActive ? activeColor.primary : '#9CA3AF',
-                      }}
-                    />
+                <div className="flex items-center gap-1.5">
+                  <div className="relative">
+                    <IconComponent className="w-5 h-5" />
                     {item.isCart && cartCount > 0 && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -top-1.5 -right-2.5 bg-gradient-to-br from-red-500 to-red-600 text-white text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-white shadow-lg"
+                      <span
+                        className={`absolute -top-2 -right-3 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 ${
+                          isActive ? 'border-[#B33A35]' : 'border-white'
+                        }`}
                       >
                         {cartCount > 9 ? '9+' : cartCount}
-                      </motion.span>
+                      </span>
                     )}
-                  </motion.div>
-                  <motion.span
-                    animate={{
-                      color: isActive ? activeColor.primary : '#6B7280',
-                      fontWeight: isActive ? 700 : 500
-                    }}
-                    className="text-[10px]"
-                  >
-                    {item.label}
-                  </motion.span>
+                  </div>
+                  {isActive && (
+                    <span className="text-xs font-semibold whitespace-nowrap">
+                      {item.id === 'cart' ? 'My cart' : item.id === 'account' ? 'Profile' : item.label}
+                    </span>
+                  )}
                 </div>
               </motion.button>
             );

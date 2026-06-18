@@ -61,9 +61,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
           gsap.to(bellButtonRef.current, { scale: 1.1, duration: 0.3, ease: 'power2.out' });
           if (btn) {
             gsap.to(btn, {
-              boxShadow: count > 0
-                ? '0 6px 20px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
-                : `0 4px 12px ${themeColors.brand.teal}40`,
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
               duration: 0.3,
               ease: 'power2.out',
             });
@@ -77,9 +75,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
           gsap.to(bellButtonRef.current, { scale: 1.0, duration: 0.3, ease: 'power2.out' });
           if (btn) {
             gsap.to(btn, {
-              boxShadow: count > 0
-                ? '0 3px 12px rgba(239, 68, 68, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
-                : `0 2px 6px ${themeColors.brand.teal}26`,
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
               duration: 0.3,
               ease: 'power2.out',
             });
@@ -88,29 +84,14 @@ const NotificationBell = ({ notificationCount = 0 }) => {
         }
       }}
     >
-      {/* 1. Gradient Border */}
+      {/* 1. Subtle Circular Border */}
       <div
-        className="absolute inset-[-2px] rounded-full z-0"
-        style={{
-          background: themeColors.brand.conic,
-          boxShadow: `0 0 8px ${themeColors.brand.orange}26`
-        }}
+        className="absolute inset-0 rounded-full z-0 border border-black/[0.12] bg-white shadow-sm"
       />
 
-      {/* 2. White Mask */}
-      <div className="absolute inset-[1px] rounded-full bg-white z-0" />
-
-      {/* 3. Inner Button */}
+      {/* 2. Inner Button */}
       <button
-        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden"
-        style={{
-          background: count > 0
-            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.12) 100%)'
-            : 'linear-gradient(135deg, rgba(52, 121, 137, 0.1) 0%, rgba(187, 95, 54, 0.1) 100%)',
-          boxShadow: count > 0
-            ? '0 3px 12px rgba(239, 68, 68, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
-            : '0 2px 6px rgba(52, 121, 137, 0.15)',
-        }}
+        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden bg-white"
       >
         <svg width="0" height="0" className="absolute">
           <linearGradient id="doormeets-bell-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -120,18 +101,32 @@ const NotificationBell = ({ notificationCount = 0 }) => {
           </linearGradient>
         </svg>
 
-        <FiBell
+        <svg
           ref={bellRef}
-          className="w-5 h-5 transition-all duration-300"
+          className="w-5.5 h-5.5 transition-all duration-300"
+          viewBox="0 0 24 24"
+          fill="none"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           style={{
-            stroke: count > 0 ? '#EF4444' : 'url(#doormeets-bell-gradient)',
-            strokeWidth: '2.5',
+            stroke: '#000000',
             color: 'transparent',
-            filter: count > 0
-              ? 'drop-shadow(0 2px 6px rgba(239, 68, 68, 0.4))'
-              : 'drop-shadow(0 1px 3px rgba(52, 121, 137, 0.3))',
           }}
-        />
+        >
+          {/* Top Loop */}
+          <path d="M12 3a2 2 0 00-2 2h4a2 2 0 00-2-2z" />
+          {/* Bell Body */}
+          <path d="M12 5a4.5 4.5 0 00-4.5 4.5v3.5c0 1.2-1 2.2-1.5 2.5h12s-1.5-1-1.5-2.5v-3.5A4.5 4.5 0 0012 5z" />
+          {/* Clapper */}
+          <path d="M10 17.5a2 2 0 004 0" />
+          {/* Left waves */}
+          <path d="M4 8a5.5 5.5 0 000 8" />
+          <path d="M2 5.5a9.5 9.5 0 000 13" />
+          {/* Right waves */}
+          <path d="M20 8a5.5 5.5 0 010 8" />
+          <path d="M22 5.5a9.5 9.5 0 010 13" />
+        </svg>
       </button>
 
       {/* 4. Active Badge (Moved outside for robustness and to prevent clipping) */}

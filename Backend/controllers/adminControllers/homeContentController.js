@@ -68,6 +68,8 @@ const getHomeContent = async (req, res) => {
         isCategorySectionsVisible: homeContent.isCategorySectionsVisible ?? true,
         isCategoriesVisible: homeContent.isCategoriesVisible ?? true,
         isFeaturedSectionsVisible: homeContent.isFeaturedSectionsVisible ?? true,
+        popularServices: homeContent.popularServices || [],
+        isPopularServicesVisible: homeContent.isPopularServicesVisible ?? true,
         createdAt: homeContent.createdAt,
         updatedAt: homeContent.updatedAt
       }
@@ -159,6 +161,8 @@ const updateHomeContent = async (req, res) => {
     if (req.body.isCategorySectionsVisible !== undefined) homeContent.isCategorySectionsVisible = req.body.isCategorySectionsVisible;
     if (req.body.isCategoriesVisible !== undefined) homeContent.isCategoriesVisible = req.body.isCategoriesVisible;
     if (req.body.isFeaturedSectionsVisible !== undefined) homeContent.isFeaturedSectionsVisible = req.body.isFeaturedSectionsVisible;
+    if (req.body.popularServices !== undefined) homeContent.popularServices = req.body.popularServices;
+    if (req.body.isPopularServicesVisible !== undefined) homeContent.isPopularServicesVisible = req.body.isPopularServicesVisible;
 
     // Handle featuredSections
     if (req.body.featuredSections !== undefined) {
@@ -198,7 +202,9 @@ const updateHomeContent = async (req, res) => {
         isBookedVisible: homeContent.isBookedVisible,
         isCategorySectionsVisible: homeContent.isCategorySectionsVisible,
         isCategoriesVisible: homeContent.isCategoriesVisible,
-        isFeaturedSectionsVisible: homeContent.isFeaturedSectionsVisible
+        isFeaturedSectionsVisible: homeContent.isFeaturedSectionsVisible,
+        popularServices: homeContent.popularServices || [],
+        isPopularServicesVisible: homeContent.isPopularServicesVisible
       }
     });
   } catch (error) {

@@ -1,19 +1,89 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, [data-theme="dark"]));
 
+
+/* ============================================
+   LIGHT THEME (default)
+   ============================================ */
+:root {
+  --primary:        #B33A35;
+  --primary-hover:  #9E2E2A;
+  --background:     #FFFFFF;
+  --surface:        #FFFFFF;
+  --card-bg:        #F8F9FA;
+  --text-primary:   #1F2937;
+  --text-secondary: #6B7280;
+  --text-muted:     #9CA3AF;
+  --border:         #E5E7EB;
+  --divider:        #F1F5F9;
+  --shadow:         0 4px 12px rgba(0, 0, 0, 0.06);
+
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error:   #EF4444;
+  --info:    #3B82F6;
+}
+
+/* ============================================
+   DARK THEME — DoorMeets Palette
+   ============================================ */
+[data-theme="dark"] {
+  --primary:        #B33A35;
+  --primary-hover:  #C6544E;
+  --background:     #0A0911;
+  --surface:        #11141B;
+  --card-bg:        #11141B;
+  --text-primary:   #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted:     #94A3B8;
+  --border:         #232733;
+  --divider:        #1B1F27;
+  --shadow:         0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error:   #EF4444;
+  --info:    #3B82F6;
+}
+
+/* ============================================
+   TAILWIND v4 @theme — maps to CSS variables
+   ============================================ */
 @theme {
-  --color-brand: #FF9F45;
-  --color-brand-light: #FFF8F1;
-  --color-brand-dark: #FFB86C;
-  --color-primary-orange: #FF9F45;
-  --color-secondary-orange: #FFB86C;
-  --color-accent-orange: #FFD8A8;
-  --color-dark-text: #3A3A3A;
-  --color-secondary-text: #7A7A7A;
-  --color-light-bg: #FFF8F1;
-  --color-card-bg: #FFFFFF;
-  --color-border-color: #EAEAEA;
+  --color-brand:          var(--primary);
+  --color-brand-light:    var(--primary-hover);
+  --color-brand-dark:     var(--primary-hover);
+  --color-dark-text:      var(--text-primary);
+  --color-secondary-text: var(--text-secondary);
+  --color-muted-text:     var(--text-muted);
+  --color-light-bg:       var(--background);
+  --color-surface:        var(--surface);
+  --color-card-bg:        var(--card-bg);
+  --color-border-color:   var(--border);
+  --color-divider:        var(--divider);
+  --color-success:        var(--success);
+  --color-warning:        var(--warning);
+  --color-error:          var(--error);
+  --color-info:           var(--info);
+
+  /* Keep orange family mapped to brand shades */
+  --color-orange-50:  var(--primary-hover);
+  --color-orange-100: var(--primary-hover);
+  --color-orange-200: var(--primary-hover);
+  --color-orange-300: var(--primary-hover);
+  --color-orange-400: var(--primary-hover);
+  --color-orange-500: var(--primary);
+  --color-orange-600: var(--primary);
+  --color-orange-700: var(--primary-hover);
+  --color-orange-800: var(--primary-hover);
+  --color-orange-900: var(--primary-hover);
+  /* Map font weights to look identical in boldness to Poppins */
+  --font-weight-medium:   600;
+  --font-weight-semibold: 700;
+  --font-weight-bold:     800;
+  --font-weight-black:    900;
 }
 
 /* Slide up animation for modal */
@@ -239,29 +309,41 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background-color: #FFF8F1 !important;
-  background: linear-gradient(to bottom, rgba(255, 159, 69, 0.05) 0%, rgba(255, 184, 108, 0.02) 15%, #FFF8F1 30%) !important;
+  background-color: var(--background) !important;
+  background: var(--background) !important;
   background-attachment: fixed;
   overflow-x: hidden;
   max-width: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   max-width: 100%;
-  color: #3A3A3A;
+  color: var(--text-primary);
+}
+
+/* Force Inter on all elements including vendor/worker/admin panels */
+*, *::before, *::after {
+  font-family: inherit;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, button, input, textarea, label, a {
+  font-family: 'Inter', sans-serif;
 }
 
 #root,
 .App {
-  background-color: #FFF8F1 !important;
-  background: linear-gradient(to bottom, rgba(255, 159, 69, 0.05) 0%, rgba(255, 184, 108, 0.02) 15%, #FFF8F1 30%) !important;
+  background-color: var(--background) !important;
+  background: var(--background) !important;
   min-height: 100vh;
   overflow-x: hidden;
   max-width: 100%;
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Hide scrollbar for horizontal scroll */
@@ -293,29 +375,29 @@ html {
   transform: scale(0.98);
 }
 
-/* Custom brand color - Doormeets update */
+/* Custom brand color - uses CSS variable so it adapts per theme */
 .bg-brand {
-  background-color: #FF9F45;
+  background-color: var(--primary);
 }
 
 .bg-brand-hover:hover {
-  background-color: #FFB86C;
+  background-color: var(--primary-hover);
 }
 
 .text-brand {
-  color: #FF9F45;
+  color: var(--primary);
 }
 
 .border-brand {
-  border-color: #FF9F45;
+  border-color: var(--primary);
 }
 
 .bg-brand-light {
-  background-color: #FFF8F1;
+  background-color: var(--primary-hover);
 }
 
 .hover\:bg-brand-light:hover {
-  background-color: #FFD8A8;
+  background-color: var(--primary-hover);
 }
 
 /* Admin Panel Styles */

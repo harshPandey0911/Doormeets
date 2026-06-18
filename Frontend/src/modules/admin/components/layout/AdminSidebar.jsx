@@ -95,6 +95,7 @@ const getChildRoute = (parentRoute, childName) => {
     },
     "/admin/user-categories": {
       "Home": "/admin/user-categories/home",
+      "Popular Services": "/admin/user-categories/popular-services",
       "Manage Professions": "/admin/user-categories/professions",
       "Category Templates": "/admin/user-categories/templates",
       "Featured Sections": "/admin/user-categories/featured-sections"

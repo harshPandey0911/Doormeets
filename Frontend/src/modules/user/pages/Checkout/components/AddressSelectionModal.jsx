@@ -82,38 +82,39 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
       />
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <div
-          className={`bg-white rounded-t-[32px] shadow-2xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`}
+          className={`shadow-2xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`}
           style={{
+            backgroundColor: 'var(--card-bg)',
             height: '85vh',
             maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            borderTop: '1px solid rgba(0,0,0,0.05)'
+            borderTop: '1px solid var(--border)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10 shrink-0 flex items-center justify-between">
+          <div className="sticky top-0 border-b px-4 py-3 z-10 shrink-0 flex items-center justify-between" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
             <div className="flex items-center gap-3">
-              <button onClick={handleClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
-                <FiArrowLeft className="w-5 h-5 text-black" />
+              <button onClick={handleClose} className="p-1 rounded-full transition-colors" style={{ color: 'var(--text-primary)' }}>
+                <FiArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-bold text-black">Confirm Location</h1>
+              <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Confirm Location</h1>
             </div>
-            <button onClick={handleClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <FiX className="w-5 h-5 text-black" />
+            <button onClick={handleClose} className="p-2 rounded-full transition-colors" style={{ color: 'var(--text-primary)' }}>
+              <FiX className="w-5 h-5" />
             </button>
           </div>
 
           {/* Info Card - Styled with Brand Colors */}
           <div className="px-4 pt-4 shrink-0">
-            <div className="rounded-xl p-3 mb-2 border" style={{ backgroundColor: `${themeColors.brand.teal}0D`, borderColor: `${themeColors.brand.teal}1A` }}>
+            <div className="rounded-xl p-3 mb-2 border" style={{ backgroundColor: 'rgba(0, 166, 166, 0.05)', borderColor: 'rgba(0, 166, 166, 0.15)' }}>
               <div className="flex items-start gap-3">
                 <FiMapPin className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: themeColors.button }} />
                 <div>
                   <h3 className="font-semibold mb-1 text-sm" style={{ color: themeColors.button }}>Set Delivery Location</h3>
-                  <p className="text-xs" style={{ color: `${themeColors.brand.teal}CC` }}>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                     Place the pin accurately on the map to help the professional find you easily.
                   </p>
                 </div>
@@ -123,7 +124,7 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
 
           {/* Map Section */}
           <div className="px-4 pb-2 shrink-0">
-            <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
+            <div className="rounded-xl overflow-hidden shadow-sm border" style={{ borderColor: 'var(--border)' }}>
               <LocationPicker
                 onLocationSelect={handleLocationSelect}
                 initialPosition={selectedLocation}
@@ -141,7 +142,7 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
           >
             {/* Address Search */}
             <div className="mb-4">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1" style={{ color: 'var(--text-muted)' }}>
                 Pinpoint your Address
               </label>
               {isLoaded ? (
@@ -160,7 +161,8 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
                       placeholder="Search for area, street name..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-10 py-3 bg-gray-50 border-none rounded-xl text-sm focus:ring-1 focus:ring-primary-500 transition-all font-medium"
+                      className="w-full pl-9 pr-10 py-3 border rounded-xl text-sm focus:ring-1 focus:ring-primary-500 transition-all font-medium"
+                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                     />
                     {searchQuery && (
                       <button
@@ -178,7 +180,8 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
                     type="text"
                     placeholder="Loading Maps..."
                     disabled
-                    className="w-full pl-4 py-3 bg-gray-100 rounded-xl text-sm"
+                    className="w-full pl-4 py-3 rounded-xl text-sm"
+                    style={{ backgroundColor: 'var(--background)', color: 'var(--text-muted)' }}
                   />
                 </div>
               )}
@@ -186,7 +189,7 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
 
             {/* House/Flat Number - NEW */}
             <div className="mb-6">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1" style={{ color: 'var(--text-muted)' }}>
                 House / Flat / Office No. (Optional)
               </label>
               <div className="relative">
@@ -196,7 +199,8 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
                   placeholder="e.g. Flat 101, Doormeets Tower"
                   value={houseNumber}
                   onChange={(e) => onHouseNumberChange(e.target.value)}
-                  className="w-full pl-9 pr-4 py-3 bg-gray-50 border-none rounded-xl text-sm focus:ring-1 focus:ring-primary-500 transition-all font-medium"
+                  className="w-full pl-9 pr-4 py-3 border rounded-xl text-sm focus:ring-1 focus:ring-primary-500 transition-all font-medium"
+                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                 />
               </div>
             </div>

@@ -230,18 +230,18 @@ const UpdateProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className="min-h-screen bg-light-bg pb-20">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <header className="bg-transparent border-b border-border-color sticky top-0 z-30">
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center gap-3">
             <button
               onClick={handleBack}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-800/10 rounded-full transition-colors"
             >
-              <FiArrowLeft className="w-5 h-5 text-black" />
+              <FiArrowLeft className="w-5 h-5 text-dark-text" />
             </button>
-            <h1 className="text-xl font-bold text-black">Update Profile</h1>
+            <h1 className="text-xl font-bold text-dark-text">Update Profile</h1>
           </div>
         </div>
       </header>
@@ -253,8 +253,8 @@ const UpdateProfile = () => {
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="relative group">
               <div
-                className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-xl cursor-pointer"
-                style={{ background: '#f0f0f0' }}
+                className="w-28 h-28 rounded-full overflow-hidden border-4 border-border-color shadow-xl cursor-pointer"
+                style={{ background: 'var(--card-bg)' }}
                 onClick={handleImageClick}
               >
                 {photoPreview || formData.profilePhoto ? (
@@ -264,7 +264,7 @@ const UpdateProfile = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                  <div className="w-full h-full flex items-center justify-center bg-card-bg text-secondary-text">
                     <FiUser className="w-12 h-12" />
                   </div>
                 )}
@@ -286,12 +286,12 @@ const UpdateProfile = () => {
                 />
               </div>
             </div>
-            <p className="text-gray-500 text-[10px] mt-3 font-bold uppercase tracking-wider">Tap to change photo</p>
+            <p className="text-secondary-text text-[10px] mt-3 font-bold uppercase tracking-wider">Tap to change photo</p>
           </div>
 
           {/* Full Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-dark-text mb-2">
               Full Name
             </label>
             <div className="relative">
@@ -307,7 +307,7 @@ const UpdateProfile = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 disabled={isLoading}
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:outline-none focus:ring-2 focus:border-transparent transition-all"
                 style={{
                   focusRingColor: themeColors.button,
                 }}
@@ -316,7 +316,7 @@ const UpdateProfile = () => {
                   e.target.style.boxShadow = '0 0 0 3px rgba(0, 166, 166, 0.1)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.borderColor = 'var(--border)';
                   e.target.style.boxShadow = 'none';
                 }}
                 placeholder="Enter your full name"
@@ -326,7 +326,7 @@ const UpdateProfile = () => {
 
           {/* Email Address */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-dark-text mb-2">
               Email Address
             </label>
             <div className="relative">
@@ -342,13 +342,13 @@ const UpdateProfile = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 disabled={isLoading}
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:outline-none focus:ring-2 focus:border-transparent transition-all"
                 onFocus={(e) => {
                   e.target.style.borderColor = themeColors.button;
                   e.target.style.boxShadow = '0 0 0 3px rgba(0, 166, 166, 0.1)';
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.borderColor = 'var(--border)';
                   e.target.style.boxShadow = 'none';
                 }}
                 placeholder="Enter your email address"
@@ -358,7 +358,7 @@ const UpdateProfile = () => {
 
           {/* Phone Number */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-dark-text mb-2">
               Phone Number
             </label>
             <div className="relative">
@@ -373,10 +373,10 @@ const UpdateProfile = () => {
                 name="phone"
                 value={formatPhoneNumber(formData.phone)}
                 disabled
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-600 cursor-not-allowed"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-border-color bg-card-bg/60 text-secondary-text cursor-not-allowed"
                 placeholder="Phone number cannot be changed"
               />
-              <p className="text-xs text-gray-500 mt-1 ml-1">
+              <p className="text-xs text-secondary-text mt-1 ml-1">
                 Phone number cannot be changed for security reasons
               </p>
             </div>
@@ -425,14 +425,14 @@ const UpdateProfile = () => {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative bg-white w-full rounded-t-[32px] p-6 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-10"
+              className="relative bg-card-bg border border-border-color w-full rounded-t-[32px] p-6 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-10"
             >
-              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+              <div className="w-12 h-1.5 bg-border-color rounded-full mx-auto mb-6" />
               <div className="flex justify-between items-center mb-6">
-                <h4 className="font-bold text-gray-900 text-lg">Select Photo Source</h4>
+                <h4 className="font-bold text-dark-text text-lg">Select Photo Source</h4>
                 <button 
                   onClick={() => setShowSourceSheet(false)}
-                  className="p-2 bg-gray-100 rounded-full text-gray-500"
+                  className="p-2 bg-gray-800/10 rounded-full text-secondary-text cursor-pointer"
                 >
                   <FiX />
                 </button>
@@ -471,12 +471,12 @@ const UpdateProfile = () => {
                     setShowSourceSheet(false);
                     document.getElementById('user-photo-upload')?.click();
                   }}
-                  className="flex flex-col items-center gap-3 p-6 bg-blue-50 rounded-2xl border border-blue-100 active:scale-95 transition-all"
+                  className="flex flex-col items-center gap-3 p-6 bg-blue-500/10 rounded-2xl border border-blue-500/20 active:scale-95 transition-all cursor-pointer"
                 >
                   <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-200">
                     <FiImage className="w-6 h-6" />
                   </div>
-                  <span className="font-bold text-blue-800 text-sm">Gallery</span>
+                  <span className="font-bold text-blue-400 text-sm">Gallery</span>
                 </button>
               </div>
             </motion.div>

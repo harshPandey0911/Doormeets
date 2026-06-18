@@ -1,22 +1,27 @@
 import React, { memo } from 'react';
 import { AiFillStar } from 'react-icons/ai';
-import { themeColors } from '../../../../theme';
 
-const ServiceWithRatingCard = memo(({ image, title, rating, reviews, price, originalPrice, discount, onClick, onAddClick, compact = false }) => {
+const ServiceWithRatingCard = memo(({
+  image, title, rating, reviews,
+  price, originalPrice, discount,
+  onClick, onAddClick, compact = false
+}) => {
   return (
     <div
-      className={`${compact ? 'min-w-[140px] w-[140px]' : 'min-w-[180px] w-[180px]'} bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 active:scale-95 group`}
+      className={`${compact ? 'min-w-[170px] w-[170px]' : 'min-w-[180px] w-[180px]'} rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 active:scale-95 group`}
       style={{
-        boxShadow: themeColors.cardShadow,
-        border: themeColors.cardBorder
+        backgroundColor: 'var(--card-bg)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow)',
       }}
       onClick={onClick}
     >
+      {/* Image */}
       <div className="relative">
         {discount && (
           <div
             className="absolute top-2 left-2 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-md z-10"
-            style={{ backgroundColor: themeColors.button }}
+            style={{ backgroundColor: 'var(--primary)' }}
           >
             {discount} OFF
           </div>
@@ -30,7 +35,14 @@ const ServiceWithRatingCard = memo(({ image, title, rating, reviews, price, orig
             decoding="async"
           />
         ) : (
-          <div className={`w-full ${compact ? 'h-[100px]' : 'h-36'} flex items-center justify-center bg-gray-50 border-b border-gray-100`}>
+          <div
+            className="w-full flex items-center justify-center border-b"
+            style={{
+              height: compact ? '100px' : '144px',
+              backgroundColor: 'var(--card-bg)',
+              borderColor: 'var(--border)',
+            }}
+          >
             <img
               src="/cleaning-expert-logo.png"
               alt="Placeholder"
@@ -39,46 +51,72 @@ const ServiceWithRatingCard = memo(({ image, title, rating, reviews, price, orig
           </div>
         )}
       </div>
-      <div className="p-3">
-        <h3 className="text-[13px] font-semibold text-gray-900 leading-snug mb-1 line-clamp-2 min-h-[40px]">{title}</h3>
+
+      {/* Content */}
+      <div className={compact ? 'p-2' : 'p-3'}>
+        <h3
+          className={`text-[13px] font-semibold leading-snug mb-1 line-clamp-2 ${compact ? 'min-h-[36px]' : 'min-h-[40px]'}`}
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {title}
+        </h3>
+
         {rating && (
-          <div className="flex items-center gap-1 mb-2">
+          <div className={`flex items-center gap-1 ${compact ? 'mb-1' : 'mb-2'}`}>
             <AiFillStar className="w-3.5 h-3.5 text-yellow-400" />
-            <span className="text-xs text-gray-900 font-bold">{rating}</span>
+            <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
+              {rating}
+            </span>
             {reviews && (
-              <span className="text-[10px] text-gray-500">({reviews})</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                ({reviews})
+              </span>
             )}
           </div>
         )}
-        <div className="flex items-center justify-between mt-auto pt-2">
+
+        <div className={`flex items-center justify-between mt-auto ${compact ? 'pt-1' : 'pt-2'}`}>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
-              <span className="text-[15px] font-bold text-gray-900">
-                {price && !isNaN(price.toString().replace(/[,]/g, '')) ? `₹${price}` : (price || 'Contact for price')}
+              <span
+                className="text-[15px] font-bold"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {price && !isNaN(price.toString().replace(/[,]/g, ''))
+                  ? `₹${price}`
+                  : price || 'Contact for price'}
               </span>
               {originalPrice && (
-                <span className="text-[11px] text-gray-400 line-through decoration-gray-400/60">₹{originalPrice}</span>
+                <span
+                  className="text-[11px] line-through"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  ₹{originalPrice}
+                </span>
               )}
             </div>
           </div>
+
           <button
             onClick={(e) => {
               e.stopPropagation();
               onAddClick?.();
             }}
-            className="px-5 py-1.5 h-8 rounded-lg text-xs font-bold transition-all active:scale-95 border"
+            className="px-4 py-1.5 h-8 rounded-lg text-xs font-bold transition-all active:scale-95 border"
             style={{
-              backgroundColor: `${themeColors.brand.teal}0D`,
-              color: themeColors.button,
-              borderColor: `${themeColors.brand.teal}1A`
+              backgroundColor: 'rgba(179,58,53,0.10)',
+              color: 'var(--primary)',
+              borderColor: 'rgba(179,58,53,0.20)',
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = themeColors.button;
-              e.target.style.color = '#FFFFFF';
+              e.currentTarget.style.backgroundColor = 'var(--primary)';
+              e.currentTarget.style.color = '#FFFFFF';
+              e.currentTarget.style.borderColor = 'var(--primary)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = `${themeColors.brand.teal}0D`;
-              e.target.style.color = themeColors.button;
+              e.currentTarget.style.backgroundColor = 'rgba(179,58,53,0.10)';
+              e.currentTarget.style.color = 'var(--primary)';
+              e.currentTarget.style.borderColor = 'rgba(179,58,53,0.20)';
             }}
           >
             Add
@@ -92,4 +130,3 @@ const ServiceWithRatingCard = memo(({ image, title, rating, reviews, price, orig
 ServiceWithRatingCard.displayName = 'ServiceWithRatingCard';
 
 export default ServiceWithRatingCard;
-

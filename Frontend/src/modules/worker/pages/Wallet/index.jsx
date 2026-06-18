@@ -159,19 +159,38 @@ const Wallet = () => {
       <Header title="My Wallet" />
 
       <main className="px-4 py-6">
-        {/* Balance Card */}
-        <div className="rounded-2xl p-6 shadow-xl relative overflow-hidden mb-6 bg-gradient-to-br from-teal-600 to-teal-800">
-          <div className="relative z-10 text-white">
+        {/* Balance Card - Light Clean Style */}
+        <div 
+          className="bg-white rounded-2xl p-6 shadow-md relative overflow-hidden mb-6"
+          style={{
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+            border: '1px solid rgba(13, 148, 136, 0.15)',
+          }}
+        >
+          <div className="relative z-10">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-white/80 text-sm font-medium mb-1">Available Balance</p>
-                <p className="text-3xl font-bold mb-4">₹{wallet.balance?.toLocaleString() || 0}</p>
+                <p className="text-gray-500 text-sm font-semibold mb-1 uppercase tracking-wide">Available Balance</p>
+                <p className="text-3xl font-black text-gray-800 mb-4">₹{wallet.balance?.toLocaleString() || 0}</p>
               </div>
-              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                <FiDollarSign className="w-6 h-6 text-white" />
+              <div 
+                className="p-2.5 rounded-xl flex-shrink-0"
+                style={{
+                  background: 'rgba(13, 148, 136, 0.1)',
+                  border: '1px solid rgba(13, 148, 136, 0.15)',
+                }}
+              >
+                <FiDollarSign className="w-6 h-6 text-teal-600" />
               </div>
             </div>
-            <div className="w-full bg-white/10 text-white py-2 rounded-xl font-medium text-xs text-center border border-white/20">
+            <div 
+              className="w-full py-2.5 rounded-xl font-bold text-xs text-center"
+              style={{
+                background: 'rgba(13, 148, 136, 0.05)',
+                color: '#0D9488',
+                border: '1px solid rgba(13, 148, 136, 0.12)',
+              }}
+            >
               Payments are managed by your Vendor
             </div>
           </div>

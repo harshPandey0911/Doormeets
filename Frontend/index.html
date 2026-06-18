@@ -11,12 +11,38 @@
   <meta name="description" content="Doormeets - Your Door. Our Service. The all-in-one home service platform for professional repairs, cleaning, and maintenance." />
   <title>Doormeets</title>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    (function() {
+      try {
+        var path = window.location.pathname;
+        var isVendorOrWorker = path.indexOf('/vendor') === 0 || path.indexOf('/worker') === 0;
+        if (!isVendorOrWorker) {
+          var theme = localStorage.getItem('theme') || 'light';
+          if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.classList.add('dark');
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <!-- Theme-responsive base styles -->
+  <style>
+    :root {
+      --html-bg-color: #ffffff;
+      --html-bg: linear-gradient(to bottom, rgba(0, 166, 166, 0.03) 0%, rgba(41, 173, 129, 0.02) 10%, #ffffff 20%);
+    }
+    [data-theme="dark"] {
+      --html-bg-color: #0A0911;
+      --html-bg: #0A0911;
+    }
+  </style>
 </head>
 
 <body
-  style="background-color: #ffffff; background: linear-gradient(to bottom, rgba(0, 166, 166, 0.03) 0%, rgba(41, 173, 129, 0.02) 10%, #ffffff 20%); margin: 0; padding: 0;">
+  style="background-color: var(--html-bg-color); background: var(--html-bg); margin: 0; padding: 0;">
   <div id="root"
-    style="background-color: #ffffff; background: linear-gradient(to bottom, rgba(0, 166, 166, 0.03) 0%, rgba(41, 173, 129, 0.02) 10%, #ffffff 20%); min-height: 100dvh;">
+    style="background-color: var(--html-bg-color); background: var(--html-bg); min-height: 100dvh;">
   </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

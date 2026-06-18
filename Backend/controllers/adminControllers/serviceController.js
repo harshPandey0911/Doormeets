@@ -154,7 +154,8 @@ const createService = async (req, res) => {
       maxImageUploads,
       pageBlocks,
       features,
-      steps
+      steps,
+      variants
     } = req.body;
 
     const cleanedCategoryId = (categoryId === '' || !categoryId) ? null : categoryId;
@@ -176,7 +177,8 @@ const createService = async (req, res) => {
       minimumMinutes: serviceType === 'minute_base' ? (Number(minimumMinutes) || 30) : 30,
       packages: serviceType === 'package_base' && Array.isArray(packages) ? packages : [],
       quoteInstructions: serviceType === 'image_base' ? (quoteInstructions || null) : null,
-      maxImageUploads: serviceType === 'image_base' ? (Number(maxImageUploads) || 5) : 5
+      maxImageUploads: serviceType === 'image_base' ? (Number(maxImageUploads) || 5) : 5,
+      variants: Array.isArray(variants) ? variants : []
     });
 
     // basePrice and gstPercentage handling removed. Prices are strictly managed from Pricing Matrix.
@@ -322,6 +324,10 @@ const updateService = async (req, res) => {
     if (updates.packages !== undefined) {
       service.packages = Array.isArray(updates.packages) ? updates.packages : [];
       service.markModified('packages');
+    }
+    if (updates.variants !== undefined) {
+      service.variants = Array.isArray(updates.variants) ? updates.variants : [];
+      service.markModified('variants');
     }
     if (updates.quoteInstructions !== undefined) service.quoteInstructions = updates.quoteInstructions;
     if (updates.maxImageUploads !== undefined) service.maxImageUploads = updates.maxImageUploads;

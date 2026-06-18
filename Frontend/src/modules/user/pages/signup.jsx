@@ -6,6 +6,7 @@ import { themeColors } from '../../../theme';
 import { userAuthService } from '../../../services/authService';
 import Logo from '../../../components/common/Logo';
 import LogoLoader from '../../../components/common/LogoLoader';
+import loginIllustration from '../../../assets/images/loginpage.png';
 
 import { z } from "zod";
 
@@ -206,223 +207,232 @@ const Signup = () => {
     }
   };
 
-  const brandColor = themeColors.brand?.teal || '#347989';
+  // Brand Colors from theme
+  const brandColor = '#B33A35';
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 flex flex-col justify-start sm:justify-center py-12 sm:px-6 lg:px-8 relative overflow-x-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#347989] opacity-[0.03] rounded-full blur-3xl animate-floating" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D68F35] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
+    <div className="min-h-[100dvh] bg-[#F4F5F8] md:bg-gray-100 flex flex-col justify-start md:justify-center md:py-12 md:px-6 lg:px-8 relative overflow-x-hidden font-['Montserrat']">
+      <div className="w-full max-w-md mx-auto bg-white md:rounded-3xl md:shadow-2xl md:border md:border-gray-100 overflow-hidden flex flex-col min-h-[100dvh] md:min-h-0 relative animate-fade-in">
+        
+        {/* Top Section: Header Banner with Illustration */}
+        <div className="w-full bg-[#F4F5F8] py-7 px-6 relative flex items-center justify-center select-none border-b border-gray-100">
+          {/* Close X Button */}
+          <button
+            onClick={() => navigate('/user')}
+            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors z-20 cursor-pointer text-base"
+            aria-label="Close"
+          >
+            <span>✕</span>
+          </button>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8 relative z-10 animate-fade-in">
-        <Logo className="h-16 w-auto transform hover:scale-110 transition-transform duration-500 mx-auto" />
-        <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
-          {step === 'details' ? 'Create Account' : 'Verify Phone'}
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 animate-stagger-1 animate-fade-in">
-          {step === 'details' ? 'Join Doormeets to start booking services' : `We've sent a 6-digit code to ${formData.phoneNumber}`}
-        </p>
-      </div>
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0 relative z-10">
-        <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#347989] via-[#D68F35] to-[#BB5F36]" />
-
-          {step === 'details' ? (
-            <form onSubmit={handleDetailsSubmit} className="space-y-6">
-              {verificationToken && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/user/login')}
-                  className="flex items-center text-sm text-gray-500 hover:text-[#347989] transition-colors mb-4 animate-fade-in"
-                >
-                  <FiChevronLeft className="mr-1" /> Back to Login
-                </button>
-              )}
-
-              <div className="animate-stagger-1 animate-fade-in">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
-                </label>
-                <div className="relative rounded-xl shadow-sm group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
-                    <FiUser className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    ref={nameInputRef}
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
-                    placeholder="Enter your name"
-                    style={{ '--tw-ring-color': brandColor }}
-                  />
-                </div>
-              </div>
-
-              <div className="animate-stagger-2 animate-fade-in">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email <span className="text-gray-400 text-xs font-normal ml-1">(Optional)</span>
-                </label>
-                <div className="relative rounded-xl shadow-sm group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
-                    <FiMail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
-                    placeholder="you@example.com"
-                    style={{ '--tw-ring-color': brandColor }}
-                  />
-                </div>
-              </div>
-
-              {!verificationToken && (
-                <div className="animate-stagger-3 animate-fade-in">
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <div className="relative rounded-xl shadow-sm group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#347989] transition-colors">
-                      <FiPhone className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <div className="absolute inset-y-0 left-10 flex items-center pointer-events-none">
-                      <span className="text-gray-500 font-medium border-r border-gray-300 pr-2">+91</span>
-                    </div>
-                    <input
-                      id="phoneNumber"
-                      name="phoneNumber"
-                      type="tel"
-                      required
-                      value={formData.phoneNumber}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
-                      className="block w-full pl-24 pr-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
-                      placeholder="9876543210"
-                      style={{ '--tw-ring-color': brandColor }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="animate-stagger-4 animate-fade-in">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed  overflow-hidden"
-                  style={{
-                    backgroundColor: brandColor,
-                    boxShadow: `0 10px 15px -3px ${brandColor}4D`
-                  }}
-                >
-                  <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
-                  {isLoading ? (
-                    <LogoLoader fullScreen={false} inline={true} size="w-6 h-6" />
-                  ) : (
-                    <span className="flex items-center relative z-10">
-                      {verificationToken ? 'Complete Registration' : 'Send OTP'}
-                      <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  )}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-6">
-              <button
-                type="button"
-                onClick={() => setStep('details')}
-                className="flex items-center text-sm text-gray-500 hover:text-[#347989] transition-colors mb-4 animate-fade-in"
-              >
-                <FiChevronLeft className="mr-1" /> Edit details
-              </button>
-
-              <form onSubmit={handleOtpSubmit} className="space-y-8">
-                <div className="flex justify-between gap-2 sm:gap-4 animate-stagger-1 animate-fade-in">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => (otpInputRefs.current[index] = el)}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-full h-14 text-center text-xl font-bold border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 hover:border-gray-400"
-                      style={{
-                        '--tw-ring-color': brandColor,
-                        caretColor: brandColor,
-                        backgroundColor: digit ? `${brandColor}05` : 'white'
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="text-center animate-stagger-2 animate-fade-in">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (resendTimer > 0) return;
-                      try {
-                        const response = await userAuthService.sendOTP(formData.phoneNumber, formData.email || null);
-                        if (response.success) {
-                          setOtpToken(response.token);
-                          setResendTimer(120);
-                          toast.success('New code sent!');
-                        }
-                      } catch (error) {
-                        toast.error('Failed to resend code');
-                      }
-                    }}
-                    disabled={resendTimer > 0}
-                    className="text-sm font-semibold hover:text-[#D68F35] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ color: brandColor }}
-                  >
-                    {resendTimer > 0
-                      ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
-                      : 'Resend code'}
-                  </button>
-                </div>
-
-                <div className="animate-stagger-3 animate-fade-in">
-                  <button
-                    type="submit"
-                    disabled={isLoading || otp.join('').length !== 6}
-                    className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white transition-all duration-500 shadow-lg hover:shadow-xl hover:-translate-y-1 transform disabled:opacity-50 disabled:cursor-not-allowed  overflow-hidden"
-                    style={{
-                      backgroundColor: brandColor,
-                      boxShadow: `0 10px 15px -3px ${brandColor}4D`
-                    }}
-                  >
-                    <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
-                    {isLoading ? (
-                      <LogoLoader fullScreen={false} inline={true} size="w-6 h-6" />
-                    ) : (
-                      <span className="flex items-center relative z-10">
-                        Create Account
-                        <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+          {/* Illustration */}
+          <img
+            src={loginIllustration}
+            alt="Signup Illustration"
+            className="mx-auto mt-3 h-[200px] w-auto object-contain"
+          />
         </div>
 
-        <p className="mt-8 text-center text-sm text-gray-500 animate-fade-in animate-stagger-5">
-          Already have an account?{' '}
-          <Link to="/user/login" className="font-semibold text-[#347989] hover:text-[#D68F35] transition-colors duration-300">
-            Sign in
-          </Link>
-        </p>
+        {/* Bottom Section: Form Fields */}
+        <div className="flex-1 bg-white px-7 py-6 flex flex-col justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
+              {step === 'details' ? 'Sign up' : 'Verify phone'}
+            </h2>
+            <p className="mt-1.5 text-sm text-gray-500 font-normal">
+              {step === 'details'
+                ? 'Join Doormeets to start booking services'
+                : `We've sent a 6-digit code to +91 ${formData.phoneNumber}`
+              }
+            </p>
+
+            <div className="mt-6">
+              {step === 'details' ? (
+                <form onSubmit={handleDetailsSubmit} className="space-y-4">
+                  {verificationToken && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/user/login')}
+                      className="flex items-center text-xs font-semibold text-gray-500 hover:text-[#B33A35] transition-colors mb-3 cursor-pointer"
+                    >
+                      <FiChevronLeft className="mr-0.5" /> Back to Login
+                    </button>
+                  )}
+
+                  {/* Full Name */}
+                  <div>
+                    <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                      Full Name
+                    </label>
+                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <FiUser />
+                      </div>
+                      <input
+                        ref={nameInputRef}
+                        id="name"
+                        name="name"
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                        placeholder="Enter your name"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                      Email <span className="text-gray-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
+                    </label>
+                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <FiMail />
+                      </div>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                        placeholder="you@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone Number */}
+                  {!verificationToken && (
+                    <div>
+                      <label htmlFor="phoneNumber" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                        Phone Number
+                      </label>
+                      <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <span className="text-gray-500 font-medium text-sm border-r border-gray-200 pr-3">+91</span>
+                        </div>
+                        <input
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          type="tel"
+                          required
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                          className="block w-full pl-16 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                          placeholder="9876543210"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 mt-2 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
+                  >
+                    {isLoading ? (
+                      <LogoLoader fullScreen={false} inline={true} size="w-5 h-5" />
+                    ) : (
+                      <>
+                        <span>{verificationToken ? 'Complete Registration' : 'Send OTP'}</span>
+                        <FiArrowRight />
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <div className="space-y-5">
+                  <button
+                    type="button"
+                    onClick={() => setStep('details')}
+                    className="flex items-center text-xs font-semibold text-gray-500 hover:text-[#B33A35] transition-colors mb-3 cursor-pointer"
+                  >
+                    <FiChevronLeft className="mr-0.5" /> Edit details
+                  </button>
+
+                  <form onSubmit={handleOtpSubmit} className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 text-center">
+                        Enter OTP Code
+                      </label>
+                      <div className="flex justify-center gap-2.5 py-2">
+                        {otp.map((digit, index) => (
+                          <input
+                            key={index}
+                            ref={(el) => (otpInputRefs.current[index] = el)}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                            className="w-11 h-12 text-center text-xl font-semibold bg-[#FFF5F5] border border-[#FCD7D9] rounded-xl focus:bg-white focus:border-[#B33A35] focus:ring-1 focus:ring-[#B33A35] outline-none transition-all text-[#B33A35]"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (resendTimer > 0) return;
+                          try {
+                            const response = await userAuthService.sendOTP(formData.phoneNumber, formData.email || null);
+                            if (response.success) {
+                              setOtpToken(response.token);
+                              setResendTimer(120);
+                              toast.success('New code sent!');
+                            }
+                          } catch (error) {
+                            toast.error('Failed to resend code');
+                          }
+                        }}
+                        disabled={resendTimer > 0}
+                        className="text-xs font-semibold text-[#B33A35] hover:text-[#9E2E2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {resendTimer > 0
+                          ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
+                          : 'Resend code'}
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading || otp.join('').length !== 6}
+                      className="w-full py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
+                    >
+                      {isLoading ? (
+                        <LogoLoader fullScreen={false} inline={true} size="w-5 h-5" />
+                      ) : (
+                        <>
+                          <span>Create Account</span>
+                          <FiArrowRight />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer Navigation */}
+          <div className="mt-5">
+            <p className="text-center text-sm text-gray-500 font-medium">
+              Already have an account?{' '}
+              <Link to="/user/login" className="text-[#B33A35] hover:text-[#9E2E2A] font-semibold transition-colors">
+                Sign in
+              </Link>
+            </p>
+            <p className="mt-3 text-center text-xs text-gray-400 font-normal">
+              &copy; {new Date().getFullYear()} Doormeets. All rights reserved.
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );

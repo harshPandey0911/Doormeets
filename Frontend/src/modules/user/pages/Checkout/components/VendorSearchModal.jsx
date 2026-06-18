@@ -93,10 +93,10 @@ const VendorSearchModal = ({
               </div>
             </div>
             <div className="text-center relative z-20 px-4 mb-4">
-              <h3 className="text-xl font-black text-gray-900 mb-2 italic uppercase tracking-tight">Searching Experts</h3>
-              <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Finding nearby professionals{dots}</p>
+              <h3 className="text-xl font-normal text-gray-900 mb-2 italic uppercase tracking-tight">Searching Experts</h3>
+              <p className="text-gray-400 text-[10px] font-normal uppercase tracking-[0.2em]">Finding nearby professionals{dots}</p>
             </div>
-            <div className="px-4 py-2 bg-gray-50 rounded-full border border-gray-100 text-[10px] font-black uppercase tracking-tighter text-gray-400 mt-4">Estimated wait: 1-2 mins</div>
+            <div className="px-4 py-2 bg-gray-50 rounded-full border border-gray-100 text-[10px] font-normal uppercase tracking-tighter text-gray-400 mt-4">Estimated wait: 1-2 mins</div>
           </div>
         )}
 
@@ -105,29 +105,29 @@ const VendorSearchModal = ({
           <div className="flex flex-col">
             <div className="h-44 bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] flex flex-col items-center justify-center p-6 text-white relative">
               <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 border border-white/30 shadow-xl">
-                <span className="text-3xl font-black text-white">$</span>
+                <span className="text-3xl font-normal text-white">$</span>
               </div>
-              <h3 className="text-2xl font-black italic tracking-tight">New Quote Received!</h3>
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/70 mt-1">Vendor is ready to work</p>
+              <h3 className="text-2xl font-normal italic tracking-tight">New Quote Received!</h3>
+              <p className="text-[10px] font-normal uppercase tracking-widest text-white/77 mt-1">Vendor is ready to work</p>
             </div>
 
             <div className="px-8 pt-10 pb-8 bg-white -mt-6 rounded-t-[2.5rem] relative z-10">
               <div className="bg-gray-50 rounded-[2rem] p-5 flex items-center gap-4 border border-gray-100 mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-[#7C3AED] shadow-sm border border-gray-100"><FiUser className="w-7 h-7" /></div>
                 <div>
-                  <h4 className="font-black text-gray-900 text-lg leading-none">{currentBid.businessName}</h4>
+                  <h4 className="font-semibold text-gray-900 text-lg leading-none">{currentBid.businessName}</h4>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="flex items-center gap-1 text-xs font-black text-yellow-500"><FiStar className="fill-current" /> {currentBid.rating || '4.8'}</span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-l pl-2 border-gray-200">Verified Expert</span>
+                    <span className="flex items-center gap-1 text-xs font-normal text-yellow-500"><FiStar className="fill-current" /> {currentBid.rating || '4.8'}</span>
+                    <span className="text-[10px] font-normal text-gray-400 uppercase tracking-widest border-l pl-2 border-gray-200">Verified Expert</span>
                   </div>
                 </div>
               </div>
 
               <div className="text-center mb-8">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Service Charge</p>
+                <p className="text-[10px] font-normal text-gray-400 uppercase tracking-[0.2em] mb-2">Service Charge</p>
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-5xl font-black text-[#7C3AED] tracking-tighter">₹{currentBid.price}</span>
-                  <span className="px-3 py-1 bg-indigo-50 text-[#7C3AED] text-[10px] font-black uppercase rounded-full">Total</span>
+                  <span className="text-5xl font-normal text-[#7C3AED] tracking-tighter">₹{currentBid.price}</span>
+                  <span className="px-3 py-1 bg-indigo-50 text-[#7C3AED] text-[10px] font-normal uppercase rounded-full">Total</span>
                 </div>
               </div>
 
@@ -136,7 +136,7 @@ const VendorSearchModal = ({
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => onRetry()} 
-                    className="py-4 bg-[#FFF1F1] text-[#FF4D4D] rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center"
+                    className="py-4 bg-[#FFF1F1] text-[#FF4D4D] rounded-2xl font-normal text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center"
                   >
                     Decline
                   </button>
@@ -145,14 +145,14 @@ const VendorSearchModal = ({
                       if (onWait) onWait();
                       setViewMode('multi_quote');
                     }}
-                    className="py-4 bg-teal-50 text-teal-600 rounded-2xl font-black text-xs uppercase tracking-widest border border-teal-100 transition-all active:scale-95 flex items-center justify-center"
+                    className="py-4 bg-teal-50 text-teal-600 rounded-2xl font-normal text-xs uppercase tracking-widest border border-teal-100 transition-all active:scale-95 flex items-center justify-center"
                   >
                     Wait (5 min)
                   </button>
                 </div>
                 <button 
                   onClick={() => onSelectBid(currentBid.bidId || currentBid.id)}
-                  className="w-full py-5 bg-[#4F46E5] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/30 transition-all active:scale-95"
+                  className="w-full py-5 bg-[#4F46E5] text-white rounded-2xl font-normal text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/30 transition-all active:scale-95"
                 >
                   Accept & Book
                 </button>
@@ -165,8 +165,8 @@ const VendorSearchModal = ({
         {(currentStep === 'searching' || currentStep === 'waiting') && viewMode === 'multi_quote' && (
           <div className="flex flex-col pt-12 pb-8 px-6 min-h-[520px]">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-black text-gray-900 mb-1 italic">Choice is Yours</h3>
-              <div className="flex items-center justify-center gap-2 text-teal-600 font-black text-xs uppercase tracking-widest">
+              <h3 className="text-2xl font-normal text-gray-900 mb-1 italic">Choice is Yours</h3>
+              <div className="flex items-center justify-center gap-2 text-teal-600 font-normal text-xs uppercase tracking-widest">
                 <FiClock className="animate-pulse" />
                 <span>Expires in {timeLeft}</span>
               </div>
@@ -176,16 +176,16 @@ const VendorSearchModal = ({
                 {bids.map((bid, index) => (
                   <div key={bid.id || index} className="group bg-gray-50 hover:bg-white p-4 rounded-[2rem] border border-gray-100 hover:border-teal-100 hover:shadow-xl transition-all duration-300 relative overflow-hidden">
                     <div className="flex items-center gap-4 relative z-10">
-                      <div className="w-12 h-12 rounded-2xl bg-[#4F46E5] flex items-center justify-center text-white font-black text-lg">{bid.businessName?.charAt(0)}</div>
+                      <div className="w-12 h-12 rounded-2xl bg-[#4F46E5] flex items-center justify-center text-white font-normal text-lg">{bid.businessName?.charAt(0)}</div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-black text-gray-900 text-sm truncate">{bid.businessName}</h4>
+                        <h4 className="font-semibold text-gray-900 text-sm truncate">{bid.businessName}</h4>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="flex items-center gap-1 text-[10px] font-black text-yellow-500"><FiStar className="fill-current" /> {bid.rating || '4.8'}</span>
+                          <span className="flex items-center gap-1 text-[10px] font-normal text-yellow-500"><FiStar className="fill-current" /> {bid.rating || '4.8'}</span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-black text-gray-900">₹{bid.price}</div>
-                        <button onClick={() => onSelectBid(bid.bidId || bid.id)} className="mt-1 text-[9px] font-black uppercase text-teal-600 hover:text-teal-700 flex items-center gap-1">Book <FiChevronRight /></button>
+                        <div className="text-sm font-normal text-gray-900">₹{bid.price}</div>
+                        <button onClick={() => onSelectBid(bid.bidId || bid.id)} className="mt-1 text-[9px] font-normal uppercase text-teal-600 hover:text-teal-700 flex items-center gap-1">Book <FiChevronRight /></button>
                       </div>
                     </div>
                   </div>
@@ -199,24 +199,24 @@ const VendorSearchModal = ({
         {currentStep === 'accepted' && acceptedVendor && (
           <div className="flex flex-col items-center pt-14 pb-10 px-8 bg-white w-full h-full min-h-[480px]">
             <div className="w-24 h-24 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl shadow-teal-500/20 bg-gradient-to-br from-teal-500 to-emerald-600"><FiCheck className="w-12 h-12 text-white" strokeWidth={3} /></div>
-            <h3 className="text-3xl font-black text-gray-900 mb-2 italic uppercase">Booked!</h3>
-            <p className="text-gray-400 text-[10px] text-center mb-10 px-4 font-black uppercase tracking-widest leading-loose">Preparing for your service</p>
+            <h3 className="text-3xl font-normal text-gray-900 mb-2 italic uppercase">Booked!</h3>
+            <p className="text-gray-400 text-[10px] text-center mb-10 px-4 font-normal uppercase tracking-widest leading-loose">Preparing for your service</p>
             <div className="w-full bg-gray-50 rounded-[2.5rem] p-6 border border-gray-100 mb-10 relative overflow-hidden">
               <div className="relative z-10">
-                <h4 className="font-black text-xl text-gray-900 mb-1">{acceptedVendor.businessName}</h4>
-                <div className="flex items-center gap-2 mt-3"><span className="bg-white px-3 py-1 rounded-full border border-gray-100 text-[10px] font-black text-teal-600 uppercase">Confirmed</span></div>
+                <h4 className="font-semibold text-xl text-gray-900 mb-1">{acceptedVendor.businessName}</h4>
+                <div className="flex items-center gap-2 mt-3"><span className="bg-white px-3 py-1 rounded-full border border-gray-100 text-[10px] font-normal text-teal-600 uppercase">Confirmed</span></div>
               </div>
             </div>
-            <button onClick={onClose} className="w-full py-5 bg-black text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95">Go to Details</button>
+            <button onClick={onClose} className="w-full py-5 bg-black text-white rounded-[2rem] font-normal text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95">Go to Details</button>
           </div>
         )}
- 
+
         {/* FAILED STATE */}
         {currentStep === 'failed' && (
           <div className="flex flex-col items-center pt-14 pb-10 px-8 bg-white w-full h-full min-h-[480px]">
             <div className="w-24 h-24 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl shadow-red-500/20 bg-gradient-to-br from-red-500 to-rose-600"><FiX className="w-12 h-12 text-white" strokeWidth={3} /></div>
-            <h3 className="text-3xl font-black text-gray-900 mb-2 italic uppercase">No Vendors!</h3>
-            <p className="text-gray-500 text-xs text-center mb-10 px-4 font-bold leading-relaxed">
+            <h3 className="text-3xl font-normal text-gray-900 mb-2 italic uppercase">No Vendors!</h3>
+            <p className="text-gray-500 text-xs text-center mb-10 px-4 font-normal leading-relaxed">
               We couldn't find any available professionals for your request at the moment.
             </p>
             <div className="w-full space-y-3">
@@ -225,7 +225,7 @@ const VendorSearchModal = ({
                   onClose();
                   setTimeout(() => window.location.reload(), 500);
                 }} 
-                className="w-full py-5 bg-black text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95"
+                className="w-full py-5 bg-black text-white rounded-[2rem] font-normal text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95"
               >
                 Back to Details
               </button>

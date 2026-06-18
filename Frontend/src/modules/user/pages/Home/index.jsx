@@ -108,9 +108,6 @@ const Home = () => {
       if (!cityLoading && currentId && matchedId !== currentId) {
         selectCity(matchedCity);
         toast.success(`Location updated to ${matchedCity.name}`);
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
       }
     } else {
       setIsLocationSupported(false);
@@ -163,9 +160,6 @@ const Home = () => {
         }
 
         toast.success(`Location set to ${city}`);
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
       }
     }
     setHouseNumber(savedHouseNumber);
@@ -436,7 +430,7 @@ const Home = () => {
       setComingSoonCategory(category);
       return;
     }
-    navigate('/user/categories', { state: { category } });
+    navigate(`/user/category/${category.slug || category.id}`, { state: { category } });
   };
 
   const handlePromoClick = (promo) => {
@@ -560,25 +554,18 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 relative bg-white">
-      {/* Refined Brand Mesh Gradient Background */}
+  <div className="min-h-screen pb-20 relative" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Refined Premium Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
           style={{
-            background: `
-              radial-gradient(at 0% 0%, ${themeColors?.brand?.teal || '#347989'}25 0%, transparent 70%),
-              radial-gradient(at 100% 0%, ${themeColors?.brand?.yellow || '#D68F35'}20 0%, transparent 70%),
-              radial-gradient(at 100% 100%, ${themeColors?.brand?.orange || '#BB5F36'}15 0%, transparent 75%),
-              radial-gradient(at 0% 100%, ${themeColors?.brand?.teal || '#347989'}10 0%, transparent 70%),
-              radial-gradient(at 50% 50%, ${themeColors?.brand?.teal || '#347989'}03 0%, transparent 100%),
-              #FFFFFF
-            `
+            background: 'var(--background)'
           }}
         />
         {/* Elegant Dot Grid Pattern */}
-        <div className="absolute inset-0 opacity-[0.04]"
+        <div className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#347989'} 0.8px, transparent 0.8px)`,
+            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#B33A35'} 0.8px, transparent 0.8px)`,
             backgroundSize: '32px 32px'
           }}
         />
@@ -592,19 +579,16 @@ const Home = () => {
       >
         <motion.div
           variants={itemVariants}
-          className="backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b border-black/[0.03] shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-300 w-full"
-          style={{ backgroundColor: 'rgba(255, 248, 241, 0.95)' }}
+          className="backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b shadow-[0_1px_0px_rgba(255,255,255,0.04)] transition-all duration-300 w-full"
+          style={{ backgroundColor: 'var(--background)', borderBottomColor: 'var(--border)' }}
         >
           <Header
             location={address}
             onLocationClick={handleLocationClick}
           />
-          <div className="px-5 pb-5 pt-1 max-w-lg lg:max-w-2xl mx-auto w-full">
-            <SearchBar onInputClick={() => setIsSearchOpen(true)} />
-          </div>
         </motion.div>
-
-        <main className="pt-[180px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
+ 
+        <main className="pt-[140px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -631,7 +615,6 @@ const Home = () => {
           ) : (
             <>
               {/* Sliding Offer Banners */}
-              {!isSearchOpen && activePromos.length > 0 && <PromoTicker promos={activePromos} />}
               {!isSearchOpen && (
                 <OfferBannerSlider 
                   banners={homeContent?.banners && homeContent.banners.length > 0 
@@ -644,6 +627,27 @@ const Home = () => {
                   } 
                 />
               )}
+ 
+              {/* Search Bar Section */}
+              <div className="mt-5 px-5 max-w-lg lg:max-w-2xl mx-auto w-full flex items-center gap-3">
+                <div className="flex-1">
+                  <SearchBar onInputClick={() => setIsSearchOpen(true)} />
+                </div>
+                <button 
+                  onClick={() => navigate('/user/categories')}
+                  className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-300"
+                  style={{
+                    backgroundColor: themeColors.brand.teal,
+                    borderColor: themeColors.brand.teal,
+                    color: '#FFFFFF',
+                    boxShadow: `0 4px 14px ${themeColors.brand.teal}33`
+                  }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                  </svg>
+                </button>
+              </div>
 
               {/* Hero Section - Promo Carousel */}
               {homeContent?.isPromosVisible !== false && (
@@ -670,8 +674,11 @@ const Home = () => {
               {homeContent?.isCategoriesVisible !== false && (
                 <>
                   {/* Service Categories */}
-                  <motion.section variants={itemVariants} className="relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent pointer-events-none -z-10" />
+                  <motion.section 
+                    variants={itemVariants} 
+                    className="relative overflow-hidden py-2"
+                    style={{ backgroundColor: 'var(--background)' }}
+                  >
                     <ServiceCategories
                       categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
                       onCategoryClick={handleCategoryClick}
@@ -679,10 +686,14 @@ const Home = () => {
                       subtitle="Premium Home Services"
                     />
                   </motion.section>
-
+ 
                   {/* Products & Materials Section */}
                   {categories.some(c => c.categoryType === 'product') && (
-                    <motion.section variants={itemVariants} className="relative overflow-hidden">
+                    <motion.section 
+                      variants={itemVariants} 
+                      className="relative overflow-hidden py-2"
+                      style={{ backgroundColor: 'var(--background)' }}
+                    >
                       <ServiceCategories
                         categories={categories.filter(c => c.categoryType === 'product' && c.status !== 'coming_soon')}
                         onCategoryClick={handleCategoryClick}
@@ -691,8 +702,46 @@ const Home = () => {
                       />
                     </motion.section>
                   )}
-
+ 
                 </>
+              )}
+
+              {/* Popular Services Section */}
+              {homeContent?.isPopularServicesVisible !== false && 
+               Array.isArray(homeContent?.popularServices) && 
+               homeContent.popularServices.length > 0 && (
+                <motion.div variants={itemVariants}>
+                  <Suspense fallback={<div className="h-40 animate-pulse rounded-xl mx-4" style={{ backgroundColor: 'var(--surface)' }} />}>
+                    <ServiceSectionWithRating
+                      title="Popular services"
+                      subtitle="Most demanded home services"
+                      compact={true}
+                      services={homeContent.popularServices.map((service, index) => ({
+                        id: service.id || service._id || index,
+                        serviceId: service.serviceId || service.id || service._id,
+                        categoryId: service.categoryId,
+                        title: service.title,
+                        rating: service.rating || "4.5",
+                        reviews: service.reviews || "1.2k reviews",
+                        price: service.price,
+                        originalPrice: service.originalPrice,
+                        discount: service.discount,
+                        image: toAssetUrl(service.image),
+                        slug: service.slug
+                      }))}
+                      onSeeAllClick={() => navigate('/user/categories')}
+                      onServiceClick={(service) => {
+                        if (service.categoryId) {
+                          const cat = categories.find(c => c.id === service.categoryId);
+                          if (cat) handleCategoryClick(cat);
+                        } else {
+                          navigate('/user/categories');
+                        }
+                      }}
+                      onAddClick={handleAddClick}
+                    />
+                  </Suspense>
+                </motion.div>
               )}
 
               {/* Upcoming Categories Section (Replacing Smart Protect Blue Banner) */}
@@ -701,10 +750,16 @@ const Home = () => {
                 return (
                   <motion.section variants={itemVariants} className="px-5 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-base font-bold text-[#111827] tracking-tight">
+                      <h2
+                        className="text-[17px] font-semibold tracking-tight"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
                         Upcoming Services
                       </h2>
-                      <span className="text-xs font-bold text-[#FF9F45] bg-[#FF9F45]/10 px-2.5 py-1 rounded-full animate-pulse">
+                      <span
+                        className="text-xs font-bold px-2.5 py-1 rounded-full animate-pulse"
+                        style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
+                      >
                         {upcomingCategories.length} Coming Soon
                       </span>
                     </div>
@@ -716,12 +771,12 @@ const Home = () => {
                       <div className="relative z-10">
                         {/* Third Layer Card (Deepest) */}
                         {upcomingCategories.length > 2 && (
-                          <div className="absolute left-5 right-5 bottom-0 h-full bg-[#FF9F45]/25 rounded-[24px] shadow-sm transform translate-y-3 z-0 pointer-events-none border border-white/5" />
+                          <div className="absolute left-5 right-5 bottom-0 h-full bg-[#B33A35]/25 rounded-[24px] shadow-sm transform translate-y-3 z-0 pointer-events-none border border-white/5" />
                         )}
                         
                         {/* Second Layer Card (Middle) */}
                         {upcomingCategories.length > 1 && (
-                          <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-[#FF9F45]/50 rounded-[24px] shadow-md transform translate-y-1.5 z-10 pointer-events-none border border-white/10" />
+                          <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-[#B33A35]/50 rounded-[24px] shadow-md transform translate-y-1.5 z-10 pointer-events-none border border-white/10" />
                         )}
 
                         {/* Main Card (Top) */}
@@ -734,7 +789,7 @@ const Home = () => {
                               handleCategoryClick(activeCat);
                             }
                           }}
-                          className="w-full bg-gradient-to-r from-[#FF9F45] to-[#FFB86C] rounded-[24px] p-5 relative overflow-hidden shadow-[0_12px_28px_rgba(255,159,69,0.22)] border border-white/20 active:scale-[0.98] hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
+                          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] rounded-[24px] p-5 relative overflow-hidden shadow-[0_12px_28px_rgba(255,159,69,0.22)] border border-white/20 active:scale-[0.98] hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
                         >
                           {/* Smooth glassmorphism-inspired highlights */}
                           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-white/30 to-transparent pointer-events-none" />
@@ -755,7 +810,7 @@ const Home = () => {
                                   />
                                 ) : (
                                   <div className="w-9 h-9 flex items-center justify-center bg-orange-50 rounded-full">
-                                    <svg className="w-5 h-5 text-[#FF9F45]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                    <svg className="w-5 h-5 text-[#B33A35]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
                                   </div>
@@ -826,7 +881,7 @@ const Home = () => {
                                 setCurrentStackIndex(dotIdx);
                               }}
                               className={`h-1.5 rounded-full transition-all duration-300 ${
-                                currentStackIndex === dotIdx ? 'w-5 bg-[#FF9F45]' : 'w-1.5 bg-gray-300'
+                                currentStackIndex === dotIdx ? 'w-5 bg-[#B33A35]' : 'w-1.5 bg-gray-300'
                               }`}
                             />
                           ))}
@@ -841,12 +896,16 @@ const Home = () => {
               {!pastServicesLoading && pastServices.length > 0 && (
                 <motion.section variants={itemVariants} className="px-5 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-base font-bold text-[#111827] tracking-tight">
+                    <h2
+                      className="text-[17px] font-semibold tracking-tight"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
                       Order again
                     </h2>
-                    <button 
+                    <button
                       onClick={() => navigate('/user/bookings')}
-                      className="text-xs font-bold text-gray-500 hover:text-[#FF9F45] transition-colors"
+                      className="text-xs font-bold transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
                     >
                       see all
                     </button>
@@ -862,30 +921,41 @@ const Home = () => {
                         <div
                           key={service.id || index}
                           onClick={() => handleAddClick(service)}
-                          className="flex-shrink-0 bg-white border border-gray-100/70 rounded-3xl p-5 flex items-center justify-between w-[285px] shadow-[0_4px_16px_rgba(0,0,0,0.015)] active:scale-[0.98] hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden"
+                          className="flex-shrink-0 rounded-3xl p-5 flex items-center justify-between w-[285px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
+                          style={{
+                            backgroundColor: 'var(--card-bg)',
+                            border: '1px solid var(--border)',
+                            boxShadow: 'var(--shadow)',
+                          }}
                         >
                           {/* Inner Content (Left Side) */}
                           <div className="flex-1 min-w-0 pr-3 space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <h3 className="text-xs font-extrabold text-gray-800 truncate leading-tight">
+                              <h3
+                                className="text-xs font-extrabold truncate leading-tight"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
                                 {service.title}
                               </h3>
-                              <span className="shrink-0 bg-[#FF9F45]/10 text-[#FF9F45] text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                              <span
+                                className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5"
+                                style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
+                              >
                                 ★ {service.rating}
                               </span>
                             </div>
 
-                            <p className="text-[10px] text-gray-400 font-semibold truncate">
+                            <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
                               by {service.vendorName}
                             </p>
 
                             <div className="flex items-baseline gap-1.5 pt-1">
-                              <span className="text-sm font-extrabold text-[#FF9F45]">
+                              <span className="text-sm font-extrabold" style={{ color: 'var(--primary)' }}>
                                 ₹{(service.price || 0).toLocaleString('en-IN')}
                               </span>
                               {service.originalPrice && service.originalPrice > service.price && (
                                 <>
-                                  <span className="text-[10px] text-gray-400 line-through">
+                                  <span className="text-[10px] line-through" style={{ color: 'var(--text-muted)' }}>
                                     ₹{service.originalPrice.toLocaleString('en-IN')}
                                   </span>
                                   <span className="text-[9px] font-extrabold text-green-500">
@@ -897,7 +967,10 @@ const Home = () => {
                           </div>
 
                           {/* Service Icon/Visual (Right Side) */}
-                          <div className="w-16 h-16 rounded-2xl bg-orange-50/50 flex items-center justify-center shrink-0 border border-orange-100/30 overflow-hidden">
+                          <div
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+                            style={{ backgroundColor: 'rgba(179,58,53,0.08)', border: '1px solid rgba(179,58,53,0.12)' }}
+                          >
                             {service.image ? (
                               <img
                                 src={service.image}
@@ -906,7 +979,7 @@ const Home = () => {
                                 loading="lazy"
                               />
                             ) : (
-                              <svg className="w-8 h-8 text-[#FF9F45]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                              <svg className="w-8 h-8" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
                             )}
@@ -1118,9 +1191,9 @@ const Home = () => {
               className={`w-full py-3.5 px-6 rounded-2xl font-bold shadow-md transition-all ${
                 comingSoonCategory.isInterested 
                   ? 'bg-green-500 text-white cursor-default shadow-none'
-                  : 'bg-[#FF9F45] text-white hover:bg-[#FFB86C] hover:shadow-lg'
+                  : 'bg-[#B33A35] text-white hover:bg-[#9E2E2A] hover:shadow-lg'
               }`}
-              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#FF9F45' }}
+              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#B33A35' }}
             >
               {comingSoonCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
             </button>
