@@ -4,6 +4,7 @@ const { SERVICE_STATUS } = require('../utils/constants');
 /**
  * Package Schema — for package_base service type
  */
+
 const packageSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   description: { type: String, trim: true },

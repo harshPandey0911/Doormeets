@@ -11,6 +11,7 @@ const getUserTypeStr = (role) => {
 // ... existing imports ...
 
 // Delete scrap item
+
 exports.deleteScrap = async (req, res) => {
   try {
     const { id } = req.params;
