@@ -50,12 +50,23 @@ const OfferBannerSlider = ({ banners }) => {
               className="relative aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden rounded-[24px]"
               onClick={() => handleBannerClick(banner)}
             >
-              <img 
-                src={banner.imageUrl} 
-                alt={banner.title} 
-                className="w-full h-full object-cover scale-[1.08] translate-y-[2px]"
-                loading="lazy"
-              />
+              {banner.mediaType === 'video' ? (
+                <video 
+                  src={banner.imageUrl} 
+                  autoPlay 
+                  muted 
+                  loop 
+                  playsInline 
+                  className="w-full h-full object-cover scale-[1.08] translate-y-[2px]"
+                />
+              ) : (
+                <img 
+                  src={banner.imageUrl} 
+                  alt={banner.title} 
+                  className="w-full h-full object-cover scale-[1.08] translate-y-[2px]"
+                  loading="lazy"
+                />
+              )}
               {/* Optional: Add a subtle overlay or text if needed */}
             </div>
           </SwiperSlide>

@@ -52,7 +52,7 @@ const ItemPickerModal = ({ type, selectedIds, onClose, onSave }) => {
       >
         <div className="p-4 border-b flex items-center justify-between">
           <h3 className="text-base font-bold text-gray-800">
-            Select {type === 'brand' ? 'Brands' : 'Categories'}
+            Select Brands
           </h3>
           <span className="text-xs text-gray-500">{picked.size} selected</span>
         </div>
@@ -189,14 +189,7 @@ const SectionCard = ({ section, index, total, availableItemsCache, onUpdate, onD
               placeholder="Section title..."
             />
             <div className="flex items-center gap-2">
-              <select
-                value={section.type}
-                onChange={e => onUpdate({ type: e.target.value, items: [] })}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-              >
-                <option value="brand">Brands</option>
-                <option value="category">Categories</option>
-              </select>
+              <span className="text-xs font-semibold text-gray-500 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 uppercase tracking-wider">Type: Brands Only</span>
               <span className="text-xs text-gray-400">Order:</span>
               <input
                 type="number"
@@ -276,7 +269,7 @@ const SectionCard = ({ section, index, total, availableItemsCache, onUpdate, onD
             className="w-full flex items-center justify-center gap-1.5 py-1.5 border-2 border-dashed border-indigo-300 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors"
           >
             <FiPlus className="w-3.5 h-3.5" />
-            Select {section.type === 'brand' ? 'Brands' : 'Categories'}
+            Select Brands
           </button>
         </div>
       </motion.div>

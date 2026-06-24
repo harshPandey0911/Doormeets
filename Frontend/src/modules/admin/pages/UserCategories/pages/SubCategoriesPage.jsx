@@ -11,7 +11,7 @@ const SubCategoriesPage = ({ selectedCity, filterTemplateId }) => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSubCategory, setCurrentSubCategory] = useState(null);
-  const [formData, setFormData] = useState({ categoryId: '', title: '', description: '', iconUrl: '', status: 'active' });
+  const [formData, setFormData] = useState({ categoryId: '', title: '', description: '', iconUrl: '', status: 'active', hasBrand: false });
   const [uploadingIcon, setUploadingIcon] = useState(false);
 
   useEffect(() => {
@@ -41,13 +41,14 @@ const SubCategoriesPage = ({ selectedCity, filterTemplateId }) => {
         title: subCat.title,
         description: subCat.description || '',
         iconUrl: subCat.iconUrl || '',
-        status: subCat.status
+        status: subCat.status,
+        hasBrand: subCat.hasBrand || false
       });
     } else {
       const firstFilteredCat = filterTemplateId
         ? (categories.find(c => String(c.templateId || c.template) === String(filterTemplateId))?._id || categories.find(c => String(c.templateId || c.template) === String(filterTemplateId))?.id || '')
         : '';
-      setFormData({ categoryId: firstFilteredCat, title: '', description: '', iconUrl: '', status: 'active' });
+      setFormData({ categoryId: firstFilteredCat, title: '', description: '', iconUrl: '', status: 'active', hasBrand: false });
     }
     setIsModalOpen(true);
   };
@@ -93,7 +94,7 @@ const SubCategoriesPage = ({ selectedCity, filterTemplateId }) => {
       if (!parentCategory) return false; // Hide if parent category not found
       
       const catCityIds = parentCategory.cityIds || [];
-      if (catCityIds.length === 0) return false; // Strict match: hide if parent is "All Cities"
+      if (catCityIds.length === 0) return true; // Show if parent is "All Cities"
       
       return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
     });
@@ -138,9 +139,16 @@ const SubCategoriesPage = ({ selectedCity, filterTemplateId }) => {
                   </td>
                   <td className="p-4 text-gray-600">{sub.categoryId?.title || 'Unknown'}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs ${sub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {sub.status}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-2 py-1 rounded-full text-xs w-fit ${sub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {sub.status}
+                      </span>
+                      {sub.hasBrand && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700 uppercase tracking-wider w-fit">
+                          Brands Enabled
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 flex justify-end gap-2">
                     <button onClick={() => handleOpenModal(sub)} className="p-2 text-blue-600 hover:bg-blue-50 rounded"><FiEdit2 /></button>
@@ -256,6 +264,18 @@ const SubCategoriesPage = ({ selectedCity, filterTemplateId }) => {
                     )}
                   </div>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 py-2">
+                <input 
+                  type="checkbox" 
+                  id="hasBrand"
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  checked={formData.hasBrand}
+                  onChange={(e) => setFormData({...formData, hasBrand: e.target.checked})}
+                />
+                <label htmlFor="hasBrand" className="text-sm font-medium text-gray-700 select-none cursor-pointer">
+                  Has Brands (Is subcategory ke liye brand enable karein)
+                </label>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>

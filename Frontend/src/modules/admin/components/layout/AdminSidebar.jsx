@@ -24,6 +24,7 @@ import {
   FiBox,
   FiInbox,
   FiGift,
+  FiSliders,
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
@@ -38,6 +39,8 @@ const iconMap = {
   Workers: FiUser,
   Bookings: FiShoppingBag,
   "User Catalog": FiGrid,
+  Management: FiSliders,
+  "Home Management": FiGrid,
   "Vendor Services": FiGrid,
   "Vendor Parts": FiPackage,
   Payments: FiDollarSign,
@@ -57,7 +60,8 @@ const iconMap = {
   "Offer Banners": FiShoppingBag,
   "Stock Management": FiBox,
   "Vendor Subscriptions": FiDollarSign,
-  "Vendor Requests": FiInbox
+  "Vendor Requests": FiInbox,
+  "Package based": FiPackage
 };
 
 // Helper function to convert child name to route path
@@ -99,6 +103,18 @@ const getChildRoute = (parentRoute, childName) => {
       "Manage Professions": "/admin/user-categories/professions",
       "Category Templates": "/admin/user-categories/templates",
       "Featured Sections": "/admin/user-categories/featured-sections"
+    },
+    "/admin/home-management": {
+      "Banners & Categories": "/admin/user-categories/home",
+      "Top Brands & Featured": "/admin/user-categories/featured-sections",
+      "Popular Services": "/admin/user-categories/popular-services"
+    },
+    "/admin/management": {
+      "Minute based": "/admin/user-categories/templates/MINUTE_BASED/manage",
+      "Normal service": "/admin/user-categories/templates/NORMAL_SERVICE/manage",
+      "Subscription based": "/admin/user-categories/templates/SUBSCRIPTION_BASED/manage",
+      "Image based": "/admin/user-categories/templates/IMAGE_CONSULTANT/manage",
+      "Multi Visit": "/admin/user-categories/templates/MULTI_VISIT/manage"
     },
     "/admin/payments": {
       "Payment Overview": "/admin/payments/overview",
@@ -161,6 +177,9 @@ const permissionMap = {
   "Vendor Requests": "view_vendor_requests",
   "Support": "manage_support",
   "User Catalog": "propose_categories",
+  "Management": "propose_categories",
+  "Package based": "propose_categories",
+  "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",
   "Stock Management": "manage_stock",

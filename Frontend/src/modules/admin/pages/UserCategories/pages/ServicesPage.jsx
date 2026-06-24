@@ -56,7 +56,7 @@ const SERVICE_TYPES = [
 // ────────────────────────────────────────────────────────────────────
 const BLOCK_PALETTE = [
   { key: 'image_gallery',      label: 'Image Gallery',            emoji: '🖼️',  color: '#6366f1' },
-  { key: 'banner_slider',      label: 'Banner Image Slider',      emoji: '🎠',  color: '#8b5cf6' },
+  { key: 'banner_slider',      label: 'Service Images / Videos',  emoji: '🎠',  color: '#8b5cf6' },
   { key: 'heading_text',       label: 'Heading & Text Block',     emoji: '📝',  color: '#3b82f6' },
   { key: 'whats_included',     label: "What's Included",          emoji: '✅',  color: '#10b981' },
   { key: 'please_note',        label: 'Please Note',              emoji: '⚠️',  color: '#f59e0b' },
@@ -188,6 +188,102 @@ const BlockDataEditor = ({ block, onChange }) => {
 
   const [uploading, setUploading] = useState(false);
 
+  const MediaUploadList = ({ items = [], onChange: onListChange }) => {
+    const handleFileUpload = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      const fileType = file.type.startsWith('video/') ? 'video' : 'image';
+      try {
+        setUploading(true);
+        const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+        const url = await uploadToCloudinary(file, 'service_banners');
+        if (url) {
+          onListChange([...items, { url, type: fileType }]);
+        }
+      } catch (err) {
+        console.error('Upload failed', err);
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    return (
+      <div className="space-y-3">
+        {items.map((item, i) => {
+          const itemUrl = typeof item === 'object' ? item.url : item;
+          const itemType = typeof item === 'object' ? (item.type || 'image') : 'image';
+          
+          return (
+            <div key={i} className="flex flex-col p-3 border border-gray-200 rounded-xl bg-white shadow-sm gap-2">
+              <div className="flex items-center gap-2">
+                {itemType === 'video' ? (
+                  <div className="w-10 h-10 bg-purple-50 rounded-md border shrink-0 flex items-center justify-center text-lg">🎥</div>
+                ) : (
+                  itemUrl && itemUrl.startsWith('http') ? (
+                    <img src={itemUrl} alt="" className="w-10 h-10 object-cover rounded-md border shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 bg-gray-50 rounded-md border shrink-0 flex items-center justify-center text-xs text-gray-400">URL</div>
+                  )
+                )}
+                <div className="flex-1 min-w-0">
+                  <input
+                    className={inputCls}
+                    value={itemUrl}
+                    onChange={e => {
+                      const n = [...items];
+                      n[i] = typeof item === 'object' ? { ...item, url: e.target.value } : { url: e.target.value, type: 'image' };
+                      onListChange(n);
+                    }}
+                    placeholder="https://..."
+                  />
+                </div>
+                <button type="button" onClick={() => onListChange(items.filter((_, idx) => idx !== i))} className="text-red-500 font-bold px-2">✕</button>
+              </div>
+              <div className="flex items-center gap-4 text-xs font-semibold text-gray-600">
+                <span className="text-gray-400">Type:</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`media-type-${i}`}
+                    checked={itemType === 'image'}
+                    onChange={() => {
+                      const n = [...items];
+                      n[i] = typeof item === 'object' ? { ...item, type: 'image' } : { url: item, type: 'image' };
+                      onListChange(n);
+                    }}
+                  />
+                  Image
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`media-type-${i}`}
+                    checked={itemType === 'video'}
+                    onChange={() => {
+                      const n = [...items];
+                      n[i] = typeof item === 'object' ? { ...item, type: 'video' } : { url: item, type: 'video' };
+                      onListChange(n);
+                    }}
+                  />
+                  Video
+                </label>
+              </div>
+            </div>
+          );
+        })}
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => onListChange([...items, { url: '', type: 'image' }])} className="text-blue-600 text-xs font-bold hover:underline">+ Add URL</button>
+          <span className="text-gray-300">|</span>
+          <label className={`text-purple-600 text-xs font-bold hover:underline cursor-pointer flex items-center gap-1 ${uploading ? 'opacity-50' : ''}`}>
+            {uploading ? 'Uploading...' : '+ Upload Image/Video to Cloudinary'}
+            <input type="file" accept="image/*,video/*" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+          </label>
+        </div>
+      </div>
+    );
+  };
+
   const ImageUploadList = ({ items = [], onChange: onListChange, folderName = 'service_blocks' }) => {
     const handleFileUpload = async (e) => {
       const file = e.target.files?.[0];
@@ -243,8 +339,8 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'banner_slider':
       return (
         <div className="space-y-3">
-          <p className="text-xs text-gray-500">Add banner image URLs for the slider.</p>
-          <ImageUploadList items={data.banners || []} onChange={v => update('banners', v)} folderName="service_banners" />
+          <p className="text-xs text-gray-500">Add images and videos for the service images slider at the top of the detail page.</p>
+          <MediaUploadList items={data.banners || []} onChange={v => update('banners', v)} />
         </div>
       );
 
@@ -515,11 +611,36 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const [services, setServices] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentService, setCurrentService] = useState(null);
   const [activeStep, setActiveStep] = useState(0); // 0-4
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Pricing Config States
+  const [pricingConfigs, setPricingConfigs] = useState([]);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [editingPricingConfigIdx, setEditingPricingConfigIdx] = useState(null);
+  const [globalSettings, setGlobalSettings] = useState(null);
+  const [pricingForm, setPricingForm] = useState({
+    cityId: '',
+    brandId: '',
+    customerPrice: '',
+    originalPrice: '',
+    pricePerMinute: '',
+    minimumMinutes: 30,
+    validityDays: 30,
+    visitsCredits: 4,
+    gstPercentage: 18,
+    gstIncluded: true,
+    platformCommission: 20,
+    l1Commission: 10,
+    l2Commission: 15,
+    l3Commission: 20,
+    isActive: true,
+    packageTitle: ''
+  });
 
   const [formData, setFormData] = useState({
     categoryId: '',
@@ -530,7 +651,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     status: 'active',
     templateType: '',
     allCities: true,
-    cityIds: []
+    cityIds: [],
+    rating: 4.5,
+    reviewCount: '1.2k'
   });
 
   // Service type state
@@ -545,6 +668,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const [maxImageUploads, setMaxImageUploads] = useState(5);
   // Variants (optional add-ons)
   const [variants, setVariants] = useState([]);
+  const [newCatName, setNewCatName] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingCategoryValue, setEditingCategoryValue] = useState('');
 
   // Builder States
   const [features, setFeatures] = useState([]);
@@ -561,16 +687,22 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [srvRes, subRes, catRes, tempRes] = await Promise.all([
+      const [srvRes, subRes, catRes, tempRes, brndRes, settingsRes] = await Promise.all([
         api.get('/admin/services'),
         api.get('/admin/subcategories'),
         api.get('/admin/categories'),
-        api.get('/admin/category-templates').catch(() => ({ data: { templates: [] } }))
+        api.get('/admin/category-templates').catch(() => ({ data: { templates: [] } })),
+        api.get('/admin/brands').catch(() => ({ data: { brands: [] } })),
+        api.get('/admin/settings').catch(() => null)
       ]);
       setServices(srvRes.data.services || []);
       setSubCategories(subRes.data.data || subRes.data.subCategories || []);
       setCategories(catRes.data.categories || catRes.data.data || []);
       setTemplates(tempRes.data?.templates || tempRes.data?.data || []);
+      setBrands(brndRes.data?.brands || brndRes.data?.data || []);
+      if (settingsRes?.data?.success) {
+        setGlobalSettings(settingsRes.data.settings);
+      }
     } catch (error) { console.error('Error fetching data:', error); }
     setLoading(false);
   };
@@ -606,7 +738,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       if (template) {
         let derivedType = 'package_base';
         if (template.code === 'MINUTE_BASED') derivedType = 'minute_base';
-        else if (template.code === 'PACKAGE_BASED' || template.code === 'SERVICE_PAGE') derivedType = 'package_base';
+        else if (template.code === 'SUBSCRIPTION_BASED') derivedType = 'subscription_base';
+        else if (template.code === 'PACKAGE_BASED' || template.code === 'SERVICE_PAGE' || template.code === 'NORMAL_SERVICE') derivedType = 'package_base';
         else if (template.code === 'IMAGE_CONSULTANT') derivedType = 'image_base';
         else if (template.code === 'MULTI_VISIT') derivedType = 'multi_visit';
 
@@ -643,7 +776,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         status: srv.status,
         templateType: '',
         allCities: !srv.cityIds || srv.cityIds.length === 0,
-        cityIds: srv.cityIds ? srv.cityIds.map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))) : []
+        cityIds: srv.cityIds ? srv.cityIds.map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))) : [],
+        rating: srv.rating || 4.5,
+        reviewCount: srv.reviewCount || '1.2k'
       });
       setServiceType(srv.serviceType || 'package_base');
       setPricePerMinute(srv.pricePerMinute || '');
@@ -655,11 +790,12 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       setQuoteInstructions(srv.quoteInstructions || '');
       setMaxImageUploads(srv.maxImageUploads || 5);
       try {
-        const [fieldsRes, workflowRes, pricingRes, blocksRes] = await Promise.all([
+        const [fieldsRes, workflowRes, pricingRes, blocksRes, prcRes] = await Promise.all([
           api.get(`/admin/services/${srv._id}/fields`),
           api.get(`/admin/services/${srv._id}/workflow`),
           api.get(`/admin/services/${srv._id}/pricing`),
-          api.get(`/admin/services/${srv._id}/page-blocks`)
+          api.get(`/admin/services/${srv._id}/page-blocks`),
+          api.get(`/admin/pricing?serviceId=${srv._id}`).catch(() => ({ data: { data: [] } }))
         ]);
         setBuilderFields((fieldsRes.data.fields || []).map(f => ({ ...f, options: Array.isArray(f.options) ? f.options.join(', ') : (f.options || '') })));
         if (workflowRes.data.workflow) {
@@ -671,6 +807,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         }
         setBuilderRules(pricingRes.data.rules || []);
         setPageBlocks((blocksRes.data.blocks || []).map((b, i) => ({ ...b, _tempId: b._id || (Date.now() + '_' + i) })));
+        setPricingConfigs(prcRes.data.data || prcRes.data.pricings || []);
       } catch (err) { console.error('Failed to load sub-details:', err); }
     } else {
       const defaultCityIds = selectedCity ? [selectedCity] : [];
@@ -679,6 +816,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         : '';
       setFormData({ categoryId: defaultCatId, subCategoryId: '', title: '', description: '', iconUrl: '', status: 'active', templateType: '', allCities: !selectedCity, cityIds: defaultCityIds });
       resetBuilderState();
+      setPricingConfigs([]);
       if (defaultCatId) {
         handleCategoryChange(defaultCatId);
       }
@@ -717,19 +855,23 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     if (!formData.categoryId) { alert('Please select a Category'); setActiveStep(0); return; }
     if (!formData.title?.trim()) { alert('Please enter a Service Title'); setActiveStep(0); return; }
 
+    const firstBanner = pageBlocks.find(b => b.blockType === 'banner_slider')?.data?.banners?.[0];
+    const firstBannerUrl = typeof firstBanner === 'object' ? firstBanner.url : firstBanner;
+
     const finalCityIds = formData.allCities ? [] : formData.cityIds;
     const payload = {
       ...formData,
+      iconUrl: firstBannerUrl || formData.iconUrl || '',
       cityIds: finalCityIds,
       serviceType,
       pricePerMinute: serviceType === 'minute_base' ? pricePerMinute : null,
       minimumMinutes: serviceType === 'minute_base' ? minimumMinutes : 30,
-      packages: serviceType === 'package_base' ? packages : [],
+      packages: (serviceType === 'package_base' || serviceType === 'subscription_base') ? packages.filter(p => p.title && p.title.trim()) : [],
       quoteInstructions: serviceType === 'image_base' ? quoteInstructions : null,
       maxImageUploads: serviceType === 'image_base' ? maxImageUploads : 5,
-      variants,
-      features,
-      steps,
+      variants: (variants || []).filter(v => v.title && v.title.trim()),
+      features: (features || []).filter(f => f && f.trim()),
+      steps: (steps || []).filter(s => s && (typeof s === 'string' ? s.trim() : (s.title && s.title.trim()))),
       fields: builderFields.map(f => ({ ...f, options: typeof f.options === 'string' ? f.options.split(',').map(s => s.trim()).filter(Boolean) : (Array.isArray(f.options) ? f.options : []) })),
       workflow: { ...builderWorkflow, steps: builderWorkflowSteps },
       rules: builderRules,
@@ -745,7 +887,21 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         });
         alert('Service updated successfully!');
       } else {
-        await api.post('/admin/services', payload);
+        const createdRes = await api.post('/admin/services', payload);
+        const newService = createdRes.data.service;
+        if (newService && pricingConfigs.length > 0) {
+          await Promise.all(
+            pricingConfigs.map(config => {
+              const { _tempId, ...configPayload } = config;
+              return api.post('/admin/pricing', {
+                ...configPayload,
+                categoryId: formData.categoryId,
+                subCategoryId: formData.subCategoryId || null,
+                serviceId: newService._id
+              });
+            })
+          );
+        }
         alert('Service created successfully!');
       }
       setIsModalOpen(false);
@@ -806,20 +962,213 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const updateVariant = (i, k, v) => { const u = [...variants]; u[i][k] = v; setVariants(u); };
   const removeVariant = (i) => setVariants(variants.filter((_, idx) => idx !== i));
 
-  const getSteps = () => {
-    const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
-    const template = selectedCat ? templates.find(t => (t._id || t.id) === selectedCat.templateId) : null;
+  // ── Pricing Matrix Operations
+  const handleOpenPricingForm = (config = null, idx = null) => {
+    const globalPlat = globalSettings?.commissionPercentage ?? 20;
+    const globalL1 = globalSettings?.commissionRates?.level1 ?? 10;
+    const globalL2 = globalSettings?.commissionRates?.level2 ?? 15;
+    const globalL3 = globalSettings?.commissionRates?.level3 ?? 20;
 
-    const baseSteps = [
-      { title: 'Basic Info', key: 'basic' },
-      { title: 'Configuration', key: 'type' }
-    ];
+    if (config) {
+      setEditingPricingConfigIdx(idx);
+      setPricingForm({
+        _tempId: config._tempId || null,
+        _id: config._id || null,
+        cityId: config.cityId?._id || config.cityId || '',
+        brandId: config.brandId?._id || config.brandId || '',
+        customerPrice: config.customerPrice || '',
+        originalPrice: config.originalPrice || '',
+        pricePerMinute: config.pricePerMinute || '',
+        minimumMinutes: config.minimumMinutes || 30,
+        validityDays: config.validityDays || 30,
+        visitsCredits: config.visitsCredits || 4,
+        gstPercentage: config.gstPercentage ?? 18,
+        gstIncluded: config.gstIncluded ?? true,
+        platformCommission: globalPlat,
+        l1Commission: globalL1,
+        l2Commission: globalL2,
+        l3Commission: globalL3,
+        isActive: config.isActive ?? true,
+        packageTitle: config.packageTitle || ''
+      });
+    } else {
+      setEditingPricingConfigIdx(null);
+      setPricingForm({
+        cityId: '',
+        brandId: '',
+        customerPrice: '',
+        originalPrice: '',
+        pricePerMinute: '',
+        minimumMinutes: 30,
+        validityDays: 30,
+        visitsCredits: 4,
+        gstPercentage: 18,
+        gstIncluded: true,
+        platformCommission: globalPlat,
+        l1Commission: globalL1,
+        l2Commission: globalL2,
+        l3Commission: globalL3,
+        isActive: true,
+        packageTitle: ''
+      });
+    }
+    setIsPricingModalOpen(true);
+  };
 
-    if (template && template.code === 'SERVICE_PAGE') {
-      baseSteps.push({ title: 'Page Builder', key: 'page' });
+  // ── Live pricing split calculations (mirrors PricingMatrixPage logic)
+  const getInlinePricingCalcs = () => {
+    const cp = Number(pricingForm.customerPrice) || 0;
+    const gstPct = Number(pricingForm.gstPercentage) || 0;
+    const gstInc = pricingForm.gstIncluded;
+    const pCommPct = Number(pricingForm.platformCommission) || 0;
+    const l1Pct = Number(pricingForm.l1Commission) || 0;
+    const l2Pct = Number(pricingForm.l2Commission) || 0;
+    const l3Pct = Number(pricingForm.l3Commission) || 0;
+
+    let totalCustomerPay = 0;
+    let vendorShareInclusive = 0;
+    let platformFeeInclusive = 0;
+
+    if (gstInc) {
+      totalCustomerPay = cp;
+      platformFeeInclusive = cp * (pCommPct / 100);
+      vendorShareInclusive = cp - platformFeeInclusive;
+    } else {
+      const platformBase = cp * (pCommPct / 100);
+      const vendorBase = cp - platformBase;
+      const platformGST = platformBase * (gstPct / 100);
+      const vendorGST = vendorBase * 0.05;
+      platformFeeInclusive = platformBase + platformGST;
+      vendorShareInclusive = vendorBase + vendorGST;
+      totalCustomerPay = platformFeeInclusive + vendorShareInclusive;
     }
 
-    baseSteps.push({ title: 'Workflow & Pricing', key: 'workflow' });
+    const platformTaxableBase = platformFeeInclusive / (1 + (gstPct / 100));
+    const platformGstAmount = platformFeeInclusive - platformTaxableBase;
+    const vendorTaxableBase = vendorShareInclusive / (1 + 0.05);
+    const vendorGstAmount = vendorShareInclusive - vendorTaxableBase;
+    const totalTaxableAmount = platformTaxableBase + vendorTaxableBase;
+    const totalGstAmount = platformGstAmount + vendorGstAmount;
+    const cgstAmount = (platformGstAmount / 2) + (vendorGstAmount / 2);
+    const sgstAmount = cgstAmount;
+
+    const l1CommAmount = vendorShareInclusive * (l1Pct / 100);
+    const l2CommAmount = vendorShareInclusive * (l2Pct / 100);
+    const l3CommAmount = vendorShareInclusive * (l3Pct / 100);
+    const payoutL1 = vendorShareInclusive - l1CommAmount;
+    const payoutL2 = vendorShareInclusive - l2CommAmount;
+    const payoutL3 = vendorShareInclusive - l3CommAmount;
+    const profitL1 = platformTaxableBase + l1CommAmount;
+    const profitL2 = platformTaxableBase + l2CommAmount;
+    const profitL3 = platformTaxableBase + l3CommAmount;
+
+    return {
+      taxableAmount: totalTaxableAmount, gstAmount: totalGstAmount, cgstAmount, sgstAmount,
+      platformCommissionAmount: platformFeeInclusive, vendorShare: vendorShareInclusive,
+      l1CommAmount, l2CommAmount, l3CommAmount, payoutL1, payoutL2, payoutL3,
+      profitL1, profitL2, profitL3, totalCustomerPay, platformTaxableBase, vendorTaxableBase
+    };
+  };
+
+  const handleSavePricingConfig = async (e) => {
+    e.preventDefault();
+    const isMinuteBased = serviceType === 'minute_base';
+    const isSubscription = serviceType === 'subscription_base';
+    
+    if (pricingForm.customerPrice === '' || pricingForm.customerPrice === null) {
+      alert("Price/Base charge is required");
+      return;
+    }
+
+    const selectedCategory = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+    
+    const payload = {
+      categoryId: formData.categoryId,
+      subCategoryId: formData.subCategoryId || null,
+      brandId: (selectedCategory?.enableBrands !== false && serviceType !== 'image_base' && pricingForm.brandId) ? pricingForm.brandId : null,
+      cityId: pricingForm.cityId || null,
+      customerPrice: Number(pricingForm.customerPrice || 0),
+      originalPrice: Number(pricingForm.originalPrice || 0) || null,
+      pricePerMinute: isMinuteBased ? Number(pricingForm.pricePerMinute || 0) : null,
+      minimumMinutes: isMinuteBased ? Number(pricingForm.minimumMinutes || 30) : null,
+      validityDays: isSubscription ? Number(pricingForm.validityDays || 30) : null,
+      visitsCredits: isSubscription ? Number(pricingForm.visitsCredits || 4) : null,
+      packageTitle: isSubscription ? pricingForm.packageTitle || null : null,
+      pricingType: isMinuteBased ? 'per_minute' : (isSubscription ? 'subscription' : 'fixed'),
+      gstPercentage: Number(pricingForm.gstPercentage || 18),
+      gstIncluded: !!pricingForm.gstIncluded,
+      platformCommission: Number(pricingForm.platformCommission ?? 20),
+      l1Commission: Number(pricingForm.l1Commission ?? 10),
+      l2Commission: Number(pricingForm.l2Commission ?? 15),
+      l3Commission: Number(pricingForm.l3Commission ?? 20),
+      isActive: !!pricingForm.isActive
+    };
+
+    if (currentService) {
+      try {
+        if (pricingForm._id) {
+          await api.put(`/admin/pricing/${pricingForm._id}`, { ...payload, serviceId: currentService._id });
+        } else {
+          await api.post('/admin/pricing', { ...payload, serviceId: currentService._id });
+        }
+        const prcRes = await api.get(`/admin/pricing?serviceId=${currentService._id}`);
+        setPricingConfigs(prcRes.data.data || prcRes.data.pricings || []);
+        setIsPricingModalOpen(false);
+        setEditingPricingConfigIdx(null);
+      } catch (err) {
+        alert(err.response?.data?.message || 'Error saving pricing configuration');
+      }
+    } else {
+      if (editingPricingConfigIdx !== null) {
+        const updated = [...pricingConfigs];
+        updated[editingPricingConfigIdx] = {
+          ...pricingForm,
+          ...payload
+        };
+        setPricingConfigs(updated);
+      } else {
+        setPricingConfigs([
+          ...pricingConfigs,
+          {
+            ...payload,
+            _tempId: 'temp_' + Date.now()
+          }
+        ]);
+      }
+      setIsPricingModalOpen(false);
+      setEditingPricingConfigIdx(null);
+    }
+  };
+
+  const handleDeletePricingConfig = async (idx) => {
+    if (!window.confirm("Are you sure you want to delete this pricing configuration?")) return;
+    const config = pricingConfigs[idx];
+    if (currentService && config._id) {
+      try {
+        await api.delete(`/admin/pricing/${config._id}`);
+        const prcRes = await api.get(`/admin/pricing?serviceId=${currentService._id}`);
+        setPricingConfigs(prcRes.data.data || prcRes.data.pricings || []);
+      } catch (err) {
+        alert("Error deleting pricing config");
+      }
+    } else {
+      setPricingConfigs(pricingConfigs.filter((_, i) => i !== idx));
+    }
+  };
+
+  const getSteps = () => {
+    const baseSteps = [
+      { title: 'Basic Info', key: 'basic' },
+      { title: 'Configuration', key: 'type' },
+      { title: 'Page Builder', key: 'page' }
+    ];
+
+    // Minute-based, Package-based & Image-based services don't need scheduling workflow
+    if (serviceType !== 'minute_base' && serviceType !== 'package_base' && serviceType !== 'image_base' && serviceType !== 'subscription_base') {
+      baseSteps.push({ title: 'Scheduling Workflow', key: 'workflow' });
+    }
+
+    baseSteps.push({ title: 'Pricing Matrix', key: 'pricing_matrix' });
 
     return baseSteps.map((step, idx) => ({
       ...step,
@@ -855,8 +1204,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     ? categories.filter(c => String(c.templateId || c.template) === String(filterTemplateId))
     : categories;
 
-  const typeColors = { minute_base: 'bg-blue-100 text-blue-700', package_base: 'bg-emerald-100 text-emerald-700', image_base: 'bg-purple-100 text-purple-700', multi_visit: 'bg-orange-100 text-orange-700' };
-  const typeLabels = { minute_base: '⏱ Minute Base', package_base: '📦 Package', image_base: '📸 Image Quote', multi_visit: '🔄 Multi-Visit' };
+  const typeColors = { minute_base: 'bg-blue-100 text-blue-700', package_base: 'bg-emerald-100 text-emerald-700', image_base: 'bg-purple-100 text-purple-700', multi_visit: 'bg-orange-100 text-orange-700', subscription_base: 'bg-violet-100 text-violet-700' };
+  const typeLabels = { minute_base: '⏱ Minute Base', package_base: '📦 Package', image_base: '📸 Image Quote', multi_visit: '🔄 Multi-Visit', subscription_base: '💳 Subscription' };
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-sm">
@@ -880,6 +1229,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                 <th className="p-4 font-semibold text-gray-600 text-sm">Title</th>
                 <th className="p-4 font-semibold text-gray-600 text-sm">Category &gt; SubCategory</th>
                 <th className="p-4 font-semibold text-gray-600 text-sm">Type</th>
+                <th className="p-4 font-semibold text-gray-600 text-sm">Price</th>
                 <th className="p-4 font-semibold text-gray-600 text-sm">Status</th>
                 <th className="p-4 font-semibold text-gray-600 text-sm text-right">Actions</th>
               </tr>
@@ -894,6 +1244,17 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       {typeLabels[srv.serviceType] || '📦 Package'}
                     </span>
                   </td>
+                  <td className="p-4 font-semibold text-sm text-gray-800">
+                    {srv.finalCustomerPrice !== undefined && srv.finalCustomerPrice !== null ? (
+                      <span className="text-emerald-600 font-bold">₹{srv.finalCustomerPrice}</span>
+                    ) : srv.basePrice !== undefined && srv.basePrice !== null ? (
+                      <span className="text-emerald-600 font-bold">₹{srv.basePrice}</span>
+                    ) : srv.serviceType === 'image_base' ? (
+                      <span className="text-purple-600 font-semibold italic text-[11px]">Quote / Addon based</span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${srv.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{srv.status}</span>
                   </td>
@@ -904,7 +1265,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                 </tr>
               ))}
               {finalFilteredServices.length === 0 && (
-                <tr><td colSpan="5" className="p-8 text-center text-gray-500">No services found.</td></tr>
+                <tr><td colSpan="6" className="p-8 text-center text-gray-500">No services found.</td></tr>
               )}
             </tbody>
           </table>
@@ -998,68 +1359,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       <textarea className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
                         value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} placeholder="Explain this service..." />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Service Image</label>
-                      <div className="flex items-center gap-4 border border-dashed border-gray-200 p-4 rounded-xl bg-gray-50/50">
-                        {formData.iconUrl ? (
-                          <div className="relative w-20 h-20 bg-white border border-gray-150 rounded-lg overflow-hidden shrink-0 shadow-sm group">
-                            <img src={formData.iconUrl.startsWith('http') ? formData.iconUrl : toAssetUrl(formData.iconUrl)} alt="" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, iconUrl: '' })}
-                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold text-xs transition-opacity"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="w-20 h-20 bg-white border-2 border-dashed border-gray-200 rounded-lg shrink-0 flex items-center justify-center text-gray-400 text-xs font-semibold">
-                            No Image
-                          </div>
-                        )}
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              id="service-image-file"
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                try {
-                                  setUploadingImage(true);
-                                  const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
-                                  const url = await uploadToCloudinary(file, 'services');
-                                  if (url) {
-                                    setFormData(prev => ({ ...prev, iconUrl: url }));
-                                  }
-                                } catch (err) {
-                                  alert('Upload failed: ' + err.message);
-                                } finally {
-                                  setUploadingImage(false);
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor="service-image-file"
-                              className={`px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 rounded-lg text-xs font-bold cursor-pointer transition-colors ${uploadingImage ? 'opacity-50 pointer-events-none' : ''}`}
-                            >
-                              {uploadingImage ? 'Uploading...' : 'Upload Image'}
-                            </label>
-                            <span className="text-xs text-gray-455 font-semibold">Or enter URL directly:</span>
-                          </div>
-                          <input
-                            type="text"
-                            className="w-full p-2 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-400"
-                            value={formData.iconUrl}
-                            onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
-                            placeholder="https://example.com/image.jpg"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">Status</label>
                         <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-400"
@@ -1067,6 +1368,29 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           <option value="active">Active</option>
                           <option value="inactive">Inactive</option>
                         </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Rating</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="1"
+                          max="5"
+                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400 font-semibold"
+                          value={formData.rating}
+                          onChange={e => setFormData({ ...formData, rating: parseFloat(e.target.value) || 0 })}
+                          placeholder="e.g. 4.5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Review Count (Display Text)</label>
+                        <input
+                          type="text"
+                          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400 font-semibold"
+                          value={formData.reviewCount}
+                          onChange={e => setFormData({ ...formData, reviewCount: e.target.value })}
+                          placeholder="e.g. 1.2k"
+                        />
                       </div>
                     </div>
 
@@ -1141,86 +1465,595 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                     </div>
 
                     {/* ── SERVICE VARIANTS ── */}
-                    <div className="pt-4 border-t space-y-3">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h5 className="text-sm font-bold text-gray-800">🎨 Service Variants (Optional Add-ons)</h5>
-                          <p className="text-xs text-gray-500 mt-0.5">Add optional upgrades shown on the service page — e.g. Male Therapist, Aromatherapy Oil, Premium Oil.</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={addVariant}
-                          className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 flex items-center gap-1"
-                        >
-                          <FiPlus /> Add Variant
-                        </button>
-                      </div>
-
-                      {variants.length === 0 && (
-                        <div className="text-center py-5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-xs">
-                          No variants yet. Click "Add Variant" to create one.
-                        </div>
-                      )}
-
-                      {variants.map((variant, idx) => (
-                        <div key={idx} className="p-3 border border-violet-100 rounded-xl bg-violet-50 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-violet-700">Variant #{idx + 1}</span>
-                            <div className="flex items-center gap-2">
-                              <label className="flex items-center gap-1 text-[10px] font-semibold text-gray-600 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={variant.isActive !== false}
-                                  onChange={e => updateVariant(idx, 'isActive', e.target.checked)}
-                                  className="accent-violet-600"
-                                />
-                                Active
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => removeVariant(idx)}
-                                className="text-red-500 text-xs font-bold hover:text-red-700"
-                              >
-                                ✕ Remove
-                              </button>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-600 mb-1">Variant Title *</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. Male Therapist"
-                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
-                                value={variant.title}
-                                onChange={e => updateVariant(idx, 'title', e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-600 mb-1">Extra Price (₹)</label>
-                              <input
-                                type="number"
-                                min={0}
-                                placeholder="0"
-                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
-                                value={variant.extraPrice}
-                                onChange={e => updateVariant(idx, 'extraPrice', parseFloat(e.target.value) || 0)}
-                              />
-                            </div>
-                          </div>
+                    {serviceType === 'image_base' ? (
+                      <div className="pt-4 border-t space-y-4">
+                        <div className="flex justify-between items-center bg-gray-50 border border-gray-200 rounded-xl p-3.5">
                           <div>
-                            <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
+                            <h5 className="text-sm font-bold text-gray-800">📸 Addon Categories & Services</h5>
+                            <p className="text-xs text-gray-500 mt-0.5">Group your addons/services into categories (e.g., Hair Care, Facial) and set prices/commissions for booking.</p>
+                          </div>
+                          <div className="flex gap-2 items-center">
                             <input
                               type="text"
-                              placeholder="Short description shown to the user"
-                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
-                              value={variant.description || ''}
-                              onChange={e => updateVariant(idx, 'description', e.target.value)}
+                              placeholder="New category name..."
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-violet-400 bg-white text-gray-800 font-medium"
+                              value={newCatName}
+                              onChange={e => setNewCatName(e.target.value)}
                             />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                let cat = newCatName.trim();
+                                if (!cat) {
+                                  let i = 1;
+                                  while (variants.some(v => v.category === `Category ${i}`)) {
+                                    i++;
+                                  }
+                                  cat = `Category ${i}`;
+                                }
+                                setVariants([...variants, { title: '', category: cat, extraPrice: 0, description: '', isActive: true }]);
+                                setNewCatName('');
+                              }}
+                              className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shrink-0"
+                            >
+                              <FiPlus /> Add Category
+                            </button>
                           </div>
                         </div>
-                      ))}
-                    </div>
+
+                        {(() => {
+                          const categoriesMap = {};
+                          variants.forEach((v, idx) => {
+                            const cat = v.category || 'Uncategorized';
+                            if (!categoriesMap[cat]) categoriesMap[cat] = [];
+                            categoriesMap[cat].push({ variant: v, originalIndex: idx });
+                          });
+
+                          const categoryNames = Object.keys(categoriesMap);
+
+                          if (variants.length === 0) {
+                            return (
+                              <div className="text-center py-5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-xs">
+                                No addon categories yet. Enter a name above to create one.
+                              </div>
+                            );
+                          }
+
+                          return categoryNames.map(catName => (
+                            <div key={catName} className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm space-y-3">
+                              <div className="flex justify-between items-center border-b pb-2 bg-gray-50 -mx-4 -mt-4 p-3 rounded-t-xl">
+                                <div className="flex items-center gap-2">
+                                  {editingCategory === catName ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="text"
+                                        className="px-2 py-1 border border-gray-300 rounded-md text-xs bg-white focus:ring-1 focus:ring-violet-400 outline-none font-semibold text-gray-800"
+                                        value={editingCategoryValue}
+                                        onChange={e => setEditingCategoryValue(e.target.value)}
+                                        placeholder="Category name..."
+                                        autoFocus
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (editingCategoryValue.trim() && editingCategoryValue.trim() !== catName) {
+                                            const updated = variants.map(v => v.category === catName ? { ...v, category: editingCategoryValue.trim() } : v);
+                                            setVariants(updated);
+                                          }
+                                          setEditingCategory(null);
+                                        }}
+                                        className="text-green-600 hover:text-green-800 text-xs font-bold px-1.5 py-0.5 rounded border border-green-200 bg-green-50"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingCategory(null)}
+                                        className="text-gray-500 hover:text-gray-700 text-xs font-bold px-1.5 py-0.5 rounded border border-gray-200 bg-white"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-bold text-gray-800">📁 {catName}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingCategory(catName);
+                                          setEditingCategoryValue(catName);
+                                        }}
+                                        className="text-gray-400 hover:text-violet-600 text-xs flex items-center gap-0.5"
+                                      >
+                                        ✏️ Rename
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setVariants([...variants, { title: '', category: catName, extraPrice: 0, description: '', isActive: true }]);
+                                    }}
+                                    className="text-xs font-bold text-violet-600 hover:underline flex items-center gap-0.5"
+                                  >
+                                    <FiPlus /> Add Addon
+                                  </button>
+                                  <span className="text-gray-300">|</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm(`Delete category "${catName}" and all its addons?`)) {
+                                        setVariants(variants.filter(v => v.category !== catName));
+                                      }
+                                    }}
+                                    className="text-xs font-bold text-red-500 hover:text-red-700"
+                                  >
+                                    ✕ Delete Category
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3 pt-2">
+                                {categoriesMap[catName].map(({ variant, originalIndex }) => (
+                                  <div key={originalIndex} className="p-3 border border-violet-100 rounded-xl bg-violet-50/50 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-bold text-violet-700">Addon #{categoriesMap[catName].findIndex(x => x.originalIndex === originalIndex) + 1}</span>
+                                      <div className="flex items-center gap-2">
+                                        <label className="flex items-center gap-1 text-[10px] font-semibold text-gray-600 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={variant.isActive !== false}
+                                            onChange={e => updateVariant(originalIndex, 'isActive', e.target.checked)}
+                                            className="accent-violet-600"
+                                          />
+                                          Active
+                                        </label>
+                                        <button
+                                          type="button"
+                                          onClick={() => removeVariant(originalIndex)}
+                                          className="text-red-500 text-xs font-bold hover:text-red-700"
+                                        >
+                                          ✕ Remove
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-600 mb-1">Addon Name *</label>
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. Hair Wash"
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                          value={variant.title}
+                                          onChange={e => updateVariant(originalIndex, 'title', e.target.value)}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-600 mb-1">Customer Price (₹) *</label>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          placeholder="0"
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400 font-bold text-gray-800"
+                                          value={variant.extraPrice}
+                                          onChange={e => updateVariant(originalIndex, 'extraPrice', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 mb-1">GST %</label>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                          value={variant.gstPercentage ?? 18}
+                                          onChange={e => updateVariant(originalIndex, 'gstPercentage', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 mb-1">GST Type</label>
+                                        <select
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                          value={variant.gstIncluded !== false ? 'true' : 'false'}
+                                          onChange={e => updateVariant(originalIndex, 'gstIncluded', e.target.value === 'true')}
+                                        >
+                                          <option value="true">Included</option>
+                                          <option value="false">Excluded</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 mb-1">Platform Comm %</label>
+                                        <input
+                                          type="number"
+                                          min={0} max={100}
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                          value={variant.platformCommission ?? 20}
+                                          onChange={e => updateVariant(originalIndex, 'platformCommission', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 mb-1">L1 Comm %</label>
+                                        <input
+                                          type="number"
+                                          min={0} max={100}
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                          value={variant.l1Commission ?? 10}
+                                          onChange={e => updateVariant(originalIndex, 'l1Commission', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 mb-1">L2 Comm %</label>
+                                        <input
+                                          type="number"
+                                          min={0} max={100}
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                          value={variant.l2Commission ?? 15}
+                                          onChange={e => updateVariant(originalIndex, 'l2Commission', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 mb-1">L3 Comm %</label>
+                                        <input
+                                          type="number"
+                                          min={0} max={100}
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                          value={variant.l3Commission ?? 20}
+                                          onChange={e => updateVariant(originalIndex, 'l3Commission', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
+                                      <input
+                                        type="text"
+                                        placeholder="Short description shown to the user"
+                                        className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                        value={variant.description || ''}
+                                        onChange={e => updateVariant(originalIndex, 'description', e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    ) : serviceType === 'subscription_base' ? (
+                      <div className="pt-4 border-t space-y-4">
+                        <div className="flex justify-between items-center bg-gray-50 border border-gray-200 rounded-xl p-3.5">
+                          <div>
+                            <h5 className="text-sm font-bold text-gray-800">💳 Subscription Plans</h5>
+                            <p className="text-xs text-gray-500 mt-0.5">Manage subscription packages (Monthly, Quarterly, Yearly) with predefined benefits.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPackages([
+                                ...packages,
+                                {
+                                  title: 'Monthly Plan',
+                                  description: '',
+                                  price: 999,
+                                  originalPrice: 1499,
+                                  duration: '30 Days',
+                                  visitsCredits: 4,
+                                  bookingDiscount: 10,
+                                  freeInspection: true,
+                                  prioritySupport: true,
+                                  memberPricing: true,
+                                  isPopular: false,
+                                  isActive: true
+                                }
+                              ]);
+                            }}
+                            className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 flex items-center gap-1"
+                          >
+                            <FiPlus /> Add Subscription Plan
+                          </button>
+                        </div>
+
+                        {packages.length === 0 && (
+                          <div className="text-center py-5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-xs">
+                            No subscription plans yet. Click "Add Subscription Plan" to create one.
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          {packages.map((plan, idx) => (
+                            <div key={idx} className="p-4 border border-violet-150 rounded-xl bg-violet-50/30 space-y-3">
+                              <div className="flex justify-between items-center pb-2 border-b border-violet-100">
+                                <span className="text-xs font-bold text-violet-700">Plan #{idx + 1}</span>
+                                <div className="flex items-center gap-3">
+                                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={plan.isActive !== false}
+                                      onChange={e => updatePackage(idx, 'isActive', e.target.checked)}
+                                      className="accent-violet-600"
+                                    />
+                                    Active
+                                  </label>
+                                  <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!plan.isPopular}
+                                      onChange={e => updatePackage(idx, 'isPopular', e.target.checked)}
+                                      className="accent-violet-600"
+                                    />
+                                    Popular
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => removePackage(idx)}
+                                    className="text-red-500 text-xs font-bold hover:text-red-700 ml-2"
+                                  >
+                                    ✕ Remove
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Plan Title *</label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. Monthly Plan"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                    value={plan.title}
+                                    onChange={e => updatePackage(idx, 'title', e.target.value)}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Validity / Duration *</label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. 30 Days, 90 Days, 365 Days, 15 Days"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                    value={plan.duration || ''}
+                                    onChange={e => updatePackage(idx, 'duration', e.target.value)}
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Number of Visits / Credits *</label>
+                                  <input
+                                    type="number"
+                                    placeholder="e.g. 4"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold"
+                                    value={plan.visitsCredits ?? 4}
+                                    onChange={e => updatePackage(idx, 'visitsCredits', parseInt(e.target.value) || 0)}
+                                    required
+                                    min="1"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Visit Interval / Frequency</label>
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. Every 15 days, Every 2 months"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                    value={plan.visitFrequency || ''}
+                                    onChange={e => updatePackage(idx, 'visitFrequency', e.target.value)}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Extra Booking Discount (%)</label>
+                                  <input
+                                    type="number"
+                                    placeholder="e.g. 10"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                    value={plan.bookingDiscount ?? 0}
+                                    onChange={e => updatePackage(idx, 'bookingDiscount', parseInt(e.target.value) || 0)}
+                                    min="0"
+                                    max="100"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="p-3 bg-white rounded-lg border border-violet-100/50 space-y-2">
+                                <span className="block text-[10px] font-bold text-violet-700 uppercase tracking-wider">Included Benefits</span>
+                                <div className="flex flex-wrap gap-4 text-xs font-semibold text-gray-600 pt-1">
+                                  <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!plan.freeInspection}
+                                      onChange={e => updatePackage(idx, 'freeInspection', e.target.checked)}
+                                      className="accent-violet-600"
+                                    />
+                                    Free Inspection/Checkup
+                                  </label>
+                                  <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!plan.prioritySupport}
+                                      onChange={e => updatePackage(idx, 'prioritySupport', e.target.checked)}
+                                      className="accent-violet-600"
+                                    />
+                                    Priority Support
+                                  </label>
+                                  <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!plan.memberPricing}
+                                      onChange={e => updatePackage(idx, 'memberPricing', e.target.checked)}
+                                      className="accent-violet-600"
+                                    />
+                                    Special Member Pricing
+                                  </label>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Short Description (optional)</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Complete home coverage with priority response"
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                  value={plan.description || ''}
+                                  onChange={e => updatePackage(idx, 'description', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="pt-4 border-t space-y-3">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h5 className="text-sm font-bold text-gray-800">🎨 Service Variants (Optional Add-ons)</h5>
+                            <p className="text-xs text-gray-500 mt-0.5">Add optional upgrades shown on the service page — e.g. Male Therapist, Aromatherapy Oil, Premium Oil.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={addVariant}
+                            className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 flex items-center gap-1"
+                          >
+                            <FiPlus /> Add Variant
+                          </button>
+                        </div>
+
+                        {variants.length === 0 && (
+                          <div className="text-center py-5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-xs">
+                            No variants yet. Click "Add Variant" to create one.
+                          </div>
+                        )}
+
+                        {variants.map((variant, idx) => (
+                          <div key={idx} className="p-3 border border-violet-100 rounded-xl bg-violet-50 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-violet-700">Variant #{idx + 1}</span>
+                              <div className="flex items-center gap-2">
+                                <label className="flex items-center gap-1 text-[10px] font-semibold text-gray-600 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={variant.isActive !== false}
+                                    onChange={e => updateVariant(idx, 'isActive', e.target.checked)}
+                                    className="accent-violet-600"
+                                  />
+                                  Active
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => removeVariant(idx)}
+                                  className="text-red-500 text-xs font-bold hover:text-red-700"
+                                >
+                                  ✕ Remove
+                                </button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Variant Title *</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Front Glass Replacement"
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                  value={variant.title}
+                                  onChange={e => updateVariant(idx, 'title', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Customer Price (₹) *</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  placeholder="0"
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400 font-bold text-gray-800"
+                                  value={variant.extraPrice}
+                                  onChange={e => updateVariant(idx, 'extraPrice', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 mb-1">GST %</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                  value={variant.gstPercentage ?? 18}
+                                  onChange={e => updateVariant(idx, 'gstPercentage', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 mb-1">GST Type</label>
+                                <select
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                  value={variant.gstIncluded !== false ? 'true' : 'false'}
+                                  onChange={e => updateVariant(idx, 'gstIncluded', e.target.value === 'true')}
+                                >
+                                  <option value="true">Included</option>
+                                  <option value="false">Excluded</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 mb-1">Platform Comm %</label>
+                                <input
+                                  type="number"
+                                  min={0} max={100}
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                  value={variant.platformCommission ?? 20}
+                                  onChange={e => updateVariant(idx, 'platformCommission', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 mb-1">L1 Comm %</label>
+                                <input
+                                  type="number"
+                                  min={0} max={100}
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                  value={variant.l1Commission ?? 10}
+                                  onChange={e => updateVariant(idx, 'l1Commission', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 mb-1">L2 Comm %</label>
+                                <input
+                                  type="number"
+                                  min={0} max={100}
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                  value={variant.l2Commission ?? 15}
+                                  onChange={e => updateVariant(idx, 'l2Commission', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 mb-1">L3 Comm %</label>
+                                <input
+                                  type="number"
+                                  min={0} max={100}
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                  value={variant.l3Commission ?? 20}
+                                  onChange={e => updateVariant(idx, 'l3Commission', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
+                              <input
+                                type="text"
+                                placeholder="Short description shown to the user"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                value={variant.description || ''}
+                                onChange={e => updateVariant(idx, 'description', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1239,10 +2072,10 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                   </div>
                 )}
 
-                {/* ── STEP 5: WORKFLOW & PRICING ── */}
+                {/* ── STEP 4: SCHEDULING WORKFLOW ── */}
                 {currentStepKey === 'workflow' && (
                   <div className="space-y-4">
-                    <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 5: Scheduling Workflow</h4>
+                    <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 4: Scheduling Workflow</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div><label className="block text-xs font-semibold text-gray-700 mb-1">Workflow Type</label>
                         <select className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white outline-none"
@@ -1325,44 +2158,459 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
 
-                    {/* Pricing Rules */}
-                    <div className="pt-4 border-t space-y-3">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-base font-bold text-gray-800">Pricing Engine</h4>
-                        <div className="flex gap-2">
-                          <button onClick={() => addPricingRule('formula')} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs font-bold hover:bg-indigo-700">Add Formula</button>
-                          <button onClick={() => addPricingRule('conditional')} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs font-bold hover:bg-indigo-700">Add Condition</button>
+                {/* ── STEP 5: PRICING MATRIX ── */}
+                {currentStepKey === 'pricing_matrix' && (
+                  <div className="space-y-4">
+                    <h4 className="text-base font-bold text-gray-800 mb-2 border-b pb-2">Step 5: Pricing Matrix</h4>
+
+                    {/* Table showing configured prices */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                      <div className="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                        <span className="text-xs font-extrabold text-gray-600 uppercase tracking-wider">Configured Price Mappings</span>
+                        {!isPricingModalOpen && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPricingForm()}
+                            className="px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 flex items-center gap-1"
+                          >
+                            <FiPlus /> Add Pricing
+                          </button>
+                        )}
+                      </div>
+                      <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-gray-50/50 border-b border-gray-150">
+                              <th className="p-2.5 font-bold text-gray-600">City</th>
+                              <th className="p-2.5 font-bold text-gray-600">Brand</th>
+                              <th className="p-2.5 font-bold text-gray-600">Price Details</th>
+                              <th className="p-2.5 font-bold text-gray-600">GST</th>
+                              <th className="p-2.5 font-bold text-gray-600 bg-green-50">Admin Profit (L1/L2/L3)</th>
+                              <th className="p-2.5 font-bold text-gray-600">Status</th>
+                              <th className="p-2.5 font-bold text-gray-600 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pricingConfigs.map((config, idx) => {
+                              const cityName = config.cityId 
+                                ? (cities.find(c => (c._id || c.id) === (config.cityId?._id || config.cityId))?.name || 'Selected City')
+                                : 'Global';
+                              const brandName = (config.brandId && serviceType !== 'image_base')
+                                ? (brands.find(b => (b._id || b.id) === (config.brandId?._id || config.brandId))?.title || 'Selected Brand')
+                                : '—';
+                              const isMinuteBased = serviceType === 'minute_base';
+                              // Compute inline profit display
+                              const cp = Number(config.customerPrice) || 0;
+                              const gstPct = Number(config.gstPercentage) || 0;
+                              const gstInc = config.gstIncluded ?? true;
+                              const pCommPct = Number(config.platformCommission ?? globalSettings?.commissionPercentage ?? 20);
+                              const l1Pct = Number(config.l1Commission ?? globalSettings?.commissionRates?.level1 ?? 10);
+                              const l2Pct = Number(config.l2Commission ?? globalSettings?.commissionRates?.level2 ?? 15);
+                              const l3Pct = Number(config.l3Commission ?? globalSettings?.commissionRates?.level3 ?? 20);
+                              
+                              let totalCustomerPay = cp;
+                              if (!gstInc) {
+                                const platformBase = cp * (pCommPct / 100);
+                                const vendorBase = cp - platformBase;
+                                const platformGST = platformBase * (gstPct / 100);
+                                const vendorGST = vendorBase * 0.05;
+                                const platformFeeInclusive = platformBase + platformGST;
+                                const vendorShareInclusive = vendorBase + vendorGST;
+                                totalCustomerPay = platformFeeInclusive + vendorShareInclusive;
+                              }
+
+                              const displayTaxable = gstInc ? cp / (1 + gstPct / 100) : cp;
+                              const displayPlatComm = displayTaxable * (pCommPct / 100);
+                              const profL1 = displayPlatComm + (displayTaxable * (l1Pct / 100));
+                              const profL2 = displayPlatComm + (displayTaxable * (l2Pct / 100));
+                              const profL3 = displayPlatComm + (displayTaxable * (l3Pct / 100));
+                              return (
+                                <tr key={config._tempId || config._id || idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                  <td className="p-2.5">
+                                    <span className={`px-2 py-0.5 rounded font-bold ${config.cityId ? 'bg-indigo-50 text-indigo-700' : 'bg-green-50 text-green-700'}`}>
+                                      {cityName}
+                                    </span>
+                                  </td>
+                                  <td className="p-2.5 font-semibold text-gray-700">{brandName}</td>
+                                  <td className="p-2.5 font-bold text-gray-800">
+                                    {isMinuteBased ? (
+                                      <span>
+                                        Base: ₹{config.customerPrice} ({config.minimumMinutes || 30} mins)
+                                        <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{totalCustomerPay.toFixed(1)}</span>
+                                        <span className="block text-[10px] text-blue-600 font-normal mt-0.25">Extra: ₹{config.pricePerMinute}/10 min</span>
+                                      </span>
+                                    ) : serviceType === 'subscription_base' ? (
+                                      <span>
+                                        ₹{config.customerPrice} (Subscription{config.packageTitle ? `: ${config.packageTitle}` : ''})
+                                        <span className="block text-[10px] text-blue-600 font-bold mt-0.5">{config.visitsCredits || 4} Visits / {config.validityDays || 30} Days</span>
+                                      </span>
+                                    ) : (
+                                      <span>
+                                        ₹{config.customerPrice}
+                                        {!gstInc && <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{totalCustomerPay.toFixed(1)}</span>}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-2.5 text-gray-500 font-semibold">{config.gstPercentage}% ({gstInc ? 'Incl.' : 'Excl.'})</td>
+                                  <td className="p-2.5 bg-green-50 font-bold text-green-700">
+                                    ₹{profL1.toFixed(1)} / ₹{profL2.toFixed(1)} / ₹{profL3.toFixed(1)}
+                                  </td>
+                                  <td className="p-2.5">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${config.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                      {config.isActive !== false ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </td>
+                                  <td className="p-2.5 text-right">
+                                    <div className="flex justify-end gap-1.5">
+                                      <button type="button" onClick={() => handleOpenPricingForm(config, idx)} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><FiEdit2 className="w-3.5 h-3.5" /></button>
+                                      <button type="button" onClick={() => handleDeletePricingConfig(idx)} className="p-1 text-red-600 hover:bg-red-50 rounded"><FiTrash2 className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {pricingConfigs.length === 0 && (
+                              <tr>
+                                <td colSpan="7" className="p-4 text-center text-gray-400">No pricing configurations defined yet.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Inline add/edit form */}
+                    {isPricingModalOpen && (
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                        <div className="flex justify-between items-center border-b pb-2">
+                          <span className="text-xs font-bold text-gray-700">
+                            {editingPricingConfigIdx !== null ? '📝 Edit Pricing configuration' : '➕ Add Pricing configuration'}
+                          </span>
+                          <button type="button" onClick={() => { setIsPricingModalOpen(false); setEditingPricingConfigIdx(null); }} className="text-xs font-bold text-gray-400 hover:text-gray-600">✕ Close</button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">City Availability</label>
+                            <select
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                              value={pricingForm.cityId}
+                              onChange={e => setPricingForm({ ...pricingForm, cityId: e.target.value })}
+                            >
+                              <option value="">All Cities (Global Pricing)</option>
+                              {cities.map(city => <option key={city._id || city.id} value={city._id || city.id}>{city.name}</option>)}
+                            </select>
+                          </div>
+                          
+                          {(() => {
+                            const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+                            const showBrandField = selectedCat ? (selectedCat.enableBrands === true && serviceType !== 'image_base') : false;
+                            if (!showBrandField) return null;
+                            const filteredBrands = brands.filter(brnd => {
+                              if (!formData.categoryId) return true;
+                              return (brnd.categoryId && (brnd.categoryId?._id === formData.categoryId || brnd.categoryId === formData.categoryId)) ||
+                                     (brnd.categoryIds && brnd.categoryIds.some(c => (c?._id || c) === formData.categoryId));
+                            });
+
+                            return (
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Brand</label>
+                                <select
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                  value={pricingForm.brandId}
+                                  onChange={e => setPricingForm({ ...pricingForm, brandId: e.target.value })}
+                                  required={selectedCat?.brandRequired === true}
+                                >
+                                  <option value="">Select Brand {selectedCat?.brandRequired ? '(Required)' : '(Optional)'}</option>
+                                  {filteredBrands.map(brnd => <option key={brnd._id || brnd.id} value={brnd._id || brnd.id}>{brnd.title}</option>)}
+                                </select>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {serviceType === 'minute_base' ? (
+                          <div className="grid grid-cols-3 gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
+                            <div>
+                              <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Base Charge (₹)</label>
+                              <input
+                                type="number"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                value={pricingForm.customerPrice}
+                                onChange={e => setPricingForm({ ...pricingForm, customerPrice: e.target.value })}
+                                required
+                                min="0"
+                                placeholder="e.g. 300"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Min Minutes</label>
+                              <input
+                                type="number"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                value={pricingForm.minimumMinutes}
+                                onChange={e => setPricingForm({ ...pricingForm, minimumMinutes: parseInt(e.target.value) || 30 })}
+                                required
+                                min="1"
+                                placeholder="e.g. 30"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Extra ₹/10 min</label>
+                              <input
+                                type="number"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                value={pricingForm.pricePerMinute}
+                                onChange={e => setPricingForm({ ...pricingForm, pricePerMinute: e.target.value })}
+                                required
+                                min="0"
+                                placeholder="e.g. 100"
+                              />
+                            </div>
+                          </div>
+                        ) : serviceType === 'subscription_base' ? (
+                          <div className="space-y-2.5">
+                            <div>
+                              <label className="block text-[10px] font-bold text-violet-700 uppercase mb-1">Select Subscription Plan *</label>
+                              <select
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                value={pricingForm.packageTitle || ''}
+                                onChange={e => {
+                                  const selectedPkg = packages.find(p => p.title === e.target.value);
+                                  setPricingForm({
+                                    ...pricingForm,
+                                    packageTitle: e.target.value,
+                                    validityDays: selectedPkg ? (parseInt(selectedPkg.duration) || 30) : 30,
+                                    visitsCredits: selectedPkg ? (selectedPkg.visitsCredits || 4) : 4,
+                                    customerPrice: selectedPkg ? selectedPkg.price : ''
+                                  });
+                                }}
+                                required
+                              >
+                                <option value="">-- Choose Plan --</option>
+                                {packages.map((pkg, pIdx) => (
+                                  <option key={pIdx} value={pkg.title}>{pkg.title}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 p-3 bg-violet-50/50 border border-violet-100 rounded-lg">
+                              <div>
+                                <label className="block text-[10px] font-bold text-violet-700 uppercase mb-1">Subscription Price (₹) *</label>
+                                <input
+                                  type="number"
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-bold"
+                                  value={pricingForm.customerPrice}
+                                  onChange={e => setPricingForm({ ...pricingForm, customerPrice: e.target.value })}
+                                  required
+                                  min="0"
+                                  placeholder="e.g. 999"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-violet-700 uppercase mb-1">Original Price (₹)</label>
+                                <input
+                                  type="number"
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none text-gray-500 line-through"
+                                  value={pricingForm.originalPrice || ''}
+                                  onChange={e => setPricingForm({ ...pricingForm, originalPrice: e.target.value })}
+                                  min="0"
+                                  placeholder="e.g. 1499"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Price (Customer Pays) *</label>
+                            <input
+                                type="number"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                value={pricingForm.customerPrice}
+                                onChange={e => setPricingForm({ ...pricingForm, customerPrice: e.target.value })}
+                                required
+                                min="0"
+                                placeholder="e.g. 500"
+                            />
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">GST Percentage</label>
+                            <input
+                              type="number"
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                              value={pricingForm.gstPercentage}
+                              onChange={e => setPricingForm({ ...pricingForm, gstPercentage: parseFloat(e.target.value) || 0 })}
+                              required
+                              min="0"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">GST Type</label>
+                            <select
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                              value={pricingForm.gstIncluded ? 'true' : 'false'}
+                              onChange={e => setPricingForm({ ...pricingForm, gstIncluded: e.target.value === 'true' })}
+                            >
+                              <option value="true">Included in Price</option>
+                              <option value="false">Excluded from Price</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2 pt-5">
+                            <input
+                              id="configIsActiveToggle"
+                              type="checkbox"
+                              checked={pricingForm.isActive !== false}
+                              onChange={e => setPricingForm({ ...pricingForm, isActive: e.target.checked })}
+                              className="h-4 w-4 accent-green-600"
+                            />
+                            <label htmlFor="configIsActiveToggle" className="text-xs font-bold text-gray-600">Active configuration</label>
+                          </div>
+                        </div>
+
+                        {/* Commission fields — editable, pre-filled from global settings */}
+                        <div className="grid grid-cols-4 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Platform Comm %</label>
+                            <input
+                              type="number"
+                              min="0" max="100"
+                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
+                              value={pricingForm.platformCommission}
+                              onChange={e => setPricingForm({ ...pricingForm, platformCommission: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">L1 Commission %</label>
+                            <input
+                              type="number"
+                              min="0" max="100"
+                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
+                              value={pricingForm.l1Commission}
+                              onChange={e => setPricingForm({ ...pricingForm, l1Commission: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">L2 Commission %</label>
+                            <input
+                              type="number"
+                              min="0" max="100"
+                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
+                              value={pricingForm.l2Commission}
+                              onChange={e => setPricingForm({ ...pricingForm, l2Commission: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">L3 Commission %</label>
+                            <input
+                              type="number"
+                              min="0" max="100"
+                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
+                              value={pricingForm.l3Commission}
+                              onChange={e => setPricingForm({ ...pricingForm, l3Commission: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <p className="col-span-4 text-[10px] text-gray-400 font-medium">* Pre-filled from global settings — override per pricing config if needed.</p>
+                        </div>
+
+                        {/* Live Split Calculation Details */}
+                        {(() => {
+                          const calcs = getInlinePricingCalcs();
+                          return (
+                            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                              <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider">Live Split Calculation Details</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Tax column */}
+                                <div className="space-y-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                  <div className="text-[10px] font-bold uppercase text-slate-500">Tax Calculations</div>
+                                  <div className="flex justify-between items-center text-xs border-b pb-1">
+                                    <span className="text-slate-500">Customer Pay</span>
+                                    <span className="font-bold text-slate-800">₹{calcs.totalCustomerPay.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-slate-500">Taxable Amount</span>
+                                    <span className="font-bold text-slate-800">₹{calcs.taxableAmount.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-slate-500">CGST ({(pricingForm.gstPercentage / 2)}%)</span>
+                                    <span className="font-semibold text-gray-600">₹{calcs.cgstAmount.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-slate-500">SGST ({(pricingForm.gstPercentage / 2)}%)</span>
+                                    <span className="font-semibold text-gray-600">₹{calcs.sgstAmount.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs font-bold border-t pt-1">
+                                    <span className="text-slate-700">Total GST ({pricingForm.gstPercentage}%)</span>
+                                    <span className="text-slate-700">₹{calcs.gstAmount.toFixed(2)}</span>
+                                  </div>
+                                </div>
+
+                                {/* Vendor & Platform column */}
+                                <div className="space-y-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm col-span-2">
+                                  <div className="text-[10px] font-bold uppercase text-slate-500">Vendor &amp; Platform Commission Splits</div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5 border-r border-gray-100 pr-3">
+                                      <div className="flex justify-between items-center text-xs text-gray-500">
+                                        <span>Platform Fee ({pricingForm.platformCommission}%)</span>
+                                        <span className="font-semibold">₹{calcs.platformCommissionAmount.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center text-xs text-gray-500 pb-1.5 border-b">
+                                        <span>Vendor Share (Base)</span>
+                                        <span className="font-semibold">₹{calcs.vendorShare.toFixed(2)}</span>
+                                      </div>
+                                      <div className="pt-1 text-xs font-bold text-blue-600">Commissions &amp; Final Payouts</div>
+                                      <div className="text-xs flex justify-between text-gray-600">
+                                        <span>L1 Payout (₹{calcs.l1CommAmount.toFixed(1)} / {pricingForm.l1Commission}%)</span>
+                                        <span className="font-bold text-green-600">₹{calcs.payoutL1.toFixed(1)}</span>
+                                      </div>
+                                      <div className="text-xs flex justify-between text-gray-600">
+                                        <span>L2 Payout (₹{calcs.l2CommAmount.toFixed(1)} / {pricingForm.l2Commission}%)</span>
+                                        <span className="font-bold text-green-600">₹{calcs.payoutL2.toFixed(1)}</span>
+                                      </div>
+                                      <div className="text-xs flex justify-between text-gray-600">
+                                        <span>L3 Payout (₹{calcs.l3CommAmount.toFixed(1)} / {pricingForm.l3Commission}%)</span>
+                                        <span className="font-bold text-green-600">₹{calcs.payoutL3.toFixed(1)}</span>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <div className="text-xs font-bold text-blue-700">Admin Net Profit</div>
+                                      <div className="text-xs flex justify-between text-gray-700 font-semibold mt-1">
+                                        <span>Admin Profit (L1 Vendor)</span>
+                                        <span className="text-blue-700 font-bold">₹{calcs.profitL1.toFixed(1)}</span>
+                                      </div>
+                                      <div className="text-xs flex justify-between text-gray-700 font-semibold">
+                                        <span>Admin Profit (L2 Vendor)</span>
+                                        <span className="text-blue-700 font-bold">₹{calcs.profitL2.toFixed(1)}</span>
+                                      </div>
+                                      <div className="text-xs flex justify-between text-gray-700 font-semibold">
+                                        <span>Admin Profit (L3 Vendor)</span>
+                                        <span className="text-blue-700 font-bold">₹{calcs.profitL3.toFixed(1)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        <div className="flex justify-end gap-2 pt-2 border-t">
+                          <button
+                            type="button"
+                            onClick={handleSavePricingConfig}
+                            className="px-4 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                          >
+                            Save Configuration
+                          </button>
                         </div>
                       </div>
-                      {builderRules.map((rule, idx) => (
-                        <div key={idx} className="p-4 border border-gray-200 rounded-xl bg-gray-50 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-indigo-600">Rule #{idx + 1} ({rule.ruleType === 'formula' ? 'Math Formula' : 'Condition'})</span>
-                            <button onClick={() => removePricingRule(idx)} className="text-xs font-bold text-red-600">Delete</button>
-                          </div>
-                          {rule.ruleType === 'formula' ? (
-                            <div><label className="block text-[10px] font-bold text-gray-700">Formula</label>
-                              <input type="text" placeholder="e.g. basePrice + (rooms * 500)" className="w-full p-2 border border-gray-300 rounded-lg text-xs font-mono bg-white" value={rule.formulaString} onChange={e => updatePricingRule(idx, 'formulaString', e.target.value)} /></div>
-                          ) : (
-                            <div className="grid grid-cols-5 gap-2">
-                              <input type="text" placeholder="Field name" className="p-2 border border-gray-300 rounded-lg text-xs bg-white" value={rule.fieldName} onChange={e => updatePricingRule(idx, 'fieldName', e.target.value)} />
-                              <select className="p-2 border border-gray-300 rounded-lg text-xs bg-white" value={rule.operator} onChange={e => updatePricingRule(idx, 'operator', e.target.value)}>
-                                <option value="equals">Equals</option>
-                              </select>
-                              <input type="text" placeholder="Value" className="p-2 border border-gray-300 rounded-lg text-xs bg-white" value={rule.value} onChange={e => updatePricingRule(idx, 'value', e.target.value)} />
-                              <select className="p-2 border border-gray-300 rounded-lg text-xs bg-white" value={rule.priceModifierType} onChange={e => updatePricingRule(idx, 'priceModifierType', e.target.value)}>
-                                <option value="add">Add (+)</option>
-                                <option value="multiply">Multiply (*)</option>
-                                <option value="fixed">Fixed (=)</option>
-                              </select>
-                              <input type="number" placeholder="Amount" className="p-2 border border-gray-300 rounded-lg text-xs bg-white" value={rule.modifierValue} onChange={e => updatePricingRule(idx, 'modifierValue', parseFloat(e.target.value) || 0)} />
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      {builderRules.length === 0 && <div className="text-center py-4 text-gray-400 text-sm">No pricing rules yet.</div>}
-                    </div>
+                    )}
+
+
                   </div>
                 )}
               </div>

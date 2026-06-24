@@ -5,6 +5,7 @@ import { cityService } from '../../../services/cityService';
 
 const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode }) => {
   const isMinuteBased = filterTemplateCode === 'MINUTE_BASED';
+  const isSubscription = filterTemplateCode === 'SUBSCRIPTION_BASED';
   const [pricings, setPricings] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
@@ -26,13 +27,16 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
     customerPrice: '',
     pricePerMinute: '',
     minimumMinutes: 30,
+    validityDays: 30,
+    visitsCredits: 4,
     gstPercentage: 18,
     gstIncluded: true,
     platformCommission: 20,
     l1Commission: 10,
     l2Commission: 15,
     l3Commission: 20,
-    isActive: true
+    isActive: true,
+    packageTitle: ''
   });
 
   useEffect(() => {
@@ -91,13 +95,16 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
         customerPrice: pricing.customerPrice || '',
         pricePerMinute: pricing.pricePerMinute || '',
         minimumMinutes: pricing.minimumMinutes || 30,
+        validityDays: pricing.validityDays || 30,
+        visitsCredits: pricing.visitsCredits || 4,
         gstPercentage: pricing.gstPercentage ?? 18,
         gstIncluded: pricing.gstIncluded ?? true,
-        platformCommission: globalPlat,
-        l1Commission: globalL1,
-        l2Commission: globalL2,
-        l3Commission: globalL3,
-        isActive: pricing.isActive ?? true
+        platformCommission: pricing.platformCommission ?? globalPlat,
+        l1Commission: pricing.l1Commission ?? globalL1,
+        l2Commission: pricing.l2Commission ?? globalL2,
+        l3Commission: pricing.l3Commission ?? globalL3,
+        isActive: pricing.isActive ?? true,
+        packageTitle: pricing.packageTitle || ''
       });
     } else {
       const defaultCatId = filterTemplateId
@@ -112,13 +119,16 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
         customerPrice: '',
         pricePerMinute: '',
         minimumMinutes: 30,
+        validityDays: 30,
+        visitsCredits: 4,
         gstPercentage: 18,
         gstIncluded: true,
         platformCommission: globalPlat,
         l1Commission: globalL1,
         l2Commission: globalL2,
         l3Commission: globalL3,
-        isActive: true
+        isActive: true,
+        packageTitle: ''
       });
     }
     setIsModalOpen(true);
@@ -148,7 +158,10 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
         customerPrice: Number(formData.customerPrice || 0),
         pricePerMinute: isMinuteBased ? Number(formData.pricePerMinute || 0) : null,
         minimumMinutes: isMinuteBased ? Number(formData.minimumMinutes || 30) : null,
-        pricingType: isMinuteBased ? 'per_minute' : 'fixed',
+        validityDays: isSubscription ? Number(formData.validityDays || 30) : null,
+        visitsCredits: isSubscription ? Number(formData.visitsCredits || 4) : null,
+        packageTitle: isSubscription ? formData.packageTitle || null : null,
+        pricingType: isMinuteBased ? 'per_minute' : (isSubscription ? 'subscription' : 'fixed'),
         gstPercentage: Number(formData.gstPercentage),
         platformCommission: Number(formData.platformCommission),
         l1Commission: Number(formData.l1Commission),
@@ -323,7 +336,9 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
                 return (
                   <tr key={prc._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="p-4">
-                      <div className="font-semibold text-gray-800">{prc.serviceId?.title}</div>
+                      <div className="font-semibold text-gray-800">
+                        {prc.serviceId?.title} {prc.packageTitle ? `(${prc.packageTitle})` : ''}
+                      </div>
                       <div className="text-xs text-gray-500">
                         {prc.categoryId?.title} {prc.subCategoryId ? `> ${prc.subCategoryId.title}` : ''} {prc.brandId ? `> ${prc.brandId.title}` : ''}
                       </div>
@@ -335,6 +350,9 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
                     </td>
                     <td className="p-4 font-bold text-gray-800">
                       ₹{(displayPrice || 0).toFixed(2)}
+                      {prc.pricingType === 'subscription' && (
+                        <span className="block text-[10px] text-blue-600 font-bold mt-0.5">{prc.visitsCredits || 4} Visits / {prc.validityDays || 30} Days</span>
+                      )}
                       <span className="text-[10px] block text-gray-400 font-semibold">{prc.gstIncluded ? 'GST Inc.' : 'GST Exc.'} ({prc.gstPercentage}%)</span>
                     </td>
                     <td className="p-4 text-blue-600 font-medium">₹{(displayTaxable || 0).toFixed(2)}</td>
@@ -521,6 +539,90 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
                       Explanation: Customer pays a base charge of ₹{formData.customerPrice || 0} for the first {formData.minimumMinutes || 30} minutes. Every extra 10 minutes will cost ₹{formData.pricePerMinute || 0}.
                     </p>
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t border-blue-200">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">GST (%)</label>
+                        <input
+                          type="number"
+                          className="w-full p-2.5 border border-gray-300 rounded-lg outline-none text-sm font-semibold"
+                          value={formData.gstPercentage}
+                          onChange={(e) => setFormData({...formData, gstPercentage: e.target.value})}
+                          required min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">GST Type</label>
+                        <select
+                          className="w-full p-2.5 border border-gray-300 rounded-lg outline-none text-sm font-semibold"
+                          value={formData.gstIncluded ? 'true' : 'false'}
+                          onChange={(e) => setFormData({...formData, gstIncluded: e.target.value === 'true'})}
+                        >
+                          <option value="true">GST Included</option>
+                          <option value="false">GST Excluded</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ) : isSubscription ? (
+                  <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">💳</span>
+                      <span className="text-xs font-bold text-violet-700 uppercase">Subscription Pricing</span>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-violet-600 mb-1 uppercase">Select Subscription Plan *</label>
+                      <select
+                        className="w-full p-2.5 border border-violet-300 rounded-lg outline-none text-sm font-semibold bg-white"
+                        value={formData.packageTitle || ''}
+                        onChange={(e) => {
+                          const selectedServiceObj = services.find(s => (s._id || s.id) === formData.serviceId);
+                          const servicePackages = selectedServiceObj?.packages || [];
+                          const selectedPkg = servicePackages.find(p => p.title === e.target.value);
+                          setFormData({
+                            ...formData,
+                            packageTitle: e.target.value,
+                            validityDays: selectedPkg ? (parseInt(selectedPkg.duration) || 30) : 30,
+                            visitsCredits: selectedPkg ? (selectedPkg.visitsCredits || 4) : 4,
+                            customerPrice: selectedPkg ? selectedPkg.price : ''
+                          });
+                        }}
+                        required
+                      >
+                        <option value="">-- Choose Plan --</option>
+                        {(() => {
+                          const selectedServiceObj = services.find(s => (s._id || s.id) === formData.serviceId);
+                          const servicePackages = selectedServiceObj?.packages || [];
+                          return servicePackages.map((pkg, pIdx) => (
+                            <option key={pIdx} value={pkg.title}>{pkg.title}</option>
+                          ));
+                        })()}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-violet-50/50 border border-violet-100 rounded-lg">
+                      <div>
+                        <label className="block text-xs font-bold text-violet-600 mb-1 uppercase">Subscription Price (₹) *</label>
+                        <input
+                          type="number"
+                          className="w-full p-2.5 border border-violet-300 rounded-lg outline-none text-sm font-bold bg-white"
+                          value={formData.customerPrice}
+                          onChange={(e) => setFormData({...formData, customerPrice: e.target.value})}
+                          required
+                          min="0"
+                          placeholder="e.g. 999"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-violet-600 mb-1 uppercase">Original Price (₹)</label>
+                        <input
+                          type="number"
+                          className="w-full p-2.5 border border-violet-300 rounded-lg outline-none text-sm font-semibold bg-white text-gray-500 line-through"
+                          value={formData.originalPrice || ''}
+                          onChange={(e) => setFormData({...formData, originalPrice: e.target.value})}
+                          min="0"
+                          placeholder="e.g. 1499"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-violet-200">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">GST (%)</label>
                         <input

@@ -79,10 +79,29 @@ const pricingConfigSchema = new mongoose.Schema({
     default: null,
     min: 1
   },
+  // For SUBSCRIPTION_BASED template pricing
+  validityDays: {
+    type: Number,
+    default: null
+  },
+  visitsCredits: {
+    type: Number,
+    default: null
+  },
   pricingType: {
     type: String,
-    enum: ['fixed', 'per_minute', 'package'],
+    enum: ['fixed', 'per_minute', 'package', 'subscription'],
     default: 'fixed'
+  },
+  originalPrice: {
+    type: Number,
+    default: null,
+    min: 0
+  },
+  packageTitle: {
+    type: String,
+    default: null,
+    index: true
   }
 }, {
   timestamps: true
@@ -90,7 +109,7 @@ const pricingConfigSchema = new mongoose.Schema({
 
 // Unique combination index
 pricingConfigSchema.index(
-  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, cityId: 1 },
+  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, cityId: 1, packageTitle: 1 },
   { unique: true }
 );
 

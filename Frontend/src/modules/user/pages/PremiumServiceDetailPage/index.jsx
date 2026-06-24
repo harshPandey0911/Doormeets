@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload, FiPlus, FiMinus, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload, FiPlus, FiMinus, FiX, FiFolder, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import Navbar from '../../components/premium/Navbar';
 import BottomCheckoutBar from '../../components/premium/BottomCheckoutBar';
@@ -45,22 +45,35 @@ const PremiumServiceDetailPage = () => {
   const brand = location.state?.brand || null;
   const category = location.state?.category || null;
 
+  const [pageBlocks, setPageBlocks] = useState([]);
+
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
 
   const serviceImages = useMemo(() => {
+    if (pageBlocks.length > 0) {
+      const bannerBlock = pageBlocks.find(b => b.blockType === 'banner_slider' && b.isVisible);
+      if (bannerBlock?.data?.banners?.length > 0) {
+        return bannerBlock.data.banners.map(item => {
+          const itemUrl = typeof item === 'object' ? item.url : item;
+          const itemType = typeof item === 'object' ? (item.type || 'image') : 'image';
+          return { url: toAssetUrl(itemUrl), type: itemType };
+        });
+      }
+    }
+    let rawImages = [];
     if (Array.isArray(service?.images) && service.images.length > 0) {
-      return service.images.map(img => toAssetUrl(img));
+      rawImages = service.images;
+    } else if (Array.isArray(service?.gallery) && service.gallery.length > 0) {
+      rawImages = service.gallery;
+    } else if (service?.image) {
+      rawImages = [service.image];
+    } else {
+      rawImages = [getDetailDummyImage(service?.title)];
     }
-    if (Array.isArray(service?.gallery) && service.gallery.length > 0) {
-      return service.gallery.map(img => toAssetUrl(img));
-    }
-    if (service?.image) {
-      return [toAssetUrl(service.image)];
-    }
-    return [getDetailDummyImage(service?.title)];
-  }, [service]);
+    return rawImages.map(img => ({ url: toAssetUrl(img), type: 'image' }));
+  }, [service, pageBlocks]);
 
   const onTouchStart = (e) => {
     setTouchEnd(null);
@@ -91,8 +104,6 @@ const PremiumServiceDetailPage = () => {
     { bg: '#E0F2FE', border: '#BAE6FD', text: '#075985' }  // Light Blue
   ];
 
-  const [pageBlocks, setPageBlocks] = useState([]);
-
   const features = useMemo(() => {
     if (pageBlocks.length > 0) {
       const whatsIncluded = pageBlocks.find(b => b.blockType === 'whats_included');
@@ -107,7 +118,7 @@ const PremiumServiceDetailPage = () => {
     if (pageBlocks.length > 0) {
       const processBlock = pageBlocks.find(b => b.blockType === 'process');
       if (processBlock?.data?.steps?.length) {
-        return processBlock.data.steps.map(s => s.title || s);
+        return processBlock.data.steps.map(s => s?.title || s);
       }
     }
     return service?.steps || [];
@@ -117,12 +128,26 @@ const PremiumServiceDetailPage = () => {
   const [pricingRules, setPricingRules] = useState([]);
   const [dynamicAnswers, setDynamicAnswers] = useState({});
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [customSelectedItems, setCustomSelectedItems] = useState({});
   const [calculatedPrice, setCalculatedPrice] = useState(0);
+
+  useEffect(() => {
+    if (selectedPackage && selectedPackage.includedItems) {
+      const initial = {};
+      selectedPackage.includedItems.forEach(item => {
+        if (item.serviceGroupId) {
+          initial[item.serviceGroupId.toString()] = item.selectedItemId ? item.selectedItemId.toString() : '';
+        }
+      });
+      setCustomSelectedItems(initial);
+    }
+  }, [selectedPackage]);
 
   // Variants state
   const [variants, setVariants] = useState([]);
   const [selectedVariants, setSelectedVariants] = useState([]);
   const [showVariantPopup, setShowVariantPopup] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState({});
 
   const toggleVariant = useCallback((variant) => {
     setSelectedVariants(prev => {
@@ -132,13 +157,23 @@ const PremiumServiceDetailPage = () => {
     });
   }, []);
 
+  const groupedVariants = useMemo(() => {
+    const groups = {};
+    variants.forEach(v => {
+      const cat = v.category || 'Other Add-ons';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(v);
+    });
+    return groups;
+  }, [variants]);
+
   const variantExtraTotal = selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0), 0);
   const finalPrice = calculatedPrice + variantExtraTotal;
 
   const [selectedDuration, setSelectedDuration] = useState(30);
 
   useEffect(() => {
-    if (service?.serviceType === 'package_base' && service?.packages?.length > 0) {
+    if ((service?.serviceType === 'package_base' || service?.serviceType === 'subscription_base') && service?.packages?.length > 0) {
       const popular = service.packages.find(p => p.isPopular);
       setSelectedPackage(popular || service.packages[0]);
     }
@@ -202,9 +237,31 @@ const PremiumServiceDetailPage = () => {
     if (!service) return;
 
     let basePrice = 0;
-    if (service.serviceType === 'package_base' && service.packages && service.packages.length > 0) {
+    if (service.serviceType === 'package_base' && selectedPackage) {
+      let pkgPrice = selectedPackage.price || 0;
+      if (selectedPackage.includedItems && service.serviceGroups) {
+        selectedPackage.includedItems.forEach(incItem => {
+          const groupId = incItem.serviceGroupId?.toString();
+          const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
+          if (group) {
+            const defaultItem = group.items?.find(i => i._id?.toString() === incItem.selectedItemId?.toString());
+            const defaultPrice = defaultItem ? (Number(defaultItem.price) || 0) : 0;
+
+            const selectedId = customSelectedItems[groupId];
+            if (selectedId === 'skip') {
+              pkgPrice -= defaultPrice;
+            } else if (selectedId) {
+              const selectedItem = group.items?.find(i => i._id?.toString() === selectedId.toString());
+              const selectedPrice = selectedItem ? (Number(selectedItem.price) || 0) : 0;
+              pkgPrice += (selectedPrice - defaultPrice);
+            }
+          }
+        });
+      }
+      basePrice = pkgPrice;
+    } else if (service.serviceType === 'subscription_base' && service.packages && service.packages.length > 0) {
       basePrice = selectedPackage?.price || 0;
-    } else if (service.serviceType === 'dynamic_base') {
+    } else if (service.serviceType === 'dynamic_base' || service.serviceType === 'image_base') {
       basePrice = 0;
     } else if (service.serviceType === 'minute_base') {
       const minPrice = Number(service.basePrice || service.price || 0);
@@ -273,7 +330,7 @@ const PremiumServiceDetailPage = () => {
     });
 
     setCalculatedPrice(Math.max(0, price));
-  }, [dynamicAnswers, pricingRules, service, selectedPackage, selectedDuration]);
+  }, [dynamicAnswers, pricingRules, service, selectedPackage, customSelectedItems, selectedDuration]);
 
   const handleFileUpload = async (fieldName, file) => {
     try {
@@ -318,7 +375,7 @@ const PremiumServiceDetailPage = () => {
     if (!service) return;
 
     // If variants exist and popup hasn't been shown yet, open the popup
-    if (variants.length > 0 && !showVariantPopup) {
+    if (service?.serviceType !== 'image_base' && variants.length > 0 && !showVariantPopup) {
       setShowVariantPopup(true);
       return;
     }
@@ -363,6 +420,31 @@ const PremiumServiceDetailPage = () => {
         label: 'Selected Package',
         value: selectedPackage.title
       });
+      if (selectedPackage.includedItems && service.serviceGroups) {
+        selectedPackage.includedItems.forEach(incItem => {
+          const groupId = incItem.serviceGroupId?.toString();
+          const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
+          if (group) {
+            const selectedId = customSelectedItems[groupId];
+            if (selectedId === 'skip') {
+              dynamicFieldsPayload.push({
+                name: `Group: ${group.title}`,
+                label: group.title,
+                value: 'Skipped ("I don\'t need this")'
+              });
+            } else if (selectedId) {
+              const selectedItem = group.items?.find(i => i._id?.toString() === selectedId.toString());
+              if (selectedItem) {
+                dynamicFieldsPayload.push({
+                  name: `Group: ${group.title}`,
+                  label: group.title,
+                  value: `${selectedItem.title} (₹${selectedItem.price})`
+                });
+              }
+            }
+          }
+        });
+      }
     }
     if (service?.serviceType === 'minute_base') {
       cartData.card.duration = `${selectedDuration} Minutes`;
@@ -413,12 +495,24 @@ const PremiumServiceDetailPage = () => {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <img
-          src={serviceImages[activeImageIndex]}
-          alt={service.title}
-          className="h-full w-full object-cover transition-all duration-300"
-          draggable="false"
-        />
+        {serviceImages[activeImageIndex]?.type === 'video' ? (
+          <video
+            src={serviceImages[activeImageIndex]?.url}
+            controls
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <img
+            src={serviceImages[activeImageIndex]?.url}
+            alt={service.title}
+            className="h-full w-full object-cover transition-all duration-300"
+            draggable="false"
+          />
+        )}
         {/* Soft Linear Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
         
@@ -475,7 +569,7 @@ const PremiumServiceDetailPage = () => {
           <div className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
             <FiStar className="fill-amber-400 text-amber-400" />
             <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{service.rating || "4.5"}</span>
-            <span>({service.reviews || "1.2k reviews"})</span>
+            <span>({service.reviewCount ? `${service.reviewCount} reviews` : "1.2k reviews"})</span>
           </div>
 
           <p className="text-sm font-normal leading-relaxed pt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -485,64 +579,165 @@ const PremiumServiceDetailPage = () => {
 
         {/* Service Variants styled like the features grid */}
         {variants.length > 0 && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-3">
+          <div className="mt-8 space-y-4">
+            <div className="flex items-center justify-between mb-1">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>Add-Ons</p>
-                <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Service Variants</h2>
+                <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  {service?.serviceType === 'image_base' ? 'Service Addon Categories' : 'Service Variants'}
+                </h2>
               </div>
               {selectedVariants.length > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(var(--primary-rgb, 255,159,69),0.12)', color: 'var(--primary)' }}>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(255, 159, 69, 0.12)', color: 'var(--primary)' }}>
                   {selectedVariants.length} selected
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-3 items-stretch">
-              {variants.map((variant, idx) => {
-                const isSelected = selectedVariants.some(v => (v._id || v.title) === (variant._id || variant.title));
-                const colorScheme = cardColors[idx % cardColors.length];
-                return (
-                  <button
-                    key={variant._id || idx}
-                    type="button"
-                    onClick={() => {
-                      toggleVariant(variant);
-                      setShowVariantPopup(false);
-                    }}
-                    className="flex flex-col items-center justify-between p-3 rounded-2xl border text-center w-full min-h-[120px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
-                    style={{
-                      backgroundColor: colorScheme.bg,
-                      borderColor: isSelected ? 'var(--primary)' : colorScheme.border,
-                      borderWidth: isSelected ? '2px' : '1px'
-                    }}
-                  >
-                    <div className="flex items-center justify-center mb-1">
+
+            {service?.serviceType === 'image_base' ? (
+              <div className="space-y-3">
+                {Object.keys(groupedVariants).map((catName, groupIdx) => {
+                  const catItems = groupedVariants[catName];
+                  const isExpanded = expandedCategories[catName] !== false; // Default to true (expanded)
+                  const selectedInGroup = catItems.filter(item => selectedVariants.some(v => (v._id || v.title) === (item._id || item.title)));
+
+                  return (
+                    <div key={catName} className="rounded-3xl border border-border-color overflow-hidden bg-card-bg shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style={{ borderColor: 'var(--border)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCategories(prev => ({ ...prev, [catName]: !isExpanded }))}
+                        className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-50/50 to-transparent hover:from-gray-50 text-left outline-none cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                            <FiFolder className="w-4 h-4" />
+                          </span>
+                          <div>
+                            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{catName}</h3>
+                            <p className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                              {catItems.length} addon{catItems.length > 1 ? 's' : ''} available
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          {selectedInGroup.length > 0 && (
+                            <span className="text-[9px] font-bold bg-green-50 text-green-600 px-2 py-0.5 rounded-full border border-green-100">
+                              {selectedInGroup.length} Selected
+                            </span>
+                          )}
+                          <span className="text-gray-400">
+                            {isExpanded ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />}
+                          </span>
+                        </div>
+                      </button>
+
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="border-t overflow-hidden"
+                            style={{ borderColor: 'var(--border)' }}
+                          >
+                            <div className="p-4 grid grid-cols-3 gap-2.5 items-stretch bg-gray-50/20">
+                              {catItems.map((variant, idx) => {
+                                const isSelected = selectedVariants.some(v => (v._id || v.title) === (variant._id || variant.title));
+                                const colorScheme = cardColors[(groupIdx + idx) % cardColors.length];
+                                return (
+                                  <button
+                                    key={variant._id || idx}
+                                    type="button"
+                                    onClick={() => toggleVariant(variant)}
+                                    className="flex flex-col items-center justify-between p-3 rounded-2xl border text-center w-full min-h-[110px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
+                                    style={{
+                                      backgroundColor: colorScheme.bg,
+                                      borderColor: isSelected ? 'var(--primary)' : colorScheme.border,
+                                      borderWidth: isSelected ? '2px' : '1px'
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-center mb-1">
+                                      <span
+                                        className="flex items-center justify-center w-5.5 h-5.5 rounded-full border-2 text-[10px] font-black transition-all"
+                                        style={isSelected
+                                          ? { borderColor: 'var(--primary)', backgroundColor: 'var(--primary)', color: '#fff' }
+                                          : { borderColor: colorScheme.text, color: colorScheme.text }
+                                        }
+                                      >
+                                        {isSelected ? '✓' : <FiPlus />}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold tracking-tight leading-tight line-clamp-2 my-1 flex-1 flex items-center justify-center" style={{ color: colorScheme.text }}>
+                                      {variant.title}
+                                    </span>
+                                    <span
+                                      className="text-[9px] font-black px-2 py-0.5 rounded-full transition-all shrink-0"
+                                      style={isSelected
+                                        ? { color: '#fff', backgroundColor: 'var(--primary)' }
+                                        : { color: colorScheme.text, backgroundColor: 'rgba(255,255,255,0.7)' }
+                                      }
+                                    >
+                                      {variant.extraPrice > 0 ? `+₹${variant.extraPrice}` : 'Free'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 items-stretch">
+                {variants.map((variant, idx) => {
+                  const isSelected = selectedVariants.some(v => (v._id || v.title) === (variant._id || variant.title));
+                  const colorScheme = cardColors[idx % cardColors.length];
+                  return (
+                    <button
+                      key={variant._id || idx}
+                      type="button"
+                      onClick={() => {
+                        toggleVariant(variant);
+                        setShowVariantPopup(false);
+                      }}
+                      className="flex flex-col items-center justify-between p-3 rounded-2xl border text-center w-full min-h-[120px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
+                      style={{
+                        backgroundColor: colorScheme.bg,
+                        borderColor: isSelected ? 'var(--primary)' : colorScheme.border,
+                        borderWidth: isSelected ? '2px' : '1px'
+                      }}
+                    >
+                      <div className="flex items-center justify-center mb-1">
+                        <span
+                          className="flex items-center justify-center w-6 h-6 rounded-full border-2 text-xs font-black transition-all"
+                          style={isSelected
+                            ? { borderColor: 'var(--primary)', backgroundColor: 'var(--primary)', color: '#fff' }
+                            : { borderColor: colorScheme.text, color: colorScheme.text }
+                          }
+                        >
+                          {isSelected ? '✓' : <FiPlus />}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold tracking-tight leading-tight line-clamp-2 my-1 flex-1 flex items-center justify-center" style={{ color: colorScheme.text }}>
+                        {variant.title}
+                      </span>
                       <span
-                        className="flex items-center justify-center w-6 h-6 rounded-full border-2 text-xs font-black transition-all"
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-all shrink-0"
                         style={isSelected
-                          ? { borderColor: 'var(--primary)', backgroundColor: 'var(--primary)', color: '#fff' }
-                          : { borderColor: colorScheme.text, color: colorScheme.text }
+                          ? { color: '#fff', backgroundColor: 'var(--primary)' }
+                          : { color: colorScheme.text, backgroundColor: 'rgba(255,255,255,0.6)' }
                         }
                       >
-                        {isSelected ? '✓' : <FiPlus />}
+                        {variant.extraPrice > 0 ? `+₹${variant.extraPrice}` : 'Free'}
                       </span>
-                    </div>
-                    <span className="text-[11px] font-semibold tracking-tight leading-tight line-clamp-2 my-1 flex-1 flex items-center justify-center" style={{ color: colorScheme.text }}>
-                      {variant.title}
-                    </span>
-                    <span
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-all shrink-0"
-                      style={isSelected
-                        ? { color: '#fff', backgroundColor: 'var(--primary)' }
-                        : { color: colorScheme.text, backgroundColor: 'rgba(255,255,255,0.6)' }
-                      }
-                    >
-                      {variant.extraPrice > 0 ? `+₹${variant.extraPrice}` : 'Free'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -635,6 +830,193 @@ const PremiumServiceDetailPage = () => {
                       }
                     >
                       {selectedPackage?.title === pkg.title ? 'Selected' : 'Select'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Package Customization Section */}
+        {service?.serviceType === 'package_base' && selectedPackage && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
+          <section className="mt-8 p-5 rounded-[28px] border-2 border-dashed space-y-5" style={{ backgroundColor: 'rgba(255,159,69,0.02)', borderColor: 'rgba(255,159,69,0.2)' }}>
+            <div>
+              <h3 className="font-bold text-[15px] tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                Customize: {selectedPackage.title}
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">Select option or skip items to customize your combo package.</p>
+            </div>
+            <div className="space-y-4">
+              {selectedPackage.includedItems.map((incItem, incIdx) => {
+                const groupId = incItem.serviceGroupId?.toString();
+                const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
+                if (!group) return null;
+
+                const selectedId = customSelectedItems[groupId];
+
+                return (
+                  <div key={incIdx} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm" style={{ borderColor: 'var(--border)' }}>
+                    <div className="flex items-center gap-3 mb-3 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                      {group.iconUrl ? (
+                        <img src={group.iconUrl} alt="" className="w-6 h-6 object-contain" />
+                      ) : (
+                        <div className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center text-brand font-bold text-xs">
+                          {group.title[0]}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-bold text-xs uppercase tracking-wider text-brand">{group.title}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {group.items?.map((item) => {
+                        const isSelected = selectedId === item._id?.toString();
+                        return (
+                          <label
+                            key={item._id}
+                            className={`flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                              isSelected ? 'border-brand bg-brand/5' : 'bg-transparent'
+                            }`}
+                            style={{ borderColor: isSelected ? 'var(--primary)' : 'var(--border)' }}
+                          >
+                            <input
+                              type="radio"
+                              name={`group-${groupId}`}
+                              value={item._id}
+                              checked={isSelected}
+                              onChange={() => {
+                                setCustomSelectedItems(prev => ({
+                                  ...prev,
+                                  [groupId]: item._id?.toString()
+                                }));
+                              }}
+                              className="mt-0.5 accent-brand"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{item.title}</span>
+                                <span className="text-xs font-bold text-brand">₹{item.price}</span>
+                              </div>
+                              {item.duration && <span className="text-[10px] text-gray-400 block mt-0.5">{item.duration}</span>}
+                              {item.description && <p className="text-[10px] text-gray-500 leading-normal mt-0.5">{item.description}</p>}
+                            </div>
+                          </label>
+                        );
+                      })}
+
+                      {group.allowSkip && (
+                        <label
+                          className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                            selectedId === 'skip' ? 'border-red-400 bg-red-50/10' : 'bg-transparent'
+                          }`}
+                          style={{ borderColor: selectedId === 'skip' ? '#f87171' : 'var(--border)' }}
+                        >
+                          <input
+                            type="radio"
+                            name={`group-${groupId}`}
+                            value="skip"
+                            checked={selectedId === 'skip'}
+                            onChange={() => {
+                              setCustomSelectedItems(prev => ({
+                                ...prev,
+                                [groupId]: 'skip'
+                              }));
+                            }}
+                            className="accent-red-500"
+                          />
+                          <div className="flex-1">
+                            <span className="text-xs font-semibold text-red-500">I don't need this {group.title.toLowerCase()}</span>
+                          </div>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Subscriptions Section */}
+        {service?.serviceType === 'subscription_base' && service?.packages?.length > 0 && (
+          <section className="mt-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Choose Subscription Plan</h2>
+            </div>
+            <div className="space-y-4">
+              {service.packages.map((pkg, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedPackage(pkg)}
+                  className={`p-5 rounded-[28px] border-2 cursor-pointer transition-all flex flex-col gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] ${
+                    selectedPackage?.title === pkg.title ? 'border-violet-500 shadow-[0_8px_30px_rgba(109,40,217,0.05)]' : 'border-border-color hover:border-violet-300'
+                  }`}
+                  style={
+                    selectedPackage?.title === pkg.title
+                      ? { backgroundColor: 'rgba(109,40,217,0.03)' }
+                      : { backgroundColor: 'var(--card-bg)' }
+                  }
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className="font-bold text-base leading-tight text-violet-800">{pkg.title}</h3>
+                        {pkg.isPopular && <span className="text-[9px] font-bold uppercase bg-violet-600 text-white px-2.5 py-0.5 rounded-full">Recommended Plan</span>}
+                      </div>
+                      <div className="text-[11px] font-semibold text-gray-500 flex items-center gap-1"><FiClock /> Validity: {pkg.duration || '30 Days'}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-extrabold text-lg text-violet-700">₹{pkg.price}</div>
+                      {pkg.originalPrice && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                    </div>
+                  </div>
+
+                  {/* Predefined benefits displays */}
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-violet-50/30 rounded-2xl border border-violet-100/20 text-xs font-semibold text-gray-700">
+                    <div className="flex items-center gap-1.5">
+                      <FiCheckCircle className="text-violet-600 shrink-0 w-3.5 h-3.5" />
+                      <span>{pkg.visitsCredits || 4} Visits {pkg.visitFrequency ? `(${pkg.visitFrequency})` : 'Included'}</span>
+                    </div>
+                    {pkg.bookingDiscount > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <FiCheckCircle className="text-violet-600 shrink-0 w-3.5 h-3.5" />
+                        <span>{pkg.bookingDiscount}% Extra Discount</span>
+                      </div>
+                    )}
+                    {pkg.freeInspection && (
+                      <div className="flex items-center gap-1.5">
+                        <FiCheckCircle className="text-violet-600 shrink-0 w-3.5 h-3.5" />
+                        <span>Free Inspection/Checkup</span>
+                      </div>
+                    )}
+                    {pkg.prioritySupport && (
+                      <div className="flex items-center gap-1.5">
+                        <FiCheckCircle className="text-violet-600 shrink-0 w-3.5 h-3.5" />
+                        <span>Priority Support</span>
+                      </div>
+                    )}
+                    {pkg.memberPricing && (
+                      <div className="flex items-center gap-1.5">
+                        <FiCheckCircle className="text-violet-600 shrink-0 w-3.5 h-3.5" />
+                        <span>Special Member Prices</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {pkg.description && <p className="text-[11px] font-normal leading-relaxed text-gray-500">{pkg.description}</p>}
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      className={`text-xs font-bold px-5 py-1.5 rounded-full border transition-all ${
+                        selectedPackage?.title === pkg.title 
+                          ? 'text-white bg-violet-600 border-violet-600' 
+                          : 'text-violet-600 border-violet-600 hover:bg-violet-50'
+                      }`}
+                    >
+                      {selectedPackage?.title === pkg.title ? 'Selected' : 'Select Plan'}
                     </button>
                   </div>
                 </div>
@@ -816,7 +1198,7 @@ const PremiumServiceDetailPage = () => {
           {/* DYNAMIC PAGE BLOCKS */}
           {pageBlocks.length > 0 ? (
             <div className="mt-6 space-y-6">
-              {pageBlocks.filter(b => b.isVisible).map((block, i) => {
+              {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, i) => {
                 const data = block.data || {};
                 switch (block.blockType) {
                   case 'heading_text':
@@ -824,6 +1206,31 @@ const PremiumServiceDetailPage = () => {
                       <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
                         <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{data.heading}</h2>
                         <p className="mt-2 text-sm leading-6 whitespace-pre-line font-normal" style={{ color: 'var(--text-secondary)' }}>{data.text}</p>
+                      </section>
+                    );
+                  case 'image_gallery':
+                    return (
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Gallery</h2>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(data.images || []).map((img, imgIdx) => (
+                            <div key={imgIdx} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                              <img src={toAssetUrl(img)} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  case 'banner_slider':
+                    return (
+                      <section key={i} className="mt-8 overflow-hidden rounded-3xl">
+                        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2">
+                          {(data.banners || []).map((banner, bIdx) => (
+                            <div key={bIdx} className="w-full aspect-[21/9] shrink-0 snap-start rounded-3xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                              <img src={toAssetUrl(banner)} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          ))}
+                        </div>
                       </section>
                     );
                   case 'warranty':
@@ -860,15 +1267,24 @@ const PremiumServiceDetailPage = () => {
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
                         <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
                         <div className="mt-4 space-y-3">
-                          {(data.steps || []).map((step, idx) => (
-                            <div key={idx} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{idx + 1}</div>
-                              <div>
-                                <div className="font-semibold text-sm" style={{ color: '#111827' }}>{step.title}</div>
-                                {step.desc && <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{step.desc}</p>}
+                          {(data.steps || []).map((step, idx) => {
+                            if (!step) return null;
+                            const title = typeof step === 'object' ? step.title : step;
+                            const desc = typeof step === 'object' ? step.desc : '';
+                            const imageUrl = typeof step === 'object' ? step.imageUrl : '';
+                            return (
+                              <div key={idx} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] items-center">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{idx + 1}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-sm" style={{ color: '#111827' }}>{title}</div>
+                                  {desc && <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{desc}</p>}
+                                </div>
+                                {data.hasImages && imageUrl && (
+                                  <img src={toAssetUrl(imageUrl)} alt="" className="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0" />
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </section>
                     );
@@ -898,6 +1314,96 @@ const PremiumServiceDetailPage = () => {
                             </div>
                           ))}
                         </div>
+                      </section>
+                    );
+                  case 'reviews':
+                    return (
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Customer Reviews</h2>
+                        <div className="space-y-3">
+                          {[
+                            { name: 'Rohan Sharma', rating: 5, comment: 'Excellent service! Highly professional and very clean work.' },
+                            { name: 'Priya Patel', rating: 4, comment: 'Very polite and on time. Satisfied with the results.' }
+                          ].slice(0, data.showCount || 5).map((rev, rIdx) => (
+                            <div key={rIdx} className="p-3.5 rounded-2xl border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="font-semibold text-xs text-gray-800 dark:text-zinc-100">{rev.name}</span>
+                                <div className="flex items-center gap-0.5 text-xs text-amber-500">
+                                  <FiStar className="fill-amber-500" />
+                                  <span>{rev.rating}</span>
+                                </div>
+                              </div>
+                              <p className="text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{rev.comment}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  case 'brands':
+                    return (
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <h2 className="text-xs font-semibold uppercase tracking-[0.24em] text-brand mb-2">{data.title || 'Brands We Service'}</h2>
+                        <div className="flex flex-wrap gap-2.5">
+                          {(data.brandIds || []).map((brandId, bIdx) => (
+                            <span key={bIdx} className="px-3.5 py-1.5 rounded-full border bg-white dark:bg-zinc-900 text-xs font-bold text-gray-700 dark:text-zinc-300" style={{ borderColor: 'var(--border)' }}>
+                              {brandId}
+                            </span>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  case 'whats_not_included':
+                    return (
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-500">Not Included</p>
+                        <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title || "What's Not Included"}</h2>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {(data.items || []).map((item, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-red-500 border border-red-200">
+                              <FiX className="w-3.5 h-3.5" /> {item}
+                            </span>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  case 'rate_card':
+                    return (
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <div>
+                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.linkLabel || 'Rate Card'}</h3>
+                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Check standard rates for our services.</p>
+                        </div>
+                        {data.linkUrl && (
+                          <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
+                            {data.linkLabel || 'View Rate Card'}
+                          </a>
+                        )}
+                      </section>
+                    );
+                  case 'comparison':
+                    return (
+                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                        <div>
+                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.title || 'Compare Plans'}</h3>
+                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Compare parameters to choose the best option.</p>
+                        </div>
+                        {data.linkUrl && (
+                          <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
+                            {data.linkLabel || 'View Comparison'}
+                          </a>
+                        )}
+                      </section>
+                    );
+                  case 'offer_image':
+                    return (
+                      <section key={i} className="mt-8 rounded-3xl overflow-hidden bg-gray-50 border border-gray-150 relative">
+                        {data.linkUrl ? (
+                          <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                            <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
+                          </a>
+                        ) : (
+                          <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
+                        )}
                       </section>
                     );
                   default:
@@ -1115,7 +1621,7 @@ const PremiumServiceDetailPage = () => {
             <PriceTag price={finalPrice} originalPrice={service.originalPrice} className="mt-1" />
           </div>
           <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-5 py-3 text-sm font-normal text-white shadow-lg transition-transform hover:scale-[1.02]">
-            {variants.length > 0 ? 'Select & Add' : 'Add to cart'}
+            {service.serviceType === 'image_base' ? 'Add Selected to Cart' : (variants.length > 0 ? 'Select & Add' : 'Add to cart')}
           </button>
         </div>
       </div>

@@ -38,6 +38,7 @@ const PoliceVerification = lazy(() => import('../pages/PoliceVerification'));
 const Commission = lazy(() => import('../pages/Commission'));
 const PromoManagement = lazy(() => import('../pages/PromoManagement'));
 const VoucherManagement = lazy(() => import('../pages/VoucherManagement'));
+const PackageBased = lazy(() => import('../pages/PackageBased'));
 
 
 
@@ -65,6 +66,7 @@ const AdminRoutes = () => {
         }>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="management" element={<Navigate to="/admin/user-categories/templates/MINUTE_BASED/manage" replace />} />
           <Route path="users/*" element={<Users />} />
           <Route path="vendors/*" element={<Vendors />} />
           <Route path="vendors-zone" element={<VendorsZone />} />
@@ -88,6 +90,7 @@ const AdminRoutes = () => {
           <Route path="vendor-requests" element={<VendorRequests />} />
           <Route path="promos" element={<PromoManagement />} />
           <Route path="vouchers" element={<VoucherManagement />} />
+          <Route path="package-based" element={<PackageBased />} />
           <Route path="vendors/police-verification" element={
             <SuperAdminRoute><PoliceVerification /></SuperAdminRoute>
           } />

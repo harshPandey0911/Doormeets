@@ -105,19 +105,41 @@
     ]
   },
   {
-    "title": "User Catalog",
-    "route": "/admin/user-categories",
+    "title": "Home Management",
+    "route": "/admin/home-management",
     "allowedRoles": [
       "super_admin",
       "admin"
     ],
     "children": [
-      "Home",
-      "Popular Services",
-      "Manage Professions",
-      "Category Templates",
-      "Featured Sections"
+      "Banners & Categories",
+      "Top Brands & Featured",
+      "Popular Services"
     ]
+  },
+  {
+    "title": "Management",
+    "route": "/admin/management",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": [
+      "Minute based",
+      "Normal service",
+      "Subscription based",
+      "Image based",
+      "Multi Visit"
+    ]
+  },
+  {
+    "title": "Package based",
+    "route": "/admin/package-based",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": []
   },
   {
     "title": "Vendor Services",

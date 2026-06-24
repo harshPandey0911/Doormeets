@@ -28,6 +28,8 @@ export const buildCartItemData = ({ service, category = null, brand = null }) =>
     reviews: service?.reviews || service?.reviewCount || 0,
     vendorId: service?.vendorId || brand?.vendorId || null,
     isPriceDisclosed: service?.isPriceDisclosed !== false,
+    serviceType: service?.serviceType || 'package_base',
+    workflow: service?.workflow || null,
     card: {
       title: service?.title || '',
       subtitle: service?.description || '',

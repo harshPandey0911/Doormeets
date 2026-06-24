@@ -609,7 +609,7 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity, filterTemplateId }) => 
             <label className="block text-sm font-bold text-gray-700 mb-1">SubCategories (Optional)</label>
             <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50">
               {subCategories
-                .filter(sub => form.categoryIds.includes(String(sub.categoryId?._id || sub.categoryId || "")))
+                .filter(sub => form.categoryIds.includes(String(sub.categoryId?._id || sub.categoryId || "")) && sub.hasBrand)
                 .map((sub) => (
                 <label key={sub._id || sub.id} className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
                   <input

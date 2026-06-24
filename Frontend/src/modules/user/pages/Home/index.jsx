@@ -990,16 +990,17 @@ const Home = () => {
                   </div>
                 </motion.section>
               )}
-
               {/* ─── Featured Sections (Admin Curated) ─── */}
               {homeContent?.isFeaturedSectionsVisible !== false &&
                 Array.isArray(homeContent?.featuredSections) &&
                 homeContent.featuredSections.length > 0 &&
-                homeContent.featuredSections.map((section, idx) => (
-                  <motion.div key={idx} variants={itemVariants}>
-                    <FeaturedSection section={section} />
-                  </motion.div>
-                ))
+                homeContent.featuredSections
+                  .filter(section => Array.isArray(section.items) && section.items.length > 0)
+                  .map((section, idx) => (
+                    <motion.div key={idx} variants={itemVariants}>
+                      <FeaturedSection section={section} />
+                    </motion.div>
+                  ))
               }
 
               {/* Curated Services */}

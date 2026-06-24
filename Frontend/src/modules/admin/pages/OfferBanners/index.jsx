@@ -14,6 +14,7 @@ const OfferBanners = () => {
     title: '',
     link: '',
     priority: 0,
+    mediaType: 'image',
     image: null
   });
   const [preview, setPreview] = useState(null);
@@ -40,10 +41,11 @@ const OfferBanners = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const fileType = file.type.startsWith('video/') ? 'video' : 'image';
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result);
-        setFormData(prev => ({ ...prev, image: reader.result }));
+        setFormData(prev => ({ ...prev, image: reader.result, mediaType: fileType }));
       };
       reader.readAsDataURL(file);
     }
@@ -92,6 +94,7 @@ const OfferBanners = () => {
         link: banner.link,
         priority: banner.priority,
         isActive: banner.isActive,
+        mediaType: banner.mediaType || 'image',
         image: null
       });
       setPreview(banner.imageUrl);
@@ -101,6 +104,7 @@ const OfferBanners = () => {
         title: '',
         link: '',
         priority: banners.length,
+        mediaType: 'image',
         image: null
       });
       setPreview(null);
@@ -111,7 +115,7 @@ const OfferBanners = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingBanner(null);
-    setFormData({ title: '', link: '', priority: 0, image: null });
+    setFormData({ title: '', link: '', priority: 0, mediaType: 'image', image: null });
     setPreview(null);
   };
 
@@ -153,7 +157,11 @@ const OfferBanners = () => {
             {banners.map((banner) => (
               <div key={banner._id} className="bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group">
                 <div className="aspect-[21/9] bg-gray-100 relative">
-                  <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                  {banner.mediaType === 'video' ? (
+                    <video src={banner.imageUrl} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+                  ) : (
+                    <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                  )}
                   <div className="absolute top-2 right-2 flex gap-2">
                     <button
                       onClick={() => toggleActive(banner)}
@@ -239,14 +247,18 @@ const OfferBanners = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Banner Image</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Banner Media (Image/Video)</label>
             <div className="mt-1 flex flex-col items-center">
               {preview ? (
                 <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden border mb-2">
-                  <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                  {formData.mediaType === 'video' ? (
+                    <video src={preview} controls autoPlay muted loop className="w-full h-full object-cover" />
+                  ) : (
+                    <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                  )}
                   <button
                     type="button"
-                    onClick={() => { setPreview(null); setFormData(p => ({ ...p, image: null })); }}
+                    onClick={() => { setPreview(null); setFormData(p => ({ ...p, image: null, mediaType: 'image' })); }}
                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
                   >
                     <FiX size={14} />
@@ -255,8 +267,8 @@ const OfferBanners = () => {
               ) : (
                 <label className="w-full aspect-[21/9] flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                   <FiImage className="text-3xl text-gray-400 mb-2" />
-                  <span className="text-xs text-gray-500 font-medium">Click to upload image</span>
-                  <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                  <span className="text-xs text-gray-500 font-medium">Click to upload Image or Video</span>
+                  <input type="file" className="hidden" accept="image/*,video/*" onChange={handleImageChange} />
                 </label>
               )}
               <p className="text-[10px] text-gray-400 mt-2">Recommended aspect ratio 21:9 for best fit.</p>

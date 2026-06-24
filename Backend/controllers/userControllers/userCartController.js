@@ -95,13 +95,27 @@ const addToCart = async (req, res) => {
     );
 
     if (existingItemIndex !== -1) {
-      // Update quantity if item exists
+      // Update quantity and price details if item exists
       const existingItem = cart.items[existingItemIndex];
       const newCount = (existingItem.serviceCount || 1) + (serviceCount || 1);
-      const newPrice = existingItem.unitPrice * newCount;
+      const newUnitPrice = unitPrice || price || existingItem.unitPrice;
+      const newPrice = newUnitPrice * newCount;
 
       cart.items[existingItemIndex].serviceCount = newCount;
+      cart.items[existingItemIndex].unitPrice = newUnitPrice;
       cart.items[existingItemIndex].price = newPrice;
+      
+      if (originalPrice) {
+        cart.items[existingItemIndex].originalPrice = originalPrice;
+      }
+      if (card) {
+        cart.items[existingItemIndex].card = {
+          ...cart.items[existingItemIndex].card,
+          ...card,
+          price: newUnitPrice,
+          originalPrice: originalPrice || card.originalPrice
+        };
+      }
       if (dynamicFields) {
         cart.items[existingItemIndex].dynamicFields = dynamicFields;
       }
