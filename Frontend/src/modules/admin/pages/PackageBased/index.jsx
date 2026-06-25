@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPackage, FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiChevronDown,
   FiChevronUp, FiStar, FiSearch, FiDollarSign, FiPercent, FiCheck,
-  FiToggleLeft, FiToggleRight, FiClock, FiGrid, FiEye, FiRefreshCw,
-  FiImage, FiLayers, FiList, FiArrowLeft, FiEyeOff
+  FiClock, FiGrid, FiEye, FiRefreshCw, FiImage, FiLayers, FiList,
+  FiArrowLeft, FiEyeOff, FiFolder, FiPlusCircle, FiChevronRight
 } from 'react-icons/fi';
 import api from '../../../../services/api';
 import toast from 'react-hot-toast';
+import { serviceService } from '../../../../services/catalogService';
 
-// ─── Price Matrix Calculator ──────────────────────────────────────
+// Price Matrix Calculator
 const calcPriceMatrix = (pkg) => {
   const price = Number(pkg.price) || 0;
   const gstPct = Number(pkg.gstPercentage) || 18;
@@ -30,1024 +31,1242 @@ const calcPriceMatrix = (pkg) => {
   return { basePrice, gstAmount, finalPrice, platformEarning };
 };
 
-// ════════════════════════════════════════════════════════════════════
-// SERVICE GROUP ITEM EDITOR (inline row for items within a group)
-// ════════════════════════════════════════════════════════════════════
-const GroupItemRow = ({ item, onUpdate, onDelete }) => {
-  return (
-    <div className="flex items-center gap-2 bg-white border border-gray-150 rounded-xl px-3 py-2">
-      <input
-        type="text"
-        value={item.title}
-        onChange={e => onUpdate({ ...item, title: e.target.value })}
-        placeholder="Item title (e.g. Haircut for men)"
-        className="flex-1 text-sm font-medium text-gray-800 focus:outline-none bg-transparent min-w-0"
-      />
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <span className="text-xs text-gray-400">₹</span>
-        <input
-          type="number"
-          value={item.price}
-          onChange={e => onUpdate({ ...item, price: Number(e.target.value) || 0 })}
-          className="w-16 text-sm font-bold text-gray-800 focus:outline-none bg-gray-50 rounded-lg px-2 py-1 text-center border border-gray-200"
-          min="0"
-        />
-      </div>
-      <input
-        type="text"
-        value={item.duration || ''}
-        onChange={e => onUpdate({ ...item, duration: e.target.value })}
-        placeholder="30 min"
-        className="w-16 text-xs text-gray-500 focus:outline-none bg-gray-50 rounded-lg px-2 py-1 text-center border border-gray-200"
-      />
-      <button onClick={onDelete} className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
-        <FiTrash2 className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-};
-
-// ════════════════════════════════════════════════════════════════════
-// SERVICE GROUP EDITOR (one group card — e.g., "Haircut")
-// ════════════════════════════════════════════════════════════════════
-const ServiceGroupCard = ({ group, index, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }) => {
-  const [collapsed, setCollapsed] = useState(false);
-
-  const addItem = () => {
-    const newItem = {
-      title: '',
-      price: 0,
-      description: '',
-      duration: '',
-      isActive: true
-    };
-    onUpdate({ ...group, items: [...(group.items || []), newItem] });
-  };
-
-  const updateItem = (idx, updatedItem) => {
-    const items = [...(group.items || [])];
-    items[idx] = updatedItem;
-    onUpdate({ ...group, items });
-  };
-
-  const deleteItem = (idx) => {
-    const items = (group.items || []).filter((_, i) => i !== idx);
-    onUpdate({ ...group, items });
-  };
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
-    >
-      {/* Group Header */}
-      <div className="flex items-center gap-3 p-3.5 bg-gray-50 border-b">
-        <div className="flex flex-col gap-0.5">
-          <button onClick={onMoveUp} disabled={isFirst} className="p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-20">
-            <FiChevronUp className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onMoveDown} disabled={isLast} className="p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-20">
-            <FiChevronDown className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center flex-shrink-0 border border-indigo-200">
-          {group.iconUrl ? (
-            <img src={group.iconUrl} alt="" className="w-6 h-6 object-contain rounded" />
-          ) : (
-            <FiGrid className="w-4 h-4 text-indigo-500" />
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <input
-            type="text"
-            value={group.title}
-            onChange={e => onUpdate({ ...group, title: e.target.value })}
-            placeholder="Group name (e.g. Haircut)"
-            className="w-full text-sm font-bold text-gray-800 bg-transparent focus:outline-none"
-          />
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-gray-400">{(group.items || []).length} items</span>
-            <button
-              onClick={() => onUpdate({ ...group, allowSkip: !group.allowSkip })}
-              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
-                group.allowSkip !== false
-                  ? 'bg-green-50 text-green-600 border border-green-100'
-                  : 'bg-gray-100 text-gray-500 border border-gray-200'
-              }`}
-            >
-              {group.allowSkip !== false ? '✓ Skip allowed' : '✗ Required'}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <input
-            type="text"
-            value={group.iconUrl || ''}
-            onChange={e => onUpdate({ ...group, iconUrl: e.target.value })}
-            placeholder="Icon URL"
-            className="w-24 text-[10px] bg-white border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300 hidden sm:block"
-          />
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <motion.div animate={{ rotate: collapsed ? 0 : 180 }}>
-              <FiChevronDown className="w-4 h-4 text-gray-400" />
-            </motion.div>
-          </button>
-          <button onClick={onDelete} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-            <FiTrash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Items List */}
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="p-3 space-y-1.5">
-              {(group.items || []).length === 0 ? (
-                <div className="text-center py-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                  <p className="text-xs text-gray-400 font-medium">No items yet. Add options for this group.</p>
-                </div>
-              ) : (
-                (group.items || []).map((item, idx) => (
-                  <GroupItemRow
-                    key={item._id || idx}
-                    item={item}
-                    onUpdate={(updated) => updateItem(idx, updated)}
-                    onDelete={() => deleteItem(idx)}
-                  />
-                ))
-              )}
-              <button
-                onClick={addItem}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 border-2 border-dashed border-indigo-300 rounded-lg text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors"
-              >
-                <FiPlus className="w-3 h-3" /> Add Item
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-};
-
-// ════════════════════════════════════════════════════════════════════
-// PACKAGE EDITOR MODAL (create/edit package with included items)
-// ════════════════════════════════════════════════════════════════════
-const PackageEditorModal = ({ pkg, serviceGroups, onSave, onClose }) => {
-  const [form, setForm] = useState({
-    title: pkg?.title || '',
-    description: pkg?.description || '',
-    price: pkg?.price || 0,
-    originalPrice: pkg?.originalPrice || '',
-    discountPercentage: pkg?.discountPercentage || 0,
-    duration: pkg?.duration || '',
-    rating: pkg?.rating ?? 4.5,
-    reviewCount: pkg?.reviewCount || '1.0k',
-    isPopular: pkg?.isPopular || false,
-    isActive: pkg?.isActive !== false,
-    gstPercentage: pkg?.gstPercentage ?? 18,
-    gstIncluded: pkg?.gstIncluded !== false,
-    vendorPayout: pkg?.vendorPayout || 0,
-    platformCommission: pkg?.platformCommission ?? 20,
-    includedItems: pkg?.includedItems || []
-  });
-
-  const matrix = calcPriceMatrix(form);
-
-  const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Toggle a service group in the package
-  const toggleGroup = (group) => {
-    const existing = form.includedItems.find(
-      i => String(i.serviceGroupId) === String(group._id)
-    );
-    if (existing) {
-      // Remove
-      handleChange('includedItems', form.includedItems.filter(
-        i => String(i.serviceGroupId) !== String(group._id)
-      ));
-    } else {
-      // Add with first item as default
-      const firstItem = (group.items || [])[0];
-      handleChange('includedItems', [
-        ...form.includedItems,
-        {
-          serviceGroupId: group._id,
-          serviceGroupTitle: group.title,
-          selectedItemId: firstItem?._id || null,
-          selectedItemTitle: firstItem?.title || '',
-          selectedItemDescription: firstItem?.description || firstItem?.title || ''
-        }
-      ]);
-    }
-  };
-
-  // Change selected item within an included group
-  const changeSelectedItem = (groupId, item) => {
-    handleChange('includedItems', form.includedItems.map(inc =>
-      String(inc.serviceGroupId) === String(groupId)
-        ? {
-            ...inc,
-            selectedItemId: item._id,
-            selectedItemTitle: item.title,
-            selectedItemDescription: item.description || item.title
-          }
-        : inc
-    ));
-  };
-
-  // Update description for an included item
-  const updateItemDescription = (groupId, desc) => {
-    handleChange('includedItems', form.includedItems.map(inc =>
-      String(inc.serviceGroupId) === String(groupId)
-        ? { ...inc, selectedItemDescription: desc }
-        : inc
-    ));
-  };
-
-  // Auto-calculate discount percentage when prices change
-  const autoCalcDiscount = () => {
-    if (form.originalPrice && form.price && Number(form.originalPrice) > Number(form.price)) {
-      const disc = Math.round(((form.originalPrice - form.price) / form.originalPrice) * 100);
-      handleChange('discountPercentage', disc);
-    }
-  };
-
-  // Auto-generate title from included groups
-  const autoTitle = () => {
-    const title = form.includedItems.map(i => i.serviceGroupTitle).filter(Boolean).join(' + ');
-    if (title) handleChange('title', title);
-  };
-
-  const handleSubmit = () => {
-    if (!form.title.trim()) {
-      toast.error('Package title is required');
-      return;
-    }
-    if (!form.price || Number(form.price) <= 0) {
-      toast.error('Price must be greater than 0');
-      return;
-    }
-    if (form.includedItems.length === 0) {
-      toast.error('Select at least one service group');
-      return;
-    }
-    onSave({
-      ...form,
-      price: Number(form.price),
-      originalPrice: form.originalPrice ? Number(form.originalPrice) : null,
-      discountPercentage: Number(form.discountPercentage) || 0,
-      vendorPayout: Number(form.vendorPayout) || 0,
-      gstPercentage: Number(form.gstPercentage) || 18,
-      platformCommission: Number(form.platformCommission) || 20,
-      _id: pkg?._id || undefined
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-white px-5 py-4 border-b flex items-center justify-between z-10">
-          <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-            <FiPackage className="w-4 h-4 text-emerald-600" />
-            {pkg?._id ? 'Edit Package' : 'Create Package'}
-          </h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <FiX className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="p-5 space-y-4">
-          {/* ── Step 1: Select Service Groups ── */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-gray-600">1. Select Service Groups *</label>
-              <button onClick={autoTitle} className="text-[10px] font-semibold text-indigo-600 hover:underline">
-                Auto-generate title
-              </button>
-            </div>
-            <div className="space-y-2">
-              {serviceGroups.length === 0 ? (
-                <p className="text-xs text-gray-400 bg-gray-50 rounded-xl p-3 text-center">
-                  No service groups found. Create groups first in the "Service Groups" tab.
-                </p>
-              ) : (
-                serviceGroups.map(group => {
-                  const isIncluded = form.includedItems.some(
-                    i => String(i.serviceGroupId) === String(group._id)
-                  );
-                  const includedItem = form.includedItems.find(
-                    i => String(i.serviceGroupId) === String(group._id)
-                  );
-
-                  return (
-                    <div key={group._id} className={`border rounded-xl overflow-hidden transition-all ${
-                      isIncluded ? 'border-emerald-300 bg-emerald-50/30' : 'border-gray-200'
-                    }`}>
-                      <button
-                        onClick={() => toggleGroup(group)}
-                        className="w-full flex items-center gap-3 p-3 text-left"
-                      >
-                        <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          isIncluded ? 'bg-emerald-600 border-emerald-600' : 'border-gray-300'
-                        }`}>
-                          {isIncluded && <FiCheck className="w-3 h-3 text-white" />}
-                        </div>
-                        <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                          {group.iconUrl
-                            ? <img src={group.iconUrl} alt="" className="w-5 h-5 object-contain" />
-                            : <FiGrid className="w-3.5 h-3.5 text-gray-500" />
-                          }
-                        </div>
-                        <span className="flex-1 text-sm font-semibold text-gray-800">{group.title}</span>
-                        <span className="text-[10px] text-gray-400">{(group.items || []).length} items</span>
-                      </button>
-
-                      {/* Show item options when included */}
-                      {isIncluded && (group.items || []).length > 0 && (
-                        <div className="px-3 pb-3 pt-0 space-y-1 ml-11">
-                          {(group.items || []).map(item => (
-                            <button
-                              key={item._id}
-                              onClick={() => changeSelectedItem(group._id, item)}
-                              className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                                String(includedItem?.selectedItemId) === String(item._id)
-                                  ? 'bg-emerald-100 text-emerald-800 font-bold'
-                                  : 'bg-white text-gray-600 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${
-                                  String(includedItem?.selectedItemId) === String(item._id)
-                                    ? 'border-emerald-600' : 'border-gray-300'
-                                }`}>
-                                  {String(includedItem?.selectedItemId) === String(item._id) && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                                  )}
-                                </span>
-                                {item.title}
-                              </span>
-                              <span className="font-bold">₹{item.price}</span>
-                            </button>
-                          ))}
-                          {/* Description for package card */}
-                          <input
-                            type="text"
-                            value={includedItem?.selectedItemDescription || ''}
-                            onChange={e => updateItemDescription(group._id, e.target.value)}
-                            placeholder="Brief description for package card"
-                            className="w-full text-[11px] bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 mt-1 focus:outline-none focus:ring-1 focus:ring-emerald-300 text-gray-500"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* ── Step 2: Package Details ── */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-gray-600">2. Package Details</label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={e => handleChange('title', e.target.value)}
-              placeholder="Package title (e.g. Haircut + Beard grooming + Massage)"
-              className="w-full px-3 py-2.5 text-sm font-semibold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <textarea
-              value={form.description}
-              onChange={e => handleChange('description', e.target.value)}
-              placeholder="Brief description (optional)"
-              rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
-            />
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 mb-0.5 block">Duration</label>
-                <input type="text" value={form.duration} onChange={e => handleChange('duration', e.target.value)}
-                  placeholder="2-3 hrs" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 mb-0.5 block">Rating</label>
-                <input type="number" value={form.rating} onChange={e => handleChange('rating', e.target.value)}
-                  step="0.1" min="0" max="5" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 mb-0.5 block">Reviews</label>
-                <input type="text" value={form.reviewCount} onChange={e => handleChange('reviewCount', e.target.value)}
-                  placeholder="1.2k" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none" />
-              </div>
-            </div>
-          </div>
-
-          {/* ── Step 3: Price Matrix ── */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
-            <h4 className="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-2">
-              <FiDollarSign className="w-4 h-4" /> Price Matrix
-            </h4>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 mb-0.5 block">Customer Price ₹ *</label>
-                <input type="number" value={form.price}
-                  onChange={e => handleChange('price', e.target.value)}
-                  onBlur={autoCalcDiscount}
-                  className="w-full px-2 py-1.5 text-sm font-bold border border-gray-200 rounded-lg focus:outline-none bg-white" min="0" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 mb-0.5 block">Original Price ₹</label>
-                <input type="number" value={form.originalPrice}
-                  onChange={e => handleChange('originalPrice', e.target.value)}
-                  onBlur={autoCalcDiscount}
-                  placeholder="MRP" className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white" min="0" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 mb-0.5 block">Discount %</label>
-                <input type="number" value={form.discountPercentage}
-                  onChange={e => handleChange('discountPercentage', e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white" min="0" max="100" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 mb-0.5 block">GST %</label>
-                <input type="number" value={form.gstPercentage}
-                  onChange={e => handleChange('gstPercentage', e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white" min="0" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 mb-0.5 block">Vendor Payout ₹</label>
-                <input type="number" value={form.vendorPayout}
-                  onChange={e => handleChange('vendorPayout', e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white" min="0" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-600 mb-0.5 block">Commission %</label>
-                <input type="number" value={form.platformCommission}
-                  onChange={e => handleChange('platformCommission', e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none bg-white" min="0" />
-              </div>
-            </div>
-
-            {/* Breakdown */}
-            <div className="mt-3 pt-3 border-t border-emerald-200 grid grid-cols-2 gap-1.5 text-xs">
-              <div className="flex justify-between bg-white/60 rounded-lg px-2.5 py-1.5">
-                <span className="text-gray-500">Base:</span>
-                <span className="font-bold text-gray-800">₹{matrix.basePrice.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between bg-white/60 rounded-lg px-2.5 py-1.5">
-                <span className="text-gray-500">GST:</span>
-                <span className="font-bold text-gray-800">₹{matrix.gstAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between bg-white/60 rounded-lg px-2.5 py-1.5">
-                <span className="text-gray-500">Vendor:</span>
-                <span className="font-bold text-blue-700">₹{(Number(form.vendorPayout) || 0).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between bg-white/60 rounded-lg px-2.5 py-1.5">
-                <span className="text-gray-500">Platform:</span>
-                <span className="font-bold text-emerald-700">₹{matrix.platformEarning.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="flex justify-between bg-emerald-600 text-white rounded-lg px-3 py-2 mt-2 text-sm">
-              <span className="font-semibold">Final Price:</span>
-              <span className="font-extrabold">₹{matrix.finalPrice.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* Toggles */}
-          <div className="flex gap-3">
-            <button type="button" onClick={() => handleChange('isPopular', !form.isPopular)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border transition-all ${
-                form.isPopular ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-500 border-gray-200'
-              }`}
-            >
-              <FiStar className="w-3.5 h-3.5" /> {form.isPopular ? 'Popular ✓' : 'Mark Popular'}
-            </button>
-            <button type="button" onClick={() => handleChange('isActive', !form.isActive)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold border transition-all ${
-                form.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-500 border-red-200'
-              }`}
-            >
-              {form.isActive ? <FiEye className="w-3.5 h-3.5" /> : <FiEyeOff className="w-3.5 h-3.5" />}
-              {form.isActive ? 'Active' : 'Inactive'}
-            </button>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-white px-5 py-4 border-t flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">
-            Cancel
-          </button>
-          <button onClick={handleSubmit}
-            className="flex-1 py-2.5 bg-emerald-600 rounded-xl text-sm font-semibold text-white hover:bg-emerald-700 flex items-center justify-center gap-2">
-            <FiCheck className="w-4 h-4" /> {pkg?._id ? 'Update' : 'Create'} Package
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-// ════════════════════════════════════════════════════════════════════
-// PACKAGE CARD (display in packages list)
-// ════════════════════════════════════════════════════════════════════
-const PackageCard = ({ pkg, onEdit, onDelete }) => {
-  const matrix = calcPriceMatrix(pkg);
-  return (
-    <div className={`border rounded-2xl p-4 transition-all ${
-      pkg.isActive !== false ? 'border-gray-200 bg-white' : 'border-red-100 bg-red-50/30 opacity-60'
-    } ${pkg.isPopular ? 'ring-1 ring-amber-300 border-amber-200' : ''}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          {pkg.discountPercentage > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full mb-1.5">
-              🏷️ {pkg.discountPercentage}% off
-            </span>
-          )}
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-bold text-gray-800">{pkg.title}</h4>
-            {pkg.isPopular && (
-              <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">⭐ Popular</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-gray-500">★ {pkg.rating || 4.5}</span>
-            <span className="text-[10px] text-gray-400">({pkg.reviewCount || '1.0k'} reviews)</span>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm font-extrabold text-gray-800">₹{Number(pkg.price).toLocaleString()}</span>
-            {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && (
-              <span className="text-xs line-through text-gray-400">₹{Number(pkg.originalPrice).toLocaleString()}</span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={onEdit} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
-            <FiEdit2 className="w-4 h-4" />
-          </button>
-          <button onClick={onDelete} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-colors">
-            <FiTrash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Included items breakdown */}
-      {(pkg.includedItems || []).length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
-          {pkg.includedItems.map((item, idx) => (
-            <div key={idx} className="text-xs text-gray-500">
-              <span className="font-bold text-gray-700">{item.serviceGroupTitle}:</span>{' '}
-              {item.selectedItemDescription || item.selectedItemTitle}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Price Matrix Mini */}
-      <div className="mt-3 grid grid-cols-4 gap-1.5">
-        <div className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
-          <div className="text-[9px] text-gray-400">Base</div>
-          <div className="text-[11px] font-bold text-gray-700">₹{matrix.basePrice.toLocaleString()}</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
-          <div className="text-[9px] text-gray-400">GST</div>
-          <div className="text-[11px] font-bold text-gray-600">₹{matrix.gstAmount.toLocaleString()}</div>
-        </div>
-        <div className="bg-blue-50 rounded-lg px-2 py-1.5 text-center">
-          <div className="text-[9px] text-blue-400">Vendor</div>
-          <div className="text-[11px] font-bold text-blue-700">₹{(Number(pkg.vendorPayout) || 0).toLocaleString()}</div>
-        </div>
-        <div className="bg-emerald-50 rounded-lg px-2 py-1.5 text-center">
-          <div className="text-[9px] text-emerald-400">Platform</div>
-          <div className="text-[11px] font-bold text-emerald-700">₹{matrix.platformEarning.toLocaleString()}</div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ════════════════════════════════════════════════════════════════════
-// SERVICE DETAIL VIEW (Service Groups + Packages tabs)
-// ════════════════════════════════════════════════════════════════════
-const ServiceDetailView = ({ service, onBack, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState('groups'); // 'groups' | 'packages'
-  const [serviceGroups, setServiceGroups] = useState(service.serviceGroups || []);
-  const [packages, setPackages] = useState(service.packages || []);
-  const [saving, setSaving] = useState(false);
-  const [editingPkg, setEditingPkg] = useState(null); // null | 'new' | package object
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Save service groups
-  const saveGroups = async () => {
-    setSaving(true);
-    try {
-      const res = await api.put(`/admin/services/${service._id}`, { serviceGroups });
-      if (res.data.success) {
-        toast.success('Service Groups saved!');
-        setHasUnsavedChanges(false);
-        onRefresh();
-      }
-    } catch (err) {
-      toast.error('Failed to save groups');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Save packages
-  const savePackages = async (updatedPkgs) => {
-    setSaving(true);
-    try {
-      const res = await api.put(`/admin/services/${service._id}`, { packages: updatedPkgs });
-      if (res.data.success) {
-        toast.success('Packages saved!');
-        setPackages(updatedPkgs);
-        onRefresh();
-      }
-    } catch (err) {
-      toast.error('Failed to save packages');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const addGroup = () => {
-    const newGroup = {
-      title: '',
-      iconUrl: '',
-      order: serviceGroups.length,
-      items: [],
-      allowSkip: true
-    };
-    const updated = [...serviceGroups, newGroup];
-    setServiceGroups(updated);
-    setHasUnsavedChanges(true);
-  };
-
-  const updateGroup = (idx, updated) => {
-    const groups = [...serviceGroups];
-    groups[idx] = updated;
-    setServiceGroups(groups);
-    setHasUnsavedChanges(true);
-  };
-
-  const deleteGroup = (idx) => {
-    if (!window.confirm('Delete this service group and all its items?')) return;
-    setServiceGroups(serviceGroups.filter((_, i) => i !== idx));
-    setHasUnsavedChanges(true);
-  };
-
-  const moveGroup = (idx, direction) => {
-    const arr = [...serviceGroups];
-    const newIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (newIdx < 0 || newIdx >= arr.length) return;
-    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-    arr.forEach((g, i) => g.order = i);
-    setServiceGroups(arr);
-    setHasUnsavedChanges(true);
-  };
-
-  const handleSavePackage = (pkgData) => {
-    let updated;
-    if (pkgData._id) {
-      updated = packages.map(p => p._id === pkgData._id ? { ...p, ...pkgData } : p);
-    } else {
-      const { _tempId, ...cleanPkg } = pkgData;
-      updated = [...packages, cleanPkg];
-    }
-    savePackages(updated);
-    setEditingPkg(null);
-  };
-
-  const handleDeletePackage = (pkgId) => {
-    if (!window.confirm('Delete this package?')) return;
-    const updated = packages.filter(p => p._id !== pkgId);
-    savePackages(updated);
-  };
-
-  const categoryName = service.categoryId?.title || 'Uncategorized';
-
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors border border-gray-200">
-            <FiArrowLeft className="w-4 h-4 text-gray-600" />
-          </button>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center flex-shrink-0">
-            {service.iconUrl
-              ? <img src={service.iconUrl} alt="" className="w-6 h-6 object-contain rounded" />
-              : <FiPackage className="w-5 h-5 text-white" />
-            }
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-gray-800 truncate">{service.title}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">{categoryName}</span>
-              <span className="text-[10px] text-gray-400">{serviceGroups.length} groups · {packages.length} packages</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm flex gap-1">
-        {[
-          { id: 'groups', label: 'Service Groups', icon: FiLayers, count: serviceGroups.length },
-          { id: 'packages', label: 'Packages', icon: FiPackage, count: packages.length }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
-              activeTab === tab.id
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/15'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <tab.icon className="w-3.5 h-3.5" />
-            {tab.label} ({tab.count})
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        {activeTab === 'groups' ? (
-          <motion.div key="groups" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-            {serviceGroups.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                <FiLayers className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-gray-500">No service groups yet</p>
-                <p className="text-xs text-gray-400 mt-1">Add groups like "Haircut", "Face care", "Massage" etc.</p>
-              </div>
-            ) : (
-              serviceGroups.map((group, idx) => (
-                <ServiceGroupCard
-                  key={group._id || idx}
-                  group={group}
-                  index={idx}
-                  onUpdate={(updated) => updateGroup(idx, updated)}
-                  onDelete={() => deleteGroup(idx)}
-                  onMoveUp={() => moveGroup(idx, 'up')}
-                  onMoveDown={() => moveGroup(idx, 'down')}
-                  isFirst={idx === 0}
-                  isLast={idx === serviceGroups.length - 1}
-                />
-              ))
-            )}
-
-            <div className="flex gap-3">
-              <button onClick={addGroup}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border-2 border-dashed border-indigo-300 rounded-xl text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors">
-                <FiPlus className="w-3.5 h-3.5" /> Add Service Group
-              </button>
-              <button onClick={saveGroups} disabled={saving || !hasUnsavedChanges}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold text-white transition-colors ${
-                  hasUnsavedChanges ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 cursor-not-allowed'
-                }`}>
-                <FiSave className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save Groups'}
-              </button>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div key="packages" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-            {packages.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                <FiPackage className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-gray-500">No packages yet</p>
-                <p className="text-xs text-gray-400 mt-1">Create combo packages like "Haircut + Beard grooming + Massage"</p>
-              </div>
-            ) : (
-              packages.map((pkg, idx) => (
-                <PackageCard
-                  key={pkg._id || idx}
-                  pkg={pkg}
-                  onEdit={() => setEditingPkg(pkg)}
-                  onDelete={() => handleDeletePackage(pkg._id)}
-                />
-              ))
-            )}
-
-            <button onClick={() => setEditingPkg('new')}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 border-2 border-dashed border-emerald-300 rounded-xl text-xs font-bold text-emerald-600 hover:bg-emerald-50 transition-colors">
-              <FiPlus className="w-3.5 h-3.5" /> Create Package
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Package Editor Modal */}
-      {editingPkg && (
-        <PackageEditorModal
-          pkg={editingPkg === 'new' ? null : editingPkg}
-          serviceGroups={serviceGroups}
-          onSave={handleSavePackage}
-          onClose={() => setEditingPkg(null)}
-        />
-      )}
-    </div>
-  );
-};
-
-// ════════════════════════════════════════════════════════════════════
-// MAIN PAGE — Services List
-// ════════════════════════════════════════════════════════════════════
 const PackageBased = () => {
-  const [services, setServices] = useState([]);
-  const [categories, setCategories] = useState([]);
+  // Main Navigation Tabs: 'main_cats' | 'sub_cats' | 'packages' | 'combos'
+  const [activeTab, setActiveTab] = useState('main_cats');
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
-  const [selectedService, setSelectedService] = useState(null);
+
+  // Core Data Lists
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [services, setServices] = useState([]);
+
+  // Selections
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState('');
+
+  // Modals & Editors state
+  const [editingMainCat, setEditingMainCat] = useState(null); // null | 'new' | category object
+  const [editingSubCat, setEditingSubCat] = useState(null);   // null | 'new' | subcategory object
+  const [editingServiceGroup, setEditingServiceGroup] = useState(null); // null | 'new' | group object
+  const [editingCombo, setEditingCombo] = useState(null);     // null | 'new' | combo object
+
+  // Form states
+  const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '' });
+  const [subCatForm, setSubCatForm] = useState({ categoryId: '', title: '', description: '', iconUrl: '', imageUrl: '', videoUrl: '', status: 'active' });
+  const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0 });
+
+  // Media upload progress states
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  // Search/Filters
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [srvRes, catRes] = await Promise.all([
-        api.get('/admin/services'),
-        api.get('/admin/categories')
+      const [catRes, subRes, srvRes] = await Promise.all([
+        api.get('/admin/categories'),
+        api.get('/admin/subcategories'),
+        api.get('/admin/services')
       ]);
+      const allCats = catRes.data.categories || catRes.data.data || [];
+      const packageCats = allCats.filter(cat => cat.templateId === '6a28fb25c692d0d224c480e2');
+      setCategories(packageCats);
+
+      const allSubCats = subRes.data.data || subRes.data.subCategories || [];
+      const packageSubCats = allSubCats.filter(sub => {
+        const parentId = sub.categoryId?._id || sub.categoryId;
+        return packageCats.some(cat => String(cat.id || cat._id) === String(parentId));
+      });
+      setSubCategories(packageSubCats);
+      
       const allServices = srvRes.data.services || [];
       const packageServices = allServices.filter(s => s.serviceType === 'package_base');
       setServices(packageServices);
-      setCategories(catRes.data.categories || catRes.data.data || []);
-
-      // If we had a selected service, refresh its data
-      if (selectedService) {
-        const refreshed = packageServices.find(s => s._id === selectedService._id);
-        if (refreshed) setSelectedService(refreshed);
-      }
     } catch (err) {
-      console.error('Error fetching data:', err);
-      toast.error('Failed to load services');
+      console.error('Fetch error:', err);
+      toast.error('Failed to sync details');
     } finally {
       setLoading(false);
     }
-  }, [selectedService?._id]);
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  const filtered = services.filter(s => {
-    const matchSearch = !search || s.title.toLowerCase().includes(search.toLowerCase());
-    const matchCat = !filterCategory || (s.categoryId?._id || s.categoryId) === filterCategory;
-    return matchSearch && matchCat;
-  });
+  // Resolve current active Service from selected subcategory
+  const activeService = useMemo(() => {
+    if (!selectedSubCategoryId) return null;
+    return services.find(s => String(s.subCategoryId?._id || s.subCategoryId) === String(selectedSubCategoryId));
+  }, [services, selectedSubCategoryId]);
 
-  const totalPackages = services.reduce((sum, s) => sum + (s.packages?.length || 0), 0);
-  const totalGroups = services.reduce((sum, s) => sum + (s.serviceGroups?.length || 0), 0);
+  // Filter Subcategories by Main Category (using SearchQuery if applicable)
+  const filteredSubCategories = useMemo(() => {
+    return subCategories.filter(s => {
+      const matchesSearch = !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [subCategories, searchQuery]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="animate-spin w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-gray-400 font-medium">Loading services...</p>
-        </div>
-      </div>
-    );
-  }
+  // Handle Main Category Actions
+  const handleOpenMainCat = (cat = null) => {
+    if (cat) {
+      setMainCatForm({
+        _id: cat._id || cat.id,
+        title: cat.title,
+        status: cat.status || 'active',
+        homeIconUrl: cat.homeIconUrl || '',
+        homeBadge: cat.homeBadge || ''
+      });
+    } else {
+      setMainCatForm({ title: '', status: 'active', homeIconUrl: '', homeBadge: '' });
+    }
+    setEditingMainCat(cat || 'new');
+  };
 
-  // If a service is selected, show its detail view
-  if (selectedService) {
-    return (
-      <ServiceDetailView
-        service={selectedService}
-        onBack={() => setSelectedService(null)}
-        onRefresh={fetchData}
-      />
-    );
-  }
+  const handleSaveMainCat = async (e) => {
+    e.preventDefault();
+    try {
+      if (mainCatForm._id) {
+        await api.put(`/admin/categories/${mainCatForm._id}`, mainCatForm);
+        toast.success('Main category updated!');
+      } else {
+        await api.post('/admin/categories', { ...mainCatForm, templateId: '6a28fb25c692d0d224c480e2' }); // Set to Page Template by default
+        toast.success('Main category created!');
+      }
+      setEditingMainCat(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save Main Category');
+    }
+  };
+
+  const handleDeleteMainCat = async (id) => {
+    if (!window.confirm('Delete this main category?')) return;
+    try {
+      await api.delete(`/admin/categories/${id}`);
+      toast.success('Deleted successfully');
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to delete category');
+    }
+  };
+
+  // Handle SubCategory (Category Level 2) Actions
+  const handleOpenSubCat = (sub = null) => {
+    if (sub) {
+      setSubCatForm({
+        _id: sub._id,
+        categoryId: sub.categoryId?._id || sub.categoryId || '',
+        title: sub.title,
+        description: sub.description || '',
+        iconUrl: sub.iconUrl || '',
+        imageUrl: sub.imageUrl || '',
+        videoUrl: sub.videoUrl || '',
+        status: sub.status || 'active'
+      });
+    } else {
+      const defaultCat = categories[0]?._id || '';
+      setSubCatForm({ categoryId: defaultCat, title: '', description: '', iconUrl: '', imageUrl: '', videoUrl: '', status: 'active' });
+    }
+    setEditingSubCat(sub || 'new');
+  };
+
+  const handleSaveSubCat = async (e) => {
+    e.preventDefault();
+    try {
+      if (subCatForm._id) {
+        await api.put(`/admin/subcategories/${subCatForm._id}`, subCatForm);
+        toast.success('Category updated successfully!');
+      } else {
+        await api.post('/admin/subcategories', subCatForm);
+        toast.success('Category created successfully!');
+      }
+      setEditingSubCat(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save Category');
+    }
+  };
+
+  const handleDeleteSubCat = async (id) => {
+    if (!window.confirm('Delete this category?')) return;
+    try {
+      await api.delete(`/admin/subcategories/${id}`);
+      toast.success('Deleted successfully');
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to delete category');
+    }
+  };
+
+  // Helper to upload media to Cloudinary
+  const handleMediaUpload = async (file, type) => {
+    const folder = `Doormeets/categories/${type}`;
+    if (type === 'icon' || type === 'main_icon') setUploadingIcon(true);
+    if (type === 'image') setUploadingImage(true);
+    if (type === 'video') setUploadingVideo(true);
+
+    try {
+      const response = await serviceService.uploadImage(file, folder);
+      if (response.success && response.imageUrl) {
+        if (type === 'icon') setSubCatForm(p => ({ ...p, iconUrl: response.imageUrl }));
+        if (type === 'image') setSubCatForm(p => ({ ...p, imageUrl: response.imageUrl }));
+        if (type === 'video') setSubCatForm(p => ({ ...p, videoUrl: response.imageUrl }));
+        if (type === 'main_icon') setMainCatForm(p => ({ ...p, homeIconUrl: response.imageUrl }));
+        toast.success('File uploaded successfully');
+      } else {
+        toast.error('Upload failed');
+      }
+    } catch (error) {
+      toast.error('Upload error');
+    } finally {
+      setUploadingIcon(false);
+      setUploadingImage(false);
+      setUploadingVideo(false);
+    }
+  };
+
+  // Initialize service under subcategory
+  const handleInitializeService = async () => {
+    if (!selectedSubCategoryId) return;
+    try {
+      const sub = subCategories.find(s => s._id === selectedSubCategoryId);
+      if (!sub) return;
+      
+      const res = await api.post('/admin/services', {
+        categoryId: sub.categoryId?._id || sub.categoryId,
+        subCategoryId: sub._id,
+        title: sub.title,
+        serviceType: 'package_base',
+        status: 'active'
+      });
+      if (res.data.success) {
+        toast.success('Service Packages initialized successfully!');
+        fetchData();
+      }
+    } catch (err) {
+      toast.error('Failed to initialize packages');
+    }
+  };
+
+  // Service Group Management (Packages)
+  const [groupForm, setGroupForm] = useState({ title: '', items: [], allowSkip: true });
+  const [editingGroupIdx, setEditingGroupIdx] = useState(null);
+
+  const handleOpenGroup = (idx = null) => {
+    if (!activeService) return;
+    if (idx !== null) {
+      const group = activeService.serviceGroups[idx];
+      setGroupForm({
+        title: group.title,
+        items: group.items || [],
+        allowSkip: group.allowSkip !== false
+      });
+      setEditingGroupIdx(idx);
+    } else {
+      setGroupForm({ title: '', items: [], allowSkip: true });
+      setEditingGroupIdx('new');
+    }
+    setEditingServiceGroup(true);
+  };
+
+  const handleSaveGroup = async (e) => {
+    e.preventDefault();
+    if (!groupForm.title.trim()) {
+      toast.error('Group title is required');
+      return;
+    }
+
+    const updatedGroups = [...(activeService.serviceGroups || [])];
+    if (editingGroupIdx === 'new') {
+      updatedGroups.push({ ...groupForm, order: updatedGroups.length });
+    } else {
+      updatedGroups[editingGroupIdx] = { ...updatedGroups[editingGroupIdx], ...groupForm };
+    }
+
+    try {
+      const res = await api.put(`/admin/services/${activeService._id}`, { serviceGroups: updatedGroups });
+      if (res.data.success) {
+        toast.success('Options saved!');
+        setEditingServiceGroup(false);
+        fetchData();
+      }
+    } catch (err) {
+      toast.error('Failed to save service group');
+    }
+  };
+
+  const handleDeleteGroup = async (idx) => {
+    if (!window.confirm('Delete this service group and all its option items?')) return;
+    const updatedGroups = activeService.serviceGroups.filter((_, i) => i !== idx);
+    try {
+      const res = await api.put(`/admin/services/${activeService._id}`, { serviceGroups: updatedGroups });
+      if (res.data.success) {
+        toast.success('Deleted successfully');
+        fetchData();
+      }
+    } catch (err) {
+      toast.error('Failed to delete group');
+    }
+  };
+
+  const handleAddItemToGroup = () => {
+    setGroupForm(p => ({
+      ...p,
+      items: [...p.items, { title: '', price: 0, description: '', duration: '' }]
+    }));
+  };
+
+  const handleUpdateItemInGroup = (idx, key, val) => {
+    const list = [...groupForm.items];
+    list[idx] = { ...list[idx], [key]: val };
+    setGroupForm(p => ({ ...p, items: list }));
+  };
+
+  const handleRemoveItemFromGroup = (idx) => {
+    setGroupForm(p => ({
+      ...p,
+      items: p.items.filter((_, i) => i !== idx)
+    }));
+  };
+
+  // Combo Packages (Package Groups)
+  const handleOpenCombo = (combo = null) => {
+    if (combo) {
+      setComboForm({
+        _id: combo._id,
+        title: combo.title,
+        description: combo.description || '',
+        price: combo.price,
+        originalPrice: combo.originalPrice || '',
+        discountPercentage: combo.discountPercentage || 0,
+        duration: combo.duration || '',
+        rating: combo.rating || 4.5,
+        reviewCount: combo.reviewCount || '1.0k',
+        isPopular: combo.isPopular || false,
+        isActive: combo.isActive !== false,
+        includedItems: combo.includedItems || [],
+        gstPercentage: combo.gstPercentage ?? 18,
+        gstIncluded: combo.gstIncluded !== false,
+        vendorPayout: combo.vendorPayout || 0
+      });
+    } else {
+      setComboForm({
+        title: '',
+        description: '',
+        price: '',
+        originalPrice: '',
+        discountPercentage: 0,
+        duration: '',
+        rating: 4.5,
+        reviewCount: '1.0k',
+        isPopular: false,
+        isActive: true,
+        includedItems: [],
+        gstPercentage: 18,
+        gstIncluded: true,
+        vendorPayout: 0
+      });
+    }
+    setEditingCombo(combo ? combo : 'new');
+  };
+
+  const handleSaveCombo = async (e) => {
+    e.preventDefault();
+    if (!comboForm.title.trim()) {
+      toast.error('Combo title is required');
+      return;
+    }
+    if (!comboForm.price || Number(comboForm.price) <= 0) {
+      toast.error('Price is required');
+      return;
+    }
+
+    const updatedPackages = [...(activeService.packages || [])];
+    const newPkg = {
+      ...comboForm,
+      price: Number(comboForm.price),
+      originalPrice: comboForm.originalPrice ? Number(comboForm.originalPrice) : null,
+      discountPercentage: Number(comboForm.discountPercentage) || 0,
+      gstPercentage: Number(comboForm.gstPercentage || 18),
+      gstIncluded: comboForm.gstIncluded !== false,
+      vendorPayout: Number(comboForm.vendorPayout || 0)
+    };
+
+    if (comboForm._id) {
+      const idx = updatedPackages.findIndex(p => p._id === comboForm._id);
+      if (idx !== -1) updatedPackages[idx] = newPkg;
+    } else {
+      updatedPackages.push(newPkg);
+    }
+
+    try {
+      const res = await api.put(`/admin/services/${activeService._id}`, { packages: updatedPackages });
+      if (res.data.success) {
+        toast.success('Combo Package saved!');
+        setEditingCombo(null);
+        fetchData();
+      }
+    } catch (err) {
+      toast.error('Failed to save combo package');
+    }
+  };
+
+  const handleDeleteCombo = async (id) => {
+    if (!window.confirm('Delete this combo package?')) return;
+    const updated = activeService.packages.filter(p => p._id !== id);
+    try {
+      const res = await api.put(`/admin/services/${activeService._id}`, { packages: updated });
+      if (res.data.success) {
+        toast.success('Deleted successfully');
+        fetchData();
+      }
+    } catch (err) {
+      toast.error('Failed to delete package');
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 rounded-2xl p-5 text-white shadow-lg shadow-emerald-500/10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-extrabold flex items-center gap-2">
-              <FiPackage className="w-5 h-5" /> Package Based Services
-            </h1>
-            <p className="text-xs text-emerald-100 mt-1">Manage salon-style service groups and combo packages</p>
-          </div>
-          <button onClick={fetchData} className="p-2.5 bg-white/15 hover:bg-white/25 rounded-xl transition-colors" title="Refresh">
-            <FiRefreshCw className="w-4 h-4" />
+    <div className="space-y-6">
+      {/* Page Title Header */}
+      <div className="flex items-center justify-between py-2 border-b border-gray-100">
+        <div>
+          <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <FiPackage className="w-5 h-5 text-emerald-600" /> Package-based Services
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">Configure Main Categories, Subcategories, Options and Combos.</p>
+        </div>
+        <button onClick={fetchData} className="p-2 bg-gray-50 hover:bg-gray-100 border rounded-xl transition-colors" title="Sync Details">
+          <FiRefreshCw className={`w-4 h-4 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {/* Main Stepper Tabs Navigation */}
+      <div className="bg-gray-50 p-1 rounded-2xl border flex gap-1">
+        {[
+          { id: 'main_cats', label: '1. Main Categories' },
+          { id: 'sub_cats', label: '2. Subcategories' },
+          { id: 'packages', label: '3. Packages / Options' },
+          { id: 'combos', label: '4. Package Groups / Combos' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => {
+              setActiveTab(tab.id);
+              setSearchQuery('');
+            }}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              activeTab === tab.id
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {tab.label}
           </button>
-        </div>
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2">
-            <div className="text-[10px] text-emerald-200 font-medium">Services</div>
-            <div className="text-lg font-extrabold">{services.length}</div>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2">
-            <div className="text-[10px] text-emerald-200 font-medium">Service Groups</div>
-            <div className="text-lg font-extrabold">{totalGroups}</div>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2">
-            <div className="text-[10px] text-emerald-200 font-medium">Packages</div>
-            <div className="text-lg font-extrabold">{totalPackages}</div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm flex items-center gap-3">
-        <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
-          <FiSearch className="w-4 h-4 text-gray-400" />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search services..." className="flex-1 bg-transparent text-sm focus:outline-none" />
-        </div>
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-xl px-3 py-2.5 focus:outline-none font-semibold">
-          <option value="">All Categories</option>
-          {categories.map(cat => (
-            <option key={cat._id || cat.id} value={cat._id || cat.id}>{cat.title || cat.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Services Grid */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
-          <FiPackage className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-gray-500">No package-based services found</p>
-          <p className="text-xs text-gray-400 mt-1">Create services with type "package_base" from Management section</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map(service => {
-            const groups = service.serviceGroups || [];
-            const pkgs = service.packages || [];
-            const catName = service.categoryId?.title || 'Uncategorized';
-            return (
-              <motion.div
-                key={service._id}
-                whileHover={{ scale: 1.005 }}
-                onClick={() => setSelectedService(service)}
-                className="bg-white border border-gray-100 rounded-2xl p-4 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-                    {service.iconUrl
-                      ? <img src={service.iconUrl} alt="" className="w-7 h-7 object-contain rounded" />
-                      : <FiPackage className="w-5 h-5 text-white" />
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-gray-800 truncate">{service.title}</h3>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">{catName}</span>
-                      <span className="text-[10px] text-gray-400">{groups.length} groups</span>
-                      <span className="text-[10px] text-gray-400">·</span>
-                      <span className="text-[10px] text-gray-400">{pkgs.length} packages</span>
-                    </div>
-                  </div>
-                  <FiChevronDown className="w-4 h-4 text-gray-300 -rotate-90 flex-shrink-0" />
+      {/* Dynamic Tab Render Content */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-sm text-gray-400 font-medium">Syncing details...</p>
+          </div>
+        ) : (
+          <>
+            {/* TAB 1: MAIN CATEGORIES */}
+            {activeTab === 'main_cats' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-sm font-bold text-gray-700">Configure Main Categories (e.g. Salon)</h2>
+                  <button
+                    onClick={() => handleOpenMainCat()}
+                    className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700"
+                  >
+                    <FiPlus className="w-3.5 h-3.5" /> Add Category
+                  </button>
                 </div>
 
-                {/* Groups preview */}
-                {groups.length > 0 && (
-                  <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-                    {groups.map((g, i) => (
-                      <div key={i} className="flex items-center gap-1.5 bg-gray-50 rounded-lg px-2.5 py-1.5 flex-shrink-0 border border-gray-100">
-                        <div className="w-5 h-5 rounded bg-white flex items-center justify-center">
-                          {g.iconUrl
-                            ? <img src={g.iconUrl} alt="" className="w-4 h-4 object-contain" />
-                            : <FiGrid className="w-3 h-3 text-gray-400" />
-                          }
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                  {categories.map(cat => (
+                    <div key={cat._id || cat.id} className="border rounded-2xl p-4 flex items-center justify-between shadow-sm bg-gray-50/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white border flex items-center justify-center shrink-0">
+                          {cat.homeIconUrl ? (
+                            <img src={cat.homeIconUrl} alt="" className="w-6 h-6 object-contain" />
+                          ) : (
+                            <FiGrid className="text-gray-400 w-5 h-5" />
+                          )}
                         </div>
-                        <span className="text-[10px] font-semibold text-gray-600">{g.title}</span>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-800">{cat.title}</h4>
+                          <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${cat.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{cat.status}</span>
+                        </div>
                       </div>
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => handleOpenMainCat(cat)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
+                          <FiEdit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteMainCat(cat._id || cat.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: SUBCATEGORIES */}
+            {activeTab === 'sub_cats' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center gap-3">
+                  <div className="flex-1 flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 border max-w-sm">
+                    <FiSearch className="w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Search categories..."
+                      className="bg-transparent text-xs focus:outline-none w-full"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleOpenSubCat()}
+                    className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 shrink-0"
+                  >
+                    <FiPlus className="w-3.5 h-3.5" /> Add Category Level 2
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100 text-[11px] uppercase tracking-wider text-gray-500">
+                        <th className="p-3.5 font-bold">Category Title</th>
+                        <th className="p-3.5 font-bold">Parent (Main Category)</th>
+                        <th className="p-3.5 font-bold">Media Coverage</th>
+                        <th className="p-3.5 font-bold">Status</th>
+                        <th className="p-3.5 font-bold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-xs">
+                      {filteredSubCategories.map(sub => {
+                        const parent = categories.find(c => String(c._id || c.id) === String(sub.categoryId?._id || sub.categoryId));
+                        return (
+                          <tr key={sub._id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                            <td className="p-3.5 font-bold text-gray-800">{sub.title}</td>
+                            <td className="p-3.5 text-gray-500 font-semibold">{parent?.title || 'Unknown parent'}</td>
+                            <td className="p-3.5">
+                              <div className="flex gap-2">
+                                <span className={`px-2 py-0.5 rounded border ${sub.imageUrl ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-gray-50 text-gray-400'}`}>Image</span>
+                                <span className={`px-2 py-0.5 rounded border ${sub.videoUrl ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-gray-50 text-gray-400'}`}>Video</span>
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${sub.status === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700'}`}>{sub.status}</span>
+                            </td>
+                            <td className="p-3.5 flex justify-end gap-2">
+                              <button onClick={() => handleOpenSubCat(sub)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg"><FiEdit2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteSubCat(sub._id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><FiTrash2 className="w-3.5 h-3.5" /></button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredSubCategories.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="p-8 text-center text-gray-400">No categories found. Create a Category to begin.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: INDIVIDUAL PACKAGES / OPTIONS */}
+            {activeTab === 'packages' && (
+              <div className="space-y-5">
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 max-w-md">
+                  <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase">Select Category / Subcategory</label>
+                  <select
+                    value={selectedSubCategoryId}
+                    onChange={e => setSelectedSubCategoryId(e.target.value)}
+                    className="w-full p-2.5 bg-white border rounded-xl text-sm focus:outline-none"
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {subCategories.map(sub => (
+                      <option key={sub._id} value={sub._id}>{sub.title}</option>
                     ))}
+                  </select>
+                </div>
+
+                {selectedSubCategoryId ? (
+                  activeService ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center border-b pb-3">
+                        <div>
+                          <h3 className="text-sm font-bold text-gray-800">Packages configured for "{activeService.title}"</h3>
+                          <p className="text-[11px] text-gray-400 mt-0.5">Manage individual options (like Haircut, Massage) and set their prices below.</p>
+                        </div>
+                        <button
+                          onClick={() => handleOpenGroup()}
+                          className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700"
+                        >
+                          <FiPlus className="w-3.5 h-3.5" /> Add Options Group
+                        </button>
+                      </div>
+
+                      <div className="space-y-4 pt-2">
+                        {activeService.serviceGroups?.map((group, idx) => (
+                          <div key={group._id || idx} className="border rounded-2xl p-4 bg-gray-50/10 shadow-sm space-y-3">
+                            <div className="flex justify-between items-center border-b pb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs">🛒</span>
+                                <h4 className="text-sm font-bold text-gray-800">{group.title}</h4>
+                                <span className="text-[10px] text-gray-400">({(group.items || []).length} choices)</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => handleOpenGroup(idx)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg"><FiEdit2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => handleDeleteGroup(idx)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg"><FiTrash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {group.items?.map((item, itemIdx) => (
+                                <div key={item._id || itemIdx} className="bg-white border rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex justify-between items-center">
+                                  <div className="min-w-0 pr-2">
+                                    <p className="text-xs font-bold text-gray-800 truncate">{item.title}</p>
+                                    {item.duration && <span className="text-[10px] text-gray-400 block">{item.duration}</span>}
+                                  </div>
+                                  <span className="text-xs font-extrabold text-emerald-600 shrink-0">₹{item.price}</span>
+                                </div>
+                              ))}
+                              {(!group.items || group.items.length === 0) && (
+                                <p className="text-xs text-gray-400 col-span-3 py-1">No items configured in this group yet.</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {(!activeService.serviceGroups || activeService.serviceGroups.length === 0) && (
+                          <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed text-gray-400">
+                            No service groups created yet. Click "Add Options Group" to start adding items.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 border-2 border-dashed rounded-3xl bg-gray-50/50 max-w-lg mx-auto">
+                      <FiPackage className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-gray-600">No Services Initialized Yet</h3>
+                      <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto leading-normal">
+                        To add packages, you must initialize the services database mapping for this subcategory first.
+                      </p>
+                      <button
+                        onClick={handleInitializeService}
+                        className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-emerald-700 transition-colors"
+                      >
+                        Initialize Packages Setup
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-12 text-gray-400 font-medium">
+                    Please select a Category/Subcategory from the dropdown above to manage options.
                   </div>
                 )}
-              </motion.div>
-            );
-          })}
+              </div>
+            )}
+
+            {/* TAB 4: COMBO PACKAGES / PACKAGE GROUPS */}
+            {activeTab === 'combos' && (
+              <div className="space-y-5">
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 max-w-md">
+                  <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase">Select Category / Subcategory</label>
+                  <select
+                    value={selectedSubCategoryId}
+                    onChange={e => setSelectedSubCategoryId(e.target.value)}
+                    className="w-full p-2.5 bg-white border rounded-xl text-sm focus:outline-none"
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {subCategories.map(sub => (
+                      <option key={sub._id} value={sub._id}>{sub.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedSubCategoryId ? (
+                  activeService ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center border-b pb-3">
+                        <div>
+                          <h3 className="text-sm font-bold text-gray-800">Combo Package Groups ({activeService.packages?.length || 0})</h3>
+                          <p className="text-[11px] text-gray-400 mt-0.5">Combine individual packages, apply discount prices, and manage them.</p>
+                        </div>
+                        <button
+                          onClick={() => handleOpenCombo()}
+                          className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700"
+                        >
+                          <FiPlus className="w-3.5 h-3.5" /> Create Combo Package
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        {activeService.packages?.map((pkg) => {
+                          const matrix = calcPriceMatrix(pkg);
+                          return (
+                            <div key={pkg._id} className="border rounded-2xl p-4 bg-white shadow-sm hover:shadow-md transition-all space-y-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <h4 className="text-sm font-bold text-gray-800">{pkg.title}</h4>
+                                    {pkg.isPopular && <span className="text-[9px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full">⭐ Popular</span>}
+                                  </div>
+                                  <span className="text-xs font-extrabold text-emerald-600">₹{pkg.price}</span>
+                                  {pkg.originalPrice && <span className="text-xs line-through text-gray-400 ml-1.5 font-semibold">₹{pkg.originalPrice}</span>}
+                                  <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">
+                                    {pkg.gstIncluded !== false ? 'GST Inc.' : 'GST Exc.'} ({pkg.gstPercentage || 18}%) | Payout: ₹{pkg.vendorPayout || 0}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <button onClick={() => handleOpenCombo(pkg)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"><FiEdit2 className="w-4 h-4" /></button>
+                                  <button onClick={() => handleDeleteCombo(pkg._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><FiTrash2 className="w-4 h-4" /></button>
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-gray-500">{pkg.description || 'No description provided.'}</p>
+                              
+                              <div className="border-t pt-2 space-y-1.5">
+                                <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">Included Service Levels:</span>
+                                {pkg.includedItems?.map((inc, i) => (
+                                  <div key={i} className="flex justify-between text-xs text-gray-600 font-semibold bg-gray-50 p-2 rounded-lg border">
+                                    <span>{inc.serviceGroupTitle}</span>
+                                    <span className="text-[10px] text-emerald-600 font-extrabold">{inc.selectedItemTitle}</span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="border-t pt-2 flex justify-between text-[11px] font-bold text-gray-500 bg-gray-50/50 p-2 rounded-xl">
+                                <span>Base: ₹{matrix.basePrice.toFixed(0)}</span>
+                                <span>GST: ₹{matrix.gstAmount.toFixed(0)}</span>
+                                <span className={matrix.platformEarning >= 0 ? "text-emerald-600" : "text-red-500"}>Profit: ₹{matrix.platformEarning.toFixed(0)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {(!activeService.packages || activeService.packages.length === 0) && (
+                          <div className="col-span-2 text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed text-gray-400">
+                            No combo packages created yet. Click "Create Combo Package" to bundle your service groups.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 border-2 border-dashed rounded-3xl bg-gray-50/50 max-w-lg mx-auto">
+                      <FiPackage className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-gray-600">No Services Initialized Yet</h3>
+                      <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto leading-normal">
+                        To bundle combo package groups, you must initialize the services database mapping first.
+                      </p>
+                      <button
+                        onClick={handleInitializeService}
+                        className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-emerald-700 transition-colors"
+                      >
+                        Initialize Packages Setup
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-12 text-gray-400 font-medium">
+                    Please select a Category/Subcategory from the dropdown above to manage combo package groups.
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* MODAL 1: ADD/EDIT MAIN CATEGORIES */}
+      {editingMainCat && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-5 py-4 border-b flex items-center justify-between bg-gray-50">
+              <h3 className="text-sm font-bold text-gray-800">{editingMainCat === 'new' ? 'Create Main Category' : 'Edit Main Category'}</h3>
+              <button onClick={() => setEditingMainCat(null)} className="p-1.5 hover:bg-gray-200 rounded-lg"><FiX className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleSaveMainCat} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Category Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={mainCatForm.title}
+                  onChange={e => setMainCatForm({ ...mainCatForm, title: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                  placeholder="e.g. Salon, AC service, Plumber"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Badge (Optional)</label>
+                <input
+                  type="text"
+                  value={mainCatForm.homeBadge}
+                  onChange={e => setMainCatForm({ ...mainCatForm, homeBadge: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                  placeholder="e.g. 20% OFF, NEW"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Icon / Image</label>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files?.[0] && handleMediaUpload(e.target.files[0], 'main_icon')}
+                    className="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-gray-200 file:bg-gray-50 file:text-xs file:font-bold hover:file:bg-gray-100"
+                  />
+                  {uploadingIcon && <span className="text-[10px] text-blue-500 animate-pulse font-bold block">Uploading image...</span>}
+                  {mainCatForm.homeIconUrl && (
+                    <div className="flex items-center gap-2 border p-1.5 rounded-xl bg-gray-50">
+                      <img src={mainCatForm.homeIconUrl} alt="" className="w-8 h-8 object-contain rounded bg-white border" />
+                      <span className="text-[10px] text-gray-500 truncate flex-1">{mainCatForm.homeIconUrl}</span>
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={mainCatForm.homeIconUrl}
+                    onChange={e => setMainCatForm({ ...mainCatForm, homeIconUrl: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                    placeholder="Or enter image URL: https://..."
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Status</label>
+                <select
+                  value={mainCatForm.status}
+                  onChange={e => setMainCatForm({ ...mainCatForm, status: e.target.value })}
+                  className="w-full p-2 border rounded-xl text-xs focus:outline-none"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingMainCat(null)} className="flex-1 py-2 border rounded-xl text-xs font-semibold hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700">Save</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL 2: ADD/EDIT CATEGORIES / SUBCATEGORIES */}
+      {editingSubCat && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="px-5 py-4 border-b flex items-center justify-between bg-gray-50">
+              <h3 className="text-sm font-bold text-gray-800">{editingMainCat === 'new' ? 'Create Category Level 2' : 'Edit Category Level 2'}</h3>
+              <button onClick={() => setEditingSubCat(null)} className="p-1.5 hover:bg-gray-200 rounded-lg"><FiX className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleSaveSubCat} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Parent (Main Category) *</label>
+                <select
+                  value={subCatForm.categoryId}
+                  onChange={e => setSubCatForm({ ...subCatForm, categoryId: e.target.value })}
+                  required
+                  className="w-full p-2 border rounded-xl text-xs focus:outline-none"
+                >
+                  <option value="">-- Select Main Category --</option>
+                  {categories.map(cat => (
+                    <option key={cat._id || cat.id} value={cat._id || cat.id}>{cat.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={subCatForm.title}
+                  onChange={e => setSubCatForm({ ...subCatForm, title: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                  placeholder="e.g. salon for kids and men"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Description</label>
+                <textarea
+                  value={subCatForm.description}
+                  onChange={e => setSubCatForm({ ...subCatForm, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none resize-none"
+                  placeholder="Description details..."
+                />
+              </div>
+
+              {/* MEDIA UPLOADS SECTION */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 border-t pt-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 mb-1 uppercase">Subcategory Icon</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files?.[0] && handleMediaUpload(e.target.files[0], 'icon')}
+                    className="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-gray-100 file:font-semibold"
+                  />
+                  {uploadingIcon && <span className="text-[9px] text-blue-500 animate-pulse">Uploading...</span>}
+                  {subCatForm.iconUrl && <span className="text-[9px] text-green-600 block mt-1 truncate">{subCatForm.iconUrl}</span>}
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 mb-1 uppercase">Cover Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files?.[0] && handleMediaUpload(e.target.files[0], 'image')}
+                    className="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-gray-100 file:font-semibold"
+                  />
+                  {uploadingImage && <span className="text-[9px] text-blue-500 animate-pulse">Uploading...</span>}
+                  {subCatForm.imageUrl && <span className="text-[9px] text-green-600 block mt-1 truncate">{subCatForm.imageUrl}</span>}
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 mb-1 uppercase">Cover Video</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={e => e.target.files?.[0] && handleMediaUpload(e.target.files[0], 'video')}
+                    className="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-gray-100 file:font-semibold"
+                  />
+                  {uploadingVideo && <span className="text-[9px] text-blue-500 animate-pulse">Uploading...</span>}
+                  {subCatForm.videoUrl && <span className="text-[9px] text-green-600 block mt-1 truncate">{subCatForm.videoUrl}</span>}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Status</label>
+                <select
+                  value={subCatForm.status}
+                  onChange={e => setSubCatForm({ ...subCatForm, status: e.target.value })}
+                  className="w-full p-2 border rounded-xl text-xs focus:outline-none"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingSubCat(null)} className="flex-1 py-2 border rounded-xl text-xs font-semibold hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700">Save</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL 3: ADD/EDIT OPTIONS GROUPS (serviceGroups) */}
+      {editingServiceGroup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="px-5 py-4 border-b flex items-center justify-between bg-gray-50">
+              <h3 className="text-sm font-bold text-gray-800">{editingGroupIdx === 'new' ? 'Add Options Group' : 'Edit Options Group'}</h3>
+              <button onClick={() => setEditingServiceGroup(false)} className="p-1.5 hover:bg-gray-200 rounded-lg"><FiX className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleSaveGroup} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Options Group Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={groupForm.title}
+                  onChange={e => setGroupForm({ ...groupForm, title: e.target.value })}
+                  className="w-full px-3 py-2.5 border rounded-xl text-xs focus:outline-none font-semibold text-gray-800"
+                  placeholder="e.g. Haircut, Massage, Face care"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 py-1">
+                <input
+                  type="checkbox"
+                  id="allowSkip"
+                  checked={groupForm.allowSkip}
+                  onChange={e => setGroupForm({ ...groupForm, allowSkip: e.target.checked })}
+                  className="w-4 h-4 accent-emerald-600"
+                />
+                <label htmlFor="allowSkip" className="text-xs font-semibold text-gray-700 select-none cursor-pointer">Allow skip option ("I don't need this")</label>
+              </div>
+
+              {/* Items checklist */}
+              <div className="space-y-3 border-t pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Configure Sub-items & Prices</span>
+                  <button type="button" onClick={handleAddItemToGroup} className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
+                    + Add Item Option
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+                  {groupForm.items.map((item, i) => (
+                    <div key={i} className="p-3 border rounded-xl space-y-2 bg-gray-50/50 relative">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItemFromGroup(i)}
+                        className="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold text-xs"
+                      >
+                        Remove
+                      </button>
+                      <div className="grid grid-cols-2 gap-2 pr-12">
+                        <input
+                          type="text"
+                          required
+                          value={item.title}
+                          onChange={e => handleUpdateItemInGroup(i, 'title', e.target.value)}
+                          placeholder="Item Name (e.g. Haircut for men)"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white font-semibold"
+                        />
+                        <input
+                          type="number"
+                          required
+                          value={item.price}
+                          onChange={e => handleUpdateItemInGroup(i, 'price', Number(e.target.value))}
+                          placeholder="Price ₹"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white font-bold text-emerald-600"
+                          min="0"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={item.duration || ''}
+                          onChange={e => handleUpdateItemInGroup(i, 'duration', e.target.value)}
+                          placeholder="Duration (e.g. 30 mins)"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white"
+                        />
+                        <input
+                          type="text"
+                          value={item.description || ''}
+                          onChange={e => handleUpdateItemInGroup(i, 'description', e.target.value)}
+                          placeholder="Description / Note"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {groupForm.items.length === 0 && (
+                    <p className="text-xs text-gray-400 py-3 text-center">Click "+ Add Item Option" to insert items like Haircuts, Shaves, etc.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button type="button" onClick={() => setEditingServiceGroup(false)} className="flex-1 py-2.5 border rounded-xl text-xs font-semibold hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700">Save Group</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* MODAL 4: ADD/EDIT COMBO PACKAGES */}
+      {editingCombo && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="px-5 py-4 border-b flex items-center justify-between bg-gray-50">
+              <h3 className="text-sm font-bold text-gray-800">{editingCombo === 'new' ? 'Create Combo Package' : 'Edit Combo Package'}</h3>
+              <button onClick={() => setEditingCombo(null)} className="p-1.5 hover:bg-gray-200 rounded-lg"><FiX className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleSaveCombo} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-gray-600 uppercase">1. Included Packages / Options</label>
+                {activeService.serviceGroups?.map(group => (
+                  <div key={group._id} className="border rounded-xl p-3 space-y-2 bg-gray-50/20">
+                    <span className="text-xs font-bold text-gray-800 block border-b pb-1">{group.title}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                      {group.items?.map(item => {
+                        const isItemIncluded = comboForm.includedItems.some(
+                          inc => String(inc.selectedItemId) === String(item._id)
+                        );
+
+                        const toggleItem = () => {
+                          if (isItemIncluded) {
+                            setComboForm(p => ({
+                              ...p,
+                              includedItems: p.includedItems.filter(i => String(i.selectedItemId) !== String(item._id))
+                            }));
+                          } else {
+                            setComboForm(p => ({
+                              ...p,
+                              includedItems: [...p.includedItems, {
+                                serviceGroupId: group._id,
+                                serviceGroupTitle: group.title,
+                                selectedItemId: item._id,
+                                selectedItemTitle: item.title,
+                                selectedItemDescription: item.description || item.title || ''
+                              }]
+                            }));
+                          }
+                        };
+
+                        return (
+                          <label key={item._id} className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={isItemIncluded}
+                              onChange={toggleItem}
+                              className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                            />
+                            <span className="text-xs text-gray-700 font-semibold">{item.title} (₹{item.price})</span>
+                          </label>
+                        );
+                      })}
+                      {(!group.items || group.items.length === 0) && (
+                        <span className="text-[10px] text-gray-400">No options configured in this group.</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-3 border-t pt-3">
+                <label className="text-xs font-bold text-gray-600 uppercase">2. Combo Package Details</label>
+                <input
+                  type="text"
+                  required
+                  value={comboForm.title}
+                  onChange={e => setComboForm({ ...comboForm, title: e.target.value })}
+                  placeholder="Combo Title (e.g. Haircut + Massage combo)"
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                />
+                <textarea
+                  value={comboForm.description}
+                  onChange={e => setComboForm({ ...comboForm, description: e.target.value })}
+                  rows={2}
+                  placeholder="Short description..."
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none resize-none"
+                />
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 uppercase">Price (Final Customer Charge) *</label>
+                    <input
+                      type="number"
+                      required
+                      value={comboForm.price}
+                      onChange={e => setComboForm({ ...comboForm, price: e.target.value })}
+                      placeholder="Discounted Price"
+                      className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none font-bold text-emerald-600"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 uppercase">Original Price</label>
+                    <input
+                      type="number"
+                      value={comboForm.originalPrice}
+                      onChange={e => setComboForm({ ...comboForm, originalPrice: e.target.value })}
+                      placeholder="Original Price"
+                      className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 uppercase">GST (%)</label>
+                    <input
+                      type="number"
+                      value={comboForm.gstPercentage}
+                      onChange={e => setComboForm({ ...comboForm, gstPercentage: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 uppercase">GST Type</label>
+                    <select
+                      value={comboForm.gstIncluded ? 'true' : 'false'}
+                      onChange={e => setComboForm({ ...comboForm, gstIncluded: e.target.value === 'true' })}
+                      className="w-full p-2 border rounded-xl text-xs focus:outline-none font-semibold text-gray-700 bg-white"
+                    >
+                      <option value="true">GST Included</option>
+                      <option value="false">GST Excluded</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 uppercase">Vendor Payout (₹)</label>
+                    <input
+                      type="number"
+                      value={comboForm.vendorPayout}
+                      onChange={e => setComboForm({ ...comboForm, vendorPayout: e.target.value })}
+                      placeholder="Payout to vendor"
+                      className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none font-bold text-blue-600"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Split Calculation Details Box */}
+                {(() => {
+                  const cp = Number(comboForm.price) || 0;
+                  const gstPct = Number(comboForm.gstPercentage) || 18;
+                  const gstInc = comboForm.gstIncluded !== false;
+                  const vendorPayout = Number(comboForm.vendorPayout) || 0;
+
+                  let basePrice, gstAmount, finalPrice;
+                  if (gstInc) {
+                    finalPrice = cp;
+                    gstAmount = (cp * gstPct) / (100 + gstPct);
+                    basePrice = cp - gstAmount;
+                  } else {
+                    basePrice = cp;
+                    gstAmount = (cp * gstPct) / 100;
+                    finalPrice = cp + gstAmount;
+                  }
+                  const platformEarning = basePrice - vendorPayout;
+
+                  return (
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-2 mt-2">
+                      <div className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Live Split Calculation Details</div>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Customer Pay:</span>
+                            <span className="font-bold text-gray-800">₹{finalPrice.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Taxable Base:</span>
+                            <span className="font-semibold text-gray-700">₹{basePrice.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">GST ({gstPct}%):</span>
+                            <span className="font-semibold text-gray-700">₹{gstAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Platform Profit:</span>
+                            <span className={`font-bold ${platformEarning >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                              ₹{platformEarning.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button type="button" onClick={() => setEditingCombo(null)} className="flex-1 py-2.5 border rounded-xl text-xs font-semibold hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700">Save Combo</button>
+              </div>
+            </form>
+          </motion.div>
         </div>
       )}
     </div>

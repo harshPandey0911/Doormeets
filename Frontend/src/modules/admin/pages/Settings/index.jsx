@@ -930,11 +930,6 @@ const AdminSettings = () => {
                       <p className="text-sm text-gray-500">Total {admins.length} administrators found</p>
                     </div>
                   </div>
-                  <button onClick={() => { setNewAdmin({ name: '', email: '', password: '', role: 'admin', cityId: '' }); setShowAddAdmin(!showAddAdmin); }}
-                    className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg transition-all ${showAddAdmin ? 'bg-gray-100 text-gray-600' : 'bg-amber-600 text-white hover:bg-amber-700 shadow-amber-100'}`}>
-                    {showAddAdmin ? <FiX className="w-4 h-4" /> : <FiPlus className="w-4 h-4" />}
-                    {showAddAdmin ? 'Cancel' : 'Add New Admin'}
-                  </button>
                 </div>
 
                 {/* Add/Edit Admin Form */}
@@ -971,7 +966,10 @@ const AdminSettings = () => {
                           </select>
                         </div>
 
-                        <div className="flex justify-end mt-4">
+                        <div className="flex justify-end gap-3 mt-4">
+                          <button type="button" onClick={() => setShowAddAdmin(false)} className="px-6 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-100 font-medium text-sm">
+                            Cancel
+                          </button>
                           <button type="submit" disabled={adminLoading}
                             className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-60 font-medium text-sm">
                             {adminLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (newAdmin.id ? 'Update Admin' : 'Create Admin')}

@@ -29,6 +29,14 @@ const subCategorySchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  imageUrl: {
+    type: String,
+    default: null
+  },
+  videoUrl: {
+    type: String,
+    default: null
+  },
   status: {
     type: String,
     enum: Object.values(SERVICE_STATUS),

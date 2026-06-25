@@ -310,7 +310,7 @@ const AdminManagement = () => {
           onClick={openCreate}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
         >
-          <FiPlus /> Create Admin
+          <FiPlus /> Create City Admin
         </button>
       </div>
 
@@ -503,7 +503,7 @@ const AdminManagement = () => {
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
                 <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
                   <FiShield className="text-blue-600" />
-                  {editingAdmin ? 'Edit Administrator' : 'Create Administrator'}
+                  {editingAdmin ? 'Edit City Admin' : 'Create City Admin'}
                 </h2>
                 <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg">
                   <FiX />
@@ -540,40 +540,14 @@ const AdminManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Role Preset *</label>
-                    <select
-                      value={rolePreset} 
-                      onChange={e => {
-                        const val = e.target.value;
-                        setRolePreset(val);
-                        if (val !== 'CUSTOM') {
-                          setFormData(p => ({...p, role: val}));
-                        } else {
-                          setFormData(p => ({...p, role: p.role === 'SUPER_ADMIN' || p.role === 'CITY_ADMIN' ? '' : p.role}));
-                        }
-                      }}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="CITY_ADMIN">City Admin</option>
-                      <option value="SUPER_ADMIN">Super Admin</option>
-                      <option value="MANAGER">Manager</option>
-                      <option value="SUPPORT">Support</option>
-                      <option value="OPERATIONS">Operations</option>
-                      <option value="CUSTOM">Custom...</option>
-                    </select>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Role *</label>
+                    <input
+                      type="text"
+                      value={formData.role === 'SUPER_ADMIN' ? 'Super Admin' : formData.role === 'CITY_ADMIN' ? 'City Admin' : formData.role}
+                      disabled
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-500 font-semibold cursor-not-allowed"
+                    />
                   </div>
-                  {rolePreset === 'CUSTOM' && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">Custom Role Name *</label>
-                      <input
-                        type="text" 
-                        value={formData.role} 
-                        onChange={e => setFormData(p => ({...p, role: e.target.value.toUpperCase()}))}
-                        placeholder="e.g. SUPERVISOR, COORDINATOR"
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Assigned Cities - Only show if CITY_ADMIN */}

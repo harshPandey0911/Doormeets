@@ -50,6 +50,24 @@ const PremiumServiceDetailPage = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const videoRef = React.useRef(null);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  useEffect(() => {
+    setIsPlaying(true);
+  }, [activeImageIndex]);
 
   const serviceImages = useMemo(() => {
     if (pageBlocks.length > 0) {
@@ -497,13 +515,14 @@ const PremiumServiceDetailPage = () => {
       >
         {serviceImages[activeImageIndex]?.type === 'video' ? (
           <video
+            ref={videoRef}
             src={serviceImages[activeImageIndex]?.url}
-            controls
             autoPlay
             muted
             loop
             playsInline
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover cursor-pointer"
+            onClick={togglePlay}
           />
         ) : (
           <img
@@ -516,10 +535,13 @@ const PremiumServiceDetailPage = () => {
         {/* Soft Linear Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
         
-        {/* Play Button Overlay (only if video exists) */}
-        {(service.video || service.videoUrl) && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-lg text-gray-800 hover:scale-105 active:scale-95 transition-all">
+        {/* Play Button Overlay (only if video is paused/exists) */}
+        {serviceImages[activeImageIndex]?.type === 'video' && !isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+            <button 
+              onClick={togglePlay}
+              className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-lg text-gray-800 hover:scale-105 active:scale-95 transition-all"
+            >
               <svg className="w-6 h-6 fill-current ml-0.5 text-gray-800" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
@@ -576,6 +598,44 @@ const PremiumServiceDetailPage = () => {
             {service.description}
           </p>
         </div>
+
+        {/* Service Groups Grid (e.g. Haircut, Massage, Shave etc.) */}
+        {service?.serviceType === 'package_base' && service?.serviceGroups?.length > 0 && (
+          <div className="mt-8 space-y-4">
+            <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              Service Categories
+            </h2>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+              {service.serviceGroups.map((group, idx) => {
+                const colors = cardColors[idx % cardColors.length];
+                return (
+                  <div
+                    key={group._id || idx}
+                    className="flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 hover:scale-[1.02] shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+                    style={{
+                      backgroundColor: colors.bg,
+                      borderColor: colors.border,
+                      minHeight: '100px'
+                    }}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/90 flex items-center justify-center mb-2 shadow-sm">
+                      {group.iconUrl ? (
+                        <img src={toAssetUrl(group.iconUrl)} alt={group.title} className="w-6 h-6 object-contain" />
+                      ) : (
+                        <span className="text-sm font-black" style={{ color: colors.text }}>
+                          {group.title ? group.title[0].toUpperCase() : 'S'}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-bold tracking-tight leading-tight line-clamp-2" style={{ color: colors.text }}>
+                      {group.title}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Service Variants styled like the features grid */}
         {variants.length > 0 && (
