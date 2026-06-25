@@ -77,6 +77,9 @@ const Checkout = () => {
   const [serviceWorkflow, setServiceWorkflow] = useState(null);
   const [dynamicAnswers, setDynamicAnswers] = useState({});
   const [uploadingFiles, setUploadingFiles] = useState({});
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
+  const [loyaltyRedemptionRate, setLoyaltyRedemptionRate] = useState(1);
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -223,6 +226,8 @@ const Checkout = () => {
           if (response.success) {
             setVisitedFee(0); // Plans usually have 0 visitor fee
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
+            setLoyaltyPoints(response.user?.loyaltyPoints || 0);
+            setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
 
             if (response.user?.addresses?.length > 0) {
               const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
@@ -245,6 +250,8 @@ const Checkout = () => {
             // Set Config
             setVisitedFee(response.settings?.visitedCharges || 29);
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
+            setLoyaltyPoints(response.user?.loyaltyPoints || 0);
+            setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
 
             // Set Addresses
             if (response.user?.addresses?.length > 0) {
@@ -503,6 +510,7 @@ const Checkout = () => {
         },
 
         paymentMethod: 'online',
+        redeemLoyaltyPoints: useLoyaltyPoints,
         bookedItems: bookedItemsData,
         dynamicFields: dynamicFieldsPayload
       });
@@ -772,6 +780,7 @@ const Checkout = () => {
         // userNotes: null, // Removed per request
         paymentMethod: amountToPay === 0 ? 'plan_benefit' : 'pay_at_home',
         amount: amountToPay,
+        redeemLoyaltyPoints: useLoyaltyPoints,
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
@@ -1285,7 +1294,11 @@ const Checkout = () => {
   const finalVisitedFee = 0;
 
   const promoDiscount = appliedPromo ? appliedPromo.discountAmount : 0;
-  const totalAmount = Math.max(0, itemTotal - promoDiscount + taxesAndFee + finalVisitedFee);
+  const netBeforeLoyalty = Math.max(0, itemTotal - promoDiscount + taxesAndFee + finalVisitedFee);
+  const pointsNeeded = Math.ceil(netBeforeLoyalty / loyaltyRedemptionRate);
+  const maxLoyaltyRedeemable = Math.min(loyaltyPoints, pointsNeeded);
+  const loyaltyDiscount = useLoyaltyPoints ? (maxLoyaltyRedeemable * loyaltyRedemptionRate) : 0;
+  const totalAmount = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
   const amountToPay = totalAmount;
 
   // Helper for Free Plan Full Breakdown Display
@@ -1880,6 +1893,42 @@ const Checkout = () => {
           )}
         </div>
 
+        {/* Loyalty Points Panel */}
+        {loyaltyPoints > 0 && (
+          <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 bg-amber-50 text-amber-500 rounded-xl text-lg shrink-0">
+                  🎁
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Loyalty Points</h3>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Balance: {loyaltyPoints} points (1 Point = ₹{loyaltyRedemptionRate})</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUseLoyaltyPoints(prev => !prev)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                  useLoyaltyPoints ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    useLoyaltyPoints ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {useLoyaltyPoints && maxLoyaltyRedeemable > 0 && (
+              <div className="mt-2.5 pt-2.5 border-t border-dashed flex justify-between text-xs text-green-600 font-medium" style={{ borderColor: 'var(--border)' }}>
+                <span>Points to redeem:</span>
+                <span>-{maxLoyaltyRedeemable} points (Saved ₹{maxLoyaltyRedeemable * loyaltyRedemptionRate})</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Payment Summary */}
         <div className="border-2 rounded-2xl p-5 mb-6 shadow-sm overflow-hidden relative" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           {/* Decorative Background for Header */}
@@ -1923,6 +1972,14 @@ const Checkout = () => {
               <div className="flex justify-between items-center text-green-600">
                 <span className="text-sm font-medium">Plan Credit</span>
                 <span className="text-sm font-bold">-₹{upgradePreview.credit.toLocaleString('en-IN')}</span>
+              </div>
+            )}
+
+            {/* Loyalty Points Discount Row */}
+            {loyaltyDiscount > 0 && (
+              <div className="flex justify-between items-center text-green-600">
+                <span className="text-sm font-medium">Loyalty Discount</span>
+                <span className="text-sm font-bold">-₹{loyaltyDiscount.toLocaleString('en-IN')}</span>
               </div>
             )}
 

@@ -176,9 +176,104 @@ export const isSoundEnabled = (userType = 'vendor') => {
   return true;
 };
 
+let sirenInterval = null;
+let sirenOscillator = null;
+let sirenGain = null;
+let sirenTimeout = null;
+
+export const unlockAudioContext = () => {
+  try {
+    initAudio();
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        console.log('🔊 AudioContext unlocked successfully:', audioContext.state);
+      });
+    }
+  } catch (e) {
+    console.error('Failed to unlock audio context:', e);
+  }
+};
+
+export const playSirenAlarm = () => {
+  try {
+    initAudio();
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    
+    // Stop any existing siren first
+    stopSirenAlarm();
+    
+    sirenOscillator = audioContext.createOscillator();
+    sirenGain = audioContext.createGain();
+    
+    sirenOscillator.type = 'sawtooth';
+    const now = audioContext.currentTime;
+    sirenOscillator.frequency.setValueAtTime(600, now);
+    
+    sirenOscillator.frequency.linearRampToValueAtTime(1000, now + 0.45);
+    
+    sirenOscillator.connect(sirenGain);
+    sirenGain.connect(audioContext.destination);
+    
+    sirenGain.gain.setValueAtTime(0.25, now);
+    
+    sirenOscillator.start(now);
+    
+    let goingUp = true;
+    sirenInterval = setInterval(() => {
+      if (!audioContext || !sirenOscillator) return;
+      const t = audioContext.currentTime;
+      if (goingUp) {
+        sirenOscillator.frequency.linearRampToValueAtTime(500, t + 0.4);
+      } else {
+        sirenOscillator.frequency.linearRampToValueAtTime(950, t + 0.4);
+      }
+      goingUp = !goingUp;
+    }, 450);
+    
+    // Auto stop after 30 seconds
+    sirenTimeout = setTimeout(() => {
+      stopSirenAlarm();
+    }, 30000);
+
+    return true;
+  } catch (error) {
+    console.error('Error starting siren alarm:', error);
+    return false;
+  }
+};
+
+export const stopSirenAlarm = () => {
+  if (sirenTimeout) {
+    clearTimeout(sirenTimeout);
+    sirenTimeout = null;
+  }
+  if (sirenInterval) {
+    clearInterval(sirenInterval);
+    sirenInterval = null;
+  }
+  if (sirenOscillator) {
+    try {
+      sirenOscillator.stop();
+      sirenOscillator.disconnect();
+    } catch (e) {}
+    sirenOscillator = null;
+  }
+  if (sirenGain) {
+    try {
+      sirenGain.disconnect();
+    } catch (e) {}
+    sirenGain = null;
+  }
+};
+
 export default {
   playNotificationSound,
   playSingleBeep,
   playAlertRing,
-  isSoundEnabled
+  isSoundEnabled,
+  playSirenAlarm,
+  stopSirenAlarm,
+  unlockAudioContext
 };

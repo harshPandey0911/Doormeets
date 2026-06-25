@@ -64,7 +64,8 @@ const iconMap = {
   "Stock Management": FiBox,
   "Vendor Subscriptions": FiDollarSign,
   "Vendor Requests": FiInbox,
-  "Package based": FiPackage
+  "Package based": FiPackage,
+  "SOS Alerts": FiShield
 };
 
 // Helper function to convert child name to route path
@@ -111,7 +112,8 @@ const getChildRoute = (parentRoute, childName) => {
       "Banners & Categories": "/admin/user-categories/home",
       "Combined Categories": "/admin/user-categories/combined-categories",
       "Top Brands & Featured": "/admin/user-categories/featured-sections",
-      "Popular Services": "/admin/user-categories/popular-services"
+      "Popular Services": "/admin/user-categories/popular-services",
+      "Loyalty Points Settings": "/admin/user-categories/loyalty-points"
     },
     "/admin/management": {
       "Minute based": "/admin/user-categories/templates/MINUTE_BASED/manage",
@@ -180,6 +182,7 @@ const permissionMap = {
   "Training": "manage_training",
   "Vendor Requests": "view_vendor_requests",
   "Support": "manage_support",
+  "SOS Alerts": "manage_support",
   "User Catalog": "propose_categories",
   "Management": "propose_categories",
   "Package based": "propose_categories",

@@ -52,7 +52,8 @@ const createBooking = async (req, res) => {
       bookingType, // Extract bookingType
       isConsultation,
       promoCode,
-      dynamicFields
+      dynamicFields,
+      redeemLoyaltyPoints
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -80,7 +81,7 @@ const createBooking = async (req, res) => {
     // 1. Parallel Fetching: Service and User
     const [service, user] = await Promise.all([
       Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds type').lean(),
-      User.findById(userId).select('name phone wallet plans')
+      User.findById(userId).select('name phone wallet plans loyaltyPoints')
     ]);
 
     if (!service) {
@@ -308,14 +309,34 @@ const createBooking = async (req, res) => {
       }
     }
 
+    // Calculate Loyalty Points Redemption
+    let pointsToRedeem = 0;
+    if (redeemLoyaltyPoints && (paymentMethod === 'razorpay' || paymentMethod === 'wallet' || paymentMethod === 'online' || paymentMethod === 'pay_at_home' || paymentMethod === 'cash')) {
+      const orderNetValue = Math.max(0, basePrice - discount + tax + visitingCharges);
+      const Settings = require('../../models/Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      const redemptionRate = globalSettings?.loyaltyPointsRedemptionRate !== undefined ? globalSettings.loyaltyPointsRedemptionRate : 1;
+      
+      const pointsNeeded = Math.ceil(orderNetValue / redemptionRate);
+      pointsToRedeem = Math.min(user.loyaltyPoints || 0, pointsNeeded);
+      const loyaltyDiscount = pointsToRedeem * redemptionRate;
+      
+      if (pointsToRedeem > 0) {
+        finalAmount = Math.max(0, finalAmount - loyaltyDiscount);
+        user.loyaltyPoints = (user.loyaltyPoints || 0) - pointsToRedeem;
+      }
+    }
+
     // NOTE: vendor earnings are NOT calculated at booking creation.
     // They are computed ONLY at bill generation (completeSelfJob) and stored in VendorBill.
     // This prevents inconsistency between Booking and VendorBill.
-    console.log(`[CreateBooking] Payment=${paymentMethod}, FinalAmount=${finalAmount}, Penalty=${pendingPenalty}`);
+    console.log(`[CreateBooking] Payment=${paymentMethod}, FinalAmount=${finalAmount}, Penalty=${pendingPenalty}, pointsToRedeem=${pointsToRedeem}`);
 
-    // Clear penalty from user wallet if we charged it
-    if (pendingPenalty > 0) {
-      user.wallet.penalty = 0;
+    // Save user if we modified penalty or points
+    if (pendingPenalty > 0 || pointsToRedeem > 0) {
+      if (pendingPenalty > 0) {
+        user.wallet.penalty = 0;
+      }
       await user.save();
     }
 
@@ -388,6 +409,7 @@ const createBooking = async (req, res) => {
       visitingCharges,
       finalAmount,
       userPayableAmount: finalAmount,
+      loyaltyPointsRedeemed: pointsToRedeem,
       address: {
         type: address.type || 'home',
         addressLine1: address.addressLine1,
@@ -421,6 +443,25 @@ const createBooking = async (req, res) => {
       await scheduleVisitsForBooking(booking);
     } catch (schedErr) {
       console.error('[CreateBooking] Workflow visits scheduling failed:', schedErr);
+    }
+
+    // Create Loyalty Points debit transaction log
+    if (pointsToRedeem > 0) {
+      try {
+        const Transaction = require('../../models/Transaction');
+        await Transaction.create({
+          userId: user._id,
+          bookingId: booking._id,
+          type: 'debit',
+          amount: pointsToRedeem,
+          status: 'completed',
+          paymentMethod: 'system',
+          description: `Redeemed ${pointsToRedeem} Loyalty Points for booking ${booking.bookingNumber}`,
+          metadata: { type: 'loyalty_points', pointsRedeemed: pointsToRedeem }
+        });
+      } catch (txErr) {
+        console.error('[CreateBooking] Error creating loyalty points transaction log:', txErr);
+      }
     }
 
     // --- IMMEDIATE RESPONSE ---

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud } from 'react-icons/fi';
 import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus, uploadWelcomeVideo } from '../../services/settingsService';
@@ -7,6 +8,7 @@ import CityManagement from '../Cities';
 import { toast } from 'react-hot-toast';
 
 const AdminSettings = () => {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     workerAutoAssignment: true,
   });
@@ -27,7 +29,9 @@ const AdminSettings = () => {
     waveDuration: 60,
     searchRadius: 10,
     isOnlinePaymentEnabled: true,
-    mcqTimeLimitMinutes: 30
+    mcqTimeLimitMinutes: 30,
+    loyaltyPointsEarningRate: 1,
+    loyaltyPointsRedemptionRate: 1
   });
 
   // Billing Configuration State
@@ -132,7 +136,9 @@ const AdminSettings = () => {
             cancellationPenalty: res.settings.cancellationPenalty !== undefined ? res.settings.cancellationPenalty : 49,
             searchRadius: res.settings.searchRadius || 10,
             isOnlinePaymentEnabled: res.settings.isOnlinePaymentEnabled !== undefined ? res.settings.isOnlinePaymentEnabled : true,
-            mcqTimeLimitMinutes: res.settings.mcqTimeLimitMinutes !== undefined ? res.settings.mcqTimeLimitMinutes : 30
+            mcqTimeLimitMinutes: res.settings.mcqTimeLimitMinutes !== undefined ? res.settings.mcqTimeLimitMinutes : 30,
+            loyaltyPointsEarningRate: res.settings.loyaltyPointsEarningRate !== undefined ? res.settings.loyaltyPointsEarningRate : 1,
+            loyaltyPointsRedemptionRate: res.settings.loyaltyPointsRedemptionRate !== undefined ? res.settings.loyaltyPointsRedemptionRate : 1
           });
           // Load billing settings
           setBillingSettings({
@@ -544,6 +550,16 @@ const AdminSettings = () => {
           <p className="text-sm text-gray-500">Upload and manage the background video shown on the welcome/splash screen</p>
         </div>
       )}
+
+      {/* SOS Alerts Settings Card */}
+      <div onClick={() => navigate('/admin/sos-alerts')}
+        className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+        <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
+          <FiShield className="w-6 h-6 text-red-600 animate-pulse" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">SOS Alerts</h3>
+        <p className="text-sm text-gray-500">View logged customer distress signals, live locations and resolution details</p>
+      </div>
     </div>
   );
 

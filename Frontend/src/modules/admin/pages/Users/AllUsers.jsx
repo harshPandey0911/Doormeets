@@ -124,6 +124,7 @@ const AllUsers = () => {
                 <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">User</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contact</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Loyalty Points</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Joined Date</th>
                 <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
@@ -131,11 +132,11 @@ const AllUsers = () => {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-xs text-gray-500">Loading users...</td>
+                  <td colSpan="6" className="px-4 py-8 text-center text-xs text-gray-500">Loading users...</td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-xs text-gray-500">No users found</td>
+                  <td colSpan="6" className="px-4 py-8 text-center text-xs text-gray-500">No users found</td>
                 </tr>
               ) : (
                 users.map((user) => (
@@ -169,6 +170,11 @@ const AllUsers = () => {
                         : 'bg-red-100 text-red-700'
                         }`}>
                         {user.isActive ? 'Active' : 'Blocked'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+                        {user.loyaltyPoints !== undefined ? user.loyaltyPoints : 0} pts
                       </span>
                     </td>
                     <td className="px-4 py-3">

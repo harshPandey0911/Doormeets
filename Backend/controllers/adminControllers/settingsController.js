@@ -60,7 +60,11 @@ exports.updateSettings = async (req, res, next) => {
       mcqMinScoreL1,
       mcqMinScoreL2,
       welcomeVideoUrl,
-      commissionPercentage
+      commissionPercentage,
+      loyaltyPointsEarningRate,
+      loyaltyPointsRedemptionRate,
+      loyaltyPointsCancellationPenalty,
+      loyaltyPointsFixedCompletionAward
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -86,7 +90,11 @@ exports.updateSettings = async (req, res, next) => {
         mcqMinScoreL1,
         mcqMinScoreL2,
         welcomeVideoUrl,
-        commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 20
+        commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 20,
+        loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : 1,
+        loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : 1,
+        loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : 0,
+        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 0
       });
     } else {
       // Update fields if provided
@@ -146,6 +154,10 @@ exports.updateSettings = async (req, res, next) => {
       if (mcqMinScoreL2 !== undefined) settings.mcqMinScoreL2 = mcqMinScoreL2;
       if (welcomeVideoUrl !== undefined) settings.welcomeVideoUrl = welcomeVideoUrl;
       if (commissionPercentage !== undefined) settings.commissionPercentage = Number(commissionPercentage);
+      if (loyaltyPointsEarningRate !== undefined) settings.loyaltyPointsEarningRate = Number(loyaltyPointsEarningRate);
+      if (loyaltyPointsRedemptionRate !== undefined) settings.loyaltyPointsRedemptionRate = Number(loyaltyPointsRedemptionRate);
+      if (loyaltyPointsCancellationPenalty !== undefined) settings.loyaltyPointsCancellationPenalty = Number(loyaltyPointsCancellationPenalty);
+      if (loyaltyPointsFixedCompletionAward !== undefined) settings.loyaltyPointsFixedCompletionAward = Number(loyaltyPointsFixedCompletionAward);
 
       await settings.save();
     }
@@ -209,7 +221,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward');
 
     // Default if not found (fallback values)
     if (!settings) {
