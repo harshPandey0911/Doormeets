@@ -70,7 +70,8 @@ const getPublicCategories = async (req, res) => {
     });
 
     const categories = await Category.find(query)
-      .select('title slug homeIconUrl homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers')
+      .select('title slug homeIconUrl homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers isGroupCategory mappedCategories')
+      .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status', match: { status: { $in: ['active', 'coming_soon'] } } })
       .sort({ homeOrder: 1, createdAt: -1 })
       .lean();
 
@@ -101,7 +102,14 @@ const getPublicCategories = async (req, res) => {
         categoryType: cat.categoryType || 'service',
         status: cat.status || 'active',
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
-        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false
+        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
+        isGroupCategory: cat.isGroupCategory || false,
+        mappedCategories: (cat.mappedCategories || []).map(mc => ({
+          id: mc._id ? mc._id.toString() : mc.toString(),
+          title: mc.title,
+          slug: mc.slug,
+          icon: mc.homeIconUrl || ''
+        }))
       }));
 
     res.status(200).json({
@@ -1055,7 +1063,8 @@ const getPublicHomeData = async (req, res) => {
           { cityIds: { $size: 0 } }
         ] : [{ status: { $in: ['active', 'coming_soon'] } }]
       })
-        .select('title slug homeIconUrl homeBadge hasSaleBadge categoryType status interestedUsers')
+        .select('title slug homeIconUrl homeBadge hasSaleBadge categoryType status interestedUsers isGroupCategory mappedCategories')
+        .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status', match: { status: { $in: ['active', 'coming_soon'] } } })
         .sort({ homeOrder: 1 })
         .lean(),
       HomeContent.getHomeContent(cityId)
@@ -1086,7 +1095,14 @@ const getPublicHomeData = async (req, res) => {
         categoryType: cat.categoryType || 'service',
         status: cat.status || 'active',
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
-        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false
+        isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
+        isGroupCategory: cat.isGroupCategory || false,
+        mappedCategories: (cat.mappedCategories || []).map(mc => ({
+          id: mc._id ? mc._id.toString() : mc.toString(),
+          title: mc.title,
+          slug: mc.slug,
+          icon: mc.homeIconUrl || ''
+        }))
       }));
 
     // Deduplicate by title to prevent duplicate icons on home page

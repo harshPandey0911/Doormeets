@@ -5,6 +5,7 @@ import { ensureIds, loadCatalog } from "./utils";
 import HomePage from "./pages/HomePage";
 import ProfessionsPage from "./pages/ProfessionsPage";
 import CategoriesPage from "./pages/CategoriesPage";
+import CombinedCategoriesPage from "./pages/CombinedCategoriesPage";
 import ServicesPage from "./pages/ServicesPage";
 import BrandsPage from "./pages/BrandsPage";
 import SubCategoriesPage from "./pages/SubCategoriesPage";
@@ -123,6 +124,7 @@ const UserCategories = () => {
         <Routes>
           <Route index element={<Navigate to="/admin/user-categories/home" replace />} />
           <Route path="home" element={<HomePage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
+          <Route path="combined-categories" element={<CombinedCategoriesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
           <Route path="professions" element={<ProfessionsPage selectedCity={selectedCity} />} />
           <Route path="categories" element={<CategoriesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
           <Route path="templates" element={<Navigate to="/admin/user-categories/home" replace />} />

@@ -109,6 +109,7 @@ const getChildRoute = (parentRoute, childName) => {
     },
     "/admin/home-management": {
       "Banners & Categories": "/admin/user-categories/home",
+      "Combined Categories": "/admin/user-categories/combined-categories",
       "Top Brands & Featured": "/admin/user-categories/featured-sections",
       "Popular Services": "/admin/user-categories/popular-services"
     },

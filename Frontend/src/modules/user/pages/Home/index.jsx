@@ -25,6 +25,7 @@ const ReferEarnSection = lazy(() => import('./components/ReferEarnSection'));
 import CategoryModal from './components/CategoryModal';
 import SearchOverlay from './components/SearchOverlay';
 import OfferBannerSlider from './components/OfferBannerSlider';
+import GroupCategoryBottomSheet from './components/GroupCategoryBottomSheet';
 import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
@@ -256,6 +257,7 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [comingSoonCategory, setComingSoonCategory] = useState(null);
+  const [groupCategorySheet, setGroupCategorySheet] = useState({ open: false, category: null });
   const [currentStackIndex, setCurrentStackIndex] = useState(0);
   const [pastServices, setPastServices] = useState([]);
   const [pastServicesLoading, setPastServicesLoading] = useState(false);
@@ -290,7 +292,14 @@ const Home = () => {
               categoryType: cat.categoryType || 'service',
               status: cat.status || 'active',
               interestedCount: cat.interestedCount || 0,
-              isInterested: cat.isInterested || false
+              isInterested: cat.isInterested || false,
+              isGroupCategory: cat.isGroupCategory || false,
+              mappedCategories: (cat.mappedCategories || []).map(mc => ({
+                id: mc.id,
+                title: mc.title,
+                slug: mc.slug,
+                icon: toAssetUrl(mc.icon)
+              }))
             }));
             setCategories(mappedCategories);
           }
@@ -430,6 +439,11 @@ const Home = () => {
       setComingSoonCategory(category);
       return;
     }
+    // If this is a group category, open the bottom sheet instead of navigating
+    if (category.isGroupCategory && Array.isArray(category.mappedCategories) && category.mappedCategories.length > 0) {
+      setGroupCategorySheet({ open: true, category });
+      return;
+    }
     navigate(`/user/category/${category.slug || category.id}`, { state: { category } });
   };
 
@@ -555,6 +569,15 @@ const Home = () => {
 
   return (
   <div className="min-h-screen pb-20 relative" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Group Category Bottom Sheet */}
+      <GroupCategoryBottomSheet
+        isOpen={groupCategorySheet.open}
+        onClose={() => setGroupCategorySheet({ open: false, category: null })}
+        category={groupCategorySheet.category}
+        onCategoryClick={(childCat) => {
+          navigate(`/user/category/${childCat.slug || childCat.id}`, { state: { category: childCat } });
+        }}
+      />
       {/* Refined Premium Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
@@ -680,7 +703,7 @@ const Home = () => {
                     style={{ backgroundColor: 'var(--background)' }}
                   >
                     <ServiceCategories
-                      categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
+                      categories={categories.filter(c => c.isGroupCategory && c.categoryType === 'service' && c.status !== 'coming_soon')}
                       onCategoryClick={handleCategoryClick}
                       title="Categories"
                       subtitle="Premium Home Services"
@@ -688,14 +711,14 @@ const Home = () => {
                   </motion.section>
  
                   {/* Products & Materials Section */}
-                  {categories.some(c => c.categoryType === 'product') && (
+                  {categories.some(c => c.isGroupCategory && c.categoryType === 'product') && (
                     <motion.section 
                       variants={itemVariants} 
                       className="relative overflow-hidden py-2"
                       style={{ backgroundColor: 'var(--background)' }}
                     >
                       <ServiceCategories
-                        categories={categories.filter(c => c.categoryType === 'product' && c.status !== 'coming_soon')}
+                        categories={categories.filter(c => c.isGroupCategory && c.categoryType === 'product' && c.status !== 'coming_soon')}
                         onCategoryClick={handleCategoryClick}
                         title="Products & Materials"
                         subtitle="Quality building materials"
@@ -1109,7 +1132,7 @@ const Home = () => {
       </motion.div>
 
       {/* Bottom Navigation */}
-      {!isAddressModalOpen && <BottomNav />}
+      {!isAddressModalOpen && !groupCategorySheet.open && <BottomNav />}
 
       {/* Category Modal */}
       <CategoryModal

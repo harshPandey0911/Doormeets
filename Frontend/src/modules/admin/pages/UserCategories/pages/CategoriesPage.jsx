@@ -57,6 +57,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     status: "active",
     allCities: true,        // true = available in all cities
     cityIds: [],            // specific city IDs when allCities is false
+    isGroupCategory: false, // Group category toggle
+    mappedCategories: [],   // IDs of mapped child categories
   });
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -121,6 +123,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             interestedCount: cat.interestedCount || 0,
             homeOrder: cat.homeOrder || 0,
             cityIds: (cat.cityIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
+            isGroupCategory: cat.isGroupCategory || false,
+            mappedCategories: (cat.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
           }));
 
           // Update catalog with fetched categories
@@ -163,6 +167,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         status: "active",
         allCities: true,
         cityIds: [],
+        isGroupCategory: false,
+        mappedCategories: [],
       });
       return;
     }
@@ -190,6 +196,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       status: safe.status || "active",
       allCities: existingCityIds.length === 0,
       cityIds: existingCityIds,
+      isGroupCategory: safe.isGroupCategory || false,
+      mappedCategories: (safe.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
     });
   }, [editing]);
 
@@ -219,6 +227,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       status: "active",
       allCities: true,
       cityIds: [],
+      isGroupCategory: false,
+      mappedCategories: [],
     });
     setIsModalOpen(false);
   };
@@ -329,6 +339,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         status,
         cityIds: finalCityIds,
         updateCityIds: finalCityIds,
+        isGroupCategory: Boolean(form.isGroupCategory),
+        mappedCategories: form.isGroupCategory ? (form.mappedCategories || []) : [],
       };
 
       if (editingId && !editingId.startsWith('ucat-')) {
@@ -366,6 +378,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
           status: cat.status || existing?.status || "active",
           interestedCount: cat.interestedCount ?? existing?.interestedCount ?? 0,
           cityIds: (cat.cityIds || existing?.cityIds || []).filter(Boolean).map(id => typeof id === 'object' ? (id._id || String(id)) : String(id)),
+          isGroupCategory: cat.isGroupCategory !== undefined ? cat.isGroupCategory : (existing?.isGroupCategory || false),
+          mappedCategories: (cat.mappedCategories || existing?.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
         };
       };
 
@@ -714,6 +728,12 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
                               {c.vendorId.businessName || c.vendorId.name || 'Vendor Created'}
                             </span>
                           )}
+                          {c.isGroupCategory && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-500 text-white shadow-sm">
+                              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z"/></svg>
+                              Group ({(c.mappedCategories || []).length})
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">{c.slug || "—"}</div>
                       </div>
@@ -1001,6 +1021,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
               Has Subcategory
             </label>
           </div>
+
+
 
           <div className="flex gap-3 pt-4">
             <button

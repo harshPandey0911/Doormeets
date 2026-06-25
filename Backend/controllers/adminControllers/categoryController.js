@@ -61,6 +61,8 @@ const getAllCategories = async (req, res) => {
         categoryType: cat.categoryType,
         vendorId: cat.vendorId,
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
+        isGroupCategory: cat.isGroupCategory || false,
+        mappedCategories: (cat.mappedCategories || []).map(id => (id && typeof id === 'object') ? id.toString() : String(id)),
         createdAt: cat.createdAt,
         updatedAt: cat.updatedAt
       }))
@@ -175,7 +177,9 @@ const createCategory = async (req, res) => {
       metaTitle,
       metaDescription,
       cityIds,
-      categoryType
+      categoryType,
+      isGroupCategory,
+      mappedCategories
     } = req.body;
 
     console.log('Creating category with payload:', req.body);
@@ -305,7 +309,9 @@ const createCategory = async (req, res) => {
       enableWarranty: enableWarranty !== undefined ? Boolean(enableWarranty) : false,
       enableMultiVisit: enableMultiVisit !== undefined ? Boolean(enableMultiVisit) : false,
       enablePricingMatrix: enablePricingMatrix !== undefined ? Boolean(enablePricingMatrix) : true,
-      createdBy: req.user.id
+      createdBy: req.user.id,
+      isGroupCategory: isGroupCategory !== undefined ? Boolean(isGroupCategory) : false,
+      mappedCategories: Array.isArray(mappedCategories) ? mappedCategories : []
     });
 
     res.status(201).json({
@@ -337,6 +343,8 @@ const createCategory = async (req, res) => {
         enablePricingMatrix: category.enablePricingMatrix !== false,
         cityIds: category.cityIds || [],
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
+        isGroupCategory: category.isGroupCategory || false,
+        mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }
@@ -400,7 +408,9 @@ const updateCategory = async (req, res) => {
       enableConsultantBooking,
       enableWarranty,
       enableMultiVisit,
-      enablePricingMatrix
+      enablePricingMatrix,
+      isGroupCategory,
+      mappedCategories
     } = req.body;
 
     const category = await Category.findById(id);
@@ -476,6 +486,11 @@ const updateCategory = async (req, res) => {
       category.cityIds = updateCityIds;
       category.markModified('cityIds'); // Explicitly mark modified for array
     }
+    if (isGroupCategory !== undefined) category.isGroupCategory = Boolean(isGroupCategory);
+    if (mappedCategories !== undefined) {
+      category.mappedCategories = Array.isArray(mappedCategories) ? mappedCategories : [];
+      category.markModified('mappedCategories');
+    }
 
     await category.save();
 
@@ -509,6 +524,8 @@ const updateCategory = async (req, res) => {
         vendorId: category.vendorId,
         cityIds: (category.cityIds || []).map(id => id.toString()),
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
+        isGroupCategory: category.isGroupCategory || false,
+        mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }

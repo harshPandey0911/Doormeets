@@ -143,6 +143,16 @@ const categorySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: []
+  }],
+  // Group Category (Urban Company style: one card shows multiple categories)
+  isGroupCategory: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  mappedCategories: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category'
   }]
 }, {
   timestamps: true
