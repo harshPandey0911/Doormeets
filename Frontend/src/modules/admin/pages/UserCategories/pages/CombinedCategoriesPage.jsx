@@ -201,7 +201,8 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
       publicCatalogService.invalidateCache();
     } catch (error) {
       console.error('Upsert combined category error:', error);
-      toast.error(error.message || 'Failed to save box');
+      const msg = error.response?.data?.message || error.message || 'Failed to save box';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

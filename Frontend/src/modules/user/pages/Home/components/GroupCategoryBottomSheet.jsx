@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import DynamicIcon from '../../../../../components/DynamicIcon';
 
 const toAssetUrl = (url) => {
@@ -55,7 +56,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
     { bg: '#FFF1F2', border: '#FEE2E2', text: '#991B1B' },
   ];
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -203,7 +204,8 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 

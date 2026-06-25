@@ -176,6 +176,8 @@ export const ensureIds = (catalog) => {
       enableWarranty: c.enableWarranty || false,
       enableMultiVisit: c.enableMultiVisit || false,
       enablePricingMatrix: c.enablePricingMatrix !== false,
+      isGroupCategory: Boolean(c.isGroupCategory),
+      mappedCategories: Array.isArray(c.mappedCategories) ? c.mappedCategories : []
     })),
     services: (catalog.services || []).map((s) => ({
       id: s.id || `usvc-${Date.now()}-${Math.random().toString(16).slice(2)}`,
