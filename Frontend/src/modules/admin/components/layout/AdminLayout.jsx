@@ -16,15 +16,32 @@ const AdminLayout = () => {
   const topPadding = headerHeight + 8;
   const bottomPadding = bottomNavHeight + 8;
 
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('adminSidebarCollapsed') === 'true';
+  });
+
+  const toggleCollapse = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('adminSidebarCollapsed', String(next));
+      return next;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <AdminSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={toggleCollapse}
+      />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-[278px] min-w-0 max-w-full overflow-x-hidden transition-all duration-300">
+      <div className={`flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden transition-all duration-300 ${isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[320px]'}`}>
         {/* Header */}
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
+        <AdminHeader onMenuClick={() => setSidebarOpen(true)} isCollapsed={isCollapsed} />
 
         {/* Page Content - with dynamic padding to account for fixed header and bottom nav */}
         <main

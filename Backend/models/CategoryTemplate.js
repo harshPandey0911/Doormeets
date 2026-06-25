@@ -10,7 +10,7 @@ const categoryTemplateSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    enum: ['MINUTE_BASED', 'PACKAGE_BASED', 'IMAGE_CONSULTANT', 'MULTI_VISIT', 'SERVICE_PAGE'],
+    enum: ['MINUTE_BASED', 'PACKAGE_BASED', 'IMAGE_CONSULTANT', 'MULTI_VISIT', 'SERVICE_PAGE', 'NORMAL_SERVICE', 'SUBSCRIPTION_BASED'],
     index: true
   },
   schema: mongoose.Schema.Types.Mixed,

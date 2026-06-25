@@ -80,6 +80,26 @@ const defaultTemplates = [
       { id: 'comparison', name: 'Comparison Section', enabled: true },
       { id: 'offer-banner', name: 'Offer Banner', enabled: true }
     ]
+  },
+  {
+    name: 'Normal Service',
+    code: 'NORMAL_SERVICE',
+    schema: {
+      fields: []
+    },
+    blocks: []
+  },
+  {
+    name: 'Subscription Based Service',
+    code: 'SUBSCRIPTION_BASED',
+    schema: {
+      fields: [
+        { name: 'validityDays', label: 'Validity (Days)', type: 'number', required: true, default: 30 },
+        { name: 'visitsCredits', label: 'Visits / Credits', type: 'number', required: true, default: 4 },
+        { name: 'benefits', label: 'Benefits (comma separated)', type: 'textarea', required: false }
+      ]
+    },
+    blocks: []
   }
 ];
 

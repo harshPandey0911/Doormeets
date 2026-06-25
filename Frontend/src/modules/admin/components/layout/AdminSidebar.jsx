@@ -13,6 +13,9 @@ import {
   FiBell,
   FiSettings,
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiSearch,
   FiX,
   FiPackage,
   FiTrash2,
@@ -24,6 +27,7 @@ import {
   FiBox,
   FiInbox,
   FiGift,
+  FiSliders,
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
@@ -38,6 +42,8 @@ const iconMap = {
   Workers: FiUser,
   Bookings: FiShoppingBag,
   "User Catalog": FiGrid,
+  Management: FiSliders,
+  "Home Management": FiGrid,
   "Vendor Services": FiGrid,
   "Vendor Parts": FiPackage,
   Payments: FiDollarSign,
@@ -57,7 +63,8 @@ const iconMap = {
   "Offer Banners": FiShoppingBag,
   "Stock Management": FiBox,
   "Vendor Subscriptions": FiDollarSign,
-  "Vendor Requests": FiInbox
+  "Vendor Requests": FiInbox,
+  "Package based": FiPackage
 };
 
 // Helper function to convert child name to route path
@@ -99,6 +106,18 @@ const getChildRoute = (parentRoute, childName) => {
       "Manage Professions": "/admin/user-categories/professions",
       "Category Templates": "/admin/user-categories/templates",
       "Featured Sections": "/admin/user-categories/featured-sections"
+    },
+    "/admin/home-management": {
+      "Banners & Categories": "/admin/user-categories/home",
+      "Top Brands & Featured": "/admin/user-categories/featured-sections",
+      "Popular Services": "/admin/user-categories/popular-services"
+    },
+    "/admin/management": {
+      "Minute based": "/admin/user-categories/templates/MINUTE_BASED/manage",
+      "Normal service": "/admin/user-categories/templates/NORMAL_SERVICE/manage",
+      "Subscription based": "/admin/user-categories/templates/SUBSCRIPTION_BASED/manage",
+      "Image based": "/admin/user-categories/templates/IMAGE_CONSULTANT/manage",
+      "Multi Visit": "/admin/user-categories/templates/MULTI_VISIT/manage"
     },
     "/admin/payments": {
       "Payment Overview": "/admin/payments/overview",
@@ -161,6 +180,9 @@ const permissionMap = {
   "Vendor Requests": "view_vendor_requests",
   "Support": "manage_support",
   "User Catalog": "propose_categories",
+  "Management": "propose_categories",
+  "Package based": "propose_categories",
+  "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",
   "Stock Management": "manage_stock",
@@ -169,12 +191,13 @@ const permissionMap = {
   "Police Verification": "view_police_verification",
 };
 
-const AdminSidebar = ({ isOpen, onClose }) => {
+const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { admin, role, isSuperAdmin, isCityAdmin, hasPermission } = useAdminRole();
   const [expandedItems, setExpandedItems] = useState({});
   const [isMobile, setIsMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [counts, setCounts] = useState({
     bookings: 0,
     vendors: 0,
@@ -227,6 +250,26 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
     return allowedByRole;
   }), [role, isSuperAdmin, isCityAdmin, hasPermission]);
+
+  // Filter menu items by search query
+  const searchedMenu = useMemo(() => {
+    if (!searchQuery.trim()) return filteredMenu;
+    const query = searchQuery.toLowerCase();
+    return filteredMenu.map(item => {
+      const parentMatches = item.title.toLowerCase().includes(query);
+      const matchingChildren = item.children ? item.children.filter(child =>
+        child.toLowerCase().includes(query)
+      ) : [];
+
+      if (parentMatches || matchingChildren.length > 0) {
+        return {
+          ...item,
+          children: matchingChildren.length > 0 ? matchingChildren : item.children
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  }, [filteredMenu, searchQuery]);
 
   // Fetch pending counts for badges
   useEffect(() => {
@@ -359,59 +402,75 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems[item.title];
     const active = isActive(item.route);
+    const hasCount = (
+      (item.title === "Bookings" && counts.bookings > 0) ||
+      (item.title === "Vendors" && counts.vendors > 0) ||
+      (item.title === "Settlements" && (counts.withdrawals + counts.pendingSettlements) > 0) ||
+      (item.title === "Scrap Items" && counts.scraps > 0) ||
+      (item.title === "Vendor Requests" && counts.vendorRequests > 0)
+    );
 
     return (
       <div key={item.route} className="mb-1">
         {/* Main Menu Item */}
         <div
+          title={isCollapsed ? item.title : undefined}
           className={`
-            flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 cursor-pointer
+            flex items-center gap-3 transition-all duration-200 cursor-pointer
+            ${isCollapsed 
+              ? "w-12 h-12 justify-center mx-auto rounded-xl p-0" 
+              : "px-4 py-3.5 rounded-xl"
+            }
             ${active
               ? "bg-primary-600 text-white shadow-sm"
               : "text-gray-300 hover:bg-slate-700"
             }
           `}
           onClick={() => {
-            if (hasChildren) {
+            if (hasChildren && !isCollapsed) {
               toggleExpand(item.title, true);
             } else {
               handleMenuItemClick(item.route);
             }
           }}>
-          <Icon
-            className={`text-xl flex-shrink-0 ${active ? "text-white" : "text-gray-400"
-              }`}
-          />
-          <span className="font-semibold flex-1 text-base">{item.title}</span>
+          <div className="relative flex items-center justify-center flex-shrink-0">
+            <Icon
+              className={`text-xl ${active ? "text-white" : "text-gray-400"}`}
+            />
+            {isCollapsed && hasCount && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm animate-pulse border-2 border-slate-800" />
+            )}
+          </div>
+          {!isCollapsed && <span className="font-semibold flex-1 text-base">{item.title}</span>}
 
           {/* Badge Display */}
-          {item.title === "Bookings" && counts.bookings > 0 && (
+          {!isCollapsed && item.title === "Bookings" && counts.bookings > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse mr-2">
               {counts.bookings > 99 ? '99+' : counts.bookings}
             </span>
           )}
-          {item.title === "Vendors" && counts.vendors > 0 && (
+          {!isCollapsed && item.title === "Vendors" && counts.vendors > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse mr-2">
               {counts.vendors > 99 ? '99+' : counts.vendors}
             </span>
           )}
-          {item.title === "Settlements" && (counts.withdrawals + counts.pendingSettlements) > 0 && (
+          {!isCollapsed && item.title === "Settlements" && (counts.withdrawals + counts.pendingSettlements) > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse mr-2">
               {(counts.withdrawals + counts.pendingSettlements) > 99 ? '99+' : (counts.withdrawals + counts.pendingSettlements)}
             </span>
           )}
-          {item.title === "Scrap Items" && counts.scraps > 0 && (
+          {!isCollapsed && item.title === "Scrap Items" && counts.scraps > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse mr-2">
               {counts.scraps > 99 ? '99+' : counts.scraps}
             </span>
           )}
-          {item.title === "Vendor Requests" && counts.vendorRequests > 0 && (
+          {!isCollapsed && item.title === "Vendor Requests" && counts.vendorRequests > 0 && (
             <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse mr-2">
               {counts.vendorRequests > 99 ? '99+' : counts.vendorRequests}
             </span>
           )}
 
-          {hasChildren && (
+          {hasChildren && !isCollapsed && (
             <motion.div
               animate={{ rotate: isExpanded ? 180 : 0 }}
               transition={{ duration: 0.2 }}>
@@ -422,7 +481,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
         {/* Children Items */}
         <AnimatePresence>
-          {hasChildren && isExpanded && (
+          {hasChildren && isExpanded && !isCollapsed && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -476,26 +535,40 @@ const AdminSidebar = ({ isOpen, onClose }) => {
   const sidebarContent = (
     <div className="h-full w-full flex flex-col bg-slate-800">
       {/* Header Section */}
-      <div className="px-4 py-6 border-b border-slate-700 bg-slate-900">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className={`px-2 py-6 border-b border-slate-700 bg-slate-900 transition-all duration-300 ${isCollapsed ? 'flex flex-col items-center justify-center gap-3' : 'px-4'}`}>
+        <div className={`flex items-center justify-between gap-2 w-full ${isCollapsed ? 'flex-col justify-center' : ''}`}>
+          <div className={`flex items-center gap-3 min-w-0 ${isCollapsed ? 'flex-col justify-center' : 'flex-1'}`}>
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
+              className={`${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'} rounded-xl flex items-center justify-center shadow-md flex-shrink-0 transition-all duration-300`}
               style={{
                 background: 'linear-gradient(135deg, #2874F0 0%, #4787F7 100%)',
               }}
             >
               <FiUser className="text-white text-xl" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-white text-base truncate">
-                {admin?.name || 'Admin'}
-              </h2>
-              <p className="text-xs text-gray-400 truncate">
-                {isSuperAdmin ? '⭐ Super Admin' : 'Admin'}
-              </p>
-            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold text-white text-base truncate">
+                  {admin?.name || 'Admin'}
+                </h2>
+                <p className="text-xs text-gray-400 truncate">
+                  {isSuperAdmin ? '⭐ Super Admin' : 'Admin'}
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Collapse Button - Desktop Only */}
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+            {isCollapsed ? (
+              <FiChevronRight className="text-xl text-gray-300" />
+            ) : (
+              <FiChevronLeft className="text-xl text-gray-300" />
+            )}
+          </button>
 
           {/* Close Button - Mobile Only */}
           <button
@@ -507,9 +580,47 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         </div>
       </div>
 
+      {/* Search Section */}
+      {!isCollapsed && (
+        <div className="px-4 py-3 border-b border-slate-700/50 bg-slate-800/50">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search Menu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900 text-gray-200 placeholder-gray-500 text-sm rounded-lg pl-9 pr-4 py-2 border border-slate-700 focus:outline-none focus:border-primary-500 transition-colors"
+            />
+            <FiSearch className="absolute left-3 top-2.5 text-gray-500 text-base" />
+          </div>
+        </div>
+      )}
+
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto p-3 scrollbar-admin lg:pb-3">
-        {filteredMenu.map((item) => renderMenuItem(item))}
+        {(() => {
+          let lastSection = null;
+          return searchedMenu.map((item) => {
+            const elements = [];
+            if (item.section && item.section !== lastSection) {
+              lastSection = item.section;
+              elements.push(
+                isCollapsed ? (
+                  <hr key={`divider-${item.section}`} className="border-slate-700/50 my-4" />
+                ) : (
+                  <div
+                    key={`section-${item.section}`}
+                    className="px-4 pt-5 pb-2 text-[12px] font-bold tracking-widest text-slate-400 uppercase select-none border-t border-slate-700/30 first:border-t-0 mt-3 first:mt-0"
+                  >
+                    {item.section}
+                  </div>
+                )
+              );
+            }
+            elements.push(renderMenuItem(item));
+            return elements;
+          });
+        })()}
       </nav>
     </div>
   );
@@ -546,8 +657,8 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
       {/* Sidebar - Desktop Fixed */}
       <div
-        className="hidden lg:flex fixed left-0 top-0 bottom-0 z-30"
-        style={{ width: '278px' }}
+        className="hidden lg:flex fixed left-0 top-0 bottom-0 z-30 transition-all duration-300"
+        style={{ width: isCollapsed ? '80px' : '320px' }}
       >
         {sidebarContent}
       </div>

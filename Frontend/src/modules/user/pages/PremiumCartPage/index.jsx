@@ -1,10 +1,41 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiMapPin, FiPackage, FiStar, FiMinus, FiPlus, FiShoppingBag, FiArrowLeft } from 'react-icons/fi';
+import { FiMapPin, FiPackage, FiStar, FiMinus, FiPlus, FiShoppingBag, FiArrowLeft, FiCalendar } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { useCart } from '../../../../context/CartContext';
 import { useCity } from '../../../../context/CityContext';
 import { useTheme } from '../../../../context/ThemeContext';
+
+/* ── helper: compute visit dates from workflow steps ─────────── */
+const computeVisitDates = (workflow) => {
+  if (!workflow?.steps?.length) return [];
+  const today = new Date();
+  let cumulativeDays = 0;
+
+  return workflow.steps
+    .sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
+    .map((step, idx) => {
+      cumulativeDays += step.daysAfterPreviousVisit || 0;
+      const visitDate = new Date(today);
+      visitDate.setDate(today.getDate() + cumulativeDays);
+      return {
+        sequence: idx + 1,
+        title: step.title,
+        date: visitDate,
+        daysOffset: cumulativeDays,
+        isToday: cumulativeDays === 0
+      };
+    });
+};
+
+const formatDate = (date) => {
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+/* ─────────────────────────────────────────────────────────────── */
 
 const PremiumCartPage = () => {
   const navigate = useNavigate();
@@ -197,6 +228,104 @@ const PremiumCartPage = () => {
                                 </span>
                               )}
                             </div>
+
+                            {/* Visit Schedule Timeline for multi_visit */}
+                            {item.serviceType === 'multi_visit' && item.workflow?.steps?.length > 0 && (() => {
+                              const visits = computeVisitDates(item.workflow);
+                              if (!visits.length) return null;
+                              return (
+                                <div
+                                  className="mt-3 p-3 rounded-xl border"
+                                  style={{
+                                    backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : '#F0F4FF',
+                                    borderColor: isDark ? 'rgba(99,102,241,0.15)' : '#DBEAFE'
+                                  }}
+                                >
+                                  <div className="flex items-center gap-1.5 mb-2.5">
+                                    <FiCalendar className="w-3.5 h-3.5" style={{ color: isDark ? '#818CF8' : '#6366F1' }} />
+                                    <span
+                                      className="text-[11px] font-bold uppercase tracking-wider"
+                                      style={{ color: isDark ? '#818CF8' : '#6366F1' }}
+                                    >
+                                      Visit Schedule
+                                    </span>
+                                  </div>
+                                  <div className="relative">
+                                    {visits.map((visit, vIdx) => (
+                                      <div key={vIdx} className="flex items-start gap-2.5 relative" style={{ paddingBottom: vIdx < visits.length - 1 ? '12px' : '0' }}>
+                                        {/* Timeline line */}
+                                        {vIdx < visits.length - 1 && (
+                                          <div
+                                            className="absolute"
+                                            style={{
+                                              left: '7px',
+                                              top: '16px',
+                                              bottom: '0',
+                                              width: '2px',
+                                              backgroundColor: isDark ? 'rgba(99,102,241,0.2)' : '#C7D2FE',
+                                              borderRadius: '1px'
+                                            }}
+                                          />
+                                        )}
+                                        {/* Timeline dot */}
+                                        <div
+                                          className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5"
+                                          style={{
+                                            backgroundColor: visit.isToday
+                                              ? (isDark ? '#34D399' : '#10B981')
+                                              : (isDark ? '#818CF8' : '#6366F1'),
+                                            boxShadow: visit.isToday
+                                              ? '0 0 0 3px rgba(16,185,129,0.15)'
+                                              : '0 0 0 3px rgba(99,102,241,0.1)'
+                                          }}
+                                        >
+                                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                        </div>
+                                        {/* Visit info */}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span
+                                              className="text-[11px] font-bold"
+                                              style={{ color: isDark ? '#F1F5F9' : '#1E293B' }}
+                                            >
+                                              Visit {visit.sequence}
+                                            </span>
+                                            {visit.isToday && (
+                                              <span
+                                                className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full"
+                                                style={{
+                                                  backgroundColor: isDark ? 'rgba(52,211,153,0.15)' : '#D1FAE5',
+                                                  color: isDark ? '#34D399' : '#059669'
+                                                }}
+                                              >
+                                                Today
+                                              </span>
+                                            )}
+                                            {!visit.isToday && (
+                                              <span
+                                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                                                style={{
+                                                  backgroundColor: isDark ? 'rgba(129,140,248,0.12)' : '#EEF2FF',
+                                                  color: isDark ? '#A5B4FC' : '#6366F1'
+                                                }}
+                                              >
+                                                +{visit.daysOffset} days
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p
+                                            className="text-[10px] mt-0.5 leading-tight"
+                                            style={{ color: isDark ? '#94A3B8' : '#64748B' }}
+                                          >
+                                            {visit.title} — <span className="font-semibold" style={{ color: isDark ? '#CBD5E1' : '#334155' }}>{formatDate(visit.date)}</span>
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Right: qty + remove */}

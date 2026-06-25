@@ -12,7 +12,7 @@ import PricingMatrixPage from "./pages/PricingMatrixPage";
 import VendorServicesPage from "./pages/VendorServicesPage";
 import VendorPartsPage from "./pages/VendorPartsPage";
 import FeaturedSectionsManager from "../Services/FeaturedSectionsManager";
-import CategoryTemplatesPage from "./pages/CategoryTemplatesPage";
+
 import TemplateCatalogManager from "./pages/TemplateCatalogManager";
 import PopularServicesPage from "./pages/PopularServicesPage";
 
@@ -121,21 +121,20 @@ const UserCategories = () => {
       )}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
         <Routes>
-          <Route index element={<Navigate to="home" replace />} />
+          <Route index element={<Navigate to="/admin/user-categories/home" replace />} />
           <Route path="home" element={<HomePage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
           <Route path="professions" element={<ProfessionsPage selectedCity={selectedCity} />} />
           <Route path="categories" element={<CategoriesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
-          <Route path="templates" element={<CategoryTemplatesPage />} />
+          <Route path="templates" element={<Navigate to="/admin/user-categories/home" replace />} />
           <Route path="templates/:code/manage" element={<TemplateCatalogManager catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
           <Route path="sections" element={<ServicesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} cities={cities} />} />
           <Route path="subcategories" element={<SubCategoriesPage selectedCity={selectedCity} />} />
-          <Route path="pricing" element={<PricingMatrixPage selectedCity={selectedCity} />} />
           <Route path="brands" element={<BrandsPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
           <Route path="popular-services" element={<PopularServicesPage catalog={catalog} setCatalog={setCatalog} selectedCity={selectedCity} />} />
           <Route path="vendor-services" element={<VendorServicesPage selectedCity={selectedCity} />} />
           <Route path="vendor-parts" element={<VendorPartsPage selectedCity={selectedCity} />} />
           <Route path="featured-sections" element={<FeaturedSectionsManager cityId={selectedCity} />} />
-          <Route path="*" element={<Navigate to="home" replace />} />
+          <Route path="*" element={<Navigate to="/admin/user-categories/home" replace />} />
         </Routes>
       </motion.div>
     </div>

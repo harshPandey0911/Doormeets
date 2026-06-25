@@ -108,7 +108,16 @@ const cartItemSchema = new mongoose.Schema({
     name: String,
     label: String,
     value: mongoose.Schema.Types.Mixed
-  }]
+  }],
+  serviceType: {
+    type: String,
+    enum: ['minute_base', 'package_base', 'image_base', 'multi_visit', 'dynamic_base'],
+    default: 'package_base'
+  },
+  workflow: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  }
 }, { _id: true });
 
 const cartSchema = new mongoose.Schema({

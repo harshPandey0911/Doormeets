@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiArrowLeft, FiGrid, FiList, FiSliders, FiDollarSign, FiTag, FiLayout, FiToggleLeft, FiToggleRight, FiChevronUp, FiChevronDown, FiSave, FiClock, FiPackage, FiCamera, FiRefreshCw, FiFeather } from "react-icons/fi";
+import { FiArrowLeft, FiGrid, FiList, FiSliders, FiDollarSign, FiTag, FiLayout, FiToggleLeft, FiToggleRight, FiChevronUp, FiChevronDown, FiSave, FiClock, FiPackage, FiCamera, FiRefreshCw, FiFeather, FiCheckCircle } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import api from "../../../../../services/api";
 import CategoriesPage from "./CategoriesPage";
@@ -99,7 +99,7 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
       <div className="p-8 text-center bg-white rounded-2xl border border-red-100 shadow-sm space-y-4">
         <p className="text-gray-500 font-semibold">Template not found or has been disabled.</p>
         <button
-          onClick={() => navigate("/admin/user-categories/templates")}
+          onClick={() => navigate("/admin/user-categories/home")}
           className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 mx-auto"
         >
           <FiArrowLeft /> Back to Templates
@@ -112,9 +112,13 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
     { id: "categories", label: "Categories", icon: FiGrid },
     { id: "subcategories", label: "Subcategories", icon: FiList },
     { id: "brands", label: "Brands", icon: FiTag },
-    { id: "services", label: "Services", icon: FiSliders },
-    { id: "pricing", label: "Pricing Matrix", icon: FiDollarSign }
-  ];
+    { id: "services", label: "Services", icon: FiSliders }
+  ].filter(tab => {
+    if (template.code === "IMAGE_CONSULTANT") {
+      return tab.id !== "brands" && tab.id !== "subcategories";
+    }
+    return true;
+  });
 
   if (template.code === "SERVICE_PAGE") {
     tabItems.push({ id: "layout", label: "Page Layout", icon: FiLayout });
@@ -123,6 +127,8 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
   // Map template keys to SVG icon components
   const templateIcons = {
     MINUTE_BASED: { Icon: FiClock, color: "text-blue-600", bg: "bg-blue-50 border-blue-100" },
+    NORMAL_SERVICE: { Icon: FiSliders, color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-100" },
+    SUBSCRIPTION_BASED: { Icon: FiCheckCircle, color: "text-violet-600", bg: "bg-violet-50 border-violet-100" },
     PACKAGE_BASED: { Icon: FiPackage, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
     IMAGE_CONSULTANT: { Icon: FiCamera, color: "text-purple-600", bg: "bg-purple-50 border-purple-100" },
     MULTI_VISIT: { Icon: FiRefreshCw, color: "text-orange-600", bg: "bg-orange-50 border-orange-100" },
@@ -137,7 +143,7 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
       <div className="bg-white rounded-2xl p-6 border border-gray-150 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate("/admin/user-categories/templates")}
+            onClick={() => navigate("/admin/user-categories/home")}
             className="p-3 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl transition-colors border border-gray-200"
             title="Back to Templates"
           >
@@ -218,13 +224,6 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
             selectedCity={selectedCity}
             cities={cities}
             filterTemplateId={template._id}
-          />
-        )}
-        {activeTab === "pricing" && (
-          <PricingMatrixPage
-            selectedCity={selectedCity}
-            filterTemplateId={template._id}
-            filterTemplateCode={template.code}
           />
         )}
         {activeTab === "layout" && template.code === "SERVICE_PAGE" && (

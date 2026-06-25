@@ -815,30 +815,83 @@ const getPublicServices = async (req, res) => {
       return svc;
     });
 
+    // Fetch workflow data for multi_visit services
+    const multiVisitServiceIds = activeServices
+      .filter(s => s.serviceType === 'multi_visit')
+      .map(s => s._id);
+
+    let workflowMap = new Map();
+    if (multiVisitServiceIds.length > 0) {
+      const ServiceWorkflow = require('../../models/ServiceWorkflow');
+      const ServiceWorkflowStep = require('../../models/ServiceWorkflowStep');
+
+      const workflows = await ServiceWorkflow.find({
+        serviceId: { $in: multiVisitServiceIds },
+        status: 'active'
+      }).lean();
+
+      const workflowIds = workflows.map(w => w._id);
+      const allSteps = await ServiceWorkflowStep.find({
+        workflowId: { $in: workflowIds }
+      }).sort({ sequence: 1 }).lean();
+
+      // Group steps by workflowId
+      const stepsByWorkflow = new Map();
+      allSteps.forEach(step => {
+        const wId = step.workflowId.toString();
+        if (!stepsByWorkflow.has(wId)) stepsByWorkflow.set(wId, []);
+        stepsByWorkflow.get(wId).push({
+          sequence: step.sequence,
+          title: step.title,
+          daysAfterPreviousVisit: step.daysAfterPreviousVisit || 0,
+          schedulingType: step.schedulingType || 'auto_offset'
+        });
+      });
+
+      workflows.forEach(w => {
+        workflowMap.set(w.serviceId.toString(), {
+          workflowType: w.workflowType,
+          totalVisits: w.totalVisits,
+          frequency: w.frequency,
+          steps: stepsByWorkflow.get(w._id.toString()) || []
+        });
+      });
+    }
+
     res.status(200).json({
       success: true,
-      services: activeServices.map(svc => ({
-        id: svc._id.toString(),
-        categoryId: svc.categoryId?.toString() || null,
-        subCategoryId: svc.subCategoryId?.toString() || null,
-        title: svc.title,
-        slug: svc.slug,
-        icon: svc.iconUrl,
-        basePrice: svc.basePrice,
-        discountPrice: svc.discountPrice || 0,
-        gstPercentage: svc.gstPercentage,
-        description: svc.description,
-        features: svc.features || [],
-        steps: svc.steps || [],
-        brandId: targetBrand ? targetBrand._id : null,
-        brandName: targetBrand ? targetBrand.title : null,
-        brandIcon: targetBrand ? targetBrand.iconUrl : null,
-        type: svc.type || 'service',
-        serviceType: svc.serviceType || 'package_base',
-        minimumMinutes: svc.minimumMinutes || 30,
-        pricePerMinute: svc.pricePerMinute || null,
-        isPriceDisclosed: svc.isPriceDisclosed ?? true
-      }))
+      services: activeServices.map(svc => {
+        const base = {
+          id: svc._id.toString(),
+          categoryId: svc.categoryId?.toString() || null,
+          subCategoryId: svc.subCategoryId?.toString() || null,
+          title: svc.title,
+          slug: svc.slug,
+          icon: svc.iconUrl,
+          basePrice: svc.basePrice,
+          discountPrice: svc.discountPrice || 0,
+          gstPercentage: svc.gstPercentage,
+          description: svc.description,
+          features: svc.features || [],
+          steps: svc.steps || [],
+          brandId: targetBrand ? targetBrand._id : null,
+          brandName: targetBrand ? targetBrand.title : null,
+          brandIcon: targetBrand ? targetBrand.iconUrl : null,
+          type: svc.type || 'service',
+          serviceType: svc.serviceType || 'package_base',
+          minimumMinutes: svc.minimumMinutes || 30,
+          pricePerMinute: svc.pricePerMinute || null,
+          isPriceDisclosed: svc.isPriceDisclosed ?? true
+        };
+
+        // Attach workflow for multi_visit services
+        const wf = workflowMap.get(svc._id.toString());
+        if (wf) {
+          base.workflow = wf;
+        }
+
+        return base;
+      })
     });
   } catch (error) {
     console.error('Get public services error:', error);
@@ -1183,7 +1236,7 @@ const getPublicHomeData = async (req, res) => {
         isCategorySectionsVisible: contentObj.isCategorySectionsVisible ?? true,
         isCategoriesVisible: contentObj.isCategoriesVisible ?? true,
         isFeaturedSectionsVisible: contentObj.isFeaturedSectionsVisible ?? true,
-        featuredSections: await Promise.all(
+        featuredSections: (await Promise.all(
           (contentObj.featuredSections || [])
             .filter(section => section.isVisible)
             .sort((a, b) => a.order - b.order)
@@ -1216,7 +1269,7 @@ const getPublicHomeData = async (req, res) => {
                 items: populatedItems.filter(Boolean).sort((a, b) => a.order - b.order)
               };
             })
-        ),
+        )).filter(section => section.items && section.items.length > 0),
         popularServices: await (async () => {
           const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
           let popServicesIds = contentObj.popularServices || [];
@@ -1400,44 +1453,92 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const PricingRule = require('../../models/PricingRule');
     const ServicePageBlock = require('../../models/ServicePageBlock');
 
-    const service = await Service.findById(id).lean();
+    let service;
+    if (mongoose.isValidObjectId(id)) {
+      service = await Service.findById(id).lean();
+    } else {
+      service = await Service.findOne({ slug: id }).lean();
+    }
+    
     if (!service) {
       return res.status(404).json({ success: false, message: 'Service not found' });
     }
+
+    const serviceId = service._id;
 
     const { cityId } = req.query;
     const PricingConfig = require('../../models/PricingConfig');
     let pricing = null;
     if (cityId) {
-      pricing = await PricingConfig.findOne({ serviceId: id, cityId }).lean();
+      pricing = await PricingConfig.findOne({ serviceId, cityId }).lean();
     }
     if (!pricing) {
-      pricing = await PricingConfig.findOne({ serviceId: id, cityId: null }).lean();
+      pricing = await PricingConfig.findOne({ serviceId, cityId: null }).lean();
     }
     if (!pricing) {
-      pricing = await PricingConfig.findOne({ serviceId: id }).lean();
+      pricing = await PricingConfig.findOne({ serviceId }).lean();
     }
 
     let resolvedService = { ...service };
-    if (pricing) {
-      resolvedService.basePrice = pricing.customerPrice;
-      resolvedService.pricePerMinute = pricing.pricePerMinute;
-      resolvedService.minimumMinutes = pricing.minimumMinutes;
-      resolvedService.gstPercentage = pricing.gstPercentage || 18;
+    if (resolvedService.serviceType === 'subscription_base' && resolvedService.packages) {
+      let cityPricings = [];
+      if (cityId) {
+        cityPricings = await PricingConfig.find({ serviceId, cityId }).lean();
+      }
+      if (cityPricings.length === 0) {
+        cityPricings = await PricingConfig.find({ serviceId, cityId: null }).lean();
+      }
+      if (cityPricings.length === 0) {
+        cityPricings = await PricingConfig.find({ serviceId }).lean();
+      }
+      
+      const pricingMap = {};
+      cityPricings.forEach(p => {
+        if (p.packageTitle) {
+          pricingMap[p.packageTitle] = p;
+        }
+      });
+      
+      resolvedService.packages = resolvedService.packages.map(pkg => {
+        const pkgPricing = pricingMap[pkg.title];
+        if (pkgPricing) {
+          return {
+            ...pkg,
+            price: pkgPricing.customerPrice,
+            originalPrice: pkgPricing.originalPrice || pkg.originalPrice,
+            duration: pkgPricing.validityDays ? `${pkgPricing.validityDays} Days` : pkg.duration,
+            visitsCredits: pkgPricing.visitsCredits || pkg.visitsCredits
+          };
+        }
+        return pkg;
+      });
+      
+      if (resolvedService.packages.length > 0) {
+        resolvedService.basePrice = resolvedService.packages[0].price;
+      } else {
+        resolvedService.basePrice = 0;
+      }
     } else {
-      resolvedService.basePrice = service.price || service.pricePerMinute || 0;
-      resolvedService.pricePerMinute = service.pricePerMinute || 0;
-      resolvedService.minimumMinutes = service.minimumMinutes || 30;
+      if (pricing) {
+        resolvedService.basePrice = pricing.customerPrice;
+        resolvedService.pricePerMinute = pricing.pricePerMinute;
+        resolvedService.minimumMinutes = pricing.minimumMinutes;
+        resolvedService.gstPercentage = pricing.gstPercentage || 18;
+      } else {
+        resolvedService.basePrice = service.price || service.pricePerMinute || 0;
+        resolvedService.pricePerMinute = service.pricePerMinute || 0;
+        resolvedService.minimumMinutes = service.minimumMinutes || 30;
+      }
     }
 
-    const fields = await ServiceField.find({ serviceId: id }).sort({ order: 1 }).lean();
-    const workflow = await ServiceWorkflow.findOne({ serviceId: id }).lean();
+    const fields = await ServiceField.find({ serviceId }).sort({ order: 1 }).lean();
+    const workflow = await ServiceWorkflow.findOne({ serviceId }).lean();
     let steps = [];
     if (workflow) {
       steps = await ServiceWorkflowStep.find({ workflowId: workflow._id }).sort({ sequence: 1 }).lean();
     }
-    const pricingRules = await PricingRule.find({ serviceId: id }).lean();
-    const pageBlocks = await ServicePageBlock.find({ serviceId: id, isVisible: true }).sort({ order: 1 }).lean();
+    const pricingRules = await PricingRule.find({ serviceId }).lean();
+    const pageBlocks = await ServicePageBlock.find({ serviceId, isVisible: true }).sort({ order: 1 }).lean();
 
     res.status(200).json({
       success: true,

@@ -35,6 +35,10 @@ const subCategorySchema = new mongoose.Schema({
     default: SERVICE_STATUS.ACTIVE,
     index: true
   },
+  hasBrand: {
+    type: Boolean,
+    default: false
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',

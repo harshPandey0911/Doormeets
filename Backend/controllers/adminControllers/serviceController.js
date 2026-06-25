@@ -36,12 +36,13 @@ const getAllServices = async (req, res) => {
       const pricings = await ServiceBrandPricing.find({ brandId: req.query.brandId, isActive: true }).lean();
       const pricingMap = new Map();
       pricings.forEach(p => pricingMap.set(p.serviceId.toString(), p));
-      
+
       servicesList = services.map(s => {
         const doc = s.toObject ? s.toObject() : s;
         const pricing = pricingMap.get(doc._id.toString());
         if (pricing) {
           doc.basePrice = pricing.basePrice;
+          doc.finalCustomerPrice = pricing.finalCustomerPrice;
           doc.gstPercentage = pricing.gstPercentage;
           doc.discountPrice = pricing.discountPrice || 0;
           doc.pricingId = pricing._id;
@@ -57,12 +58,13 @@ const getAllServices = async (req, res) => {
           pricingMap.set(p.serviceId.toString(), p);
         }
       });
-      
+
       servicesList = services.map(s => {
         const doc = s.toObject ? s.toObject() : s;
         const pricing = pricingMap.get(doc._id.toString());
         if (pricing) {
           doc.basePrice = pricing.basePrice;
+          doc.finalCustomerPrice = pricing.finalCustomerPrice;
           doc.gstPercentage = pricing.gstPercentage;
           doc.discountPrice = pricing.discountPrice || 0;
           doc.pricingId = pricing._id;
@@ -150,12 +152,15 @@ const createService = async (req, res) => {
       pricePerMinute,
       minimumMinutes,
       packages,
+      serviceGroups,
       quoteInstructions,
       maxImageUploads,
       pageBlocks,
       features,
       steps,
-      variants
+      variants,
+      rating,
+      reviewCount
     } = req.body;
 
     const cleanedCategoryId = (categoryId === '' || !categoryId) ? null : categoryId;
@@ -171,11 +176,14 @@ const createService = async (req, res) => {
       status: status || SERVICE_STATUS.ACTIVE,
       iconUrl,
       cityIds: Array.isArray(cityIds) ? cityIds : [],
+      rating: rating !== undefined ? Number(rating) : 4.5,
+      reviewCount: reviewCount !== undefined ? reviewCount : '1.2k',
       // Service type fields
       serviceType: serviceType || 'package_base',
       pricePerMinute: serviceType === 'minute_base' ? (Number(pricePerMinute) || null) : null,
       minimumMinutes: serviceType === 'minute_base' ? (Number(minimumMinutes) || 30) : 30,
-      packages: serviceType === 'package_base' && Array.isArray(packages) ? packages : [],
+      packages: (serviceType === 'package_base' || serviceType === 'subscription_base') && Array.isArray(packages) ? packages : [],
+      serviceGroups: serviceType === 'package_base' && Array.isArray(serviceGroups) ? serviceGroups : [],
       quoteInstructions: serviceType === 'image_base' ? (quoteInstructions || null) : null,
       maxImageUploads: serviceType === 'image_base' ? (Number(maxImageUploads) || 5) : 5,
       variants: Array.isArray(variants) ? variants : []
@@ -313,6 +321,8 @@ const updateService = async (req, res) => {
     }
     if (updates.status) service.status = updates.status;
     if (updates.iconUrl !== undefined) service.iconUrl = updates.iconUrl;
+    if (updates.rating !== undefined) service.rating = Number(updates.rating) || 4.5;
+    if (updates.reviewCount !== undefined) service.reviewCount = updates.reviewCount;
     if (updates.cityIds !== undefined) {
       service.cityIds = Array.isArray(updates.cityIds) ? updates.cityIds : [];
       service.markModified('cityIds');
@@ -331,7 +341,10 @@ const updateService = async (req, res) => {
     }
     if (updates.quoteInstructions !== undefined) service.quoteInstructions = updates.quoteInstructions;
     if (updates.maxImageUploads !== undefined) service.maxImageUploads = updates.maxImageUploads;
-
+    if (updates.serviceGroups !== undefined) {
+      service.serviceGroups = Array.isArray(updates.serviceGroups) ? updates.serviceGroups : [];
+      service.markModified('serviceGroups');
+    }
 
     await service.save();
 
@@ -351,7 +364,7 @@ const updateService = async (req, res) => {
       } else if (updates.categoryId || service.categoryId) {
         const finalCategoryId = (updates.categoryId === '' || !updates.categoryId) ? service.categoryId : updates.categoryId;
         const finalSubCategoryId = (updates.subCategoryId === '' || !updates.subCategoryId) ? service.subCategoryId : updates.subCategoryId;
-        
+
         await ServiceBrandPricing.create({
           categoryId: finalCategoryId,
           subCategoryId: finalSubCategoryId || null,
@@ -390,7 +403,7 @@ const updateService = async (req, res) => {
     if (updates.workflow !== undefined) {
       const ServiceWorkflow = require('../../models/ServiceWorkflow');
       const ServiceWorkflowStep = require('../../models/ServiceWorkflowStep');
-      
+
       const existingWorkflow = await ServiceWorkflow.findOne({ serviceId: service._id });
       if (existingWorkflow) {
         await ServiceWorkflowStep.deleteMany({ workflowId: existingWorkflow._id });

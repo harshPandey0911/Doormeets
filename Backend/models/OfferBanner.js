@@ -10,6 +10,11 @@ const offerBannerSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide an image URL']
   },
+  mediaType: {
+    type: String,
+    enum: ['image', 'video'],
+    default: 'image'
+  },
   link: {
     type: String,
     default: ''

@@ -26,23 +26,24 @@ const getOfferBanners = async (req, res) => {
  */
 const addOfferBanner = async (req, res) => {
   try {
-    const { title, link, priority, image } = req.body;
+    const { title, link, priority, image, mediaType } = req.body;
 
     if (!image) {
-      return res.status(400).json({ success: false, message: 'Image is required' });
+      return res.status(400).json({ success: false, message: 'Image/Video is required' });
     }
 
     // Upload to Cloudinary
     const uploadRes = await cloudinaryService.uploadFile(image, { folder: 'banners/offers' });
     if (!uploadRes.success) {
-      return res.status(500).json({ success: false, message: 'Image upload failed' });
+      return res.status(500).json({ success: false, message: 'Upload failed' });
     }
 
     const banner = await OfferBanner.create({
       title,
       link,
       priority: priority || 0,
-      imageUrl: uploadRes.url
+      imageUrl: uploadRes.url,
+      mediaType: mediaType || 'image'
     });
 
     res.status(201).json({
@@ -65,9 +66,9 @@ const addOfferBanner = async (req, res) => {
 const updateOfferBanner = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, link, priority, isActive, image } = req.body;
+    const { title, link, priority, isActive, image, mediaType } = req.body;
 
-    let updateData = { title, link, priority, isActive };
+    let updateData = { title, link, priority, isActive, mediaType };
 
     if (image && image.startsWith('data:')) {
       // Upload new image

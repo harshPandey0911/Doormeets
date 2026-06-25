@@ -12,21 +12,25 @@ envContent.split('\n').forEach(line => {
 
 async function run() {
   await mongoose.connect(env.MONGODB_URI);
-  const Category = require('./models/Category');
   const CategoryTemplate = require('./models/CategoryTemplate');
-  
-  const categories = await Category.find().lean();
   const templates = await CategoryTemplate.find().lean();
-  
-  console.log('--- TEMPLATES ---');
-  templates.forEach(t => {
-    console.log(`Template: ${t.name} | Code: ${t.code} | ID: ${t._id}`);
-  });
-  
-  console.log('\n--- CATEGORIES ---');
-  categories.forEach(c => {
-    console.log(`Category: ${c.title} | TemplateID: ${c.templateId || c.template} | ID: ${c._id}`);
-  });
+  console.log('--- CATEGORY TEMPLATES ---');
+  console.log(JSON.stringify(templates.map(t => ({
+    id: t._id,
+    code: t.code,
+    name: t.name
+  })), null, 2));
+
+  console.log('--- CATEGORIES ---');
+  const categories = await Category.find().lean();
+  console.log(JSON.stringify(categories.map(c => ({
+    id: c._id,
+    title: c.title,
+    status: c.status,
+    templateId: c.templateId,
+    template: c.template,
+    cityIds: c.cityIds
+  })), null, 2));
 
   process.exit(0);
 }

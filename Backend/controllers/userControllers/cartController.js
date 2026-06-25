@@ -34,7 +34,7 @@ const getCart = async (req, res) => {
 const addToCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { serviceId, title, category, price, unitPrice, serviceCount = 1, icon, description, categoryId, vendorId, sectionId, brandId } = req.body;
+    const { serviceId, title, category, price, unitPrice, serviceCount = 1, icon, description, categoryId, vendorId, sectionId, brandId, serviceType, workflow } = req.body;
 
     if (!title || !category || !price) {
       return res.status(400).json({
@@ -71,7 +71,9 @@ const addToCart = async (req, res) => {
         price,
         unitPrice: unitPrice || price,
         serviceCount,
-        vendorId: vendorId || null
+        vendorId: vendorId || null,
+        serviceType: serviceType || 'package_base',
+        workflow: workflow || null
       });
     }
 

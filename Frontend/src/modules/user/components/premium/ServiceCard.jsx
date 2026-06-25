@@ -1,6 +1,38 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FiPlus, FiMinus, FiStar } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiStar, FiCalendar } from 'react-icons/fi';
+
+/* ── helper: compute visit dates from workflow steps ─────────── */
+const computeVisitDates = (workflow) => {
+  if (!workflow?.steps?.length) return [];
+  const today = new Date();
+  let cumulativeDays = 0;
+
+  return workflow.steps
+    .slice()
+    .sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
+    .map((step, idx) => {
+      cumulativeDays += step.daysAfterPreviousVisit || 0;
+      const visitDate = new Date(today);
+      visitDate.setDate(today.getDate() + cumulativeDays);
+      return {
+        sequence: idx + 1,
+        title: step.title,
+        date: visitDate,
+        daysOffset: cumulativeDays,
+        isToday: cumulativeDays === 0
+      };
+    });
+};
+
+const formatDate = (date) => {
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+/* ─────────────────────────────────────────────────────────────── */
 
 const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onOpen }) => {
   return (
@@ -39,9 +71,36 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         {/* Divider and description */}
         <div className="mt-2.5">
           <div className="border-t w-full my-1.5" style={{ borderColor: 'var(--border)' }} />
-          <p className="text-[11px] leading-relaxed line-clamp-2 font-normal" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[11px] leading-relaxed line-clamp-2 font-normal mb-2" style={{ color: 'var(--text-secondary)' }}>
             {service.description}
           </p>
+
+          {/* Multi-Visit Schedule Timeline */}
+          {service.serviceType === 'multi_visit' && service.workflow?.steps?.length > 0 && (() => {
+            const visits = computeVisitDates(service.workflow);
+            if (!visits.length) return null;
+            return (
+              <div className="mt-2 p-2.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 text-[10px] space-y-1.5">
+                <div className="font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1">
+                  <FiCalendar className="w-3 h-3" />
+                  <span>{visits.length} Scheduled Visits</span>
+                </div>
+                <div className="space-y-1">
+                  {visits.map((v, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[10px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                      <span className="font-semibold text-slate-700 dark:text-zinc-300">
+                        Visit {v.sequence}:
+                      </span>
+                      <span className="text-slate-500 dark:text-zinc-400">
+                        {v.daysOffset === 0 ? 'Today' : `After ${v.daysOffset} days`} ({formatDate(v.date)})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

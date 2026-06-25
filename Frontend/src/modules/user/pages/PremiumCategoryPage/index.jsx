@@ -143,7 +143,9 @@ const PremiumCategoryPage = () => {
             brandId: service.brandId,
             subCategoryId: service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id)),
             vendorId: service.vendorId,
-            variants: service.variants || []
+            variants: service.variants || [],
+            serviceType: service.serviceType || 'package_base',
+            workflow: service.workflow || null
           }));
           setServices(mappedServices);
         } else {
@@ -345,13 +347,6 @@ const PremiumCategoryPage = () => {
         </button>
 
 
-        {/* Carousel Indicator Dots */}
-        <div className="absolute bottom-4 left-4 flex gap-1.5 z-10">
-          <span className="w-6 h-1 rounded-full bg-white" />
-          <span className="w-1.5 h-1 rounded-full bg-white/40" />
-          <span className="w-1.5 h-1 rounded-full bg-white/40" />
-          <span className="w-1.5 h-1 rounded-full bg-white/40" />
-        </div>
       </div>
 
       {/* Main Container */}
@@ -429,8 +424,8 @@ const PremiumCategoryPage = () => {
                   {generatedPackages[0].description}
                 </p>
                 <div className="mt-3 flex items-center gap-2">
-                  <span className="text-base font-bold text-slate-900 dark:text-white">${generatedPackages[0].price}</span>
-                  <span className="text-xs text-slate-400 line-through">${generatedPackages[0].originalPrice}</span>
+                  <span className="text-base font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
+                  <span className="text-xs text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
                 </div>
               </div>
               

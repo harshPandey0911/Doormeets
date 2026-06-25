@@ -74,7 +74,9 @@ const PremiumBrandPage = () => {
             features: service.features || [],
             steps: service.steps || [],
             vendorId: service.vendorId || brand.vendorId,
-            brandId
+            brandId,
+            serviceType: service.serviceType || 'package_base',
+            workflow: service.workflow || null
           })));
         } else {
           setServices([]);

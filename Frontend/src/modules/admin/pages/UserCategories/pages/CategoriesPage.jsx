@@ -599,27 +599,22 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     setDraggedItem(null);
   };
 
-  // Merge unassigned categories into the main filtered list
+  // Filter categories strictly by template ID if provided (checking both templateId and template fields)
   let filteredCategories = categories;
   if (filterTemplateId) {
     const filterIdStr = String(filterTemplateId);
-    const matched = [];
-    const unassigned = [];
-    categories.forEach(c => {
-      if (!c.templateId) {
-        unassigned.push(c); // include unassigned at bottom
-      } else {
-        const catTemplateId = typeof c.templateId === 'object'
-          ? String(c.templateId._id || c.templateId.id || c.templateId)
-          : String(c.templateId);
-        if (catTemplateId === filterIdStr) matched.push(c);
-      }
+    filteredCategories = categories.filter(c => {
+      const tId = c.templateId || c.template;
+      if (!tId) return false;
+      const catTemplateId = typeof tId === 'object'
+        ? String(tId._id || tId.id || tId.toString())
+        : String(tId);
+      return catTemplateId === filterIdStr;
     });
-    filteredCategories = [...matched, ...unassigned];
   }
   if (selectedCity) {
     filteredCategories = filteredCategories.filter(c => {
-      if (!c.cityIds || c.cityIds.length === 0) return false;
+      if (!c.cityIds || c.cityIds.length === 0) return true;
       return c.cityIds.some(id => String(id) === String(selectedCity) || String(id._id) === String(selectedCity));
     });
   }
@@ -912,94 +907,6 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             </div>
           )}
 
-          {/* Brands Selection Flags */}
-          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
-            <label className="block text-base font-bold text-gray-900">🏷️ Brand Configuration</label>
-            <div className="flex items-center gap-3">
-              <input
-                id="enableBrands"
-                type="checkbox"
-                checked={form.enableBrands}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setForm(p => ({ ...p, enableBrands: checked, hasBrand: checked, hasBrands: checked }));
-                }}
-                className="h-4 w-4 accent-blue-600"
-              />
-              <label htmlFor="enableBrands" className="text-sm font-semibold text-gray-850">
-                Enable Brands (Brands support for this category)
-              </label>
-            </div>
-            {form.enableBrands && (
-              <div className="flex items-center gap-3 pl-6">
-                <input
-                  id="brandRequired"
-                  type="checkbox"
-                  checked={form.brandRequired}
-                  onChange={(e) => setForm(p => ({ ...p, brandRequired: e.target.checked }))}
-                  className="h-4 w-4 accent-blue-600"
-                />
-                <label htmlFor="brandRequired" className="text-sm font-semibold text-gray-800">
-                  Brand Required (Cannot add service without brand)
-                </label>
-              </div>
-            )}
-          </div>
-
-          {/* Feature flags selection */}
-          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
-            <label className="block text-base font-bold text-gray-900">⚙️ Category Settings & Feature Flags</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-3">
-                <input
-                  id="enableConsultantBooking"
-                  type="checkbox"
-                  checked={form.enableConsultantBooking}
-                  onChange={(e) => setForm(p => ({ ...p, enableConsultantBooking: e.target.checked }))}
-                  className="h-4 w-4 accent-blue-600"
-                />
-                <label htmlFor="enableConsultantBooking" className="text-sm font-semibold text-gray-800">
-                  Enable Consultant Booking
-                </label>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  id="enableWarranty"
-                  type="checkbox"
-                  checked={form.enableWarranty}
-                  onChange={(e) => setForm(p => ({ ...p, enableWarranty: e.target.checked }))}
-                  className="h-4 w-4 accent-blue-600"
-                />
-                <label htmlFor="enableWarranty" className="text-sm font-semibold text-gray-800">
-                  Enable Warranty
-                </label>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  id="enableMultiVisit"
-                  type="checkbox"
-                  checked={form.enableMultiVisit}
-                  onChange={(e) => setForm(p => ({ ...p, enableMultiVisit: e.target.checked }))}
-                  className="h-4 w-4 accent-blue-600"
-                />
-                <label htmlFor="enableMultiVisit" className="text-sm font-semibold text-gray-800">
-                  Enable Multi Visit
-                </label>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  id="enablePricingMatrix"
-                  type="checkbox"
-                  checked={form.enablePricingMatrix}
-                  onChange={(e) => setForm(p => ({ ...p, enablePricingMatrix: e.target.checked }))}
-                  className="h-4 w-4 accent-blue-600"
-                />
-                <label htmlFor="enablePricingMatrix" className="text-sm font-semibold text-gray-800">
-                  Enable Pricing Matrix
-                </label>
-              </div>
-            </div>
-          </div>
 
           <div>
             <label className="block text-base font-bold text-gray-900 mb-2">Link to Profession (Optional)</label>

@@ -109,6 +109,20 @@ const CategoryTemplatesPage = () => {
       color: "text-blue-600",
       bg: "bg-blue-50 border-blue-100"
     },
+    NORMAL_SERVICE: {
+      desc: "Fixed charge services with basic info and page builder, without minutes constraints.",
+      examples: "Normal Service Charge, General Consultations",
+      Icon: FiSliders,
+      color: "text-indigo-600",
+      bg: "bg-indigo-50 border-indigo-100"
+    },
+    SUBSCRIPTION_BASED: {
+      desc: "Subscription services with recurring credits/visits. Perfect for ongoing maintenance plans.",
+      examples: "Home Maintenance, Periodic Pest Control, Monthly Salon Subscriptions",
+      Icon: FiCheckCircle,
+      color: "text-violet-600",
+      bg: "bg-violet-50 border-violet-100"
+    },
     PACKAGE_BASED: {
       desc: "Standard fixed packages with duration and pricing options. Flat rate checkout flow.",
       examples: "Home Deep Cleaning, Pest Control, Car Wash",
