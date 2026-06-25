@@ -47,7 +47,7 @@ const ServiceCategories = React.memo(({
       icon: cat.icon || cat.image,
       colorScheme
     };
-  }).slice(0, 9); // Keep a clean 3x3 grid matching the layout
+  }); // Keep all categories without limiting to 9
 
   return (
     <div className="px-5 w-full">

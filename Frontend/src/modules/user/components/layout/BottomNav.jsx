@@ -105,7 +105,7 @@ const BottomNav = React.memo(() => {
       }}
     >
       <div
-        className="w-full pb-4 pt-3 px-4 rounded-t-[28px]"
+        className="w-full pb-3 pt-2 px-4 rounded-t-[24px]"
         style={{
           background: 'var(--background)',
           backdropFilter: 'blur(20px)',
@@ -126,8 +126,8 @@ const BottomNav = React.memo(() => {
                 whileTap={{ scale: 0.95 }}
                 className={`flex items-center justify-center transition-all duration-300 relative cursor-pointer ${
                   isActive
-                    ? 'bg-[#B33A35] text-white px-4 py-2.5 rounded-full flex-1 max-w-[135px]'
-                    : 'w-11 h-11 rounded-full flex-shrink-0'
+                    ? 'bg-[#B33A35] text-white px-3.5 py-2 rounded-full flex-1 max-w-[135px]'
+                    : 'w-10 h-10 rounded-full flex-shrink-0'
                 }`}
                 style={isActive ? {} : {
                   backgroundColor: 'rgba(179,58,53,0.12)',

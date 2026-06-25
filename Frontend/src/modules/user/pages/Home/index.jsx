@@ -19,7 +19,7 @@ import PromoCarousel from './components/PromoCarousel';
 const NewAndNoteworthy = lazy(() => import('./components/NewAndNoteworthy'));
 const MostBookedServices = lazy(() => import('./components/MostBookedServices'));
 const CuratedServices = lazy(() => import('./components/CuratedServices'));
-const ServiceSectionWithRating = lazy(() => import('./components/ServiceSectionWithRating'));
+import ServiceSectionWithRating from './components/ServiceSectionWithRating';
 const Banner = lazy(() => import('./components/Banner'));
 const ReferEarnSection = lazy(() => import('./components/ReferEarnSection'));
 import CategoryModal from './components/CategoryModal';
@@ -734,36 +734,34 @@ const Home = () => {
                Array.isArray(homeContent?.popularServices) && 
                homeContent.popularServices.length > 0 && (
                 <motion.div variants={itemVariants}>
-                  <Suspense fallback={<div className="h-40 animate-pulse rounded-xl mx-4" style={{ backgroundColor: 'var(--surface)' }} />}>
-                    <ServiceSectionWithRating
-                      title="Popular services"
-                      subtitle="Most demanded home services"
-                      compact={true}
-                      services={homeContent.popularServices.map((service, index) => ({
-                        id: service.id || service._id || index,
-                        serviceId: service.serviceId || service.id || service._id,
-                        categoryId: service.categoryId,
-                        title: service.title,
-                        rating: service.rating || "4.5",
-                        reviews: service.reviews || "1.2k reviews",
-                        price: service.price,
-                        originalPrice: service.originalPrice,
-                        discount: service.discount,
-                        image: toAssetUrl(service.image),
-                        slug: service.slug
-                      }))}
-                      onSeeAllClick={() => navigate('/user/categories')}
-                      onServiceClick={(service) => {
-                        if (service.categoryId) {
-                          const cat = categories.find(c => c.id === service.categoryId);
-                          if (cat) handleCategoryClick(cat);
-                        } else {
-                          navigate('/user/categories');
-                        }
-                      }}
-                      onAddClick={handleAddClick}
-                    />
-                  </Suspense>
+                  <ServiceSectionWithRating
+                    title="Popular services"
+                    subtitle="Most demanded home services"
+                    compact={true}
+                    services={homeContent.popularServices.map((service, index) => ({
+                      id: service.id || service._id || index,
+                      serviceId: service.serviceId || service.id || service._id,
+                      categoryId: service.categoryId,
+                      title: service.title,
+                      rating: service.rating || "4.5",
+                      reviews: service.reviews || "1.2k reviews",
+                      price: service.price,
+                      originalPrice: service.originalPrice,
+                      discount: service.discount,
+                      image: toAssetUrl(service.image),
+                      slug: service.slug
+                    }))}
+                    onSeeAllClick={() => navigate('/user/categories')}
+                    onServiceClick={(service) => {
+                      if (service.categoryId) {
+                        const cat = categories.find(c => c.id === service.categoryId);
+                        if (cat) handleCategoryClick(cat);
+                      } else {
+                        navigate('/user/categories');
+                      }
+                    }}
+                    onAddClick={handleAddClick}
+                  />
                 </motion.div>
               )}
 

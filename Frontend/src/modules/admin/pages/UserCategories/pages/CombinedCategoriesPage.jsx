@@ -109,9 +109,11 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
       status: safe.status || "active",
       allCities: existingCityIds.length === 0,
       cityIds: existingCityIds,
-      mappedCategories: (safe.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
+      mappedCategories: (safe.mappedCategories || [])
+        .map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))
+        .filter(id => standardCategories.some(sc => sc.id === id)),
     });
-  }, [editing]);
+  }, [editing, standardCategories]);
 
   const reset = () => {
     setEditingId(null);
