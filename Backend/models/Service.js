@@ -53,6 +53,7 @@ const packageSchema = new mongoose.Schema({
   reviewCount: { type: String, default: '1.0k' },
   isPopular: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
+  allowUserEdit: { type: Boolean, default: true },
   // Which service groups + items are included in this package
   includedItems: { type: [packageIncludedItemSchema], default: [] },
   // Price matrix fields

@@ -53,7 +53,7 @@ const PackageBased = () => {
   // Form states
   const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '' });
   const [subCatForm, setSubCatForm] = useState({ categoryId: '', title: '', description: '', iconUrl: '', imageUrl: '', videoUrl: '', status: 'active' });
-  const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0 });
+  const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0, allowUserEdit: true });
 
   // Media upload progress states
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -352,7 +352,8 @@ const PackageBased = () => {
         includedItems: combo.includedItems || [],
         gstPercentage: combo.gstPercentage ?? 18,
         gstIncluded: combo.gstIncluded !== false,
-        vendorPayout: combo.vendorPayout || 0
+        vendorPayout: combo.vendorPayout || 0,
+        allowUserEdit: combo.allowUserEdit !== false
       });
     } else {
       setComboForm({
@@ -369,7 +370,8 @@ const PackageBased = () => {
         includedItems: [],
         gstPercentage: 18,
         gstIncluded: true,
-        vendorPayout: 0
+        vendorPayout: 0,
+        allowUserEdit: true
       });
     }
     setEditingCombo(combo ? combo : 'new');
@@ -394,7 +396,8 @@ const PackageBased = () => {
       discountPercentage: Number(comboForm.discountPercentage) || 0,
       gstPercentage: Number(comboForm.gstPercentage || 18),
       gstIncluded: comboForm.gstIncluded !== false,
-      vendorPayout: Number(comboForm.vendorPayout || 0)
+      vendorPayout: Number(comboForm.vendorPayout || 0),
+      allowUserEdit: comboForm.allowUserEdit !== false
     };
 
     if (comboForm._id) {
@@ -413,6 +416,25 @@ const PackageBased = () => {
       }
     } catch (err) {
       toast.error('Failed to save combo package');
+    }
+  };
+
+  const handleToggleUserEdit = async (combo) => {
+    const updatedPackages = activeService.packages.map(p => {
+      if (String(p._id) === String(combo._id)) {
+        return { ...p, allowUserEdit: p.allowUserEdit === false };
+      }
+      return p;
+    });
+
+    try {
+      const res = await api.put(`/admin/services/${activeService._id}`, { packages: updatedPackages });
+      if (res.data.success) {
+        toast.success(`Customization ${combo.allowUserEdit === false ? 'enabled' : 'disabled'} for "${combo.title}"`);
+        fetchData();
+      }
+    } catch (err) {
+      toast.error('Failed to update customization setting');
     }
   };
 
@@ -748,6 +770,23 @@ const PackageBased = () => {
                                     <span className="text-[10px] text-emerald-600 font-extrabold">{inc.selectedItemTitle}</span>
                                   </div>
                                 ))}
+                              </div>
+
+                              <div className="flex items-center justify-between border-t pt-2 mt-1">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase">Allow User to Edit Options:</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserEdit(pkg)}
+                                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    pkg.allowUserEdit !== false ? 'bg-emerald-500' : 'bg-gray-200'
+                                  }`}
+                                >
+                                  <span
+                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                      pkg.allowUserEdit !== false ? 'translate-x-4' : 'translate-x-0'
+                                    }`}
+                                  />
+                                </button>
                               </div>
 
                               <div className="border-t pt-2 flex justify-between text-[11px] font-bold text-gray-500 bg-gray-50/50 p-2 rounded-xl">
@@ -1092,23 +1131,35 @@ const PackageBased = () => {
                         );
 
                         const toggleItem = () => {
+                          let updatedIncluded;
                           if (isItemIncluded) {
-                            setComboForm(p => ({
-                              ...p,
-                              includedItems: p.includedItems.filter(i => String(i.selectedItemId) !== String(item._id))
-                            }));
+                            updatedIncluded = comboForm.includedItems.filter(i => String(i.selectedItemId) !== String(item._id));
                           } else {
-                            setComboForm(p => ({
-                              ...p,
-                              includedItems: [...p.includedItems, {
-                                serviceGroupId: group._id,
-                                serviceGroupTitle: group.title,
-                                selectedItemId: item._id,
-                                selectedItemTitle: item.title,
-                                selectedItemDescription: item.description || item.title || ''
-                              }]
-                            }));
+                            updatedIncluded = [...comboForm.includedItems, {
+                              serviceGroupId: group._id,
+                              serviceGroupTitle: group.title,
+                              selectedItemId: item._id,
+                              selectedItemTitle: item.title,
+                              selectedItemDescription: item.description || item.title || ''
+                            }];
                           }
+
+                          // Calculate sum of all included items' prices
+                          let sumPrice = 0;
+                          updatedIncluded.forEach(inc => {
+                            const grp = activeService.serviceGroups?.find(g => String(g._id) === String(inc.serviceGroupId));
+                            const itm = grp?.items?.find(i => String(i._id) === String(inc.selectedItemId));
+                            if (itm) {
+                              sumPrice += Number(itm.price || 0);
+                            }
+                          });
+
+                          setComboForm(p => ({
+                            ...p,
+                            includedItems: updatedIncluded,
+                            price: sumPrice,
+                            originalPrice: sumPrice
+                          }));
                         };
 
                         return (
@@ -1208,6 +1259,19 @@ const PackageBased = () => {
                       min="0"
                     />
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 py-1">
+                  <input
+                    type="checkbox"
+                    id="allowUserEdit"
+                    checked={comboForm.allowUserEdit}
+                    onChange={e => setComboForm(p => ({ ...p, allowUserEdit: e.target.checked }))}
+                    className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                  />
+                  <label htmlFor="allowUserEdit" className="text-xs font-bold text-gray-700 select-none cursor-pointer">
+                    Allow user to edit package options on detail page
+                  </label>
                 </div>
 
                 {/* Split Calculation Details Box */}

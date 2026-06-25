@@ -148,6 +148,7 @@ const PremiumServiceDetailPage = () => {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [customSelectedItems, setCustomSelectedItems] = useState({});
   const [calculatedPrice, setCalculatedPrice] = useState(0);
+  const [isCustomizing, setIsCustomizing] = useState(false);
 
   useEffect(() => {
     if (selectedPackage && selectedPackage.includedItems) {
@@ -158,6 +159,7 @@ const PremiumServiceDetailPage = () => {
         }
       });
       setCustomSelectedItems(initial);
+      setIsCustomizing(false);
     }
   }, [selectedPackage]);
 
@@ -256,27 +258,24 @@ const PremiumServiceDetailPage = () => {
 
     let basePrice = 0;
     if (service.serviceType === 'package_base' && selectedPackage) {
-      let pkgPrice = selectedPackage.price || 0;
-      if (selectedPackage.includedItems && service.serviceGroups) {
-        selectedPackage.includedItems.forEach(incItem => {
-          const groupId = incItem.serviceGroupId?.toString();
-          const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
-          if (group) {
-            const defaultItem = group.items?.find(i => i._id?.toString() === incItem.selectedItemId?.toString());
-            const defaultPrice = defaultItem ? (Number(defaultItem.price) || 0) : 0;
-
-            const selectedId = customSelectedItems[groupId];
-            if (selectedId === 'skip') {
-              pkgPrice -= defaultPrice;
-            } else if (selectedId) {
-              const selectedItem = group.items?.find(i => i._id?.toString() === selectedId.toString());
-              const selectedPrice = selectedItem ? (Number(selectedItem.price) || 0) : 0;
-              pkgPrice += (selectedPrice - defaultPrice);
+      if (isCustomizing) {
+        // If user is customizing, price is strictly the sum of selected items!
+        let sumPrice = 0;
+        Object.keys(customSelectedItems).forEach(groupId => {
+          const selectedId = customSelectedItems[groupId];
+          if (selectedId && selectedId !== 'skip') {
+            const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
+            const selectedItem = group?.items?.find(i => i._id?.toString() === selectedId.toString());
+            if (selectedItem) {
+              sumPrice += Number(selectedItem.price || 0);
             }
           }
         });
+        basePrice = sumPrice;
+      } else {
+        // Otherwise, show the discounted combo package price
+        basePrice = selectedPackage.price || 0;
       }
-      basePrice = pkgPrice;
     } else if (service.serviceType === 'subscription_base' && service.packages && service.packages.length > 0) {
       basePrice = selectedPackage?.price || 0;
     } else if (service.serviceType === 'dynamic_base' || service.serviceType === 'image_base') {
@@ -348,7 +347,7 @@ const PremiumServiceDetailPage = () => {
     });
 
     setCalculatedPrice(Math.max(0, price));
-  }, [dynamicAnswers, pricingRules, service, selectedPackage, customSelectedItems, selectedDuration]);
+  }, [dynamicAnswers, pricingRules, service, selectedPackage, customSelectedItems, selectedDuration, isCustomizing]);
 
   const handleFileUpload = async (fieldName, file) => {
     try {
@@ -899,103 +898,132 @@ const PremiumServiceDetailPage = () => {
         )}
 
         {/* Package Customization Section */}
-        {service?.serviceType === 'package_base' && selectedPackage && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
-          <section className="mt-8 p-5 rounded-[28px] border-2 border-dashed space-y-5" style={{ backgroundColor: 'rgba(255,159,69,0.02)', borderColor: 'rgba(255,159,69,0.2)' }}>
-            <div>
-              <h3 className="font-bold text-[15px] tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                Customize: {selectedPackage.title}
-              </h3>
-              <p className="text-xs text-gray-500 mt-0.5">Select option or skip items to customize your combo package.</p>
+        {service?.serviceType === 'package_base' && selectedPackage && selectedPackage.allowUserEdit !== false && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
+          <section className="mt-8 space-y-6">
+            <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: 'var(--border)' }}>
+              <div>
+                <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Customize Package
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">Customize individual options inside this combo package</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCustomizing(prev => !prev)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  isCustomizing ? 'bg-violet-600' : 'bg-gray-200 dark:bg-zinc-700'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    isCustomizing ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
-            <div className="space-y-4">
-              {selectedPackage.includedItems.map((incItem, incIdx) => {
-                const groupId = incItem.serviceGroupId?.toString();
-                const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
-                if (!group) return null;
 
-                const selectedId = customSelectedItems[groupId];
+            {isCustomizing ? (
+              <div className="space-y-6">
+                {(() => {
+                  const renderedGroupIds = new Set();
+                  return selectedPackage.includedItems.map((incItem, incIdx) => {
+                    const groupId = incItem.serviceGroupId?.toString();
+                    if (!groupId || renderedGroupIds.has(groupId)) return null;
+                    renderedGroupIds.add(groupId);
 
-                return (
-                  <div key={incIdx} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm" style={{ borderColor: 'var(--border)' }}>
-                    <div className="flex items-center gap-3 mb-3 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                      {group.iconUrl ? (
-                        <img src={group.iconUrl} alt="" className="w-6 h-6 object-contain" />
-                      ) : (
-                        <div className="w-6 h-6 rounded bg-brand/10 flex items-center justify-center text-brand font-bold text-xs">
-                          {group.title[0]}
-                        </div>
-                      )}
-                      <div>
-                        <span className="font-bold text-xs uppercase tracking-wider text-brand">{group.title}</span>
-                      </div>
-                    </div>
+                    const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
+                    if (!group) return null;
 
-                    <div className="space-y-2">
-                      {group.items?.map((item) => {
-                        const isSelected = selectedId === item._id?.toString();
-                        return (
-                          <label
-                            key={item._id}
-                            className={`flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer transition-all ${
-                              isSelected ? 'border-brand bg-brand/5' : 'bg-transparent'
-                            }`}
-                            style={{ borderColor: isSelected ? 'var(--primary)' : 'var(--border)' }}
-                          >
-                            <input
-                              type="radio"
-                              name={`group-${groupId}`}
-                              value={item._id}
-                              checked={isSelected}
-                              onChange={() => {
+                    const selectedId = customSelectedItems[groupId];
+
+                    return (
+                      <div key={incIdx} className="space-y-3">
+                        <h3 className="text-[15px] font-bold text-gray-800 dark:text-zinc-100" style={{ color: 'var(--text-primary)' }}>
+                          {group.title}
+                        </h3>
+
+                        <div className="space-y-3 pl-1">
+                        {group.items?.map((item) => {
+                          const isSelected = selectedId === item._id?.toString();
+                          return (
+                            <div
+                              key={item._id}
+                              onClick={() => {
                                 setCustomSelectedItems(prev => ({
                                   ...prev,
                                   [groupId]: item._id?.toString()
                                 }));
                               }}
-                              className="mt-0.5 accent-brand"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-baseline justify-between gap-2">
-                                <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{item.title}</span>
-                                <span className="text-xs font-bold text-brand">₹{item.price}</span>
+                              className="flex items-center justify-between py-2 cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span 
+                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                                    isSelected 
+                                      ? 'border-violet-600 dark:border-violet-500' 
+                                      : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <span className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-500" />
+                                  )}
+                                </span>
+                                <span className="text-[14px] font-medium text-gray-700 dark:text-zinc-300" style={{ color: 'var(--text-primary)' }}>
+                                  {item.title}
+                                </span>
                               </div>
-                              {item.duration && <span className="text-[10px] text-gray-400 block mt-0.5">{item.duration}</span>}
-                              {item.description && <p className="text-[10px] text-gray-500 leading-normal mt-0.5">{item.description}</p>}
+                              <span className="text-[14px] font-bold text-gray-800 dark:text-zinc-200">
+                                ₹{item.price}
+                              </span>
                             </div>
-                          </label>
-                        );
-                      })}
+                          );
+                        })}
 
-                      {group.allowSkip && (
-                        <label
-                          className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-all ${
-                            selectedId === 'skip' ? 'border-red-400 bg-red-50/10' : 'bg-transparent'
-                          }`}
-                          style={{ borderColor: selectedId === 'skip' ? '#f87171' : 'var(--border)' }}
-                        >
-                          <input
-                            type="radio"
-                            name={`group-${groupId}`}
-                            value="skip"
-                            checked={selectedId === 'skip'}
-                            onChange={() => {
+                        {group.allowSkip && (
+                          <div
+                            onClick={() => {
                               setCustomSelectedItems(prev => ({
                                 ...prev,
                                 [groupId]: 'skip'
                               }));
                             }}
-                            className="accent-red-500"
-                          />
-                          <div className="flex-1">
-                            <span className="text-xs font-semibold text-red-500">I don't need this {group.title.toLowerCase()}</span>
+                            className="flex items-center justify-between py-2 cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span 
+                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                                  selectedId === 'skip' 
+                                    ? 'border-violet-600 dark:border-violet-500' 
+                                    : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
+                                }`}
+                              >
+                                {selectedId === 'skip' && (
+                                  <span className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-500" />
+                                )}
+                              </span>
+                              <span className="text-[14px] font-medium text-red-500 dark:text-red-400">
+                                I don't need {group.title.toLowerCase()}
+                              </span>
+                            </div>
                           </div>
-                        </label>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-2 space-y-3">
+                <p className="text-xs text-gray-500">This combo package standardly includes the following items at a discounted rate:</p>
+                  {selectedPackage.includedItems.map((incItem, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span>{incItem.serviceGroupTitle}: <span className="font-bold text-gray-800 dark:text-zinc-100">{incItem.selectedItemTitle}</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
