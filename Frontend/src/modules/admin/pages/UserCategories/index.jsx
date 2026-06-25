@@ -16,6 +16,7 @@ import FeaturedSectionsManager from "../Services/FeaturedSectionsManager";
 
 import TemplateCatalogManager from "./pages/TemplateCatalogManager";
 import PopularServicesPage from "./pages/PopularServicesPage";
+import LoyaltyPointsConfig from "./pages/LoyaltyPointsConfig";
 
 import { cityService } from "../../services/cityService";
 
@@ -136,6 +137,7 @@ const UserCategories = () => {
           <Route path="vendor-services" element={<VendorServicesPage selectedCity={selectedCity} />} />
           <Route path="vendor-parts" element={<VendorPartsPage selectedCity={selectedCity} />} />
           <Route path="featured-sections" element={<FeaturedSectionsManager cityId={selectedCity} />} />
+          <Route path="loyalty-points" element={<LoyaltyPointsConfig />} />
           <Route path="*" element={<Navigate to="/admin/user-categories/home" replace />} />
         </Routes>
       </motion.div>

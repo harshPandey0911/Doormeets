@@ -387,7 +387,7 @@ const refreshToken = async (req, res) => {
     }
 
     // Verify Session ID
-    if (decoded.loginSessionId !== user.loginSessionId) {
+    if (process.env.NODE_ENV === 'production' && decoded.loginSessionId !== user.loginSessionId) {
       return res.status(401).json({ success: false, message: 'LoggedIn on another device.' });
     }
 

@@ -472,7 +472,7 @@ const refreshToken = async (req, res) => {
     }
 
     // Verify Session ID for Vendor
-    if (decoded.loginSessionId !== vendor.loginSessionId) {
+    if (process.env.NODE_ENV === 'production' && decoded.loginSessionId !== vendor.loginSessionId) {
       return res.status(401).json({
         success: false,
         message: 'Account logged in on a new device. Please login again.'

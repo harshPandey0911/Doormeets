@@ -42,6 +42,7 @@ const getProfile = async (req, res) => {
         plans: user.plans || {},
         settings: user.settings || {},
         wallet: user.wallet || { balance: 0 },
+        loyaltyPoints: user.loyaltyPoints || 0,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       }
@@ -182,7 +183,7 @@ const getCheckoutData = async (req, res) => {
 
     // Fetch all 3 in parallel
     const [user, cart, settings] = await Promise.all([
-      User.findById(userId).select('addresses phone name'),
+      User.findById(userId).select('addresses phone name loyaltyPoints'),
       Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl slug').populate('items.categoryId', 'title slug'),
       Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage')
     ]);
@@ -200,7 +201,8 @@ const getCheckoutData = async (req, res) => {
         id: user._id,
         name: user.name,
         phone: user.phone,
-        addresses: user.addresses || []
+        addresses: user.addresses || [],
+        loyaltyPoints: user.loyaltyPoints || 0
       },
       cartItems: cart ? cart.items : [],
       settings: settings || { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18 }

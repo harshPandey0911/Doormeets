@@ -149,19 +149,26 @@ const PremiumServiceDetailPage = () => {
   const [customSelectedItems, setCustomSelectedItems] = useState({});
   const [calculatedPrice, setCalculatedPrice] = useState(0);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [activeCategoryModal, setActiveCategoryModal] = useState(null);
 
   useEffect(() => {
-    if (selectedPackage && selectedPackage.includedItems) {
+    setIsCustomizing(false);
+    if (!selectedPackage) {
+      setCustomSelectedItems({});
+    }
+  }, [selectedPackage]);
+
+  useEffect(() => {
+    if (!isCustomizing && selectedPackage && selectedPackage.includedItems) {
       const initial = {};
       selectedPackage.includedItems.forEach(item => {
         if (item.serviceGroupId) {
-          initial[item.serviceGroupId.toString()] = item.selectedItemId ? item.selectedItemId.toString() : '';
+          initial[item.serviceGroupId.toString()] = item.selectedItemId ? [item.selectedItemId.toString()] : [];
         }
       });
       setCustomSelectedItems(initial);
-      setIsCustomizing(false);
     }
-  }, [selectedPackage]);
+  }, [isCustomizing, selectedPackage]);
 
   // Variants state
   const [variants, setVariants] = useState([]);
@@ -257,24 +264,30 @@ const PremiumServiceDetailPage = () => {
     if (!service) return;
 
     let basePrice = 0;
-    if (service.serviceType === 'package_base' && selectedPackage) {
-      if (isCustomizing) {
-        // If user is customizing, price is strictly the sum of selected items!
-        let sumPrice = 0;
-        Object.keys(customSelectedItems).forEach(groupId => {
-          const selectedId = customSelectedItems[groupId];
-          if (selectedId && selectedId !== 'skip') {
-            const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
-            const selectedItem = group?.items?.find(i => i._id?.toString() === selectedId.toString());
-            if (selectedItem) {
-              sumPrice += Number(selectedItem.price || 0);
-            }
-          }
-        });
-        basePrice = sumPrice;
-      } else {
+    if (service.serviceType === 'package_base') {
+      if (selectedPackage && !isCustomizing) {
         // Otherwise, show the discounted combo package price
         basePrice = selectedPackage.price || 0;
+      } else {
+        // If user is customizing, or no package is selected, price is strictly the sum of selected items!
+        let sumPrice = 0;
+        Object.keys(customSelectedItems).forEach(groupId => {
+          const selectedVal = customSelectedItems[groupId];
+          const selectedIds = Array.isArray(selectedVal)
+            ? selectedVal
+            : (selectedVal ? [selectedVal.toString()] : []);
+
+          selectedIds.forEach(selectedId => {
+            if (selectedId && selectedId !== 'skip') {
+              const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
+              const selectedItem = group?.items?.find(i => i._id?.toString() === selectedId.toString());
+              if (selectedItem) {
+                sumPrice += Number(selectedItem.price || 0);
+              }
+            }
+          });
+        });
+        basePrice = sumPrice;
       }
     } else if (service.serviceType === 'subscription_base' && service.packages && service.packages.length > 0) {
       basePrice = selectedPackage?.price || 0;
@@ -429,38 +442,89 @@ const PremiumServiceDetailPage = () => {
     }
 
     const cartData = buildCartItemData({ service, category, brand });
-    if (service?.serviceType === 'package_base' && selectedPackage) {
-      cartData.card.title = `${service.title} - ${selectedPackage.title}`;
-      if (selectedPackage.duration) cartData.card.duration = selectedPackage.duration;
-      dynamicFieldsPayload.push({
-        name: 'Selected Package',
-        label: 'Selected Package',
-        value: selectedPackage.title
-      });
-      if (selectedPackage.includedItems && service.serviceGroups) {
-        selectedPackage.includedItems.forEach(incItem => {
-          const groupId = incItem.serviceGroupId?.toString();
-          const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
-          if (group) {
-            const selectedId = customSelectedItems[groupId];
-            if (selectedId === 'skip') {
+    if (service?.serviceType === 'package_base') {
+      if (selectedPackage) {
+        cartData.card.title = `${service.title} - ${selectedPackage.title}`;
+        if (selectedPackage.duration) cartData.card.duration = selectedPackage.duration;
+        dynamicFieldsPayload.push({
+          name: 'Selected Package',
+          label: 'Selected Package',
+          value: selectedPackage.title
+        });
+        if (selectedPackage.includedItems && service.serviceGroups) {
+          selectedPackage.includedItems.forEach(incItem => {
+            const groupId = incItem.serviceGroupId?.toString();
+            const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
+            if (group) {
+              const selectedVal = customSelectedItems[groupId];
+              const selectedIds = Array.isArray(selectedVal)
+                ? selectedVal
+                : (selectedVal ? [selectedVal.toString()] : []);
+
+              if (selectedIds.includes('skip')) {
+                dynamicFieldsPayload.push({
+                  name: `Group: ${group.title}`,
+                  label: group.title,
+                  value: 'Skipped ("I don\'t need this")'
+                });
+              } else if (selectedIds.length > 0) {
+                const itemTitles = [];
+                selectedIds.forEach(id => {
+                  const selectedItem = group.items?.find(i => i._id?.toString() === id.toString());
+                  if (selectedItem) {
+                    itemTitles.push(`${selectedItem.title} (₹${selectedItem.price})`);
+                  }
+                });
+                if (itemTitles.length > 0) {
+                  dynamicFieldsPayload.push({
+                    name: `Group: ${group.title}`,
+                    label: group.title,
+                    value: itemTitles.join(', ')
+                  });
+                }
+              }
+            }
+          });
+        }
+      } else {
+        cartData.card.title = `${service.title} - Customized Items`;
+        dynamicFieldsPayload.push({
+          name: 'Selected Package',
+          label: 'Selected Package',
+          value: 'None (Custom Options Selection)'
+        });
+        if (service.serviceGroups) {
+          service.serviceGroups.forEach(group => {
+            const groupId = group._id?.toString();
+            const selectedVal = customSelectedItems[groupId];
+            const selectedIds = Array.isArray(selectedVal)
+              ? selectedVal
+              : (selectedVal ? [selectedVal.toString()] : []);
+
+            if (selectedIds.includes('skip')) {
               dynamicFieldsPayload.push({
                 name: `Group: ${group.title}`,
                 label: group.title,
                 value: 'Skipped ("I don\'t need this")'
               });
-            } else if (selectedId) {
-              const selectedItem = group.items?.find(i => i._id?.toString() === selectedId.toString());
-              if (selectedItem) {
+            } else if (selectedIds.length > 0) {
+              const itemTitles = [];
+              selectedIds.forEach(id => {
+                const selectedItem = group.items?.find(i => i._id?.toString() === id.toString());
+                if (selectedItem) {
+                  itemTitles.push(`${selectedItem.title} (₹${selectedItem.price})`);
+                }
+              });
+              if (itemTitles.length > 0) {
                 dynamicFieldsPayload.push({
                   name: `Group: ${group.title}`,
                   label: group.title,
-                  value: `${selectedItem.title} (₹${selectedItem.price})`
+                  value: itemTitles.join(', ')
                 });
               }
             }
-          }
-        });
+          });
+        }
       }
     }
     if (service?.serviceType === 'minute_base') {
@@ -605,12 +669,13 @@ const PremiumServiceDetailPage = () => {
               Service Categories
             </h2>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-              {service.serviceGroups.map((group, idx) => {
+               {service.serviceGroups.map((group, idx) => {
                 const colors = cardColors[idx % cardColors.length];
                 return (
                   <div
                     key={group._id || idx}
-                    className="flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 hover:scale-[1.02] shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+                    onClick={() => setActiveCategoryModal(group)}
+                    className="flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 hover:scale-[1.04] hover:shadow-md cursor-pointer select-none"
                     style={{
                       backgroundColor: colors.bg,
                       borderColor: colors.border,
@@ -848,51 +913,61 @@ const PremiumServiceDetailPage = () => {
               <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Packages</h2>
             </div>
             <div className="space-y-3">
-              {service.packages.map((pkg, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedPackage(pkg)}
-                  className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${
-                    selectedPackage?.title === pkg.title ? 'border-brand' : 'border-border-color hover:border-gray-300'
-                  }`}
-                  style={
-                    selectedPackage?.title === pkg.title
-                      ? { backgroundColor: 'rgba(255,159,69,0.1)' }
-                      : { backgroundColor: 'var(--card-bg)' }
-                  }
-                >
-                  <div className="flex-1 min-w-0 pr-3">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="font-semibold text-sm leading-tight" style={{ color: 'var(--text-primary)' }}>{pkg.title}</h3>
-                      {pkg.isPopular && <span className="text-[9px] font-semibold uppercase bg-brand text-white px-2.5 py-0.5 rounded-full">Popular</span>}
-                    </div>
-                    {pkg.duration && <div className="text-[11px] font-semibold text-gray-400 mb-1.5 flex items-center gap-1"><FiClock /> {pkg.duration}</div>}
-                    {pkg.description && <p className="text-[11px] font-normal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
-                  </div>
-                  
-                  <div className="flex flex-col items-end shrink-0 gap-2">
-                    <div className="text-right">
-                      <div className="font-semibold text-sm text-brand">₹{pkg.price}</div>
-                      {pkg.originalPrice && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
-                    </div>
-                    <button
-                      type="button"
-                      className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${
-                        selectedPackage?.title === pkg.title 
-                          ? 'text-white' 
-                          : 'hover:bg-brand/5'
-                      }`}
-                      style={
-                        selectedPackage?.title === pkg.title 
-                          ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)' }
-                          : { borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'transparent' }
+              {service.packages.map((pkg, idx) => {
+                const isPkgSelected = selectedPackage?.title === pkg.title;
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (selectedPackage?.title === pkg.title && !isCustomizing) {
+                        setSelectedPackage(null);
+                      } else {
+                        setSelectedPackage(pkg);
+                        setIsCustomizing(false);
                       }
-                    >
-                      {selectedPackage?.title === pkg.title ? 'Selected' : 'Select'}
-                    </button>
+                    }}
+                    className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${
+                      isPkgSelected ? 'border-brand' : 'border-border-color hover:border-gray-300'
+                    }`}
+                    style={
+                      isPkgSelected
+                        ? { backgroundColor: 'rgba(255,159,69,0.1)' }
+                        : { backgroundColor: 'var(--card-bg)' }
+                    }
+                  >
+                    <div className="flex-1 min-w-0 pr-3">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className="font-semibold text-sm leading-tight" style={{ color: 'var(--text-primary)' }}>{pkg.title}</h3>
+                        {pkg.isPopular && <span className="text-[9px] font-semibold uppercase bg-brand text-white px-2.5 py-0.5 rounded-full">Popular</span>}
+                      </div>
+                      {pkg.duration && <div className="text-[11px] font-semibold text-gray-400 mb-1.5 flex items-center gap-1"><FiClock /> {pkg.duration}</div>}
+                      {pkg.description && <p className="text-[11px] font-normal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
+                    </div>
+                    
+                    <div className="flex flex-col items-end shrink-0 gap-2">
+                      <div className="text-right">
+                        <div className="font-semibold text-sm text-brand">₹{pkg.price}</div>
+                        {pkg.originalPrice && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                      </div>
+                      <button
+                        type="button"
+                        className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${
+                          isPkgSelected 
+                            ? 'text-white' 
+                            : 'hover:bg-brand/5'
+                        }`}
+                        style={
+                          isPkgSelected 
+                            ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)' }
+                            : { borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'transparent' }
+                        }
+                      >
+                        {isPkgSelected ? 'Selected' : 'Select'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -934,7 +1009,9 @@ const PremiumServiceDetailPage = () => {
                     const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
                     if (!group) return null;
 
-                    const selectedId = customSelectedItems[groupId];
+                    const selectedList = Array.isArray(customSelectedItems[groupId])
+                      ? customSelectedItems[groupId]
+                      : (customSelectedItems[groupId] ? [customSelectedItems[groupId].toString()] : []);
 
                     return (
                       <div key={incIdx} className="space-y-3">
@@ -944,28 +1021,41 @@ const PremiumServiceDetailPage = () => {
 
                         <div className="space-y-3 pl-1">
                         {group.items?.map((item) => {
-                          const isSelected = selectedId === item._id?.toString();
+                          const isSelected = selectedList.includes(item._id?.toString());
                           return (
                             <div
                               key={item._id}
                               onClick={() => {
-                                setCustomSelectedItems(prev => ({
-                                  ...prev,
-                                  [groupId]: item._id?.toString()
-                                }));
+                                setCustomSelectedItems(prev => {
+                                  const currentList = Array.isArray(prev[groupId])
+                                    ? prev[groupId]
+                                    : (prev[groupId] ? [prev[groupId].toString()] : []);
+                                  
+                                  const listWithoutSkip = currentList.filter(id => id !== 'skip');
+                                  let newList;
+                                  if (listWithoutSkip.includes(item._id?.toString())) {
+                                    newList = listWithoutSkip.filter(id => id !== item._id?.toString());
+                                  } else {
+                                    newList = [...listWithoutSkip, item._id?.toString()];
+                                  }
+                                  return {
+                                    ...prev,
+                                    [groupId]: newList
+                                  };
+                                });
                               }}
                               className="flex items-center justify-between py-2 cursor-pointer group"
                             >
                               <div className="flex items-center gap-3">
                                 <span 
-                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
                                     isSelected 
-                                      ? 'border-violet-600 dark:border-violet-500' 
+                                      ? 'border-violet-600 bg-violet-600 dark:border-violet-500 dark:bg-violet-500' 
                                       : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
                                   }`}
                                 >
                                   {isSelected && (
-                                    <span className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-500" />
+                                    <span className="text-white text-xs font-bold">✓</span>
                                   )}
                                 </span>
                                 <span className="text-[14px] font-medium text-gray-700 dark:text-zinc-300" style={{ color: 'var(--text-primary)' }}>
@@ -982,23 +1072,30 @@ const PremiumServiceDetailPage = () => {
                         {group.allowSkip && (
                           <div
                             onClick={() => {
-                              setCustomSelectedItems(prev => ({
-                                ...prev,
-                                [groupId]: 'skip'
-                              }));
+                              setCustomSelectedItems(prev => {
+                                const currentList = Array.isArray(prev[groupId])
+                                  ? prev[groupId]
+                                  : (prev[groupId] ? [prev[groupId].toString()] : []);
+                                
+                                const isSkipSelected = currentList.includes('skip');
+                                return {
+                                  ...prev,
+                                  [groupId]: isSkipSelected ? [] : ['skip']
+                                };
+                              });
                             }}
                             className="flex items-center justify-between py-2 cursor-pointer group"
                           >
                             <div className="flex items-center gap-3">
                               <span 
-                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                                  selectedId === 'skip' 
-                                    ? 'border-violet-600 dark:border-violet-500' 
+                                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
+                                  selectedList.includes('skip') 
+                                    ? 'border-red-500 bg-red-500' 
                                     : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
                                 }`}
                               >
-                                {selectedId === 'skip' && (
-                                  <span className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-500" />
+                                {selectedList.includes('skip') && (
+                                  <span className="text-white text-xs font-bold">✓</span>
                                 )}
                               </span>
                               <span className="text-[14px] font-medium text-red-500 dark:text-red-400">
@@ -1010,11 +1107,13 @@ const PremiumServiceDetailPage = () => {
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                })
+              })()}
+            </div>
             ) : (
               <div className="py-2 space-y-3">
                 <p className="text-xs text-gray-500">This combo package standardly includes the following items at a discounted rate:</p>
+                <div className="grid grid-cols-1 gap-2">
                   {selectedPackage.includedItems.map((incItem, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
                       <span className="text-emerald-500 font-bold">✓</span>
@@ -1713,6 +1812,91 @@ const PremiumServiceDetailPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Category Group details modal */}
+      <AnimatePresence>
+        {activeCategoryModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveCategoryModal(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-pointer"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-white dark:bg-zinc-900 rounded-t-[32px] z-50 shadow-2xl p-6 pb-[calc(env(safe-area-inset-bottom)+24px)] flex flex-col gap-5 border-t dark:border-zinc-800"
+            >
+              <div className="flex justify-between items-center border-b pb-3 dark:border-zinc-800">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
+                  {activeCategoryModal.title} Options & Packages
+                </h3>
+                <button
+                  onClick={() => setActiveCategoryModal(null)}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full text-gray-500"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Available Options:</h4>
+                <div className="space-y-3">
+                  {activeCategoryModal.items?.map((item) => (
+                    <div
+                      key={item._id}
+                      className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border dark:border-zinc-800 flex justify-between items-start gap-4"
+                    >
+                      <div className="space-y-1">
+                        <div className="font-semibold text-sm text-gray-800 dark:text-zinc-200">{item.title}</div>
+                        {item.duration && <div className="text-[10px] text-gray-400 flex items-center gap-1 font-medium"><FiClock /> {item.duration}</div>}
+                        {item.description && <p className="text-xs text-gray-500 leading-normal">{item.description}</p>}
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <span className="font-bold text-sm text-brand">₹{item.price}</span>
+                        {/* Quick Selection button */}
+                        {service?.serviceType === 'package_base' && selectedPackage && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const groupId = activeCategoryModal._id?.toString();
+                              if (groupId) {
+                                // Select this option and default all other groups to 'skip'
+                                const updatedSelections = {};
+                                service.serviceGroups?.forEach(g => {
+                                  const gId = g._id?.toString();
+                                  if (gId === groupId) {
+                                    updatedSelections[gId] = [item._id?.toString()];
+                                  } else {
+                                    updatedSelections[gId] = ['skip'];
+                                  }
+                                });
+
+                                setCustomSelectedItems(updatedSelections);
+                                setIsCustomizing(true);
+                                setActiveCategoryModal(null);
+                                toast.success(`Selected ${item.title}`);
+                              }
+                            }}
+                            className="text-[10px] font-bold bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 px-3 py-1 rounded-full border border-violet-100 dark:border-violet-900/50 transition-colors"
+                          >
+                            Choose Option
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -434,7 +434,23 @@ const bookingSchema = new mongoose.Schema({
   visits: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'BookingVisit' 
-  }]
+  }],
+  loyaltyPointsRedeemed: {
+    type: Number,
+    default: 0
+  },
+  loyaltyPointsEarned: {
+    type: Number,
+    default: 0
+  },
+  loyaltyPointsAwarded: {
+    type: Boolean,
+    default: false
+  },
+  loyaltyPointsRefunded: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });
@@ -446,7 +462,116 @@ bookingSchema.pre('save', async function (next) {
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     this.bookingNumber = `BK${timestamp}${random}`;
   }
+  
+  // Refund loyalty points if cancelled or search failed
+  if (this.isModified('status') && (this.status === 'cancelled' || this.status === 'no_vendors')) {
+    if (this.loyaltyPointsRedeemed > 0 && !this.loyaltyPointsRefunded) {
+      try {
+        const User = mongoose.model('User');
+        await User.findByIdAndUpdate(this.userId, { $inc: { loyaltyPoints: this.loyaltyPointsRedeemed } });
+        console.log(`[LoyaltyPoints] Refunded ${this.loyaltyPointsRedeemed} points to user ${this.userId} due to status change to ${this.status}`);
+        
+        const Transaction = mongoose.model('Transaction');
+        await Transaction.create({
+          userId: this.userId,
+          type: 'refund',
+          amount: this.loyaltyPointsRedeemed,
+          status: 'completed',
+          paymentMethod: 'system',
+          description: `Refunded ${this.loyaltyPointsRedeemed} Loyalty Points for booking #${this.bookingNumber} (${this.status})`,
+          bookingId: this._id,
+          metadata: { type: 'loyalty_points', pointsRefunded: this.loyaltyPointsRedeemed }
+        });
+        
+        this.loyaltyPointsRefunded = true;
+      } catch (err) {
+        console.error('[LoyaltyPoints] Error refunding points in pre-save hook:', err);
+      }
+    }
+  }
+
+  // Deduct loyalty points cancellation penalty if booking is cancelled
+  if (this.isModified('status') && this.status === 'cancelled') {
+    try {
+      const Settings = mongoose.model('Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      const cancellationPenalty = globalSettings?.loyaltyPointsCancellationPenalty || 0;
+      
+      if (cancellationPenalty > 0) {
+        const User = mongoose.model('User');
+        const user = await User.findById(this.userId);
+        if (user) {
+          const penaltyAmount = Math.min(user.loyaltyPoints || 0, cancellationPenalty);
+          if (penaltyAmount > 0) {
+            user.loyaltyPoints -= penaltyAmount;
+            await user.save();
+            
+            const Transaction = mongoose.model('Transaction');
+            await Transaction.create({
+              userId: this.userId,
+              type: 'penalty',
+              amount: penaltyAmount,
+              status: 'completed',
+              paymentMethod: 'system',
+              description: `Deducted ${penaltyAmount} Loyalty Points as cancellation penalty for booking #${this.bookingNumber}`,
+              bookingId: this._id,
+              metadata: { type: 'loyalty_points', pointsDeducted: penaltyAmount }
+            });
+            console.log(`[LoyaltyPoints] Deducted ${penaltyAmount} points from user ${this.userId} as cancellation penalty for booking ${this.bookingNumber}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[LoyaltyPoints] Error deducting cancellation penalty points in pre-save hook:', err);
+    }
+  }
   next();
+});
+
+// Post-save hook to award loyalty points upon completion
+bookingSchema.post('save', async function (doc) {
+  if (doc.status === 'completed' && !doc.loyaltyPointsAwarded && (doc.paymentMethod === 'razorpay' || doc.paymentMethod === 'wallet' || doc.paymentMethod === 'online')) {
+    try {
+      const Settings = mongoose.model('Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      const earningRate = globalSettings?.loyaltyPointsEarningRate !== undefined ? globalSettings.loyaltyPointsEarningRate : 1;
+      const fixedAward = globalSettings?.loyaltyPointsFixedCompletionAward || 0;
+      
+      // Award points based on amount spent + flat completion award
+      const pointsEarned = (Math.floor(doc.finalAmount / 100) * earningRate) + fixedAward;
+      
+      if (pointsEarned > 0) {
+        await mongoose.model('Booking').findByIdAndUpdate(doc._id, { 
+          loyaltyPointsEarned: pointsEarned,
+          loyaltyPointsAwarded: true 
+        });
+
+        const User = mongoose.model('User');
+        await User.findByIdAndUpdate(doc.userId, { $inc: { loyaltyPoints: pointsEarned } });
+        console.log(`[LoyaltyPoints] Awarded ${pointsEarned} points to user ${doc.userId} for booking ${doc.bookingNumber}`);
+
+        // Try creating push/in-app notification
+        const { createNotification } = require('../controllers/notificationControllers/notificationController');
+        await createNotification({
+          userId: doc.userId,
+          type: 'loyalty_points_earned',
+          title: 'Loyalty Points Earned! 🎁',
+          message: `Congratulations! You earned ${pointsEarned} loyalty points from your booking ${doc.bookingNumber}.`,
+          relatedId: doc._id,
+          relatedType: 'booking',
+          pushData: {
+            type: 'loyalty_points_earned',
+            bookingId: doc._id.toString(),
+            link: '/user/rewards'
+          }
+        });
+      } else {
+        await mongoose.model('Booking').findByIdAndUpdate(doc._id, { loyaltyPointsAwarded: true });
+      }
+    } catch (err) {
+      console.error('[LoyaltyPoints] Error awarding points post-save:', err);
+    }
+  }
 });
 
 // Core compound indexes
