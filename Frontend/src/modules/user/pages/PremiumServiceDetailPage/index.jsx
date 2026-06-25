@@ -1010,18 +1010,18 @@ const PremiumServiceDetailPage = () => {
                       </div>
                     </div>
                   );
-                })}
+                });
+              })()}
               </div>
             ) : (
               <div className="py-2 space-y-3">
                 <p className="text-xs text-gray-500">This combo package standardly includes the following items at a discounted rate:</p>
-                  {selectedPackage.includedItems.map((incItem, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span>{incItem.serviceGroupTitle}: <span className="font-bold text-gray-800 dark:text-zinc-100">{incItem.selectedItemTitle}</span></span>
-                    </div>
-                  ))}
-                </div>
+                {selectedPackage.includedItems.map((incItem, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>{incItem.serviceGroupTitle}: <span className="font-bold text-gray-800 dark:text-zinc-100">{incItem.selectedItemTitle}</span></span>
+                  </div>
+                ))}
               </div>
             )}
           </section>

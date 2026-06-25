@@ -594,12 +594,12 @@ const deleteVendor = async (req, res) => {
 };
 
 /**
- * Update vendor (categories and status)
+ * Update vendor (categories, status, and level)
  */
 const updateVendor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive, service, subCategories, brands } = req.body;
+    const { isActive, service, subCategories, brands, currentLevel } = req.body;
 
     const vendor = await Vendor.findById(id);
 
@@ -624,6 +624,17 @@ const updateVendor = async (req, res) => {
 
     if (brands !== undefined) {
       vendor.brands = Array.isArray(brands) ? brands : [brands];
+    }
+
+    if (currentLevel !== undefined) {
+      vendor.currentLevel = currentLevel;
+      if (currentLevel === 'L1') {
+        vendor.level = 1;
+      } else if (currentLevel === 'L2') {
+        vendor.level = 2;
+      } else {
+        vendor.level = 3;
+      }
     }
 
     await vendor.save();

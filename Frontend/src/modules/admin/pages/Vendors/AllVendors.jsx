@@ -21,7 +21,7 @@ const AllVendors = () => {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [subCategoriesData, setSubCategoriesData] = useState({});
   const [brandsData, setBrandsData] = useState({});
-  const [editFormData, setEditFormData] = useState({ isActive: true, service: [], subCategories: [], brands: [] });
+  const [editFormData, setEditFormData] = useState({ isActive: true, service: [], subCategories: [], brands: [], currentLevel: 'L3' });
   const navigate = useNavigate();
 
   // Load vendors from backend
@@ -146,7 +146,8 @@ const AllVendors = () => {
       isActive: vendor.isActive,
       service: Array.isArray(vendor.service) ? vendor.service : (vendor.service ? [vendor.service] : []),
       subCategories: Array.isArray(vendor.subCategories) ? vendor.subCategories : [],
-      brands: Array.isArray(vendor.brands) ? vendor.brands : []
+      brands: Array.isArray(vendor.brands) ? vendor.brands : [],
+      currentLevel: vendor.currentLevel || 'L3'
     });
     setExpandedCategory(null);
     setIsEditModalOpen(true);
@@ -190,7 +191,7 @@ const AllVendors = () => {
       if (response.success) {
         setVendors(prev => prev.map(v => 
           v.id === selectedVendor.id 
-            ? { ...v, isActive: editFormData.isActive, service: editFormData.service, subCategories: editFormData.subCategories, brands: editFormData.brands }
+            ? { ...v, isActive: editFormData.isActive, service: editFormData.service, subCategories: editFormData.subCategories, brands: editFormData.brands, currentLevel: editFormData.currentLevel }
             : v
         ));
         toast.success('Vendor updated successfully');
@@ -636,6 +637,21 @@ const AllVendors = () => {
               <span className="text-sm font-semibold text-gray-700">Vendor Account Active</span>
             </label>
             <p className="text-xs text-gray-500 mt-1 ml-6">If disabled, the vendor will not be able to log in or receive jobs.</p>
+          </div>
+
+          {/* Vendor Level Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Vendor Level</label>
+            <select
+              value={editFormData.currentLevel}
+              onChange={(e) => setEditFormData(prev => ({ ...prev, currentLevel: e.target.value }))}
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs font-semibold"
+            >
+              <option value="L1">Level 1 — Premium / Expert (80%+ Rating)</option>
+              <option value="L2">Level 2 — Standard / Professional (50-80% Rating)</option>
+              <option value="L3">Level 3 — Basic / Beginner (Under 50% Rating)</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Directly upgrades/downgrades vendor ranking level manually.</p>
           </div>
 
           {/* Categories */}

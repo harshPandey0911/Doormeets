@@ -9,9 +9,14 @@ const {
   getRevenueReport,
   getCustomerReport
 } = require('../../controllers/adminControllers/adminReportController');
+const { exportExcel, exportPDF } = require('../../controllers/adminControllers/adminExportController');
 
 // All routes require authentication and admin role
 router.use(authenticate, isAdmin);
+
+// Export routes
+router.get('/reports/export/excel', exportExcel);
+router.get('/reports/export/pdf', exportPDF);
 
 // Report routes
 router.get('/reports/bookings', getBookingReport);

@@ -89,6 +89,11 @@ const categorySchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  minWalletBalance: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   homeOrder: {
     type: Number,
     default: 0,

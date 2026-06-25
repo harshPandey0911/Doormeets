@@ -30,6 +30,7 @@ const categorySchema = z.object({
   enableWarranty: z.boolean().default(false),
   enableMultiVisit: z.boolean().default(false),
   enablePricingMatrix: z.boolean().default(true),
+  minWalletBalance: z.number().optional().default(0),
 });
 
 const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filterTemplateId, filterTemplateCode }) => {
@@ -59,6 +60,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     cityIds: [],            // specific city IDs when allCities is false
     isGroupCategory: false, // Group category toggle
     mappedCategories: [],   // IDs of mapped child categories
+    minWalletBalance: 0,
   });
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -125,6 +127,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             cityIds: (cat.cityIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
             isGroupCategory: cat.isGroupCategory || false,
             mappedCategories: (cat.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
+            minWalletBalance: cat.minWalletBalance || 0,
           }));
 
           // Update catalog with fetched categories
@@ -169,6 +172,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         cityIds: [],
         isGroupCategory: false,
         mappedCategories: [],
+        minWalletBalance: 0,
       });
       return;
     }
@@ -198,10 +202,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       cityIds: existingCityIds,
       isGroupCategory: safe.isGroupCategory || false,
       mappedCategories: (safe.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
+      minWalletBalance: safe.minWalletBalance || 0,
     });
-  }, [editing]);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  }, [editing]);  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const reset = () => {
     setEditingId(null);
@@ -212,8 +215,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       homeBadge: "",
       hasSaleBadge: false,
       hasBrands: true,
-      hasSubCategory: false,
-      hasBrand: false,
+      hasSubCategory: true,
+      hasBrand: true,
       templateId: filterTemplateId || "",
       enableBrands: false,
       brandRequired: false,
@@ -229,6 +232,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       cityIds: [],
       isGroupCategory: false,
       mappedCategories: [],
+      minWalletBalance: 0,
     });
     setIsModalOpen(false);
   };
@@ -285,6 +289,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       enableWarranty: Boolean(form.enableWarranty),
       enableMultiVisit: Boolean(form.enableMultiVisit),
       enablePricingMatrix: Boolean(form.enablePricingMatrix),
+      minWalletBalance: Number(form.minWalletBalance) || 0,
     });
 
     if (!validationResult.success) {
@@ -293,7 +298,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       return;
     }
 
-    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, templateId, enableBrands, brandRequired, enableConsultantBooking, enableWarranty, enableMultiVisit, enablePricingMatrix, showOnHome, categoryType, status } = validationResult.data;
+    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, templateId, enableBrands, brandRequired, enableConsultantBooking, enableWarranty, enableMultiVisit, enablePricingMatrix, showOnHome, categoryType, status, minWalletBalance } = validationResult.data;
 
     try {
       setLoading(true);
@@ -341,6 +346,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         updateCityIds: finalCityIds,
         isGroupCategory: Boolean(form.isGroupCategory),
         mappedCategories: form.isGroupCategory ? (form.mappedCategories || []) : [],
+        minWalletBalance: Number(minWalletBalance) || 0,
       };
 
       if (editingId && !editingId.startsWith('ucat-')) {
@@ -1007,6 +1013,19 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
               <option value="inactive">Deactive</option>
               <option value="coming_soon">Coming Soon</option>
             </select>
+          </div>
+
+          {/* Minimum Wallet Balance input */}
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Minimum Wallet Balance (₹)</label>
+            <input
+              type="number"
+              value={form.minWalletBalance || 0}
+              onChange={(e) => setForm((p) => ({ ...p, minWalletBalance: Number(e.target.value) || 0 }))}
+              placeholder="e.g. 500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-semibold"
+            />
+            <p className="text-xs text-gray-500 mt-1">Minimum wallet balance required for vendors to receive bookings in this category.</p>
           </div>
 
           <div className="flex items-center gap-3 pt-2">

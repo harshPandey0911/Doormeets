@@ -179,7 +179,8 @@ const createCategory = async (req, res) => {
       cityIds,
       categoryType,
       isGroupCategory,
-      mappedCategories
+      mappedCategories,
+      minWalletBalance
     } = req.body;
 
     console.log('Creating category with payload:', req.body);
@@ -247,6 +248,7 @@ const createCategory = async (req, res) => {
         existingCategory.enableMultiVisit = enableMultiVisit !== undefined ? Boolean(enableMultiVisit) : false;
         existingCategory.enablePricingMatrix = enablePricingMatrix !== undefined ? Boolean(enablePricingMatrix) : true;
         existingCategory.createdBy = req.user.id;
+        existingCategory.minWalletBalance = minWalletBalance !== undefined ? Number(minWalletBalance) : 0;
         
         await existingCategory.save();
         
@@ -271,7 +273,8 @@ const createCategory = async (req, res) => {
             isPopular: existingCategory.isPopular,
             categoryType: existingCategory.categoryType,
             createdAt: existingCategory.createdAt,
-            updatedAt: existingCategory.updatedAt
+            updatedAt: existingCategory.updatedAt,
+            minWalletBalance: existingCategory.minWalletBalance
           }
         });
       }
@@ -311,7 +314,8 @@ const createCategory = async (req, res) => {
       enablePricingMatrix: enablePricingMatrix !== undefined ? Boolean(enablePricingMatrix) : true,
       createdBy: req.user.id,
       isGroupCategory: isGroupCategory !== undefined ? Boolean(isGroupCategory) : false,
-      mappedCategories: Array.isArray(mappedCategories) ? mappedCategories : []
+      mappedCategories: Array.isArray(mappedCategories) ? mappedCategories : [],
+      minWalletBalance: minWalletBalance !== undefined ? Number(minWalletBalance) : 0
     });
 
     res.status(201).json({
@@ -410,7 +414,8 @@ const updateCategory = async (req, res) => {
       enableMultiVisit,
       enablePricingMatrix,
       isGroupCategory,
-      mappedCategories
+      mappedCategories,
+      minWalletBalance
     } = req.body;
 
     const category = await Category.findById(id);
@@ -481,6 +486,7 @@ const updateCategory = async (req, res) => {
     if (enableWarranty !== undefined) category.enableWarranty = Boolean(enableWarranty);
     if (enableMultiVisit !== undefined) category.enableMultiVisit = Boolean(enableMultiVisit);
     if (enablePricingMatrix !== undefined) category.enablePricingMatrix = Boolean(enablePricingMatrix);
+    if (minWalletBalance !== undefined) category.minWalletBalance = Number(minWalletBalance) || 0;
 
     if (updateCityIds !== undefined) {
       category.cityIds = updateCityIds;
@@ -526,6 +532,7 @@ const updateCategory = async (req, res) => {
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         isGroupCategory: category.isGroupCategory || false,
         mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
+        minWalletBalance: category.minWalletBalance || 0,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }

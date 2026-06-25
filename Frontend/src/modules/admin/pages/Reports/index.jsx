@@ -35,6 +35,49 @@ const ReportsOverview = () => {
   const [growthData, setGrowthData] = useState([]);
   const [period, setPeriod] = useState('monthly');
 
+  // Export reports state hooks
+  const [exportType, setExportType] = useState('gst');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExport = (format) => {
+    const token = localStorage.getItem('adminAccessToken');
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const query = new URLSearchParams({
+      reportType: exportType,
+      startDate,
+      endDate
+    });
+    
+    setExportLoading(true);
+    fetch(`${baseUrl}/admin/reports/export/${format}?${query.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(async (res) => {
+      if (!res.ok) throw new Error('Failed to generate report');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${exportType}_report_${Date.now()}.${format === 'excel' ? 'csv' : 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Report downloaded successfully!');
+    })
+    .catch((err) => {
+      console.error(err);
+      toast.error('Failed to download report. Please verify date range.');
+    })
+    .finally(() => {
+      setExportLoading(false);
+    });
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -169,6 +212,64 @@ const ReportsOverview = () => {
           </CardShell>
         </Link>
       </div>
+
+      {/* Export Reports Widget */}
+      <CardShell className="bg-white border-slate-200 p-5 shadow-sm">
+        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <FiDownload className="text-blue-600" />
+          Export Financial & Operational Reports
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Report Type</label>
+            <select
+              value={exportType}
+              onChange={(e) => setExportType(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="gst">GST Tax Collection Report</option>
+              <option value="profit">Net Platform Profit Report</option>
+              <option value="payout">Vendor Net Payout Report</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleExport('excel')}
+              disabled={exportLoading}
+              className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+            >
+              <FiDownload size={14} />
+              Excel (CSV)
+            </button>
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={exportLoading}
+              className="flex-1 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+            >
+              <FiDownload size={14} />
+              PDF
+            </button>
+          </div>
+        </div>
+      </CardShell>
 
       {/* Overview Filters */}
       <div className="flex justify-between items-center">
