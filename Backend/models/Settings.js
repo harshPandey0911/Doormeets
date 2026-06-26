@@ -226,6 +226,26 @@ const settingsSchema = new mongoose.Schema({
   welcomeVideoUrl: {
     type: String,
     default: null
+  },
+  loyaltyPointsEarningRate: {
+    type: Number,
+    default: 1, // 1 point per 100 Rs spent
+    min: 0
+  },
+  loyaltyPointsRedemptionRate: {
+    type: Number,
+    default: 1, // 1 point = 1 Rs discount
+    min: 0
+  },
+  loyaltyPointsCancellationPenalty: {
+    type: Number,
+    default: 0, // points deducted on cancellation
+    min: 0
+  },
+  loyaltyPointsFixedCompletionAward: {
+    type: Number,
+    default: 0, // flat points awarded on completion
+    min: 0
   }
 }, { timestamps: true });
 

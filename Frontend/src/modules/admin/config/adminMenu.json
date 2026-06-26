@@ -143,7 +143,8 @@
       "Banners & Categories",
       "Combined Categories",
       "Top Brands & Featured",
-      "Popular Services"
+      "Popular Services",
+      "Loyalty Points Settings"
     ]
   },
   {
@@ -250,6 +251,16 @@
       "SUPER_ADMIN",
       "admin",
       "CITY_ADMIN"
+    ],
+    "children": []
+  },
+  {
+    "title": "SOS Alerts",
+    "route": "/admin/sos-alerts",
+    "section": "SUPPORT & REVIEWS",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
     ],
     "children": []
   },

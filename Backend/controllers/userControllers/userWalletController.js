@@ -9,7 +9,7 @@ const getWalletBalance = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const user = await User.findById(userId).select('wallet');
+    const user = await User.findById(userId).select('wallet loyaltyPoints');
 
     if (!user) {
       return res.status(404).json({
@@ -21,7 +21,8 @@ const getWalletBalance = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        balance: user.wallet.balance || 0
+        balance: user.wallet.balance || 0,
+        loyaltyPoints: user.loyaltyPoints || 0
       }
     });
   } catch (error) {

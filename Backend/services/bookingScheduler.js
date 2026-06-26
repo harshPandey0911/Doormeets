@@ -107,7 +107,7 @@ class BookingScheduler {
           waveStartedAt: { $ne: null },
           potentialVendors: { $exists: true, $not: { $size: 0 } }
         },
-        '_id currentWave waveStartedAt potentialVendors notifiedVendors bookingNumber createdAt userId expiresAt' // Added createdAt, userId, expiresAt
+        '_id currentWave waveStartedAt potentialVendors notifiedVendors bookingNumber createdAt userId expiresAt loyaltyPointsRedeemed' // Added createdAt, userId, expiresAt, loyaltyPointsRedeemed
       ).lean();
 
       if (activeBookings.length === 0) {
@@ -147,6 +147,31 @@ class BookingScheduler {
               if (updateResult.modifiedCount > 0) {
                 console.log(`[BookingScheduler] ${booking.bookingNumber}: Search timed out. Status updated to NO_VENDORS.`);
                 
+                // Refund Loyalty Points if any were redeemed
+                if (booking.loyaltyPointsRedeemed > 0) {
+                  try {
+                    const User = require('../models/User');
+                    const Transaction = require('../models/Transaction');
+                    await User.findByIdAndUpdate(booking.userId, { $inc: { loyaltyPoints: booking.loyaltyPointsRedeemed } });
+                    
+                    await Transaction.create({
+                      userId: booking.userId,
+                      type: 'refund',
+                      amount: booking.loyaltyPointsRedeemed,
+                      status: 'completed',
+                      paymentMethod: 'system',
+                      description: `Refunded ${booking.loyaltyPointsRedeemed} Loyalty Points for booking #${booking.bookingNumber} (search timeout)`,
+                      bookingId: booking._id,
+                      metadata: { type: 'loyalty_points', pointsRefunded: booking.loyaltyPointsRedeemed }
+                    });
+                    
+                    await Booking.updateOne({ _id: booking._id }, { $set: { loyaltyPointsRefunded: true } });
+                    console.log(`[BookingScheduler] Refunded ${booking.loyaltyPointsRedeemed} points to user ${booking.userId}`);
+                  } catch (refErr) {
+                    console.error('[BookingScheduler] Error refunding loyalty points on timeout:', refErr);
+                  }
+                }
+
                 // Notify User
                 if (this.io) {
                   this.io.to(`user_${booking.userId}`).emit('booking_search_failed', {

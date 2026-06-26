@@ -1,5 +1,6 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, useLocation, Navigate, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import PageTransition from '../components/common/PageTransition';
 import BottomNav from '../components/layout/BottomNav';
 import Footer from '../components/layout/Footer';
@@ -8,14 +9,13 @@ import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 import PublicRoute from '../../../components/auth/PublicRoute';
 import useAppNotifications from '../../../hooks/useAppNotifications.jsx';
 import { ThemeProvider } from '../../../context/ThemeContext';
+import { useSocket } from '../../../context/SocketContext';
 
 // Lazy load wrapper with error handling
 const lazyLoad = (importFunc) => {
   return lazy(() => {
     return Promise.resolve(importFunc()).catch((error) => {
       console.error('User Module - Lazy Load Error:', error);
-      // Failed to load user page
-      // Return a fallback component wrapped in a Promise
       return Promise.resolve({
         default: () => (
           <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -54,7 +54,7 @@ const lazyLoad = (importFunc) => {
   });
 };
 
-// Lazy load all user pages for code splitting with error handling
+// Lazy load all user pages
 const Home = lazyLoad(() => import('../pages/Home'));
 const Rewards = lazyLoad(() => import('../pages/Rewards'));
 const Account = lazyLoad(() => import('../pages/Account'));
@@ -102,10 +102,43 @@ const HomeSlugRedirect = () => {
 
 const UserRoutes = () => {
   const location = useLocation();
+  const socket = useSocket();
+  const [resolvedSOSAlert, setResolvedSOSAlert] = useState(null);
 
-  // Enable global notifications for user
-  // Global notifications are now handled by SocketProvider at App level
-  // useAppNotifications('user');
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSOSResolved = (data) => {
+      console.log('🚨 SOS Alert Resolved received on User side:', data);
+      setResolvedSOSAlert(data);
+      
+      // Play a positive confirmation tone
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+        osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+        
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.25, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } catch (e) {}
+    };
+
+    socket.on('sos_alert_resolved', handleSOSResolved);
+    return () => {
+      socket.off('sos_alert_resolved', handleSOSResolved);
+    };
+  }, [socket]);
 
   // Pages where BottomNav should be shown
   const bottomNavPages = ['/user/home', '/user/my-bookings', '/user/cart', '/user/account'];
@@ -117,18 +150,17 @@ const UserRoutes = () => {
 
   const shouldShowBottomNav = bottomNavPages.includes(normalizedPath) || location.pathname === '/user/home/';
 
-  // Check if we hide the live booking card (e.g. if we are on the specific booking details or track page)
+  // Check if we hide the live booking card
   const isBookingDetailsPage = location.pathname.match(/^\/user\/booking\/[a-zA-Z0-9]+(\/track)?$/);
   const isBookingConfirmationPage = location.pathname.includes('/booking-confirmation');
 
-
-  // Check if we are on public pages where we shouldn't fetch bookings
+  // Check if we are on public pages
   const isPublicPage = location.pathname.includes('/login') || location.pathname.includes('/signup') || location.pathname === '/user' || location.pathname === '/user/';
 
   return (
     <ThemeProvider>
       <ErrorBoundary>
-        {/* Main content area - leaves space for bottom nav when needed */}
+        {/* Main content area */}
         <div className={shouldShowBottomNav ? "pb-24" : ""}>
           <Suspense fallback={<LoadingFallback />}>
             <PageTransition>
@@ -138,7 +170,7 @@ const UserRoutes = () => {
                 <Route path="/login" element={<PublicRoute userType="user"><Login /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute userType="user"><Signup /></PublicRoute>} />
 
-                {/* Protected routes (auth required) */}
+                {/* Protected routes */}
                 <Route path="/home" element={<ProtectedRoute userType="user"><Home /></ProtectedRoute>} />
                 <Route path="/home/:slug" element={<ProtectedRoute userType="user"><HomeSlugRedirect /></ProtectedRoute>} />
                 <Route path="/native" element={<ProtectedRoute userType="user"><Native /></ProtectedRoute>} />
@@ -158,7 +190,6 @@ const UserRoutes = () => {
                 <Route path="/my-plan" element={<ProtectedRoute userType="user"><MyPlan /></ProtectedRoute>} />
                 <Route path="/my-plan/:id" element={<ProtectedRoute userType="user"><PlanDetails /></ProtectedRoute>} />
                 <Route path="/category/:slug" element={<ProtectedRoute userType="user"><CategoryPage /></ProtectedRoute>} />
-                {/* <Route path="/categories" element={<ProtectedRoute userType="user"><CategoriesPage /></ProtectedRoute>} /> */}
                 <Route path="/brand/:slug" element={<ProtectedRoute userType="user"><BrandPage /></ProtectedRoute>} />
                 <Route path="/service/:slug" element={<ProtectedRoute userType="user"><ServiceDetailPage /></ProtectedRoute>} />
                 <Route path="/my-rating" element={<ProtectedRoute userType="user"><MyRating /></ProtectedRoute>} />
@@ -172,7 +203,50 @@ const UserRoutes = () => {
           </Suspense>
         </div>
 
-        {/* These components are OUTSIDE Suspense so they persist during page loads */}
+        {/* Custom Premium SOS Resolved Slide-down Banner */}
+        <AnimatePresence>
+          {resolvedSOSAlert && (
+            <motion.div
+              initial={{ opacity: 0, y: -80, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="fixed top-6 left-4 right-4 z-[999999] max-w-sm mx-auto bg-white rounded-3xl p-5 shadow-[0_20px_40px_rgba(6,95,70,0.15)] border border-emerald-200 flex flex-col gap-3"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold animate-pulse">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Emergency Status</p>
+                  <h4 className="text-sm font-black text-gray-800 tracking-tight">SOS Alert Resolved</h4>
+                </div>
+                <button 
+                  onClick={() => setResolvedSOSAlert(null)}
+                  className="w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="bg-emerald-50/50 border border-emerald-100/50 rounded-2xl p-3.5">
+                <p className="text-[9px] text-emerald-800/80 font-semibold mb-1 uppercase tracking-widest">Resolution Update</p>
+                <p className="text-xs text-gray-700 font-bold leading-relaxed">{resolvedSOSAlert.notes || 'Our emergency response team has confirmed that you are safe.'}</p>
+              </div>
+
+              <button
+                onClick={() => setResolvedSOSAlert(null)}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors shadow-lg shadow-emerald-600/15"
+              >
+                I am Safe
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Components OUTSIDE Suspense */}
         {!isBookingDetailsPage && !isBookingConfirmationPage && !isPublicPage && <LiveBookingCard hasBottomNav={shouldShowBottomNav} />}
         {shouldShowBottomNav && <BottomNav />}
         {(location.pathname === '/user/home' || location.pathname === '/user/home/') && <Footer />}
@@ -182,4 +256,3 @@ const UserRoutes = () => {
 };
 
 export default UserRoutes;
-

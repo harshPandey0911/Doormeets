@@ -149,19 +149,26 @@ const PremiumServiceDetailPage = () => {
   const [customSelectedItems, setCustomSelectedItems] = useState({});
   const [calculatedPrice, setCalculatedPrice] = useState(0);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [activeCategoryModal, setActiveCategoryModal] = useState(null);
 
   useEffect(() => {
-    if (selectedPackage && selectedPackage.includedItems) {
+    setIsCustomizing(false);
+    if (!selectedPackage) {
+      setCustomSelectedItems({});
+    }
+  }, [selectedPackage]);
+
+  useEffect(() => {
+    if (!isCustomizing && selectedPackage && selectedPackage.includedItems) {
       const initial = {};
       selectedPackage.includedItems.forEach(item => {
         if (item.serviceGroupId) {
-          initial[item.serviceGroupId.toString()] = item.selectedItemId ? item.selectedItemId.toString() : '';
+          initial[item.serviceGroupId.toString()] = item.selectedItemId ? [item.selectedItemId.toString()] : [];
         }
       });
       setCustomSelectedItems(initial);
-      setIsCustomizing(false);
     }
-  }, [selectedPackage]);
+  }, [isCustomizing, selectedPackage]);
 
   // Variants state
   const [variants, setVariants] = useState([]);
@@ -257,24 +264,30 @@ const PremiumServiceDetailPage = () => {
     if (!service) return;
 
     let basePrice = 0;
-    if (service.serviceType === 'package_base' && selectedPackage) {
-      if (isCustomizing) {
-        // If user is customizing, price is strictly the sum of selected items!
-        let sumPrice = 0;
-        Object.keys(customSelectedItems).forEach(groupId => {
-          const selectedId = customSelectedItems[groupId];
-          if (selectedId && selectedId !== 'skip') {
-            const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
-            const selectedItem = group?.items?.find(i => i._id?.toString() === selectedId.toString());
-            if (selectedItem) {
-              sumPrice += Number(selectedItem.price || 0);
-            }
-          }
-        });
-        basePrice = sumPrice;
-      } else {
+    if (service.serviceType === 'package_base') {
+      if (selectedPackage && !isCustomizing) {
         // Otherwise, show the discounted combo package price
         basePrice = selectedPackage.price || 0;
+      } else {
+        // If user is customizing, or no package is selected, price is strictly the sum of selected items!
+        let sumPrice = 0;
+        Object.keys(customSelectedItems).forEach(groupId => {
+          const selectedVal = customSelectedItems[groupId];
+          const selectedIds = Array.isArray(selectedVal)
+            ? selectedVal
+            : (selectedVal ? [selectedVal.toString()] : []);
+
+          selectedIds.forEach(selectedId => {
+            if (selectedId && selectedId !== 'skip') {
+              const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
+              const selectedItem = group?.items?.find(i => i._id?.toString() === selectedId.toString());
+              if (selectedItem) {
+                sumPrice += Number(selectedItem.price || 0);
+              }
+            }
+          });
+        });
+        basePrice = sumPrice;
       }
     } else if (service.serviceType === 'subscription_base' && service.packages && service.packages.length > 0) {
       basePrice = selectedPackage?.price || 0;
@@ -429,38 +442,89 @@ const PremiumServiceDetailPage = () => {
     }
 
     const cartData = buildCartItemData({ service, category, brand });
-    if (service?.serviceType === 'package_base' && selectedPackage) {
-      cartData.card.title = `${service.title} - ${selectedPackage.title}`;
-      if (selectedPackage.duration) cartData.card.duration = selectedPackage.duration;
-      dynamicFieldsPayload.push({
-        name: 'Selected Package',
-        label: 'Selected Package',
-        value: selectedPackage.title
-      });
-      if (selectedPackage.includedItems && service.serviceGroups) {
-        selectedPackage.includedItems.forEach(incItem => {
-          const groupId = incItem.serviceGroupId?.toString();
-          const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
-          if (group) {
-            const selectedId = customSelectedItems[groupId];
-            if (selectedId === 'skip') {
+    if (service?.serviceType === 'package_base') {
+      if (selectedPackage) {
+        cartData.card.title = `${service.title} - ${selectedPackage.title}`;
+        if (selectedPackage.duration) cartData.card.duration = selectedPackage.duration;
+        dynamicFieldsPayload.push({
+          name: 'Selected Package',
+          label: 'Selected Package',
+          value: selectedPackage.title
+        });
+        if (selectedPackage.includedItems && service.serviceGroups) {
+          selectedPackage.includedItems.forEach(incItem => {
+            const groupId = incItem.serviceGroupId?.toString();
+            const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
+            if (group) {
+              const selectedVal = customSelectedItems[groupId];
+              const selectedIds = Array.isArray(selectedVal)
+                ? selectedVal
+                : (selectedVal ? [selectedVal.toString()] : []);
+
+              if (selectedIds.includes('skip')) {
+                dynamicFieldsPayload.push({
+                  name: `Group: ${group.title}`,
+                  label: group.title,
+                  value: 'Skipped ("I don\'t need this")'
+                });
+              } else if (selectedIds.length > 0) {
+                const itemTitles = [];
+                selectedIds.forEach(id => {
+                  const selectedItem = group.items?.find(i => i._id?.toString() === id.toString());
+                  if (selectedItem) {
+                    itemTitles.push(`${selectedItem.title} (₹${selectedItem.price})`);
+                  }
+                });
+                if (itemTitles.length > 0) {
+                  dynamicFieldsPayload.push({
+                    name: `Group: ${group.title}`,
+                    label: group.title,
+                    value: itemTitles.join(', ')
+                  });
+                }
+              }
+            }
+          });
+        }
+      } else {
+        cartData.card.title = `${service.title} - Customized Items`;
+        dynamicFieldsPayload.push({
+          name: 'Selected Package',
+          label: 'Selected Package',
+          value: 'None (Custom Options Selection)'
+        });
+        if (service.serviceGroups) {
+          service.serviceGroups.forEach(group => {
+            const groupId = group._id?.toString();
+            const selectedVal = customSelectedItems[groupId];
+            const selectedIds = Array.isArray(selectedVal)
+              ? selectedVal
+              : (selectedVal ? [selectedVal.toString()] : []);
+
+            if (selectedIds.includes('skip')) {
               dynamicFieldsPayload.push({
                 name: `Group: ${group.title}`,
                 label: group.title,
                 value: 'Skipped ("I don\'t need this")'
               });
-            } else if (selectedId) {
-              const selectedItem = group.items?.find(i => i._id?.toString() === selectedId.toString());
-              if (selectedItem) {
+            } else if (selectedIds.length > 0) {
+              const itemTitles = [];
+              selectedIds.forEach(id => {
+                const selectedItem = group.items?.find(i => i._id?.toString() === id.toString());
+                if (selectedItem) {
+                  itemTitles.push(`${selectedItem.title} (₹${selectedItem.price})`);
+                }
+              });
+              if (itemTitles.length > 0) {
                 dynamicFieldsPayload.push({
                   name: `Group: ${group.title}`,
                   label: group.title,
-                  value: `${selectedItem.title} (₹${selectedItem.price})`
+                  value: itemTitles.join(', ')
                 });
               }
             }
-          }
-        });
+          });
+        }
       }
     }
     if (service?.serviceType === 'minute_base') {
@@ -506,7 +570,7 @@ const PremiumServiceDetailPage = () => {
   return (
     <div className="min-h-screen pb-28" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header Image Section with Full-Bleed style on mobile */}
-      <div 
+      <div
         className="relative w-full h-[320px] md:h-[460px] overflow-hidden bg-gray-100 shadow-sm select-none"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -533,11 +597,11 @@ const PremiumServiceDetailPage = () => {
         )}
         {/* Soft Linear Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
-        
+
         {/* Play Button Overlay (only if video is paused/exists) */}
         {serviceImages[activeImageIndex]?.type === 'video' && !isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-            <button 
+            <button
               onClick={togglePlay}
               className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-lg text-gray-800 hover:scale-105 active:scale-95 transition-all"
             >
@@ -570,9 +634,8 @@ const PremiumServiceDetailPage = () => {
                 key={dotIdx}
                 type="button"
                 onClick={() => setActiveImageIndex(dotIdx)}
-                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  activeImageIndex === dotIdx ? 'w-8 bg-brand' : 'w-2 bg-white/40 hover:bg-white/60'
-                }`}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${activeImageIndex === dotIdx ? 'w-8 bg-brand' : 'w-2 bg-white/40 hover:bg-white/60'
+                  }`}
                 aria-label={`Go to slide ${dotIdx + 1}`}
               />
             ))}
@@ -586,7 +649,7 @@ const PremiumServiceDetailPage = () => {
           <h1 className="text-[22px] font-semibold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
             {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
           </h1>
-          
+
           <div className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
             <FiStar className="fill-amber-400 text-amber-400" />
             <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{service.rating || "4.5"}</span>
@@ -610,7 +673,8 @@ const PremiumServiceDetailPage = () => {
                 return (
                   <div
                     key={group._id || idx}
-                    className="flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 hover:scale-[1.02] shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+                    onClick={() => setActiveCategoryModal(group)}
+                    className="flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 hover:scale-[1.04] hover:shadow-md cursor-pointer select-none"
                     style={{
                       backgroundColor: colors.bg,
                       borderColor: colors.border,
@@ -823,9 +887,8 @@ const PremiumServiceDetailPage = () => {
                     key={mins}
                     type="button"
                     onClick={() => setSelectedDuration(mins)}
-                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer ${
-                      selectedDuration === mins ? 'border-brand font-semibold shadow-sm' : ''
-                    }`}
+                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer ${selectedDuration === mins ? 'border-brand font-semibold shadow-sm' : ''
+                      }`}
                     style={
                       selectedDuration === mins
                         ? { backgroundColor: 'rgba(255,159,69,0.12)', color: 'var(--primary)', borderColor: 'var(--primary)' }
@@ -848,51 +911,59 @@ const PremiumServiceDetailPage = () => {
               <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Packages</h2>
             </div>
             <div className="space-y-3">
-              {service.packages.map((pkg, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedPackage(pkg)}
-                  className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${
-                    selectedPackage?.title === pkg.title ? 'border-brand' : 'border-border-color hover:border-gray-300'
-                  }`}
-                  style={
-                    selectedPackage?.title === pkg.title
-                      ? { backgroundColor: 'rgba(255,159,69,0.1)' }
-                      : { backgroundColor: 'var(--card-bg)' }
-                  }
-                >
-                  <div className="flex-1 min-w-0 pr-3">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="font-semibold text-sm leading-tight" style={{ color: 'var(--text-primary)' }}>{pkg.title}</h3>
-                      {pkg.isPopular && <span className="text-[9px] font-semibold uppercase bg-brand text-white px-2.5 py-0.5 rounded-full">Popular</span>}
-                    </div>
-                    {pkg.duration && <div className="text-[11px] font-semibold text-gray-400 mb-1.5 flex items-center gap-1"><FiClock /> {pkg.duration}</div>}
-                    {pkg.description && <p className="text-[11px] font-normal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
-                  </div>
-                  
-                  <div className="flex flex-col items-end shrink-0 gap-2">
-                    <div className="text-right">
-                      <div className="font-semibold text-sm text-brand">₹{pkg.price}</div>
-                      {pkg.originalPrice && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
-                    </div>
-                    <button
-                      type="button"
-                      className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${
-                        selectedPackage?.title === pkg.title 
-                          ? 'text-white' 
-                          : 'hover:bg-brand/5'
-                      }`}
-                      style={
-                        selectedPackage?.title === pkg.title 
-                          ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)' }
-                          : { borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'transparent' }
+              {service.packages.map((pkg, idx) => {
+                const isPkgSelected = selectedPackage?.title === pkg.title;
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (selectedPackage?.title === pkg.title && !isCustomizing) {
+                        setSelectedPackage(null);
+                      } else {
+                        setSelectedPackage(pkg);
+                        setIsCustomizing(false);
                       }
-                    >
-                      {selectedPackage?.title === pkg.title ? 'Selected' : 'Select'}
-                    </button>
+                    }}
+                    className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${isPkgSelected ? 'border-brand' : 'border-border-color hover:border-gray-300'
+                      }`}
+                    style={
+                      isPkgSelected
+                        ? { backgroundColor: 'rgba(255,159,69,0.1)' }
+                        : { backgroundColor: 'var(--card-bg)' }
+                    }
+                  >
+                    <div className="flex-1 min-w-0 pr-3">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className="font-semibold text-sm leading-tight" style={{ color: 'var(--text-primary)' }}>{pkg.title}</h3>
+                        {pkg.isPopular && <span className="text-[9px] font-semibold uppercase bg-brand text-white px-2.5 py-0.5 rounded-full">Popular</span>}
+                      </div>
+                      {pkg.duration && <div className="text-[11px] font-semibold text-gray-400 mb-1.5 flex items-center gap-1"><FiClock /> {pkg.duration}</div>}
+                      {pkg.description && <p className="text-[11px] font-normal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
+                    </div>
+
+                    <div className="flex flex-col items-end shrink-0 gap-2">
+                      <div className="text-right">
+                        <div className="font-semibold text-sm text-brand">₹{pkg.price}</div>
+                        {pkg.originalPrice && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                      </div>
+                      <button
+                        type="button"
+                        className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${isPkgSelected
+                            ? 'text-white'
+                            : 'hover:bg-brand/5'
+                          }`}
+                        style={
+                          isPkgSelected
+                            ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)' }
+                            : { borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'transparent' }
+                        }
+                      >
+                        {isPkgSelected ? 'Selected' : 'Select'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -910,14 +981,12 @@ const PremiumServiceDetailPage = () => {
               <button
                 type="button"
                 onClick={() => setIsCustomizing(prev => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  isCustomizing ? 'bg-violet-600' : 'bg-gray-200 dark:bg-zinc-700'
-                }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isCustomizing ? 'bg-violet-600' : 'bg-gray-200 dark:bg-zinc-700'
+                  }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    isCustomizing ? 'translate-x-5' : 'translate-x-0'
-                  }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isCustomizing ? 'translate-x-5' : 'translate-x-0'
+                    }`}
                 />
               </button>
             </div>
@@ -934,7 +1003,9 @@ const PremiumServiceDetailPage = () => {
                     const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
                     if (!group) return null;
 
-                    const selectedId = customSelectedItems[groupId];
+                    const selectedList = Array.isArray(customSelectedItems[groupId])
+                      ? customSelectedItems[groupId]
+                      : (customSelectedItems[groupId] ? [customSelectedItems[groupId].toString()] : []);
 
                     return (
                       <div key={incIdx} className="space-y-3">
@@ -943,85 +1014,105 @@ const PremiumServiceDetailPage = () => {
                         </h3>
 
                         <div className="space-y-3 pl-1">
-                        {group.items?.map((item) => {
-                          const isSelected = selectedId === item._id?.toString();
-                          return (
+                          {group.items?.map((item) => {
+                            const isSelected = selectedList.includes(item._id?.toString());
+                            return (
+                              <div
+                                key={item._id}
+                                onClick={() => {
+                                  setCustomSelectedItems(prev => {
+                                    const currentList = Array.isArray(prev[groupId])
+                                      ? prev[groupId]
+                                      : (prev[groupId] ? [prev[groupId].toString()] : []);
+
+                                    const listWithoutSkip = currentList.filter(id => id !== 'skip');
+                                    let newList;
+                                    if (listWithoutSkip.includes(item._id?.toString())) {
+                                      newList = listWithoutSkip.filter(id => id !== item._id?.toString());
+                                    } else {
+                                      newList = [...listWithoutSkip, item._id?.toString()];
+                                    }
+                                    return {
+                                      ...prev,
+                                      [groupId]: newList
+                                    };
+                                  });
+                                }}
+                                className="flex items-center justify-between py-2 cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span
+                                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${isSelected
+                                        ? 'border-violet-600 bg-violet-600 dark:border-violet-500 dark:bg-violet-500'
+                                        : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
+                                      }`}
+                                  >
+                                    {isSelected && (
+                                      <span className="text-white text-xs font-bold">✓</span>
+                                    )}
+                                  </span>
+                                  <span className="text-[14px] font-medium text-gray-700 dark:text-zinc-300" style={{ color: 'var(--text-primary)' }}>
+                                    {item.title}
+                                  </span>
+                                </div>
+                                <span className="text-[14px] font-bold text-gray-800 dark:text-zinc-200">
+                                  ₹{item.price}
+                                </span>
+                              </div>
+                            );
+                          })}
+
+                          {group.allowSkip && (
                             <div
-                              key={item._id}
                               onClick={() => {
-                                setCustomSelectedItems(prev => ({
-                                  ...prev,
-                                  [groupId]: item._id?.toString()
-                                }));
+                                setCustomSelectedItems(prev => {
+                                  const currentList = Array.isArray(prev[groupId])
+                                    ? prev[groupId]
+                                    : (prev[groupId] ? [prev[groupId].toString()] : []);
+
+                                  const isSkipSelected = currentList.includes('skip');
+                                  return {
+                                    ...prev,
+                                    [groupId]: isSkipSelected ? [] : ['skip']
+                                  };
+                                });
                               }}
                               className="flex items-center justify-between py-2 cursor-pointer group"
                             >
                               <div className="flex items-center gap-3">
-                                <span 
-                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                                    isSelected 
-                                      ? 'border-violet-600 dark:border-violet-500' 
+                                <span
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${selectedList.includes('skip')
+                                      ? 'border-red-500 bg-red-500'
                                       : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
-                                  }`}
+                                    }`}
                                 >
-                                  {isSelected && (
-                                    <span className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-500" />
+                                  {selectedList.includes('skip') && (
+                                    <span className="text-white text-xs font-bold">✓</span>
                                   )}
                                 </span>
-                                <span className="text-[14px] font-medium text-gray-700 dark:text-zinc-300" style={{ color: 'var(--text-primary)' }}>
-                                  {item.title}
+                                <span className="text-[14px] font-medium text-red-500 dark:text-red-400">
+                                  I don't need {group.title.toLowerCase()}
                                 </span>
                               </div>
-                              <span className="text-[14px] font-bold text-gray-800 dark:text-zinc-200">
-                                ₹{item.price}
-                              </span>
                             </div>
-                          );
-                        })}
-
-                        {group.allowSkip && (
-                          <div
-                            onClick={() => {
-                              setCustomSelectedItems(prev => ({
-                                ...prev,
-                                [groupId]: 'skip'
-                              }));
-                            }}
-                            className="flex items-center justify-between py-2 cursor-pointer group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span 
-                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                                  selectedId === 'skip' 
-                                    ? 'border-violet-600 dark:border-violet-500' 
-                                    : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
-                                }`}
-                              >
-                                {selectedId === 'skip' && (
-                                  <span className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-500" />
-                                )}
-                              </span>
-                              <span className="text-[14px] font-medium text-red-500 dark:text-red-400">
-                                I don't need {group.title.toLowerCase()}
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                });
-              })()}
+                    );
+                  })
+                })()}
               </div>
             ) : (
               <div className="py-2 space-y-3">
                 <p className="text-xs text-gray-500">This combo package standardly includes the following items at a discounted rate:</p>
-                {selectedPackage.includedItems.map((incItem, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
-                    <span className="text-emerald-500 font-bold">✓</span>
-                    <span>{incItem.serviceGroupTitle}: <span className="font-bold text-gray-800 dark:text-zinc-100">{incItem.selectedItemTitle}</span></span>
-                  </div>
-                ))}
+                <div className="grid grid-cols-1 gap-2">
+                  {selectedPackage.includedItems.map((incItem, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span>{incItem.serviceGroupTitle}: <span className="font-bold text-gray-800 dark:text-zinc-100">{incItem.selectedItemTitle}</span></span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </section>
@@ -1038,9 +1129,8 @@ const PremiumServiceDetailPage = () => {
                 <div
                   key={idx}
                   onClick={() => setSelectedPackage(pkg)}
-                  className={`p-5 rounded-[28px] border-2 cursor-pointer transition-all flex flex-col gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] ${
-                    selectedPackage?.title === pkg.title ? 'border-violet-500 shadow-[0_8px_30px_rgba(109,40,217,0.05)]' : 'border-border-color hover:border-violet-300'
-                  }`}
+                  className={`p-5 rounded-[28px] border-2 cursor-pointer transition-all flex flex-col gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] ${selectedPackage?.title === pkg.title ? 'border-violet-500 shadow-[0_8px_30px_rgba(109,40,217,0.05)]' : 'border-border-color hover:border-violet-300'
+                    }`}
                   style={
                     selectedPackage?.title === pkg.title
                       ? { backgroundColor: 'rgba(109,40,217,0.03)' }
@@ -1098,11 +1188,10 @@ const PremiumServiceDetailPage = () => {
                   <div className="flex justify-end pt-1">
                     <button
                       type="button"
-                      className={`text-xs font-bold px-5 py-1.5 rounded-full border transition-all ${
-                        selectedPackage?.title === pkg.title 
-                          ? 'text-white bg-violet-600 border-violet-600' 
+                      className={`text-xs font-bold px-5 py-1.5 rounded-full border transition-all ${selectedPackage?.title === pkg.title
+                          ? 'text-white bg-violet-600 border-violet-600'
                           : 'text-violet-600 border-violet-600 hover:bg-violet-50'
-                      }`}
+                        }`}
                     >
                       {selectedPackage?.title === pkg.title ? 'Selected' : 'Select Plan'}
                     </button>
@@ -1113,448 +1202,448 @@ const PremiumServiceDetailPage = () => {
           </section>
         )}
 
-          {fields.filter(f => f.showToUser !== false).length > 0 && (
-            <section className="mt-3 py-2 px-1">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="p-1.5 bg-orange-50 text-brand rounded-lg">
-                  <FiSliders className="w-5 h-5" />
-                </span>
-                <h2 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>Custom Options</h2>
-              </div>
+        {fields.filter(f => f.showToUser !== false).length > 0 && (
+          <section className="mt-3 py-2 px-1">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="p-1.5 bg-orange-50 text-brand rounded-lg">
+                <FiSliders className="w-5 h-5" />
+              </span>
+              <h2 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>Custom Options</h2>
+            </div>
 
-              <div className="space-y-4">
-                {fields.filter(f => f.showToUser !== false).map((field) => {
-                  const value = dynamicAnswers[field.name] || '';
-                  return (
-                    <div key={field._id || field.name} className="space-y-1">
-                      <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                        {field.label} {field.isRequired && <span className="text-red-500">*</span>}
+            <div className="space-y-4">
+              {fields.filter(f => f.showToUser !== false).map((field) => {
+                const value = dynamicAnswers[field.name] || '';
+                return (
+                  <div key={field._id || field.name} className="space-y-1">
+                    <label className="block text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      {field.label} {field.isRequired && <span className="text-red-500">*</span>}
+                    </label>
+
+                    {/* Render inputs based on type */}
+                    {field.fieldType === 'text' && (
+                      <input
+                        type="text"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'number' && (
+                      <input
+                        type="number"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'textarea' && (
+                      <textarea
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        rows={3}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'dropdown' && (
+                      <select
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      >
+                        <option value="" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>Select Option</option>
+                        {(field.options || []).map(opt => (
+                          <option key={opt} value={opt} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>{opt}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {field.fieldType === 'radio' && (
+                      <div className="flex flex-wrap gap-3 pt-1">
+                        {(field.options || []).map(opt => (
+                          <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                            <input
+                              type="radio"
+                              name={field.name}
+                              value={opt}
+                              checked={value === opt}
+                              onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {field.fieldType === 'checkbox' && (
+                      <label className="flex items-center gap-2 py-1 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                        <input
+                          type="checkbox"
+                          checked={!!value}
+                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.checked }))}
+                        />
+                        Enable this Option
                       </label>
+                    )}
 
-                      {/* Render inputs based on type */}
-                      {field.fieldType === 'text' && (
+                    {field.fieldType === 'date' && (
+                      <input
+                        type="date"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {field.fieldType === 'time' && (
+                      <input
+                        type="time"
+                        className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        value={value}
+                        onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        required={field.isRequired}
+                      />
+                    )}
+
+                    {/* File / Image Uploader with progress indicator */}
+                    {(field.fieldType === 'image' || field.fieldType === 'file') && (
+                      <div className="flex flex-col gap-2 pt-1">
+                        <input
+                          type="file"
+                          accept={field.fieldType === 'image' ? 'image/*' : '*'}
+                          disabled={uploadingFiles[field.name]}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleFileUpload(field.name, e.target.files[0]);
+                            }
+                          }}
+                          className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-brand hover:file:bg-orange-100/50"
+                        />
+                        {uploadingFiles[field.name] && <p className="text-[10px] text-brand animate-pulse">Uploading file...</p>}
+                        {value && (
+                          <div className="flex items-center gap-2 p-1.5 rounded-lg border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                            <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
+                            <a href={value} target="_blank" rel="noreferrer" className="text-xs text-orange-500 hover:underline truncate flex-1">{value}</a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Location Picker */}
+                    {field.fieldType === 'location' && (
+                      <div className="flex gap-2 pt-1">
                         <input
                           type="text"
-                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
+                          placeholder="Latitude, Longitude coordinates"
+                          className="flex-1 p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
                           style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                           value={value}
                           onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
                           required={field.isRequired}
                         />
-                      )}
-
-                      {field.fieldType === 'number' && (
-                        <input
-                          type="number"
-                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                          value={value}
-                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                          required={field.isRequired}
-                        />
-                      )}
-
-                      {field.fieldType === 'textarea' && (
-                        <textarea
-                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                          rows={3}
-                          value={value}
-                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                          required={field.isRequired}
-                        />
-                      )}
-
-                      {field.fieldType === 'dropdown' && (
-                        <select
-                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                          value={value}
-                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                          required={field.isRequired}
+                        <button
+                          type="button"
+                          onClick={() => fetchCurrentLocation(field.name)}
+                          className="px-3 bg-orange-50 hover:bg-orange-100/50 text-brand rounded-xl text-xs font-semibold border border-orange-100"
                         >
-                          <option value="" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>Select Option</option>
-                          {(field.options || []).map(opt => (
-                            <option key={opt} value={opt} style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' }}>{opt}</option>
-                          ))}
-                        </select>
-                      )}
-
-                      {field.fieldType === 'radio' && (
-                        <div className="flex flex-wrap gap-3 pt-1">
-                          {(field.options || []).map(opt => (
-                            <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-                              <input
-                                type="radio"
-                                name={field.name}
-                                value={opt}
-                                checked={value === opt}
-                                onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                              />
-                              {opt}
-                            </label>
-                          ))}
-                        </div>
-                      )}
-
-                      {field.fieldType === 'checkbox' && (
-                        <label className="flex items-center gap-2 py-1 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-                          <input
-                            type="checkbox"
-                            checked={!!value}
-                            onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.checked }))}
-                          />
-                          Enable this Option
-                        </label>
-                      )}
-
-                      {field.fieldType === 'date' && (
-                        <input
-                          type="date"
-                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                          value={value}
-                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                          required={field.isRequired}
-                        />
-                      )}
-
-                      {field.fieldType === 'time' && (
-                        <input
-                          type="time"
-                          className="w-full p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                          value={value}
-                          onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                          required={field.isRequired}
-                        />
-                      )}
-
-                      {/* File / Image Uploader with progress indicator */}
-                      {(field.fieldType === 'image' || field.fieldType === 'file') && (
-                        <div className="flex flex-col gap-2 pt-1">
-                          <input
-                            type="file"
-                            accept={field.fieldType === 'image' ? 'image/*' : '*'}
-                            disabled={uploadingFiles[field.name]}
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                handleFileUpload(field.name, e.target.files[0]);
-                              }
-                            }}
-                            className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-brand hover:file:bg-orange-100/50"
-                          />
-                          {uploadingFiles[field.name] && <p className="text-[10px] text-brand animate-pulse">Uploading file...</p>}
-                          {value && (
-                            <div className="flex items-center gap-2 p-1.5 rounded-lg border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-                              <span className="text-[10px] text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">UPLOADED</span>
-                              <a href={value} target="_blank" rel="noreferrer" className="text-xs text-orange-500 hover:underline truncate flex-1">{value}</a>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Location Picker */}
-                      {field.fieldType === 'location' && (
-                        <div className="flex gap-2 pt-1">
-                          <input
-                            type="text"
-                            placeholder="Latitude, Longitude coordinates"
-                            className="flex-1 p-2.5 border rounded-xl text-sm focus:ring-1 focus:ring-orange-300 outline-none"
-                            style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                            value={value}
-                            onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [field.name]: e.target.value }))}
-                            required={field.isRequired}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => fetchCurrentLocation(field.name)}
-                            className="px-3 bg-orange-50 hover:bg-orange-100/50 text-brand rounded-xl text-xs font-semibold border border-orange-100"
-                          >
-                            Locate Me
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-
-          {/* DYNAMIC PAGE BLOCKS */}
-          {pageBlocks.length > 0 ? (
-            <div className="mt-6 space-y-6">
-              {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, i) => {
-                const data = block.data || {};
-                switch (block.blockType) {
-                  case 'heading_text':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{data.heading}</h2>
-                        <p className="mt-2 text-sm leading-6 whitespace-pre-line font-normal" style={{ color: 'var(--text-secondary)' }}>{data.text}</p>
-                      </section>
-                    );
-                  case 'image_gallery':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Gallery</h2>
-                        <div className="grid grid-cols-3 gap-2">
-                          {(data.images || []).map((img, imgIdx) => (
-                            <div key={imgIdx} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
-                              <img src={toAssetUrl(img)} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  case 'banner_slider':
-                    return (
-                      <section key={i} className="mt-8 overflow-hidden rounded-3xl">
-                        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2">
-                          {(data.banners || []).map((banner, bIdx) => (
-                            <div key={bIdx} className="w-full aspect-[21/9] shrink-0 snap-start rounded-3xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
-                              <img src={toAssetUrl(banner)} alt="" className="w-full h-full object-cover" />
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  case 'warranty':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <div className="flex items-center gap-3">
-                          <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">{data.duration} Warranty</p>
-                            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h3>
-                          </div>
-                        </div>
-                        <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{data.description}</p>
-                      </section>
-                    );
-                  case 'whats_included':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
-                        <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {(data.items || []).map((item, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
-                              <FiCheckCircle /> {item}
-                            </span>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  case 'process':
-                  case 'how_it_works':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
-                        <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
-                        <div className="mt-4 space-y-3">
-                          {(data.steps || []).map((step, idx) => {
-                            if (!step) return null;
-                            const title = typeof step === 'object' ? step.title : step;
-                            const desc = typeof step === 'object' ? step.desc : '';
-                            const imageUrl = typeof step === 'object' ? step.imageUrl : '';
-                            return (
-                              <div key={idx} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] items-center">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{idx + 1}</div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-sm" style={{ color: '#111827' }}>{title}</div>
-                                  {desc && <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{desc}</p>}
-                                </div>
-                                {data.hasImages && imageUrl && (
-                                  <img src={toAssetUrl(imageUrl)} alt="" className="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0" />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </section>
-                    );
-                  case 'please_note':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'rgba(217,119,6,0.05)', border: '1px solid rgba(217,119,6,0.2)' }}>
-                        <div className="flex items-center gap-2">
-                          <FiInfo className="text-amber-600 w-5 h-5" />
-                          <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
-                        </div>
-                        <ul className="mt-3 list-inside list-disc space-y-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>
-                          {(data.notes || []).map((note, idx) => (
-                            <li key={idx}>{note}</li>
-                          ))}
-                        </ul>
-                      </section>
-                    );
-                  case 'faq':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>FAQ</h2>
-                        <div className="mt-4 space-y-3">
-                          {(data.faqs || []).map((faq, idx) => (
-                            <div key={idx} className="rounded-2xl border p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.005)]" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
-                              <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{faq.question}</h4>
-                              <p className="mt-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{faq.answer}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  case 'reviews':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Customer Reviews</h2>
-                        <div className="space-y-3">
-                          {[
-                            { name: 'Rohan Sharma', rating: 5, comment: 'Excellent service! Highly professional and very clean work.' },
-                            { name: 'Priya Patel', rating: 4, comment: 'Very polite and on time. Satisfied with the results.' }
-                          ].slice(0, data.showCount || 5).map((rev, rIdx) => (
-                            <div key={rIdx} className="p-3.5 rounded-2xl border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="font-semibold text-xs text-gray-800 dark:text-zinc-100">{rev.name}</span>
-                                <div className="flex items-center gap-0.5 text-xs text-amber-500">
-                                  <FiStar className="fill-amber-500" />
-                                  <span>{rev.rating}</span>
-                                </div>
-                              </div>
-                              <p className="text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{rev.comment}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  case 'brands':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <h2 className="text-xs font-semibold uppercase tracking-[0.24em] text-brand mb-2">{data.title || 'Brands We Service'}</h2>
-                        <div className="flex flex-wrap gap-2.5">
-                          {(data.brandIds || []).map((brandId, bIdx) => (
-                            <span key={bIdx} className="px-3.5 py-1.5 rounded-full border bg-white dark:bg-zinc-900 text-xs font-bold text-gray-700 dark:text-zinc-300" style={{ borderColor: 'var(--border)' }}>
-                              {brandId}
-                            </span>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  case 'whats_not_included':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-500">Not Included</p>
-                        <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title || "What's Not Included"}</h2>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {(data.items || []).map((item, idx) => (
-                            <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-red-500 border border-red-200">
-                              <FiX className="w-3.5 h-3.5" /> {item}
-                            </span>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  case 'rate_card':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <div>
-                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.linkLabel || 'Rate Card'}</h3>
-                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Check standard rates for our services.</p>
-                        </div>
-                        {data.linkUrl && (
-                          <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
-                            {data.linkLabel || 'View Rate Card'}
-                          </a>
-                        )}
-                      </section>
-                    );
-                  case 'comparison':
-                    return (
-                      <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                        <div>
-                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.title || 'Compare Plans'}</h3>
-                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Compare parameters to choose the best option.</p>
-                        </div>
-                        {data.linkUrl && (
-                          <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
-                            {data.linkLabel || 'View Comparison'}
-                          </a>
-                        )}
-                      </section>
-                    );
-                  case 'offer_image':
-                    return (
-                      <section key={i} className="mt-8 rounded-3xl overflow-hidden bg-gray-50 border border-gray-150 relative">
-                        {data.linkUrl ? (
-                          <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
-                            <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
-                          </a>
-                        ) : (
-                          <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
-                        )}
-                      </section>
-                    );
-                  default:
-                    return null;
-                }
+                          Locate Me
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
               })}
             </div>
-          ) : (
-            <>
-              <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
-                <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>What you get</h2>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {features.length > 0 ? features.map((feature, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
-                      <FiCheckCircle /> {feature}
-                    </span>
-                  )) : <span className="text-xs text-gray-500">No included features listed.</span>}
-                </div>
-              </section>
+          </section>
+        )}
 
-              <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
-                <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>How it works</h2>
-                <div className="mt-4 space-y-3">
-                  {steps.length > 0 ? steps.map((step, index) => {
-                    const stepTitle = typeof step === 'object' ? step.title : step;
-                    const stepDesc = typeof step === 'object' ? step.desc : 'Smooth and transparent service delivery.';
-                    return (
-                      <div key={index} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{index + 1}</div>
+
+        {/* DYNAMIC PAGE BLOCKS */}
+        {pageBlocks.length > 0 ? (
+          <div className="mt-6 space-y-6">
+            {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, i) => {
+              const data = block.data || {};
+              switch (block.blockType) {
+                case 'heading_text':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{data.heading}</h2>
+                      <p className="mt-2 text-sm leading-6 whitespace-pre-line font-normal" style={{ color: 'var(--text-secondary)' }}>{data.text}</p>
+                    </section>
+                  );
+                case 'image_gallery':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Gallery</h2>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(data.images || []).map((img, imgIdx) => (
+                          <div key={imgIdx} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                            <img src={toAssetUrl(img)} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'banner_slider':
+                  return (
+                    <section key={i} className="mt-8 overflow-hidden rounded-3xl">
+                      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2">
+                        {(data.banners || []).map((banner, bIdx) => (
+                          <div key={bIdx} className="w-full aspect-[21/9] shrink-0 snap-start rounded-3xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                            <img src={toAssetUrl(banner)} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'warranty':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
                         <div>
-                          <div className="font-semibold text-sm" style={{ color: '#111827' }}>{stepTitle}</div>
-                          <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{stepDesc}</p>
+                          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">{data.duration} Warranty</p>
+                          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h3>
                         </div>
                       </div>
-                    );
-                  }) : <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-xs text-gray-500">No steps listed for this service.</div>}
+                      <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{data.description}</p>
+                    </section>
+                  );
+                case 'whats_included':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
+                      <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {(data.items || []).map((item, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
+                            <FiCheckCircle /> {item}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'process':
+                case 'how_it_works':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
+                      <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
+                      <div className="mt-4 space-y-3">
+                        {(data.steps || []).map((step, idx) => {
+                          if (!step) return null;
+                          const title = typeof step === 'object' ? step.title : step;
+                          const desc = typeof step === 'object' ? step.desc : '';
+                          const imageUrl = typeof step === 'object' ? step.imageUrl : '';
+                          return (
+                            <div key={idx} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] items-center">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{idx + 1}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-sm" style={{ color: '#111827' }}>{title}</div>
+                                {desc && <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{desc}</p>}
+                              </div>
+                              {data.hasImages && imageUrl && (
+                                <img src={toAssetUrl(imageUrl)} alt="" className="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                case 'please_note':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'rgba(217,119,6,0.05)', border: '1px solid rgba(217,119,6,0.2)' }}>
+                      <div className="flex items-center gap-2">
+                        <FiInfo className="text-amber-600 w-5 h-5" />
+                        <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
+                      </div>
+                      <ul className="mt-3 list-inside list-disc space-y-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>
+                        {(data.notes || []).map((note, idx) => (
+                          <li key={idx}>{note}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                case 'faq':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>FAQ</h2>
+                      <div className="mt-4 space-y-3">
+                        {(data.faqs || []).map((faq, idx) => (
+                          <div key={idx} className="rounded-2xl border p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.005)]" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                            <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{faq.question}</h4>
+                            <p className="mt-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{faq.answer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'reviews':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Customer Reviews</h2>
+                      <div className="space-y-3">
+                        {[
+                          { name: 'Rohan Sharma', rating: 5, comment: 'Excellent service! Highly professional and very clean work.' },
+                          { name: 'Priya Patel', rating: 4, comment: 'Very polite and on time. Satisfied with the results.' }
+                        ].slice(0, data.showCount || 5).map((rev, rIdx) => (
+                          <div key={rIdx} className="p-3.5 rounded-2xl border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="font-semibold text-xs text-gray-800 dark:text-zinc-100">{rev.name}</span>
+                              <div className="flex items-center gap-0.5 text-xs text-amber-500">
+                                <FiStar className="fill-amber-500" />
+                                <span>{rev.rating}</span>
+                              </div>
+                            </div>
+                            <p className="text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{rev.comment}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'brands':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <h2 className="text-xs font-semibold uppercase tracking-[0.24em] text-brand mb-2">{data.title || 'Brands We Service'}</h2>
+                      <div className="flex flex-wrap gap-2.5">
+                        {(data.brandIds || []).map((brandId, bIdx) => (
+                          <span key={bIdx} className="px-3.5 py-1.5 rounded-full border bg-white dark:bg-zinc-900 text-xs font-bold text-gray-700 dark:text-zinc-300" style={{ borderColor: 'var(--border)' }}>
+                            {brandId}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'whats_not_included':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-500">Not Included</p>
+                      <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title || "What's Not Included"}</h2>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {(data.items || []).map((item, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-red-500 border border-red-200">
+                            <FiX className="w-3.5 h-3.5" /> {item}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                case 'rate_card':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <div>
+                        <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.linkLabel || 'Rate Card'}</h3>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Check standard rates for our services.</p>
+                      </div>
+                      {data.linkUrl && (
+                        <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
+                          {data.linkLabel || 'View Rate Card'}
+                        </a>
+                      )}
+                    </section>
+                  );
+                case 'comparison':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      <div>
+                        <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.title || 'Compare Plans'}</h3>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Compare parameters to choose the best option.</p>
+                      </div>
+                      {data.linkUrl && (
+                        <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
+                          {data.linkLabel || 'View Comparison'}
+                        </a>
+                      )}
+                    </section>
+                  );
+                case 'offer_image':
+                  return (
+                    <section key={i} className="mt-8 rounded-3xl overflow-hidden bg-gray-50 border border-gray-150 relative">
+                      {data.linkUrl ? (
+                        <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
+                          <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
+                        </a>
+                      ) : (
+                        <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
+                      )}
+                    </section>
+                  );
+                default:
+                  return null;
+              }
+            })}
+          </div>
+        ) : (
+          <>
+            <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
+              <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>What you get</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {features.length > 0 ? features.map((feature, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
+                    <FiCheckCircle /> {feature}
+                  </span>
+                )) : <span className="text-xs text-gray-500">No included features listed.</span>}
+              </div>
+            </section>
+
+            <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
+              <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>How it works</h2>
+              <div className="mt-4 space-y-3">
+                {steps.length > 0 ? steps.map((step, index) => {
+                  const stepTitle = typeof step === 'object' ? step.title : step;
+                  const stepDesc = typeof step === 'object' ? step.desc : 'Smooth and transparent service delivery.';
+                  return (
+                    <div key={index} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{index + 1}</div>
+                      <div>
+                        <div className="font-semibold text-sm" style={{ color: '#111827' }}>{stepTitle}</div>
+                        <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{stepDesc}</p>
+                      </div>
+                    </div>
+                  );
+                }) : <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-xs text-gray-500">No steps listed for this service.</div>}
+              </div>
+            </section>
+
+            <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Professional badge</p>
+                  <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Verified Professional</h3>
                 </div>
-              </section>
-
-              <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                <div className="flex items-center gap-3">
-                  <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Professional badge</p>
-                    <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Verified Professional</h3>
-                  </div>
-                </div>
-                <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>Certified experts, clean work, and support-backed service experience.</p>
-              </section>
-            </>
-          )}
+              </div>
+              <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>Certified experts, clean work, and support-backed service experience.</p>
+            </section>
+          </>
+        )}
 
 
-          <section className="mt-3 py-2 px-1">
-            <p className="text-xs font-normal tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>Reviews</p>
-            <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>User feedback</h2>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <div className="rounded-3xl border border-dashed p-5 text-sm md:col-span-3 font-normal" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>No reviews available yet.</div>
-            </div>
-          </section>
-        </div>
+        <section className="mt-3 py-2 px-1">
+          <p className="text-xs font-normal tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>Reviews</p>
+          <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>User feedback</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-3xl border border-dashed p-5 text-sm md:col-span-3 font-normal" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>No reviews available yet.</div>
+          </div>
+        </section>
+      </div>
 
       {/* Variant Selection Popup */}
       <AnimatePresence>
@@ -1583,7 +1672,7 @@ const PremiumServiceDetailPage = () => {
               }}
             >
               {/* Header */}
-              <div 
+              <div
                 className="flex items-center justify-between px-5 pt-5 pb-4 border-b"
                 style={{ borderColor: isDark ? '#232733' : '#F1F5F9' }}
               >
@@ -1632,8 +1721,8 @@ const PremiumServiceDetailPage = () => {
                             {isSelected ? '✓' : <FiPlus className="w-2.5 h-2.5" />}
                           </span>
                         </div>
-                        <span 
-                          className="text-[10px] font-bold tracking-tight leading-tight line-clamp-1 my-0.5 flex-1 flex items-center justify-center" 
+                        <span
+                          className="text-[10px] font-bold tracking-tight leading-tight line-clamp-1 my-0.5 flex-1 flex items-center justify-center"
                           style={{ color: color.text }}
                         >
                           {variant.title}
@@ -1654,12 +1743,12 @@ const PremiumServiceDetailPage = () => {
               </div>
 
               {/* Price Breakdown + Confirm */}
-              <div 
+              <div
                 className="px-5 pt-3 pb-6 border-t"
                 style={{ borderColor: isDark ? '#232733' : '#F1F5F9' }}
               >
                 {/* Price Preview */}
-                <div 
+                <div
                   className="mb-4 p-3 rounded-2xl text-xs space-y-1"
                   style={{ backgroundColor: isDark ? '#11141B' : '#F8F9FA' }}
                 >
@@ -1673,8 +1762,8 @@ const PremiumServiceDetailPage = () => {
                       <span className="font-semibold text-brand">+₹{v.extraPrice}</span>
                     </div>
                   ))}
-                  <div 
-                    className="flex justify-between pt-1 border-t" 
+                  <div
+                    className="flex justify-between pt-1 border-t"
                     style={{
                       borderColor: isDark ? '#232733' : '#E5E7EB',
                       color: isDark ? '#F8FAFC' : '#1F2937'
@@ -1713,6 +1802,91 @@ const PremiumServiceDetailPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Category Group details modal */}
+      <AnimatePresence>
+        {activeCategoryModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveCategoryModal(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-pointer"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-white dark:bg-zinc-900 rounded-t-[32px] z-50 shadow-2xl p-6 pb-[calc(env(safe-area-inset-bottom)+24px)] flex flex-col gap-5 border-t dark:border-zinc-800"
+            >
+              <div className="flex justify-between items-center border-b pb-3 dark:border-zinc-800">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
+                  {activeCategoryModal.title} Options & Packages
+                </h3>
+                <button
+                  onClick={() => setActiveCategoryModal(null)}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full text-gray-500"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Available Options:</h4>
+                <div className="space-y-3">
+                  {activeCategoryModal.items?.map((item) => (
+                    <div
+                      key={item._id}
+                      className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border dark:border-zinc-800 flex justify-between items-start gap-4"
+                    >
+                      <div className="space-y-1">
+                        <div className="font-semibold text-sm text-gray-800 dark:text-zinc-200">{item.title}</div>
+                        {item.duration && <div className="text-[10px] text-gray-400 flex items-center gap-1 font-medium"><FiClock /> {item.duration}</div>}
+                        {item.description && <p className="text-xs text-gray-500 leading-normal">{item.description}</p>}
+                      </div>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <span className="font-bold text-sm text-brand">₹{item.price}</span>
+                        {/* Quick Selection button */}
+                        {service?.serviceType === 'package_base' && selectedPackage && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const groupId = activeCategoryModal._id?.toString();
+                              if (groupId) {
+                                // Select this option and default all other groups to 'skip'
+                                const updatedSelections = {};
+                                service.serviceGroups?.forEach(g => {
+                                  const gId = g._id?.toString();
+                                  if (gId === groupId) {
+                                    updatedSelections[gId] = [item._id?.toString()];
+                                  } else {
+                                    updatedSelections[gId] = ['skip'];
+                                  }
+                                });
+
+                                setCustomSelectedItems(updatedSelections);
+                                setIsCustomizing(true);
+                                setActiveCategoryModal(null);
+                                toast.success(`Selected ${item.title}`);
+                              }
+                            }}
+                            className="text-[10px] font-bold bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 px-3 py-1 rounded-full border border-violet-100 dark:border-violet-900/50 transition-colors"
+                          >
+                            Choose Option
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

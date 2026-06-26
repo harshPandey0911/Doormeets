@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
 import { userAuthService } from '../../../../services/authService';
+import api from '../../../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { motion } from 'framer-motion';
 import {
@@ -130,6 +131,48 @@ const Account = () => {
       localStorage.removeItem('userData');
       toast.success('Logged out successfully');
       navigate('/user/login');
+    }
+  };
+
+  const [sosTriggering, setSosTriggering] = useState(false);
+
+  const handleSOSClick = () => {
+    const confirmSOS = window.confirm("EMERGENCY SOS: Are you in danger? Clicking OK will immediately alert our emergency response team and admins with your live coordinates.");
+    if (!confirmSOS) return;
+
+    setSosTriggering(true);
+    const loadingToast = toast.loading('Activating SOS Alert...');
+
+    const sendAlert = async (lat = null, lng = null) => {
+      try {
+        const res = await api.post('/users/sos', { lat, lng });
+        toast.dismiss(loadingToast);
+        if (res.data.success) {
+          toast.error('🚨 SOS Alert Triggered! Help is on the way. Our team will contact you shortly.', { duration: 30000 });
+        } else {
+          toast.error(res.data.message || 'Failed to trigger SOS');
+        }
+      } catch (err) {
+        toast.dismiss(loadingToast);
+        toast.error('Failed to contact emergency support. Please call emergency services directly.');
+      } finally {
+        setSosTriggering(false);
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          sendAlert(position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          console.warn('Geolocation failed, triggering SOS without coordinates:', error.message);
+          sendAlert();
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
+      sendAlert();
     }
   };
 
@@ -391,6 +434,12 @@ const Account = () => {
               icon={FiHeadphones}
               label="Help & Support"
               onClick={() => navigate('/user/help-support')}
+            />
+            <MenuItem
+              icon={FiShield}
+              label="SOS Emergency Alert"
+              color="text-red-500"
+              onClick={handleSOSClick}
             />
             <motion.button
               whileTap={{ scale: 0.98 }}

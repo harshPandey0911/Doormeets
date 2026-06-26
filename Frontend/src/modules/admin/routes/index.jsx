@@ -26,6 +26,7 @@ const Payments = lazy(() => import('../pages/Payments'));
 const Reports = lazy(() => import('../pages/Reports'));
 const Notifications = lazy(() => import('../pages/Notifications'));
 const AdminSupport = lazy(() => import('../pages/Support/index'));
+const SOSAlerts = lazy(() => import('../pages/SOSAlerts'));
 const OfferBanners = lazy(() => import('../pages/OfferBanners'));
 const Plans = lazy(() => import('../pages/Plans/Plans'));
 const Settlements = lazy(() => import('../pages/Settlements'));
@@ -85,6 +86,7 @@ const AdminRoutes = () => {
           <Route path="settlements/*" element={<Settlements />} />
           <Route path="settings/*" element={<Settings />} />
           <Route path="support/*" element={<AdminSupport />} />
+          <Route path="sos-alerts" element={<SOSAlerts />} />
           <Route path="offer-banners" element={<OfferBanners />} />
           <Route path="training" element={<Training />} />
           <Route path="vendor-requests" element={<VendorRequests />} />

@@ -12,6 +12,7 @@ import { themeColors } from '../../../../theme';
 const Wallet = () => {
   const navigate = useNavigate();
   const [walletBalance, setWalletBalance] = useState(0);
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,6 +31,7 @@ const Wallet = () => {
 
         if (balanceResponse.success) {
           setWalletBalance(balanceResponse.data.balance || 0);
+          setLoyaltyPoints(balanceResponse.data.loyaltyPoints || 0);
         }
 
         if (transactionsResponse.success) {
@@ -69,6 +71,7 @@ const Wallet = () => {
         ]);
         if (balanceResponse.success) {
           setWalletBalance(balanceResponse.data.balance || 0);
+          setLoyaltyPoints(balanceResponse.data.loyaltyPoints || 0);
         }
         if (transactionsResponse.success) {
           setTransactions(transactionsResponse.data || []);
@@ -143,20 +146,35 @@ const Wallet = () => {
             </div>
           </div>
 
-          {/* Main Balance Card */}
-          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 mb-6 text-white shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
+          {/* Main Balance & Loyalty Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Wallet Balance Card */}
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-12 -mt-12"></div>
+              <div className="relative z-10">
+                <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Penalty Balance</p>
+                <h2 className="text-3xl font-extrabold text-red-400">
+                  -₹{transactions
+                    .filter(t => ['penalty', 'fine', 'cancellation_fee', 'debit'].includes(t.type))
+                    .reduce((sum, t) => sum + t.amount, 0)
+                    .toLocaleString('en-IN')}
+                </h2>
+                <p className="text-[10px] text-gray-400 mt-2 font-medium">Charged on your next service booking</p>
+              </div>
+            </div>
 
-            <div className="relative z-10">
-              <p className="text-gray-400 text-sm font-medium mb-1">Current Balance</p>
-              {/* User Request: Balance should only reflect penalties (negative) */}
-              <h2 className="text-4xl font-bold text-red-400">
-                -₹{transactions
-                  .filter(t => ['penalty', 'fine', 'cancellation_fee', 'debit'].includes(t.type))
-                  .reduce((sum, t) => sum + t.amount, 0)
-                  .toLocaleString('en-IN')} <span className="text-base font-normal text-red-300">(Penalty)</span>
-              </h2>
+            {/* Loyalty Points Card */}
+            <div className="bg-gradient-to-r from-teal-900 to-emerald-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-12 -mt-12"></div>
+              <div className="relative z-10">
+                <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <span>🎁</span> Loyalty Points
+                </p>
+                <h2 className="text-3xl font-extrabold text-emerald-100">
+                  {loyaltyPoints.toLocaleString('en-IN')} <span className="text-sm font-normal text-emerald-300">points</span>
+                </h2>
+                <p className="text-[10px] text-emerald-200 mt-2 font-medium">1 point = ₹1 discount at checkout</p>
+              </div>
             </div>
           </div>
 
