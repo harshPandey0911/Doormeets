@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiDollarSign, FiArrowUp, FiArrowDown, FiArrowRight, FiClock, FiCheckCircle, FiAlertCircle, FiSend } from 'react-icons/fi';
+import { FiDollarSign, FiArrowUp, FiArrowDown, FiArrowRight, FiClock, FiCheckCircle, FiAlertCircle, FiSend, FiAward } from 'react-icons/fi';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
@@ -71,11 +71,18 @@ const Wallet = () => {
 
   const filteredTransactions = transactions.filter(txn => {
     if (filter === 'all') return true;
+    if (filter === 'incentive') {
+      return txn.type === 'credit';
+    }
     return txn.type === filter;
   });
 
-  const getTransactionIcon = (type) => {
-    switch (type) {
+  const getTransactionIcon = (txn) => {
+    const isIncentive = txn.type === 'credit';
+    if (isIncentive) {
+      return <FiAward className="w-5 h-5 text-green-600" />;
+    }
+    switch (txn.type) {
       case 'cash_collected':
         return <FiArrowDown className="w-5 h-5 text-red-500" />;
       case 'earnings_credit':
@@ -91,8 +98,12 @@ const Wallet = () => {
     }
   };
 
-  const getTransactionLabel = (type) => {
-    switch (type) {
+  const getTransactionLabel = (txn) => {
+    const isIncentive = txn.type === 'credit';
+    if (isIncentive) {
+      return 'Incentive';
+    }
+    switch (txn.type) {
       case 'cash_collected':
         return 'Cash Collected';
       case 'earnings_credit':
@@ -104,7 +115,7 @@ const Wallet = () => {
       case 'tds_deduction':
         return 'TDS Deduction';
       default:
-        return type;
+        return txn.type;
     }
   };
 
@@ -258,6 +269,7 @@ const Wallet = () => {
             { id: 'cash_collected', label: 'Cash Collected' },
             { id: 'settlement', label: 'Settlements' },
             { id: 'withdrawal', label: 'Withdrawals' },
+            { id: 'incentive', label: 'Incentives' },
             { id: 'tds_deduction', label: 'TDS' },
           ].map((filterOption) => (
             <button
@@ -294,61 +306,66 @@ const Wallet = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredTransactions.map((txn) => (
-                <div
-                  key={txn._id}
-                  className="bg-white rounded-xl p-4 shadow-md border-l-4"
-                  style={{
-                    borderLeftColor:
-                      txn.type === 'cash_collected' ? '#DC2626' :
-                        txn.type === 'settlement' ? '#10B981' :
-                          txn.type === 'withdrawal' ? '#8B5CF6' :
-                            txn.type === 'tds_deduction' ? '#F59E0B' :
-                              txn.type === 'platform_fee' ? '#E11D48' : '#F97316'
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{
-                        background:
-                          txn.type === 'cash_collected' ? '#FEE2E2' :
-                            txn.type === 'settlement' ? '#D1FAE5' :
-                              txn.type === 'withdrawal' ? '#EDE9FE' :
-                                txn.type === 'tds_deduction' ? '#FEF3C7' :
-                                  txn.type === 'platform_fee' ? '#FFF1F2' : '#FFEDD5'
-                      }}
-                    >
-                      {getTransactionIcon(txn.type)}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-bold text-gray-900 text-sm">
-                          {getTransactionLabel(txn.type)}
-                        </p>
-                        <p className={`text-lg font-bold ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type)
-                          ? 'text-red-600'
-                          : 'text-green-600'
-                          }`}>
-                          {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}₹{Math.abs(txn.amount).toLocaleString()}
-                        </p>
+              {filteredTransactions.map((txn) => {
+                const isIncentive = txn.type === 'credit';
+                return (
+                  <div
+                    key={txn._id}
+                    className="bg-white rounded-xl p-4 shadow-md border-l-4"
+                    style={{
+                      borderLeftColor:
+                        txn.type === 'cash_collected' ? '#DC2626' :
+                          isIncentive ? '#10B981' :
+                            txn.type === 'settlement' ? '#10B981' :
+                              txn.type === 'withdrawal' ? '#8B5CF6' :
+                                txn.type === 'tds_deduction' ? '#F59E0B' :
+                                  txn.type === 'platform_fee' ? '#E11D48' : '#F97316'
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                        style={{
+                          background:
+                            txn.type === 'cash_collected' ? '#FEE2E2' :
+                              isIncentive ? '#D1FAE5' :
+                                txn.type === 'settlement' ? '#D1FAE5' :
+                                  txn.type === 'withdrawal' ? '#EDE9FE' :
+                                    txn.type === 'tds_deduction' ? '#FEF3C7' :
+                                      txn.type === 'platform_fee' ? '#FFF1F2' : '#FFEDD5'
+                        }}
+                      >
+                        {getTransactionIcon(txn)}
                       </div>
 
-                      <p className="text-xs text-gray-600 truncate mb-1">{txn.description}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-bold text-gray-900 text-sm">
+                            {getTransactionLabel(txn)}
+                          </p>
+                          <p className={`text-lg font-bold ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type)
+                            ? 'text-red-600'
+                            : 'text-green-600'
+                            }`}>
+                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}₹{Math.abs(txn.amount).toLocaleString()}
+                          </p>
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">{formatDate(txn.createdAt)}</span>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${txn.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          txn.status === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                          {txn.status}
-                        </span>
+                        <p className="text-xs text-gray-600 truncate mb-1">{txn.description}</p>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">{formatDate(txn.createdAt)}</span>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${txn.status === 'completed' ? 'bg-green-100 text-green-700' :
+                            txn.status === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'
+                            }`}>
+                            {txn.status}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
