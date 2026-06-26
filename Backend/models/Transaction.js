@@ -48,6 +48,10 @@ const transactionSchema = new mongoose.Schema({
     type: String,  // Payment gateway reference
     default: null
   },
+  referenceType: {
+    type: String,
+    default: null
+  },
   balanceBefore: {
     type: Number,
     default: 0

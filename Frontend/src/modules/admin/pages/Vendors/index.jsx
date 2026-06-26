@@ -10,10 +10,10 @@ import {
 } from 'react-icons/fi';
 
 // Import sub-components
-// Import sub-components
 import AllVendors from './AllVendors';
 import VendorBookings from './VendorBookings';
 import VendorAnalytics from './VendorAnalytics';
+import IncentivesPage from './IncentivesPage';
 
 const Vendors = () => {
   const location = useLocation();
@@ -43,6 +43,7 @@ const Vendors = () => {
           <Route path="all" element={<AllVendors />} />
           <Route path="bookings" element={<VendorBookings />} />
           <Route path="analytics" element={<VendorAnalytics />} />
+          <Route path="incentives" element={<IncentivesPage />} />
         </Routes>
       </motion.div>
     </div>

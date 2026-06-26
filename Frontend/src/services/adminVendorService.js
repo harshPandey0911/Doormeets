@@ -103,6 +103,30 @@ const adminVendorService = {
   getVendorAnalytics: async (params = {}) => {
     const response = await api.get('/admin/reports/vendors', { params });
     return response.data;
+  },
+
+  /**
+   * Get vendor incentive statistics dynamically calculated over date filters
+   */
+  getVendorIncentiveStats: async (params = {}) => {
+    const response = await api.get('/admin/vendors/incentives/stats', { params });
+    return response.data;
+  },
+
+  /**
+   * Credit an incentive amount to a vendor
+   */
+  giveVendorIncentive: async (id, data) => {
+    const response = await api.post(`/admin/vendors/${id}/incentive`, data);
+    return response.data;
+  },
+
+  /**
+   * Get incentive award history
+   */
+  getIncentiveHistory: async () => {
+    const response = await api.get('/admin/vendors/incentives/history');
+    return response.data;
   }
 };
 

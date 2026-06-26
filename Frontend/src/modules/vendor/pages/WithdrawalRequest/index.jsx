@@ -165,6 +165,7 @@ const WithdrawalRequest = () => {
   const commissionRate = vendorStats.commissionRate;
   const platformFeeRate = vendorStats.platformFeeRate;
 
+  const grossAmount = parseInt(amount) || 0;
   const tdsAmount = Math.round(grossAmount * (tdsRate / 100));
   const netAmount = grossAmount - tdsAmount;
 
