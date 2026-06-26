@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiUser, FiMail, FiPhone, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiArrowRight, FiChevronLeft, FiCheckCircle, FiGift } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../theme';
 import { userAuthService } from '../../../services/authService';
@@ -31,6 +31,16 @@ const Signup = () => {
   const [verificationToken, setVerificationToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [referralCode, setReferralCode] = useState('');
+
+  // Extract referral code on load
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('referral');
+    if (code) {
+      setReferralCode(code.toUpperCase());
+    }
+  }, [location.search]);
 
   // Timer countdown effect
   useEffect(() => {
@@ -90,7 +100,8 @@ const Signup = () => {
         const response = await userAuthService.register({
           name: formData.name,
           email: formData.email || null,
-          verificationToken
+          verificationToken,
+          referralCode: referralCode || undefined
         });
         if (response.success) {
           try {
@@ -178,7 +189,8 @@ const Signup = () => {
         email: formData.email || null,
         phone: formData.phoneNumber,
         otp: otpValue,
-        token: otpToken
+        token: otpToken,
+        referralCode: referralCode || undefined
       });
       if (response.success) {
         setIsLoading(false);
@@ -326,6 +338,27 @@ const Signup = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Referral Code */}
+                  <div>
+                    <label htmlFor="referralCode" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                      Referral Code <span className="text-gray-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
+                    </label>
+                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <FiGift />
+                      </div>
+                      <input
+                        id="referralCode"
+                        name="referralCode"
+                        type="text"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                        className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                        placeholder="DM-XXXXXX"
+                      />
+                    </div>
+                  </div>
 
                   <button
                     type="submit"

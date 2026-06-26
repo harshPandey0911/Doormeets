@@ -327,13 +327,35 @@ const createBooking = async (req, res) => {
       }
     }
 
+    // Generate unique booking number
+    const bookingNumber = `BK${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+
+    // Calculate and Apply Wallet Balance (max percentage limit from settings)
+    let walletAmountUsed = 0;
+    if (user.wallet && user.wallet.balance > 0 && finalAmount > 0 && paymentMethod !== 'plan_benefit') {
+      const Settings = require('../../models/Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      const maxWalletUsagePercentage = globalSettings?.maxWalletUsagePercentage !== undefined ? globalSettings.maxWalletUsagePercentage : 30;
+
+      if (maxWalletUsagePercentage > 0) {
+        const maxWalletUse = finalAmount * (maxWalletUsagePercentage / 100);
+        walletAmountUsed = Math.min(user.wallet.balance, maxWalletUse);
+        walletAmountUsed = parseFloat(walletAmountUsed.toFixed(2));
+
+        if (walletAmountUsed > 0) {
+          finalAmount = parseFloat((finalAmount - walletAmountUsed).toFixed(2));
+          user.wallet.balance = parseFloat((user.wallet.balance - walletAmountUsed).toFixed(2));
+        }
+      }
+    }
+
     // NOTE: vendor earnings are NOT calculated at booking creation.
     // They are computed ONLY at bill generation (completeSelfJob) and stored in VendorBill.
     // This prevents inconsistency between Booking and VendorBill.
-    console.log(`[CreateBooking] Payment=${paymentMethod}, FinalAmount=${finalAmount}, Penalty=${pendingPenalty}, pointsToRedeem=${pointsToRedeem}`);
+    console.log(`[CreateBooking] Payment=${paymentMethod}, FinalAmount=${finalAmount}, Penalty=${pendingPenalty}, pointsToRedeem=${pointsToRedeem}, walletAmountUsed=${walletAmountUsed}`);
 
-    // Save user if we modified penalty or points
-    if (pendingPenalty > 0 || pointsToRedeem > 0) {
+    // Save user if we modified penalty, points, or wallet balance
+    if (pendingPenalty > 0 || pointsToRedeem > 0 || walletAmountUsed > 0) {
       if (pendingPenalty > 0) {
         user.wallet.penalty = 0;
       }
@@ -344,9 +366,6 @@ const createBooking = async (req, res) => {
     if (finalAmount < 1 && paymentMethod !== 'plan_benefit') {
       finalAmount = 1;
     }
-
-    // Create booking
-    const bookingNumber = `BK${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
     // Improve Category Fetching if ID is missing (Fallback to title match)
     let finalCategory = category;
@@ -431,10 +450,10 @@ const createBooking = async (req, res) => {
       paymentMethod: isBiddingRequired ? 'bidding' : (paymentMethod || null),
       status: isBiddingRequired ? BOOKING_STATUS.BIDDING : bookingStatus,
       paymentStatus: isBiddingRequired ? PAYMENT_STATUS.PENDING : bookingPaymentStatus,
-      isBidding: isBiddingRequired,
       biddingDeadline: biddingDeadline,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes search limit (sequential takes time)
-      dynamicFields: dynamicFields || []
+      dynamicFields: dynamicFields || [],
+      walletAmountApplied: walletAmountUsed
     });
 
     // Generate visits for this booking based on its workflow configuration
@@ -443,6 +462,25 @@ const createBooking = async (req, res) => {
       await scheduleVisitsForBooking(booking);
     } catch (schedErr) {
       console.error('[CreateBooking] Workflow visits scheduling failed:', schedErr);
+    }
+
+    // Create Wallet debit transaction log
+    if (walletAmountUsed > 0) {
+      try {
+        const Transaction = require('../../models/Transaction');
+        await Transaction.create({
+          userId,
+          bookingId: booking._id,
+          amount: walletAmountUsed,
+          type: 'debit',
+          paymentMethod: 'wallet',
+          status: 'completed',
+          description: `Applied ₹${walletAmountUsed} wallet balance (max limit discount) to booking #${bookingNumber}`,
+          balanceAfter: user.wallet.balance
+        });
+      } catch (txnErr) {
+        console.error('[CreateBooking] Failed to log wallet transaction:', txnErr);
+      }
     }
 
     // Create Loyalty Points debit transaction log

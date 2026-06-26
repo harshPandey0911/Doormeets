@@ -246,6 +246,22 @@ const settingsSchema = new mongoose.Schema({
     type: Number,
     default: 0, // flat points awarded on completion
     min: 0
+  },
+  referralRewardReferrer: {
+    type: Number,
+    default: 100,
+    min: 0
+  },
+  referralRewardReferee: {
+    type: Number,
+    default: 100,
+    min: 0
+  },
+  maxWalletUsagePercentage: {
+    type: Number,
+    default: 30,
+    min: 0,
+    max: 100
   }
 }, { timestamps: true });
 

@@ -21,7 +21,8 @@
     "children": [
       "All Users",
       "User Bookings",
-      "User Analytics"
+      "User Analytics",
+      "Referral Settings"
     ]
   },
   {
@@ -166,6 +167,16 @@
   {
     "title": "Package based",
     "route": "/admin/package-based",
+    "section": "CATALOG MANAGEMENT",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": []
+  },
+  {
+    "title": "Painting Mgmt",
+    "route": "/admin/painting",
     "section": "CATALOG MANAGEMENT",
     "allowedRoles": [
       "super_admin",

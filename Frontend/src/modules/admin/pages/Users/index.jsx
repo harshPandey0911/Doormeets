@@ -8,6 +8,7 @@ import { FiUsers, FiShoppingBag, FiActivity, FiDollarSign } from 'react-icons/fi
 import AllUsers from './AllUsers';
 import UserBookings from './UserBookings';
 import UserAnalytics from './UserAnalytics';
+import ReferralSettings from './ReferralSettings';
 
 const Users = () => {
   const location = useLocation();
@@ -16,6 +17,7 @@ const Users = () => {
     { name: 'All Users', path: '/admin/users/all', icon: FiUsers },
     { name: 'User Bookings', path: '/admin/users/bookings', icon: FiShoppingBag },
     { name: 'User Analytics', path: '/admin/users/analytics', icon: FiActivity },
+    { name: 'Referral Settings', path: '/admin/users/referrals', icon: FiDollarSign },
   ];
 
   const getPageTitle = () => {
@@ -37,6 +39,7 @@ const Users = () => {
           <Route path="all" element={<AllUsers />} />
           <Route path="bookings" element={<UserBookings />} />
           <Route path="analytics" element={<UserAnalytics />} />
+          <Route path="referrals" element={<ReferralSettings />} />
           <Route path="*" element={<Navigate to="all" replace />} />
         </Routes>
       </motion.div>

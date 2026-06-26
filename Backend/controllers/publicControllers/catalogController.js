@@ -141,6 +141,35 @@ const getPublicSubCategories = async (req, res) => {
       return res.status(200).json({ success: true, subCategories: [] });
     }
 
+    if (categoryId === '6a293e391e686a11ee740000' || (category && category.slug === 'painting')) {
+      return res.status(200).json({
+        success: true,
+        subCategories: [
+          {
+            id: 'sub-painting-paint',
+            title: 'Paints',
+            slug: 'paints',
+            iconUrl: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=150',
+            description: 'Premium quality paints'
+          },
+          {
+            id: 'sub-painting-putty',
+            title: 'Putties',
+            slug: 'putties',
+            iconUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=150',
+            description: 'Wall putties for smooth finish'
+          },
+          {
+            id: 'sub-painting-primer',
+            title: 'Primers',
+            slug: 'primers',
+            iconUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=150',
+            description: 'Undercoats and primers'
+          }
+        ]
+      });
+    }
+
     const SubCategory = require('../../models/SubCategory');
     const subCategories = await SubCategory.find({ categoryId, status: 'active' })
       .select('title slug iconUrl description')
@@ -670,6 +699,70 @@ const getPublicServices = async (req, res) => {
       if (!category || (category.status !== 'active' && category.status !== 'coming_soon')) {
         return res.status(200).json({ success: true, services: [] });
       }
+
+      if (categoryId === '6a293e391e686a11ee740000' || category.slug === 'painting') {
+        const PaintProduct = require('../../models/PaintProduct');
+        const productQuery = { status: true };
+        if (subCategoryId) {
+          if (subCategoryId === 'sub-painting-paint') productQuery.productType = 'PAINT';
+          else if (subCategoryId === 'sub-painting-putty') productQuery.productType = 'PUTTY';
+          else if (subCategoryId === 'sub-painting-primer') productQuery.productType = 'PRIMER';
+        }
+
+        const products = await PaintProduct.find(productQuery).populate('brandId').lean();
+
+        const mappedServices = products.map((prod, index) => {
+          const features = [
+            `Application: ${prod.application === 'INTERIOR' ? 'Interior' : 'Exterior'}`,
+            `Coverage: ${prod.coverage} sqft/${prod.unit}`,
+            prod.finish ? `Finish: ${prod.finish}` : null,
+            prod.warranty ? `Warranty: ${prod.warranty}` : null,
+            prod.washable ? 'Washable' : null
+          ].filter(Boolean);
+
+          // Generate stable dynamic rating and reviewCount based on product ID
+          const idStr = prod._id.toString();
+          let hash = 0;
+          for (let i = 0; i < idStr.length; i++) {
+            hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+          }
+          const ratingVal = (4.4 + (Math.abs(hash) % 6) * 0.1).toFixed(1);
+          const reviewCountVal = (80 + (Math.abs(hash) % 770)).toString();
+
+          return {
+            id: idStr,
+            title: `${prod.brandId?.name || ''} ${prod.paintName} (${prod.application === 'INTERIOR' ? 'Interior' : 'Exterior'})`,
+            description: `${prod.brandId?.name || ''} ${prod.paintName} ${prod.productType.toLowerCase()} with ${prod.finish || 'standard'} finish. Coverage: ${prod.coverage} sqft per ${prod.unit}. ${prod.warranty ? `Warranty: ${prod.warranty}.` : ''}`,
+            image: prod.brandId?.logo || 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=300',
+            rating: parseFloat(ratingVal),
+            reviews: parseInt(reviewCountVal),
+            reviewCount: reviewCountVal,
+            price: prod.price,
+            originalPrice: prod.price,
+            features,
+            brandId: prod.brandId?._id?.toString(),
+            subCategoryId: prod.productType === 'PAINT' ? 'sub-painting-paint' : prod.productType === 'PUTTY' ? 'sub-painting-putty' : 'sub-painting-primer',
+            vendorId: null,
+            variants: [],
+            serviceType: 'package_base',
+            packages: [{
+              title: 'Standard Product',
+              price: prod.price,
+              originalPrice: prod.price,
+              isActive: true,
+              isPopular: true,
+              duration: "Standard Unit"
+            }],
+            workflow: null
+          };
+        });
+
+        return res.status(200).json({
+          success: true,
+          services: mappedServices
+        });
+      }
+
       query.categoryId = categoryId;
     } else {
       query.categoryId = { $in: activeCatIds };
@@ -1470,12 +1563,58 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const ServicePageBlock = require('../../models/ServicePageBlock');
 
     let service;
+    let isPaintingProduct = false;
+
     if (mongoose.isValidObjectId(id)) {
-      service = await Service.findById(id).lean();
-    } else {
-      service = await Service.findOne({ slug: id }).lean();
+      const PaintProduct = require('../../models/PaintProduct');
+      const paintProduct = await PaintProduct.findById(id).populate('brandId').lean();
+      if (paintProduct) {
+        isPaintingProduct = true;
+
+        const idStr = paintProduct._id.toString();
+        let hash = 0;
+        for (let i = 0; i < idStr.length; i++) {
+          hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const ratingVal = (4.4 + (Math.abs(hash) % 6) * 0.1).toFixed(1);
+        const reviewCountVal = (80 + (Math.abs(hash) % 770)).toString();
+
+        service = {
+          _id: paintProduct._id,
+          title: `${paintProduct.brandId?.name || ''} ${paintProduct.paintName} (${paintProduct.application === 'INTERIOR' ? 'Interior' : 'Exterior'})`,
+          description: `${paintProduct.brandId?.name || ''} ${paintProduct.paintName} ${paintProduct.productType.toLowerCase()} with ${paintProduct.finish || 'standard'} finish. Coverage: ${paintProduct.coverage} sqft per ${paintProduct.unit}. ${paintProduct.warranty ? `Warranty: ${paintProduct.warranty}.` : ''}`,
+          image: paintProduct.brandId?.logo || 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=300',
+          rating: parseFloat(ratingVal),
+          reviews: parseInt(reviewCountVal),
+          reviewCount: reviewCountVal,
+          price: paintProduct.price,
+          originalPrice: paintProduct.price,
+          categoryId: '6a293e391e686a11ee740000',
+          subCategoryId: paintProduct.productType === 'PAINT' ? 'sub-painting-paint' : paintProduct.productType === 'PUTTY' ? 'sub-painting-putty' : 'sub-painting-primer',
+          vendorId: null,
+          variants: [],
+          serviceType: 'package_base',
+          packages: [{
+            title: 'Standard Product',
+            price: paintProduct.price,
+            originalPrice: paintProduct.price,
+            isActive: true,
+            isPopular: true,
+            duration: "Standard Unit"
+          }],
+          status: 'active'
+        };
+      }
     }
-    
+
+    if (!isPaintingProduct) {
+      if (mongoose.isValidObjectId(id)) {
+        service = await Service.findById(id).lean();
+      } else {
+        service = await Service.findOne({ slug: id }).lean();
+      }
+    }
+
     if (!service) {
       return res.status(404).json({ success: false, message: 'Service not found' });
     }
