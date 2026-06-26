@@ -653,6 +653,209 @@ const updateVendor = async (req, res) => {
   }
 };
 
+/**
+ * Get vendor incentive statistics (rating and bookings count) in date range
+ */
+const getVendorIncentiveStats = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start Date and End Date are required'
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const Review = require('../../models/Review');
+
+    const vendors = await Vendor.find({ approvalStatus: VENDOR_STATUS.APPROVED, isActive: true })
+      .select('name businessName phone wallet.earnings wallet.dues')
+      .lean();
+
+    const stats = await Promise.all(vendors.map(async (vendor) => {
+      // Completed Booking count in date range
+      const bookingsCount = await Booking.countDocuments({
+        vendorId: vendor._id,
+        status: 'completed',
+        createdAt: { $gte: start, $lte: end }
+      });
+
+      // Average Rating in date range
+      const reviewResult = await Review.aggregate([
+        {
+          $match: {
+            vendorId: vendor._id,
+            createdAt: { $gte: start, $lte: end },
+            status: 'active'
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgRating: { $avg: '$rating' }
+          }
+        }
+      ]);
+
+      const averageRating = reviewResult[0]?.avgRating ? parseFloat(reviewResult[0].avgRating.toFixed(2)) : 0;
+
+      return {
+        id: vendor._id,
+        name: vendor.name,
+        businessName: vendor.businessName,
+        phone: vendor.phone,
+        earnings: vendor.wallet?.earnings || 0,
+        dues: vendor.wallet?.dues || 0,
+        bookingsCount,
+        averageRating
+      };
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Get vendor incentive stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch vendor incentive stats'
+    });
+  }
+};
+
+/**
+ * Get incentive transaction history
+ */
+const getIncentiveHistory = async (req, res) => {
+  try {
+    const Transaction = require('../../models/Transaction');
+    
+    // Find credit transactions containing "Incentive" or marked as admin adjustment
+    const transactions = await Transaction.find({
+      type: 'credit',
+      vendorId: { $ne: null },
+      $or: [
+        { referenceType: 'admin_adjustment' },
+        { referenceType: { $exists: false } },
+        { referenceType: null },
+        { description: /incentive/i }
+      ]
+    })
+      .populate('vendorId', 'name businessName phone')
+      .sort({ createdAt: -1 });
+
+    const formattedHistory = transactions.map(tx => ({
+      id: tx._id,
+      amount: tx.amount,
+      description: tx.description,
+      createdAt: tx.createdAt,
+      vendor: tx.vendorId ? {
+        id: tx.vendorId._id,
+        name: tx.vendorId.name,
+        businessName: tx.vendorId.businessName,
+        phone: tx.vendorId.phone
+      } : null
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: formattedHistory
+    });
+  } catch (error) {
+    console.error('Get incentive history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch incentive history'
+    });
+  }
+};
+
+/**
+ * Award incentive to vendor
+ */
+const giveVendorIncentive = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, notes } = req.body;
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid amount is required'
+      });
+    }
+
+    const vendor = await Vendor.findById(id);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found'
+      });
+    }
+
+    // Add money directly to earnings
+    const currentEarnings = vendor.wallet?.earnings || 0;
+    vendor.wallet = {
+      ...vendor.wallet,
+      earnings: currentEarnings + parsedAmount
+    };
+    await vendor.save();
+
+    // Create completed credit transaction
+    const Transaction = require('../../models/Transaction');
+    await Transaction.create({
+      vendorId: vendor._id,
+      type: 'credit',
+      amount: parsedAmount,
+      description: notes || `Admin Incentive of ₹${parsedAmount} awarded`,
+      status: 'completed',
+      referenceType: 'admin_adjustment'
+    });
+
+    // Notify vendor
+    try {
+      await createNotification({
+        vendorId: vendor._id,
+        type: 'wallet_credit',
+        title: '🎉 Incentive Received!',
+        message: `Admin has credited ₹${parsedAmount} incentive to your wallet.`,
+        data: {
+          amount: parsedAmount,
+          notes: notes || ''
+        },
+        pushData: {
+          type: 'wallet_update',
+          link: '/vendor/wallet'
+        }
+      });
+    } catch (notifErr) {
+      console.error('FCM/Notification error during incentive:', notifErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Incentive of ₹${parsedAmount} successfully credited to ${vendor.businessName || vendor.name}`,
+      data: {
+        earnings: vendor.wallet.earnings,
+        dues: vendor.wallet.dues
+      }
+    });
+  } catch (error) {
+    console.error('Give vendor incentive error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to award incentive'
+    });
+  }
+};
+
 module.exports = {
   getAllVendors,
   getVendorDetails,
@@ -665,6 +868,9 @@ module.exports = {
   getVendorPaymentsSummary,
   toggleVendorStatus,
   deleteVendor,
-  updateVendor
+  updateVendor,
+  getVendorIncentiveStats,
+  giveVendorIncentive,
+  getIncentiveHistory
 };
 

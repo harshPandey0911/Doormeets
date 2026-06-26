@@ -14,7 +14,10 @@ const {
   getAllVendorBookings,
   getVendorPaymentsSummary,
   toggleVendorStatus,
-  deleteVendor
+  deleteVendor,
+  getVendorIncentiveStats,
+  giveVendorIncentive,
+  getIncentiveHistory
 } = require('../../controllers/adminControllers/adminVendorController');
 
 // Validation rules
@@ -23,6 +26,10 @@ const rejectVendorValidation = [
 ];
 
 // Routes
+router.get('/vendors/incentives/stats', authenticate, isAdmin, getVendorIncentiveStats);
+router.get('/vendors/incentives/history', authenticate, isAdmin, getIncentiveHistory);
+router.post('/vendors/:id/incentive', authenticate, isAdmin, [ body('amount').isFloat({ min: 1 }) ], giveVendorIncentive);
+
 router.get('/vendors', authenticate, isAdmin, getAllVendors);
 router.get('/vendors/bookings', authenticate, isAdmin, getAllVendorBookings);
 router.get('/vendors/payments', authenticate, isAdmin, getVendorPaymentsSummary);
