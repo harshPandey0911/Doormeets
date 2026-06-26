@@ -8,6 +8,7 @@ import { vendorAuthService } from '../../../../services/authService';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import LogoLoader from '../../../../components/common/LogoLoader';
+import api from '../../../../services/api';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sosTriggering, setSosTriggering] = useState(false);
 
   useLayoutEffect(() => {
     const html = document.documentElement;
@@ -51,6 +53,46 @@ const Profile = () => {
       if (root) root.style.background = '';
     };
   }, []);
+
+  const handleSOSClick = () => {
+    const confirmSOS = window.confirm("EMERGENCY SOS: Are you in danger? Clicking OK will immediately alert our emergency response team and admins with your live coordinates.");
+    if (!confirmSOS) return;
+
+    setSosTriggering(true);
+    const loadingToast = toast.loading('Activating SOS Alert...');
+
+    const sendAlert = async (lat = null, lng = null) => {
+      try {
+        const res = await api.post('/vendors/profile/sos', { lat, lng });
+        toast.dismiss(loadingToast);
+        if (res.data.success) {
+          toast.error('🚨 SOS Alert Triggered! Help is on the way. Our team will contact you shortly.', { duration: 30000 });
+        } else {
+          toast.error(res.data.message || 'Failed to trigger SOS');
+        }
+      } catch (err) {
+        toast.dismiss(loadingToast);
+        toast.error('Failed to contact emergency support. Please call emergency services directly.');
+      } finally {
+        setSosTriggering(false);
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          sendAlert(position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          console.warn('Geolocation failed, triggering SOS without coordinates:', error.message);
+          sendAlert();
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
+      sendAlert();
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -395,6 +437,24 @@ const Profile = () => {
               </button>
             );
           })}
+        </div>
+
+        {/* SOS Button */}
+        <div className="mb-3">
+          <button
+            type="button"
+            disabled={sosTriggering}
+            onClick={handleSOSClick}
+            className="w-full font-black py-4 rounded-xl active:scale-98 transition-all text-white flex items-center justify-center gap-2 uppercase tracking-wider text-sm animate-pulse"
+            style={{
+              backgroundColor: '#DC2626',
+              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)',
+              cursor: 'pointer'
+            }}
+          >
+            <span className="text-base">🚨</span>
+            {sosTriggering ? 'Sending SOS Alert...' : 'SOS Emergency Alert'}
+          </button>
         </div>
 
         {/* Logout Button */}

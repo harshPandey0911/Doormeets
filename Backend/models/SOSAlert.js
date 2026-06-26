@@ -4,7 +4,17 @@ const sosAlertSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    default: null
+  },
+  vendorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor',
+    default: null
+  },
+  userType: {
+    type: String,
+    enum: ['user', 'vendor'],
+    default: 'user'
   },
   lat: {
     type: Number,

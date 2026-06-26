@@ -64,7 +64,8 @@ const AdminLayout = () => {
       
       // Trigger a 30-second toast alert on Admin panel
       try {
-        toast.error(`🚨 EMERGENCY SOS! User ${data.name} (${data.phone}) has triggered an SOS alert!`, {
+        const isVendor = data.userType === 'vendor';
+        toast.error(`🚨 EMERGENCY SOS! ${isVendor ? 'Vendor' : 'User'} ${data.name} (${data.phone}) has triggered an SOS alert!`, {
           duration: 30000,
           position: 'top-right'
         });
@@ -142,10 +143,10 @@ const AdminLayout = () => {
             </div>
             <div className="p-6 space-y-4 animate-slide-up">
               <div className="space-y-2">
-                <p className="text-gray-500 text-xs">A user has triggered an emergency SOS panic button from their profile dashboard.</p>
+                <p className="text-gray-500 text-xs">A {currentSOS.userType === 'vendor' ? 'vendor' : 'user'} has triggered an emergency SOS panic button from their profile dashboard.</p>
                 <div className="bg-red-50/50 border border-red-100 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-400 font-bold uppercase">Customer</span>
+                    <span className="text-gray-400 font-bold uppercase">{currentSOS.userType === 'vendor' ? 'Vendor / Partner' : 'Customer'}</span>
                     <span className="text-gray-900 font-bold">{currentSOS.name}</span>
                   </div>
                   <div className="flex justify-between text-xs">

@@ -264,6 +264,25 @@ const createService = async (req, res) => {
       }
     }
 
+    // Create default ServiceBrandPricing entry so service is visible and bookable
+    if (cleanedCategoryId) {
+      try {
+        const targetBrandId = brandId || null;
+        await ServiceBrandPricing.create({
+          categoryId: cleanedCategoryId,
+          subCategoryId: cleanedSubCategoryId || null,
+          serviceId: service._id,
+          brandId: targetBrandId,
+          basePrice: Number(basePrice) || 0,
+          gstPercentage: Number(gstPercentage || 18),
+          vendorProfit: 0,
+          isActive: true
+        });
+      } catch (pricingErr) {
+        console.error('[CreateService] Failed to create default brand pricing:', pricingErr);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Service created successfully',

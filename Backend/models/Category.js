@@ -29,6 +29,10 @@ const categorySchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  bannerImage: {
+    type: String,
+    default: null
+  },
   homeBadge: {
     type: String,
     default: null,

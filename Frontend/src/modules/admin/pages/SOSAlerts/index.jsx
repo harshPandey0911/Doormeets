@@ -8,6 +8,7 @@ const SOSAlerts = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all', 'pending', 'resolved'
+  const [userTypeFilter, setUserTypeFilter] = useState('all'); // 'all', 'user', 'vendor'
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [resolveNotes, setResolveNotes] = useState('');
   const [resolving, setResolving] = useState(false);
@@ -59,12 +60,19 @@ const SOSAlerts = () => {
 
   const filteredAlerts = alerts.filter(alert => {
     const statusMatches = filter === 'all' || alert.status === filter;
+    const typeMatches = userTypeFilter === 'all' || (alert.userType || 'user') === userTypeFilter;
     
-    const user = alert.userId || {};
-    const searchStr = `${user.name || ''} ${user.phone || ''} ${user.email || ''}`.toLowerCase();
+    let searchStr = '';
+    if (alert.userType === 'vendor') {
+      const vendor = alert.vendorId || {};
+      searchStr = `${vendor.businessName || ''} ${vendor.name || ''} ${vendor.phone || ''} ${vendor.email || ''}`.toLowerCase();
+    } else {
+      const user = alert.userId || {};
+      searchStr = `${user.name || ''} ${user.phone || ''} ${user.email || ''}`.toLowerCase();
+    }
     const searchMatches = search.trim() === '' || searchStr.includes(search.toLowerCase());
     
-    return statusMatches && searchMatches;
+    return statusMatches && typeMatches && searchMatches;
   });
 
   return (
@@ -81,7 +89,7 @@ const SOSAlerts = () => {
             </span>
             <h1 className="text-3xl font-extrabold tracking-tight">SOS Alarms & Logs</h1>
             <p className="text-white/80 max-w-xl text-sm leading-relaxed">
-              Monitor, investigate, and log resolution details for emergency SOS alerts triggered by customers on their profile dashboards.
+              Monitor, investigate, and log resolution details for emergency SOS alerts triggered by customers and vendors.
             </p>
           </div>
           <div className="p-4 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 animate-pulse">
@@ -92,27 +100,51 @@ const SOSAlerts = () => {
 
       {/* Filter and Search Panel */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex gap-2 w-full md:w-auto">
-          {['all', 'pending', 'resolved'].map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilter(t)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                filter === t
-                  ? 'bg-red-600 text-white shadow-md'
-                  : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              {t === 'all' ? 'All Alerts' : `${t} Alerts`}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-4 w-full md:w-auto items-center">
+          <div className="flex gap-2">
+            {['all', 'pending', 'resolved'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilter(t)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                  filter === t
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                {t === 'all' ? 'All Statuses' : `${t} Alerts`}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
+
+          <div className="flex gap-2">
+            {[
+              { value: 'all', label: 'All Users' },
+              { value: 'user', label: 'Customers' },
+              { value: 'vendor', label: 'Vendors' }
+            ].map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setUserTypeFilter(t.value)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                  userTypeFilter === t.value
+                    ? 'bg-gray-800 text-white shadow-md'
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="relative w-full md:w-80">
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search by User details..."
+            placeholder="Search by details..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-xs"
@@ -126,7 +158,7 @@ const SOSAlerts = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">User / Vendor</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contact Info</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Timestamp</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Coordinates / Location</th>
@@ -147,17 +179,44 @@ const SOSAlerts = () => {
                 filteredAlerts.map((alert) => (
                   <tr key={alert._id} className={`${alert.status === 'pending' ? 'bg-red-50/20' : ''} hover:bg-gray-50/50 transition-colors`}>
                     <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900 text-xs">{alert.userId?.name || 'Unknown User'}</div>
-                      <div className="text-[10px] text-gray-400">ID: {alert._id.slice(-6).toUpperCase()}</div>
+                      {alert.userType === 'vendor' ? (
+                        <>
+                          <div className="font-bold text-gray-900 text-xs">
+                            {alert.vendorId?.businessName || alert.vendorId?.name || 'Unknown Vendor'}
+                          </div>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-bold uppercase rounded">Vendor</span>
+                            <span className="text-[10px] text-gray-400">ID: {alert._id.slice(-6).toUpperCase()}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="font-bold text-gray-900 text-xs">
+                            {alert.userId?.name || 'Unknown User'}
+                          </div>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-[9px] font-bold uppercase rounded">Customer</span>
+                            <span className="text-[10px] text-gray-400">ID: {alert._id.slice(-6).toUpperCase()}</span>
+                          </div>
+                        </>
+                      )}
                     </td>
                     <td className="px-6 py-4 space-y-1">
                       <div className="flex items-center gap-1.5 text-gray-600 text-xs">
                         <FiPhone className="w-3 h-3 text-gray-400" />
-                        <span>{alert.userId?.phone || 'No Phone'}</span>
+                        <span>
+                          {alert.userType === 'vendor' 
+                            ? (alert.vendorId?.phone || 'No Phone') 
+                            : (alert.userId?.phone || 'No Phone')}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-gray-600 text-xs">
                         <FiMail className="w-3 h-3 text-gray-400" />
-                        <span>{alert.userId?.email || 'No Email'}</span>
+                        <span>
+                          {alert.userType === 'vendor' 
+                            ? (alert.vendorId?.email || 'No Email') 
+                            : (alert.userId?.email || 'No Email')}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -233,7 +292,7 @@ const SOSAlerts = () => {
                 <h3 className="text-lg font-bold">Resolve SOS Alarm</h3>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Confirming resolution details for <strong>{selectedAlert.userId?.name}</strong>'s alarm at {new Date(selectedAlert.createdAt).toLocaleTimeString()}. Log investigative details below.
+                Confirming resolution details for <strong>{selectedAlert.userType === 'vendor' ? (selectedAlert.vendorId?.businessName || selectedAlert.vendorId?.name) : selectedAlert.userId?.name}</strong>'s alarm at {new Date(selectedAlert.createdAt).toLocaleTimeString()}. Log investigative details below.
               </p>
 
               <form onSubmit={handleResolveSubmit} className="space-y-4">
@@ -244,7 +303,7 @@ const SOSAlerts = () => {
                     rows="3"
                     value={resolveNotes}
                     onChange={(e) => setResolveNotes(e.target.value)}
-                    placeholder="Enter what actions were taken (e.g. contacted customer, called local police desk)..."
+                    placeholder="Enter what actions were taken (e.g. contacted customer/vendor, called local police desk)..."
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl outline-none focus:border-red-500 resize-none font-medium"
                   />
                 </div>

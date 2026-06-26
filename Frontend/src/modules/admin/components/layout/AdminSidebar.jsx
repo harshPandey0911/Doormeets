@@ -115,6 +115,7 @@ const getChildRoute = (parentRoute, childName) => {
       "Combined Categories": "/admin/user-categories/combined-categories",
       "Top Brands & Featured": "/admin/user-categories/featured-sections",
       "Popular Services": "/admin/user-categories/popular-services",
+      "Manage Professions": "/admin/user-categories/professions",
       "Loyalty Points Settings": "/admin/user-categories/loyalty-points"
     },
     "/admin/management": {

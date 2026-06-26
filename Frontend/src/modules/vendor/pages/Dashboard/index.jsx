@@ -202,7 +202,7 @@ const Dashboard = memo(() => {
     // If we reached here, the subscription is active (otherwise middleware would have blocked it)
     try {
       const currentVendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
-      if (currentVendorData.id) {
+      if (currentVendorData.id || currentVendorData._id) {
         localStorage.setItem('vendorData', JSON.stringify({
           ...currentVendorData,
           isSubscriptionActive: apiStats.isSubscriptionActive ?? true,
@@ -396,6 +396,14 @@ const Dashboard = memo(() => {
         
         // Update local stats too
         setStats(prev => ({ ...prev, isOnline: newStatus }));
+
+        // Update localStorage
+        const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+        vendorData.isOnline = newStatus;
+        localStorage.setItem('vendorData', JSON.stringify(vendorData));
+
+        // Dispatch event for other components (like Header)
+        window.dispatchEvent(new CustomEvent('vendorStatusChanged', { detail: { isOnline: newStatus } }));
       }
     } catch (error) {
       console.error('Failed to toggle status:', error);

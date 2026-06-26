@@ -93,6 +93,8 @@ const PremiumCategoryPage = () => {
             title: cat.title,
             slug: cat.slug || cat.title?.toLowerCase().replace(/\s+/g, '-'),
             icon: toAssetUrl(cat.icon || cat.homeIconUrl),
+            bannerImage: toAssetUrl(cat.bannerImage) || '',
+            description: cat.description || '',
             subtitle: cat.subtitle || 'Premium service',
             status: cat.status || 'active',
             interestedCount: cat.interestedCount || 0,
@@ -330,7 +332,7 @@ const PremiumCategoryPage = () => {
       <div className="relative w-full h-[260px] md:h-[350px] overflow-hidden">
         {/* Cover Image */}
         <img
-          src={activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
+          src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
           alt={activeCategory?.title}
           className="w-full h-full object-cover filter brightness-[0.85] dark:brightness-75 transition-all duration-300"
         />
@@ -366,7 +368,7 @@ const PremiumCategoryPage = () => {
           </div>
 
           <p className="mt-3 text-xs md:text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>
-            Our {activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages tailored for you.
+            {activeCategory?.description || `Our ${activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages tailored for you.`}
           </p>
         </div>
 

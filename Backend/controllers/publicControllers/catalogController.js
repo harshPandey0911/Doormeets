@@ -1156,7 +1156,7 @@ const getPublicHomeData = async (req, res) => {
           { cityIds: { $size: 0 } }
         ] : [{ status: { $in: ['active', 'coming_soon'] } }]
       })
-        .select('title slug homeIconUrl homeBadge hasSaleBadge categoryType status interestedUsers isGroupCategory mappedCategories')
+        .select('title slug homeIconUrl bannerImage description homeBadge hasSaleBadge categoryType status interestedUsers isGroupCategory mappedCategories')
         .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status', match: { status: { $in: ['active', 'coming_soon'] } } })
         .sort({ homeOrder: 1 })
         .lean(),
@@ -1183,6 +1183,8 @@ const getPublicHomeData = async (req, res) => {
         title: cat.title,
         slug: cat.slug,
         icon: cat.homeIconUrl || '',
+        bannerImage: cat.bannerImage || '',
+        description: cat.description || '',
         badge: cat.homeBadge || '',
         hasSaleBadge: cat.hasSaleBadge || false,
         categoryType: cat.categoryType || 'service',

@@ -40,6 +40,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     title: "",
     slug: "",
     homeIconUrl: "",
+    bannerImage: "",
+    description: "",
     homeBadge: "",
     hasSaleBadge: false,
     hasBrands: true,
@@ -63,6 +65,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     minWalletBalance: 0,
   });
   const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
 
@@ -104,6 +107,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             title: cat.title,
             slug: cat.slug,
             homeIconUrl: cat.homeIconUrl || "",
+            bannerImage: cat.bannerImage || "",
+            description: cat.description || "",
             homeBadge: cat.homeBadge || "",
             hasSaleBadge: cat.hasSaleBadge || false,
             hasBrands: cat.hasBrands ?? true,
@@ -152,6 +157,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         title: "",
         slug: "",
         homeIconUrl: "",
+        bannerImage: "",
+        description: "",
         homeBadge: "",
         hasSaleBadge: false,
         hasBrands: true,
@@ -182,6 +189,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       title: safe.title || "",
       slug: safe.slug || "",
       homeIconUrl: safe.homeIconUrl || "",
+      bannerImage: safe.bannerImage || "",
+      description: safe.description || "",
       homeBadge: safe.homeBadge || "",
       hasSaleBadge: Boolean(safe.hasSaleBadge),
       hasBrands: safe.hasBrands ?? true,
@@ -212,6 +221,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       title: "",
       slug: "",
       homeIconUrl: "",
+      bannerImage: "",
+      description: "",
       homeBadge: "",
       hasSaleBadge: false,
       hasBrands: true,
@@ -326,6 +337,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         title,
         slug,
         homeIconUrl: homeIconUrl || null,
+        bannerImage: form.bannerImage || null,
+        description: (form.description || '').trim() || null,
         homeBadge: homeBadge || null,
         hasSaleBadge,
         hasBrands,
@@ -365,6 +378,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
           title: cat.title || existing?.title || "",
           slug: cat.slug || existing?.slug || "",
           homeIconUrl: cat.homeIconUrl ?? existing?.homeIconUrl ?? "",
+          bannerImage: cat.bannerImage ?? existing?.bannerImage ?? "",
+          description: cat.description ?? existing?.description ?? "",
           homeBadge: cat.homeBadge ?? existing?.homeBadge ?? "",
           hasSaleBadge: cat.hasSaleBadge !== undefined ? cat.hasSaleBadge : (existing?.hasSaleBadge || false),
           hasBrands: cat.hasBrands !== undefined ? cat.hasBrands : (existing?.hasBrands ?? true),
@@ -913,6 +928,60 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
                 <p className="text-[10px] text-gray-400 mt-1">PNG, JPG, SVG up to 2MB</p>
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Banner / Cover Image (for category page)</label>
+            <div className="flex items-center gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+              <div className="h-16 w-24 bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                {form.bannerImage ? (
+                  <img src={form.bannerImage} alt="Banner Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-gray-400 text-xs font-semibold text-center">No Banner</div>
+                )}
+              </div>
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingBanner}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setUploadingBanner(true);
+                      try {
+                        const categorySlug = form.slug || form.title?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                        const folder = `Doormeets/${categorySlug}/banners`;
+                        const response = await serviceService.uploadImage(file, folder);
+                        if (response.success && response.imageUrl) {
+                          setForm((p) => ({ ...p, bannerImage: response.imageUrl }));
+                          toast.success("Banner image uploaded successfully");
+                        } else {
+                          toast.error("Upload failed");
+                        }
+                      } catch (error) {
+                        toast.error("Failed to upload banner image");
+                      } finally {
+                        setUploadingBanner(false);
+                      }
+                    }
+                  }}
+                  className="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Wide image recommended (1200×400). Shown as cover on category page.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Description (shown on category page)</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              placeholder="e.g. Our painting services provide premium quality with certified experts..."
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none text-sm"
+            />
           </div>
 
           {!filterTemplateId && (

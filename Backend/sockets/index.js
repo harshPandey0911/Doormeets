@@ -254,30 +254,15 @@ const initializeSocket = (server) => {
 const updateVendorOnlineStatus = async (vendorId, isOnline, socketId) => {
   try {
     const Vendor = require('../models/Vendor');
-    const { setVendorOnline, setVendorAvailability } = require('../services/redisService');
 
     const updateData = {
-      isOnline,
       currentSocketId: socketId
     };
-
-    if (isOnline) {
-      updateData.availability = 'AVAILABLE';
-      updateData.availabilityStatus = 'ONLINE';
-    } else {
-      updateData.lastSeenAt = new Date();
-      updateData.availability = 'OFFLINE';
-      updateData.availabilityStatus = 'OFFLINE';
-    }
 
     // Update MongoDB
     await Vendor.findByIdAndUpdate(vendorId, updateData);
 
-    // Update Redis cache (fast lookup)
-    await setVendorOnline(vendorId, isOnline);
-    await setVendorAvailability(vendorId, updateData.availability);
-
-    console.log(`[Socket] Vendor ${vendorId} is now ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+    console.log(`[Socket] Vendor ${vendorId} socket connection updated: socketId=${socketId}`);
   } catch (error) {
     console.error('[Socket] Error updating vendor online status:', error);
   }

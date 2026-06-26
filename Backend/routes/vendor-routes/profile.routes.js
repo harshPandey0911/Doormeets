@@ -4,6 +4,7 @@ const { body } = require('express-validator');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isVendor } = require('../../middleware/roleMiddleware');
 const { getProfile, updateProfile, updateAddress, updateLocation, updateStatus } = require('../../controllers/vendorControllers/vendorProfileController');
+const { triggerVendorSOS } = require('../../controllers/userControllers/sosController');
 
 // Validation rules
 const updateProfileValidation = [
@@ -23,6 +24,7 @@ router.put('/profile', authenticate, isVendor, updateProfileValidation, updatePr
 router.put('/address', authenticate, isVendor, updateAddressValidation, updateAddress);
 router.put('/profile/location', authenticate, isVendor, updateLocation);
 router.put('/status', authenticate, isVendor, updateStatus);
+router.post('/profile/sos', authenticate, isVendor, triggerVendorSOS);
 
 module.exports = router;
 

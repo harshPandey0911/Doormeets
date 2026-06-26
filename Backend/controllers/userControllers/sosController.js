@@ -62,6 +62,7 @@ exports.getSOSLogs = async (req, res) => {
   try {
     const alerts = await SOSAlert.find()
       .populate('userId', 'name phone email')
+      .populate('vendorId', 'name businessName phone email')
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -103,6 +104,7 @@ exports.resolveSOS = async (req, res) => {
         io.emit('sos_alert_resolved', {
           alertId: alert._id,
           userId: alert.userId,
+          vendorId: alert.vendorId,
           status: 'resolved',
           notes: alert.notes
         });
@@ -125,3 +127,62 @@ exports.resolveSOS = async (req, res) => {
     });
   }
 };
+
+// Vendor triggers SOS emergency
+exports.triggerVendorSOS = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { lat, lng } = req.body;
+    const Vendor = require('../../models/Vendor');
+
+    const vendor = await Vendor.findById(vendorId).select('name businessName phone email');
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found'
+      });
+    }
+
+    const alert = await SOSAlert.create({
+      vendorId,
+      userType: 'vendor',
+      lat: lat ? Number(lat) : null,
+      lng: lng ? Number(lng) : null,
+      status: 'pending'
+    });
+
+    // Send real-time notification to all connected Admin panel sockets
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('sos_alert_triggered', {
+          alertId: alert._id,
+          vendorId: vendor._id,
+          name: vendor.businessName || vendor.name,
+          phone: vendor.phone,
+          email: vendor.email,
+          lat: alert.lat,
+          lng: alert.lng,
+          userType: 'vendor',
+          createdAt: alert.createdAt
+        });
+        console.log(`[SOS] Broadcasted socket event for Vendor SOS Alert: ${alert._id}`);
+      }
+    } catch (sockErr) {
+      console.error('[SOS] Socket broadcast failed:', sockErr.message);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'SOS Emergency Alert triggered successfully. Help is on the way.',
+      alert
+    });
+  } catch (error) {
+    console.error('Error triggering Vendor SOS:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to trigger SOS alert'
+    });
+  }
+};
+

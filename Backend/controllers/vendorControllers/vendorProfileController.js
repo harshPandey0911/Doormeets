@@ -52,6 +52,8 @@ const getProfile = async (req, res) => {
         profilePhoto: vendor.profilePhoto || null,
         aadharDocument: vendor.aadhar?.document || null,
         policeVerification: vendor.policeVerification || null,
+        isOnline: vendor.isOnline || false,
+        availability: vendor.availability || 'OFFLINE',
         createdAt: vendor.createdAt,
         updatedAt: vendor.updatedAt
       }
@@ -239,9 +241,10 @@ const updateProfile = async (req, res) => {
         isPhoneVerified: vendor.isPhoneVerified,
         isEmailVerified: vendor.isEmailVerified,
         profilePhoto: vendor.profilePhoto,
-        service: vendor.service,
         skills: vendor.skills,
-        settings: vendor.settings
+        settings: vendor.settings,
+        isOnline: vendor.isOnline || false,
+        availability: vendor.availability || 'OFFLINE'
       }
     });
   } catch (error) {
@@ -371,6 +374,15 @@ const updateStatus = async (req, res) => {
     }
     
     await vendor.save();
+
+    // Sync to Redis cache (fast lookup)
+    try {
+      const { setVendorOnline, setVendorAvailability } = require('../../services/redisService');
+      await setVendorOnline(vendorId, isOnline);
+      await setVendorAvailability(vendorId, vendor.availability);
+    } catch (redisErr) {
+      console.error('[UpdateStatus] Redis sync failed:', redisErr);
+    }
 
     res.status(200).json({ 
       success: true, 
