@@ -216,8 +216,78 @@ const getCheckoutData = async (req, res) => {
   }
 };
 
+/**
+ * Get user referral details and stats
+ */
+const getReferralDetails = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const User = require('../../models/User');
+    const Settings = require('../../models/Settings');
+    const Transaction = require('../../models/Transaction');
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Dynamic fallback generation of referral code for old users
+    let referralCode = user.referralCode;
+    if (!referralCode) {
+      let isUnique = false;
+      let attempts = 0;
+      while (!isUnique && attempts < 10) {
+        const randStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+        referralCode = `DM-${randStr}`;
+        const existingCode = await User.findOne({ referralCode });
+        if (!existingCode) {
+          isUnique = true;
+        }
+        attempts++;
+      }
+      user.referralCode = referralCode;
+      await user.save();
+    }
+
+    // Get referral rewards from settings
+    const settings = await Settings.findOne({ type: 'global' });
+    const referrerReward = settings?.referralRewardReferrer !== undefined ? settings.referralRewardReferrer : 100;
+    const refereeReward = settings?.referralRewardReferee !== undefined ? settings.referralRewardReferee : 100;
+
+    // Get stats
+    const successfulReferrals = await User.countDocuments({ referredBy: userId, referralStatus: 'rewarded' });
+    
+    // Sum referral reward credits from Transactions
+    const referralTransactions = await Transaction.find({
+      userId,
+      type: 'credit',
+      description: { $regex: /Referral Reward/i }
+    });
+    const totalEarnings = referralTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+
+    res.status(200).json({
+      success: true,
+      referralCode,
+      referrerReward,
+      refereeReward,
+      successfulReferrals,
+      totalEarnings
+    });
+  } catch (error) {
+    console.error('Get referral details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch referral details'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
-  getCheckoutData
+  getCheckoutData,
+  getReferralDetails
 };

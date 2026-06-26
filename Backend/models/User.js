@@ -118,6 +118,23 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  referralStatus: {
+    type: String,
+    enum: ['none', 'pending', 'rewarded'],
+    default: 'none',
+    index: true
+  },
 
   // FCM Push Notification Tokens
   fcmTokens: {

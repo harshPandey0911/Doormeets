@@ -39,6 +39,7 @@ const AdminHeader = ({ onMenuClick, isCollapsed }) => {
       { path: '/admin/users/bookings', title: 'User Bookings', description: 'Track customer booking history' },
       { path: '/admin/users/analytics', title: 'User Analytics', description: 'Analyze customer behavior and growth' },
       { path: '/admin/users/transactions', title: 'User Transactions', description: 'Monitor customer financial transactions' },
+      { path: '/admin/users/referrals', title: 'Referral Settings', description: 'Configure referral reward settings and view referral statistics' },
       { path: '/admin/users', title: 'Users', description: 'Manage platform customers and their activity' },
       { path: '/admin/vendors/all', title: 'All Vendors', description: 'Manage platform vendors and their activity' },
       { path: '/admin/vendors/analytics', title: 'Vendor Analytics', description: 'Analyze vendor growth and booking trends' },

@@ -112,6 +112,12 @@ export const userAuthService = {
   getCheckoutData: async () => {
     const response = await api.get('/users/checkout-data');
     return response.data;
+  },
+
+  // Get referral details
+  getReferralDetails: async () => {
+    const response = await api.get('/users/profile/referral/details');
+    return response.data;
   }
 };
 

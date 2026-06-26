@@ -64,7 +64,10 @@ exports.updateSettings = async (req, res, next) => {
       loyaltyPointsEarningRate,
       loyaltyPointsRedemptionRate,
       loyaltyPointsCancellationPenalty,
-      loyaltyPointsFixedCompletionAward
+      loyaltyPointsFixedCompletionAward,
+      referralRewardReferrer,
+      referralRewardReferee,
+      maxWalletUsagePercentage
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -94,7 +97,10 @@ exports.updateSettings = async (req, res, next) => {
         loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : 1,
         loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : 1,
         loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : 0,
-        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 0
+        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 0,
+        referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
+        referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
+        maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30
       });
     } else {
       // Update fields if provided
@@ -158,6 +164,9 @@ exports.updateSettings = async (req, res, next) => {
       if (loyaltyPointsRedemptionRate !== undefined) settings.loyaltyPointsRedemptionRate = Number(loyaltyPointsRedemptionRate);
       if (loyaltyPointsCancellationPenalty !== undefined) settings.loyaltyPointsCancellationPenalty = Number(loyaltyPointsCancellationPenalty);
       if (loyaltyPointsFixedCompletionAward !== undefined) settings.loyaltyPointsFixedCompletionAward = Number(loyaltyPointsFixedCompletionAward);
+      if (referralRewardReferrer !== undefined) settings.referralRewardReferrer = Number(referralRewardReferrer);
+      if (referralRewardReferee !== undefined) settings.referralRewardReferee = Number(referralRewardReferee);
+      if (maxWalletUsagePercentage !== undefined) settings.maxWalletUsagePercentage = Number(maxWalletUsagePercentage);
 
       await settings.save();
     }
@@ -221,11 +230,11 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage');
 
     // Default if not found (fallback values)
     if (!settings) {
-      settings = { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18 };
+      settings = { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18, referralRewardReferrer: 100, referralRewardReferee: 100, maxWalletUsagePercentage: 30 };
     }
 
     res.status(200).json({

@@ -365,6 +365,73 @@ const getAllUserBookings = async (req, res) => {
   }
 };
 
+/**
+ * Get referral system statistics
+ */
+const getReferralStats = async (req, res) => {
+  try {
+    const Transaction = require('../../models/Transaction');
+
+    const totalReferredUsers = await User.countDocuments({ referredBy: { $ne: null } });
+    const rewardedReferrals = await User.countDocuments({ referredBy: { $ne: null }, referralStatus: 'rewarded' });
+    const pendingReferrals = await User.countDocuments({ referredBy: { $ne: null }, referralStatus: 'pending' });
+
+    // Calculate total referrer payouts and referee payouts from Transactions
+    const referrerPayouts = await Transaction.find({
+      type: 'credit',
+      description: { $regex: /Referral Reward/i }
+    });
+    const totalReferrerPayoutsAmount = referrerPayouts.reduce((sum, tx) => sum + tx.amount, 0);
+
+    const refereePayouts = await Transaction.find({
+      type: 'credit',
+      description: { $regex: /Welcome Bonus/i }
+    });
+    const totalRefereePayoutsAmount = refereePayouts.reduce((sum, tx) => sum + tx.amount, 0);
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        totalReferredUsers,
+        rewardedReferrals,
+        pendingReferrals,
+        totalReferrerPayoutsAmount,
+        totalRefereePayoutsAmount,
+        totalPayoutsAmount: totalReferrerPayoutsAmount + totalRefereePayoutsAmount
+      }
+    });
+  } catch (error) {
+    console.error('Get referral stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch referral statistics'
+    });
+  }
+};
+
+/**
+ * Get detailed list of referrals
+ */
+const getReferralsList = async (req, res) => {
+  try {
+    const referrals = await User.find({ referredBy: { $ne: null } })
+      .select('name phone email referralStatus createdAt referredBy')
+      .populate('referredBy', 'name phone email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: referrals
+    });
+  } catch (error) {
+    console.error('Get referrals list error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch referrals list'
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserDetails,
@@ -372,6 +439,8 @@ module.exports = {
   deleteUser,
   getUserBookings,
   getUserWalletTransactions,
-  getAllUserBookings
+  getAllUserBookings,
+  getReferralStats,
+  getReferralsList
 };
 

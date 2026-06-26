@@ -3,7 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
-const { getProfile, updateProfile, getCheckoutData } = require('../../controllers/userControllers/userProfileController');
+const { getProfile, updateProfile, getCheckoutData, getReferralDetails } = require('../../controllers/userControllers/userProfileController');
 
 // Validation rules
 const updateProfileValidation = [
@@ -14,6 +14,7 @@ const updateProfileValidation = [
 // Routes
 router.get('/profile', authenticate, isUser, getProfile);
 router.get('/checkout-data', authenticate, isUser, getCheckoutData);
+router.get('/profile/referral/details', authenticate, isUser, getReferralDetails);
 router.put('/profile', authenticate, isUser, updateProfileValidation, updateProfile);
 
 module.exports = router;

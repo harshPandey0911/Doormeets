@@ -450,6 +450,18 @@ const bookingSchema = new mongoose.Schema({
   loyaltyPointsRefunded: {
     type: Boolean,
     default: false
+  },
+  referralProcessed: {
+    type: Boolean,
+    default: false
+  },
+  walletAmountApplied: {
+    type: Number,
+    default: 0
+  },
+  walletAmountRefunded: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -463,7 +475,7 @@ bookingSchema.pre('save', async function (next) {
     this.bookingNumber = `BK${timestamp}${random}`;
   }
   
-  // Refund loyalty points if cancelled or search failed
+  // Refund loyalty points and wallet applied if cancelled or search failed
   if (this.isModified('status') && (this.status === 'cancelled' || this.status === 'no_vendors')) {
     if (this.loyaltyPointsRedeemed > 0 && !this.loyaltyPointsRefunded) {
       try {
@@ -486,6 +498,29 @@ bookingSchema.pre('save', async function (next) {
         this.loyaltyPointsRefunded = true;
       } catch (err) {
         console.error('[LoyaltyPoints] Error refunding points in pre-save hook:', err);
+      }
+    }
+
+    if (this.walletAmountApplied > 0 && !this.walletAmountRefunded) {
+      try {
+        const User = mongoose.model('User');
+        await User.findByIdAndUpdate(this.userId, { $inc: { 'wallet.balance': this.walletAmountApplied } });
+        console.log(`[Wallet] Refunded ₹${this.walletAmountApplied} to user ${this.userId} due to status change to ${this.status}`);
+        
+        const Transaction = mongoose.model('Transaction');
+        await Transaction.create({
+          userId: this.userId,
+          type: 'refund',
+          amount: this.walletAmountApplied,
+          status: 'completed',
+          paymentMethod: 'system',
+          description: `Refunded ₹${this.walletAmountApplied} wallet balance for booking #${this.bookingNumber} (${this.status})`,
+          bookingId: this._id
+        });
+        
+        this.walletAmountRefunded = true;
+      } catch (err) {
+        console.error('[Wallet] Error refunding wallet balance in pre-save hook:', err);
       }
     }
   }
@@ -570,6 +605,66 @@ bookingSchema.post('save', async function (doc) {
       }
     } catch (err) {
       console.error('[LoyaltyPoints] Error awarding points post-save:', err);
+    }
+  }
+
+  // Handle referral reward for the referrer upon referee's first booking completion
+  if (doc.status === 'completed' && !doc.referralProcessed) {
+    try {
+      const User = mongoose.model('User');
+      const refereeUser = await User.findById(doc.userId);
+      if (refereeUser && refereeUser.referredBy && refereeUser.referralStatus === 'pending') {
+        const Settings = mongoose.model('Settings');
+        const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+        const referrerReward = globalSettings?.referralRewardReferrer !== undefined ? globalSettings.referralRewardReferrer : 100;
+        
+        if (referrerReward > 0) {
+          // Credit referrer's wallet balance
+          await User.findByIdAndUpdate(refereeUser.referredBy, {
+            $inc: { 'wallet.balance': referrerReward }
+          });
+          
+          // Log Transaction for referrer
+          const Transaction = mongoose.model('Transaction');
+          await Transaction.create({
+            userId: refereeUser.referredBy,
+            type: 'credit',
+            amount: referrerReward,
+            status: 'completed',
+            paymentMethod: 'system',
+            description: `Referral Reward: Your referred friend completed their first booking #${doc.bookingNumber}`,
+            bookingId: doc._id
+          });
+          
+          // Send notification to referrer
+          const { createNotification } = require('../controllers/notificationControllers/notificationController');
+          await createNotification({
+            userId: refereeUser.referredBy,
+            type: 'referral_earned',
+            title: 'Referral Reward Credited! 🎉',
+            message: `Congratulations! You have received ₹${referrerReward} in your wallet because your referred friend, ${refereeUser.name}, completed their first booking.`,
+            relatedId: doc._id,
+            relatedType: 'booking',
+            pushData: {
+              type: 'referral_earned',
+              bookingId: doc._id.toString(),
+              link: '/user/rewards'
+            }
+          });
+        }
+        
+        // Update user's referralStatus to rewarded
+        refereeUser.referralStatus = 'rewarded';
+        await refereeUser.save();
+        
+        // Mark booking.referralProcessed = true
+        await mongoose.model('Booking').findByIdAndUpdate(doc._id, { referralProcessed: true });
+      } else {
+        // If not referred or status is not pending, still mark it processed so we don't check again
+        await mongoose.model('Booking').findByIdAndUpdate(doc._id, { referralProcessed: true });
+      }
+    } catch (err) {
+      console.error('[Referral] Error processing referrer reward:', err);
     }
   }
 });

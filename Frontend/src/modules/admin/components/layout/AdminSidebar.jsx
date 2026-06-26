@@ -65,6 +65,7 @@ const iconMap = {
   "Vendor Subscriptions": FiDollarSign,
   "Vendor Requests": FiInbox,
   "Package based": FiPackage,
+  "Painting Mgmt": FiGrid,
   "SOS Alerts": FiShield
 };
 
@@ -76,6 +77,7 @@ const getChildRoute = (parentRoute, childName) => {
       "User Bookings": "/admin/users/bookings",
       "Transactions": "/admin/users/transactions",
       "User Analytics": "/admin/users/analytics",
+      "Referral Settings": "/admin/users/referrals",
     },
     "/admin/vendors": {
       "All Vendors": "/admin/vendors/all",
@@ -187,6 +189,7 @@ const permissionMap = {
   "User Catalog": "propose_categories",
   "Management": "propose_categories",
   "Package based": "propose_categories",
+  "Painting Mgmt": "propose_categories",
   "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",

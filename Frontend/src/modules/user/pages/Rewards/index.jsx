@@ -1,31 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
 import { FiCopy, FiArrowLeft, FiGift, FiBell } from 'react-icons/fi';
 import { FaWhatsapp, FaFacebookMessenger } from 'react-icons/fa';
 import { themeColors } from '../../../../theme';
+import { userAuthService } from '../../../../services/authService';
 
 const Rewards = () => {
   const navigate = useNavigate();
+  const [referralData, setReferralData] = useState({
+    referralCode: '',
+    referrerReward: 100,
+    refereeReward: 100,
+    successfulReferrals: 0,
+    totalEarnings: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReferralDetails = async () => {
+      try {
+        const response = await userAuthService.getReferralDetails();
+        if (response.success) {
+          setReferralData({
+            referralCode: response.referralCode,
+            referrerReward: response.referrerReward,
+            refereeReward: response.refereeReward,
+            successfulReferrals: response.successfulReferrals,
+            totalEarnings: response.totalEarnings
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching referral details:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReferralDetails();
+  }, []);
+
   const handleCopyLink = () => {
-    // Copy referral link to clipboard
-    const referralLink = 'https://Doormeets.in/refer/your-link';
+    const referralLink = `https://Doormeets.in/user/signup?referral=${referralData.referralCode}`;
     navigator.clipboard.writeText(referralLink).then(() => {
       toast.success('Link copied to clipboard!');
     });
   };
 
   const handleShareWhatsApp = () => {
-    const text = 'Check out this amazing electrical services app!';
-    const url = 'https://Doormeets.in/refer/your-link';
+    const text = `Join Door Meets using my referral code ${referralData.referralCode} and get ₹${referralData.refereeReward} welcome reward in your wallet!`;
+    const url = `https://Doormeets.in/user/signup?referral=${referralData.referralCode}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
   };
 
   const handleShareMessenger = () => {
-    const url = 'https://Doormeets.in/refer/your-link';
+    const url = `https://Doormeets.in/user/signup?referral=${referralData.referralCode}`;
     window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=your-app-id`, '_blank');
   };
+
   return (
     <div
       className="min-h-screen bg-white"
@@ -68,7 +100,7 @@ const Rewards = () => {
                   Refer and get FREE services
                 </h2>
                 <p className="text-xs text-gray-700 leading-relaxed">
-                  Invite your friends to try our electrical services. They get instant ₹100 off. You win ₹100 once they take a service.
+                  Invite your friends to try our services. They get instant ₹{referralData.refereeReward} wallet balance on signup. You get ₹{referralData.referrerReward} once they complete their first booking.
                 </p>
               </div>
               {/* Gift Box Illustration */}
@@ -78,6 +110,33 @@ const Rewards = () => {
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full"></div>
                 <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-orange-300 rounded-full"></div>
+              </div>
+            </div>
+
+            {/* Referral Code Display Box */}
+            <div className="bg-white/90 backdrop-blur-sm border border-teal-100 rounded-2xl p-4 mb-4 flex items-center justify-between shadow-sm">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-0.5">Your Referral Code</p>
+                <p className="text-xl font-bold text-gray-900 tracking-wide font-mono">{referralData.referralCode || 'DM-XXXXXX'}</p>
+              </div>
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-1.5 px-3 py-2 bg-teal-50 hover:bg-teal-100 text-[#00A6A6] text-xs font-semibold rounded-xl transition-all duration-200"
+              >
+                <FiCopy className="w-4 h-4" />
+                Copy
+              </button>
+            </div>
+
+            {/* Stats Box */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-3.5 shadow-sm text-center">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Total Referrals</p>
+                <p className="text-2xl font-extrabold text-[#00A6A6]">{referralData.successfulReferrals}</p>
+              </div>
+              <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-3.5 shadow-sm text-center">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Total Earnings</p>
+                <p className="text-2xl font-extrabold text-teal-600">₹{referralData.totalEarnings}</p>
               </div>
             </div>
 
@@ -143,7 +202,7 @@ const Rewards = () => {
               <div className="absolute -left-7 w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
                 2
               </div>
-              <p className="text-xs text-gray-700">They get ₹100 on their first service</p>
+              <p className="text-xs text-gray-700">They get ₹{referralData.refereeReward} wallet bonus instantly upon signup</p>
             </div>
 
             {/* Step 3 */}
@@ -151,7 +210,7 @@ const Rewards = () => {
               <div className="absolute -left-7 w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
                 3
               </div>
-              <p className="text-xs text-gray-700">You get ₹100 once their service is completed</p>
+              <p className="text-xs text-gray-700">You get ₹{referralData.referrerReward} once their first booking is completed</p>
             </div>
           </div>
         </div>
@@ -184,13 +243,11 @@ const Rewards = () => {
               <span className="text-xl">🎁</span>
             </div>
             <p className="text-sm text-gray-800 font-medium">
-              Earn ₹100 on every successful referral
+              Earn ₹{referralData.referrerReward} on every successful referral
             </p>
           </div>
         </div>
       </main>
-
-
     </div>
   );
 };

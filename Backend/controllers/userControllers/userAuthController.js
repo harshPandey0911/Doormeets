@@ -161,6 +161,7 @@ const register = async (req, res) => {
       });
     }
 
+    const mongoose = require('mongoose');
     const { name, email, verificationToken } = req.body;
     let phone = req.body.phone;
 
@@ -194,14 +195,88 @@ const register = async (req, res) => {
       });
     }
 
+    // Generate unique referral code for the new user
+    let generatedReferralCode;
+    let isUnique = false;
+    let attempts = 0;
+    while (!isUnique && attempts < 10) {
+      const randStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+      generatedReferralCode = `DM-${randStr}`;
+      const existingCode = await User.findOne({ referralCode: generatedReferralCode });
+      if (!existingCode) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    // Process referral input if provided
+    let referredBy = null;
+    let referralStatus = 'none';
+    let refereeRewardAmount = 0;
+
+    if (req.body.referralCode) {
+      const referrer = await User.findOne({ referralCode: req.body.referralCode.trim().toUpperCase() });
+      if (referrer) {
+        referredBy = referrer._id;
+        referralStatus = 'pending';
+
+        const Settings = mongoose.model('Settings');
+        const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+        refereeRewardAmount = globalSettings?.referralRewardReferee !== undefined ? globalSettings.referralRewardReferee : 100;
+      } else {
+        // Option: return an error if code is invalid, or ignore? We can ignore and log or return a warning, but let's just proceed without referral
+        console.warn(`[Referral] Invalid referral code used on signup: ${req.body.referralCode}`);
+      }
+    }
+
     // Create user
     const user = await User.create({
       name,
       email: email || null,
       phone,
       isPhoneVerified: true,
-      isEmailVerified: email ? false : true
+      isEmailVerified: email ? false : true,
+      referralCode: generatedReferralCode,
+      referredBy,
+      referralStatus
     });
+
+    // Award welcome/referee bonus
+    if (referredBy && refereeRewardAmount > 0) {
+      await User.findByIdAndUpdate(user._id, {
+        $inc: { 'wallet.balance': refereeRewardAmount }
+      });
+
+      // Log Transaction for referee
+      const Transaction = mongoose.model('Transaction');
+      await Transaction.create({
+        userId: user._id,
+        type: 'credit',
+        amount: refereeRewardAmount,
+        status: 'completed',
+        paymentMethod: 'system',
+        description: `Welcome Bonus: Sign up reward for using referral code: ${req.body.referralCode.trim().toUpperCase()}`
+      });
+
+      // Send notification to referee
+      try {
+        const { createNotification } = require('../notificationControllers/notificationController');
+        await createNotification({
+          userId: user._id,
+          type: 'referral_earned',
+          title: 'Welcome Reward Credited! 🎁',
+          message: `Congratulations! You received a sign-up reward of ₹${refereeRewardAmount} in your wallet for joining via referral code.`,
+          relatedId: user._id,
+          relatedType: 'user',
+          pushData: {
+            type: 'referral_earned',
+            link: '/user/rewards'
+          }
+        });
+      } catch (err) {
+        console.error('[Referral] Error sending notification to referee on signup:', err);
+      }
+    }
 
     // Send Welcome Email
     if (email) {
