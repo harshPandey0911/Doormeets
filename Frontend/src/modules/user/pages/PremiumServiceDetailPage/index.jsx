@@ -1189,8 +1189,8 @@ const PremiumServiceDetailPage = () => {
                     <button
                       type="button"
                       className={`text-xs font-bold px-5 py-1.5 rounded-full border transition-all ${selectedPackage?.title === pkg.title
-                          ? 'text-white bg-violet-600 border-violet-600'
-                          : 'text-violet-600 border-violet-600 hover:bg-violet-50'
+                        ? 'text-white bg-violet-600 border-violet-600'
+                        : 'text-violet-600 border-violet-600 hover:bg-violet-50'
                         }`}
                     >
                       {selectedPackage?.title === pkg.title ? 'Selected' : 'Select Plan'}
