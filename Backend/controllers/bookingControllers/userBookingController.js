@@ -198,7 +198,7 @@ const createBooking = async (req, res) => {
 
     // Calculate pricing - use amount from frontend if provided, otherwise calculate
     let basePrice, discount, tax, finalAmount;
-    let bookingStatus = BOOKING_STATUS.SEARCHING;
+    let bookingStatus = nearbyVendors.length === 0 ? 'pending_admin' : BOOKING_STATUS.SEARCHING;
     let bookingPaymentStatus = PAYMENT_STATUS.PENDING;
 
     // -------------------------------------------------------------------------
@@ -610,7 +610,7 @@ const createBooking = async (req, res) => {
           return {
             vendorId: v._id,
             distance: v.distance || 0,
-            wave: 1 // All vendors in Wave 1 for simultaneous broadcast
+            wave: isProduct ? 1 : index + 1 // Sequential waves for services, broadcast for products
           };
         });
 
@@ -661,9 +661,20 @@ const createBooking = async (req, res) => {
           }
         } else {
           console.warn(`[CreateBooking] NO VENDORS FOUND nearby! Push notifications will not be sent.`);
-          // Update booking status if no vendors found - fallback to SEARCHING to allow scheduler to retry
-          bookingForBackground.status = BOOKING_STATUS.SEARCHING;
+          bookingForBackground.status = 'pending_admin';
           await bookingForBackground.save();
+
+          // Emit to all admins
+          const { getIO } = require('../../sockets');
+          const io = getIO();
+          if (io) {
+            io.to('all_admins').emit('admin_booking_requested', {
+              bookingId: bookingForBackground._id.toString(),
+              bookingNumber: bookingForBackground.bookingNumber,
+              status: 'pending_admin',
+              message: 'No online vendors available. Booking request sent to admin for manual assignment.'
+            });
+          }
         }
 
         // Send notifications to initial wave vendors ONLY
