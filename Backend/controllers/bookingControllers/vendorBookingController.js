@@ -339,7 +339,10 @@ const acceptBooking = async (req, res) => {
       {
         _id: id,
         status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
-        vendorId: null // Crucial: Ensures another request didn't just take it
+        $or: [
+          { vendorId: null },
+          { vendorId: vendorId }
+        ]
       },
       {
         $set: {
@@ -355,7 +358,7 @@ const acceptBooking = async (req, res) => {
     if (!updatedBooking) {
       // If update failed, check why (likely already taken)
       const existing = await Booking.findById(id);
-      if (existing && existing.vendorId) {
+      if (existing && existing.vendorId && existing.vendorId.toString() !== vendorId.toString()) {
         return res.status(409).json({ // 409 Conflict
           success: false,
           message: 'Sorry, this job has already been accepted by another vendor.'
@@ -517,11 +520,13 @@ const rejectBooking = async (req, res) => {
     const { reason } = req.body;
 
     // Find booking
+    // Find booking
     const booking = await Booking.findOne({
       _id: id,
       $or: [
         { notifiedVendors: vendorId },
-        { vendorId: null, status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] } }
+        { vendorId: null, status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] } },
+        { vendorId: vendorId, status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] } }
       ]
     });
 
@@ -551,6 +556,63 @@ const rejectBooking = async (req, res) => {
       }
     );
 
+    const Vendor = require('../../models/Vendor');
+    const io = req.app.get('io');
+
+    // Handle Admin Manual Assignment Rejection
+    if (booking.assignedByAdmin) {
+      const rejectingVendor = await Vendor.findById(vendorId).select('name businessName').lean();
+      const vendorName = rejectingVendor?.businessName || rejectingVendor?.name || 'Vendor';
+
+      booking.vendorId = null;
+      booking.assignedByAdmin = false;
+      booking.status = 'pending_admin';
+      booking.notifiedVendors = [];
+      booking.potentialVendors = [];
+      booking.cancellationReason = `Manually assigned vendor (${vendorName}) rejected the request.`;
+
+      // Create Admin Notification
+      await createNotification({
+        userId: booking.userId,
+        type: 'booking_rejected',
+        title: 'Manually Assigned Vendor Rejected Request',
+        message: `Vendor ${vendorName} has rejected manually assigned booking #${booking.bookingNumber}.`,
+        relatedId: booking._id,
+        relatedType: 'booking',
+        pushData: {
+          type: 'booking_rejected',
+          bookingId: booking._id.toString(),
+          link: `/admin/bookings/${booking._id}`
+        }
+      });
+
+      if (io) {
+        const payload = {
+          bookingId: booking._id.toString(),
+          bookingNumber: booking.bookingNumber,
+          status: 'pending_admin',
+          message: `Vendor ${vendorName} rejected manual assignment. Ready for reassignment.`,
+          vendorName
+        };
+        // Emit to all admins
+        io.to('all_admins').emit('admin_booking_rejected', payload);
+        io.to('all_admins').emit('admin_booking_requested', payload);
+        // Update user
+        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: 'pending_admin'
+        });
+      }
+
+      await booking.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Manual assignment rejected successfully. Booking routed back to admin.',
+        data: { bookingId: id }
+      });
+    }
+
     // Remove vendor from notifiedVendors (they've responded)
     booking.notifiedVendors = booking.notifiedVendors.filter(
       v => v.toString() !== vendorId.toString()
@@ -573,14 +635,77 @@ const rejectBooking = async (req, res) => {
     const remainingPotentialIds = remainingPotentialVendors
       .map(v => v.vendorId)
       .filter(vId => vId && vId.toString() !== vendorId.toString());
-    
-    const onlineRemainingCount = await Vendor.countDocuments({
-      _id: { $in: remainingPotentialIds },
-      isOnline: true,
-      availability: { $in: ['AVAILABLE', 'BUSY'] }
-    });
 
-    if (pendingRequests === 0 && onlineRemainingCount === 0) {
+    // Sequential Wave Match: Find the next online vendor in order of waves
+    const sortedRemaining = remainingPotentialVendors
+      .filter(v => v.vendorId && v.vendorId.toString() !== vendorId.toString())
+      .sort((a, b) => a.wave - b.wave);
+
+    let nextOnlineVendor = null;
+    let nextVendorDistance = null;
+    let nextVendorWave = null;
+
+    for (const p of sortedRemaining) {
+      const vDoc = await Vendor.findOne({
+        _id: p.vendorId,
+        isOnline: true,
+        availability: { $in: ['AVAILABLE', 'BUSY'] }
+      }).select('_id').lean();
+
+      if (vDoc) {
+        nextOnlineVendor = vDoc;
+        nextVendorDistance = p.distance;
+        nextVendorWave = p.wave;
+        break;
+      }
+    }
+
+    if (nextOnlineVendor) {
+      // Notify the next online vendor immediately!
+      booking.currentWave = nextVendorWave;
+      booking.waveStartedAt = new Date();
+      booking.notifiedVendors.push(nextOnlineVendor._id);
+
+      // Create BookingRequest entry
+      await BookingRequest.create({
+        bookingId: booking._id,
+        vendorId: nextOnlineVendor._id,
+        status: 'PENDING',
+        wave: nextVendorWave,
+        distance: nextVendorDistance,
+        sentAt: new Date(),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      });
+
+      // Emit Socket request
+      if (io) {
+        const User = require('../../models/User');
+        const user = await User.findById(booking.userId).select('name').lean();
+
+        io.to(`vendor_${nextOnlineVendor._id.toString()}`).emit('new_booking_request', {
+          bookingId: booking._id,
+          serviceName: booking.serviceName,
+          customerName: user?.name || 'Customer',
+          scheduledDate: booking.scheduledDate,
+          scheduledTime: booking.scheduledTime,
+          price: booking.finalAmount,
+          address: booking.address,
+          distance: nextVendorDistance,
+          serviceCategory: booking.serviceCategory,
+          brandName: booking.brandName,
+          brandIcon: booking.brandIcon,
+          categoryIcon: booking.categoryIcon,
+          createdAt: booking.createdAt,
+          expiresAt: new Date(Date.now() + 60 * 1000).toISOString(),
+          status: booking.status,
+          serviceType: booking.serviceType || 'service',
+          playSound: true,
+          message: `New booking request within ${nextVendorDistance?.toFixed(1) || '?'}km!`
+        });
+      }
+
+      console.log(`[RejectBooking] Immediately routed to next online vendor: ${nextOnlineVendor._id.toString()} in Wave ${nextVendorWave}`);
+    } else if (pendingRequests === 0) {
       // No vendors left - route to admin
       booking.status = 'pending_admin';
       booking.cancellationReason = 'All online vendors rejected the request. Awaiting admin review.';
@@ -600,8 +725,6 @@ const rejectBooking = async (req, res) => {
         }
       });
 
-      // --- ADD SOCKET NOTIFICATION FOR REAL-TIME UI UPDATE ---
-      const io = req.app.get('io');
       if (io) {
         const userIdStr = booking.userId.toString();
         const bookingIdStr = booking._id.toString();
@@ -617,10 +740,7 @@ const rejectBooking = async (req, res) => {
 
         // Emit to user room
         io.to(`user_${userIdStr}`).emit('booking_updated', payload);
-
-        // Also emit to specific booking room (as fallback)
         io.to(`booking_${bookingIdStr}`).emit('booking_updated', payload);
-
         // Emit to all admins
         io.to('all_admins').emit('admin_booking_requested', payload);
       }

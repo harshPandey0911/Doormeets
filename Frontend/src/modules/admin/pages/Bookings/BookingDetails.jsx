@@ -6,6 +6,7 @@ import {
   FiMapPin, FiCreditCard, FiDollarSign, FiTrash2, FiActivity, FiCpu
 } from 'react-icons/fi';
 import { adminBookingService } from '../../../../services/adminBookingService';
+import adminVendorService from '../../../../services/adminVendorService';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../../utils/adminHelpers';
 
@@ -21,6 +22,7 @@ const statusBadgeClass = (status) => {
     CANCELLED: 'bg-red-100 text-red-700 border-red-200',
     CANCELED: 'bg-red-100 text-red-700 border-red-200',
     REJECTED: 'bg-red-100 text-red-700 border-red-200',
+    PENDING_ADMIN: 'bg-amber-100 text-amber-700 border-amber-200',
   };
   return map[s] || 'bg-gray-100 text-gray-700 border-gray-200';
 };
@@ -33,6 +35,61 @@ const BookingDetails = () => {
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+
+  // Assign Vendor States
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [vendors, setVendors] = useState([]);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorSearch, setVendorSearch] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
+  const fetchVendors = async () => {
+    try {
+      setVendorsLoading(true);
+      const res = await adminVendorService.getAllVendors({ limit: 1000 });
+      if (res.success) {
+        setVendors(res.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching vendors:', err);
+      toast.error('Failed to load vendors list');
+    } finally {
+      setVendorsLoading(false);
+    }
+  };
+
+  const handleOpenAssignModal = () => {
+    fetchVendors();
+    setShowAssignModal(true);
+  };
+
+  const handleAssignVendor = async (vendorId) => {
+    try {
+      setAssigning(true);
+      const res = await adminBookingService.assignVendor(id, vendorId);
+      if (res.success) {
+        toast.success('Vendor assigned successfully. Waiting for vendor response.');
+        setShowAssignModal(false);
+        fetchBookingDetails();
+      } else {
+        toast.error(res.message || 'Failed to assign vendor');
+      }
+    } catch (err) {
+      console.error('Error assigning vendor:', err);
+      toast.error(err.message || 'Error assigning vendor');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const filteredVendors = vendors.filter(v => {
+    const term = vendorSearch.toLowerCase();
+    return (
+      (v.name || '').toLowerCase().includes(term) ||
+      (v.businessName || '').toLowerCase().includes(term) ||
+      (v.phone || '').toLowerCase().includes(term)
+    );
+  });
 
   const fetchBookingDetails = async () => {
     try {
@@ -53,6 +110,12 @@ const BookingDetails = () => {
 
   useEffect(() => {
     fetchBookingDetails();
+
+    const handleRefresh = () => fetchBookingDetails();
+    window.addEventListener('adminBookingUpdated', handleRefresh);
+    return () => {
+      window.removeEventListener('adminBookingUpdated', handleRefresh);
+    };
   }, [id]);
 
   const handleCancelBooking = async () => {
@@ -139,6 +202,21 @@ const BookingDetails = () => {
           >
             <FiActivity className="w-3.5 h-3.5" /> Track Booking
           </button>
+          {booking.status === 'pending_admin' && (
+            <button
+              onClick={handleOpenAssignModal}
+              className={`px-4 py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm ${
+                booking.cancellationReason && booking.cancellationReason.toLowerCase().includes('rejected')
+                  ? 'bg-amber-500 hover:bg-amber-650'
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              <FiUser className="w-3.5 h-3.5" />
+              {booking.cancellationReason && booking.cancellationReason.toLowerCase().includes('rejected')
+                ? 'Reassign Vendor'
+                : 'Assign Vendor'}
+            </button>
+          )}
           {booking.status !== 'cancelled' && booking.status !== 'completed' && (
             <button
               onClick={() => setShowCancelModal(true)}
@@ -399,6 +477,84 @@ const BookingDetails = () => {
                 disabled={cancelling}
               >
                 {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Vendor Modal */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center border-b border-gray-150 pb-3">
+              <h3 className="text-base font-bold text-gray-800">Assign Vendor Manually</h3>
+              <button 
+                onClick={() => setShowAssignModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div>
+              <input
+                type="text"
+                value={vendorSearch}
+                onChange={(e) => setVendorSearch(e.target.value)}
+                placeholder="Search vendor by name, business or phone..."
+                className="w-full border border-gray-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+              />
+            </div>
+
+            {/* Vendor List */}
+            <div className="flex-1 overflow-y-auto min-h-[250px] max-h-[400px] divide-y divide-gray-100 pr-1">
+              {vendorsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : filteredVendors.length === 0 ? (
+                <p className="text-xs text-gray-500 text-center py-8 italic">No matching vendors found.</p>
+              ) : (
+                filteredVendors.map((vendor) => (
+                  <div key={vendor._id} className="py-3 flex justify-between items-center text-xs">
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-gray-800">{vendor.name || 'Vendor'}</span>
+                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold ${vendor.isActive !== false ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {vendor.isActive !== false ? 'Active' : 'Inactive'}
+                        </span>
+                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold capitalize ${
+                          vendor.approvalStatus === 'approved' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-yellow-50 text-yellow-700 border border-yellow-100'
+                        }`}>
+                          {vendor.approvalStatus || 'pending'}
+                        </span>
+                      </div>
+                      {vendor.businessName && (
+                        <p className="text-blue-600 font-medium text-[11px] mt-0.5">{vendor.businessName}</p>
+                      )}
+                      <p className="text-gray-500 mt-0.5">{vendor.phone}</p>
+                    </div>
+                    <button
+                      onClick={() => handleAssignVendor(vendor._id)}
+                      disabled={assigning}
+                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition-colors disabled:opacity-50"
+                    >
+                      {assigning ? 'Assigning...' : 'Assign'}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-3 border-t border-gray-100 text-xs font-semibold">
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-gray-650 hover:bg-gray-50 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>

@@ -79,6 +79,7 @@ const AdminLayout = () => {
 
     const handleAdminBookingRequest = (data) => {
       console.log('💼 Admin Booking Request received:', data);
+      window.dispatchEvent(new CustomEvent('adminBookingUpdated'));
       toast.custom((t) => (
         <div className="bg-white dark:bg-gray-800 border-2 border-blue-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3 max-w-sm pointer-events-auto transition-all animate-slide-up">
           <span className="text-2xl">💼</span>
@@ -98,7 +99,7 @@ const AdminLayout = () => {
           <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
         </div>
       ), {
-        duration: 15000,
+        duration: Infinity,
         position: 'top-right'
       });
 
@@ -106,11 +107,41 @@ const AdminLayout = () => {
       playNotificationSound().catch(e => console.warn('Admin notification sound failed:', e));
     };
 
+    const handleAdminBookingRejected = (data) => {
+      console.log('💼 Admin Booking Rejection received:', data);
+      window.dispatchEvent(new CustomEvent('adminBookingUpdated'));
+      toast.custom((t) => (
+        <div className="bg-white dark:bg-gray-800 border-2 border-red-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3 max-w-sm pointer-events-auto transition-all animate-slide-up">
+          <span className="text-2xl">❌</span>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">Manual Reassignment Needed</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Vendor {data.vendorName || 'assigned'} rejected manual assignment for booking #{data.bookingNumber}.</p>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                navigate(`/admin/bookings/${data.bookingId}`);
+              }}
+              className="mt-2 px-3 py-1.5 bg-red-650 hover:bg-red-750 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
+            >
+              Reassign Vendor Now
+            </button>
+          </div>
+          <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+        </div>
+      ), {
+        duration: Infinity,
+        position: 'top-right'
+      });
+      playNotificationSound().catch(e => console.warn('Admin notification sound failed:', e));
+    };
+
     socket.on('sos_alert_triggered', handleSOSAlert);
     socket.on('admin_booking_requested', handleAdminBookingRequest);
+    socket.on('admin_booking_rejected', handleAdminBookingRejected);
     return () => {
       socket.off('sos_alert_triggered', handleSOSAlert);
       socket.off('admin_booking_requested', handleAdminBookingRequest);
+      socket.off('admin_booking_rejected', handleAdminBookingRejected);
       stopSirenAlarm(); // Ensure sound stops if layout unmounts
     };
   }, [socket]);

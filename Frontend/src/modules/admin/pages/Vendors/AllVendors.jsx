@@ -69,6 +69,8 @@ const AllVendors = () => {
           currentLevel: vendor.currentLevel,
           createdAt: vendor.createdAt,
           isActive: vendor.isActive,
+          isOnline: vendor.isOnline,
+          availability: vendor.availability,
           experience: vendor.experience,
           rating: vendor.rating || 0,
           completedJobs: vendor.completedJobs || 0,
@@ -329,7 +331,11 @@ const AllVendors = () => {
                     <tr key={vendor.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
                         <div>
-                          <p className="font-bold text-gray-900 text-xs">{vendor.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-gray-900 text-xs">{vendor.name}</span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${vendor.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} title={vendor.isOnline ? 'Online' : 'Offline'}></span>
+                            <span className="text-[9px] text-gray-400 font-semibold lowercase">({vendor.isOnline ? 'online' : 'offline'})</span>
+                          </div>
                           <p className="text-[10px] text-gray-500">{vendor.phone}</p>
                           <p className="text-[10px] text-gray-400">{vendor.email}</p>
                           <p className="text-[10px] font-semibold text-blue-600 mt-0.5">{vendor.city}</p>

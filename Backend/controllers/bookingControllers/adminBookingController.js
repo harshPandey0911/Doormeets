@@ -16,6 +16,7 @@ const getAllBookings = async (req, res) => {
       startDate,
       endDate,
       search,
+      manual,
       page = 1,
       limit = 20
     } = req.query;
@@ -23,7 +24,13 @@ const getAllBookings = async (req, res) => {
     // Build query
     const query = {};
 
-    if (status) {
+    if (manual === 'true') {
+      // Find bookings in pending_admin status or requested with assignedByAdmin true
+      query.$or = [
+        { status: 'pending_admin' },
+        { status: 'requested', assignedByAdmin: true }
+      ];
+    } else if (status) {
       query.status = { $regex: new RegExp(`^${status}$`, 'i') };
     }
     if (paymentStatus) query.paymentStatus = paymentStatus;
@@ -408,33 +415,77 @@ const assignVendor = async (req, res) => {
 
     // Update booking details
     booking.vendorId = vendor._id;
-    booking.status = 'accepted'; // Transition status to accepted
-    booking.acceptedAt = new Date();
+    booking.status = 'requested'; // Set to requested, so vendor gets accept/decline popup
+    booking.assignedByAdmin = true;
+    booking.notifiedVendors = [vendor._id];
     booking.assignedAt = new Date();
 
     await booking.save();
 
-    // Trigger socket notifications for user
+    // Create BookingRequest for vendor
+    const BookingRequest = require('../../models/BookingRequest');
+    await BookingRequest.deleteMany({ bookingId: booking._id }); // Clear old requests
+    await BookingRequest.create({
+      bookingId: booking._id,
+      vendorId: vendor._id,
+      status: 'PENDING',
+      wave: 1,
+      sentAt: new Date(),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+    });
+
+    // Trigger socket notifications for vendor and user
     try {
       const io = req.app.get('io');
       if (io) {
-        io.to(`user_${booking.userId.toString()}`).emit('booking_accepted', {
-          bookingId: booking._id.toString(),
-          vendor: {
-            id: vendor._id.toString(),
-            name: vendor.name,
-            businessName: vendor.businessName,
-            phone: vendor.phone,
-            rating: vendor.rating || 4.8
-          }
+        const User = require('../../models/User');
+        const user = await User.findById(booking.userId).select('name phone').lean();
+
+        // Emit new booking request popup to vendor
+        io.to(`vendor_${vendor._id.toString()}`).emit('new_booking_request', {
+          bookingId: booking._id,
+          serviceName: booking.serviceName,
+          customerName: user?.name || 'Customer',
+          customerPhone: user?.phone || 'Phone hidden',
+          scheduledDate: booking.scheduledDate,
+          scheduledTime: booking.scheduledTime,
+          price: booking.finalAmount,
+          address: booking.address,
+          distance: 0,
+          serviceCategory: booking.serviceCategory,
+          brandName: booking.brandName,
+          brandIcon: booking.brandIcon,
+          categoryIcon: booking.categoryIcon,
+          createdAt: booking.createdAt || new Date(),
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          status: booking.status,
+          serviceType: booking.serviceType || 'service',
+          playSound: true,
+          message: `Admin has manually assigned a booking request to you!`
         });
+
+        // Emit status update to user
         io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
           bookingId: booking._id.toString(),
-          status: 'accepted'
+          status: 'requested'
         });
       }
     } catch (socketErr) {
       console.error('[AdminAssignVendor] Socket notification error:', socketErr);
+    }
+
+    // Trigger FCM push notification to vendor
+    try {
+      const { sendNotificationToVendor } = require('../../services/firebaseAdmin');
+      if (vendor.fcmToken) {
+        await sendNotificationToVendor(vendor._id.toString(), {
+          title: '🎉 New Job Assigned by Admin!',
+          body: `Admin has assigned you booking #${booking.bookingNumber}. Please respond.`,
+          bookingId: booking._id.toString()
+        });
+      }
+    } catch (fcmErr) {
+      console.error('[AdminAssignVendor] FCM notification error:', fcmErr);
     }
 
     res.status(200).json({

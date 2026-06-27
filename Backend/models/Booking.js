@@ -58,6 +58,10 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  assignedByAdmin: {
+    type: Boolean,
+    default: false
+  },
   isBidding: {
     type: Boolean,
     default: false

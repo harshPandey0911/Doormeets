@@ -115,7 +115,8 @@ const BOOKING_STATUS = {
   BIDDING: 'bidding', // Open for bidding
   CANCELLED: 'cancelled',
   REJECTED: 'rejected',
-  NO_VENDORS: 'no_vendors'
+  NO_VENDORS: 'no_vendors',
+  PENDING_ADMIN: 'pending_admin'
 };
 
 // Payment Status
