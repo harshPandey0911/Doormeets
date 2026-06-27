@@ -134,10 +134,6 @@ const createBooking = async (req, res) => {
         return res.status(404).json({ success: false, message: 'The selected vendor was not found.' });
       }
 
-      if (targetVendor.approvalStatus !== 'approved') {
-        return res.status(400).json({ success: false, message: 'This vendor is not approved to accept bookings yet.' });
-      }
-
       // Check if vendor is online/available
       if (!targetVendor.isOnline || targetVendor.availability === 'OFFLINE') {
         return res.status(400).json({ 
@@ -167,7 +163,6 @@ const createBooking = async (req, res) => {
         // Find vendors who have the category ID or category Title
         const vendorQuery = {
           isActive: true,
-          approvalStatus: 'approved',
           categories: { $in: searchArray }
         };
         

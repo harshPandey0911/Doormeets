@@ -148,14 +148,13 @@ const VendorLogin = () => {
           });
         } else {
           // Check for rejected status
-          const appStatus = response.vendor?.approvalStatus?.toLowerCase();
-          if (response.vendor?.adminApproval === 'rejected' || response.vendor?.adminApproval === 'REJECTED' || appStatus === 'rejected') {
+          if (response.vendor?.adminApproval === 'rejected' || response.vendor?.adminApproval === 'REJECTED' || response.vendor?.approvalStatus === 'REJECTED') {
             toast.error('Your application has been rejected.');
             return;
           }
 
           // Check for pending approval status (New Verification Flow)
-          if (appStatus === 'pending' || response.vendor?.adminApproval === 'pending') {
+          if (response.vendor?.approvalStatus === 'PENDING' || response.vendor?.adminApproval === 'pending') {
             toast.success('Please complete your training and subscription.');
             localStorage.setItem('vendorAccessToken', response.accessToken);
             localStorage.setItem('vendorRefreshToken', response.refreshToken);
