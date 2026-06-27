@@ -82,6 +82,7 @@ const Checkout = () => {
   const [loyaltyRedemptionRate, setLoyaltyRedemptionRate] = useState(1);
   const [useWallet, setUseWallet] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [walletAmountInput, setWalletAmountInput] = useState('');
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -1323,7 +1324,10 @@ const Checkout = () => {
   // Wallet Deduction
   const maxWalletUsePercentage = 30; // matches backend
   const maxWalletUse = baseTotalAmount * (maxWalletUsePercentage / 100);
-  const walletDiscount = useWallet ? Math.min(walletBalance, maxWalletUse) : 0;
+  const parsedWalletInput = parseFloat(walletAmountInput) || 0;
+  const walletDiscount = useWallet
+    ? (walletAmountInput !== '' ? Math.min(parsedWalletInput, walletBalance, maxWalletUse) : Math.min(walletBalance, maxWalletUse))
+    : 0;
 
   const totalAmount = Math.max(0, baseTotalAmount - walletDiscount);
   const amountToPay = totalAmount;
@@ -1923,11 +1927,10 @@ const Checkout = () => {
          {/* Wallet Balance Panel */}
         {walletBalance > 0 && (
           <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            {/* Header row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 bg-blue-50 text-blue-500 rounded-xl text-lg shrink-0">
-                  💳
-                </span>
+                <span className="p-2 bg-blue-50 text-blue-500 rounded-xl text-lg shrink-0">💳</span>
                 <div>
                   <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Wallet Balance</h3>
                   <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Available: ₹{walletBalance.toLocaleString('en-IN')}</p>
@@ -1935,8 +1938,11 @@ const Checkout = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setUseWallet(prev => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                onClick={() => {
+                  setUseWallet(prev => !prev);
+                  setWalletAmountInput('');
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   useWallet ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'
                 }`}
               >
@@ -1947,14 +1953,103 @@ const Checkout = () => {
                 />
               </button>
             </div>
+
+            {/* Custom Amount Input — shown when wallet is enabled */}
             {useWallet && (
-              <div className="mt-2.5 pt-2.5 border-t border-dashed flex justify-between text-xs text-green-600 font-medium" style={{ borderColor: 'var(--border)' }}>
-                <span>Wallet discount:</span>
-                <span>Will save up to 30% of booking value (max ₹{walletDiscount.toFixed(1)})</span>
+              <div className="mt-3 pt-3 border-t border-dashed" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Enter wallet amount to use <span className="text-gray-400">(max ₹{Math.floor(maxWalletUse)} or leave blank to auto-apply)</span>
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>₹</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={Math.floor(Math.min(walletBalance, maxWalletUse))}
+                      value={walletAmountInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || (parseFloat(val) >= 0 && parseFloat(val) <= Math.min(walletBalance, maxWalletUse))) {
+                          setWalletAmountInput(val);
+                        }
+                      }}
+                      placeholder={`0 – ${Math.floor(Math.min(walletBalance, maxWalletUse))}`}
+                      className="w-full pl-7 pr-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWalletAmountInput(String(Math.floor(Math.min(walletBalance, maxWalletUse))))}
+                    className="px-3 py-2 text-xs font-bold rounded-lg bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition-colors"
+                  >
+                    Max
+                  </button>
+                </div>
+                {walletDiscount > 0 && (
+                  <div className="flex justify-between text-xs text-green-600 font-semibold mt-2">
+                    <span>Wallet discount applied:</span>
+                    <span>-₹{walletDiscount.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
+
+        {/* Payment Method Selector */}
+        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">💰</span>
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Payment Method</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Online Payment */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('online')}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                paymentMethod === 'online'
+                  ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                  : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
+              }`}
+            >
+              <span className="text-2xl">📱</span>
+              <span className="text-xs font-semibold" style={{ color: paymentMethod === 'online' ? '#0d9488' : 'var(--text-secondary)' }}>Online Payment</span>
+              <span className="text-[10px] text-gray-400">UPI / Card / Net Banking</span>
+              {paymentMethod === 'online' && (
+                <span className="text-[10px] font-bold text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">Selected ✓</span>
+              )}
+            </button>
+
+            {/* Cash on Delivery */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('pay_at_home')}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                paymentMethod === 'pay_at_home'
+                  ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
+                  : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
+              }`}
+            >
+              <span className="text-2xl">💵</span>
+              <span className="text-xs font-semibold" style={{ color: paymentMethod === 'pay_at_home' ? '#ea580c' : 'var(--text-secondary)' }}>Cash on Delivery</span>
+              <span className="text-[10px] text-gray-400">Pay after service</span>
+              {paymentMethod === 'pay_at_home' && (
+                <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">Selected ✓</span>
+              )}
+            </button>
+          </div>
+          {paymentMethod === 'pay_at_home' && (
+            <div className="mt-3 flex items-start gap-2 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 rounded-lg p-2.5">
+              <span className="text-orange-500 text-sm mt-0.5">ℹ️</span>
+              <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">
+                You will pay in cash directly to the vendor after the service is completed.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Loyalty Points Panel */}
         {loyaltyPoints > 0 && (

@@ -856,6 +856,102 @@ const giveVendorIncentive = async (req, res) => {
   }
 };
 
+/**
+ * Get all vendors with wallet info for admin wallet management
+ */
+const getVendorWallets = async (req, res) => {
+  try {
+    const { search, page = 1, limit = 20, frozenOnly } = req.query;
+    const query = {};
+
+    const adminFilter = await getVendorQueryFilter(req.user);
+    Object.assign(query, adminFilter);
+
+    if (frozenOnly === 'true') {
+      query['wallet.isBlocked'] = true;
+    }
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { businessName: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const vendors = await Vendor.find(query)
+      .select('name businessName phone profilePhoto approvalStatus isActive wallet createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Vendor.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: vendors,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Get vendor wallets error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch vendor wallets.' });
+  }
+};
+
+/**
+ * Freeze or unfreeze a vendor's wallet
+ */
+const toggleVendorWalletFreeze = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { freeze, reason } = req.body;
+
+    const vendor = await Vendor.findById(id);
+    if (!vendor) {
+      return res.status(404).json({ success: false, message: 'Vendor not found' });
+    }
+
+    vendor.wallet.isBlocked = !!freeze;
+    vendor.wallet.blockedAt = freeze ? new Date() : null;
+    vendor.wallet.blockReason = freeze ? (reason || 'Frozen by admin') : null;
+    await vendor.save();
+
+    // Notify vendor
+    await createNotification({
+      vendorId: vendor._id,
+      type: freeze ? 'wallet_frozen' : 'wallet_unfrozen',
+      title: freeze ? 'Wallet Frozen' : 'Wallet Unfrozen',
+      message: freeze
+        ? `Your wallet has been frozen by admin. Reason: ${reason || 'Policy violation'}. Contact support for help.`
+        : 'Your wallet has been unfrozen. You can now withdraw your earnings.',
+      relatedId: vendor._id,
+      relatedType: 'vendor'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: freeze ? 'Vendor wallet frozen successfully' : 'Vendor wallet unfrozen successfully',
+      data: {
+        vendorId: id,
+        walletIsBlocked: vendor.wallet.isBlocked,
+        blockedAt: vendor.wallet.blockedAt,
+        blockReason: vendor.wallet.blockReason
+      }
+    });
+  } catch (error) {
+    console.error('Toggle vendor wallet freeze error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update wallet status.' });
+  }
+};
+
 module.exports = {
   getAllVendors,
   getVendorDetails,
@@ -871,6 +967,9 @@ module.exports = {
   updateVendor,
   getVendorIncentiveStats,
   giveVendorIncentive,
-  getIncentiveHistory
+  getIncentiveHistory,
+  getVendorWallets,
+  toggleVendorWalletFreeze
 };
+
 
