@@ -14,15 +14,20 @@ const getVendorBookings = async (req, res) => {
     const vendorId = req.user.id;
     const { status, q, page = 1, limit = 20 } = req.query;
 
-    // ── Get vendor categories from req.user (set in auth middleware) ──
-    let vendorCategories = req.user.categories || req.user.service || [];
-    if (!vendorCategories.length) {
-      const Vendor = require('../../models/Vendor');
-      const v = await Vendor.findById(vendorId, 'service').lean();
-      vendorCategories = v?.service || [];
-    }
+    // ── Get vendor categories and services ──
+    const Vendor = require('../../models/Vendor');
+    const v = await Vendor.findById(vendorId, 'categories service').lean();
+    const vendorCategoryIds = v?.categories || [];
+    const vendorCategoryTitles = v?.service || [];
 
     const vId = new mongoose.Types.ObjectId(vendorId);
+
+    // Fetch bookings that this vendor has already rejected
+    const BookingRequest = require('../../models/BookingRequest');
+    const rejectedBookingIds = await BookingRequest.find({
+      vendorId: vId,
+      status: 'REJECTED'
+    }).distinct('bookingId');
 
     // ── Build Base Query ──
     // This Or condition ensures vendors see their own jobs OR relevant unassigned alerts
@@ -31,8 +36,12 @@ const getVendorBookings = async (req, res) => {
         { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
         {
           vendorId: null,
+          _id: { $nin: rejectedBookingIds },
           status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.BIDDING] },
-          serviceCategory: { $in: vendorCategories },
+          $or: [
+            { serviceCategory: { $in: vendorCategoryTitles } },
+            { categoryId: { $in: vendorCategoryIds } }
+          ],
           'potentialVendors.vendorId': vId // Only show jobs where THIS vendor is within range
         }
       ]
@@ -549,8 +558,10 @@ const rejectBooking = async (req, res) => {
 
     // Remove from potentialVendors too
     booking.potentialVendors = booking.potentialVendors.filter(
-      v => v.vendorId?.toString() !== vendorId.toString()
+      v => v.vendorId && v.vendorId.toString() !== vendorId.toString()
     );
+    booking.markModified('potentialVendors');
+    booking.markModified('notifiedVendors');
 
     // Check if ALL vendors have rejected
     const pendingRequests = await BookingRequest.countDocuments({
@@ -558,21 +569,28 @@ const rejectBooking = async (req, res) => {
       status: { $in: ['PENDING', 'VIEWED'] }
     });
 
-    const remainingPotential = booking.potentialVendors.length;
+    const remainingPotentialVendors = booking.potentialVendors || [];
+    const remainingPotentialIds = remainingPotentialVendors
+      .map(v => v.vendorId)
+      .filter(vId => vId && vId.toString() !== vendorId.toString());
+    
+    const onlineRemainingCount = await Vendor.countDocuments({
+      _id: { $in: remainingPotentialIds },
+      isOnline: true,
+      availability: { $in: ['AVAILABLE', 'BUSY'] }
+    });
 
-    if (pendingRequests === 0 && remainingPotential === 0) {
-      // No vendors left - mark booking as failed
-      booking.status = BOOKING_STATUS.NO_VENDORS;
-      booking.cancelledAt = new Date();
-      booking.cancelledBy = 'system';
-      booking.cancellationReason = 'All vendors rejected the request';
+    if (pendingRequests === 0 && onlineRemainingCount === 0) {
+      // No vendors left - route to admin
+      booking.status = 'pending_admin';
+      booking.cancellationReason = 'All online vendors rejected the request. Awaiting admin review.';
 
-      // Notify user that no vendors are available
+      // Notify admin / log
       await createNotification({
         userId: booking.userId,
         type: 'booking_rejected',
-        title: 'No Vendors Available',
-        message: `Sorry, no vendors are available for booking ${booking.bookingNumber}. Please try again later.`,
+        title: 'Booking Pending Admin Assignment',
+        message: `Booking ${booking.bookingNumber} has been rejected by all online vendors. Awaiting admin review.`,
         relatedId: booking._id,
         relatedType: 'booking',
         pushData: {
@@ -588,21 +606,23 @@ const rejectBooking = async (req, res) => {
         const userIdStr = booking.userId.toString();
         const bookingIdStr = booking._id.toString();
 
-        console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Notifying rooms: user_${userIdStr}, booking_${bookingIdStr}`);
+        console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Routed to admin. Notifying rooms: user_${userIdStr}, booking_${bookingIdStr}, all_admins`);
 
         const payload = {
           bookingId: bookingIdStr,
-          status: BOOKING_STATUS.NO_VENDORS,
-          message: 'All nearby vendors are currently unavailable for this request.'
+          bookingNumber: booking.bookingNumber,
+          status: 'pending_admin',
+          message: 'Booking request sent to admin for manual assignment.'
         };
 
         // Emit to user room
-        io.to(`user_${userIdStr}`).emit('booking_search_failed', payload);
         io.to(`user_${userIdStr}`).emit('booking_updated', payload);
 
         // Also emit to specific booking room (as fallback)
-        io.to(`booking_${bookingIdStr}`).emit('booking_search_failed', payload);
         io.to(`booking_${bookingIdStr}`).emit('booking_updated', payload);
+
+        // Emit to all admins
+        io.to('all_admins').emit('admin_booking_requested', payload);
       }
     }
     // Otherwise, booking stays SEARCHING for other vendors
@@ -1229,6 +1249,7 @@ const vendorReachedLocation = async (req, res) => {
   try {
     const vendorId = req.user.id;
     const { id } = req.params;
+    const { reachedPhotos } = req.body;
 
     // Need visitOtp to resend it
     const booking = await Booking.findOne({ _id: id, vendorId }).select('+visitOtp');
@@ -1239,6 +1260,11 @@ const vendorReachedLocation = async (req, res) => {
 
     if (booking.status !== BOOKING_STATUS.JOURNEY_STARTED) {
       return res.status(400).json({ success: false, message: 'Journey not started yet' });
+    }
+
+    if (reachedPhotos) {
+      booking.reachedPhotos = reachedPhotos;
+      await booking.save();
     }
 
     const otp = booking.visitOtp;

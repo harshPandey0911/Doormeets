@@ -133,8 +133,22 @@ const updateJobStatus = async (req, res) => {
       // Update booking status
       booking.status = status;
 
-      if (status === BOOKING_STATUS.IN_PROGRESS && !booking.startedAt) {
-        booking.startedAt = new Date();
+      if (status === BOOKING_STATUS.IN_PROGRESS) {
+        if (!booking.uniformSelfieUrl || !booking.beforeWorkPhotoUrl) {
+          return res.status(400).json({
+            success: false,
+            message: 'Selfie and Before Work photo are required to start job'
+          });
+        }
+        if (booking.estimateStatus === 'pending') {
+          return res.status(400).json({
+            success: false,
+            message: 'Cannot start work while estimate is pending customer approval'
+          });
+        }
+        if (!booking.startedAt) {
+          booking.startedAt = new Date();
+        }
       }
 
       if (status === BOOKING_STATUS.VISITED && !booking.startedAt) {
@@ -874,6 +888,142 @@ const respondToJob = async (req, res) => {
   }
 };
 
+/**
+ * Submit Inspection Estimate (Step 7 - Addon Services)
+ */
+const submitInspectionEstimate = async (req, res) => {
+  try {
+    const workerId = req.user.id;
+    const { id } = req.params;
+    const { services, parts, notes } = req.body;
+
+    const booking = await Booking.findOne({ _id: id, workerId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    if (booking.status !== BOOKING_STATUS.VISITED) {
+      return res.status(400).json({ success: false, message: 'Can only submit estimate when in VISITED status' });
+    }
+
+    const calculatedServices = (services || []).map(s => ({
+      name: s.name,
+      price: Number(s.price) || 0,
+      quantity: Number(s.quantity) || 1
+    }));
+
+    const calculatedParts = (parts || []).map(p => ({
+      name: p.name,
+      price: Number(p.price) || 0,
+      quantity: Number(p.quantity) || 1
+    }));
+
+    const totalAmount = calculatedServices.reduce((sum, s) => sum + (s.price * s.quantity), 0) +
+                        calculatedParts.reduce((sum, p) => sum + (p.price * p.quantity), 0);
+
+    booking.inspectionEstimate = {
+      services: calculatedServices,
+      parts: calculatedParts,
+      notes: notes || '',
+      totalAmount
+    };
+    booking.estimateStatus = 'pending';
+    await booking.save();
+
+    // Notify User via Socket & Notifications
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${booking.userId}`).emit('estimate_received', {
+        bookingId: booking._id,
+        estimate: booking.inspectionEstimate
+      });
+    }
+
+    const { createNotification } = require('../notificationControllers/notificationController');
+    await createNotification({
+      userId: booking.userId,
+      type: 'estimate_received',
+      title: 'New Addon Estimate Received',
+      message: `The professional has submitted a new estimate of ₹${totalAmount} for your approval.`,
+      relatedId: booking._id,
+      relatedType: 'booking',
+      pushData: {
+        type: 'estimate_received',
+        bookingId: booking._id.toString(),
+        link: `/user/booking/${booking._id}`
+      }
+    });
+
+    res.status(200).json({ success: true, message: 'Estimate submitted successfully', data: booking });
+  } catch (error) {
+    console.error('Submit estimate error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit estimate' });
+  }
+};
+
+/**
+ * Start Work with Selfie and Photo Verification (Step 7)
+ */
+const startJobWithVerification = async (req, res) => {
+  try {
+    const workerId = req.user.id;
+    const { id } = req.params;
+    const { uniformSelfieUrl, beforeWorkPhotoUrl } = req.body;
+
+    const booking = await Booking.findOne({ _id: id, workerId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    if (booking.status !== BOOKING_STATUS.VISITED) {
+      return res.status(400).json({ success: false, message: 'Job must be in VISITED state to start work' });
+    }
+
+    if (booking.estimateStatus === 'pending') {
+      return res.status(400).json({ success: false, message: 'Cannot start work while estimate is pending customer approval' });
+    }
+
+    if (!uniformSelfieUrl || !beforeWorkPhotoUrl) {
+      return res.status(400).json({ success: false, message: 'Selfie and Before Work photo are required to verify professional uniform' });
+    }
+
+    booking.status = BOOKING_STATUS.IN_PROGRESS;
+    booking.startedAt = new Date();
+    booking.uniformSelfieUrl = uniformSelfieUrl;
+    booking.beforeWorkPhotoUrl = beforeWorkPhotoUrl;
+    await booking.save();
+
+    // Emit Socket & Notification to User
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${booking.userId}`).emit('booking_updated', {
+        bookingId: booking._id,
+        status: booking.status
+      });
+    }
+
+    const { createNotification } = require('../notificationControllers/notificationController');
+    await createNotification({
+      userId: booking.userId,
+      type: 'work_started',
+      title: 'Work In Progress',
+      message: 'Professional has started working on your service.',
+      relatedId: booking._id,
+      relatedType: 'booking',
+      pushData: {
+        type: 'in_progress',
+        bookingId: booking._id.toString(),
+        link: `/user/booking/${booking._id}`
+      }
+    });
+
+    res.status(200).json({ success: true, message: 'Work started successfully', data: booking });
+  } catch (error) {
+    console.error('Start work with verification error:', error);
+    res.status(500).json({ success: false, message: 'Failed to start work' });
+  }
+};
+
 module.exports = {
   getAssignedJobs,
   getJobById,
@@ -884,5 +1034,7 @@ module.exports = {
   verifyVisit,
   workerReachedLocation,
   collectCash,
-  respondToJob
+  respondToJob,
+  submitInspectionEstimate,
+  startJobWithVerification
 };

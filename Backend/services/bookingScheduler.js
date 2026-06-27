@@ -133,50 +133,32 @@ class BookingScheduler {
 
             // --- EXPIRY CHECK ---
             if (totalElapsed > MAX_SEARCH_TIME_MS) {
-              // Try atomic update to NO_VENDORS
+              // Try atomic update to pending_admin
               const updateResult = await Booking.updateOne(
                 { _id: booking._id, status: BOOKING_STATUS.SEARCHING },
                 {
                   $set: {
-                    status: BOOKING_STATUS.NO_VENDORS,
-                    cancellationReason: 'No vendor accepted within time limit'
+                    status: 'pending_admin',
+                    cancellationReason: 'No vendor accepted within time limit. Awaiting admin review.'
                   }
                 }
               );
 
               if (updateResult.modifiedCount > 0) {
-                console.log(`[BookingScheduler] ${booking.bookingNumber}: Search timed out. Status updated to NO_VENDORS.`);
-                
-                // Refund Loyalty Points if any were redeemed
-                if (booking.loyaltyPointsRedeemed > 0) {
-                  try {
-                    const User = require('../models/User');
-                    const Transaction = require('../models/Transaction');
-                    await User.findByIdAndUpdate(booking.userId, { $inc: { loyaltyPoints: booking.loyaltyPointsRedeemed } });
-                    
-                    await Transaction.create({
-                      userId: booking.userId,
-                      type: 'refund',
-                      amount: booking.loyaltyPointsRedeemed,
-                      status: 'completed',
-                      paymentMethod: 'system',
-                      description: `Refunded ${booking.loyaltyPointsRedeemed} Loyalty Points for booking #${booking.bookingNumber} (search timeout)`,
-                      bookingId: booking._id,
-                      metadata: { type: 'loyalty_points', pointsRefunded: booking.loyaltyPointsRedeemed }
-                    });
-                    
-                    await Booking.updateOne({ _id: booking._id }, { $set: { loyaltyPointsRefunded: true } });
-                    console.log(`[BookingScheduler] Refunded ${booking.loyaltyPointsRedeemed} points to user ${booking.userId}`);
-                  } catch (refErr) {
-                    console.error('[BookingScheduler] Error refunding loyalty points on timeout:', refErr);
-                  }
-                }
+                console.log(`[BookingScheduler] ${booking.bookingNumber}: Search timed out. Routed to admin.`);
 
-                // Notify User
+                // Notify User and Admin
                 if (this.io) {
-                  this.io.to(`user_${booking.userId}`).emit('booking_search_failed', {
+                  this.io.to('all_admins').emit('admin_booking_requested', {
+                    bookingId: booking._id.toString(),
+                    bookingNumber: booking.bookingNumber,
+                    status: 'pending_admin',
+                    message: 'Booking request sent to admin for manual assignment.'
+                  });
+                  this.io.to(`user_${booking.userId}`).emit('booking_updated', {
                     bookingId: booking._id,
-                    message: 'No vendors available at the moment. Please try again later.'
+                    status: 'pending_admin',
+                    message: 'Booking request sent to admin for manual assignment.'
                   });
                 }
 
@@ -208,9 +190,39 @@ class BookingScheduler {
               });
               return;
             } else if (vendorsToNotify.length === 0) {
-               // Next wave > 3 and no more vendors
-               console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: Exhausted all waves.`);
-               return;
+              // Next wave > 3 and no more vendors
+              console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: Exhausted all waves.`);
+                
+              const activeRequestsCount = await BookingRequest.countDocuments({
+                bookingId: booking._id,
+                status: { $in: ['PENDING', 'VIEWED'] }
+              });
+
+              if (activeRequestsCount === 0) {
+                console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: No active requests and waves exhausted. Setting status to pending_admin.`);
+                await Booking.findByIdAndUpdate(booking._id, {
+                  $set: {
+                    status: 'pending_admin',
+                    cancellationReason: 'All available waves exhausted. Awaiting admin review.'
+                  }
+                });
+
+                 // Notify User and Admin
+                 if (this.io) {
+                   this.io.to('all_admins').emit('admin_booking_requested', {
+                     bookingId: booking._id.toString(),
+                     bookingNumber: booking.bookingNumber,
+                     status: 'pending_admin',
+                     message: 'Booking request sent to admin for manual assignment.'
+                   });
+                  this.io.to(`user_${booking.userId}`).emit('booking_updated', {
+                    bookingId: booking._id,
+                    status: 'pending_admin',
+                    message: 'Booking request sent to admin for manual assignment.'
+                  });
+                }
+              }
+              return;
             }
 
             // Filter to only online+available vendors (single batch find for this booking)

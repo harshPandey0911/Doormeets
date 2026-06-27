@@ -72,6 +72,12 @@ export const bookingService = {
   rejectBid: async (bidId) => {
     const response = await api.post(`/bids/reject/${bidId}`);
     return response.data;
+  },
+
+  // Approve or decline inspection estimate
+  approveEstimate: async (bookingId, approve) => {
+    const response = await api.post(`/users/bookings/${bookingId}/estimate/approve`, { approve });
+    return response.data;
   }
 };
 

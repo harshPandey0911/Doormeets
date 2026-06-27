@@ -104,6 +104,16 @@ const workerService = {
     return response.data;
   },
 
+  submitEstimate: async (id, estimateData) => {
+    const response = await api.post(`/workers/jobs/${id}/estimate`, estimateData);
+    return response.data;
+  },
+
+  startJobVerified: async (id, verificationData) => {
+    const response = await api.post(`/workers/jobs/${id}/start-verified`, verificationData);
+    return response.data;
+  },
+
   // Notifications
   getNotifications: async (params) => {
     const response = await api.get('/notifications/worker', { params });

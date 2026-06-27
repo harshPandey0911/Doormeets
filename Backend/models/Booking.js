@@ -344,6 +344,9 @@ const bookingSchema = new mongoose.Schema({
   workPhotos: [{
     type: String
   }],
+  reachedPhotos: [{
+    type: String
+  }],
   visitLocation: {
     lat: Number,
     lng: Number,
@@ -353,6 +356,33 @@ const bookingSchema = new mongoose.Schema({
   workDoneDetails: {
     type: mongoose.Schema.Types.Mixed,
     default: {}
+  },
+  uniformSelfieUrl: {
+    type: String,
+    default: null
+  },
+  beforeWorkPhotoUrl: {
+    type: String,
+    default: null
+  },
+  estimateStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'declined'],
+    default: 'none'
+  },
+  inspectionEstimate: {
+    services: [{
+      name: String,
+      price: Number,
+      quantity: { type: Number, default: 1 }
+    }],
+    parts: [{
+      name: String,
+      price: Number,
+      quantity: { type: Number, default: 1 }
+    }],
+    notes: String,
+    totalAmount: Number
   },
   // Note: Detailed billing (items/parts) is now handled by VendorBill model
   // workDoneDetails and extraCharges are deprecated in favor of VendorBill

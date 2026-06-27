@@ -23,7 +23,9 @@ const getAllBookings = async (req, res) => {
     // Build query
     const query = {};
 
-    if (status) query.status = status;
+    if (status) {
+      query.status = { $regex: new RegExp(`^${status}$`, 'i') };
+    }
     if (paymentStatus) query.paymentStatus = paymentStatus;
     if (userId) query.userId = userId;
     if (vendorId) query.vendorId = vendorId;
@@ -154,12 +156,80 @@ const cancelBooking = async (req, res) => {
     }
 
     // Update booking
-    booking.status = BOOKING_STATUS.CANCELLED;
-    booking.cancelledAt = new Date();
-    booking.cancelledBy = 'admin';
-    booking.cancellationReason = cancellationReason || 'Cancelled by admin';
+    const isPendingAdmin = booking.status === 'pending_admin';
+    if (isPendingAdmin) {
+      booking.status = BOOKING_STATUS.NO_VENDORS;
+      booking.cancelledAt = new Date();
+      booking.cancelledBy = 'admin';
+      booking.cancellationReason = cancellationReason || 'Currently no vendor online (Declined by admin)';
+    } else {
+      booking.status = BOOKING_STATUS.CANCELLED;
+      booking.cancelledAt = new Date();
+      booking.cancelledBy = 'admin';
+      booking.cancellationReason = cancellationReason || 'Cancelled by admin';
+    }
+
+    // Refund Loyalty Points if any were redeemed
+    if (booking.loyaltyPointsRedeemed > 0 && !booking.loyaltyPointsRefunded) {
+      try {
+        const User = require('../../models/User');
+        const Transaction = require('../../models/Transaction');
+        await User.findByIdAndUpdate(booking.userId, { $inc: { loyaltyPoints: booking.loyaltyPointsRedeemed } });
+        
+        await Transaction.create({
+          userId: booking.userId,
+          type: 'refund',
+          amount: booking.loyaltyPointsRedeemed,
+          status: 'completed',
+          paymentMethod: 'system',
+          description: `Refunded ${booking.loyaltyPointsRedeemed} Loyalty Points for booking #${booking.bookingNumber} (admin cancellation)`,
+          bookingId: booking._id,
+          metadata: { type: 'loyalty_points', pointsRefunded: booking.loyaltyPointsRedeemed }
+        });
+        booking.loyaltyPointsRefunded = true;
+      } catch (refErr) {
+        console.error('[AdminCancel] Error refunding loyalty points:', refErr);
+      }
+    }
+
+    // Refund Wallet Amount if any was applied
+    if (booking.walletAmountApplied > 0 && booking.walletAmountRefunded !== true) {
+      try {
+        const User = require('../../models/User');
+        const Transaction = require('../../models/Transaction');
+        await User.findByIdAndUpdate(booking.userId, { $inc: { 'wallet.balance': booking.walletAmountApplied } });
+
+        await Transaction.create({
+          userId: booking.userId,
+          type: 'credit',
+          amount: booking.walletAmountApplied,
+          status: 'completed',
+          paymentMethod: 'wallet',
+          description: `Refund of ₹${booking.walletAmountApplied} wallet balance for booking #${booking.bookingNumber} (admin cancellation)`,
+          bookingId: booking._id,
+          balanceAfter: (await User.findById(booking.userId)).wallet?.balance || 0
+        });
+        booking.walletAmountRefunded = true;
+      } catch (walletErr) {
+        console.error('[AdminCancel] Error refunding wallet amount:', walletErr);
+      }
+    }
 
     await booking.save();
+
+    // Notify user of the status change via socket
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          message: isPendingAdmin ? 'Currently no vendor online.' : 'Booking cancelled by admin.'
+        });
+      }
+    } catch (socketErr) {
+      console.error('[AdminCancel] Socket notification error:', socketErr);
+    }
 
     // ── Update Vendor Performance Stats & Availability ──
     if (booking.vendorId) {
@@ -302,10 +372,90 @@ const getBookingAnalytics = async (req, res) => {
   }
 };
 
+/**
+ * Assign vendor to booking (admin)
+ */
+const assignVendor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { vendorId } = req.body;
+
+    if (!vendorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vendor ID is required'
+      });
+    }
+
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    const Vendor = require('../../models/Vendor');
+    const vendor = await Vendor.findById(vendorId);
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor not found'
+      });
+    }
+
+    // Update booking details
+    booking.vendorId = vendor._id;
+    booking.status = 'accepted'; // Transition status to accepted
+    booking.acceptedAt = new Date();
+    booking.assignedAt = new Date();
+
+    await booking.save();
+
+    // Trigger socket notifications for user
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${booking.userId.toString()}`).emit('booking_accepted', {
+          bookingId: booking._id.toString(),
+          vendor: {
+            id: vendor._id.toString(),
+            name: vendor.name,
+            businessName: vendor.businessName,
+            phone: vendor.phone,
+            rating: vendor.rating || 4.8
+          }
+        });
+        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: 'accepted'
+        });
+      }
+    } catch (socketErr) {
+      console.error('[AdminAssignVendor] Socket notification error:', socketErr);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Vendor assigned successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Assign vendor error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to assign vendor. Please try again.'
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
   getBookingById,
   cancelBooking,
-  getBookingAnalytics
+  getBookingAnalytics,
+  assignVendor
 };
 

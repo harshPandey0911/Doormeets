@@ -1840,7 +1840,28 @@ const PremiumServiceDetailPage = () => {
                   {activeCategoryModal.items?.map((item) => (
                     <div
                       key={item._id}
-                      className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border dark:border-zinc-800 flex justify-between items-start gap-4"
+                      onClick={() => {
+                        const groupId = activeCategoryModal._id?.toString();
+                        if (groupId) {
+                          // Select this option and default all other groups to 'skip'
+                          const updatedSelections = {};
+                          const groups = service.serviceGroups || [];
+                          groups.forEach(g => {
+                            const gId = g._id?.toString();
+                            if (gId === groupId) {
+                              updatedSelections[gId] = [item._id?.toString()];
+                            } else {
+                              updatedSelections[gId] = ['skip'];
+                            }
+                          });
+
+                          setCustomSelectedItems(updatedSelections);
+                          setIsCustomizing(true);
+                          setActiveCategoryModal(null);
+                          toast.success(`Selected ${item.title}`);
+                        }
+                      }}
+                      className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border dark:border-zinc-800 flex justify-between items-start gap-4 cursor-pointer hover:border-violet-400 dark:hover:border-violet-500 transition-all active:scale-[0.99] select-none"
                     >
                       <div className="space-y-1">
                         <div className="font-semibold text-sm text-gray-800 dark:text-zinc-200">{item.title}</div>
@@ -1849,35 +1870,9 @@ const PremiumServiceDetailPage = () => {
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0">
                         <span className="font-bold text-sm text-brand">₹{item.price}</span>
-                        {/* Quick Selection button */}
-                        {service?.serviceType === 'package_base' && selectedPackage && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const groupId = activeCategoryModal._id?.toString();
-                              if (groupId) {
-                                // Select this option and default all other groups to 'skip'
-                                const updatedSelections = {};
-                                service.serviceGroups?.forEach(g => {
-                                  const gId = g._id?.toString();
-                                  if (gId === groupId) {
-                                    updatedSelections[gId] = [item._id?.toString()];
-                                  } else {
-                                    updatedSelections[gId] = ['skip'];
-                                  }
-                                });
-
-                                setCustomSelectedItems(updatedSelections);
-                                setIsCustomizing(true);
-                                setActiveCategoryModal(null);
-                                toast.success(`Selected ${item.title}`);
-                              }
-                            }}
-                            className="text-[10px] font-bold bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 px-3 py-1 rounded-full border border-violet-100 dark:border-violet-900/50 transition-colors"
-                          >
-                            Choose Option
-                          </button>
-                        )}
+                        <span className="text-[10px] font-bold bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 px-3 py-1 rounded-full border border-violet-100 dark:border-violet-900/50 transition-colors">
+                          Choose
+                        </span>
                       </div>
                     </div>
                   ))}

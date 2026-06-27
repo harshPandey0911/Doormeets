@@ -131,8 +131,8 @@ export const startSelfJob = async (bookingId) => {
 /**
  * Notify Reached (Vendor)
  */
-export const vendorReached = async (bookingId) => {
-  const response = await api.post(`/vendors/bookings/${bookingId}/self/reached`);
+export const vendorReached = async (bookingId, reachedPhotos) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/self/reached`, { reachedPhotos });
   return response.data;
 };
 

@@ -159,6 +159,7 @@ const Bookings = () => {
             className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none focus:border-green-500 cursor-pointer"
           >
             <option>All Status</option>
+            <option value="pending_admin">Awaiting Admin Review</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
             <option value="in_progress">In Progress</option>

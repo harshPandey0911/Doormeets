@@ -25,7 +25,8 @@ import {
   FiChevronRight,
   FiSearch,
   FiHome,
-  FiAlertCircle
+  FiAlertCircle,
+  FiFileText
 } from 'react-icons/fi';
 import { bookingService } from '../../../../services/bookingService';
 import { paymentService } from '../../../../services/paymentService';
@@ -274,6 +275,8 @@ const BookingDetails = () => {
       case 'awaiting_payment':
       case 'work_done':
         return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+      case 'pending_admin':
+        return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
       case 'requested':
       case 'searching':
         return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -294,6 +297,7 @@ const BookingDetails = () => {
       case 'work_done': return 'Work Done'; // Payment Pending
       case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
+      case 'pending_admin': return 'Awaiting Admin Review';
       case 'requested':
       case 'searching': return 'Finding Expert';
       case 'bidding': return 'Bidding in Progress';
@@ -875,6 +879,89 @@ const BookingDetails = () => {
             </div>
           )}
 
+          {/* Estimate Card */}
+          {booking.estimateStatus === 'pending' && booking.inspectionEstimate && (
+            <div className="bg-white rounded-3xl p-6 shadow-lg border-2 border-amber-400 relative overflow-hidden mb-6">
+              <h3 className="font-bold text-gray-900 text-lg mb-3 flex items-center gap-2">
+                <FiFileText className="text-amber-500 w-5 h-5" />
+                Addon Service Estimate
+              </h3>
+              <p className="text-sm text-gray-500 mb-4 font-medium">
+                The service professional has inspected the work and proposed the following add-on charges:
+              </p>
+              
+              <div className="space-y-2 mb-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                {booking.inspectionEstimate.services?.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm text-gray-700">
+                    <span>{item.name} (x{item.quantity})</span>
+                    <span className="font-bold">₹{(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+                {booking.inspectionEstimate.parts?.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm text-gray-700">
+                    <span>{item.name} (x{item.quantity}) [Part]</span>
+                    <span className="font-bold">₹{(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+                {booking.inspectionEstimate.notes && (
+                  <div className="text-xs text-gray-400 mt-2 border-t pt-2 italic">
+                    Note: {booking.inspectionEstimate.notes}
+                  </div>
+                )}
+                <div className="flex justify-between font-black text-gray-900 pt-2 border-t text-base">
+                  <span>Total Addons</span>
+                  <span>₹{(booking.inspectionEstimate.totalAmount || 0).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      toast.loading('Declining estimate...');
+                      const res = await bookingService.approveEstimate(booking._id || booking.id, false);
+                      toast.dismiss();
+                      if (res.success) {
+                        toast.success('Estimate declined');
+                        loadBooking();
+                      } else {
+                        toast.error(res.message || 'Action failed');
+                      }
+                    } catch (e) {
+                      toast.dismiss();
+                      toast.error('Failed to process response');
+                    }
+                  }}
+                  className="flex-1 py-3 rounded-xl font-bold bg-red-50 text-red-500 border border-red-200 transition-all active:scale-95 text-sm"
+                >
+                  Decline
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      toast.loading('Approving estimate...');
+                      const res = await bookingService.approveEstimate(booking._id || booking.id, true);
+                      toast.dismiss();
+                      if (res.success) {
+                        toast.success('Estimate approved!');
+                        loadBooking();
+                      } else {
+                        toast.error(res.message || 'Action failed');
+                      }
+                    } catch (e) {
+                      toast.dismiss();
+                      toast.error('Failed to process response');
+                    }
+                  }}
+                  className="flex-[2] py-3 rounded-xl font-bold text-white transition-all active:scale-95 text-sm"
+                  style={{ background: themeColors.button }}
+                >
+                  Approve Addons
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Waiting for Vendor to initiate Payment */}
           {!booking.customerConfirmationOTP && ['work_done'].includes(booking.status?.toLowerCase()) && !booking.cashCollected && (
             <div className="bg-card-bg rounded-3xl p-6 shadow-lg border border-border-color mb-6 flex items-center gap-4 relative overflow-hidden">
@@ -1334,6 +1421,13 @@ const BookingDetails = () => {
                         <div className="flex justify-between text-sm">
                           <span className="text-green-500">Discount</span>
                           <span className="font-medium text-green-500">-₹{booking.discount.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+
+                      {booking.walletAmountApplied > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-secondary-text">Wallet Applied</span>
+                          <span className="font-medium text-dark-text">-₹{booking.walletAmountApplied.toLocaleString('en-IN')}</span>
                         </div>
                       )}
 

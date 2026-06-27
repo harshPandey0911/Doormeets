@@ -211,36 +211,21 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex gap-3">
+          <button
+            disabled={!!loadingAction}
+            onClick={() => handleAction(onReject, 'reject')}
+            className="flex-1 py-4 rounded-2xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 font-bold text-xs uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
+          >
+            {loadingAction === 'reject' ? '...' : 'Decline'}
+          </button>
           <button
             disabled={!!loadingAction}
             onClick={() => handleAction(onAccept, 'accept')}
-            className={`w-full py-4 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 col-span-2 disabled:opacity-50 ${isProduct ? 'bg-purple-600 shadow-purple-200' : 'bg-gray-900 shadow-gray-200'}`}
+            className={`flex-[2] py-4 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${isProduct ? 'bg-purple-600 shadow-purple-200' : 'bg-gray-900 shadow-gray-200'}`}
           >
-            {loadingAction === 'accept' ? 'Processing...' : (isProduct ? 'Send Quote' : (isWaiting ? 'Confirm Interest' : (booking.bookingType === 'scheduled' ? 'Accept Booking' : 'Self Assign')))}
+            {loadingAction === 'accept' ? 'Processing...' : (isProduct ? 'Send Quote' : 'Accept')}
           </button>
-          
-          {!isWaiting && (
-            <>
-              {booking.bookingType !== 'scheduled' && (
-                <button
-                  disabled={!!loadingAction}
-                  onClick={() => handleAction(onAssign, 'assign')}
-                  className="w-full py-3 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-sm active:scale-95 transition-all disabled:opacity-50"
-                  style={{ background: themeColors.button }}
-                >
-                  Assign Worker
-                </button>
-              )}
-              <button
-                disabled={!!loadingAction}
-                onClick={() => handleAction(onReject, 'reject')}
-                className={`w-full py-3 rounded-xl bg-red-50 border border-red-100 text-red-500 font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50 ${booking.bookingType === 'scheduled' ? 'col-span-2' : ''}`}
-              >
-                Decline
-              </button>
-            </>
-          )}
         </div>
       </div>
     </div>

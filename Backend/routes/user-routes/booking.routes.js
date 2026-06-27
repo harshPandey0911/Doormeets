@@ -10,7 +10,8 @@ const {
   cancelBooking,
   rescheduleBooking,
   addReview,
-  getUserRatings
+  getUserRatings,
+  approveInspectionEstimate
 } = require('../../controllers/bookingControllers/userBookingController');
 
 // Validation rules
@@ -57,6 +58,7 @@ router.get('/:id', authenticate, isUser, getBookingById);
 router.post('/:id/cancel', authenticate, isUser, cancelBookingValidation, cancelBooking);
 router.put('/:id/reschedule', authenticate, isUser, rescheduleBookingValidation, rescheduleBooking);
 router.post('/:id/review', authenticate, isUser, addReviewValidation, addReview);
+router.post('/:id/estimate/approve', authenticate, isUser, approveInspectionEstimate);
 
 module.exports = router;
 

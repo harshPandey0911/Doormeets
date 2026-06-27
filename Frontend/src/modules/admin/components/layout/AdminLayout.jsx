@@ -7,7 +7,7 @@ import useAdminHeaderHeight from '../../hooks/useAdminHeaderHeight';
 import { useSocket } from '../../../../context/SocketContext';
 import { FiAlertTriangle, FiX, FiMapPin } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import { playSirenAlarm, stopSirenAlarm, unlockAudioContext } from '../../../../utils/notificationSound';
+import { playSirenAlarm, stopSirenAlarm, unlockAudioContext, playNotificationSound } from '../../../../utils/notificationSound';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -77,9 +77,40 @@ const AdminLayout = () => {
       playSirenAlarm();
     };
 
+    const handleAdminBookingRequest = (data) => {
+      console.log('💼 Admin Booking Request received:', data);
+      toast.custom((t) => (
+        <div className="bg-white dark:bg-gray-800 border-2 border-blue-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3 max-w-sm pointer-events-auto transition-all animate-slide-up">
+          <span className="text-2xl">💼</span>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100">Manual Assignment Needed</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">Booking #{data.bookingNumber} has no available vendors.</p>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                navigate(`/admin/bookings/${data.bookingId}`);
+              }}
+              className="mt-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
+            >
+              Assign Vendor Now
+            </button>
+          </div>
+          <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+        </div>
+      ), {
+        duration: 15000,
+        position: 'top-right'
+      });
+
+      // Play chime/beep sound
+      playNotificationSound().catch(e => console.warn('Admin notification sound failed:', e));
+    };
+
     socket.on('sos_alert_triggered', handleSOSAlert);
+    socket.on('admin_booking_requested', handleAdminBookingRequest);
     return () => {
       socket.off('sos_alert_triggered', handleSOSAlert);
+      socket.off('admin_booking_requested', handleAdminBookingRequest);
       stopSirenAlarm(); // Ensure sound stops if layout unmounts
     };
   }, [socket]);

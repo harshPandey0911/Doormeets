@@ -13,7 +13,9 @@ const {
   verifyVisit,
   workerReachedLocation,
   collectCash,
-  respondToJob
+  respondToJob,
+  submitInspectionEstimate,
+  startJobWithVerification
 } = require('../../controllers/bookingControllers/workerBookingController');
 const {
   createOrUpdateBill,
@@ -42,8 +44,10 @@ router.get('/jobs/:id', authenticate, isWorker, getJobById);
 router.put('/jobs/:id/respond', authenticate, isWorker, respondValidation, respondToJob);
 router.put('/jobs/:id/status', authenticate, isWorker, updateStatusValidation, updateJobStatus);
 router.post('/jobs/:id/start', authenticate, isWorker, startJob);
+router.post('/jobs/:id/start-verified', authenticate, isWorker, startJobWithVerification);
 router.post('/jobs/:id/reached', authenticate, isWorker, workerReachedLocation);
 router.post('/jobs/:id/visit/verify', authenticate, isWorker, verifyVisit);
+router.post('/jobs/:id/estimate', authenticate, isWorker, submitInspectionEstimate);
 router.post('/jobs/:id/complete', authenticate, isWorker, completeJob);
 router.post('/jobs/:id/payment/collect', authenticate, isWorker, collectCash);
 router.post('/jobs/:id/notes', authenticate, isWorker, addNotesValidation, addWorkerNotes);

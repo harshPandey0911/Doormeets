@@ -15,7 +15,7 @@ import {
   completeSelfJob
 } from '../../services/bookingService';
 import vendorBillService from '../../../../services/vendorBillService';
-import { CashCollectionModal, ConfirmDialog, WorkerPaymentModal, OtpVerificationModal } from '../../components/common';
+import { CashCollectionModal, ConfirmDialog, WorkerPaymentModal, OtpVerificationModal, ReachedPhotoModal } from '../../components/common';
 import VisitVerificationModal from '../../components/common/VisitVerificationModal';
 // Import shared WorkCompletionModal from worker directory or move to shared
 import { WorkCompletionModal } from '../../../worker/components/common';
@@ -36,6 +36,8 @@ export default function BookingDetails() {
   const [isWorkDoneModalOpen, setIsWorkDoneModalOpen] = useState(false);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+  const [isReachedModalOpen, setIsReachedModalOpen] = useState(false);
+  const [reachedLoading, setReachedLoading] = useState(false);
 
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
   const [addonSearch, setAddonSearch] = useState('');
@@ -1746,14 +1748,7 @@ export default function BookingDetails() {
 
               {booking.status === 'journey_started' && (
                 <button
-                  onClick={async () => {
-                    try {
-                      setIsVisitModalOpen(true);
-                      await vendorReached(id);
-                    } catch (err) {
-                      console.error('Failed to notify reached:', err);
-                    }
-                  }}
+                  onClick={() => setIsReachedModalOpen(true)}
                   className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
                   style={{
                     background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
@@ -1836,6 +1831,26 @@ export default function BookingDetails() {
         onClose={() => setIsVisitModalOpen(false)}
         bookingId={id}
         onSuccess={() => window.location.reload()}
+      />
+
+      {/* Arrival Photo Modal */}
+      <ReachedPhotoModal
+        isOpen={isReachedModalOpen}
+        onClose={() => setIsReachedModalOpen(false)}
+        onComplete={async (photos) => {
+          try {
+            setReachedLoading(true);
+            await vendorReached(id, photos);
+            setIsReachedModalOpen(false);
+            setIsVisitModalOpen(true);
+          } catch (err) {
+            console.error('Failed to notify reached:', err);
+            toast.error('Failed to verify arrival');
+          } finally {
+            setReachedLoading(false);
+          }
+        }}
+        loading={reachedLoading}
       />
 
       {/* Unified Worker Completion Modal - REUSABLE COMPONENT */}
@@ -1999,14 +2014,14 @@ export default function BookingDetails() {
         )}
       </AnimatePresence>
 
-      {(isAddonModalOpen || isCashModalOpen || isOtpModalOpen || isVisitModalOpen || isWorkDoneModalOpen) && (
+      {(isAddonModalOpen || isCashModalOpen || isOtpModalOpen || isVisitModalOpen || isWorkDoneModalOpen || isReachedModalOpen) && (
         <style>{`
           nav {
             display: none !important;
           }
         `}</style>
       )}
-      {!(isAddonModalOpen || isCashModalOpen || isOtpModalOpen || isVisitModalOpen || isWorkDoneModalOpen) && <BottomNav />}
+      {!(isAddonModalOpen || isCashModalOpen || isOtpModalOpen || isVisitModalOpen || isWorkDoneModalOpen || isReachedModalOpen) && <BottomNav />}
     </div>
   );
 }

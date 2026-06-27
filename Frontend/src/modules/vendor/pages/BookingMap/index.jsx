@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleMap, useJsApiLoader, DirectionsRenderer, OverlayView, PolylineF } from '@react-google-maps/api';
 import { FiArrowLeft, FiNavigation, FiMapPin, FiCrosshair, FiPhone, FiClock, FiCheckCircle, FiX, FiMaximize, FiMinimize, FiWifiOff, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
 import { FaMotorcycle } from 'react-icons/fa';
-import { getBookingById, verifySelfVisit } from '../../services/bookingService';
+import { getBookingById, verifySelfVisit, vendorReached } from '../../services/bookingService';
 import VisitVerificationModal from '../../components/common/VisitVerificationModal';
+import ReachedPhotoModal from '../../components/common/ReachedPhotoModal';
 import vendorService from '../../../../services/vendorService';
 import { toast } from 'react-hot-toast';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
@@ -55,6 +56,8 @@ const BookingMap = () => {
   const [heading, setHeading] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false); // Lifted state up
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
+  const [isReachedModalOpen, setIsReachedModalOpen] = useState(false);
+  const [reachedLoading, setReachedLoading] = useState(false);
   const [otpInput, setOtpInput] = useState(['', '', '', '']);
   const [actionLoading, setActionLoading] = useState(false);
   const [routeError, setRouteError] = useState(null);
@@ -759,7 +762,7 @@ const BookingMap = () => {
         <div className="flex gap-3">
           {booking?.status === 'journey_started' && (
             <button
-              onClick={() => setIsVisitModalOpen(true)}
+              onClick={() => setIsReachedModalOpen(true)}
               className="px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30 transition-all active:scale-95"
             >
               <FiCheckCircle className="w-5 h-5" /> Reached
@@ -791,6 +794,26 @@ const BookingMap = () => {
         onClose={() => setIsVisitModalOpen(false)}
         bookingId={id}
         onSuccess={() => navigate(`/vendor/booking/${id}`)}
+      />
+
+      {/* Arrival Photo Modal */}
+      <ReachedPhotoModal
+        isOpen={isReachedModalOpen}
+        onClose={() => setIsReachedModalOpen(false)}
+        onComplete={async (photos) => {
+          try {
+            setReachedLoading(true);
+            await vendorReached(id, photos);
+            setIsReachedModalOpen(false);
+            setIsVisitModalOpen(true);
+          } catch (err) {
+            console.error('Failed to notify reached:', err);
+            toast.error('Failed to verify arrival');
+          } finally {
+            setReachedLoading(false);
+          }
+        }}
+        loading={reachedLoading}
       />
     </div>
   );

@@ -34,9 +34,19 @@ const ThemeRouteManager = () => {
 };
 
 function App() {
-  // Initialize push notifications on app load
+  // Initialize push notifications and AudioContext unlock on app load
   useEffect(() => {
     initializePushNotifications();
+
+    const unlockAudio = () => {
+      import('./utils/notificationSound').then((module) => {
+        module.unlockAudioContext();
+      }).catch(err => console.error('Failed to load notificationSound:', err));
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
 
     // Setup foreground notification handler
     setupForegroundNotificationHandler((payload) => {

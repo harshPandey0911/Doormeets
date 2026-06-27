@@ -53,7 +53,8 @@ const createBooking = async (req, res) => {
       isConsultation,
       promoCode,
       dynamicFields,
-      redeemLoyaltyPoints
+      redeemLoyaltyPoints,
+      applyWallet
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -332,7 +333,7 @@ const createBooking = async (req, res) => {
 
     // Calculate and Apply Wallet Balance (max percentage limit from settings)
     let walletAmountUsed = 0;
-    if (user.wallet && user.wallet.balance > 0 && finalAmount > 0 && paymentMethod !== 'plan_benefit') {
+    if (applyWallet !== false && user.wallet && user.wallet.balance > 0 && finalAmount > 0 && paymentMethod !== 'plan_benefit') {
       const Settings = require('../../models/Settings');
       const globalSettings = await Settings.findOne({ type: 'global' }).lean();
       const maxWalletUsagePercentage = globalSettings?.maxWalletUsagePercentage !== undefined ? globalSettings.maxWalletUsagePercentage : 30;
@@ -609,7 +610,7 @@ const createBooking = async (req, res) => {
           return {
             vendorId: v._id,
             distance: v.distance || 0,
-            wave: isProduct ? 1 : (index + 1) // strictly sequential: 1 by 1
+            wave: 1 // All vendors in Wave 1 for simultaneous broadcast
           };
         });
 
@@ -1406,6 +1407,125 @@ const getUserRatings = async (req, res) => {
   }
 };
 
+/**
+ * Approve or Decline Inspection Estimate (Step 7 - Addon Services)
+ */
+const approveInspectionEstimate = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { approve } = req.body; // boolean: true to approve, false to decline
+
+    const booking = await Booking.findOne({ _id: id, userId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.estimateStatus !== 'pending') {
+      return res.status(400).json({ success: false, message: 'No pending estimate found for this booking' });
+    }
+
+    if (approve) {
+      booking.estimateStatus = 'approved';
+      const estimateTotal = booking.inspectionEstimate?.totalAmount || 0;
+      
+      // Update booking final amount
+      booking.finalAmount = (booking.finalAmount || 0) + estimateTotal;
+      booking.userPayableAmount = booking.finalAmount;
+
+      // Sync with VendorBill
+      const VendorBill = require('../../models/VendorBill');
+      let bill = await VendorBill.findOne({ bookingId: booking._id });
+      const serviceGstPct = 18;
+
+      const estimateServices = (booking.inspectionEstimate.services || []).map(s => {
+        const gst = parseFloat(((s.price * s.quantity * serviceGstPct) / 100).toFixed(2));
+        return {
+          name: s.name,
+          price: s.price,
+          gstPercentage: serviceGstPct,
+          quantity: s.quantity,
+          gstAmount: gst,
+          total: parseFloat((s.price * s.quantity + gst).toFixed(2)),
+          isOriginal: false
+        };
+      });
+
+      const estimateParts = (booking.inspectionEstimate.parts || []).map(p => {
+        const gst = parseFloat(((p.price * p.quantity * serviceGstPct) / 100).toFixed(2));
+        return {
+          name: p.name,
+          price: p.price,
+          gstPercentage: serviceGstPct,
+          quantity: p.quantity,
+          gstAmount: gst,
+          total: parseFloat((p.price * p.quantity + gst).toFixed(2))
+        };
+      });
+
+      if (!bill) {
+        await VendorBill.create({
+          bookingId: booking._id,
+          vendorId: booking.vendorId,
+          services: estimateServices,
+          parts: estimateParts,
+          status: 'draft',
+          grandTotal: estimateTotal
+        });
+      } else {
+        bill.services.push(...estimateServices);
+        bill.parts.push(...estimateParts);
+        bill.grandTotal = (bill.grandTotal || 0) + estimateTotal;
+        await bill.save();
+      }
+    } else {
+      booking.estimateStatus = 'declined';
+    }
+
+    await booking.save();
+
+    // Notify Worker via Socket & Notifications
+    const io = req.app.get('io');
+    if (io && booking.workerId) {
+      io.to(`worker_${booking.workerId.toString()}`).emit('estimate_responded', {
+        bookingId: booking._id,
+        status: booking.estimateStatus
+      });
+    } else if (io && booking.vendorId) {
+      io.to(`vendor_${booking.vendorId.toString()}`).emit('estimate_responded', {
+        bookingId: booking._id,
+        status: booking.estimateStatus
+      });
+    }
+
+    const { createNotification } = require('../notificationControllers/notificationController');
+    const recipientObj = booking.workerId ? { workerId: booking.workerId } : { vendorId: booking.vendorId };
+    
+    await createNotification({
+      ...recipientObj,
+      type: 'estimate_responded',
+      title: `Estimate ${approve ? 'Approved' : 'Declined'}`,
+      message: `The customer has ${approve ? 'approved' : 'declined'} the inspection estimate for booking #${booking.bookingNumber}.`,
+      relatedId: booking._id,
+      relatedType: 'booking',
+      pushData: {
+        type: 'estimate_responded',
+        bookingId: booking._id.toString(),
+        status: booking.estimateStatus
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Estimate ${approve ? 'approved' : 'declined'} successfully`,
+      data: booking
+    });
+  } catch (error) {
+    console.error('Approve estimate error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process estimate response' });
+  }
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
@@ -1413,6 +1533,7 @@ module.exports = {
   cancelBooking,
   rescheduleBooking,
   addReview,
-  getUserRatings
+  getUserRatings,
+  approveInspectionEstimate
 };
 

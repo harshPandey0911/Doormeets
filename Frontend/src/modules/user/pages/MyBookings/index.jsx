@@ -112,6 +112,7 @@ const MyBookings = () => {
 
   const getStatusBorderColor = (status) => {
     switch (status) {
+      case 'pending_admin': return '!border-l-blue-500';
       case 'confirmed': return '!border-l-emerald-500';
       case 'in_progress':
       case 'in-progress':
@@ -128,6 +129,8 @@ const MyBookings = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'pending_admin':
+        return 'bg-blue-500 text-white border-transparent ring-blue-500';
       case 'confirmed':
         return 'bg-emerald-500 text-white border-transparent ring-emerald-500';
       case 'in_progress':
@@ -150,6 +153,7 @@ const MyBookings = () => {
   const getStatusLabel = (status) => {
     if (!status) return 'Unknown';
     switch (status) {
+      case 'pending_admin': return 'Awaiting Admin Review';
       case 'in_progress':
       case 'in-progress':
         return 'In Progress';

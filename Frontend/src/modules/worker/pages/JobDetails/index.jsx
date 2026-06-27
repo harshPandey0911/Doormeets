@@ -30,6 +30,62 @@ const JobDetails = () => {
   const [collectionAmount, setCollectionAmount] = useState('');
   const actionLoadingRef = useRef(false);
 
+  // Estimate & verification states
+  const [isEstimateModalOpen, setIsEstimateModalOpen] = useState(false);
+  const [estimateServices, setEstimateServices] = useState([{ name: '', price: '', quantity: 1 }]);
+  const [estimateParts, setEstimateParts] = useState([]);
+  const [estimateNotes, setEstimateNotes] = useState('');
+
+  const [isStartJobModalOpen, setIsStartJobModalOpen] = useState(false);
+  const [uniformSelfie, setUniformSelfie] = useState('');
+  const [beforeWorkPhoto, setBeforeWorkPhoto] = useState('');
+
+  const handleAddServiceRow = () => setEstimateServices(prev => [...prev, { name: '', price: '', quantity: 1 }]);
+  const handleAddPartRow = () => setEstimateParts(prev => [...prev, { name: '', price: '', quantity: 1 }]);
+  
+  const handleRemoveServiceRow = (idx) => setEstimateServices(prev => prev.filter((_, i) => i !== idx));
+  const handleRemovePartRow = (idx) => setEstimateParts(prev => prev.filter((_, i) => i !== idx));
+
+  const handleEstimateSubmit = async () => {
+    try {
+      setActionLoading(true);
+      const payload = {
+        services: estimateServices.filter(s => s.name && s.price),
+        parts: estimateParts.filter(p => p.name && p.price),
+        notes: estimateNotes
+      };
+      await workerService.submitEstimate(id, payload);
+      toast.success('Inspection estimate submitted to customer!');
+      setIsEstimateModalOpen(false);
+      fetchJobDetails();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to submit estimate');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStartVerifiedJob = async () => {
+    if (!uniformSelfie || !beforeWorkPhoto) {
+      toast.error('Selfie and Before Work photo are required');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      await workerService.startJobVerified(id, {
+        uniformSelfieUrl: uniformSelfie,
+        beforeWorkPhotoUrl: beforeWorkPhoto
+      });
+      toast.success('Work started successfully!');
+      setIsStartJobModalOpen(false);
+      fetchJobDetails();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to start job');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   useLayoutEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -370,7 +426,33 @@ const JobDetails = () => {
             </button>
           )}
 
-          {(job.status === 'visited' || job.status === 'in_progress') && (
+          {job.status === 'visited' && (
+            <div className="space-y-3">
+              {job.estimateStatus === 'pending' ? (
+                <div className="bg-amber-100 border border-amber-300 rounded-2xl p-4 text-center text-amber-850 font-bold shadow-sm mb-4">
+                  Estimate Pending Customer Approval...
+                </div>
+              ) : (
+                <div className="flex gap-3 mb-4">
+                  <button
+                    onClick={() => setIsEstimateModalOpen(true)}
+                    className="flex-1 py-4 rounded-2xl font-bold bg-white text-blue-600 border border-blue-200 shadow-sm active:scale-95 transition-all"
+                  >
+                    {job.estimateStatus === 'approved' ? 'Add Extra Addon' : 'Create Addon Estimate'}
+                  </button>
+                  <button
+                    onClick={() => setIsStartJobModalOpen(true)}
+                    className="flex-[2] py-4 rounded-2xl font-bold text-white shadow-xl active:scale-95 transition-all"
+                    style={{ background: themeColors.button }}
+                  >
+                    START JOB
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {job.status === 'in_progress' && (
             <button
               onClick={() => handleStatusUpdate('complete')}
               disabled={actionLoading}
@@ -705,6 +787,216 @@ const JobDetails = () => {
           loading={actionLoading}
         />
       </Suspense>
+
+      {/* Create Estimate Modal */}
+      {isEstimateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-black text-gray-900 text-lg">Create Inspection Estimate</h3>
+              <button onClick={() => setIsEstimateModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <FiX className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-gray-400">Addon Services</h4>
+                  <button onClick={handleAddServiceRow} className="text-xs font-bold text-blue-600 flex items-center gap-1">
+                    <FiPlus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+                {estimateServices.map((row, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Service Name"
+                      value={row.name}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEstimateServices(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
+                      }}
+                      className="flex-3 px-3 py-2 border rounded-xl text-sm"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      value={row.price}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEstimateServices(prev => prev.map((item, i) => i === idx ? { ...item, price: val } : item));
+                      }}
+                      className="flex-2 w-20 px-3 py-2 border rounded-xl text-sm"
+                    />
+                    <button onClick={() => handleRemoveServiceRow(idx)} className="text-red-500 hover:text-red-700">
+                      <FiTrash className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-gray-400">Required Parts (Optional)</h4>
+                  <button onClick={handleAddPartRow} className="text-xs font-bold text-blue-600 flex items-center gap-1">
+                    <FiPlus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+                {estimateParts.map((row, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Part Name"
+                      value={row.name}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEstimateParts(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item));
+                      }}
+                      className="flex-3 px-3 py-2 border rounded-xl text-sm"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      value={row.price}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEstimateParts(prev => prev.map((item, i) => i === idx ? { ...item, price: val } : item));
+                      }}
+                      className="flex-2 w-20 px-3 py-2 border rounded-xl text-sm"
+                    />
+                    <button onClick={() => handleRemovePartRow(idx)} className="text-red-500 hover:text-red-700">
+                      <FiTrash className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Notes</label>
+                <textarea
+                  placeholder="Notes for customer..."
+                  value={estimateNotes}
+                  onChange={(e) => setEstimateNotes(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl text-sm h-20 resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t bg-gray-50 flex gap-3">
+              <button
+                onClick={() => setIsEstimateModalOpen(false)}
+                className="flex-1 py-3 border rounded-xl font-bold text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEstimateSubmit}
+                disabled={actionLoading}
+                className="flex-2 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all"
+                style={{ background: themeColors.button }}
+              >
+                {actionLoading ? 'Submitting...' : 'Send to Customer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Start Job Photo & Uniform Selfie verification modal */}
+      {isStartJobModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-black text-gray-900 text-lg">Verify & Start Job</h3>
+              <button onClick={() => setIsStartJobModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <FiX className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <p className="text-sm text-gray-500 leading-relaxed font-medium">
+                To maintain our quality check and verify your professional uniform, please upload your selfie and a photo of the workplace before starting.
+              </p>
+
+              {/* Uniform Selfie */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">1. Selfie (Uniform Verification)</label>
+                {uniformSelfie ? (
+                  <div className="relative w-full h-32 rounded-xl overflow-hidden border">
+                    <img src={uniformSelfie} alt="Uniform Selfie" className="w-full h-full object-cover" />
+                    <button onClick={() => setUniformSelfie('')} className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md">
+                      <FiX className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors relative cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setUniformSelfie(reader.result);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <FiCamera className="w-8 h-8 text-gray-400 mb-2" />
+                    <span className="text-xs font-bold text-gray-500">Take Selfie with Uniform</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Before Work Photo */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">2. Before Work Photo</label>
+                {beforeWorkPhoto ? (
+                  <div className="relative w-full h-32 rounded-xl overflow-hidden border">
+                    <img src={beforeWorkPhoto} alt="Before Work" className="w-full h-full object-cover" />
+                    <button onClick={() => setBeforeWorkPhoto('')} className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md">
+                      <FiX className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors relative cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setBeforeWorkPhoto(reader.result);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <FiCamera className="w-8 h-8 text-gray-400 mb-2" />
+                    <span className="text-xs font-bold text-gray-500">Capture Workplace Photo</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t bg-gray-50 flex gap-3">
+              <button
+                onClick={() => setIsStartJobModalOpen(false)}
+                className="flex-1 py-3 border rounded-xl font-bold text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStartVerifiedJob}
+                disabled={actionLoading || !uniformSelfie || !beforeWorkPhoto}
+                className="flex-2 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all disabled:opacity-50"
+                style={{ background: themeColors.button }}
+              >
+                {actionLoading ? 'Starting...' : 'Verify & Start Job'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

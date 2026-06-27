@@ -183,7 +183,7 @@ const getCheckoutData = async (req, res) => {
 
     // Fetch all 3 in parallel
     const [user, cart, settings] = await Promise.all([
-      User.findById(userId).select('addresses phone name loyaltyPoints'),
+      User.findById(userId).select('addresses phone name loyaltyPoints wallet'),
       Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl slug').populate('items.categoryId', 'title slug'),
       Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage')
     ]);
@@ -202,7 +202,8 @@ const getCheckoutData = async (req, res) => {
         name: user.name,
         phone: user.phone,
         addresses: user.addresses || [],
-        loyaltyPoints: user.loyaltyPoints || 0
+        loyaltyPoints: user.loyaltyPoints || 0,
+        wallet: user.wallet || { balance: 0 }
       },
       cartItems: cart ? cart.items : [],
       settings: settings || { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18 }

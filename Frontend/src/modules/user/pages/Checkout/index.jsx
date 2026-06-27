@@ -80,6 +80,8 @@ const Checkout = () => {
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
   const [loyaltyRedemptionRate, setLoyaltyRedemptionRate] = useState(1);
+  const [useWallet, setUseWallet] = useState(true);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -511,6 +513,7 @@ const Checkout = () => {
 
         paymentMethod: 'online',
         redeemLoyaltyPoints: useLoyaltyPoints,
+        applyWallet: useWallet,
         bookedItems: bookedItemsData,
         dynamicFields: dynamicFieldsPayload
       });
@@ -615,6 +618,11 @@ const Checkout = () => {
           setSearchingVendors(false);
           setCurrentStep('failed');
           toast.error(data.message || 'All vendors are currently unavailable.');
+        } else if (data.status === 'pending_admin') {
+          setSearchingVendors(false);
+          setShowVendorModal(false);
+          toast.success('Sent to admin for manual assignment!');
+          navigate(`/user/booking-confirmation/${bookingRequest._id}`, { replace: true });
         }
       }
     });
@@ -632,6 +640,13 @@ const Checkout = () => {
               setSearchingVendors(false);
               setCurrentStep('failed');
               clearInterval(pollInterval);
+            } else if (status === 'pending_admin') {
+              console.log('[Checkout] Polling detected admin queue status:', status);
+              setSearchingVendors(false);
+              setShowVendorModal(false);
+              clearInterval(pollInterval);
+              toast.success('Sent to admin for manual assignment!');
+              navigate(`/user/booking-confirmation/${bookingRequest._id}`, { replace: true });
             } else if (status === 'accepted' || status === 'assigned') {
               // Also handle success via polling as fallback
               console.log('[Checkout] Polling detected success status:', status);
@@ -781,6 +796,7 @@ const Checkout = () => {
         paymentMethod: amountToPay === 0 ? 'plan_benefit' : 'pay_at_home',
         amount: amountToPay,
         redeemLoyaltyPoints: useLoyaltyPoints,
+        applyWallet: useWallet,
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
@@ -1159,18 +1175,22 @@ const Checkout = () => {
           userAuthService.getProfile(), // Ensure we have latest status
         ]);
 
-        if (plansRes.success && userRes.success && userRes.user?.plans?.isActive) {
-          const userPlanName = userRes.user.plans.name;
-          const activePlan = plansRes.data.find(p => p.name === userPlanName);
+        if (plansRes.success && userRes.success) {
+          if (userRes.user?.wallet) {
+            setWalletBalance(userRes.user.wallet.balance || 0);
+          }
+          if (userRes.user?.plans?.isActive) {
+            const userPlanName = userRes.user.plans.name;
+            const activePlan = plansRes.data.find(p => p.name === userPlanName);
 
-          if (activePlan) {
-            setPlanBenefits({
-              name: activePlan.name,
-              freeCategories: activePlan.freeCategories || [],
-              freeBrands: activePlan.freeBrands || [],
-              freeServices: activePlan.freeServices || []
-            });
-
+            if (activePlan) {
+              setPlanBenefits({
+                name: activePlan.name,
+                freeCategories: activePlan.freeCategories || [],
+                freeBrands: activePlan.freeBrands || [],
+                freeServices: activePlan.freeServices || []
+              });
+            }
           }
         }
       } catch (e) {
@@ -1298,7 +1318,14 @@ const Checkout = () => {
   const pointsNeeded = Math.ceil(netBeforeLoyalty / loyaltyRedemptionRate);
   const maxLoyaltyRedeemable = Math.min(loyaltyPoints, pointsNeeded);
   const loyaltyDiscount = useLoyaltyPoints ? (maxLoyaltyRedeemable * loyaltyRedemptionRate) : 0;
-  const totalAmount = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
+  const baseTotalAmount = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
+
+  // Wallet Deduction
+  const maxWalletUsePercentage = 30; // matches backend
+  const maxWalletUse = baseTotalAmount * (maxWalletUsePercentage / 100);
+  const walletDiscount = useWallet ? Math.min(walletBalance, maxWalletUse) : 0;
+
+  const totalAmount = Math.max(0, baseTotalAmount - walletDiscount);
   const amountToPay = totalAmount;
 
   // Helper for Free Plan Full Breakdown Display
@@ -1893,6 +1920,42 @@ const Checkout = () => {
           )}
         </div>
 
+         {/* Wallet Balance Panel */}
+        {walletBalance > 0 && (
+          <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 bg-blue-50 text-blue-500 rounded-xl text-lg shrink-0">
+                  💳
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Wallet Balance</h3>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Available: ₹{walletBalance.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUseWallet(prev => !prev)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                  useWallet ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    useWallet ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {useWallet && (
+              <div className="mt-2.5 pt-2.5 border-t border-dashed flex justify-between text-xs text-green-600 font-medium" style={{ borderColor: 'var(--border)' }}>
+                <span>Wallet discount:</span>
+                <span>Will save up to 30% of booking value (max ₹{walletDiscount.toFixed(1)})</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Loyalty Points Panel */}
         {loyaltyPoints > 0 && (
           <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
@@ -1980,6 +2043,14 @@ const Checkout = () => {
               <div className="flex justify-between items-center text-green-600">
                 <span className="text-sm font-medium">Loyalty Discount</span>
                 <span className="text-sm font-bold">-₹{loyaltyDiscount.toLocaleString('en-IN')}</span>
+              </div>
+            )}
+
+            {/* Wallet Applied Row */}
+            {walletDiscount > 0 && (
+              <div className="flex justify-between items-center text-green-600">
+                <span className="text-sm font-medium">Wallet Applied</span>
+                <span className="text-sm font-bold">-₹{walletDiscount.toLocaleString('en-IN')}</span>
               </div>
             )}
 
