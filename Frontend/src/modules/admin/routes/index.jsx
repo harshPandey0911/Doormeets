@@ -41,6 +41,8 @@ const PromoManagement = lazy(() => import('../pages/PromoManagement'));
 const VoucherManagement = lazy(() => import('../pages/VoucherManagement'));
 const PackageBased = lazy(() => import('../pages/PackageBased'));
 const PaintingManagement = lazy(() => import('../pages/Painting'));
+const VendorWallets = lazy(() => import('../pages/VendorWallets'));
+
 
 
 
@@ -99,6 +101,7 @@ const AdminRoutes = () => {
             <SuperAdminRoute><PoliceVerification /></SuperAdminRoute>
           } />
           <Route path="commission" element={<Commission />} />
+          <Route path="vendor-wallets" element={<VendorWallets />} />
           <Route path="admin-management/*" element={
             <SuperAdminRoute><AdminManagement /></SuperAdminRoute>
           } />
