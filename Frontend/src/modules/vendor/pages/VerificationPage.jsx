@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlayCircle, FiCheckCircle, FiAward, FiShield, FiUploadCloud, FiClock, FiAlertCircle } from 'react-icons/fi';
+import { FiPlayCircle, FiCheckCircle, FiAward, FiShield, FiUploadCloud, FiClock, FiAlertCircle, FiArrowRight } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import api from '../../../services/api';
 import LogoLoader from '../../../components/common/LogoLoader';
@@ -13,9 +13,14 @@ const VerificationPage = () => {
   const [loading, setLoading] = useState(true);
   const [vendor, setVendor] = useState(null);
   
-  // Step 1: Police Verification
-  const [documentUrl, setDocumentUrl] = useState('');
-  const [uploadingDoc, setUploadingDoc] = useState(false);
+  // Step 1: Documents state (Aadhaar, PAN, and Police Verification)
+  const [aadharNumber, setAadharNumber] = useState('');
+  const [aadharFront, setAadharFront] = useState('');
+  const [aadharBack, setAadharBack] = useState('');
+  const [panNumber, setPanNumber] = useState('');
+  const [panDoc, setPanDoc] = useState('');
+  const [policeDoc, setPoliceDoc] = useState('');
+  const [submittingDocs, setSubmittingDocs] = useState(false);
   
   // Step 2: Training Video
   const [video, setVideo] = useState(null);
@@ -23,7 +28,7 @@ const VerificationPage = () => {
   
   // State for tracking overall step
   const [step, setStep] = useState(1); 
-  // 1 = Police Verification, 2 = Video, 3 = MCQ, 4 = Subscription
+  // 1 = Document Verification, 2 = Video, 3 = MCQ, 4 = Subscription
   const [levelInfo, setLevelInfo] = useState(null);
 
   const fetchStatus = async () => {
@@ -34,19 +39,34 @@ const VerificationPage = () => {
         const vendorData = profileRes.data.vendor;
         setVendor(vendorData);
 
-        // Determine step based on status
+        // Prepopulate documents if they exist
+        if (vendorData.aadhar) {
+          setAadharNumber(vendorData.aadhar.number || '');
+          setAadharFront(vendorData.aadhar.document || '');
+          setAadharBack(vendorData.aadhar.backDocument || '');
+        }
+        if (vendorData.pan) {
+          setPanNumber(vendorData.pan.number || '');
+          setPanDoc(vendorData.pan.document || '');
+        }
+        if (vendorData.policeVerification) {
+          setPoliceDoc(vendorData.policeVerification.documentUrl || '');
+        }
+
         const pvStatus = vendorData.policeVerification?.status || 'pending';
-        
-        if (pvStatus === 'pending' || pvStatus === 'rejected') {
+        const hasAadhar = vendorData.aadhar?.number && vendorData.aadhar?.document && vendorData.aadhar?.backDocument;
+        const hasPan = vendorData.pan?.number && vendorData.pan?.document;
+        const hasPV = vendorData.policeVerification?.documentUrl;
+
+        // If documents are missing or rejected, force step 1 (upload docs)
+        if (pvStatus === 'pending' || pvStatus === 'rejected' || !hasAadhar || !hasPan || !hasPV) {
           setStep(1);
-        } else if (pvStatus === 'submitted') {
-          setStep(1); // Stuck on waiting screen
-        } else if (pvStatus === 'approved') {
-          // Check training status from backend
+        } else {
+          // Documents are submitted or approved! Proceed with training video, MCQ test, and subscription.
           let hasWatchedVideo = false;
           let hasPassedMcq = false;
 
-          // Step 1: Check training status (video watched + MCQ passed)
+          // Check training status from backend
           try {
             const statusRes = await api.get('/vendors/training/status');
             if (statusRes.data?.success) {
@@ -56,8 +76,7 @@ const VerificationPage = () => {
                 hasWatchedVideo = true;
                 hasPassedMcq = true;
               } else if (trainingStatus === 'in_progress') {
-                // Video may have been watched, but MCQ not yet passed
-                hasWatchedVideo = false; // will check videos below
+                hasWatchedVideo = false;
                 hasPassedMcq = false;
               }
             }
@@ -65,25 +84,24 @@ const VerificationPage = () => {
             console.log('Training status check failed, falling back to video check');
           }
 
-          // Step 2: If not completed, check if videos exist and if they were watched
+          // If MCQ not passed, check if training videos are watched
           if (!hasPassedMcq) {
             try {
               const videoRes = await api.get('/vendors/training/videos');
               if (videoRes.data?.success && videoRes.data?.data?.length > 0) {
                 setVideo(videoRes.data.data[0]);
-                // Check if all required videos are watched
                 const totalRequired = videoRes.data.totalRequired || 0;
                 const totalWatched = videoRes.data.totalWatched || 0;
                 if (totalRequired === 0 || totalWatched >= totalRequired) {
-                  hasWatchedVideo = true; // No required videos or all watched
+                  hasWatchedVideo = true;
                 } else {
                   hasWatchedVideo = false;
                 }
               } else {
-                hasWatchedVideo = true; // No videos = skip to MCQ
+                hasWatchedVideo = true;
               }
             } catch(e) {
-              hasWatchedVideo = true; // Error = skip to MCQ
+              hasWatchedVideo = true;
             }
           }
 
@@ -94,7 +112,8 @@ const VerificationPage = () => {
           } else if (!hasPassedMcq) {
             setStep(3); // MCQ Test
           } else {
-            setStep(4); // Subscription
+            // Already watched video and passed MCQ! They are done with onboarding, redirect to pending approval.
+            handleSubscriptionComplete();
           }
         }
       }
@@ -129,7 +148,7 @@ const VerificationPage = () => {
     return () => socket.off('notification', handleNotification);
   }, [socket]);
 
-  const handleDocumentUpload = async (e) => {
+  const handleFileChange = (e, setter) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -138,28 +157,65 @@ const VerificationPage = () => {
       return;
     }
 
-    setUploadingDoc(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setter(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmitDocuments = async (e) => {
+    if (e) e.preventDefault();
+
+    if (!aadharNumber || aadharNumber.length !== 12) {
+      toast.error('Please enter a valid 12-digit Aadhar number');
+      return;
+    }
+    if (!aadharFront) {
+      toast.error('Please upload Aadhar Front photo');
+      return;
+    }
+    if (!aadharBack) {
+      toast.error('Please upload Aadhar Back photo');
+      return;
+    }
+    if (!panNumber || panNumber.length !== 10) {
+      toast.error('Please enter a valid 10-character PAN number');
+      return;
+    }
+    if (!panDoc) {
+      toast.error('Please upload PAN card document');
+      return;
+    }
+    if (!policeDoc) {
+      toast.error('Please upload Police Verification document');
+      return;
+    }
+
+    setSubmittingDocs(true);
     try {
-      // In a real app, upload to Cloudinary/S3 first. Here we assume we have a direct upload route or base64.
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64data = reader.result;
-        try {
-          const res = await api.post('/vendors/verification/police', { documentUrl: base64data });
-          if (res.data.success) {
-            toast.success('Document submitted successfully');
-            fetchStatus(); // Refresh status
-          }
-        } catch (err) {
-          toast.error(err.response?.data?.message || 'Failed to submit document');
-        } finally {
-          setUploadingDoc(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      toast.error('Error reading file');
-      setUploadingDoc(false);
+      // 1. Save Aadhaar and PAN details to vendor profile
+      await api.put('/vendors/profile', {
+        aadharNumber,
+        aadharDocument: aadharFront,
+        aadharBackDocument: aadharBack,
+        panNumber,
+        panDocument: panDoc
+      });
+
+      // 2. Submit Police Verification document
+      const res = await api.post('/vendors/verification/police', {
+        documentUrl: policeDoc
+      });
+
+      if (res.data.success) {
+        toast.success('Verification documents submitted successfully!');
+        fetchStatus();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit documents');
+    } finally {
+      setSubmittingDocs(false);
     }
   };
 
@@ -179,7 +235,15 @@ const VerificationPage = () => {
 
   const handleSubscriptionComplete = () => {
     toast.success('Verification complete! Welcome to Doormeets.');
-    navigate('/vendor/dashboard', { replace: true });
+    const pvStatus = vendor?.policeVerification?.status || 'pending';
+    if (pvStatus === 'approved') {
+      navigate('/vendor/dashboard', { replace: true });
+    } else {
+      if (vendor?._id || vendor?.id) {
+        sessionStorage.setItem('pendingVendorId', (vendor._id || vendor.id).toString());
+      }
+      navigate('/vendor/pending-approval', { replace: true });
+    }
   };
 
   if (loading) {
@@ -199,86 +263,176 @@ const VerificationPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        
-        {/* Progress Tracker */}
+               {/* Progress Tracker */}
         {vendor?.policeVerification?.status !== 'submitted' && (
           <div className="mb-10">
             <div className="flex items-center justify-center gap-2 md:gap-4">
               <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 ${step >= 1 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}>1</div>
-              <div className={`h-1 w-12 md:w-20 -ml-4 -mr-4 ${step >= 2 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
+              <div className={`h-1 w-16 md:w-28 -ml-4 -mr-4 ${step >= 2 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
               <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 ${step >= 2 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}>2</div>
-              <div className={`h-1 w-12 md:w-20 -ml-4 -mr-4 ${step >= 3 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
+              <div className={`h-1 w-16 md:w-28 -ml-4 -mr-4 ${step >= 3 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
               <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 ${step >= 3 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}>3</div>
-              <div className={`h-1 w-12 md:w-20 -ml-4 -mr-4 ${step >= 4 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 ${step >= 4 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}>4</div>
             </div>
-            <div className="flex justify-center mt-2 gap-4 md:gap-12">
+            <div className="flex justify-center mt-2 gap-8 md:gap-20">
               <span className="text-xs md:text-sm font-semibold text-gray-700">Verification</span>
               <span className="text-xs md:text-sm font-semibold text-gray-700">Video</span>
               <span className="text-xs md:text-sm font-semibold text-gray-700">MCQ Test</span>
-              <span className="text-xs md:text-sm font-semibold text-gray-700">Subscription</span>
             </div>
           </div>
         )}
 
         {/* Step 1: Police Verification */}
         {step === 1 && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-8 animate-fade-in text-center max-w-2xl mx-auto">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 p-6 sm:p-8 animate-fade-in max-w-3xl mx-auto">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <FiShield className="text-4xl text-[#9634f7]" />
-              <h2 className="text-2xl font-bold text-gray-800">Police Verification</h2>
+              <FiShield className="text-3xl sm:text-4xl text-[#9634f7]" />
+              <h2 className="text-xl sm:text-2xl font-black text-gray-800">Document Verification</h2>
             </div>
             
-            {vendor?.policeVerification?.status === 'submitted' ? (
-               <div className="py-8">
-                 <div className="w-20 h-20 bg-yellow-100 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                   <FiClock className="w-10 h-10" />
-                 </div>
-                 <h3 className="text-xl font-bold text-gray-800 mb-2">Verification Pending</h3>
-                 <p className="text-gray-500 mb-6">Your police verification document is currently under review by our admin team. You will be notified once approved.</p>
-                 <button onClick={fetchStatus} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                   Refresh Status
-                 </button>
-               </div>
-            ) : (
-              <div className="py-4">
-                {vendor?.policeVerification?.status === 'rejected' && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-left">
-                    <div className="flex items-start gap-2 text-red-600 mb-1">
-                      <FiAlertCircle className="mt-0.5" />
-                      <span className="font-bold">Verification Rejected</span>
-                    </div>
-                    <p className="text-sm text-red-500 ml-6">{vendor.policeVerification.rejectionReason}</p>
-                  </div>
-                )}
-                
-                <p className="text-gray-600 mb-8">Please upload a valid Police Verification certificate to proceed with your onboarding process.</p>
-                
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 hover:bg-gray-50 transition-colors relative">
-                   {uploadingDoc ? (
-                     <div className="flex flex-col items-center justify-center py-4">
-                       <div className="w-8 h-8 border-4 border-[#9634f7] border-t-transparent rounded-full animate-spin mb-4" />
-                       <p className="text-gray-500 font-medium">Uploading Document...</p>
-                     </div>
-                   ) : (
-                     <>
-                       <FiUploadCloud className="text-5xl text-gray-400 mx-auto mb-4" />
-                       <p className="font-medium text-gray-700 mb-1">Click to upload document</p>
-                       <p className="text-sm text-gray-500 mb-4">PDF, JPG or PNG (Max 5MB)</p>
-                       <input 
-                         type="file" 
-                         accept="image/*,.pdf" 
-                         onChange={handleDocumentUpload}
-                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                       />
-                       <button className="px-6 py-2 bg-[#9634f7] text-white rounded-lg font-medium">
-                         Select File
-                       </button>
-                     </>
-                   )}
+            {vendor?.policeVerification?.status === 'rejected' && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-left">
+                <div className="flex items-start gap-2 text-red-600 mb-1">
+                  <FiAlertCircle className="mt-0.5 shrink-0" />
+                  <span className="font-bold text-sm">Verification Rejected by Admin</span>
                 </div>
+                <p className="text-xs text-red-500 ml-6">{vendor.policeVerification.rejectionReason}</p>
               </div>
             )}
+
+            <form onSubmit={handleSubmitDocuments} className="space-y-6 text-left">
+              {/* Aadhaar Section */}
+              <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100 space-y-4">
+                <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black">1</span>
+                  Aadhaar Card Verification
+                </h3>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Card Number</label>
+                  <input
+                    type="tel"
+                    maxLength={12}
+                    value={aadharNumber}
+                    onChange={(e) => setAadharNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                    placeholder="12-digit Aadhaar Number"
+                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Aadhaar Front */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Front Photo</label>
+                    {aadharFront ? (
+                      <div className="relative rounded-xl overflow-hidden border border-gray-200 aspect-[4/3] bg-gray-50 flex items-center justify-center">
+                        <img src={aadharFront} alt="Aadhaar Front" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setAadharFront('')} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors">✕</button>
+                      </div>
+                    ) : (
+                      <div className="relative border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-colors aspect-[4/3] flex flex-col items-center justify-center p-4 text-center cursor-pointer">
+                        <FiUploadCloud className="text-3xl text-gray-400 mb-2" />
+                        <span className="text-xs text-gray-600 font-bold">Upload Aadhaar Front</span>
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setAadharFront)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Aadhaar Back */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Back Photo</label>
+                    {aadharBack ? (
+                      <div className="relative rounded-xl overflow-hidden border border-gray-200 aspect-[4/3] bg-gray-50 flex items-center justify-center">
+                        <img src={aadharBack} alt="Aadhaar Back" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => setAadharBack('')} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors">✕</button>
+                      </div>
+                    ) : (
+                      <div className="relative border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-colors aspect-[4/3] flex flex-col items-center justify-center p-4 text-center cursor-pointer">
+                        <FiUploadCloud className="text-3xl text-gray-400 mb-2" />
+                        <span className="text-xs text-gray-600 font-bold">Upload Aadhaar Back</span>
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setAadharBack)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* PAN Card Section */}
+              <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100 space-y-4">
+                <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black">2</span>
+                  PAN Card Verification
+                </h3>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">PAN Card Number</label>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    value={panNumber}
+                    onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
+                    placeholder="10-character PAN Number"
+                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-white uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">PAN Card Document</label>
+                  {panDoc ? (
+                    <div className="relative rounded-xl overflow-hidden border border-gray-200 max-w-sm aspect-[4/3] bg-gray-50 flex items-center justify-center">
+                      <img src={panDoc} alt="PAN Card" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setPanDoc('')} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors">✕</button>
+                    </div>
+                  ) : (
+                    <div className="relative border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-colors max-w-sm aspect-[16/9] flex flex-col items-center justify-center p-4 text-center cursor-pointer">
+                      <FiUploadCloud className="text-3xl text-gray-400 mb-2" />
+                      <span className="text-xs text-gray-600 font-bold">Upload PAN Document</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setPanDoc)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Police Verification Section */}
+              <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100 space-y-4">
+                <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center text-[10px] font-black">3</span>
+                  Police Verification Certificate
+                </h3>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Verification Document</label>
+                  {policeDoc ? (
+                    <div className="relative rounded-xl overflow-hidden border border-gray-200 max-w-sm aspect-[4/3] bg-gray-50 flex items-center justify-center">
+                      {policeDoc.includes('pdf') || policeDoc.startsWith('data:application/pdf') ? (
+                        <div className="flex flex-col items-center justify-center p-6 text-gray-500">
+                          <span className="text-4xl mb-2">📄</span>
+                          <span className="text-xs font-bold">Police_Verification.pdf</span>
+                        </div>
+                      ) : (
+                        <img src={policeDoc} alt="Police Verification" className="w-full h-full object-cover" />
+                      )}
+                      <button type="button" onClick={() => setPoliceDoc('')} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors">✕</button>
+                    </div>
+                  ) : (
+                    <div className="relative border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-colors max-w-sm aspect-[16/9] flex flex-col items-center justify-center p-4 text-center cursor-pointer">
+                      <FiUploadCloud className="text-3xl text-gray-400 mb-2" />
+                      <span className="text-xs text-gray-600 font-bold">Upload Police Verification</span>
+                      <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileChange(e, setPoliceDoc)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={submittingDocs}
+                className="w-full py-4 bg-[#9634f7] hover:bg-[#822cd6] disabled:opacity-50 text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-200 text-sm sm:text-base mt-8"
+              >
+                {submittingDocs ? (
+                  <span className="w-5 h-5 border-2 border-white/35 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>Submit & Proceed to Training</span>
+                    <FiArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         )}
 
@@ -355,16 +509,6 @@ const VerificationPage = () => {
           </div>
         )}
 
-        {/* Step 4: Subscription */}
-        {step === 4 && (
-          <div className="animate-slide-in-bottom">
-            <SubscriptionSelection 
-              isVerificationFlow={true} 
-              onComplete={handleSubscriptionComplete} 
-            />
-          </div>
-        )}
-
       </div>
 
       {/* Level Assignment Modal */}
@@ -412,11 +556,11 @@ const VerificationPage = () => {
               <button 
                 onClick={() => {
                   setLevelInfo(null);
-                  setStep(4);
+                  handleSubscriptionComplete();
                 }}
                 className="w-full py-3.5 bg-[#9634f7] hover:bg-[#b87cff] text-white font-bold rounded-xl transition-all shadow-md"
               >
-                Proceed to Subscription
+                Proceed to Review
               </button>
             ) : (
               <button 

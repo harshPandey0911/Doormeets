@@ -67,8 +67,15 @@ const VendorSignup = () => {
     try {
       const response = await register(formData);
       if (response.success) {
-        toast.success('Registration successful! You can now login.');
-        navigate('/vendor/login');
+        toast.success('Registration successful!');
+        if (response.accessToken) {
+          localStorage.setItem('vendorAccessToken', response.accessToken);
+          localStorage.setItem('vendorRefreshToken', response.refreshToken);
+          localStorage.setItem('vendorData', JSON.stringify(response.vendor));
+          navigate('/vendor/verification');
+        } else {
+          navigate('/vendor/login');
+        }
       } else {
         toast.error(response.message || 'Registration failed');
       }

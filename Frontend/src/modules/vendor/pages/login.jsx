@@ -154,7 +154,8 @@ const VendorLogin = () => {
           }
 
           // Check for pending approval status (New Verification Flow)
-          if (response.vendor?.approvalStatus === 'PENDING' || response.vendor?.adminApproval === 'pending') {
+          const isPending = response.vendor?.approvalStatus?.toLowerCase() === 'pending' || response.vendor?.adminApproval?.toLowerCase() === 'pending';
+          if (isPending) {
             toast.success('Please complete your training and subscription.');
             localStorage.setItem('vendorAccessToken', response.accessToken);
             localStorage.setItem('vendorRefreshToken', response.refreshToken);

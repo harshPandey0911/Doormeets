@@ -279,15 +279,29 @@ const register = async (req, res) => {
       }
     })();
 
+    // Generate JWT tokens
+    const loginSessionId = Date.now().toString();
+    vendor.loginSessionId = loginSessionId;
+    await vendor.save();
+
+    const tokens = generateTokenPair({
+      userId: vendor._id,
+      role: USER_ROLES.VENDOR,
+      loginSessionId
+    });
+
     res.status(201).json({
       success: true,
-      message: 'Registration successful! You can now login.',
+      message: 'Registration successful!',
       vendor: {
         id: vendor._id,
         name: vendor.name,
         phone: vendor.phone,
-        approvalStatus: vendor.approvalStatus
-      }
+        approvalStatus: vendor.approvalStatus,
+        isSubscriptionActive: vendor.isSubscriptionActive,
+        subscription: vendor.subscription
+      },
+      ...tokens
     });
 
   } catch (error) {

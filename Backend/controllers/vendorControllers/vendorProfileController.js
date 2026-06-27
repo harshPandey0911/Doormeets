@@ -50,7 +50,8 @@ const getProfile = async (req, res) => {
         isPhoneVerified: vendor.isPhoneVerified || false,
         isEmailVerified: vendor.isEmailVerified || false,
         profilePhoto: vendor.profilePhoto || null,
-        aadharDocument: vendor.aadhar?.document || null,
+        aadhar: vendor.aadhar || null,
+        pan: vendor.pan || null,
         policeVerification: vendor.policeVerification || null,
         isOnline: vendor.isOnline || false,
         availability: vendor.availability || 'OFFLINE',
@@ -82,7 +83,7 @@ const updateProfile = async (req, res) => {
     }
 
     const vendorId = req.user.id;
-    const { name, businessName, address, profilePhoto, serviceCategory, skills, aadharNumber, aadharDocument, panNumber, panDocument, serviceRange } = req.body;
+    const { name, businessName, address, profilePhoto, serviceCategory, skills, aadharNumber, aadharDocument, aadharBackDocument, panNumber, panDocument, serviceRange } = req.body;
 
     console.log('Update Vendor Profile Body:', JSON.stringify(req.body, null, 2));
 
@@ -163,21 +164,29 @@ const updateProfile = async (req, res) => {
     if (skills !== undefined) {
       vendor.skills = Array.isArray(skills) ? skills : [];
     }
-    // If aadharDocument exists and is not empty, update it
-    if (aadharDocument || aadharNumber) {
+    // If aadharDocument/aadharBackDocument exists and is not empty, update it
+    if (aadharDocument || aadharBackDocument || aadharNumber) {
       let aadharUrl = aadharDocument || vendor.aadhar?.document;
       if (aadharUrl && aadharUrl.startsWith('data:')) {
         const uploadRes = await cloudinaryService.uploadFile(aadharUrl, { folder: 'vendors/documents' });
         if (uploadRes.success) aadharUrl = uploadRes.url;
       }
 
+      let aadharBackUrl = aadharBackDocument || vendor.aadhar?.backDocument;
+      if (aadharBackUrl && aadharBackUrl.startsWith('data:')) {
+        const uploadRes = await cloudinaryService.uploadFile(aadharBackUrl, { folder: 'vendors/documents' });
+        if (uploadRes.success) aadharBackUrl = uploadRes.url;
+      }
+
       if (vendor.aadhar) {
         if (aadharNumber) vendor.aadhar.number = aadharNumber;
         if (aadharDocument) vendor.aadhar.document = aadharUrl;
+        if (aadharBackDocument) vendor.aadhar.backDocument = aadharBackUrl;
       } else {
         vendor.aadhar = {
           number: aadharNumber || '',
-          document: aadharUrl || ''
+          document: aadharUrl || '',
+          backDocument: aadharBackUrl || ''
         };
       }
     }
