@@ -117,34 +117,25 @@ export const playSingleBeep = () => {
   }
 };
 
-// Play urgent ring for booking alerts
+// Urgent ring for booking alerts
 let currentAudio = null; // Global variable to track current playing audio
+let alertAudio = null; // Single reused audio instance to optimize performance and browser unlock
 
 export const playAlertRing = (loop = false) => {
   try {
-    // If audio is already playing, do nothing if we want to sustain it, or restart ??
-    // Actually, proper behavior: if playing, stop previous and start new to ensure fresh start
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
+    if (!alertAudio) {
+      alertAudio = new Audio('/booking-alert.mp3');
     }
 
-    const audio = new Audio('/booking-alert.mp3');
-    if (loop) audio.loop = true;
-    currentAudio = audio; // Track the new audio instance
+    if (loop) alertAudio.loop = true;
+    currentAudio = alertAudio; // Track the new audio instance
 
-    audio.play().catch(e => {
+    alertAudio.currentTime = 0;
+    alertAudio.play().catch(e => {
       console.error('Error playing alert file:', e);
       // Fallback to Web Audio API synthesis
       playNotificationSound();
     });
-
-    // Cleanup when audio finishes (if not looping)
-    audio.onended = () => {
-      if (currentAudio === audio) {
-        currentAudio = null;
-      }
-    };
 
     return true;
   } catch (error) {
@@ -154,11 +145,11 @@ export const playAlertRing = (loop = false) => {
 };
 
 export const stopAlertRing = () => {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.currentTime = 0;
-    currentAudio = null;
+  if (alertAudio) {
+    alertAudio.pause();
+    alertAudio.currentTime = 0;
   }
+  currentAudio = null;
 };
 
 // Check if sound is enabled in settings
@@ -191,6 +182,21 @@ export const unlockAudioContext = () => {
     if (audioContext && audioContext.state === 'suspended') {
       audioContext.resume().then(() => {
         console.log('🔊 AudioContext unlocked successfully:', audioContext.state);
+      });
+    }
+
+    // Unlock the booking alert audio element by playing and pausing it quickly
+    if (!alertAudio) {
+      alertAudio = new Audio('/booking-alert.mp3');
+    }
+    const playPromise = alertAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        alertAudio.pause();
+        alertAudio.currentTime = 0;
+        console.log('🔊 Alert Audio element unlocked successfully');
+      }).catch(e => {
+        console.warn('Alert audio unlock failed (waiting for gesture):', e.message);
       });
     }
   } catch (e) {

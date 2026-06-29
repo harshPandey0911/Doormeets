@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiSearch, FiCalendar, FiDownload, FiMoreVertical,
@@ -22,6 +23,7 @@ const BookingStatsCard = ({ title, count, icon: Icon, colorClass, bgClass }) => 
 );
 
 const Bookings = () => {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -220,7 +222,11 @@ const Bookings = () => {
                 </tr>
               ) : (
                 bookings.map((booking) => (
-                  <tr key={booking._id} className="hover:bg-gray-50 transition-colors">
+                  <tr 
+                    key={booking._id} 
+                    onClick={() => navigate(`/admin/bookings/${booking._id}`)}
+                    className="hover:bg-gray-55 transition-colors cursor-pointer"
+                  >
                     <td className="px-4 py-3">
                       <span className="font-bold text-gray-900 text-xs">#{booking.bookingNumber || booking._id.slice(-6).toUpperCase()}</span>
                     </td>

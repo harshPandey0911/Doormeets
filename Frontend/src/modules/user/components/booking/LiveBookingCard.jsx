@@ -26,10 +26,10 @@ const LiveBookingCard = ({ hasBottomNav }) => {
   const getStatusInfo = (status) => {
     switch (status?.toUpperCase()) {
       case 'ASSIGNED':
-        return { label: 'Worker Assigned', icon: FiCheckCircle, color: 'bg-blue-500', sub: 'Worker will start journey soon' };
+        return { label: 'Professional Assigned', icon: FiCheckCircle, color: 'bg-blue-500', sub: 'Professional will start journey soon' };
       case 'STARTED':
       case 'JOURNEY_STARTED':
-        return { label: 'Worker on the Way', icon: FiNavigation, color: 'bg-orange-500', sub: 'Track location live', pulse: true };
+        return { label: 'Professional on the Way', icon: FiNavigation, color: 'bg-orange-500', sub: 'Track location live', pulse: true };
       case 'VISITED':
         return { label: 'Reached & Started Work', icon: FiMapPin, color: 'bg-green-500', sub: 'At your location • Work Started' };
       case 'IN_PROGRESS':
@@ -221,7 +221,7 @@ const LiveBookingCard = ({ hasBottomNav }) => {
         }}
         onSubmit={handleRateSubmit}
         bookingName={activeBooking.serviceName || 'Service'}
-        workerName={activeBooking.workerId?.name || 'Worker'}
+        workerName={activeBooking.workerId?.name || activeBooking.vendorId?.name || 'Professional'}
       />
     </AnimatePresence>
   );

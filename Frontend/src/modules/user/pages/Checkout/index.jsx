@@ -56,6 +56,7 @@ const Checkout = () => {
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' | 'pay_at_home'
   const [bids, setBids] = useState([]); // Array to collect multiple vendor responses
+  const [codAdvancePercentage, setCodAdvancePercentage] = useState(10);
 
   // Promo Code States
   const [promoCode, setPromoCode] = useState('');
@@ -69,7 +70,12 @@ const Checkout = () => {
   const [selectedTime, setSelectedTime] = useState(null);
   const [visitedFee, setVisitedFee] = useState(0);
   const [gstPercentage, setGstPercentage] = useState(18);
-  const [bookingType, setBookingType] = useState('instant'); // 'instant' | 'scheduled'
+  const [bookingType, setBookingType] = useState('scheduled'); // 'instant' | 'scheduled'
+  const [isInstantBookingEnabled, setIsInstantBookingEnabled] = useState(true);
+  const [instantBookingMarkup, setInstantBookingMarkup] = useState(99);
+  const [instantBookingWaitTime, setInstantBookingWaitTime] = useState(45);
+  const [showArrivalTime, setShowArrivalTime] = useState(true);
+  const [instantBookingWindowHours, setInstantBookingWindowHours] = useState(4);
 
   // Dynamic Builder States
   const [dynamicFieldsConfig, setDynamicFieldsConfig] = useState([]);
@@ -231,6 +237,12 @@ const Checkout = () => {
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
             setLoyaltyPoints(response.user?.loyaltyPoints || 0);
             setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
+            setCodAdvancePercentage(response.settings?.codAdvancePercentage ?? 10);
+            setIsInstantBookingEnabled(response.settings?.isInstantBookingEnabled ?? true);
+            setInstantBookingMarkup(response.settings?.instantBookingMarkup ?? 99);
+            setInstantBookingWaitTime(response.settings?.instantBookingWaitTime ?? 45);
+            setShowArrivalTime(response.settings?.showArrivalTime ?? true);
+            setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
 
             if (response.user?.addresses?.length > 0) {
               const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
@@ -255,6 +267,12 @@ const Checkout = () => {
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
             setLoyaltyPoints(response.user?.loyaltyPoints || 0);
             setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
+            setCodAdvancePercentage(response.settings?.codAdvancePercentage ?? 10);
+            setIsInstantBookingEnabled(response.settings?.isInstantBookingEnabled ?? true);
+            setInstantBookingMarkup(response.settings?.instantBookingMarkup ?? 99);
+            setInstantBookingWaitTime(response.settings?.instantBookingWaitTime ?? 45);
+            setShowArrivalTime(response.settings?.showArrivalTime ?? true);
+            setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
 
             // Set Addresses
             if (response.user?.addresses?.length > 0) {
@@ -708,9 +726,13 @@ const Checkout = () => {
       setCurrentStep('searching');
       setSearchingVendors(true);
 
-      // Get first service
+      // Get first service and resolve ID robustly
       const firstItem = cartItems[0];
-      if (!firstItem.serviceId) {
+      const resolvedServiceId = (typeof firstItem.serviceId === 'object' && firstItem.serviceId !== null)
+        ? firstItem.serviceId._id || firstItem.serviceId.id
+        : firstItem.serviceId || firstItem.id || firstItem._id;
+
+      if (!resolvedServiceId) {
         toast.error('Service information missing. Please try again.');
         setCurrentStep('details');
         setSearchingVendors(false);
@@ -751,10 +773,8 @@ const Checkout = () => {
       // Create booking request
       toast.loading('Searching for nearby vendors...');
 
-      // Ensure serviceId is a string (handle populated cart data)
-      const serviceId = typeof firstItem.serviceId === 'object'
-        ? firstItem.serviceId._id || firstItem.serviceId.id
-        : firstItem.serviceId;
+      // Ensure serviceId is a string
+      const serviceId = resolvedServiceId;
 
       // Prepare bookedItems array matching Service catalog structure
       // Prepare bookedItems array matching Service catalog structure
@@ -794,7 +814,7 @@ const Checkout = () => {
         scheduledTime: finalTimeDisplay,
         timeSlot: timeSlotObj,
         // userNotes: null, // Removed per request
-        paymentMethod: amountToPay === 0 ? 'plan_benefit' : 'pay_at_home',
+        paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
         amount: amountToPay,
         redeemLoyaltyPoints: useLoyaltyPoints,
         applyWallet: useWallet,
@@ -886,8 +906,10 @@ const Checkout = () => {
 
     } catch (error) {
       toast.dismiss();
+      console.log('Search vendors error details:', error.response?.data);
       console.error('Search vendors error:', error);
-      toast.error('Failed to search for vendors. Please try again.');
+      const errMsg = error.response?.data?.message || 'Failed to search for vendors. Please try again.';
+      toast.error(errMsg);
       setCurrentStep('details');
       setSearchingVendors(false);
       setShowVendorModal(false);
@@ -904,7 +926,7 @@ const Checkout = () => {
 
       // Create Razorpay order
       toast.loading('Creating payment order...');
-      const orderResponse = await paymentService.createOrder(bookingRequest._id);
+      const orderResponse = await paymentService.createOrder(bookingRequest._id, paymentMethod);
 
       if (!orderResponse.success) {
         toast.dismiss();
@@ -1042,7 +1064,11 @@ const Checkout = () => {
     } else if (paymentMethod === 'online') {
       await handleOnlinePayment();
     } else {
-      await handlePayAtHome();
+      if (codAdvancePercentage > 0) {
+        await handleOnlinePayment();
+      } else {
+        await handlePayAtHome();
+      }
     }
   };
 
@@ -1330,12 +1356,14 @@ const Checkout = () => {
     : 0;
 
   const totalAmount = Math.max(0, baseTotalAmount - walletDiscount);
-  const amountToPay = totalAmount;
+  // Add instant booking markup on top if instant type is selected and enabled
+  const instantSurcharge = (bookingType === 'instant' && isInstantBookingEnabled && totalAmount > 0) ? instantBookingMarkup : 0;
+  const amountToPay = totalAmount + instantSurcharge;
 
   // Helper for Free Plan Full Breakdown Display
   const displayTax = 0;
   const displayFee = 0;
-  const displaySavings = totalAmount === 0 ? (totalOriginalPrice + displayTax + displayFee) : (savings + promoDiscount);
+  const displaySavings = amountToPay === 0 ? (totalOriginalPrice + displayTax + displayFee) : (savings + promoDiscount);
 
   // Date and time slot helper functions
   const getDates = () => {
@@ -1373,13 +1401,15 @@ const Checkout = () => {
       return allSlots;
     }
 
-    // Get current hour + 3 (minimum 3 hour buffer to hide upcoming 2 hours)
+    // Get current hour and minutes to filter slots within the instant booking window
     const currentHour = now.getHours();
-    const minHour = currentHour + 3;
+    const currentMinute = now.getMinutes();
+    const currentDecimalHour = currentHour + currentMinute / 60;
 
     return allSlots.filter(slot => {
       const slotHour = parseInt(slot.value.split(':')[0], 10);
-      return slotHour >= minHour;
+      const diff = slotHour - currentDecimalHour;
+      return diff >= instantBookingWindowHours;
     });
   };
 
@@ -2042,10 +2072,15 @@ const Checkout = () => {
             </button>
           </div>
           {paymentMethod === 'pay_at_home' && (
-            <div className="mt-3 flex items-start gap-2 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 rounded-lg p-2.5">
-              <span className="text-orange-500 text-sm mt-0.5">ℹ️</span>
-              <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">
-                You will pay in cash directly to the vendor after the service is completed.
+            <div className="mt-3 flex flex-col gap-2 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <span className="text-orange-500 text-sm mt-0.5">ℹ️</span>
+                <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">
+                  To confirm this Cash on Delivery booking, an advance online payment of {codAdvancePercentage}% (₹{Math.ceil(amountToPay * (codAdvancePercentage / 100))}) is required.
+                </p>
+              </div>
+              <p className="text-[10px] text-orange-600/80 font-semibold pl-6">
+                The remaining balance (₹{amountToPay - Math.ceil(amountToPay * (codAdvancePercentage / 100))}) will be payable in cash/UPI to the professional after service completion.
               </p>
             </div>
           )}
@@ -2149,12 +2184,22 @@ const Checkout = () => {
               </div>
             )}
 
+            {/* Instant Booking Surcharge */}
+            {instantSurcharge > 0 && (
+              <div className="flex justify-between items-center" style={{ color: 'var(--text-primary)' }}>
+                <span className="text-sm font-medium flex items-center gap-1">
+                  <span className="text-yellow-500">⚡</span> Instant Booking Fee
+                </span>
+                <span className="text-sm font-bold">+₹{instantSurcharge.toLocaleString('en-IN')}</span>
+              </div>
+            )}
+
             {/* Divider */}
             <div className="border-t pt-4 mt-2" style={{ borderColor: 'var(--border)' }}>
               <div className="flex justify-between items-center">
                 <span className="text-base font-normal" style={{ color: 'var(--text-primary)' }}>Total Payable</span>
                 <div className="flex flex-col items-end">
-                  {totalAmount === 0 ? (
+                  {amountToPay === 0 ? (
                     <>
                       <span className="text-sm font-medium text-gray-400 line-through">
                         ₹{Math.round(totalOriginalPrice + displayTax + displayFee).toLocaleString('en-IN')}
@@ -2163,7 +2208,7 @@ const Checkout = () => {
                     </>
                   ) : (
                     <span className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>
-                      ₹{totalAmount.toLocaleString('en-IN')}
+                      ₹{amountToPay.toLocaleString('en-IN')}
                     </span>
                   )}
                 </div>
@@ -2227,24 +2272,44 @@ const Checkout = () => {
         {/* Booking Type Toggle */}
         <div className="px-4 pt-3 pb-0">
           <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
-            <button
-              onClick={() => setBookingType('instant')}
-              className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
-              style={bookingType === 'instant' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
-            >
-              <span className="text-yellow-500">⚡</span> Book
-            </button>
+            {/* Slot Booking - Always shown, always default */}
             <button
               onClick={() => setBookingType('scheduled')}
               className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
               style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
             >
-              <span>📅</span> Slot
+              <span>📅</span> Slot Booking
             </button>
+
+            {/* Instant Booking - Only shown if admin has enabled it */}
+            {isInstantBookingEnabled && (
+              <button
+                onClick={() => setBookingType('instant')}
+                className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
+                style={bookingType === 'instant'
+                  ? { backgroundColor: '#fef9c3', color: '#854d0e', fontWeight: 600 }
+                  : { color: 'var(--text-muted)' }}
+              >
+                <span className="text-yellow-500">⚡</span>
+                Instant
+                {instantBookingMarkup > 0 && (
+                  <span className="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
+                    +₹{instantBookingMarkup}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
+
+          {/* Info text below toggle */}
+          {bookingType === 'scheduled' && (
+            <p className="text-[10px] text-center font-medium mt-1 mb-1" style={{ color: 'var(--text-muted)' }}>
+              📅 Choose a date & time slot below
+            </p>
+          )}
           {bookingType === 'instant' && (
-            <p className="text-xs text-center text-green-600 font-medium mt-1 mb-1">
-              <span className="font-normal">⚡ Priority Service:</span> Vendor arrives in ~45 mins
+            <p className="text-xs text-center text-yellow-700 font-medium mt-1 mb-1">
+              ⚡ Priority Service{showArrivalTime ? `: Professional arrives in ~${instantBookingWaitTime} mins` : ''} · +₹{instantBookingMarkup} surcharge
             </p>
           )}
         </div>
@@ -2333,12 +2398,12 @@ const Checkout = () => {
             style={{ backgroundColor: themeColors.button }}
           >
             {searchingVendors ? 'Searching for vendors...' :
-              currentStep === 'payment' ? (totalAmount === 0 ? 'Confirm Booking (Free)' : (paymentMethod === 'online' ? 'Proceed to Pay' : 'Confirm Booking')) :
+              currentStep === 'payment' ? (amountToPay === 0 ? 'Confirm Booking (Free)' : (paymentMethod === 'online' ? 'Proceed to Pay' : 'Confirm Booking')) :
                 plan ? 'Proceed to Payment' :
-                  bookingType === 'instant' ? 'Find nearby vendors now' :
+                  bookingType === 'instant' ? '⚡ Book Instantly Now' :
                     (selectedDate && selectedTime && houseNumber ?
-                      'Find nearby vendors' :
-                      (houseNumber || addressDetails) ? 'Select Time Slot' : 'Add address to proceed')}
+                      'Find Vendors for Slot' :
+                      (houseNumber || addressDetails) ? 'Select Date & Time Slot' : 'Add address to proceed')}
           </button>
         </div>
       </div>

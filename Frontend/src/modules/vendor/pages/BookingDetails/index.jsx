@@ -274,7 +274,10 @@ export default function BookingDetails() {
         paymentStatus: apiData.paymentStatus,
         cashCollected: apiData.cashCollected || false,
         workerPaymentStatus: apiData.workerPaymentStatus,
-        finalSettlementStatus: apiData.finalSettlementStatus
+        finalSettlementStatus: apiData.finalSettlementStatus,
+        cancelRequestStatus: apiData.cancelRequestStatus,
+        cancelRequestedBy: apiData.cancelRequestedBy,
+        cancelRequestReason: apiData.cancelRequestReason
       };
 
       setBooking(mappedBooking);
@@ -438,7 +441,7 @@ export default function BookingDetails() {
     // Check if payment is already done (Online SUCCESS or Cash COLLECTED)
     // Robust check for various status strings (case-insensitive)
     const pStatus = booking?.paymentStatus?.toLowerCase() || '';
-    const isPaid = pStatus === 'success' || pStatus === 'paid' || booking?.cashCollected;
+    const isPaid = pStatus === 'success' || pStatus === 'paid' || pStatus === 'completed' || booking?.cashCollected;
 
     const status = booking?.status?.toLowerCase() || '';
     const isWorkDone = status === 'work_done' || status === 'completed' || status === 'worker_paid';
@@ -482,6 +485,33 @@ export default function BookingDetails() {
   };
 
   const handleCancelBooking = async () => {
+    // If direct cancellation window is expired, request cancellation instead
+    const requiresRequest = !canCancel;
+
+    if (requiresRequest) {
+      const reason = window.prompt('Please enter the reason for requesting cancellation:');
+      if (reason === null) return; // Vendor cancelled
+      if (!reason.trim()) {
+        toast.error('Cancellation reason is required');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const { requestCancel } = await import('../../services/bookingService');
+        const response = await requestCancel(id, reason);
+        toast.success('Cancellation request submitted successfully.');
+        window.dispatchEvent(new Event('vendorJobsUpdated'));
+        loadBooking();
+      } catch (error) {
+        console.error('Error requesting cancellation:', error);
+        toast.error(error.response?.data?.message || 'Failed to submit cancellation request.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     setConfirmDialog({
       isOpen: true,
       title: 'Cancel Booking',
@@ -612,7 +642,7 @@ export default function BookingDetails() {
       return true;
     }
 
-    if (booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid') {
+    if (booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid' || booking?.paymentStatus?.toLowerCase() === 'completed') {
       return false;
     }
 
@@ -793,6 +823,22 @@ export default function BookingDetails() {
       <Header title="Booking Details" />
 
       <main className="px-4 py-6">
+        {/* Cancelled Booking Banner */}
+        {booking.status?.toLowerCase() === 'cancelled' && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex items-center gap-2">
+            <FiXCircle className="w-4 h-4 shrink-0 text-red-500" />
+            <span>This booking has been cancelled.</span>
+          </div>
+        )}
+
+        {/* Payment Warning Banner */}
+        {booking.paymentMethod === 'online' && (booking.paymentStatus !== 'SUCCESS' && booking.paymentStatus !== 'paid' && booking.paymentStatus?.toLowerCase() !== 'completed') && booking.status?.toLowerCase() !== 'cancelled' && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex items-center gap-2 animate-pulse">
+            <FiAlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+            <span>PAYMENT PENDING: Customer chose Online payment but has not paid yet. Please verify payment before starting work.</span>
+          </div>
+        )}
+
         {/* Bidding Section */}
         {booking.status?.toLowerCase() === 'bidding' && !booking.vendorId && (
           <>
@@ -1681,14 +1727,20 @@ export default function BookingDetails() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {canCancel && (
-            <button
-              onClick={handleCancelBooking}
-              className="w-full py-4 rounded-xl font-bold text-red-600 border-2 border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
-            >
-              <FiXCircle className="w-5 h-5 text-red-500 animate-pulse" />
-              Cancel Booking (Active for 2m)
-            </button>
+          {booking.cancelRequestStatus === 'pending' && booking.status !== 'cancelled' ? (
+            <div className="w-full py-4 rounded-xl font-bold text-sm bg-amber-50 text-amber-700 border border-amber-200 text-center animate-pulse mb-1">
+              Cancellation Request Pending Admin Approval
+            </div>
+          ) : (
+            !['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && (
+              <button
+                onClick={handleCancelBooking}
+                className="w-full py-4 rounded-xl font-bold text-red-650 border-2 border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
+              >
+                <FiXCircle className="w-5 h-5 text-red-500 animate-pulse" />
+                {canCancel ? 'Cancel Booking (Direct)' : 'Request Cancellation'}
+              </button>
+            )
           )}
 
           <button

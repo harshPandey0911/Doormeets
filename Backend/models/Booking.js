@@ -170,6 +170,10 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  instantMarkupCharged: {
+    type: Number,
+    default: 0
+  },
   // Total Value of the Booking (set after bill generation)
   finalAmount: {
     type: Number,
@@ -416,6 +420,14 @@ const bookingSchema = new mongoose.Schema({
     enum: ['NORMAL', 'HIGH'],
     default: 'NORMAL'
   },
+  sentOneHourReminder: {
+    type: Boolean,
+    default: false
+  },
+  sentHalfHourReminder: {
+    type: Boolean,
+    default: false
+  },
 
   // ==========================================
   // 11. CANCELLATION
@@ -423,6 +435,25 @@ const bookingSchema = new mongoose.Schema({
   cancelledAt: { type: Date, default: null },
   cancellationReason: { type: String, default: null },
   cancelledBy: { type: String, default: null },
+  cancelRequestStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'rejected'],
+    default: 'none',
+    index: true
+  },
+  cancelRequestedBy: {
+    type: String,
+    enum: ['none', 'user', 'vendor'],
+    default: 'none'
+  },
+  cancelRequestReason: {
+    type: String,
+    default: null
+  },
+  cancelRequestAt: {
+    type: Date,
+    default: null
+  },
 
   // ==========================================
   // 11. REVIEW & RATING

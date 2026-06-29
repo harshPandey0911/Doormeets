@@ -310,6 +310,17 @@ const createBooking = async (req, res) => {
       }
     }
 
+    // Calculate Instant Booking Surcharge
+    let instantMarkupCharged = 0;
+    if (bookingType === 'instant' && paymentMethod !== 'plan_benefit') {
+      const Settings = require('../../models/Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      if (globalSettings?.isInstantBookingEnabled !== false) {
+        instantMarkupCharged = globalSettings?.instantBookingMarkup !== undefined ? globalSettings.instantBookingMarkup : 99;
+        finalAmount = parseFloat((finalAmount + instantMarkupCharged).toFixed(2));
+      }
+    }
+
     // Calculate Loyalty Points Redemption
     let pointsToRedeem = 0;
     if (redeemLoyaltyPoints && (paymentMethod === 'razorpay' || paymentMethod === 'wallet' || paymentMethod === 'online' || paymentMethod === 'pay_at_home' || paymentMethod === 'cash')) {
@@ -419,6 +430,7 @@ const createBooking = async (req, res) => {
       brandIcon: reqBrandIcon || brandIcon,
       bookingType: bookingType || 'scheduled',
       isConsultation: isConsultation || false,
+      instantMarkupCharged,
 
       description: service.description,
       serviceImages: service.images || [],
@@ -1537,6 +1549,47 @@ const approveInspectionEstimate = async (req, res) => {
   }
 };
 
+const requestCancelBooking = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+    }
+
+    const booking = await Booking.findOne({ _id: id, userId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (['cancelled', 'completed'].includes(booking.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot request cancellation for a booking that is already ${booking.status}` 
+      });
+    }
+
+    booking.cancelRequestStatus = 'pending';
+    booking.cancelRequestedBy = 'user';
+    booking.cancelRequestReason = reason;
+    booking.cancelRequestAt = new Date();
+    await booking.save();
+
+    console.log(`[CancelRequest] User ${userId} requested cancellation for booking ${booking.bookingNumber}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Cancellation request submitted to admin successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('User request cancel booking error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit cancellation request' });
+  }
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
@@ -1545,6 +1598,7 @@ module.exports = {
   rescheduleBooking,
   addReview,
   getUserRatings,
-  approveInspectionEstimate
+  approveInspectionEstimate,
+  requestCancelBooking
 };
 

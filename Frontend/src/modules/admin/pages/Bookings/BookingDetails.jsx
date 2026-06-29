@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiArrowLeft, FiClock, FiCheckCircle, FiXCircle, FiUser, FiBriefcase,
-  FiMapPin, FiCreditCard, FiDollarSign, FiTrash2, FiActivity, FiCpu
+  FiMapPin, FiCreditCard, FiDollarSign, FiTrash2, FiActivity, FiCpu, FiAlertCircle
 } from 'react-icons/fi';
 import { adminBookingService } from '../../../../services/adminBookingService';
+import { paymentService } from '../../../../services/paymentService';
 import adminVendorService from '../../../../services/adminVendorService';
 import { toast } from 'react-hot-toast';
 import { formatCurrency } from '../../utils/adminHelpers';
@@ -32,6 +33,7 @@ const BookingDetails = () => {
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [invoices, setInvoices] = useState([]);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -97,6 +99,15 @@ const BookingDetails = () => {
       const res = await adminBookingService.getBookingById(id);
       if (res.success) {
         setBooking(res.data);
+        // Fetch invoices if booking exists
+        try {
+          const invRes = await paymentService.getBookingInvoices(id);
+          if (invRes.success) {
+            setInvoices(invRes.invoices || []);
+          }
+        } catch (err) {
+          console.error('Failed to load invoices:', err);
+        }
       } else {
         toast.error(res.message || 'Failed to load booking details');
       }
@@ -138,6 +149,44 @@ const BookingDetails = () => {
       toast.error(error.message || 'Error cancelling booking');
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleApproveCancellation = async () => {
+    if (!window.confirm('Are you sure you want to approve this cancellation request? This will cancel the booking and release any assigned vendors.')) return;
+    try {
+      setLoading(true);
+      const res = await adminBookingService.approveCancelBooking(id);
+      if (res.success) {
+        toast.success('Cancellation request approved successfully!');
+        fetchBookingDetails();
+      } else {
+        toast.error(res.message || 'Failed to approve cancellation');
+      }
+    } catch (err) {
+      console.error('Approve cancellation request error:', err);
+      toast.error(err.message || 'Error approving cancellation request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectCancellation = async () => {
+    if (!window.confirm('Are you sure you want to reject this cancellation request? The booking will remain active.')) return;
+    try {
+      setLoading(true);
+      const res = await adminBookingService.rejectCancelBooking(id);
+      if (res.success) {
+        toast.success('Cancellation request rejected successfully.');
+        fetchBookingDetails();
+      } else {
+        toast.error(res.message || 'Failed to reject cancellation');
+      }
+    } catch (err) {
+      console.error('Reject cancellation request error:', err);
+      toast.error(err.message || 'Error rejecting cancellation request');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -227,7 +276,41 @@ const BookingDetails = () => {
           )}
         </div>
       </div>
+ 
+      {booking.cancelRequestStatus === 'pending' && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 px-5 py-4 rounded-xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-start gap-2.5">
+            <FiAlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-800 text-sm">Cancellation Request Pending</p>
+              <p className="mt-0.5">Requested by: <span className="font-bold capitalize text-amber-900">{booking.cancelRequestedBy}</span></p>
+              <p className="mt-1 text-[11px] text-amber-700/90 italic">Reason: "{booking.cancelRequestReason || 'No reason provided'}"</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <button
+              onClick={handleApproveCancellation}
+              className="px-3.5 py-2 bg-red-650 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition-colors text-xs"
+            >
+              Approve Cancellation
+            </button>
+            <button
+              onClick={handleRejectCancellation}
+              className="px-3.5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-bold border border-gray-300 transition-colors text-xs"
+            >
+              Reject Request
+            </button>
+          </div>
+        </div>
+      )}
 
+      {booking.paymentMethod === 'online' && (booking.paymentStatus !== 'SUCCESS' && booking.paymentStatus !== 'paid') && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-xs font-bold flex items-center gap-2 animate-pulse">
+          <FiXCircle className="w-4 h-4 shrink-0 text-red-500" />
+          <span>PAYMENT PENDING: This booking was scheduled for Online Payment, but the customer has not completed the payment transaction yet.</span>
+        </div>
+      )}
+ 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Columns: Main Info */}
         <div className="lg:col-span-2 space-y-6">
@@ -444,6 +527,91 @@ const BookingDetails = () => {
                 <p className="font-semibold text-gray-700 capitalize mt-0.5">{booking.paymentStatus || 'PENDING'}</p>
               </div>
             </div>
+
+            {/* Admin Invoices View */}
+            {invoices.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-150">
+                <h4 className="text-xs font-bold text-gray-700 mb-2">Generated Invoices</h4>
+                <div className="space-y-2">
+                  {invoices.map((inv) => (
+                    <div key={inv._id} className="flex justify-between items-center bg-gray-50 p-2.5 rounded border border-gray-200">
+                      <div className="flex flex-col min-w-0 text-xs">
+                        <span className="font-bold text-gray-800 truncate">
+                          {inv.type === 'vendor_service' ? 'Service Invoice (Vendor)' : 'Platform Invoice (Company)'}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-mono mt-0.5">{inv.invoiceNumber} • ₹{inv.totalAmount}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          toast.success('Opening invoice PDF...');
+                          const doc = window.open('', '_blank');
+                          if (doc) {
+                            doc.document.write(`
+                              <html>
+                              <head>
+                                <title>Invoice - ${inv.invoiceNumber}</title>
+                                <style>
+                                  body { font-family: sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+                                  .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+                                  .title { font-size: 24px; font-weight: bold; }
+                                  .details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+                                  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                                  th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                                  th { background-color: #f5f5f5; }
+                                  .total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }
+                                </style>
+                              </head>
+                              <body>
+                                <div class="header">
+                                  <div class="title">\${inv.type === 'vendor_service' ? 'VENDOR SERVICE INVOICE' : 'PLATFORM FEE INVOICE'}</div>
+                                  <div>Invoice Number: \${inv.invoiceNumber}</div>
+                                  <div>Date: \${new Date(inv.createdAt).toLocaleDateString()}</div>
+                                </div>
+                                <div class="details">
+                                  <div>
+                                    <strong>Issued To:</strong><br/>
+                                    \${inv.customerId?.name || 'Customer'}<br/>
+                                    \${inv.customerId?.phone || ''}
+                                  </div>
+                                  <div>
+                                    <strong>Status:</strong> PAID
+                                  </div>
+                                </div>
+                                <table>
+                                  <thead>
+                                    <tr>
+                                      <th>Description</th>
+                                      <th>Base Amount</th>
+                                      <th>GST (\${inv.gstPercent}%)</th>
+                                      <th>Total Amount</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td>\${inv.type === 'vendor_service' ? 'Base service fee and add-ons' : 'Convenience and platform fee'}</td>
+                                      <td>₹\${inv.baseAmount}</td>
+                                      <td>₹\${inv.totalGST}</td>
+                                      <td>₹\${inv.totalAmount}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                                <div class="total">Grand Total: ₹\${inv.totalAmount}</div>
+                                <script>window.print();</script>
+                              </body>
+                              </html>
+                            `);
+                            doc.document.close();
+                          }
+                        }}
+                        className="px-2 py-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-[10px] font-bold rounded shadow-sm transition-colors"
+                      >
+                        Print/View
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

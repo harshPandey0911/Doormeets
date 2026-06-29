@@ -65,43 +65,55 @@ exports.updateSettings = async (req, res, next) => {
       loyaltyPointsRedemptionRate,
       loyaltyPointsCancellationPenalty,
       loyaltyPointsFixedCompletionAward,
-      referralRewardReferrer,
-      referralRewardReferee,
-      maxWalletUsagePercentage
-    } = req.body;
-
-    let settings = await Settings.findOne({ type: 'global' });
-
-    if (!settings) {
-      settings = await Settings.create({
-        type: 'global',
-        visitedCharges,
-        serviceGstPercentage,
-        partsGstPercentage,
-        servicePayoutPercentage,
-        partsPayoutPercentage,
-        tdsPercentage,
-        platformFeePercentage,
-        vendorCashLimit, // Add this
-        cancellationPenalty,
-        razorpayKeyId,
-        razorpayKeySecret,
-        razorpayWebhookSecret,
-        cloudinaryCloudName,
-        cloudinaryApiKey,
-        cloudinaryApiSecret,
-        mcqMinScoreL1,
-        mcqMinScoreL2,
-        welcomeVideoUrl,
-        commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 20,
-        loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : 1,
-        loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : 1,
-        loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : 0,
-        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 0,
-        referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
-        referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
-        maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30
-      });
+       referralRewardReferrer,
+       referralRewardReferee,
+       maxWalletUsagePercentage,
+       codAdvancePercentage,
+       isInstantBookingEnabled,
+       instantBookingMarkup,
+       instantBookingWaitTime,
+       showArrivalTime,
+       instantBookingWindowHours
+     } = req.body;
+ 
+     let settings = await Settings.findOne({ type: 'global' });
+ 
+     if (!settings) {
+       settings = await Settings.create({
+         type: 'global',
+         visitedCharges,
+         serviceGstPercentage,
+         partsGstPercentage,
+         servicePayoutPercentage,
+         partsPayoutPercentage,
+         tdsPercentage,
+         platformFeePercentage,
+         vendorCashLimit, // Add this
+         cancellationPenalty,
+         razorpayKeyId,
+         razorpayKeySecret,
+         razorpayWebhookSecret,
+         cloudinaryCloudName,
+         cloudinaryApiKey,
+         cloudinaryApiSecret,
+         mcqMinScoreL1,
+         mcqMinScoreL2,
+         welcomeVideoUrl,
+         commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 20,
+         loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : 1,
+         loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : 1,
+         loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : 0,
+         loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 0,
+         referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
+         referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
+         maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30,
+         codAdvancePercentage: codAdvancePercentage !== undefined ? Number(codAdvancePercentage) : 10,
+         isInstantBookingEnabled: isInstantBookingEnabled !== undefined ? isInstantBookingEnabled : true,
+         instantBookingMarkup: instantBookingMarkup !== undefined ? Number(instantBookingMarkup) : 99,
+         instantBookingWaitTime: instantBookingWaitTime !== undefined ? Number(instantBookingWaitTime) : 45,
+         showArrivalTime: showArrivalTime !== undefined ? showArrivalTime : true,
+         instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4
+       });
     } else {
       // Update fields if provided
       if (visitedCharges !== undefined) settings.visitedCharges = visitedCharges;
@@ -167,6 +179,12 @@ exports.updateSettings = async (req, res, next) => {
       if (referralRewardReferrer !== undefined) settings.referralRewardReferrer = Number(referralRewardReferrer);
       if (referralRewardReferee !== undefined) settings.referralRewardReferee = Number(referralRewardReferee);
       if (maxWalletUsagePercentage !== undefined) settings.maxWalletUsagePercentage = Number(maxWalletUsagePercentage);
+      if (codAdvancePercentage !== undefined) settings.codAdvancePercentage = Number(codAdvancePercentage);
+      if (isInstantBookingEnabled !== undefined) settings.isInstantBookingEnabled = isInstantBookingEnabled;
+      if (instantBookingMarkup !== undefined) settings.instantBookingMarkup = Number(instantBookingMarkup);
+      if (instantBookingWaitTime !== undefined) settings.instantBookingWaitTime = Number(instantBookingWaitTime);
+      if (showArrivalTime !== undefined) settings.showArrivalTime = showArrivalTime;
+      if (instantBookingWindowHours !== undefined) settings.instantBookingWindowHours = Number(instantBookingWindowHours);
 
       await settings.save();
     }
@@ -230,11 +248,11 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage codAdvancePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime showArrivalTime instantBookingWindowHours');
 
     // Default if not found (fallback values)
     if (!settings) {
-      settings = { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18, referralRewardReferrer: 100, referralRewardReferee: 100, maxWalletUsagePercentage: 30 };
+      settings = { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18, referralRewardReferrer: 100, referralRewardReferee: 100, maxWalletUsagePercentage: 30, codAdvancePercentage: 10, isInstantBookingEnabled: true, instantBookingMarkup: 99, instantBookingWaitTime: 45, showArrivalTime: true, instantBookingWindowHours: 4 };
     }
 
     res.status(200).json({

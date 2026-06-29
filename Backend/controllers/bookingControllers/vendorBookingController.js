@@ -2296,6 +2296,47 @@ const reconfirmBooking = async (req, res) => {
   }
 };
 
+const requestCancelBooking = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+    }
+
+    const booking = await Booking.findOne({ _id: id, vendorId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (['cancelled', 'completed'].includes(booking.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot request cancellation for a booking that is already ${booking.status}` 
+      });
+    }
+
+    booking.cancelRequestStatus = 'pending';
+    booking.cancelRequestedBy = 'vendor';
+    booking.cancelRequestReason = reason;
+    booking.cancelRequestAt = new Date();
+    await booking.save();
+
+    console.log(`[CancelRequest] Vendor ${vendorId} requested cancellation for booking ${booking.bookingNumber}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Cancellation request submitted to admin successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Vendor request cancel booking error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit cancellation request' });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   getBookingById,
@@ -2313,5 +2354,6 @@ module.exports = {
   getVendorRatings,
   getPendingBookings,
   reconfirmBooking,
-  cancelAcceptedBooking
+  cancelAcceptedBooking,
+  requestCancelBooking
 };

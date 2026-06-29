@@ -66,7 +66,9 @@ const ActiveJobs = memo(() => {
         timeSlot: {
           date: job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : 'Date',
           time: job.scheduledTime || 'Time'
-        }
+        },
+        paymentMethod: job.paymentMethod,
+        paymentStatus: job.paymentStatus
       }));
       setJobs(mappedJobs);
     } catch (error) {
@@ -271,7 +273,7 @@ const ActiveJobs = memo(() => {
                           </div>
                           <h3 className="font-bold text-gray-800 text-sm truncate">{job.serviceType}</h3>
                         </div>
-                        <div className="ml-7 mb-1">
+                        <div className="ml-7 mb-1 flex flex-wrap gap-2 items-center">
                           <span
                             className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                             style={{
@@ -282,6 +284,11 @@ const ActiveJobs = memo(() => {
                           >
                             {job.status.replace('_', ' ').toLowerCase()}
                           </span>
+                          {job.paymentMethod === 'online' && (job.paymentStatus !== 'SUCCESS' && job.paymentStatus !== 'paid' && job.paymentStatus?.toLowerCase() !== 'completed') && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-650 border border-red-200 animate-pulse uppercase tracking-wider">
+                              Payment Pending
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div

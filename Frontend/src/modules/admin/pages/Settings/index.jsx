@@ -31,7 +31,11 @@ const AdminSettings = () => {
     isOnlinePaymentEnabled: true,
     mcqTimeLimitMinutes: 30,
     loyaltyPointsEarningRate: 1,
-    loyaltyPointsRedemptionRate: 1
+    loyaltyPointsRedemptionRate: 1,
+    codAdvancePercentage: 10,
+    isInstantBookingEnabled: true,
+    instantBookingMarkup: 99,
+    instantBookingWaitTime: 45
   });
 
   // Billing Configuration State
@@ -138,7 +142,11 @@ const AdminSettings = () => {
             isOnlinePaymentEnabled: res.settings.isOnlinePaymentEnabled !== undefined ? res.settings.isOnlinePaymentEnabled : true,
             mcqTimeLimitMinutes: res.settings.mcqTimeLimitMinutes !== undefined ? res.settings.mcqTimeLimitMinutes : 30,
             loyaltyPointsEarningRate: res.settings.loyaltyPointsEarningRate !== undefined ? res.settings.loyaltyPointsEarningRate : 1,
-            loyaltyPointsRedemptionRate: res.settings.loyaltyPointsRedemptionRate !== undefined ? res.settings.loyaltyPointsRedemptionRate : 1
+            loyaltyPointsRedemptionRate: res.settings.loyaltyPointsRedemptionRate !== undefined ? res.settings.loyaltyPointsRedemptionRate : 1,
+            codAdvancePercentage: res.settings.codAdvancePercentage !== undefined ? res.settings.codAdvancePercentage : 10,
+            isInstantBookingEnabled: res.settings.isInstantBookingEnabled !== undefined ? res.settings.isInstantBookingEnabled : true,
+            instantBookingMarkup: res.settings.instantBookingMarkup !== undefined ? res.settings.instantBookingMarkup : 99,
+            instantBookingWaitTime: res.settings.instantBookingWaitTime !== undefined ? res.settings.instantBookingWaitTime : 45
           });
           // Load billing settings
           setBillingSettings({
@@ -681,13 +689,37 @@ const AdminSettings = () => {
                           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Global Search Radius (Km)</label>
-                      <input type="number" name="searchRadius" value={financialSettings.searchRadius} onChange={handleFinancialChange}
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
-                      <p className="text-[10px] text-gray-400 mt-1">Default global search radius for hunting vendors (10 KM)</p>
-                    </div>
-                  </div>
+                     <div>
+                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Global Search Radius (Km)</label>
+                       <input type="number" name="searchRadius" value={financialSettings.searchRadius} onChange={handleFinancialChange}
+                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
+                       <p className="text-[10px] text-gray-400 mt-1">Default global search radius for hunting vendors (10 KM)</p>
+                     </div>
+                     <div>
+                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">COD Advance Online Payment (%)</label>
+                       <input type="number" name="codAdvancePercentage" value={financialSettings.codAdvancePercentage} onChange={handleFinancialChange}
+                         min="0" max="100"
+                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
+                       <p className="text-[10px] text-gray-400 mt-1">Percentage of booking total required online to confirm COD</p>
+                     </div>
+
+                     {/* Instant Booking moved to its own dedicated page */}
+                     <div className="col-span-2 border-t pt-4 mt-2" style={{ borderColor: 'var(--border)' }}>
+                       <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                         <div className="flex items-center gap-2">
+                           <span className="text-xl">⚡</span>
+                           <div>
+                             <p className="text-xs font-bold text-yellow-800">Instant Booking Settings</p>
+                             <p className="text-[10px] text-yellow-600">Configure pricing, wait time & booking window from the dedicated page</p>
+                           </div>
+                         </div>
+                         <a href="/admin/instant-booking"
+                           className="text-xs font-semibold text-yellow-700 border border-yellow-300 px-3 py-1.5 rounded-lg hover:bg-yellow-100 transition-all whitespace-nowrap">
+                           Open ⚡ Page →
+                         </a>
+                       </div>
+                     </div>
+                   </div>
                   <div className="flex justify-end pt-2">
                     <button type="submit" disabled={loading}
                       className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-green-200">

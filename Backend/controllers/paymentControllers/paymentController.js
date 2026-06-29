@@ -23,7 +23,7 @@ const createPaymentOrder = async (req, res) => {
     }
 
     const userId = req.user.id;
-    const { bookingId } = req.body;
+    const { bookingId, paymentMethod } = req.body;
 
     // Get booking
     const booking = await Booking.findOne({ _id: bookingId, userId });
@@ -35,18 +35,33 @@ const createPaymentOrder = async (req, res) => {
       });
     }
 
+    if (paymentMethod) {
+      booking.paymentMethod = paymentMethod;
+      await booking.save();
+    }
+
     // Check if payment already done
-    if (booking.paymentStatus === PAYMENT_STATUS.SUCCESS) {
+    if (booking.paymentStatus === PAYMENT_STATUS.SUCCESS || booking.paymentStatus === 'completed') {
       return res.status(400).json({
         success: false,
         message: 'Payment already completed for this booking'
       });
     }
 
+    // Calculate final order amount (fully pre-paid online vs COD partial advance payment)
+    let orderAmount = booking.finalAmount;
+    if (booking.paymentMethod === 'pay_at_home') {
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      const codPct = globalSettings?.codAdvancePercentage !== undefined ? globalSettings.codAdvancePercentage : 10;
+      if (codPct > 0 && codPct < 100) {
+        orderAmount = parseFloat((booking.finalAmount * (codPct / 100)).toFixed(2));
+      }
+    }
+
     // Create Razorpay order
-    console.log('Creating Razorpay order with amount:', booking.finalAmount);
+    console.log('Creating Razorpay order with amount:', orderAmount);
     const orderResult = await createOrder(
-      booking.finalAmount,
+      orderAmount,
       'INR',
       booking.bookingNumber,
       {
@@ -124,8 +139,12 @@ const verifyPaymentWebhook = async (req, res) => {
     }
 
     // Update booking payment status
-    booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
-    booking.paymentMethod = 'online';
+    if (booking.paymentMethod === 'pay_at_home') {
+      booking.paymentStatus = 'partially_paid';
+    } else {
+      booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
+      booking.paymentMethod = 'online';
+    }
     booking.razorpayPaymentId = razorpay_payment_id;
     booking.paymentId = razorpay_payment_id;
 
@@ -837,6 +856,27 @@ const verifyPlanPayment = async (req, res) => {
   }
 };
 
+const getBookingInvoices = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const Invoice = require('../../models/Invoice');
+    const invoices = await Invoice.find({ bookingId })
+      .populate('vendorId', 'name businessName phone address')
+      .populate('customerId', 'name email phone');
+
+    res.status(200).json({
+      success: true,
+      invoices
+    });
+  } catch (error) {
+    console.error('Error fetching booking invoices:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch invoices'
+    });
+  }
+};
+
 module.exports = {
   createPaymentOrder,
   verifyPaymentWebhook,
@@ -846,6 +886,7 @@ module.exports = {
   confirmPayAtHome,
   createPlanOrder,
   verifyPlanPayment,
-  getUpgradeDetails
+  getUpgradeDetails,
+  getBookingInvoices
 };
 

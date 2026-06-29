@@ -246,7 +246,14 @@ const cancelBooking = async (req, res) => {
 
         // Also free up the vendor's availability so they appear online to new users
         const Vendor = require('../../models/Vendor');
-        await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+        await Vendor.findByIdAndUpdate(booking.vendorId, {
+          availability: 'AVAILABLE',
+          workStatus: 'available',
+          availabilityStatus: 'ONLINE',
+          reservedFrom: null,
+          reservedBookingId: null
+        });
+        await Vendor.updateWorkStatus(booking.vendorId);
       } catch (statsErr) {
         console.error('Error updating vendor stats after admin cancellation:', statsErr);
       }
@@ -502,11 +509,126 @@ const assignVendor = async (req, res) => {
   }
 };
 
+const approveCancelBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.cancelRequestStatus !== 'pending') {
+      return res.status(400).json({ success: false, message: 'No pending cancellation request for this booking' });
+    }
+
+    // Process actual cancellation
+    booking.status = 'cancelled';
+    booking.cancelledAt = new Date();
+    booking.cancellationReason = `Approved Request: ${booking.cancelRequestReason}`;
+    booking.cancelledBy = `admin (via ${booking.cancelRequestedBy} request)`;
+    booking.cancelRequestStatus = 'approved';
+    await booking.save();
+
+    console.log(`[AdminCancel] Cancellation approved for booking ${booking.bookingNumber}`);
+
+    // If vendor was assigned, notify vendor that it's cancelled and free up their availability!
+    if (booking.vendorId) {
+      const Vendor = require('../../models/Vendor');
+      await Vendor.findByIdAndUpdate(booking.vendorId, {
+        $set: {
+          availabilityStatus: 'ONLINE',
+          availability: 'AVAILABLE',
+          reservedFrom: null,
+          reservedBookingId: null
+        }
+      });
+      try {
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_cancelled', {
+            bookingId: booking._id.toString(),
+            bookingNumber: booking.bookingNumber,
+            message: 'Booking cancellation request has been approved by admin.'
+          });
+        }
+      } catch (err) {}
+    }
+
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${booking.userId.toString()}`).emit('booking_cancelled', {
+          bookingId: booking._id.toString(),
+          bookingNumber: booking.bookingNumber
+        });
+      }
+    } catch (err) {}
+
+    res.status(200).json({
+      success: true,
+      message: 'Cancellation request approved and booking cancelled successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Approve cancel error:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve cancellation request' });
+  }
+};
+
+const rejectCancelBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.cancelRequestStatus !== 'pending') {
+      return res.status(400).json({ success: false, message: 'No pending cancellation request for this booking' });
+    }
+
+    booking.cancelRequestStatus = 'rejected';
+    await booking.save();
+
+    console.log(`[AdminCancel] Cancellation request rejected for booking ${booking.bookingNumber}`);
+
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        if (booking.cancelRequestedBy === 'vendor' && booking.vendorId) {
+          io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            message: 'Your cancellation request was rejected by admin.'
+          });
+        } else {
+          io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            message: 'Your cancellation request was rejected by admin.'
+          });
+        }
+      }
+    } catch (err) {}
+
+    res.status(200).json({
+      success: true,
+      message: 'Cancellation request rejected successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Reject cancel error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject cancellation request' });
+  }
+};
+
 module.exports = {
   getAllBookings,
   getBookingById,
   cancelBooking,
   getBookingAnalytics,
-  assignVendor
+  assignVendor,
+  approveCancelBooking,
+  rejectCancelBooking
 };
 

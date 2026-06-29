@@ -478,7 +478,6 @@ const BookingConfirmation = () => {
                   <span className="font-medium text-slate-900">-₹{booking.walletAmountApplied.toLocaleString('en-IN')}</span>
                 </div>
               )}
-
               {/* Tax block removed since GST is included in base price */}
 
               {/* Convenience Fee block removed per user request */}
@@ -486,7 +485,9 @@ const BookingConfirmation = () => {
               {/* Total */}
               <div className="border-t border-slate-200 pt-4 mt-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-base font-bold text-slate-900">Total Paid</span>
+                  <span className="text-base font-bold text-slate-900">
+                    {booking.paymentStatus === 'SUCCESS' || booking.paymentStatus === 'paid' || booking.paymentMethod === 'plan_benefit' ? 'Total Paid' : 'Total Amount (Pending)'}
+                  </span>
                   <span className="text-xl font-black text-slate-900">
                     ₹{(booking.paymentMethod === 'plan_benefit' ? 0 : (booking.finalAmount || booking.totalAmount || 0)).toLocaleString('en-IN')}
                   </span>

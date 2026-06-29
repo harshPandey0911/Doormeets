@@ -49,5 +49,25 @@ export const adminBookingService = {
     } catch (error) {
       throw error.response?.data || { message: 'Failed to assign vendor' };
     }
+  },
+
+  // Approve booking cancellation request
+  approveCancelBooking: async (id) => {
+    try {
+      const response = await api.post(`/admin/bookings/${id}/approve-cancel`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to approve cancellation request' };
+    }
+  },
+
+  // Reject booking cancellation request
+  rejectCancelBooking: async (id) => {
+    try {
+      const response = await api.post(`/admin/bookings/${id}/reject-cancel`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to reject cancellation request' };
+    }
   }
 };

@@ -262,6 +262,37 @@ const settingsSchema = new mongoose.Schema({
     default: 30,
     min: 0,
     max: 100
+  },
+  codAdvancePercentage: {
+    type: Number,
+    default: 10, // 10% advance payment required for COD
+    min: 0,
+    max: 100
+  },
+  isInstantBookingEnabled: {
+    type: Boolean,
+    default: true
+  },
+  instantBookingMarkup: {
+    type: Number,
+    default: 99, // default 99 Rs extra markup fee
+    min: 0
+  },
+  instantBookingWaitTime: {
+    type: Number,
+    default: 45, // default 45 minutes arrival wait time
+    min: 5
+  },
+  // how many hours from booking-time onwards are treated as "instant"
+  instantBookingWindowHours: {
+    type: Number,
+    default: 4, // slots within the next 4 hours count as instant
+    min: 1
+  },
+  // whether to show estimated arrival time to the user at checkout
+  showArrivalTime: {
+    type: Boolean,
+    default: true
   }
 }, { timestamps: true });
 

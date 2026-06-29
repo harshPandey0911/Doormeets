@@ -28,6 +28,7 @@ import {
   FiInbox,
   FiGift,
   FiSliders,
+  FiZap,
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
@@ -66,6 +67,7 @@ const iconMap = {
   "Vendor Requests": FiInbox,
   "Package based": FiPackage,
   "Painting Mgmt": FiGrid,
+  "Instant Booking": FiZap,
   "SOS Alerts": FiShield
 };
 
@@ -192,6 +194,7 @@ const permissionMap = {
   "Management": "propose_categories",
   "Package based": "propose_categories",
   "Painting Mgmt": "propose_categories",
+  "Instant Booking": "propose_categories",
   "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",

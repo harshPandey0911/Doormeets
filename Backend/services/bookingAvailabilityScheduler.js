@@ -63,6 +63,7 @@ class BookingAvailabilityScheduler {
       await this.processAutoReservations();
       await this.processUpcomingReconfirmations();
       await this.processReconfirmationTimeouts();
+      await this.processVendorTimeReminders();
     } catch (error) {
       console.error('[BookingAvailabilityScheduler] Error in runTasks:', error);
     }
@@ -251,6 +252,112 @@ class BookingAvailabilityScheduler {
       }
     } catch (err) {
       console.error('[BookingAvailabilityScheduler] Error in processReconfirmationTimeouts:', err);
+    }
+  }
+
+  /**
+   * Task 4: Hourly & Half-hourly Vendor Job Reminders
+   * Sends notifications 1 hour and 30 minutes before booking start time.
+   */
+  async processVendorTimeReminders() {
+    try {
+      const now = Date.now();
+      const bookings = await Booking.find({
+        status: { $in: ['accepted', 'confirmed', 'assigned'] },
+        bookingType: 'scheduled',
+        vendorId: { $ne: null },
+        $or: [
+          { sentOneHourReminder: { $ne: true } },
+          { sentHalfHourReminder: { $ne: true } }
+        ]
+      });
+
+      const { createNotification } = require('../controllers/notificationControllers/notificationController');
+
+      for (const booking of bookings) {
+        const slotStart = parseScheduledStartTime(booking.scheduledDate, booking.timeSlot?.start || booking.scheduledTime);
+        const slotStartMs = slotStart.getTime();
+
+        // 1. One Hour Reminder (Trigger if time left is <= 60 minutes and > 30 minutes)
+        if (!booking.sentOneHourReminder) {
+          const timeLeftMs = slotStartMs - now;
+          if (timeLeftMs <= 60 * 60 * 1000 && timeLeftMs > 0) {
+            booking.sentOneHourReminder = true;
+            await booking.save();
+
+            const hasAssigned = !!booking.workerId;
+            const title = 'Upcoming Booking Reminder';
+            const message = hasAssigned
+              ? `Reminder: Your booking ${booking.bookingNumber} starts in 1 hour (${booking.scheduledTime || booking.timeSlot?.start}).`
+              : `Important Reminder: You have an upcoming booking ${booking.bookingNumber} at ${booking.scheduledTime || booking.timeSlot?.start} in 1 hour. Please assign a worker now!`;
+
+            await createNotification({
+              vendorId: booking.vendorId,
+              type: 'booking_reminder',
+              title,
+              message,
+              relatedId: booking._id,
+              relatedType: 'booking',
+              pushData: {
+                type: 'booking_reminder',
+                bookingId: booking._id.toString(),
+                link: `/vendor/bookings/${booking._id}`
+              }
+            });
+
+            if (this.io) {
+              this.io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_reminder', {
+                bookingId: booking._id,
+                bookingNumber: booking.bookingNumber,
+                title,
+                message
+              });
+            }
+            console.log(`[BookingAvailabilityScheduler] Sent 1-hour reminder to Vendor ${booking.vendorId} for booking ${booking.bookingNumber}`);
+          }
+        }
+
+        // 2. 30 Minutes Reminder (Trigger if time left is <= 30 minutes)
+        if (!booking.sentHalfHourReminder) {
+          const timeLeftMs = slotStartMs - now;
+          if (timeLeftMs <= 30 * 60 * 1000 && timeLeftMs > 0) {
+            booking.sentHalfHourReminder = true;
+            await booking.save();
+
+            const hasAssigned = !!booking.workerId;
+            const title = 'Upcoming Booking Reminder (30 mins)';
+            const message = hasAssigned
+              ? `Reminder: Your booking ${booking.bookingNumber} starts in 30 minutes (${booking.scheduledTime || booking.timeSlot?.start}).`
+              : `Urgent: Your booking ${booking.bookingNumber} starts in 30 minutes (${booking.scheduledTime || booking.timeSlot?.start}). Please assign a worker immediately!`;
+
+            await createNotification({
+              vendorId: booking.vendorId,
+              type: 'booking_reminder',
+              title,
+              message,
+              relatedId: booking._id,
+              relatedType: 'booking',
+              pushData: {
+                type: 'booking_reminder',
+                bookingId: booking._id.toString(),
+                link: `/vendor/bookings/${booking._id}`
+              }
+            });
+
+            if (this.io) {
+              this.io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_reminder', {
+                bookingId: booking._id,
+                bookingNumber: booking.bookingNumber,
+                title,
+                message
+              });
+            }
+            console.log(`[BookingAvailabilityScheduler] Sent 30-min reminder to Vendor ${booking.vendorId} for booking ${booking.bookingNumber}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[BookingAvailabilityScheduler] Error in processVendorTimeReminders:', err);
     }
   }
 }
