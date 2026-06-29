@@ -32,10 +32,7 @@ const AdminSettings = () => {
     mcqTimeLimitMinutes: 30,
     loyaltyPointsEarningRate: 1,
     loyaltyPointsRedemptionRate: 1,
-    codAdvancePercentage: 10,
-    isInstantBookingEnabled: true,
-    instantBookingMarkup: 99,
-    instantBookingWaitTime: 45
+    vendorBusyBufferHours: 1
   });
 
   // Billing Configuration State
@@ -143,10 +140,7 @@ const AdminSettings = () => {
             mcqTimeLimitMinutes: res.settings.mcqTimeLimitMinutes !== undefined ? res.settings.mcqTimeLimitMinutes : 30,
             loyaltyPointsEarningRate: res.settings.loyaltyPointsEarningRate !== undefined ? res.settings.loyaltyPointsEarningRate : 1,
             loyaltyPointsRedemptionRate: res.settings.loyaltyPointsRedemptionRate !== undefined ? res.settings.loyaltyPointsRedemptionRate : 1,
-            codAdvancePercentage: res.settings.codAdvancePercentage !== undefined ? res.settings.codAdvancePercentage : 10,
-            isInstantBookingEnabled: res.settings.isInstantBookingEnabled !== undefined ? res.settings.isInstantBookingEnabled : true,
-            instantBookingMarkup: res.settings.instantBookingMarkup !== undefined ? res.settings.instantBookingMarkup : 99,
-            instantBookingWaitTime: res.settings.instantBookingWaitTime !== undefined ? res.settings.instantBookingWaitTime : 45
+            vendorBusyBufferHours: res.settings.vendorBusyBufferHours !== undefined ? res.settings.vendorBusyBufferHours : 1
           });
           // Load billing settings
           setBillingSettings({
@@ -689,37 +683,13 @@ const AdminSettings = () => {
                           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
                       </div>
                     </div>
-                     <div>
-                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Global Search Radius (Km)</label>
-                       <input type="number" name="searchRadius" value={financialSettings.searchRadius} onChange={handleFinancialChange}
-                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
-                       <p className="text-[10px] text-gray-400 mt-1">Default global search radius for hunting vendors (10 KM)</p>
-                     </div>
-                     <div>
-                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">COD Advance Online Payment (%)</label>
-                       <input type="number" name="codAdvancePercentage" value={financialSettings.codAdvancePercentage} onChange={handleFinancialChange}
-                         min="0" max="100"
-                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
-                       <p className="text-[10px] text-gray-400 mt-1">Percentage of booking total required online to confirm COD</p>
-                     </div>
-
-                     {/* Instant Booking moved to its own dedicated page */}
-                     <div className="col-span-2 border-t pt-4 mt-2" style={{ borderColor: 'var(--border)' }}>
-                       <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-                         <div className="flex items-center gap-2">
-                           <span className="text-xl">⚡</span>
-                           <div>
-                             <p className="text-xs font-bold text-yellow-800">Instant Booking Settings</p>
-                             <p className="text-[10px] text-yellow-600">Configure pricing, wait time & booking window from the dedicated page</p>
-                           </div>
-                         </div>
-                         <a href="/admin/instant-booking"
-                           className="text-xs font-semibold text-yellow-700 border border-yellow-300 px-3 py-1.5 rounded-lg hover:bg-yellow-100 transition-all whitespace-nowrap">
-                           Open ⚡ Page →
-                         </a>
-                       </div>
-                     </div>
-                   </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Global Search Radius (Km)</label>
+                      <input type="number" name="searchRadius" value={financialSettings.searchRadius} onChange={handleFinancialChange}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
+                      <p className="text-[10px] text-gray-400 mt-1">Default global search radius for hunting vendors (10 KM)</p>
+                    </div>
+                  </div>
                   <div className="flex justify-end pt-2">
                     <button type="submit" disabled={loading}
                       className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-green-200">
@@ -863,10 +833,10 @@ const AdminSettings = () => {
                       <p className="text-xs text-gray-500 mt-1">Enable digital payment methods for users</p>
                     </div>
                     <button onClick={() => {
-                        const newValue = !financialSettings.isOnlinePaymentEnabled;
-                        setFinancialSettings(prev => ({ ...prev, isOnlinePaymentEnabled: newValue }));
-                        updateSettings({ isOnlinePaymentEnabled: newValue });
-                      }}
+                      const newValue = !financialSettings.isOnlinePaymentEnabled;
+                      setFinancialSettings(prev => ({ ...prev, isOnlinePaymentEnabled: newValue }));
+                      updateSettings({ isOnlinePaymentEnabled: newValue });
+                    }}
                       className={`relative w-12 h-7 rounded-full transition-all duration-300 ${financialSettings.isOnlinePaymentEnabled ? 'bg-green-600' : 'bg-gray-200'}`}>
                       <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${financialSettings.isOnlinePaymentEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
                     </button>
@@ -878,15 +848,15 @@ const AdminSettings = () => {
                       <p className="text-xs text-gray-500 mt-1">Set the duration in minutes for the vendor MCQ training test</p>
                     </div>
                     <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        name="mcqTimeLimitMinutes" 
-                        value={financialSettings.mcqTimeLimitMinutes || 30} 
+                      <input
+                        type="number"
+                        name="mcqTimeLimitMinutes"
+                        value={financialSettings.mcqTimeLimitMinutes || 30}
                         onChange={(e) => setFinancialSettings(prev => ({ ...prev, mcqTimeLimitMinutes: Number(e.target.value) }))}
                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white"
                         min="1"
                       />
-                      <button 
+                      <button
                         onClick={async () => {
                           try {
                             await updateSettings({ mcqTimeLimitMinutes: financialSettings.mcqTimeLimitMinutes });
@@ -900,6 +870,43 @@ const AdminSettings = () => {
                         Save
                       </button>
                     </div>
+                  </div>
+
+                  {/* Vendor Busy Buffer Hours */}
+                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 space-y-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">Vendor Job Buffer Time (Hours)</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        How many hours before a scheduled booking the vendor becomes <span className="font-bold text-orange-600">busy</span> and stops receiving new bookings. Default: 1 hour.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        name="vendorBusyBufferHours"
+                        value={financialSettings.vendorBusyBufferHours ?? 1}
+                        onChange={(e) => setFinancialSettings(prev => ({ ...prev, vendorBusyBufferHours: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg outline-none focus:border-orange-500 bg-white"
+                        min="0"
+                        step="0.5"
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            await updateSettings({ vendorBusyBufferHours: financialSettings.vendorBusyBufferHours });
+                            toast.success('Vendor buffer time updated successfully');
+                          } catch (error) {
+                            toast.error('Failed to update vendor buffer time');
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
+                      >
+                        Save
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-orange-600 font-medium">
+                      e.g. Set to <strong>2</strong> → vendor marked busy 2 hours before an 8 PM booking (from 6 PM onwards)
+                    </p>
                   </div>
 
                 </div>
@@ -1180,11 +1187,10 @@ const AdminSettings = () => {
                     const file = e.dataTransfer.files?.[0];
                     if (file) handleVideoUpload(file);
                   }}
-                  className={`relative border-2 border-dashed rounded-xl p-10 text-center transition-all ${
-                    videoDragOver
+                  className={`relative border-2 border-dashed rounded-xl p-10 text-center transition-all ${videoDragOver
                       ? 'border-rose-400 bg-rose-50'
                       : 'border-gray-200 bg-gray-50 hover:border-rose-300 hover:bg-rose-50/40'
-                  }`}
+                    }`}
                 >
                   {videoUploading ? (
                     <div className="flex flex-col items-center gap-3">

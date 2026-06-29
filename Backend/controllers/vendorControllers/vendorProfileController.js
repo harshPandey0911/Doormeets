@@ -217,15 +217,15 @@ const updateProfile = async (req, res) => {
       try {
         const City = require('../../models/City');
         const Admin = require('../../models/Admin');
-        
+
         // Find the city document matching the vendor's city name
         const cityDoc = await City.findOne({ name: new RegExp(`^${vendor.address.city}$`, 'i') });
         if (cityDoc) {
           // Add this vendor to all City Admins assigned to this city
           await Admin.updateMany(
-            { 
+            {
               role: { $in: ['CITY_ADMIN', 'admin'] },
-              assignedCities: cityDoc._id 
+              assignedCities: cityDoc._id
             },
             { $addToSet: { assignedVendors: vendor._id } }
           );
@@ -376,12 +376,12 @@ const updateStatus = async (req, res) => {
     vendor.isOnline = isOnline;
     vendor.availability = isOnline ? 'AVAILABLE' : 'OFFLINE';
     vendor.availabilityStatus = isOnline ? 'ONLINE' : 'OFFLINE';
-    
+
     // Set lastSeenAt if going offline
     if (!isOnline) {
       vendor.lastSeenAt = new Date();
     }
-    
+
     await vendor.save();
 
     // Sync to Redis cache (fast lookup)
@@ -393,8 +393,8 @@ const updateStatus = async (req, res) => {
       console.error('[UpdateStatus] Redis sync failed:', redisErr);
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: `Status updated to ${isOnline ? 'Online' : 'Offline'}`,
       isOnline: vendor.isOnline,
       availability: vendor.availability

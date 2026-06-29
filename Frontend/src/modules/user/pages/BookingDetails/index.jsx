@@ -25,8 +25,7 @@ import {
   FiChevronRight,
   FiSearch,
   FiHome,
-  FiAlertCircle,
-  FiFileText
+  FiAlertCircle
 } from 'react-icons/fi';
 import { bookingService } from '../../../../services/bookingService';
 import { paymentService } from '../../../../services/paymentService';
@@ -55,7 +54,6 @@ const BookingDetails = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [invoices, setInvoices] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -127,18 +125,6 @@ const BookingDetails = () => {
           if (!data.visitingCharges && !data.visitationFee) data.visitingCharges = 49;
         }
         setBooking(data);
-
-        // Fetch invoices if booking is completed
-        if (data.status?.toLowerCase() === 'completed') {
-          try {
-            const invoiceRes = await paymentService.getBookingInvoices(id);
-            if (invoiceRes.success) {
-              setInvoices(invoiceRes.invoices || []);
-            }
-          } catch (err) {
-            console.error('Error fetching invoices:', err);
-          }
-        }
       } else {
         toast.error(response.message || 'Booking not found');
         navigate('/user/my-bookings');
@@ -288,8 +274,6 @@ const BookingDetails = () => {
       case 'awaiting_payment':
       case 'work_done':
         return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-      case 'pending_admin':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
       case 'requested':
       case 'searching':
         return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -310,7 +294,6 @@ const BookingDetails = () => {
       case 'work_done': return 'Work Done'; // Payment Pending
       case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
-      case 'pending_admin': return 'Awaiting Admin Review';
       case 'requested':
       case 'searching': return 'Finding Expert';
       case 'bidding': return 'Bidding in Progress';
@@ -321,35 +304,7 @@ const BookingDetails = () => {
   // ... (keep handle methods same) ...
 
   const handleCancelBooking = async () => {
-    // Check if direct cancellation window has expired
-    const requiresRequest = booking.vendorId && !cancellationTimeLeft;
-
-    if (requiresRequest) {
-      const reason = window.prompt('Please enter the reason for requesting cancellation:');
-      if (reason === null) return; // User cancelled
-      if (!reason.trim()) {
-        toast.error('Cancellation reason is required');
-        return;
-      }
-
-      try {
-        toast.loading('Submitting cancellation request...');
-        const response = await bookingService.requestCancel(booking._id || booking.id, reason);
-        toast.dismiss();
-        if (response.success) {
-          toast.success('Cancellation request submitted successfully!');
-          loadBooking();
-        } else {
-          toast.error(response.message || 'Failed to submit cancellation request');
-        }
-      } catch (err) {
-        toast.dismiss();
-        toast.error('Failed to submit cancellation request. Please try again.');
-      }
-      return;
-    }
-
-    // Direct Cancellation Flow (No Vendor or within 2 minutes)
+    // Check if journey has started to determine if a fee applies
     const journeyStarted = ['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase());
     const cancellationFee = booking.visitingCharges || 49;
 
@@ -686,63 +641,52 @@ const BookingDetails = () => {
             <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color">
               <div className="flex justify-between relative z-10">
                 {/* Step 1: Booked */}
-                <div className="flex flex-col items-center gap-2 w-1/5">
+                <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['pending', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
                     ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     <FiCheckCircle className="w-4 h-4" />
                   </div>
-                  <p className="text-[9px] font-bold text-secondary-text uppercase tracking-wide text-center">Booked</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Booked</p>
                 </div>
 
                 {/* Step 2: Assigned */}
-                <div className="flex flex-col items-center gap-2 w-1/5">
+                <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
                     ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     2
                   </div>
-                  <p className="text-[9px] font-bold text-secondary-text uppercase tracking-wide text-center">Assigned</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Assigned</p>
                 </div>
 
-                {/* Step 3: Payment */}
-                <div className="flex flex-col items-center gap-2 w-1/5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['success', 'collected_by_vendor', 'paid', 'paid_online', 'completed'].includes(booking.paymentStatus?.toLowerCase()) || booking.paymentMethod === 'plan_benefit' || booking.paymentMethod === 'pay_at_home'
+                {/* Step 3: In Progress */}
+                <div className="flex flex-col items-center gap-2 w-1/4">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
                     ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     3
                   </div>
-                  <p className="text-[9px] font-bold text-secondary-text uppercase tracking-wide text-center">Payment</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Started</p>
                 </div>
 
-                {/* Step 4: Started */}
-                <div className="flex flex-col items-center gap-2 w-1/5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['journey_started', 'visited', 'in_progress', 'work_done', 'completed_status', 'completed'].includes(booking.status?.toLowerCase())
+                {/* Step 4: Done */}
+                <div className="flex flex-col items-center gap-2 w-1/4">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['work_done', 'completed'].includes(booking.status?.toLowerCase())
                     ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
                     }`}>
                     4
                   </div>
-                  <p className="text-[9px] font-bold text-secondary-text uppercase tracking-wide text-center">Started</p>
-                </div>
-
-                {/* Step 5: Done */}
-                <div className="flex flex-col items-center gap-2 w-1/5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
-                    }`}>
-                    5
-                  </div>
-                  <p className="text-[9px] font-bold text-secondary-text uppercase tracking-wide text-center">Done</p>
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Done</p>
                 </div>
               </div>
               {/* Connect lines */}
-              <div className="absolute top-[38px] left-[10%] right-[10%] h-0.5 bg-divider z-0">
+              <div className="absolute top-18 left-[15%] right-[15%] h-0.5 bg-divider z-0">
                 <div className="h-full bg-[#B33A35] transition-all duration-1000" style={{
                   width:
                     ['work_done', 'completed'].includes(booking.status?.toLowerCase()) ? '100%' :
-                      ['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? '75%' :
-                        (['success', 'collected_by_vendor', 'paid', 'paid_online', 'completed'].includes(booking.paymentStatus?.toLowerCase()) || booking.paymentMethod === 'plan_benefit' || booking.paymentMethod === 'pay_at_home') ? '50%' :
-                          ['accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) ? '25%' : '0%'
+                      ['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? '66%' :
+                        ['accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) ? '33%' : '0%'
                 }}></div>
               </div>
             </div>
@@ -775,7 +719,7 @@ const BookingDetails = () => {
                 </div>
 
                 <p className="text-sm text-secondary-text mb-4 leading-relaxed font-medium">
-                  {booking.status?.toLowerCase() === 'bidding' 
+                  {booking.status?.toLowerCase() === 'bidding'
                     ? "Vendors are now submitting their best prices for your request. View the quotes below and pick the best one!"
                     : "We've sent your request to all verified experts in your area. You'll be notified automatically as soon as someone accepts."}
                 </p>
@@ -797,7 +741,7 @@ const BookingDetails = () => {
                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Quotes Received</h3>
                 <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">LIVE</span>
               </div>
-              
+
               <BidsList bookingId={id} onAccept={() => loadBooking()} />
             </div>
           )}
@@ -927,89 +871,6 @@ const BookingDetails = () => {
                   <h3 className="text-lg font-bold text-white tracking-tight">Professional Arrived</h3>
                   <p className="text-sm text-teal-50 font-medium">Expert is at your location and starting the work.</p>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Estimate Card */}
-          {booking.estimateStatus === 'pending' && booking.inspectionEstimate && (
-            <div className="bg-white rounded-3xl p-6 shadow-lg border-2 border-amber-400 relative overflow-hidden mb-6">
-              <h3 className="font-bold text-gray-900 text-lg mb-3 flex items-center gap-2">
-                <FiFileText className="text-amber-500 w-5 h-5" />
-                Addon Service Estimate
-              </h3>
-              <p className="text-sm text-gray-500 mb-4 font-medium">
-                The service professional has inspected the work and proposed the following add-on charges:
-              </p>
-              
-              <div className="space-y-2 mb-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                {booking.inspectionEstimate.services?.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm text-gray-700">
-                    <span>{item.name} (x{item.quantity})</span>
-                    <span className="font-bold">₹{(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-                {booking.inspectionEstimate.parts?.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm text-gray-700">
-                    <span>{item.name} (x{item.quantity}) [Part]</span>
-                    <span className="font-bold">₹{(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-                {booking.inspectionEstimate.notes && (
-                  <div className="text-xs text-gray-400 mt-2 border-t pt-2 italic">
-                    Note: {booking.inspectionEstimate.notes}
-                  </div>
-                )}
-                <div className="flex justify-between font-black text-gray-900 pt-2 border-t text-base">
-                  <span>Total Addons</span>
-                  <span>₹{(booking.inspectionEstimate.totalAmount || 0).toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={async () => {
-                    try {
-                      toast.loading('Declining estimate...');
-                      const res = await bookingService.approveEstimate(booking._id || booking.id, false);
-                      toast.dismiss();
-                      if (res.success) {
-                        toast.success('Estimate declined');
-                        loadBooking();
-                      } else {
-                        toast.error(res.message || 'Action failed');
-                      }
-                    } catch (e) {
-                      toast.dismiss();
-                      toast.error('Failed to process response');
-                    }
-                  }}
-                  className="flex-1 py-3 rounded-xl font-bold bg-red-50 text-red-500 border border-red-200 transition-all active:scale-95 text-sm"
-                >
-                  Decline
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      toast.loading('Approving estimate...');
-                      const res = await bookingService.approveEstimate(booking._id || booking.id, true);
-                      toast.dismiss();
-                      if (res.success) {
-                        toast.success('Estimate approved!');
-                        loadBooking();
-                      } else {
-                        toast.error(res.message || 'Action failed');
-                      }
-                    } catch (e) {
-                      toast.dismiss();
-                      toast.error('Failed to process response');
-                    }
-                  }}
-                  className="flex-[2] py-3 rounded-xl font-bold text-white transition-all active:scale-95 text-sm"
-                  style={{ background: themeColors.button }}
-                >
-                  Approve Addons
-                </button>
               </div>
             </div>
           )}
@@ -1476,13 +1337,6 @@ const BookingDetails = () => {
                         </div>
                       )}
 
-                      {booking.walletAmountApplied > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-secondary-text">Wallet Applied</span>
-                          <span className="font-medium text-dark-text">-₹{booking.walletAmountApplied.toLocaleString('en-IN')}</span>
-                        </div>
-                      )}
-
                       {/* Extra Charges Section */}
                       {booking.extraCharges && booking.extraCharges.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-border-color">
@@ -1522,153 +1376,49 @@ const BookingDetails = () => {
               {/* Payment Status Footer */}
               <div className="bg-light-bg px-5 py-3 border-t border-border-color flex justify-between items-center">
                 <span className="text-xs font-bold text-secondary-text uppercase tracking-wide">Payment Status</span>
-                <span className={`px-2.5 py-1 rounded-md text-xs font-bold capitalize ${['success', 'collected_by_vendor', 'paid', 'completed'].includes(booking.paymentStatus?.toLowerCase()) ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                <span className={`px-2.5 py-1 rounded-md text-xs font-bold capitalize ${['success', 'collected_by_vendor', 'paid'].includes(booking.paymentStatus?.toLowerCase()) ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
                   booking.paymentStatus === 'pending' || booking.paymentStatus === 'plan_covered' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
                   }`}>
-                  {['success', 'collected_by_vendor', 'paid', 'paid_online', 'completed'].includes(booking.paymentStatus?.toLowerCase()) ? 'Paid' :
+                  {['success', 'collected_by_vendor', 'paid', 'paid_online'].includes(booking.paymentStatus?.toLowerCase()) ? 'Paid' :
                     booking.paymentStatus === 'plan_covered' ? 'Processing Bill' :
-                    booking.paymentStatus?.replace(/_/g, ' ') || 'Pending'}
+                      booking.paymentStatus?.replace(/_/g, ' ') || 'Pending'}
                 </span>
               </div>
             </section>
           )}
 
-          {/* Download Invoices Section */}
-          {invoices.length > 0 && (
-            <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                  <FiFileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-dark-text text-sm">Download Invoices</h4>
-                  <p className="text-[10px] text-secondary-text">Receipts and tax invoices for your records</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-2.5 pt-2">
-                {invoices.map((inv) => (
-                  <div key={inv._id} className="flex justify-between items-center bg-light-bg rounded-xl p-3 border border-border-color">
-                    <div className="flex flex-col min-w-0 font-medium">
-                      <span className="text-xs font-bold text-dark-text truncate">
-                        {inv.type === 'vendor_service' ? 'Service Bill (from Professional)' : 'Platform Receipt (from Doormeets)'}
-                      </span>
-                      <span className="text-[10px] text-secondary-text font-mono mt-0.5">{inv.invoiceNumber} • ₹{inv.totalAmount}</span>
-                    </div>
-                    
-                    <button
-                      onClick={() => {
-                        toast.success('Downloading invoice PDF...');
-                        const doc = window.open('', '_blank');
-                        if (doc) {
-                          doc.document.write(`
-                            <html>
-                            <head>
-                              <title>Invoice - ${inv.invoiceNumber}</title>
-                              <style>
-                                body { font-family: sans-serif; padding: 40px; color: #333; line-height: 1.6; }
-                                .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
-                                .title { font-size: 24px; font-weight: bold; }
-                                .details { display: flex; justify-content: space-between; margin-bottom: 30px; }
-                                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                                th { background-color: #f5f5f5; }
-                                .total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }
-                              </style>
-                            </head>
-                            <body>
-                              <div class="header">
-                                <div class="title">\${inv.type === 'vendor_service' ? 'VENDOR SERVICE INVOICE' : 'PLATFORM FEE INVOICE'}</div>
-                                <div>Invoice Number: \${inv.invoiceNumber}</div>
-                                <div>Date: \${new Date(inv.createdAt).toLocaleDateString()}</div>
-                              </div>
-                              <div class="details">
-                                <div>
-                                  <strong>Issued To:</strong><br/>
-                                  \${inv.customerId?.name || 'Customer'}<br/>
-                                  \${inv.customerId?.phone || ''}
-                                </div>
-                                <div>
-                                  <strong>Status:</strong> PAID
-                                </div>
-                              </div>
-                              <table>
-                                <thead>
-                                  <tr>
-                                    <th>Description</th>
-                                    <th>Base Amount</th>
-                                    <th>GST (\${inv.gstPercent}%)</th>
-                                    <th>Total Amount</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  <tr>
-                                    <td>\${inv.type === 'vendor_service' ? 'Base service fee and add-ons' : 'Convenience and platform fee'}</td>
-                                    <td>₹\${inv.baseAmount}</td>
-                                    <td>₹\${inv.totalGST}</td>
-                                    <td>₹\${inv.totalAmount}</td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                              <div class="total">Grand Total: ₹\${inv.totalAmount}</div>
-                              <script>window.print();</script>
-                            </body>
-                            </html>
-                          `);
-                          doc.document.close();
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shrink-0"
-                    >
-                      Download
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Action Card for Payment */}
-          {((booking.status === 'awaiting_payment') || 
-            (booking.paymentMethod === 'online' && !['success', 'paid', 'collected_by_vendor', 'paid_online', 'completed'].includes(booking.paymentStatus?.toLowerCase()) && booking.vendorId)) && (
+          {/* Action Card for Awaiting Payment */}
+          {booking.status === 'awaiting_payment' && (
             <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color p-6 space-y-4">
               <div className="text-center mb-4">
-                <div className="w-16 h-16 bg-[#B33A35]/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-[#B33A35]/20 animate-pulse">
-                  <FiDollarSign className="w-8 h-8 text-[#B33A35]" />
+                <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-brand/20">
+                  <FiDollarSign className="w-8 h-8 text-brand" />
                 </div>
-                <h3 className="text-lg font-bold text-dark-text">
-                  {booking.status === 'awaiting_payment' ? 'Payment Required' : 'Online Payment Pending'}
-                </h3>
-                <p className="text-sm text-secondary-text">
-                  {booking.status === 'awaiting_payment'
-                    ? 'The professional has completed the work. Please choose a payment method to verify and close your booking.'
-                    : 'A professional has been assigned to your booking. Please complete the online payment to proceed.'}
-                </p>
+                <h3 className="text-lg font-bold text-dark-text">Payment Required</h3>
+                <p className="text-sm text-secondary-text">The professional has completed the work. Please choose a payment method to verify and close your booking.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
                 <button
                   onClick={handleOnlinePayment}
-                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform bg-[#B33A35] hover:bg-[#a0312c]"
+                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform bg-brand hover:bg-brand-light"
                 >
                   <FiDollarSign className="w-5 h-5" />
-                  Pay Online Now (Razorpay/UPI)
+                  Pay Online (Razorpay/UPI)
                 </button>
 
-                {booking.status === 'awaiting_payment' && booking.paymentMethod !== 'online' && (
-                  <button
-                    onClick={handlePayAtHome}
-                    className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
-                  >
-                    <FiHome className="w-5 h-5" />
-                    Pay at Home (After Service)
-                  </button>
-                )}
+                <button
+                  onClick={handlePayAtHome}
+                  className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
+                >
+                  <FiHome className="w-5 h-5" />
+                  Pay at Home (After Service)
+                </button>
               </div>
             </div>
           )}
 
-           {/* Action Buttons */}
+          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4">
             {/* Support */}
             <button
@@ -1707,26 +1457,22 @@ const BookingDetails = () => {
             {/* Cancel */}
             {!['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && (
               <div className="col-span-2 space-y-2">
-                {booking.cancelRequestStatus === 'pending' ? (
-                  <div className="w-full py-4 rounded-2xl font-bold text-sm bg-amber-50 text-amber-700 border border-amber-200 text-center animate-pulse">
-                    Cancellation Request Pending Admin Approval
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleCancelBooking}
-                      className="w-full py-4 rounded-2xl font-bold text-sm transition-colors text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95"
-                    >
-                      {booking.vendorId && !cancellationTimeLeft ? 'Request Cancellation' : 'Cancel Booking'}
-                    </button>
-                    {booking.vendorId && (
-                      <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
-                        {cancellationTimeLeft 
-                          ? '⚠️ Direct cancellation allowed within 2 minutes of acceptance' 
-                          : 'ℹ️ Cancellation window expired. Request will be sent to admin.'}
-                      </p>
-                    )}
-                  </>
+                <button
+                  disabled={booking.vendorId && !cancellationTimeLeft}
+                  onClick={handleCancelBooking}
+                  className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors ${(booking.vendorId && !cancellationTimeLeft)
+                      ? 'bg-divider text-secondary-text border border-border-color cursor-not-allowed'
+                      : 'text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
+                    }`}
+                >
+                  Cancel Booking
+                </button>
+                {booking.vendorId && (
+                  <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
+                    {cancellationTimeLeft
+                      ? '⚠️ Cancellation only allowed within 2 minutes of acceptance'
+                      : '🚫 Cancellation window expired (exceeded 2 mins)'}
+                  </p>
                 )}
               </div>
             )}
@@ -1806,7 +1552,7 @@ const BidsList = ({ bookingId, onAccept }) => {
 
   const handleAccept = async (bidId) => {
     if (!window.confirm('Are you sure you want to accept this quote?')) return;
-    
+
     setAcceptingId(bidId);
     try {
       const { bookingService } = await import('../../../../services/bookingService');
@@ -1843,7 +1589,7 @@ const BidsList = ({ bookingId, onAccept }) => {
               </div>
             )}
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <h4 className="font-black text-dark-text truncate">{bid.vendorId?.businessName || bid.vendorId?.name}</h4>
@@ -1862,9 +1608,8 @@ const BidsList = ({ bookingId, onAccept }) => {
           <button
             onClick={() => handleAccept(bid._id)}
             disabled={acceptingId !== null}
-            className={`px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${
-              acceptingId === bid._id ? 'bg-divider text-secondary-text' : 'bg-brand text-white shadow-lg shadow-brand/10'
-            }`}
+            className={`px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${acceptingId === bid._id ? 'bg-divider text-secondary-text' : 'bg-brand text-white shadow-lg shadow-brand/10'
+              }`}
           >
             {acceptingId === bid._id ? 'Wait...' : 'Accept'}
           </button>

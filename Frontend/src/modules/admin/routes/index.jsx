@@ -16,7 +16,6 @@ const Settings = lazy(() => import('../pages/Settings'));
 const UserCategories = lazy(() => import('../pages/UserCategories'));
 const Users = lazy(() => import('../pages/Users'));
 const Vendors = lazy(() => import('../pages/Vendors'));
-const Workers = lazy(() => import('../pages/Workers'));
 const VendorsZone = lazy(() => import('../pages/VendorsZone'));
 const Bookings = lazy(() => import('../pages/Bookings'));
 const BookingDetails = lazy(() => import('../pages/Bookings/BookingDetails'));
@@ -35,13 +34,11 @@ const VendorSubscriptionManagement = lazy(() => import('../pages/VendorSubscript
 const Training = lazy(() => import('../pages/Training'));
 const VendorRequests = lazy(() => import('../pages/VendorRequests'));
 const AdminManagement = lazy(() => import('../pages/AdminManagement'));
-const PoliceVerification = lazy(() => import('../pages/PoliceVerification'));
 const Commission = lazy(() => import('../pages/Commission'));
 const PromoManagement = lazy(() => import('../pages/PromoManagement'));
 const VoucherManagement = lazy(() => import('../pages/VoucherManagement'));
 const PackageBased = lazy(() => import('../pages/PackageBased'));
 const PaintingManagement = lazy(() => import('../pages/Painting'));
-const InstantBookingManagement = lazy(() => import('../pages/InstantBooking'));
 const VendorWallets = lazy(() => import('../pages/VendorWallets'));
 
 
@@ -76,7 +73,6 @@ const AdminRoutes = () => {
           <Route path="vendors/*" element={<Vendors />} />
           <Route path="vendors-zone" element={<VendorsZone />} />
           <Route path="vendor-subscriptions/*" element={<VendorSubscriptionManagement />} />
-          <Route path="workers/*" element={<Workers />} />
           <Route path="bookings" element={<Bookings />} />
           <Route path="bookings/:id" element={<BookingDetails />} />
           <Route path="bookings/tracking" element={<BookingTracking />} />
@@ -98,10 +94,6 @@ const AdminRoutes = () => {
           <Route path="vouchers" element={<VoucherManagement />} />
           <Route path="package-based" element={<PackageBased />} />
           <Route path="painting" element={<PaintingManagement />} />
-          <Route path="instant-booking" element={<InstantBookingManagement />} />
-          <Route path="vendors/police-verification" element={
-            <SuperAdminRoute><PoliceVerification /></SuperAdminRoute>
-          } />
           <Route path="commission" element={<Commission />} />
           <Route path="vendor-wallets" element={<VendorWallets />} />
           <Route path="admin-management/*" element={

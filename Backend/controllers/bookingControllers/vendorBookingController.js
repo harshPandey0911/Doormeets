@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Booking = require('../../models/Booking');
-const Worker = require('../../models/Worker');
+const Worker = null; // Worker system removed
 const { validationResult } = require('express-validator');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
@@ -14,20 +14,15 @@ const getVendorBookings = async (req, res) => {
     const vendorId = req.user.id;
     const { status, q, page = 1, limit = 20 } = req.query;
 
-    // ── Get vendor categories and services ──
-    const Vendor = require('../../models/Vendor');
-    const v = await Vendor.findById(vendorId, 'categories service').lean();
-    const vendorCategoryIds = v?.categories || [];
-    const vendorCategoryTitles = v?.service || [];
+    // ── Get vendor categories from req.user (set in auth middleware) ──
+    let vendorCategories = req.user.categories || req.user.service || [];
+    if (!vendorCategories.length) {
+      const Vendor = require('../../models/Vendor');
+      const v = await Vendor.findById(vendorId, 'service').lean();
+      vendorCategories = v?.service || [];
+    }
 
     const vId = new mongoose.Types.ObjectId(vendorId);
-
-    // Fetch bookings that this vendor has already rejected
-    const BookingRequest = require('../../models/BookingRequest');
-    const rejectedBookingIds = await BookingRequest.find({
-      vendorId: vId,
-      status: 'REJECTED'
-    }).distinct('bookingId');
 
     // ── Build Base Query ──
     // This Or condition ensures vendors see their own jobs OR relevant unassigned alerts
@@ -36,12 +31,8 @@ const getVendorBookings = async (req, res) => {
         { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
         {
           vendorId: null,
-          _id: { $nin: rejectedBookingIds },
           status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.BIDDING] },
-          $or: [
-            { serviceCategory: { $in: vendorCategoryTitles } },
-            { categoryId: { $in: vendorCategoryIds } }
-          ],
+          serviceCategory: { $in: vendorCategories },
           'potentialVendors.vendorId': vId // Only show jobs where THIS vendor is within range
         }
       ]
@@ -200,7 +191,7 @@ const getBookingById = async (req, res) => {
     const bookingData = booking.toObject();
     const phoneRevealedStatuses = ['visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
     const canSeePhone = phoneRevealedStatuses.includes(booking.status) && booking.vendorId && booking.vendorId._id.toString() === vendorId.toString();
-    
+
     if (!canSeePhone) {
       if (bookingData.userId) {
         bookingData.userId.phone = undefined;
@@ -232,7 +223,7 @@ const getBookingById = async (req, res) => {
 function parseScheduledStartTime(scheduledDate, timeStr) {
   const date = new Date(scheduledDate);
   if (isNaN(date.getTime())) return new Date();
-  
+
   let hours = 0;
   let minutes = 0;
   if (typeof timeStr === 'string') {
@@ -339,10 +330,7 @@ const acceptBooking = async (req, res) => {
       {
         _id: id,
         status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
-        $or: [
-          { vendorId: null },
-          { vendorId: vendorId }
-        ]
+        vendorId: null // Crucial: Ensures another request didn't just take it
       },
       {
         $set: {
@@ -358,7 +346,7 @@ const acceptBooking = async (req, res) => {
     if (!updatedBooking) {
       // If update failed, check why (likely already taken)
       const existing = await Booking.findById(id);
-      if (existing && existing.vendorId && existing.vendorId.toString() !== vendorId.toString()) {
+      if (existing && existing.vendorId) {
         return res.status(409).json({ // 409 Conflict
           success: false,
           message: 'Sorry, this job has already been accepted by another vendor.'
@@ -387,7 +375,7 @@ const acceptBooking = async (req, res) => {
       // Scheduled booking availability logic
       const slotStart = parseScheduledStartTime(booking.scheduledDate, booking.timeSlot?.start || booking.scheduledTime);
       const reservedFrom = new Date(slotStart.getTime() - 60 * 60 * 1000); // 1 hour before slot starts
-      
+
       await Vendor.findByIdAndUpdate(vendorId, {
         reservedFrom,
         reservedBookingId: booking._id,
@@ -520,13 +508,11 @@ const rejectBooking = async (req, res) => {
     const { reason } = req.body;
 
     // Find booking
-    // Find booking
     const booking = await Booking.findOne({
       _id: id,
       $or: [
         { notifiedVendors: vendorId },
-        { vendorId: null, status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] } },
-        { vendorId: vendorId, status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] } }
+        { vendorId: null, status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] } }
       ]
     });
 
@@ -556,63 +542,6 @@ const rejectBooking = async (req, res) => {
       }
     );
 
-    const Vendor = require('../../models/Vendor');
-    const io = req.app.get('io');
-
-    // Handle Admin Manual Assignment Rejection
-    if (booking.assignedByAdmin) {
-      const rejectingVendor = await Vendor.findById(vendorId).select('name businessName').lean();
-      const vendorName = rejectingVendor?.businessName || rejectingVendor?.name || 'Vendor';
-
-      booking.vendorId = null;
-      booking.assignedByAdmin = false;
-      booking.status = 'pending_admin';
-      booking.notifiedVendors = [];
-      booking.potentialVendors = [];
-      booking.cancellationReason = `Manually assigned vendor (${vendorName}) rejected the request.`;
-
-      // Create Admin Notification
-      await createNotification({
-        userId: booking.userId,
-        type: 'booking_rejected',
-        title: 'Manually Assigned Vendor Rejected Request',
-        message: `Vendor ${vendorName} has rejected manually assigned booking #${booking.bookingNumber}.`,
-        relatedId: booking._id,
-        relatedType: 'booking',
-        pushData: {
-          type: 'booking_rejected',
-          bookingId: booking._id.toString(),
-          link: `/admin/bookings/${booking._id}`
-        }
-      });
-
-      if (io) {
-        const payload = {
-          bookingId: booking._id.toString(),
-          bookingNumber: booking.bookingNumber,
-          status: 'pending_admin',
-          message: `Vendor ${vendorName} rejected manual assignment. Ready for reassignment.`,
-          vendorName
-        };
-        // Emit to all admins
-        io.to('all_admins').emit('admin_booking_rejected', payload);
-        io.to('all_admins').emit('admin_booking_requested', payload);
-        // Update user
-        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
-          bookingId: booking._id.toString(),
-          status: 'pending_admin'
-        });
-      }
-
-      await booking.save();
-
-      return res.status(200).json({
-        success: true,
-        message: 'Manual assignment rejected successfully. Booking routed back to admin.',
-        data: { bookingId: id }
-      });
-    }
-
     // Remove vendor from notifiedVendors (they've responded)
     booking.notifiedVendors = booking.notifiedVendors.filter(
       v => v.toString() !== vendorId.toString()
@@ -620,10 +549,8 @@ const rejectBooking = async (req, res) => {
 
     // Remove from potentialVendors too
     booking.potentialVendors = booking.potentialVendors.filter(
-      v => v.vendorId && v.vendorId.toString() !== vendorId.toString()
+      v => v.vendorId?.toString() !== vendorId.toString()
     );
-    booking.markModified('potentialVendors');
-    booking.markModified('notifiedVendors');
 
     // Check if ALL vendors have rejected
     const pendingRequests = await BookingRequest.countDocuments({
@@ -631,91 +558,21 @@ const rejectBooking = async (req, res) => {
       status: { $in: ['PENDING', 'VIEWED'] }
     });
 
-    const remainingPotentialVendors = booking.potentialVendors || [];
-    const remainingPotentialIds = remainingPotentialVendors
-      .map(v => v.vendorId)
-      .filter(vId => vId && vId.toString() !== vendorId.toString());
+    const remainingPotential = booking.potentialVendors.length;
 
-    // Sequential Wave Match: Find the next online vendor in order of waves
-    const sortedRemaining = remainingPotentialVendors
-      .filter(v => v.vendorId && v.vendorId.toString() !== vendorId.toString())
-      .sort((a, b) => a.wave - b.wave);
+    if (pendingRequests === 0 && remainingPotential === 0) {
+      // No vendors left - mark booking as failed
+      booking.status = BOOKING_STATUS.NO_VENDORS;
+      booking.cancelledAt = new Date();
+      booking.cancelledBy = 'system';
+      booking.cancellationReason = 'All vendors rejected the request';
 
-    let nextOnlineVendor = null;
-    let nextVendorDistance = null;
-    let nextVendorWave = null;
-
-    for (const p of sortedRemaining) {
-      const vDoc = await Vendor.findOne({
-        _id: p.vendorId,
-        isOnline: true,
-        availability: { $in: ['AVAILABLE', 'BUSY'] }
-      }).select('_id').lean();
-
-      if (vDoc) {
-        nextOnlineVendor = vDoc;
-        nextVendorDistance = p.distance;
-        nextVendorWave = p.wave;
-        break;
-      }
-    }
-
-    if (nextOnlineVendor) {
-      // Notify the next online vendor immediately!
-      booking.currentWave = nextVendorWave;
-      booking.waveStartedAt = new Date();
-      booking.notifiedVendors.push(nextOnlineVendor._id);
-
-      // Create BookingRequest entry
-      await BookingRequest.create({
-        bookingId: booking._id,
-        vendorId: nextOnlineVendor._id,
-        status: 'PENDING',
-        wave: nextVendorWave,
-        distance: nextVendorDistance,
-        sentAt: new Date(),
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
-      });
-
-      // Emit Socket request
-      if (io) {
-        const User = require('../../models/User');
-        const user = await User.findById(booking.userId).select('name').lean();
-
-        io.to(`vendor_${nextOnlineVendor._id.toString()}`).emit('new_booking_request', {
-          bookingId: booking._id,
-          serviceName: booking.serviceName,
-          customerName: user?.name || 'Customer',
-          scheduledDate: booking.scheduledDate,
-          scheduledTime: booking.scheduledTime,
-          price: booking.finalAmount,
-          address: booking.address,
-          distance: nextVendorDistance,
-          serviceCategory: booking.serviceCategory,
-          brandName: booking.brandName,
-          brandIcon: booking.brandIcon,
-          categoryIcon: booking.categoryIcon,
-          createdAt: booking.createdAt,
-          expiresAt: new Date(Date.now() + 60 * 1000).toISOString(),
-          status: booking.status,
-          serviceType: booking.serviceType || 'service',
-          playSound: true,
-          message: `New booking request within ${nextVendorDistance?.toFixed(1) || '?'}km!`
-        });
-      }
-
-      console.log(`[RejectBooking] Immediately routed to next online vendor: ${nextOnlineVendor._id.toString()} in Wave ${nextVendorWave}`);
-    } else if (pendingRequests === 0) {
-      // No vendors left - route to admin
-      booking.status = 'pending_admin';
-      booking.cancellationReason = 'All online vendors rejected the request. Awaiting admin review.';
-
-      // Notify admin / log
+      // Notify user that no vendors are available
       await createNotification({
         userId: booking.userId,
         type: 'booking_rejected',
-        title: 'Booking Pending Admin Assignment',
-        message: `Booking ${booking.bookingNumber} has been rejected by all online vendors. Awaiting admin review.`,
+        title: 'No Vendors Available',
+        message: `Sorry, no vendors are available for booking ${booking.bookingNumber}. Please try again later.`,
         relatedId: booking._id,
         relatedType: 'booking',
         pushData: {
@@ -725,24 +582,27 @@ const rejectBooking = async (req, res) => {
         }
       });
 
+      // --- ADD SOCKET NOTIFICATION FOR REAL-TIME UI UPDATE ---
+      const io = req.app.get('io');
       if (io) {
         const userIdStr = booking.userId.toString();
         const bookingIdStr = booking._id.toString();
 
-        console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Routed to admin. Notifying rooms: user_${userIdStr}, booking_${bookingIdStr}, all_admins`);
+        console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Notifying rooms: user_${userIdStr}, booking_${bookingIdStr}`);
 
         const payload = {
           bookingId: bookingIdStr,
-          bookingNumber: booking.bookingNumber,
-          status: 'pending_admin',
-          message: 'Booking request sent to admin for manual assignment.'
+          status: BOOKING_STATUS.NO_VENDORS,
+          message: 'All nearby vendors are currently unavailable for this request.'
         };
 
         // Emit to user room
+        io.to(`user_${userIdStr}`).emit('booking_search_failed', payload);
         io.to(`user_${userIdStr}`).emit('booking_updated', payload);
+
+        // Also emit to specific booking room (as fallback)
+        io.to(`booking_${bookingIdStr}`).emit('booking_search_failed', payload);
         io.to(`booking_${bookingIdStr}`).emit('booking_updated', payload);
-        // Emit to all admins
-        io.to('all_admins').emit('admin_booking_requested', payload);
       }
     }
     // Otherwise, booking stays SEARCHING for other vendors
@@ -807,7 +667,7 @@ const cancelAcceptedBooking = async (req, res) => {
     booking.waveStartedAt = new Date(); // Start wave timer now
     // Remove this vendor from potential vendors so they don't get pinged again
     booking.potentialVendors = booking.potentialVendors.filter(v => v.vendorId?.toString() !== vendorId.toString());
-    
+
     // Also remove from notified vendors so they don't get the 'booking_taken' later
     booking.notifiedVendors = booking.notifiedVendors.filter(v => v.toString() !== vendorId.toString());
 
@@ -1429,7 +1289,7 @@ const verifySelfVisit = async (req, res) => {
 
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     if (booking.status !== BOOKING_STATUS.JOURNEY_STARTED) return res.status(400).json({ success: false, message: 'Journey not started' });
-    
+
     // Allow master OTP 1234 for testing
     if (booking.visitOtp !== otp && otp !== '1234') return res.status(400).json({ success: false, message: 'Invalid OTP' });
 
@@ -1522,10 +1382,10 @@ const completeSelfJob = async (req, res) => {
       // If it's a cash job, we calculate commission now to add to DUES.
       // If it's an online job, we credit GROSS (100%) and deduct at withdrawal as requested.
       const isOnlineJob = booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online';
-      
+
       // Get Dynamic Commission from Settings based on Vendor Level (DISABLED: Commission removed)
       const dynamicCommission = 0;
-      
+
       const serviceSplitPct = isOnlineJob ? 100 : (100 - dynamicCommission);
       const partsSplitPct = settings?.partsPayoutPercentage ?? 10;
       const serviceGstPct = settings?.serviceGstPercentage ?? 18;
@@ -1714,7 +1574,7 @@ const completeSelfJob = async (req, res) => {
 
     // ── Notify user ──
     const { createNotification } = require('../notificationControllers/notificationController');
-    
+
     // 1. Notify user that work is completed
     await createNotification({
       userId: booking.userId,
@@ -1807,7 +1667,7 @@ const collectSelfCash = async (req, res) => {
     if (!bill) return res.status(500).json({ success: false, message: 'Bill not found — cannot process payment' });
 
     const grandTotal = Number(bill.grandTotal) || 0;
-    
+
     // ── Generate Invoices (Dual-Invoice Flow with Safeguards) ──
     let vendorEarning = 0;
     let platformFeeAmount = 0;
@@ -1817,7 +1677,7 @@ const collectSelfCash = async (req, res) => {
     try {
       if (!booking.invoiceGenerated && booking.vendorId) {
         const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
-        
+
         const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
         platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
         vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
@@ -2296,47 +2156,6 @@ const reconfirmBooking = async (req, res) => {
   }
 };
 
-const requestCancelBooking = async (req, res) => {
-  try {
-    const vendorId = req.user.id;
-    const { id } = req.params;
-    const { reason } = req.body;
-
-    if (!reason || !reason.trim()) {
-      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
-    }
-
-    const booking = await Booking.findOne({ _id: id, vendorId });
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
-    if (['cancelled', 'completed'].includes(booking.status)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot request cancellation for a booking that is already ${booking.status}` 
-      });
-    }
-
-    booking.cancelRequestStatus = 'pending';
-    booking.cancelRequestedBy = 'vendor';
-    booking.cancelRequestReason = reason;
-    booking.cancelRequestAt = new Date();
-    await booking.save();
-
-    console.log(`[CancelRequest] Vendor ${vendorId} requested cancellation for booking ${booking.bookingNumber}`);
-
-    res.status(200).json({
-      success: true,
-      message: 'Cancellation request submitted to admin successfully',
-      data: booking
-    });
-  } catch (error) {
-    console.error('Vendor request cancel booking error:', error);
-    res.status(500).json({ success: false, message: 'Failed to submit cancellation request' });
-  }
-};
-
 module.exports = {
   getVendorBookings,
   getBookingById,
@@ -2354,6 +2173,5 @@ module.exports = {
   getVendorRatings,
   getPendingBookings,
   reconfirmBooking,
-  cancelAcceptedBooking,
-  requestCancelBooking
+  cancelAcceptedBooking
 };

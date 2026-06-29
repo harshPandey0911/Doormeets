@@ -199,16 +199,3 @@ export const getRatings = async (params = {}) => {
     throw error;
   }
 };
-
-/**
- * Request booking cancellation (Vendor)
- */
-export const requestCancel = async (bookingId, reason) => {
-  try {
-    const response = await api.post(`/vendors/bookings/${bookingId}/request-cancel`, { reason });
-    return response.data;
-  } catch (error) {
-    console.error('Error requesting cancellation:', error);
-    throw error;
-  }
-};

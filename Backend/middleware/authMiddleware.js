@@ -1,7 +1,6 @@
 const { verifyAccessToken } = require('../utils/tokenService');
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
-const Worker = require('../models/Worker');
 const Admin = require('../models/Admin');
 const { USER_ROLES } = require('../utils/constants');
 
@@ -55,7 +54,7 @@ const authenticate = async (req, res, next) => {
           // Allow access to verification, training, and profile endpoints during pending state
           const allowedPaths = ['/verification', '/training', '/profile', '/subscription', '/auth'];
           const isAllowedPath = allowedPaths.some(p => req.baseUrl.includes(p) || req.path.includes(p));
-          
+
           if (!isAllowedPath) {
             return res.status(403).json({
               success: false,
@@ -80,13 +79,6 @@ const authenticate = async (req, res, next) => {
             success: false,
             message: 'Account logged in on another device. Please login again.'
           });
-        }
-        break;
-      case USER_ROLES.WORKER:
-        user = await Worker.findById(decoded.userId).select('-password').lean();
-        // SINGLE DEVICE LOGOUT Logic
-        if (process.env.NODE_ENV === 'production' && user && user.loginSessionId && decoded.loginSessionId && user.loginSessionId !== decoded.loginSessionId) {
-          return res.status(401).json({ success: false, message: 'Account logged in on another device. Please login again.' });
         }
         break;
       case USER_ROLES.ADMIN:

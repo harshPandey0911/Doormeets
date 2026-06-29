@@ -117,25 +117,30 @@ export const playSingleBeep = () => {
   }
 };
 
-// Urgent ring for booking alerts
+// Play urgent ring for booking alerts
 let currentAudio = null; // Global variable to track current playing audio
-let alertAudio = null; // Single reused audio instance to optimize performance and browser unlock
 
 export const playAlertRing = (loop = false) => {
   try {
-    if (!alertAudio) {
-      alertAudio = new Audio('/booking-alert.mp3');
+    // If audio is already playing, do nothing if we want to sustain it, or restart ??
+    // Actually, proper behavior: if playing, stop previous and start new to ensure fresh start
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
     }
 
-    if (loop) alertAudio.loop = true;
-    currentAudio = alertAudio; // Track the new audio instance
+    const audio = new Audio('/booking-alert.mp3');
+    if (loop) audio.loop = true;
+    currentAudio = audio; // Track the new audio instance
 
-    alertAudio.currentTime = 0;
-    alertAudio.play().catch(e => {
-      console.error('Error playing alert file:', e);
-      // Fallback to Web Audio API synthesis
-      playNotificationSound();
-    });
+    audio.play().catch(e => console.error('Error playing alert file:', e));
+
+    // Cleanup when audio finishes (if not looping)
+    audio.onended = () => {
+      if (currentAudio === audio) {
+        currentAudio = null;
+      }
+    };
 
     return true;
   } catch (error) {
@@ -145,11 +150,11 @@ export const playAlertRing = (loop = false) => {
 };
 
 export const stopAlertRing = () => {
-  if (alertAudio) {
-    alertAudio.pause();
-    alertAudio.currentTime = 0;
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
   }
-  currentAudio = null;
 };
 
 // Check if sound is enabled in settings
@@ -184,21 +189,6 @@ export const unlockAudioContext = () => {
         console.log('🔊 AudioContext unlocked successfully:', audioContext.state);
       });
     }
-
-    // Unlock the booking alert audio element by playing and pausing it quickly
-    if (!alertAudio) {
-      alertAudio = new Audio('/booking-alert.mp3');
-    }
-    const playPromise = alertAudio.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        alertAudio.pause();
-        alertAudio.currentTime = 0;
-        console.log('🔊 Alert Audio element unlocked successfully');
-      }).catch(e => {
-        console.warn('Alert audio unlock failed (waiting for gesture):', e.message);
-      });
-    }
   } catch (e) {
     console.error('Failed to unlock audio context:', e);
   }
@@ -210,26 +200,26 @@ export const playSirenAlarm = () => {
     if (audioContext.state === 'suspended') {
       audioContext.resume();
     }
-    
+
     // Stop any existing siren first
     stopSirenAlarm();
-    
+
     sirenOscillator = audioContext.createOscillator();
     sirenGain = audioContext.createGain();
-    
+
     sirenOscillator.type = 'sawtooth';
     const now = audioContext.currentTime;
     sirenOscillator.frequency.setValueAtTime(600, now);
-    
+
     sirenOscillator.frequency.linearRampToValueAtTime(1000, now + 0.45);
-    
+
     sirenOscillator.connect(sirenGain);
     sirenGain.connect(audioContext.destination);
-    
+
     sirenGain.gain.setValueAtTime(0.25, now);
-    
+
     sirenOscillator.start(now);
-    
+
     let goingUp = true;
     sirenInterval = setInterval(() => {
       if (!audioContext || !sirenOscillator) return;
@@ -241,7 +231,7 @@ export const playSirenAlarm = () => {
       }
       goingUp = !goingUp;
     }, 450);
-    
+
     // Auto stop after 30 seconds
     sirenTimeout = setTimeout(() => {
       stopSirenAlarm();
@@ -267,13 +257,13 @@ export const stopSirenAlarm = () => {
     try {
       sirenOscillator.stop();
       sirenOscillator.disconnect();
-    } catch (e) {}
+    } catch (e) { }
     sirenOscillator = null;
   }
   if (sirenGain) {
     try {
       sirenGain.disconnect();
-    } catch (e) {}
+    } catch (e) { }
     sirenGain = null;
   }
 };

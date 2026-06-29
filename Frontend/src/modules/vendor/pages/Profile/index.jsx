@@ -224,7 +224,7 @@ const Profile = () => {
               transform: 'translate(30px, -30px)',
             }}
           />
- 
+
           <div className="relative z-10">
             <div className="flex items-center gap-4">
               {/* Profile Photo - Circle with Rating Below */}
@@ -258,12 +258,12 @@ const Profile = () => {
                   </div>
                 )}
               </div>
- 
+
               {/* Name and Info */}
               <div className="flex-1 min-w-0 flex flex-col">
                 <h2 className="text-xl font-black text-orange-950 mb-0 break-words tracking-tight leading-tight">{profile.name}</h2>
                 <p className="text-orange-900/70 text-[10px] mb-2 font-bold break-words tracking-wide uppercase">{profile.businessName}</p>
- 
+
                 {/* Phone and Email */}
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
- 
+
               {/* Navigate Button */}
               <button
                 onClick={() => navigate('/vendor/profile/details')}

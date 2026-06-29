@@ -263,15 +263,10 @@ const settingsSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  codAdvancePercentage: {
+  vendorBusyBufferHours: {
     type: Number,
-    default: 10, // 10% advance payment required for COD
-    min: 0,
-    max: 100
-  },
-  isInstantBookingEnabled: {
-    type: Boolean,
-    default: true
+    default: 1, // default 1 hour before scheduled time
+    min: 0
   },
   instantBookingMarkup: {
     type: Number,

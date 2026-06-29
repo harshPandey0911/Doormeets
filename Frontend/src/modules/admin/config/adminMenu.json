@@ -198,16 +198,6 @@
     "children": []
   },
   {
-    "title": "Instant Booking",
-    "route": "/admin/instant-booking",
-    "section": "CATALOG MANAGEMENT",
-    "allowedRoles": [
-      "super_admin",
-      "admin"
-    ],
-    "children": []
-  },
-  {
     "title": "Offer Banners",
     "route": "/admin/offer-banners",
     "section": "BUSINESS & PROMOTIONS",

@@ -1,6 +1,6 @@
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
-const Worker = require('../../models/Worker');
+const Worker = null; // Worker system removed
 const Booking = require('../../models/Booking');
 const Withdrawal = require('../../models/Withdrawal');
 const Settlement = require('../../models/Settlement');

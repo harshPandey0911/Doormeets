@@ -192,7 +192,7 @@ const Dashboard = memo(() => {
       currentLevel: apiStats.currentLevel || 'L3',
       commissionRate: apiStats.commissionRate || 15
     });
-    
+
     // Set online status from API
     if (apiStats.isOnline !== undefined) {
       setIsOnline(apiStats.isOnline);
@@ -295,7 +295,7 @@ const Dashboard = memo(() => {
     };
 
     window.addEventListener('vendorStatusChanged', handleStatusUpdate);
-    
+
     const handleShowAlert = (e) => {
       // e.detail contains the new booking job
       if (e.detail) {
@@ -393,7 +393,7 @@ const Dashboard = memo(() => {
       if (response.success) {
         setIsOnline(newStatus);
         toast.success(`You are now ${newStatus ? 'Online' : 'Offline'}`);
-        
+
         // Update local stats too
         setStats(prev => ({ ...prev, isOnline: newStatus }));
 
@@ -560,7 +560,7 @@ const Dashboard = memo(() => {
 
         {/* Vendor Header Welcome & Level Badge Card */}
         <div className="px-4 pt-4">
-          <div 
+          <div
             className="rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden border border-white/10"
             style={{
               background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
@@ -573,13 +573,13 @@ const Dashboard = memo(() => {
             <div className="flex items-center gap-3 relative z-10">
               {/* Profile Image / Initials */}
               {vendorProfile.photo ? (
-                <img 
-                  src={vendorProfile.photo} 
+                <img
+                  src={vendorProfile.photo}
                   alt={vendorProfile.name}
                   className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/30 shadow-md"
                 />
               ) : (
-                <div 
+                <div
                   className="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg select-none border-2 border-purple-500/30 shadow-md text-white"
                   style={{
                     background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)'
@@ -594,7 +594,7 @@ const Dashboard = memo(() => {
                   {vendorProfile.businessName || vendorProfile.name}
                 </h2>
                 <p className="text-[11px] font-semibold text-purple-300/80 uppercase tracking-wider mt-0.5">
-                  Partner ID: DM-{String(vendorProfile.name.slice(0,3)).toUpperCase()}-{stats.level}
+                  Partner ID: DM-{String(vendorProfile.name.slice(0, 3)).toUpperCase()}-{stats.level}
                 </p>
               </div>
             </div>
@@ -602,20 +602,20 @@ const Dashboard = memo(() => {
             {/* Badges Container */}
             <div className="flex items-center relative z-10 shrink-0">
               {/* Performance Level Badge */}
-              <span 
+              <span
                 className="text-[11px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider text-white shadow-md animate-pulse"
                 style={{
-                  background: stats.level === 1 
+                  background: stats.level === 1
                     ? 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)' // Gold for Level 1
                     : stats.level === 2
-                    ? 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)' // Silver for Level 2
-                    : 'linear-gradient(135deg, #b45309 0%, #78350f 100%)', // Bronze for Level 3
+                      ? 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)' // Silver for Level 2
+                      : 'linear-gradient(135deg, #b45309 0%, #78350f 100%)', // Bronze for Level 3
                   border: '1px solid rgba(255, 255, 255, 0.15)',
-                  boxShadow: stats.level === 1 
-                    ? '0 4px 14px rgba(234, 179, 8, 0.4)' 
-                    : stats.level === 2 
-                    ? '0 4px 14px rgba(100, 116, 139, 0.4)' 
-                    : '0 4px 14px rgba(180, 83, 9, 0.4)'
+                  boxShadow: stats.level === 1
+                    ? '0 4px 14px rgba(234, 179, 8, 0.4)'
+                    : stats.level === 2
+                      ? '0 4px 14px rgba(100, 116, 139, 0.4)'
+                      : '0 4px 14px rgba(180, 83, 9, 0.4)'
                 }}
               >
                 {stats.level === 1 ? '🥇 Level 1' : stats.level === 2 ? '🥈 Level 2' : '🥉 Level 3'}
