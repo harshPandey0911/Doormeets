@@ -19,3 +19,8 @@ export const declineConsultation = async (id) => {
   const response = await api.put(`/vendors/painting-consultations/${id}/decline`);
   return response.data;
 };
+
+export const getPaintingRates = async () => {
+  const response = await api.get('/public/config');
+  return response.data?.settings?.paintingRates || null;
+};

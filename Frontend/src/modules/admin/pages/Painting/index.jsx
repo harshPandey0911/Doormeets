@@ -8,6 +8,7 @@ import {
 import * as paintingService from '../../services/paintingService';
 import uploadToCloudinary from '../../../../utils/cloudinaryUpload';
 import ConsultationDashboard from './ConsultationDashboard';
+import PaintingPricingConfig from './PaintingPricingConfig';
 
 const PaintingManagement = () => {
   const [activeTab, setActiveTab] = useState('brands'); // 'brands' | 'products' | 'rates' | 'quotations' | 'consultations'
@@ -311,7 +312,7 @@ const PaintingManagement = () => {
           <h1 className="text-2xl font-bold text-gray-900">Painting Management</h1>
           <p className="text-sm text-gray-500">Configure brands, product prices, coverage, labor rates, and generate custom quotations.</p>
         </div>
-        {activeTab !== 'consultations' && (
+        {activeTab !== 'consultations' && activeTab !== 'pricing' && (
           <button
             onClick={openAddModal}
             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
@@ -329,6 +330,7 @@ const PaintingManagement = () => {
           { id: 'products', label: 'Paint Products & Putty/Primer', icon: FiPackage },
           { id: 'rates', label: 'Labour Rates', icon: FiPercent },
           { id: 'quotations', label: 'Painting Quotations', icon: FiFileText },
+          { id: 'pricing', label: 'Pricing Config', icon: FiDollarSign },
           { id: 'consultations', label: 'Live Consultations', icon: FiFileText }
         ].map(tab => {
           const Icon = tab.icon;
@@ -635,7 +637,12 @@ const PaintingManagement = () => {
               </div>
             )}
 
-            {/* 5. CONSULTATIONS TAB */}
+            {/* 5. PRICING CONFIG TAB */}
+            {activeTab === 'pricing' && (
+              <PaintingPricingConfig />
+            )}
+
+            {/* 6. CONSULTATIONS TAB */}
             {activeTab === 'consultations' && (
               <ConsultationDashboard />
             )}

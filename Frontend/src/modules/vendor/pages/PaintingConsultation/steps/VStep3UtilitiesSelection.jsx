@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const UTILITY_ITEMS = [
   { id: 'doors',   label: 'Doors',   icon: 'sensor_door', enamelRate: 120, addlRate: 80 },
@@ -7,7 +7,16 @@ const UTILITY_ITEMS = [
   { id: 'panels',  label: 'Panels',  icon: 'dashboard',    enamelRate: 150, addlRate: 100 },
 ];
 
-const VStep3UtilitiesSelection = ({ quoteData, updateQuoteData, onNext, onBack }) => {
+const VStep3UtilitiesSelection = ({ quoteData, updateQuoteData, onNext, onBack, paintingRates }) => {
+  // Merge admin-configured utility rates
+  const dynamicUtilities = useMemo(() => {
+    if (!paintingRates?.utilities) return UTILITY_ITEMS;
+    return UTILITY_ITEMS.map(u => {
+      const adminUtility = paintingRates.utilities[u.id];
+      return adminUtility ? { ...u, enamelRate: adminUtility.enamelRate, addlRate: adminUtility.addlRate } : u;
+    });
+  }, [paintingRates]);
+
   const [utilities, setUtilities] = useState(
     quoteData.utilities?.length > 0 ? quoteData.utilities :
     UTILITY_ITEMS.map(u => ({ id: u.id, selected: false, enamel: false, additionalService: false }))
@@ -48,7 +57,7 @@ const VStep3UtilitiesSelection = ({ quoteData, updateQuoteData, onNext, onBack }
 
       {/* Utility Cards */}
       <div className="space-y-3">
-        {UTILITY_ITEMS.map(meta => {
+        {dynamicUtilities.map(meta => {
           const state = utilities.find(u => u.id === meta.id) || {};
           return (
             <div

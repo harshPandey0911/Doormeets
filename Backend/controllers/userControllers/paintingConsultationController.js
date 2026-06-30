@@ -20,6 +20,28 @@ exports.requestConsultation = async (req, res) => {
       status: 'PENDING'
     });
 
+    // Populate user details for real-time notification detail rendering
+    const populatedConsultation = await PaintingConsultation.findById(consultation._id).populate('userId', 'name phone email');
+
+    // Broadcast real-time socket.io alert to all vendors
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        console.log(`[PaintingConsultation] Broadcasting new consultation request #${consultation._id} to all online vendors`);
+        io.to('all_vendors').emit('new_painting_consultation', {
+          consultationId: consultation._id,
+          propertyType: consultation.propertyType,
+          customerName: populatedConsultation.userId?.name || 'Customer',
+          customerPhone: populatedConsultation.userId?.phone || 'N/A',
+          city: consultation.address?.city || 'Location shared',
+          createdAt: consultation.createdAt
+        });
+      }
+    } catch (socketErr) {
+      console.error('[PaintingConsultation] Socket broadcast failed:', socketErr);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Consultation requested successfully',

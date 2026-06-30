@@ -22,9 +22,26 @@ async function processBookingCompletion(bookingId) {
     // 2. Determine base amount to calculate commission on (finalAmount / Grand Total)
     const amount = Number(booking.finalAmount || booking.basePrice || 0);
 
-    // 3. Compute Splits
-    const adminCommission = parseFloat(((amount * commissionPct) / 100).toFixed(2));
-    const vendorShare = parseFloat((amount - adminCommission).toFixed(2));
+    // 3. Compute Splits (Take Instant Booking Surcharge into account)
+    let adminCommission = 0;
+    let vendorShare = 0;
+
+    if (booking.bookingType === 'instant' && settings) {
+      const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
+      const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+      const adminMarkupShare = Math.max(0, markupFee - vendorMarkupShare);
+
+      // Surcharge is subtracted first, regular commission is computed on base amount, then shares are added back
+      const baseForCommission = Math.max(0, amount - markupFee);
+      const baseAdminCommission = parseFloat(((baseForCommission * commissionPct) / 100).toFixed(2));
+      const baseVendorShare = parseFloat((baseForCommission - baseAdminCommission).toFixed(2));
+
+      adminCommission = parseFloat((baseAdminCommission + adminMarkupShare).toFixed(2));
+      vendorShare = parseFloat((baseVendorShare + vendorMarkupShare).toFixed(2));
+    } else {
+      adminCommission = parseFloat(((amount * commissionPct) / 100).toFixed(2));
+      vendorShare = parseFloat((amount - adminCommission).toFixed(2));
+    }
 
     booking.totalAmount = amount;
     booking.adminCommission = adminCommission;

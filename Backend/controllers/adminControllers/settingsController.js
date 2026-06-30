@@ -73,7 +73,9 @@ exports.updateSettings = async (req, res, next) => {
       instantBookingMarkup,
       instantBookingWaitTime,
       showArrivalTime,
-      instantBookingWindowHours
+      instantBookingWindowHours,
+      instantBookingVendorShare,
+      paintingRates
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -112,7 +114,9 @@ exports.updateSettings = async (req, res, next) => {
         instantBookingMarkup: instantBookingMarkup !== undefined ? Number(instantBookingMarkup) : 99,
         instantBookingWaitTime: instantBookingWaitTime !== undefined ? Number(instantBookingWaitTime) : 45,
         showArrivalTime: showArrivalTime !== undefined ? showArrivalTime : true,
-        instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4
+        instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4,
+        instantBookingVendorShare: instantBookingVendorShare !== undefined ? Number(instantBookingVendorShare) : 50,
+        paintingRates: paintingRates !== undefined ? paintingRates : undefined
       });
     } else {
       // Update fields if provided
@@ -185,6 +189,8 @@ exports.updateSettings = async (req, res, next) => {
       if (instantBookingWaitTime !== undefined) settings.instantBookingWaitTime = Number(instantBookingWaitTime);
       if (showArrivalTime !== undefined) settings.showArrivalTime = showArrivalTime;
       if (instantBookingWindowHours !== undefined) settings.instantBookingWindowHours = Number(instantBookingWindowHours);
+      if (instantBookingVendorShare !== undefined) settings.instantBookingVendorShare = Number(instantBookingVendorShare);
+      if (paintingRates !== undefined) settings.paintingRates = paintingRates;
 
       await settings.save();
     }
@@ -248,7 +254,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates');
 
     // Default if not found (fallback values)
     if (!settings) {

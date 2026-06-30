@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { generateQuote } from '../../services/paintingConsultationService';
+import { generateQuote, getPaintingRates } from '../../services/paintingConsultationService';
 import VStep1CreateSurvey from './steps/VStep1CreateSurvey';
 import VStep2RoomDetails, { ADDL_SERVICES_OPTIONS } from './steps/VStep2RoomDetails';
 import VStep3UtilitiesSelection from './steps/VStep3UtilitiesSelection';
@@ -40,6 +40,14 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
     grandTotal: 0,
   });
 
+  // Fetch dynamic painting rates from admin settings
+  const [paintingRates, setPaintingRates] = useState(null);
+  useEffect(() => {
+    getPaintingRates().then(rates => {
+      if (rates) setPaintingRates(rates);
+    }).catch(err => console.error('Failed to fetch painting rates:', err));
+  }, []);
+
   const updateQuoteData = (updates) => {
     setQuoteData(prev => ({ ...prev, ...updates }));
   };
@@ -78,11 +86,16 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
         }),
         // Map Figma utilities + global services into one array for the backend
         additionalServices: [
-          ...(finalData.utilities || []).filter(u => u.selected).map(u => ({
-            name: `${u.label} (${u.enamel ? 'Enamel' : 'Basic'})`,
-            quantity: 1,
-            cost: (u.enamel ? 120 : 0) + (u.additionalService ? 80 : 0),
-          })),
+          ...(finalData.utilities || []).filter(u => u.selected).map(u => {
+            const adminUtilRates = paintingRates?.utilities?.[u.id];
+            const enamelRate = adminUtilRates?.enamelRate ?? 120;
+            const addlRate = adminUtilRates?.addlRate ?? 80;
+            return {
+              name: `${u.label} (${u.enamel ? 'Enamel' : 'Basic'})`,
+              quantity: 1,
+              cost: (u.enamel ? enamelRate : 0) + (u.additionalService ? addlRate : 0),
+            };
+          }),
           ...(finalData.rooms || []).filter(r => r.selected).flatMap(r => 
             (r.additionalServices || []).map(svc => {
               const opt = ADDL_SERVICES_OPTIONS.find(o => o.id === svc.id);
@@ -163,8 +176,8 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
       {/* Step Content */}
       <div className="px-4 py-6 max-w-2xl mx-auto">
         {step === 0 && <VStep1CreateSurvey quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} />}
-        {step === 1 && <VStep2RoomDetails quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} />}
-        {step === 2 && <VStep3UtilitiesSelection quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} />}
+        {step === 1 && <VStep2RoomDetails quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
+        {step === 2 && <VStep3UtilitiesSelection quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
         {step === 3 && <VStep5GenerateMeasurements quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} />}
         {step === 4 && <VStep6PaintPackage quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} />}
         {step === 5 && <VStep7Finalize quoteData={quoteData} updateQuoteData={updateQuoteData} onBack={goBack} onSubmit={handleFinalSubmit} submitting={submitting} />}

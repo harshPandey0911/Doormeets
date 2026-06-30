@@ -124,110 +124,203 @@ export default function GlobalBookingAlert() {
       }
     };
 
+    // Painting consultation real-time listener
+    const handlePaintingConsultationAlert = (e) => {
+      if (e.detail) {
+        setActiveConsultationAlerts(prev => {
+          const cId = String(e.detail.consultationId);
+          if (prev.find(c => String(c.consultationId) === cId)) return prev;
+          return [e.detail, ...prev];
+        });
+      }
+    };
+
     window.addEventListener('showDashboardBookingAlert', handleShowAlert);
     window.addEventListener('removeVendorBooking', handleRemoveBooking);
+    window.addEventListener('showPaintingConsultationAlert', handlePaintingConsultationAlert);
 
     return () => {
       window.removeEventListener('showDashboardBookingAlert', handleShowAlert);
       window.removeEventListener('removeVendorBooking', handleRemoveBooking);
+      window.removeEventListener('showPaintingConsultationAlert', handlePaintingConsultationAlert);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(heartbeat);
     };
   }, []);
 
+  const [activeConsultationAlerts, setActiveConsultationAlerts] = useState([]);
+
   // Effect to manage sound based on pending bookings
   useEffect(() => {
-    if (activeAlertBookings.length > 0) {
+    if (activeAlertBookings.length > 0 || activeConsultationAlerts.length > 0) {
       playAlertRing(true); // Always loop for vendor until actioned
     } else {
       stopAlertRing();
     }
     return () => stopAlertRing();
-  }, [activeAlertBookings.length]);
+  }, [activeAlertBookings.length, activeConsultationAlerts.length]);
 
-  if (activeAlertBookings.length === 0) return null;
+  const handleAcceptConsultation = async (id) => {
+    try {
+      const { acceptConsultation } = await import('../../services/paintingConsultationService');
+      await acceptConsultation(id);
+      toast.success('Consultation Request Accepted!');
+      setActiveConsultationAlerts(prev => prev.filter(c => String(c.consultationId) !== String(id)));
+      navigate('/vendor/painting-consultations');
+    } catch (err) {
+      toast.error('Failed to accept consultation');
+    }
+  };
+
+  const handleDeclineConsultation = async (id) => {
+    try {
+      const { declineConsultation } = await import('../../services/paintingConsultationService');
+      await declineConsultation(id);
+      toast.success('Consultation Request Declined');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActiveConsultationAlerts(prev => prev.filter(c => String(c.consultationId) !== String(id)));
+    }
+  };
+
+  if (activeAlertBookings.length === 0 && activeConsultationAlerts.length === 0) return null;
 
   return (
-    <BookingAlertModal
-      isOpen={activeAlertBookings.length > 0}
-      bookings={activeAlertBookings}
-      maxSearchTimeMins={maxSearchTime}
-      onAccept={async (id, price, note) => {
-        try {
-          if (price) {
-            const { submitBid } = await import('../../services/bookingService');
-            await submitBid(id, price, note);
-            toast.success('Quote sent successfully!');
-          } else {
-            const bookingItem = activeAlertBookings.find(b => String(b.id || b._id) === String(id));
-            const isScheduled = bookingItem?.bookingType === 'scheduled';
-            await acceptBooking(id);
-            if (!isScheduled) {
-              await assignWorker(id, 'SELF');
+    <>
+      {activeAlertBookings.length > 0 && (
+        <BookingAlertModal
+          isOpen={activeAlertBookings.length > 0}
+          bookings={activeAlertBookings}
+          maxSearchTimeMins={maxSearchTime}
+          onAccept={async (id, price, note) => {
+            try {
+              if (price) {
+                const { submitBid } = await import('../../services/bookingService');
+                await submitBid(id, price, note);
+                toast.success('Quote sent successfully!');
+              } else {
+                const bookingItem = activeAlertBookings.find(b => String(b.id || b._id) === String(id));
+                const isScheduled = bookingItem?.bookingType === 'scheduled';
+                await acceptBooking(id);
+                if (!isScheduled) {
+                  await assignWorker(id, 'SELF');
+                  toast.success('Job claimed successfully! Assigned to you.');
+                } else {
+                  toast.success('Scheduled job accepted! You can assign yourself or a worker 30 minutes before the start time.');
+                }
+              }
+
+              // Remove from local storage
+              const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
+              const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
+              localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
+
+              // Dispatch remove event
+              window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
+              setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
+
+              window.dispatchEvent(new Event('vendorJobsUpdated'));
+              window.dispatchEvent(new Event('vendorStatsUpdated'));
               toast.success('Job claimed successfully! Assigned to you.');
-            } else {
-              toast.success('Scheduled job accepted! You can assign yourself or a worker 30 minutes before the start time.');
+            } catch (e) {
+              toast.error('Failed to claim job');
             }
-          }
+          }}
+          onAssign={async (id) => {
+            try {
+              await acceptBooking(id);
 
-          // Remove from local storage
-          const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-          const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
-          localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
+              // Remove from local storage
+              const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
+              const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
+              localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
 
-          // Dispatch remove event
-          window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
-          setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
+              // Dispatch remove event
+              window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
+              setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
 
-          window.dispatchEvent(new Event('vendorJobsUpdated'));
-          window.dispatchEvent(new Event('vendorStatsUpdated'));
-          toast.success('Job claimed successfully! Assigned to you.');
-        } catch (e) {
-          toast.error('Failed to claim job');
-        }
-      }}
-      onAssign={async (id) => {
-        try {
-          await acceptBooking(id);
+              window.dispatchEvent(new Event('vendorJobsUpdated'));
+              window.dispatchEvent(new Event('vendorStatsUpdated'));
+              toast.success('Job claimed! Redirecting to assign...');
+              navigate(`/vendor/booking/${id}/assign-worker`);
+            } catch (e) {
+              toast.error('Failed to claim job');
+            }
+          }}
+          onReject={async (id) => {
+            try {
+              // Reject is often silent or via reject api
+              await rejectBooking(id);
+            } catch (error) {
+              console.error("Failed to reject job via API, removing locally");
+            } finally {
+              const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
+              const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
+              localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
 
-          // Remove from local storage
-          const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-          const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
-          localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
+              window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
+              setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
 
-          // Dispatch remove event
-          window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
-          setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
+              toast.success('Booking application rejected');
+              window.dispatchEvent(new Event('vendorJobsUpdated'));
+            }
+          }}
+          onMinimize={() => {
+            setActiveAlertBookings([]); // simply minimizes current visible ones. We can fetch them later from pending.
+          }}
+        />
+      )}
 
-          window.dispatchEvent(new Event('vendorJobsUpdated'));
-          window.dispatchEvent(new Event('vendorStatsUpdated'));
-          toast.success('Job claimed! Redirecting to assign...');
-          navigate(`/vendor/booking/${id}/assign-worker`);
-        } catch (e) {
-          toast.error('Failed to claim job');
-        }
-      }}
-      onReject={async (id) => {
-        try {
-          // Reject is often silent or via reject api
-          await rejectBooking(id);
-        } catch (error) {
-          console.error("Failed to reject job via API, removing locally");
-        } finally {
-          const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-          const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(id));
-          localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
+      {/* Painting Consultation Live Alert Modal Overlay */}
+      {activeConsultationAlerts.map((consultation) => (
+        <div key={consultation.consultationId} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border-2 border-orange-500 animate-bounce-short">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                <span className="material-symbols-outlined text-2xl">format_paint</span>
+              </div>
+              <div>
+                <span className="bg-orange-100 text-orange-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">New Consultation Request</span>
+                <h3 className="text-lg font-bold text-gray-900 mt-1">🎨 Painting Inquiry</h3>
+              </div>
+            </div>
 
-          window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id } }));
-          setActiveAlertBookings(prev => prev.filter(b => String(b.id || b._id) !== String(id)));
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-6 border border-gray-100 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">BHK Type</span>
+                <span className="font-bold text-gray-800">{consultation.propertyType}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">Customer</span>
+                <span className="font-bold text-gray-800">{consultation.customerName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">Location</span>
+                <span className="font-bold text-gray-800 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm text-orange-500">location_on</span>
+                  {consultation.city}
+                </span>
+              </div>
+            </div>
 
-          toast.success('Booking application rejected');
-          window.dispatchEvent(new Event('vendorJobsUpdated'));
-        }
-      }}
-      onMinimize={() => {
-        setActiveAlertBookings([]); // simply minimizes current visible ones. We can fetch them later from pending.
-      }}
-    />
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleAcceptConsultation(consultation.consultationId)}
+                className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold rounded-xl transition-all shadow-md shadow-orange-200"
+              >
+                Accept Request
+              </button>
+              <button
+                onClick={() => handleDeclineConsultation(consultation.consultationId)}
+                className="px-4 py-3 border-2 border-gray-200 text-gray-500 font-semibold rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }

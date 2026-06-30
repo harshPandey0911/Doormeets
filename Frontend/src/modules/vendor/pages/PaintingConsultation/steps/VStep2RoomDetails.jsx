@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const REPAIR_TYPES = [
   { id: 'paint_only',       label: 'Paint Only',       icon: '🎨', desc: 'Direct paint application' },
@@ -230,10 +230,19 @@ const WallCard = ({ wall, wIdx, removeWall, updateWall }) => {
 };
 
 
-const VStep2RoomDetails = ({ quoteData, updateQuoteData, onNext, onBack }) => {
+const VStep2RoomDetails = ({ quoteData, updateQuoteData, onNext, onBack, paintingRates }) => {
   const [rooms, setRooms] = useState(quoteData.rooms || []);
   const [activeTab, setActiveTab] = useState(0);
   const [showAddlServices, setShowAddlServices] = useState(false);
+
+  // Merge admin-configured rates into ADDL_SERVICES_OPTIONS
+  const dynamicServices = useMemo(() => {
+    if (!paintingRates?.additionalServices) return ADDL_SERVICES_OPTIONS;
+    return ADDL_SERVICES_OPTIONS.map(svc => {
+      const adminRate = paintingRates.additionalServices[svc.id];
+      return adminRate ? { ...svc, rate: adminRate.rate } : svc;
+    });
+  }, [paintingRates]);
 
   const selectedRooms = rooms.filter(r => r.selected);
 
@@ -270,7 +279,7 @@ const VStep2RoomDetails = ({ quoteData, updateQuoteData, onNext, onBack }) => {
     if (already) {
       updated = existing.filter(s => s.id !== svcId);
     } else {
-      const meta = ADDL_SERVICES_OPTIONS.find(s => s.id === svcId);
+      const meta = dynamicServices.find(s => s.id === svcId);
       updated = [...existing, { id: svcId, label: meta.label, enabled: true, quantity: 1, rate: meta.rate, unit: meta.unit }];
     }
     updateRoom(roomIdx, { additionalServices: updated });
@@ -411,7 +420,7 @@ const VStep2RoomDetails = ({ quoteData, updateQuoteData, onNext, onBack }) => {
         
         {showAddlServices && (
           <div className="px-5 pb-5 space-y-3 border-t-2 border-gray-100 pt-4">
-            {ADDL_SERVICES_OPTIONS.map(svc => {
+            {dynamicServices.map(svc => {
               const enabled = isServiceEnabled(room, svc.id);
               return (
                 <div
