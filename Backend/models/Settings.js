@@ -293,6 +293,20 @@ const settingsSchema = new mongoose.Schema({
   showArrivalTime: {
     type: Boolean,
     default: true
+  },
+  shopReferralRewardShopOwner: {
+    type: Number,
+    default: 100,
+    min: 0
+  },
+  shopReferralRewardVendor: {
+    type: Number,
+    default: 50,
+    min: 0
+  },
+  shopReferralQrCodeUrl: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

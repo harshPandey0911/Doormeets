@@ -89,6 +89,11 @@ const authenticate = async (req, res, next) => {
           return res.status(401).json({ success: false, message: 'Account logged in on another device. Please login again.' });
         }
         break;
+      case USER_ROLES.SHOP_OWNER:
+      case 'shop_owner':
+        const ShopOwner = require('../models/ShopOwner');
+        user = await ShopOwner.findById(decoded.userId).select('-password').lean();
+        break;
       case USER_ROLES.ADMIN:
       case 'super_admin':
       case 'admin':

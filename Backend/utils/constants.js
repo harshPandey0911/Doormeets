@@ -7,7 +7,8 @@ const USER_ROLES = {
   USER: 'USER',
   VENDOR: 'VENDOR',
   WORKER: 'WORKER',
-  ADMIN: 'ADMIN'
+  ADMIN: 'ADMIN',
+  SHOP_OWNER: 'SHOP_OWNER'
 };
 
 // Admin Roles (sub-roles within admin)

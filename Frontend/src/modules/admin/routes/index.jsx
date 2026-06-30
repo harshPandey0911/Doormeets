@@ -43,6 +43,7 @@ const PackageBased = lazy(() => import('../pages/PackageBased'));
 const PaintingManagement = lazy(() => import('../pages/Painting'));
 const InstantBookingManagement = lazy(() => import('../pages/InstantBooking'));
 const VendorWallets = lazy(() => import('../pages/VendorWallets'));
+const ShopOwners = lazy(() => import('../pages/ShopOwners/index'));
 
 
 
@@ -93,6 +94,7 @@ const AdminRoutes = () => {
           <Route path="sos-alerts" element={<SOSAlerts />} />
           <Route path="offer-banners" element={<OfferBanners />} />
           <Route path="training" element={<Training />} />
+          <Route path="shop-owners/*" element={<ShopOwners />} />
           <Route path="vendor-requests" element={<VendorRequests />} />
           <Route path="promos" element={<PromoManagement />} />
           <Route path="vouchers" element={<VoucherManagement />} />

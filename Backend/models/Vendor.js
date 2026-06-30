@@ -427,6 +427,11 @@ const vendorSchema = new mongoose.Schema({
     default: 100,
     min: 0,
     max: 100
+  },
+  referredByShopOwner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ShopOwner',
+    default: null
   }
 }, {
   timestamps: true

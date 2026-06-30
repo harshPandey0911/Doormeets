@@ -71,10 +71,13 @@ exports.updateSettings = async (req, res, next) => {
        codAdvancePercentage,
        isInstantBookingEnabled,
        instantBookingMarkup,
-       instantBookingWaitTime,
-       showArrivalTime,
-       instantBookingWindowHours
-     } = req.body;
+        instantBookingWaitTime,
+        showArrivalTime,
+        instantBookingWindowHours,
+        shopReferralRewardShopOwner,
+        shopReferralRewardVendor,
+        shopReferralQrCodeUrl
+      } = req.body;
  
      let settings = await Settings.findOne({ type: 'global' });
  
@@ -112,7 +115,10 @@ exports.updateSettings = async (req, res, next) => {
          instantBookingMarkup: instantBookingMarkup !== undefined ? Number(instantBookingMarkup) : 99,
          instantBookingWaitTime: instantBookingWaitTime !== undefined ? Number(instantBookingWaitTime) : 45,
          showArrivalTime: showArrivalTime !== undefined ? showArrivalTime : true,
-         instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4
+         instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4,
+         shopReferralRewardShopOwner: shopReferralRewardShopOwner !== undefined ? Number(shopReferralRewardShopOwner) : 100,
+         shopReferralRewardVendor: shopReferralRewardVendor !== undefined ? Number(shopReferralRewardVendor) : 50,
+         shopReferralQrCodeUrl: shopReferralQrCodeUrl !== undefined ? shopReferralQrCodeUrl : null
        });
     } else {
       // Update fields if provided
@@ -185,6 +191,9 @@ exports.updateSettings = async (req, res, next) => {
       if (instantBookingWaitTime !== undefined) settings.instantBookingWaitTime = Number(instantBookingWaitTime);
       if (showArrivalTime !== undefined) settings.showArrivalTime = showArrivalTime;
       if (instantBookingWindowHours !== undefined) settings.instantBookingWindowHours = Number(instantBookingWindowHours);
+      if (shopReferralRewardShopOwner !== undefined) settings.shopReferralRewardShopOwner = Number(shopReferralRewardShopOwner);
+      if (shopReferralRewardVendor !== undefined) settings.shopReferralRewardVendor = Number(shopReferralRewardVendor);
+      if (shopReferralQrCodeUrl !== undefined) settings.shopReferralQrCodeUrl = shopReferralQrCodeUrl;
 
       await settings.save();
     }

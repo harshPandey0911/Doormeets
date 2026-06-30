@@ -101,6 +101,19 @@
     "children": []
   },
   {
+    "title": "Shop Owners",
+    "route": "/admin/shop-owners",
+    "section": "SHOP OWNER MANAGEMENT",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": [
+      "All Shop Owners",
+      "Referral Settings"
+    ]
+  },
+  {
     "title": "Bookings",
     "route": "/admin/bookings",
     "section": "BOOKING MANAGEMENT",
