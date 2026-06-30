@@ -286,9 +286,9 @@ const Checkout = () => {
             // Fetch dynamic fields if there are items
             if (items.length > 0) {
               const firstItem = items[0];
-              const serviceId = typeof firstItem.serviceId === 'object'
-                ? firstItem.serviceId._id || firstItem.serviceId.id
-                : firstItem.serviceId;
+              const serviceId = (firstItem.serviceId && typeof firstItem.serviceId === 'object')
+                ? (firstItem.serviceId._id || firstItem.serviceId.id)
+                : (firstItem.serviceId || firstItem.id || firstItem._id);
               
               if (serviceId) {
                 try {

@@ -471,3 +471,45 @@ exports.deleteQuotation = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to delete quotation', error: error.message });
   }
 };
+
+// ==========================================
+// CONSULTATIONS OVERVIEW (ADMIN MASTER DASHBOARD)
+// ==========================================
+
+const PaintingConsultation = require('../../models/PaintingConsultation');
+
+exports.getConsultationOverview = async (req, res) => {
+  try {
+    const consultations = await PaintingConsultation.find()
+      .populate('userId', 'name phone email')
+      .populate('vendorId', 'name phone')
+      .populate('quotationId')
+      .sort({ createdAt: -1 });
+
+    const total = consultations.length;
+    const pending = consultations.filter(c => c.status === 'PENDING').length;
+    const acceptedByVendor = consultations.filter(c => c.status === 'ACCEPTED_BY_VENDOR').length;
+    const quoteGenerated = consultations.filter(c => c.status === 'QUOTE_GENERATED').length;
+    const quoteAccepted = consultations.filter(c => c.status === 'QUOTE_ACCEPTED').length;
+    
+    // Calculate simple conversion rate: (Quote Accepted / Total Consultations) * 100
+    const conversionRate = total > 0 ? ((quoteAccepted / total) * 100).toFixed(2) : 0;
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        total,
+        pending,
+        acceptedByVendor,
+        quoteGenerated,
+        quoteAccepted,
+        conversionRate
+      },
+      data: consultations
+    });
+  } catch (error) {
+    console.error('Error fetching consultation overview:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch consultation overview', error: error.message });
+  }
+};
+

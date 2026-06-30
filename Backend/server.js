@@ -178,6 +178,7 @@ app.use('/api/users/bookings', require('./routes/user-routes/booking.routes'));
 app.use('/api/users', require('./routes/user-routes/cart.routes'));
 app.use('/api/users/fcm-tokens', require('./routes/user-routes/fcmToken.routes'));
 app.use('/api/users', require('./routes/user-routes/sos.routes'));
+app.use('/api/users/painting-consultations', require('./routes/user-routes/painting-consultation.routes'));
 
 
 // Vendor routes
@@ -206,6 +207,7 @@ app.use('/api/vendors/categories', checkSubscription, require('./routes/vendor-r
 app.use('/api/vendors/category-requests', checkSubscription, require('./routes/vendor-routes/vendorCategoryRequest.routes'));
 app.use('/api/vendors/products', checkSubscription, require('./routes/vendor-routes/product.routes'));
 app.use('/api/vendors/support', checkSubscription, require('./routes/vendor-routes/support.routes'));
+app.use('/api/vendors/painting-consultations', checkSubscription, require('./routes/vendor-routes/painting-consultation.routes'));
 
 // Worker routes
 app.use('/api/workers/auth', require('./routes/worker-routes/auth.routes'));

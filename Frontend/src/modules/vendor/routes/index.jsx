@@ -80,6 +80,7 @@ const Categories = lazyLoad(() => import('../pages/Categories'));
 const Products = lazyLoad(() => import('../pages/Products'));
 const StockManagement = lazyLoad(() => import('../pages/Stock'));
 const CategoryDetail = lazyLoad(() => import('../pages/Categories/CategoryDetail'));
+const PaintingConsultations = lazyLoad(() => import('../pages/PaintingConsultation'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -148,6 +149,7 @@ const VendorRoutes = () => {
               <Route path="/support" element={<ProtectedRoute userType="vendor"><SupportList /></ProtectedRoute>} />
               <Route path="/support/:id" element={<ProtectedRoute userType="vendor"><TicketDetails /></ProtectedRoute>} />
               <Route path="/stock" element={<ProtectedRoute userType="vendor"><StockManagement /></ProtectedRoute>} />
+              <Route path="/painting-consultations" element={<ProtectedRoute userType="vendor"><PaintingConsultations /></ProtectedRoute>} />
 
               {/* Training Routes */}
               <Route path="/training" element={<ProtectedRoute userType="vendor"><Training /></ProtectedRoute>} />

@@ -7,9 +7,10 @@ import {
 } from 'react-icons/fi';
 import * as paintingService from '../../services/paintingService';
 import uploadToCloudinary from '../../../../utils/cloudinaryUpload';
+import ConsultationDashboard from './ConsultationDashboard';
 
 const PaintingManagement = () => {
-  const [activeTab, setActiveTab] = useState('brands'); // 'brands' | 'products' | 'rates' | 'quotations'
+  const [activeTab, setActiveTab] = useState('brands'); // 'brands' | 'products' | 'rates' | 'quotations' | 'consultations'
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -310,13 +311,15 @@ const PaintingManagement = () => {
           <h1 className="text-2xl font-bold text-gray-900">Painting Management</h1>
           <p className="text-sm text-gray-500">Configure brands, product prices, coverage, labor rates, and generate custom quotations.</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-        >
-          <FiPlus className="w-5 h-5" />
-          Add New {activeTab === 'brands' ? 'Brand' : activeTab === 'products' ? 'Product' : activeTab === 'rates' ? 'Labour Rate' : 'Quotation'}
-        </button>
+        {activeTab !== 'consultations' && (
+          <button
+            onClick={openAddModal}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+          >
+            <FiPlus className="w-5 h-5" />
+            Add New {activeTab === 'brands' ? 'Brand' : activeTab === 'products' ? 'Product' : activeTab === 'rates' ? 'Labour Rate' : 'Quotation'}
+          </button>
+        )}
       </div>
 
       {/* Tabs Menu */}
@@ -325,7 +328,8 @@ const PaintingManagement = () => {
           { id: 'brands', label: 'Paint Brands', icon: FiGrid },
           { id: 'products', label: 'Paint Products & Putty/Primer', icon: FiPackage },
           { id: 'rates', label: 'Labour Rates', icon: FiPercent },
-          { id: 'quotations', label: 'Painting Quotations', icon: FiFileText }
+          { id: 'quotations', label: 'Painting Quotations', icon: FiFileText },
+          { id: 'consultations', label: 'Live Consultations', icon: FiFileText }
         ].map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -629,6 +633,11 @@ const PaintingManagement = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* 5. CONSULTATIONS TAB */}
+            {activeTab === 'consultations' && (
+              <ConsultationDashboard />
             )}
           </div>
         )}

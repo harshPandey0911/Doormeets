@@ -444,6 +444,11 @@ const Home = () => {
       setGroupCategorySheet({ open: true, category });
       return;
     }
+    const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
+    if (isPainting) {
+      navigate('/user/painting-consultation');
+      return;
+    }
     navigate(`/user/category/${category.slug || category.id}`, { state: { category } });
   };
 
@@ -574,9 +579,7 @@ const Home = () => {
         isOpen={groupCategorySheet.open}
         onClose={() => setGroupCategorySheet({ open: false, category: null })}
         category={groupCategorySheet.category}
-        onCategoryClick={(childCat) => {
-          navigate(`/user/category/${childCat.slug || childCat.id}`, { state: { category: childCat } });
-        }}
+        onCategoryClick={(childCat) => handleCategoryClick(childCat)}
       />
       {/* Refined Premium Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">

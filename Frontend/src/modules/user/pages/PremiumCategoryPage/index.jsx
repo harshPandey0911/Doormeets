@@ -65,6 +65,13 @@ const PremiumCategoryPage = () => {
   const { isDark } = useTheme();
   const { cartCount, cartItems, addToCart, updateItem, removeItem } = useCart();
 
+  // Redirect painting category to the painting consultation flow
+  useEffect(() => {
+    if (slug === 'painting' || (slug && slug.toLowerCase() === 'painting')) {
+      navigate('/user/painting-consultation', { replace: true });
+    }
+  }, [slug, navigate]);
+
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(location.state?.category || null);
