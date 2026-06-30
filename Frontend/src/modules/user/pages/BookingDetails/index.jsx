@@ -381,7 +381,7 @@ const BookingDetails = () => {
     try {
       setPaying(true);
       toast.loading('Creating payment order...');
-      const orderResponse = await paymentService.createOrder(booking._id || booking.id);
+      const orderResponse = await paymentService.createOrder(booking._id || booking.id, 'online');
       toast.dismiss();
 
       if (!orderResponse.success) {
@@ -932,12 +932,11 @@ const BookingDetails = () => {
               </div>
             )}
 
-          {/* Payment Card - Show when work is done AND bill is finalized (OTP exists) or paid */}
-          {(booking.customerConfirmationOTP || booking.paymentStatus === 'success') && ['work_done'].includes(booking.status?.toLowerCase()) && !booking.cashCollected && (
+          {/* Payment Card - Show when work is done AND bill is finalized (OTP exists), paid, or if online payment is pending */}
+          {(((booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online') && booking.paymentStatus?.toLowerCase() === 'pending') || booking.customerConfirmationOTP || booking.paymentStatus === 'success') && !booking.cashCollected && !['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
             <div
-              onClick={() => setShowPaymentModal(true)}
-              className={`relative overflow-hidden rounded-3xl shadow-lg border cursor-pointer active:scale-[0.98] transition-all ${booking.paymentStatus === 'success' ? 'border-green-100' : 'border-orange-100'
-                }`}>
+              onClick={() => { if (booking.customerConfirmationOTP) setShowPaymentModal(true); }}
+              className={`relative overflow-hidden rounded-3xl shadow-lg border active:scale-[0.98] transition-all ${booking.paymentStatus === 'success' ? 'border-green-100' : 'border-orange-100'} ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}>
               {/* Animated gradient background */}
               <div className={`absolute inset-0 opacity-95 ${booking.paymentStatus === 'success'
                 ? 'bg-linear-to-br from-green-500 via-green-600 to-emerald-700'
@@ -956,10 +955,10 @@ const BookingDetails = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white tracking-tight">
-                      {booking.paymentStatus === 'success' ? 'Payment Received' : 'Final Payment'}
+                      {booking.paymentStatus === 'success' ? 'Payment Received' : 'Online Payment'}
                     </h3>
                     <p className={`text-xs font-medium ${booking.paymentStatus === 'success' ? 'text-green-50' : 'text-orange-100'}`}>
-                      {booking.paymentStatus === 'success' ? 'Transaction verified successfully' : 'Final amount after service completion'}
+                      {booking.paymentStatus === 'success' ? 'Transaction verified successfully' : 'Complete your online payment'}
                     </p>
                   </div>
                 </div>
@@ -976,22 +975,24 @@ const BookingDetails = () => {
                       <FiChevronRight className="w-4 h-4" />
                     </button>
 
-                    <div className="flex flex-col items-center mb-6">
-                      <p className="text-[10px] font-bold text-orange-100 uppercase tracking-[0.2em] mb-3 opacity-90">Verification Code</p>
-                      <div className="flex justify-center gap-2">
-                        {String(booking.customerConfirmationOTP || booking.paymentOtp || '0000').split('').map((digit, idx) => (
-                          <div
-                            key={idx}
-                            className="w-12 h-14 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-lg"
-                          >
-                            <span className="text-2xl font-black text-white">{digit}</span>
-                          </div>
-                        ))}
+                    {booking.customerConfirmationOTP && (
+                      <div className="flex flex-col items-center mb-6">
+                        <p className="text-[10px] font-bold text-orange-100 uppercase tracking-[0.2em] mb-3 opacity-90">Verification Code</p>
+                        <div className="flex justify-center gap-2">
+                          {String(booking.customerConfirmationOTP).split('').map((digit, idx) => (
+                            <div
+                              key={idx}
+                              className="w-12 h-14 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-lg"
+                            >
+                              <span className="text-2xl font-black text-white">{digit}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-orange-50 mt-3 font-medium bg-black/10 px-3 py-1 rounded-full backdrop-blur-sm">
+                          Share this code with the professional ONLY after your satisfaction
+                        </p>
                       </div>
-                      <p className="text-[10px] text-orange-50 mt-3 font-medium bg-black/10 px-3 py-1 rounded-full backdrop-blur-sm">
-                        Share this code with the professional ONLY after your satisfaction
-                      </p>
-                    </div>
+                    )}
                   </>
                 )}
 

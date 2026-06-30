@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const Settings = require('../models/Settings');
+const VendorBill = require('../models/VendorBill');
 
 const COLORS = {
   primary: '#00a6a6',
@@ -10,6 +12,97 @@ const COLORS = {
   text: '#0f172a',
   lightText: '#64748b',
   border: '#e2e8f0'
+};
+
+const getDynamicEmailWrapper = (content, title, settings, preheader = '') => {
+  const companyName = settings?.companyName || 'Doormeets';
+  const companyEmail = settings?.companyEmail || 'support@doormeets.com';
+  const companyPhone = settings?.companyPhone || '';
+  const companyAddress = settings?.companyAddress || '';
+  const companyCity = settings?.companyCity || '';
+  const companyState = settings?.companyState || '';
+  const companyPincode = settings?.companyPincode || '';
+  const fullAddress = [companyAddress, companyCity, companyState, companyPincode].filter(Boolean).join(', ');
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
+  </style>
+  <![endif]-->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+    
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${COLORS.bg}; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    .preheader { display: none; max-width: 0; max-height: 0; overflow: hidden; font-size: 1px; line-height: 1px; color: #fff; opacity: 0; }
+    .wrapper { width: 100%; table-layout: fixed; background-color: ${COLORS.bg}; padding-bottom: 60px; }
+    .main { max-width: 600px; margin: 0 auto; background-color: ${COLORS.white}; border-radius: 24px; overflow: hidden; margin-top: 40px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    
+    .header { background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%); padding: 48px 40px; text-align: center; position: relative; }
+    .logo-circle { width: 64px; height: 64px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; border: 1px solid rgba(255,255,255,0.3); margin-bottom: 16px; }
+    .header h1 { margin: 0; font-size: 24px; color: ${COLORS.white}; font-weight: 800; letter-spacing: -0.5px; }
+    
+    .content { padding: 48px 40px; color: ${COLORS.text}; }
+    .badge { display: inline-block; padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 24px; }
+    .badge-primary { background-color: ${COLORS.primary}15; color: ${COLORS.primary}; }
+    .badge-success { background-color: ${COLORS.success}15; color: ${COLORS.success}; }
+    
+    h2 { font-size: 28px; font-weight: 800; line-height: 1.2; margin: 0 0 16px 0; color: ${COLORS.text}; letter-spacing: -0.5px; }
+    p { font-size: 16px; line-height: 1.6; color: ${COLORS.lightText}; margin: 0 0 24px 0; }
+    
+    .card { background-color: #f8fafc; border: 1px solid ${COLORS.border}; border-radius: 20px; padding: 32px; margin: 32px 0; }
+    .card-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: ${COLORS.lightText}; letter-spacing: 1px; margin-bottom: 20px; border-bottom: 1px solid ${COLORS.border}; padding-bottom: 12px; }
+    
+    .data-row { display: flex; justify-content: space-between; padding: 12px 0; }
+    .data-label { font-size: 14px; font-weight: 600; color: ${COLORS.lightText}; }
+    .data-value { font-size: 14px; font-weight: 700; color: ${COLORS.text}; text-align: right; }
+    
+    .total-row { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 2px dashed ${COLORS.border}; }
+    .total-label { font-size: 18px; font-weight: 800; color: ${COLORS.text}; }
+    .total-value { font-size: 22px; font-weight: 900; color: ${COLORS.primary}; }
+    
+    .btn-container { text-align: center; margin-top: 40px; }
+    .btn { display: inline-block; background-color: ${COLORS.primary}; color: ${COLORS.white} !important; padding: 18px 36px; border-radius: 16px; font-weight: 700; font-size: 16px; text-decoration: none; box-shadow: 0 10px 15px -3px rgba(0, 166, 166, 0.3); transition: all 0.2s; }
+    
+    .footer { text-align: center; padding: 40px; }
+    .footer p { font-size: 13px; color: ${COLORS.lightText}; margin-bottom: 8px; }
+    .social-links { margin-top: 20px; }
+    .social-links a { color: ${COLORS.primary}; text-decoration: none; font-weight: 600; font-size: 13px; margin: 0 10px; }
+    
+    @media only screen and (max-width: 600px) {
+      .main { margin-top: 0; border-radius: 0; }
+      .content { padding: 32px 24px; }
+      .card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="preheader">${preheader}</div>
+  <div class="wrapper">
+    <div class="main">
+      <div class="header">
+        <div class="logo-circle">${companyName.slice(0, 2).toUpperCase()}</div>
+        <h1>${companyName}</h1>
+      </div>
+      <div class="content">
+        ${content}
+      </div>
+      <div class="footer">
+        <p>${companyName} • Premium Home Services</p>
+        ${fullAddress ? `<p style="margin: 4px 0;">${fullAddress}</p>` : ''}
+        <p>&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+`;
 };
 
 const emailWrapper = (content, title, preheader = '') => `
@@ -279,41 +372,122 @@ const sendBookingCompletionEmails = async (booking) => {
     const bookingId = booking.bookingNumber || booking._id;
 
     if (user && user.email) {
+      // Fetch dynamic settings
+      const settings = await Settings.findOne({ type: 'global' });
+      const companyName = settings?.companyName || 'Doormeets';
+      const companyGSTIN = settings?.companyGSTIN || '';
+      const companyPAN = settings?.companyPAN || '';
+      const companyAddress = settings?.companyAddress || '';
+      const companyCity = settings?.companyCity || '';
+      const companyState = settings?.companyState || '';
+      const companyPincode = settings?.companyPincode || '';
+      const companyPhone = settings?.companyPhone || '';
+      const companyEmail = settings?.companyEmail || '';
+      const invoicePrefix = settings?.invoicePrefix || 'INV';
+      const sacCode = settings?.sacCode || '998599';
+
+      // Fetch VendorBill
+      const bill = await VendorBill.findOne({ bookingId: booking._id });
+
+      let lineItemsHtml = '';
+      let subTotal = 0;
+      let gstAmount = 0;
+      let visitingCharges = booking.visitingCharges || 0;
+      let discount = booking.discount || 0;
+      let finalAmount = booking.finalAmount || 0;
+
+      if (bill) {
+        subTotal = (bill.totalServiceBase || 0) + (bill.totalPartsBase || 0);
+        gstAmount = bill.totalGST || 0;
+        visitingCharges = bill.visitingCharges || 0;
+        finalAmount = bill.grandTotal || 0;
+
+        // Add services
+        if (bill.services && bill.services.length > 0) {
+          bill.services.forEach(item => {
+            lineItemsHtml += `
+              <div class="data-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
+                <span class="data-label" style="font-size: 13px; color: ${COLORS.lightText};">${item.name} (Qty: ${item.quantity})</span>
+                <span class="data-value" style="font-size: 13px; font-weight: 700; color: ${COLORS.text};">₹${(item.price * item.quantity).toFixed(2)}</span>
+              </div>
+            `;
+          });
+        }
+
+        // Add parts
+        if (bill.parts && bill.parts.length > 0) {
+          bill.parts.forEach(item => {
+            lineItemsHtml += `
+              <div class="data-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
+                <span class="data-label" style="font-size: 13px; color: ${COLORS.lightText};">${item.name} (Qty: ${item.quantity})</span>
+                <span class="data-value" style="font-size: 13px; font-weight: 700; color: ${COLORS.text};">₹${(item.price * item.quantity).toFixed(2)}</span>
+              </div>
+            `;
+          });
+        }
+      } else {
+        // Fallback
+        subTotal = booking.basePrice || 0;
+        gstAmount = booking.tax || 0;
+        finalAmount = booking.finalAmount || 0;
+        lineItemsHtml += `
+          <div class="data-row" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
+            <span class="data-label" style="font-size: 13px; color: ${COLORS.lightText};">${booking.serviceId?.title || booking.serviceName || 'Home Service'}</span>
+            <span class="data-value" style="font-size: 13px; font-weight: 700; color: ${COLORS.text};">₹${subTotal.toFixed(2)}</span>
+          </div>
+        `;
+      }
+
+      const taxDetailsHtml = `
+        ${companyGSTIN ? `<div class="data-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span class="data-label" style="font-size: 12px; color: ${COLORS.lightText};">Company GSTIN</span><span class="data-value" style="font-size: 12px; font-weight: 700; color: ${COLORS.text};">${companyGSTIN}</span></div>` : ''}
+        ${companyPAN ? `<div class="data-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span class="data-label" style="font-size: 12px; color: ${COLORS.lightText};">Company PAN</span><span class="data-value" style="font-size: 12px; font-weight: 700; color: ${COLORS.text};">${companyPAN}</span></div>` : ''}
+        ${sacCode ? `<div class="data-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span class="data-label" style="font-size: 12px; color: ${COLORS.lightText};">SAC Code</span><span class="data-value" style="font-size: 12px; font-weight: 700; color: ${COLORS.text};">${sacCode}</span></div>` : ''}
+      `;
+
+      const invoiceNo = `${invoicePrefix}-${bookingId}`;
       const content = `
         <div style="text-align: center; margin-bottom: 32px;">
           <div style="font-size: 48px; margin-bottom: 16px;">⭐</div>
           <h2>Service Completed</h2>
-          <p>Thank you for choosing Civil connect. We hope the service for <strong>${booking.serviceId?.title || 'Home Service'}</strong> was to your satisfaction.</p>
+          <p>Thank you for choosing <strong>${companyName}</strong>. We hope the service for <strong>${booking.serviceId?.title || booking.serviceName || 'Home Service'}</strong> was to your satisfaction.</p>
         </div>
 
         <div class="card" style="background-color: white;">
           <div class="card-title">Official Receipt</div>
-          <div class="data-row"><span class="data-label">Invoice No.</span><span class="data-value">INV-${bookingId}</span></div>
-          <div class="data-row"><span class="data-label">Completed On</span><span class="data-value">${new Date().toLocaleDateString('en-IN')}</span></div>
-          <div class="data-row"><span class="data-label">Service Charge</span><span class="data-value">₹${booking.basePrice - booking.discount}</span></div>
-          <div class="data-row"><span class="data-label">Visiting Fee</span><span class="data-value">₹${booking.visitingCharges}</span></div>
-          <div class="data-row"><span class="data-label">HST (Tax)</span><span class="data-value">₹${booking.tax}</span></div>
+          <div class="data-row"><span class="data-label">Invoice No.</span><span class="data-value">${invoiceNo}</span></div>
+          <div class="data-row"><span class="data-label">Completed On</span><span class="data-value">${new Date(booking.completedAt || Date.now()).toLocaleDateString('en-IN')}</span></div>
+          
+          <div style="margin: 16px 0; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            <div style="font-weight: 700; font-size: 13px; color: ${COLORS.lightText}; text-transform: uppercase; margin-bottom: 8px;">Line Items</div>
+            ${lineItemsHtml}
+          </div>
+
+          <div style="margin: 16px 0; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            <div class="data-row"><span class="data-label">Subtotal</span><span class="data-value">₹${subTotal.toFixed(2)}</span></div>
+            ${visitingCharges > 0 ? `<div class="data-row"><span class="data-label">Visiting Fee</span><span class="data-value">₹${visitingCharges.toFixed(2)}</span></div>` : ''}
+            ${gstAmount > 0 ? `<div class="data-row"><span class="data-label">GST / Taxes</span><span class="data-value">₹${gstAmount.toFixed(2)}</span></div>` : ''}
+            ${discount > 0 ? `<div class="data-row"><span class="data-label">Discount</span><span class="data-value" style="color: #ef4444;">-₹${discount.toFixed(2)}</span></div>` : ''}
+          </div>
+
+          ${taxDetailsHtml.trim() ? `<div style="margin: 16px 0; border-top: 1px solid #e2e8f0; padding-top: 16px;">${taxDetailsHtml}</div>` : ''}
           
           <div class="total-row">
             <span class="total-label">Amount Paid</span>
-            <span class="total-value">₹${booking.finalAmount}</span>
+            <span class="total-value">₹${finalAmount.toFixed(2)}</span>
           </div>
         </div>
 
         <div style="text-align: center; margin-top: 32px; border: 1px solid ${COLORS.border}; border-radius: 16px; padding: 24px;">
            <div style="font-weight: 700; font-size: 14px; color: ${COLORS.text}; margin-bottom: 8px;">RATE THE PROFESSIONAL</div>
            <p style="font-size: 13px; margin: 0;">How was your experience with us? Help others by rating the service.</p>
-           <div class="btn-container" style="margin-top: 16px;">
-             <a href="#" class="btn" style="background-color: #f59e0b;">Submit Rating</a>
-           </div>
         </div>
       `;
 
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM || 'Civil connect <noreply@civilconnect.com>',
+        from: process.env.EMAIL_FROM || `"${companyName}" <${companyEmail || 'noreply@doormeets.com'}>`,
         to: user.email,
-        subject: `Service Invoice #${bookingId} - Civil connect`,
-        html: emailWrapper(content, 'Invoice', 'Your service is complete. Here is the receipt.')
+        subject: `Service Invoice #${bookingId} - ${companyName}`,
+        html: getDynamicEmailWrapper(content, 'Invoice', settings, 'Your service is complete. Here is the receipt.')
       });
     }
   } catch (error) { console.error('Invoice email error:', error); }

@@ -1816,8 +1816,8 @@ const collectSelfCash = async (req, res) => {
       const { updateVendorStats } = require('../../utils/vendorStatsHelper');
       updateVendorStats(vendorId);
 
-      // Also free up the vendor's availability so they appear online to new users
-      await Vendor.findByIdAndUpdate(vendorId, { availability: 'AVAILABLE' });
+      // Also free up the vendor's availability status cleanly (checks active jobs and updates availabilityStatus to ONLINE/AVAILABLE)
+      await Vendor.updateWorkStatus(vendorId);
     } catch (statsErr) {
       console.error('Error updating vendor stats after cash collection:', statsErr);
     }
@@ -2156,6 +2156,97 @@ const reconfirmBooking = async (req, res) => {
   }
 };
 
+const requestCancelBooking = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+    }
+
+    const booking = await Booking.findOne({ _id: id, vendorId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (['cancelled', 'completed'].includes(booking.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot request cancellation for a booking that is already ${booking.status}` 
+      });
+    }
+
+    booking.cancelRequestStatus = 'pending';
+    booking.cancelRequestedBy = 'vendor';
+    booking.cancelRequestReason = reason;
+    booking.cancelRequestAt = new Date();
+    await booking.save();
+
+    console.log(`[CancelRequest] Vendor ${vendorId} requested cancellation for booking ${booking.bookingNumber}`);
+
+    // Send notifications to admins
+    try {
+      const Admin = require('../../models/Admin');
+      const City = require('../../models/City');
+      const { createNotification } = require('../notificationControllers/notificationController');
+
+      const city = booking.address?.city || '';
+      const cityDoc = await City.findOne({ name: new RegExp(`^${city}$`, 'i') });
+      let adminQuery = { role: { $in: ['admin', 'super_admin', 'super-admin'] } };
+      if (cityDoc) {
+        adminQuery = {
+          $or: [
+            { role: { $in: ['admin', 'super_admin', 'super-admin'] } },
+            { role: 'CITY_ADMIN', assignedCities: cityDoc._id }
+          ]
+        };
+      }
+
+      const admins = await Admin.find(adminQuery);
+      const io = req.app.get('io');
+      const msg = `Vendor has requested cancellation for Booking #${booking.bookingNumber}. Reason: ${reason}`;
+
+      for (const admin of admins) {
+        await createNotification({
+          adminId: admin._id,
+          type: 'booking_escalation',
+          title: 'Cancellation Request (Vendor)',
+          message: msg,
+          relatedId: booking._id,
+          relatedType: 'booking',
+          pushData: {
+            type: 'booking_escalation',
+            bookingId: booking._id.toString(),
+            link: `/admin/bookings/${booking._id}`
+          }
+        });
+
+        if (io) {
+          io.to(`admin_${admin._id.toString()}`).emit('booking_escalation', {
+            bookingId: booking._id,
+            bookingNumber: booking.bookingNumber,
+            message: msg,
+            severity: 'MEDIUM'
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error('Error notifying admins about vendor cancellation request:', notifErr);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Cancellation request submitted to admin successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Vendor request cancel booking error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit cancellation request' });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   getBookingById,
@@ -2173,5 +2264,6 @@ module.exports = {
   getVendorRatings,
   getPendingBookings,
   reconfirmBooking,
-  cancelAcceptedBooking
+  cancelAcceptedBooking,
+  requestCancelBooking
 };

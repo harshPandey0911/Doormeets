@@ -104,6 +104,7 @@ const getChildRoute = (parentRoute, childName) => {
       "All Bookings": "/admin/bookings",
       "Booking Tracking": "/admin/bookings/tracking",
       "Booking Notifications": "/admin/bookings/notifications",
+      "Instant Booking": "/admin/bookings/instant",
     },
     "/admin/user-categories": {
       "Home": "/admin/user-categories/home",

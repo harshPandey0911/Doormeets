@@ -32,7 +32,12 @@ const AdminSettings = () => {
     mcqTimeLimitMinutes: 30,
     loyaltyPointsEarningRate: 1,
     loyaltyPointsRedemptionRate: 1,
-    vendorBusyBufferHours: 1
+    vendorBusyBufferHours: 1,
+    isInstantBookingEnabled: true,
+    instantBookingMarkup: 99,
+    instantBookingWaitTime: 45,
+    instantBookingWindowHours: 4,
+    showArrivalTime: true
   });
 
   // Billing Configuration State
@@ -140,7 +145,12 @@ const AdminSettings = () => {
             mcqTimeLimitMinutes: res.settings.mcqTimeLimitMinutes !== undefined ? res.settings.mcqTimeLimitMinutes : 30,
             loyaltyPointsEarningRate: res.settings.loyaltyPointsEarningRate !== undefined ? res.settings.loyaltyPointsEarningRate : 1,
             loyaltyPointsRedemptionRate: res.settings.loyaltyPointsRedemptionRate !== undefined ? res.settings.loyaltyPointsRedemptionRate : 1,
-            vendorBusyBufferHours: res.settings.vendorBusyBufferHours !== undefined ? res.settings.vendorBusyBufferHours : 1
+            vendorBusyBufferHours: res.settings.vendorBusyBufferHours !== undefined ? res.settings.vendorBusyBufferHours : 1,
+            isInstantBookingEnabled: res.settings.isInstantBookingEnabled !== undefined ? res.settings.isInstantBookingEnabled : true,
+            instantBookingMarkup: res.settings.instantBookingMarkup !== undefined ? res.settings.instantBookingMarkup : 99,
+            instantBookingWaitTime: res.settings.instantBookingWaitTime !== undefined ? res.settings.instantBookingWaitTime : 45,
+            instantBookingWindowHours: res.settings.instantBookingWindowHours !== undefined ? res.settings.instantBookingWindowHours : 4,
+            showArrivalTime: res.settings.showArrivalTime !== undefined ? res.settings.showArrivalTime : true
           });
           // Load billing settings
           setBillingSettings({
@@ -908,6 +918,8 @@ const AdminSettings = () => {
                       e.g. Set to <strong>2</strong> → vendor marked busy 2 hours before an 8 PM booking (from 6 PM onwards)
                     </p>
                   </div>
+
+
 
                 </div>
               </div>

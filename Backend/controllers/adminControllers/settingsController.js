@@ -68,7 +68,16 @@ exports.updateSettings = async (req, res, next) => {
       referralRewardReferrer,
       referralRewardReferee,
       maxWalletUsagePercentage,
-      vendorBusyBufferHours
+      vendorBusyBufferHours,
+      showVendorProfitToVendor,
+      showVendorNameToUser,
+      showVendorPhoneToUser,
+      // Instant Booking Settings
+      isInstantBookingEnabled,
+      instantBookingMarkup,
+      instantBookingWaitTime,
+      instantBookingWindowHours,
+      showArrivalTime
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -102,7 +111,15 @@ exports.updateSettings = async (req, res, next) => {
         referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
         referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
         maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30,
-        vendorBusyBufferHours: vendorBusyBufferHours !== undefined ? Number(vendorBusyBufferHours) : 1
+        vendorBusyBufferHours: vendorBusyBufferHours !== undefined ? Number(vendorBusyBufferHours) : 1,
+        showVendorProfitToVendor: showVendorProfitToVendor !== undefined ? showVendorProfitToVendor === true : true,
+        showVendorNameToUser: showVendorNameToUser !== undefined ? showVendorNameToUser === true : true,
+        showVendorPhoneToUser: showVendorPhoneToUser !== undefined ? showVendorPhoneToUser === true : true,
+        isInstantBookingEnabled: isInstantBookingEnabled !== undefined ? isInstantBookingEnabled === true : true,
+        instantBookingMarkup: instantBookingMarkup !== undefined ? Number(instantBookingMarkup) : 99,
+        instantBookingWaitTime: instantBookingWaitTime !== undefined ? Number(instantBookingWaitTime) : 45,
+        instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4,
+        showArrivalTime: showArrivalTime !== undefined ? showArrivalTime === true : true
       });
     } else {
       // Update fields if provided
@@ -170,6 +187,16 @@ exports.updateSettings = async (req, res, next) => {
       if (referralRewardReferee !== undefined) settings.referralRewardReferee = Number(referralRewardReferee);
       if (maxWalletUsagePercentage !== undefined) settings.maxWalletUsagePercentage = Number(maxWalletUsagePercentage);
       if (vendorBusyBufferHours !== undefined) settings.vendorBusyBufferHours = Number(vendorBusyBufferHours);
+      if (showVendorProfitToVendor !== undefined) settings.showVendorProfitToVendor = showVendorProfitToVendor === true;
+      if (showVendorNameToUser !== undefined) settings.showVendorNameToUser = showVendorNameToUser === true;
+      if (showVendorPhoneToUser !== undefined) settings.showVendorPhoneToUser = showVendorPhoneToUser === true;
+
+      // Instant Booking Settings update
+      if (isInstantBookingEnabled !== undefined) settings.isInstantBookingEnabled = isInstantBookingEnabled === true;
+      if (instantBookingMarkup !== undefined) settings.instantBookingMarkup = Number(instantBookingMarkup);
+      if (instantBookingWaitTime !== undefined) settings.instantBookingWaitTime = Number(instantBookingWaitTime);
+      if (instantBookingWindowHours !== undefined) settings.instantBookingWindowHours = Number(instantBookingWindowHours);
+      if (showArrivalTime !== undefined) settings.showArrivalTime = showArrivalTime === true;
 
       await settings.save();
     }
@@ -233,7 +260,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime');
 
     // Default if not found (fallback values)
     if (!settings) {

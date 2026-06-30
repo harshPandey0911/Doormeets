@@ -21,6 +21,7 @@ const Bookings = lazy(() => import('../pages/Bookings'));
 const BookingDetails = lazy(() => import('../pages/Bookings/BookingDetails'));
 const BookingTracking = lazy(() => import('../pages/Bookings/Tracking'));
 const BookingNotifications = lazy(() => import('../pages/Bookings/BookingNotifications'));
+const InstantBookingSettings = lazy(() => import('../pages/Bookings/InstantBookingSettings'));
 const Payments = lazy(() => import('../pages/Payments'));
 const Reports = lazy(() => import('../pages/Reports'));
 const Notifications = lazy(() => import('../pages/Notifications'));
@@ -77,6 +78,7 @@ const AdminRoutes = () => {
           <Route path="bookings/:id" element={<BookingDetails />} />
           <Route path="bookings/tracking" element={<BookingTracking />} />
           <Route path="bookings/notifications" element={<BookingNotifications />} />
+          <Route path="bookings/instant" element={<InstantBookingSettings />} />
           <Route path="user-categories/*" element={<UserCategories />} />
           <Route path="payments/*" element={<Payments />} />
           <Route path="reports/*" element={<Reports />} />

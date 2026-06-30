@@ -26,21 +26,6 @@
     ]
   },
   {
-    "title": "Workers",
-    "route": "/admin/workers",
-    "section": "USER MANAGEMENT",
-    "allowedRoles": [
-      "super_admin",
-      "admin",
-      "city_admin"
-    ],
-    "children": [
-      "All Workers",
-      "Worker Jobs",
-      "Worker Analytics"
-    ]
-  },
-  {
     "title": "Vendors",
     "route": "/admin/vendors",
     "section": "VENDOR MANAGEMENT",
@@ -111,7 +96,8 @@
     "children": [
       "All Bookings",
       "Booking Tracking",
-      "Booking Notifications"
+      "Booking Notifications",
+      "Instant Booking"
     ]
   },
   {

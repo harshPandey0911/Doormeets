@@ -72,7 +72,21 @@ const getBidsForBooking = async (req, res) => {
 
     const bids = await Bid.find({ bookingId })
       .populate('vendorId', 'name businessName profilePicture rating')
-      .sort({ price: 1 });
+      .sort({ price: 1 })
+      .lean();
+
+    const Settings = require('../../models/Settings');
+    const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+    const showVendorNameToUser = globalSettings ? globalSettings.showVendorNameToUser !== false : true;
+
+    if (!showVendorNameToUser) {
+      bids.forEach(b => {
+        if (b.vendorId) {
+          b.vendorId.name = "Service Provider";
+          b.vendorId.businessName = "Service Provider";
+        }
+      });
+    }
 
     res.status(200).json({ success: true, bids });
   } catch (error) {

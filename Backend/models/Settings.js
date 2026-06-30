@@ -195,6 +195,10 @@ const settingsSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isInstantBookingEnabled: {
+    type: Boolean,
+    default: true
+  },
   policeVerificationDays: {
     type: Number,
     default: 7, // Vendors have 7 days to complete verification by default
@@ -286,6 +290,18 @@ const settingsSchema = new mongoose.Schema({
   },
   // whether to show estimated arrival time to the user at checkout
   showArrivalTime: {
+    type: Boolean,
+    default: true
+  },
+  showVendorProfitToVendor: {
+    type: Boolean,
+    default: true
+  },
+  showVendorNameToUser: {
+    type: Boolean,
+    default: true
+  },
+  showVendorPhoneToUser: {
     type: Boolean,
     default: true
   }
