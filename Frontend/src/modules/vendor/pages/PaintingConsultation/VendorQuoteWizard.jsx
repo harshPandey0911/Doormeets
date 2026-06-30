@@ -178,7 +178,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
         {step === 0 && <VStep1CreateSurvey quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} />}
         {step === 1 && <VStep2RoomDetails quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
         {step === 2 && <VStep3UtilitiesSelection quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
-        {step === 3 && <VStep5GenerateMeasurements quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} />}
+        {step === 3 && <VStep5GenerateMeasurements quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
         {step === 4 && <VStep6PaintPackage quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} />}
         {step === 5 && <VStep7Finalize quoteData={quoteData} updateQuoteData={updateQuoteData} onBack={goBack} onSubmit={handleFinalSubmit} submitting={submitting} />}
       </div>

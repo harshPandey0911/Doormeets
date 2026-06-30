@@ -8,7 +8,7 @@ const PAINT_COVERAGE        = 12;  // sqft per litre
 const PRIMER_COVERAGE       = 14;
 const PUTTY_COVERAGE_KG     = 3;   // sqft per kg
 
-const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack }) => {
+const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack, paintingRates }) => {
   const rooms = (quoteData.rooms || []).filter(r => r.selected);
   const globalServices = (quoteData.globalServices || []).filter(s => s.enabled);
 
@@ -19,9 +19,29 @@ const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack
     (room.walls || []).forEach(w => {
       wallArea += (parseFloat(w.height) || 0) * (parseFloat(w.width) || 0);
       
-      const windowArea = Array.isArray(w.windows) ? w.windows.reduce((acc, win) => acc + ((parseFloat(win.width) || 0) * (parseFloat(win.height) || 0)), 0) : (w.windows || 0) * 12;
-      const doorArea = Array.isArray(w.doors) ? w.doors.reduce((acc, door) => acc + ((parseFloat(door.width) || 0) * (parseFloat(door.height) || 0)), 0) : (w.doors || 0) * 21;
-      const wardrobeArea = Array.isArray(w.wardrobes) ? w.wardrobes.reduce((acc, ward) => acc + ((parseFloat(ward.width) || 0) * (parseFloat(ward.height) || 0)), 0) : (w.wardrobes || 0) * 25;
+      // Calculate custom doors and windows area deductions using size rates
+      const windowArea = (w.windows || []).reduce((acc, win) => {
+        const wSqft = (parseFloat(win.width) || 0) * (parseFloat(win.height) || 0);
+        // Find custom price range if registered
+        let customPrice = 12 * wSqft; // Default area base deduct
+        if (paintingRates?.windowSizeRates?.length > 0) {
+          const match = paintingRates.windowSizeRates.find(r => wSqft >= r.minSqft && wSqft <= r.maxSqft);
+          if (match) customPrice = match.price;
+        }
+        return acc + wSqft;
+      }, 0);
+
+      const doorArea = (w.doors || []).reduce((acc, door) => {
+        const dSqft = (parseFloat(door.width) || 0) * (parseFloat(door.height) || 0);
+        let customPrice = 21 * dSqft; // Default area base deduct
+        if (paintingRates?.doorSizeRates?.length > 0) {
+          const match = paintingRates.doorSizeRates.find(r => dSqft >= r.minSqft && dSqft <= r.maxSqft);
+          if (match) customPrice = match.price;
+        }
+        return acc + dSqft;
+      }, 0);
+
+      const wardrobeArea = (w.wardrobes || []).reduce((acc, ward) => acc + ((parseFloat(ward.width) || 0) * (parseFloat(ward.height) || 0)), 0);
       
       deductions += windowArea + doorArea + wardrobeArea;
     });
@@ -32,14 +52,23 @@ const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack
       
     const netArea = Math.max(0, wallArea + ceilingArea - deductions);
 
+    // Apply dynamic sqft base area rate multiplier if configured
+    let dynamicMultiplier = 1.0;
+    if (paintingRates?.sqftRanges?.length > 0) {
+      const match = paintingRates.sqftRanges.find(r => netArea >= r.minSqft && netArea <= r.maxSqft);
+      if (match) {
+        dynamicMultiplier = match.rateMultiplier;
+      }
+    }
+
     const repairType = room.repairType || 'paint_only';
     const hasPrimer = ['primer', 'putty_primer'].includes(repairType);
     const hasPutty  = repairType === 'putty_primer';
 
-    const paintCost   = netArea * PAINT_RATE_PER_SQFT;
-    const labourCost  = netArea * LABOUR_RATE_PER_SQFT;
-    const primerCost  = hasPrimer ? netArea * PRIMER_RATE_PER_SQFT : 0;
-    const puttyCost   = hasPutty  ? netArea * PUTTY_RATE_PER_SQFT  : 0;
+    const paintCost   = netArea * PAINT_RATE_PER_SQFT * dynamicMultiplier;
+    const labourCost  = netArea * LABOUR_RATE_PER_SQFT * dynamicMultiplier;
+    const primerCost  = hasPrimer ? netArea * PRIMER_RATE_PER_SQFT * dynamicMultiplier : 0;
+    const puttyCost   = hasPutty  ? netArea * PUTTY_RATE_PER_SQFT * dynamicMultiplier : 0;
     const addlServicesCost = (room.additionalServices || []).reduce((acc, s) => acc + (s.rate || 0) * (s.quantity || 1), 0);
 
     return {
@@ -55,7 +84,7 @@ const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack
       primerLitres:  hasPrimer ? (netArea / PRIMER_COVERAGE).toFixed(1) : '—',
       puttyKg:       hasPutty  ? (netArea / PUTTY_COVERAGE_KG).toFixed(1) : '—',
     };
-  }), [rooms]);
+  }), [rooms, paintingRates]);
 
   const totalArea       = roomBreakdown.reduce((acc, r) => acc + r.netArea, 0);
   const totalPaint      = roomBreakdown.reduce((acc, r) => acc + r.paintCost, 0);

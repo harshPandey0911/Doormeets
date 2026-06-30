@@ -14,3 +14,8 @@ export const quoteAction = async (id, action, extras = {}) => {
   const response = await api.put(`/users/painting-consultations/${id}/quote-action`, { action, ...extras });
   return response.data;
 };
+
+export const getPaintingPublicSettings = async () => {
+  const response = await api.get('/public/config');
+  return response.data;
+};

@@ -340,7 +340,31 @@ const settingsSchema = new mongoose.Schema({
       deep_cleaning: { rate: { type: Number, default: 350 } },
       putty_work: { rate: { type: Number, default: 12 } },
       enamel_painting: { rate: { type: Number, default: 30 } }
-    }
+    },
+    // Dynamic area/dimension-based pricing range configurations
+    sqftRanges: [{
+      minSqft: { type: Number, required: true },
+      maxSqft: { type: Number, required: true },
+      rateMultiplier: { type: Number, default: 1.0 } // Multiplier or adjustments for large/small areas
+    }],
+    doorSizeRates: [{
+      minSqft: { type: Number, required: true },
+      maxSqft: { type: Number, required: true },
+      price: { type: Number, required: true }
+    }],
+    windowSizeRates: [{
+      minSqft: { type: Number, required: true },
+      maxSqft: { type: Number, required: true },
+      price: { type: Number, required: true }
+    }],
+    // Dynamic user-side room layouts configurations
+    propertyLayouts: [{
+      id: { type: String, required: true }, // e.g. 1BHK, 2BHK, Villa
+      name: { type: String, required: true },
+      tag: { type: String, default: '' },
+      imageUrl: { type: String, default: '' },
+      details: [{ type: String }] // e.g. ["1 Bedroom", "1 Kitchen"]
+    }]
   }
 }, { timestamps: true });
 
