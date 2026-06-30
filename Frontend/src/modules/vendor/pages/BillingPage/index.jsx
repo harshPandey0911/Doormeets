@@ -1114,7 +1114,7 @@ const BillingPage = () => {
                     <div>
                       <p className="text-xs font-bold text-amber-800">Wallet Limit Warning</p>
                       <p className="text-[10px] text-amber-600 leading-normal mt-0.5">
-                        Collecting this cash bill will exceed your net limit (₹{(walletInfo?.cashLimit || 10000).toLocaleString()}). 
+                        Collecting this cash bill will exceed your net limit (₹{(walletInfo?.cashLimit || 10000).toLocaleString()}).
                         Your account will be temporarily blocked from new jobs until settled.
                       </p>
                     </div>

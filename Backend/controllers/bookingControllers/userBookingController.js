@@ -5,7 +5,6 @@ const Category = require('../../models/Category');
 const Cart = require('../../models/Cart');
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
-const Worker = require('../../models/Worker');
 const Review = require('../../models/Review');
 const { validationResult } = require('express-validator');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
@@ -147,6 +146,35 @@ const createBooking = async (req, res) => {
       vendorObj.distance = 0; // Dist is not critical for direct booking
       nearbyVendors = [vendorObj];
     } else {
+      // Sync geoLocation coordinates from address.lat/lng for all approved/active/online vendors who have no real-time coordinates
+      try {
+        await Vendor.updateMany(
+          {
+            isActive: true,
+            approvalStatus: 'APPROVED',
+            isOnline: true,
+            $or: [
+              { geoLocation: { $exists: false } },
+              { 'geoLocation.coordinates': [0, 0] }
+            ],
+            'address.lat': { $ne: null },
+            'address.lng': { $ne: null }
+          },
+          [
+            {
+              $set: {
+                geoLocation: {
+                  type: 'Point',
+                  coordinates: ['$address.lng', '$address.lat']
+                }
+              }
+            }
+          ]
+        );
+      } catch (syncErr) {
+        console.error('[CreateBooking] Background vendor geoLocation sync failed:', syncErr);
+      }
+
       // Find vendors who offer the category of this service
       let qualifiedVendorIds = [];
       const searchCategoryTitle = category ? category.title : (reqServiceCategory || service.category);

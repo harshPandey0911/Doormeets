@@ -68,8 +68,7 @@ const iconMap = {
   "Package based": FiPackage,
   "Painting Mgmt": FiGrid,
   "Instant Booking": FiZap,
-  "SOS Alerts": FiShield,
-  "Shop Owners": FiShoppingBag
+  "SOS Alerts": FiShield
 };
 
 // Helper function to convert child name to route path
@@ -199,7 +198,6 @@ const permissionMap = {
   "Management": "propose_categories",
   "Package based": "propose_categories",
   "Painting Mgmt": "propose_categories",
-  "Instant Booking": "propose_categories",
   "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",
@@ -261,7 +259,7 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
       if (requiredPerm) {
         return hasPermission(requiredPerm);
       }
-      
+
       // If no permission mapped but role allows it, show it (e.g., Dashboard if no perm mapped)
       return allowedByRole;
     }
@@ -435,8 +433,8 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
           title={isCollapsed ? item.title : undefined}
           className={`
             flex items-center gap-3 transition-all duration-200 cursor-pointer
-            ${isCollapsed 
-              ? "w-12 h-12 justify-center mx-auto rounded-xl p-0" 
+            ${isCollapsed
+              ? "w-12 h-12 justify-center mx-auto rounded-xl p-0"
               : "px-4 py-3.5 rounded-xl"
             }
             ${active

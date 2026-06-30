@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiSearch, FiCalendar, FiDownload, FiMoreVertical,
@@ -23,9 +22,9 @@ const BookingStatsCard = ({ title, count, icon: Icon, colorClass, bgClass }) => 
 );
 
 const Bookings = () => {
-  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -161,7 +160,6 @@ const Bookings = () => {
             className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none focus:border-green-500 cursor-pointer"
           >
             <option>All Status</option>
-            <option value="pending_admin">Awaiting Admin Review</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
             <option value="in_progress">In Progress</option>
@@ -222,11 +220,7 @@ const Bookings = () => {
                 </tr>
               ) : (
                 bookings.map((booking) => (
-                  <tr 
-                    key={booking._id} 
-                    onClick={() => navigate(`/admin/bookings/${booking._id}`)}
-                    className="hover:bg-gray-55 transition-colors cursor-pointer"
-                  >
+                  <tr key={booking._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <span className="font-bold text-gray-900 text-xs">#{booking.bookingNumber || booking._id.slice(-6).toUpperCase()}</span>
                     </td>
@@ -263,10 +257,47 @@ const Bookings = () => {
                         })}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <button className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
+                    <td className="px-4 py-3 text-right relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === booking._id ? null : booking._id);
+                        }}
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
                         <FiMoreVertical className="w-4 h-4" />
                       </button>
+
+                      {openMenuId === booking._id && (
+                        <>
+                          {/* Backdrop to close menu */}
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setOpenMenuId(null)}
+                          />
+                          <div className="absolute right-8 top-8 z-20 bg-white border border-gray-100 rounded-xl shadow-xl min-w-[160px] py-1 overflow-hidden">
+                            <a
+                              href={`/admin/bookings/${booking._id}`}
+                              className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                              onClick={() => setOpenMenuId(null)}
+                            >
+                              <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                              View Details
+                            </a>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(booking.bookingNumber || booking._id);
+                                toast.success('Booking ID copied!');
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                              Copy Booking ID
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))

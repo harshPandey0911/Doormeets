@@ -12,8 +12,7 @@ const {
   confirmPayAtHome,
   createPlanOrder,
   verifyPlanPayment,
-  getUpgradeDetails,
-  getBookingInvoices
+  getUpgradeDetails
 } = require('../../controllers/paymentControllers/paymentController');
 
 // Validation rules
@@ -46,7 +45,6 @@ router.get('/history', authenticate, isUser, getPaymentHistory);
 router.post('/plan/create-order', authenticate, isUser, createPlanOrder);
 router.post('/plan/verify', authenticate, isUser, verifyPlanPayment);
 router.get('/plan/upgrade-details', authenticate, isUser, getUpgradeDetails);
-router.get('/booking/:bookingId/invoices', authenticate, getBookingInvoices);
 
 module.exports = router;
 

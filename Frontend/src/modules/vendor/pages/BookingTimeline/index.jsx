@@ -6,7 +6,7 @@ import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import { getBookingById, updateBookingStatus, startSelfJob, verifySelfVisit, completeSelfJob, collectSelfCash, payWorker } from '../../services/bookingService';
 import { CashCollectionModal, ConfirmDialog } from '../../components/common';
-import { WorkCompletionModal } from '../../../worker/components/common';
+import WorkCompletionModal from '../../components/common/WorkCompletionModal';
 import vendorWalletService from '../../../../services/vendorWalletService';
 import { toast } from 'react-hot-toast';
 
@@ -272,10 +272,10 @@ const BookingTimeline = () => {
       setActionLoading(true);
       // If it's a worker job, go directly to 'completed' to skip billing for user
       const targetStatus = booking?.isSelfJob ? 'work_done' : 'completed';
-      
+
       await updateBookingStatus(id, targetStatus);
       toast.success(booking?.isSelfJob ? 'Work marked as done' : 'Booking completed successfully');
-      
+
       // Refresh data
       const response = await getBookingById(id);
       const apiData = response.data || response;
@@ -306,8 +306,8 @@ const BookingTimeline = () => {
       title: (booking?.isBidding && booking?.status === 'bidding') ? 'USER IS WAITING' : 'Booking Accepted',
       icon: (booking?.isBidding && booking?.status === 'bidding') ? FiClock : FiCheck,
       action: null,
-      description: (booking?.isBidding && booking?.status === 'bidding') 
-        ? 'User is comparing quotes. Waiting for 5 mins.' 
+      description: (booking?.isBidding && booking?.status === 'bidding')
+        ? 'User is comparing quotes. Waiting for 5 mins.'
         : 'You accepted the booking',
     },
     {
@@ -342,8 +342,8 @@ const BookingTimeline = () => {
           return currentStage === 5 ? () => setIsWorkDoneModalOpen(true) : null;
         }
         // For worker job, just mark it done directly (the 'simple' way)
-        return (booking?.assignedTo && currentStage >= 3 && booking?.status !== 'work_done' && booking?.status !== 'completed') 
-          ? handleWorkDone 
+        return (booking?.assignedTo && currentStage >= 3 && booking?.status !== 'work_done' && booking?.status !== 'completed')
+          ? handleWorkDone
           : null;
       })(),
       description: 'Service work completed',
@@ -396,7 +396,7 @@ const BookingTimeline = () => {
 
     // Hide worker-specific stages for self jobs
     if (booking?.isSelfJob && stage.id === 8) return false;
-    
+
     return true;
   });
 

@@ -49,7 +49,7 @@ async function processBookingCompletion(bookingId) {
     // 5. Create Ledger Transaction entry
     const vendorId = booking.vendorId || null;
     const type = isCash ? 'cash_collection' : 'online_collection';
-    
+
     await Transaction.create({
       userId: booking.userId || null,
       vendorId: vendorId,

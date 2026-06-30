@@ -56,7 +56,6 @@ const Checkout = () => {
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' | 'pay_at_home'
   const [bids, setBids] = useState([]); // Array to collect multiple vendor responses
-  const [codAdvancePercentage, setCodAdvancePercentage] = useState(10);
 
   // Promo Code States
   const [promoCode, setPromoCode] = useState('');
@@ -70,12 +69,7 @@ const Checkout = () => {
   const [selectedTime, setSelectedTime] = useState(null);
   const [visitedFee, setVisitedFee] = useState(0);
   const [gstPercentage, setGstPercentage] = useState(18);
-  const [bookingType, setBookingType] = useState('scheduled'); // 'instant' | 'scheduled'
-  const [isInstantBookingEnabled, setIsInstantBookingEnabled] = useState(true);
-  const [instantBookingMarkup, setInstantBookingMarkup] = useState(99);
-  const [instantBookingWaitTime, setInstantBookingWaitTime] = useState(45);
-  const [showArrivalTime, setShowArrivalTime] = useState(true);
-  const [instantBookingWindowHours, setInstantBookingWindowHours] = useState(4);
+  const [bookingType, setBookingType] = useState('instant'); // 'instant' | 'scheduled'
 
   // Dynamic Builder States
   const [dynamicFieldsConfig, setDynamicFieldsConfig] = useState([]);
@@ -86,9 +80,6 @@ const Checkout = () => {
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
   const [loyaltyRedemptionRate, setLoyaltyRedemptionRate] = useState(1);
-  const [useWallet, setUseWallet] = useState(true);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [walletAmountInput, setWalletAmountInput] = useState('');
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -103,9 +94,9 @@ const Checkout = () => {
       const serviceId = typeof firstItem?.serviceId === 'object'
         ? firstItem.serviceId._id || firstItem.serviceId.id
         : firstItem?.serviceId || firstItem?._id;
-      
+
       const quantity = firstItem?.serviceCount || 1;
-      
+
       // 1. Try standard Promo Code validation
       try {
         const response = await promoService.applyPromo(
@@ -237,12 +228,6 @@ const Checkout = () => {
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
             setLoyaltyPoints(response.user?.loyaltyPoints || 0);
             setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
-            setCodAdvancePercentage(response.settings?.codAdvancePercentage ?? 10);
-            setIsInstantBookingEnabled(response.settings?.isInstantBookingEnabled ?? true);
-            setInstantBookingMarkup(response.settings?.instantBookingMarkup ?? 99);
-            setInstantBookingWaitTime(response.settings?.instantBookingWaitTime ?? 45);
-            setShowArrivalTime(response.settings?.showArrivalTime ?? true);
-            setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
 
             if (response.user?.addresses?.length > 0) {
               const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
@@ -267,12 +252,6 @@ const Checkout = () => {
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
             setLoyaltyPoints(response.user?.loyaltyPoints || 0);
             setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
-            setCodAdvancePercentage(response.settings?.codAdvancePercentage ?? 10);
-            setIsInstantBookingEnabled(response.settings?.isInstantBookingEnabled ?? true);
-            setInstantBookingMarkup(response.settings?.instantBookingMarkup ?? 99);
-            setInstantBookingWaitTime(response.settings?.instantBookingWaitTime ?? 45);
-            setShowArrivalTime(response.settings?.showArrivalTime ?? true);
-            setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
 
             // Set Addresses
             if (response.user?.addresses?.length > 0) {
@@ -307,7 +286,7 @@ const Checkout = () => {
               const serviceId = typeof firstItem.serviceId === 'object'
                 ? firstItem.serviceId._id || firstItem.serviceId.id
                 : firstItem.serviceId;
-              
+
               if (serviceId) {
                 try {
                   const detailsRes = await api.get(`/public/services/${serviceId}/dynamic-details`);
@@ -315,7 +294,7 @@ const Checkout = () => {
                     setDynamicFieldsConfig((detailsRes.data.fields || []).filter(f => f.showToUser !== false));
                     setPricingRules(detailsRes.data.pricingRules || []);
                     setServiceWorkflow(detailsRes.data.workflow || null);
-                    
+
                     // Initialize dynamic field answers
                     const initialAnswers = {};
                     (detailsRes.data.fields || []).filter(f => f.showToUser !== false).forEach(f => {
@@ -532,7 +511,6 @@ const Checkout = () => {
 
         paymentMethod: 'online',
         redeemLoyaltyPoints: useLoyaltyPoints,
-        applyWallet: useWallet,
         bookedItems: bookedItemsData,
         dynamicFields: dynamicFieldsPayload
       });
@@ -637,11 +615,6 @@ const Checkout = () => {
           setSearchingVendors(false);
           setCurrentStep('failed');
           toast.error(data.message || 'All vendors are currently unavailable.');
-        } else if (data.status === 'pending_admin') {
-          setSearchingVendors(false);
-          setShowVendorModal(false);
-          toast.success('Sent to admin for manual assignment!');
-          navigate(`/user/booking-confirmation/${bookingRequest._id}`, { replace: true });
         }
       }
     });
@@ -659,13 +632,6 @@ const Checkout = () => {
               setSearchingVendors(false);
               setCurrentStep('failed');
               clearInterval(pollInterval);
-            } else if (status === 'pending_admin') {
-              console.log('[Checkout] Polling detected admin queue status:', status);
-              setSearchingVendors(false);
-              setShowVendorModal(false);
-              clearInterval(pollInterval);
-              toast.success('Sent to admin for manual assignment!');
-              navigate(`/user/booking-confirmation/${bookingRequest._id}`, { replace: true });
             } else if (status === 'accepted' || status === 'assigned') {
               // Also handle success via polling as fallback
               console.log('[Checkout] Polling detected success status:', status);
@@ -726,13 +692,9 @@ const Checkout = () => {
       setCurrentStep('searching');
       setSearchingVendors(true);
 
-      // Get first service and resolve ID robustly
+      // Get first service
       const firstItem = cartItems[0];
-      const resolvedServiceId = (typeof firstItem.serviceId === 'object' && firstItem.serviceId !== null)
-        ? firstItem.serviceId._id || firstItem.serviceId.id
-        : firstItem.serviceId || firstItem.id || firstItem._id;
-
-      if (!resolvedServiceId) {
+      if (!firstItem.serviceId) {
         toast.error('Service information missing. Please try again.');
         setCurrentStep('details');
         setSearchingVendors(false);
@@ -773,8 +735,10 @@ const Checkout = () => {
       // Create booking request
       toast.loading('Searching for nearby vendors...');
 
-      // Ensure serviceId is a string
-      const serviceId = resolvedServiceId;
+      // Ensure serviceId is a string (handle populated cart data)
+      const serviceId = typeof firstItem.serviceId === 'object'
+        ? firstItem.serviceId._id || firstItem.serviceId.id
+        : firstItem.serviceId;
 
       // Prepare bookedItems array matching Service catalog structure
       // Prepare bookedItems array matching Service catalog structure
@@ -814,10 +778,9 @@ const Checkout = () => {
         scheduledTime: finalTimeDisplay,
         timeSlot: timeSlotObj,
         // userNotes: null, // Removed per request
-        paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
+        paymentMethod: amountToPay === 0 ? 'plan_benefit' : 'pay_at_home',
         amount: amountToPay,
         redeemLoyaltyPoints: useLoyaltyPoints,
-        applyWallet: useWallet,
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
@@ -906,10 +869,8 @@ const Checkout = () => {
 
     } catch (error) {
       toast.dismiss();
-      console.log('Search vendors error details:', error.response?.data);
       console.error('Search vendors error:', error);
-      const errMsg = error.response?.data?.message || 'Failed to search for vendors. Please try again.';
-      toast.error(errMsg);
+      toast.error('Failed to search for vendors. Please try again.');
       setCurrentStep('details');
       setSearchingVendors(false);
       setShowVendorModal(false);
@@ -926,7 +887,7 @@ const Checkout = () => {
 
       // Create Razorpay order
       toast.loading('Creating payment order...');
-      const orderResponse = await paymentService.createOrder(bookingRequest._id, paymentMethod);
+      const orderResponse = await paymentService.createOrder(bookingRequest._id);
 
       if (!orderResponse.success) {
         toast.dismiss();
@@ -1064,11 +1025,7 @@ const Checkout = () => {
     } else if (paymentMethod === 'online') {
       await handleOnlinePayment();
     } else {
-      if (codAdvancePercentage > 0) {
-        await handleOnlinePayment();
-      } else {
-        await handlePayAtHome();
-      }
+      await handlePayAtHome();
     }
   };
 
@@ -1202,22 +1159,18 @@ const Checkout = () => {
           userAuthService.getProfile(), // Ensure we have latest status
         ]);
 
-        if (plansRes.success && userRes.success) {
-          if (userRes.user?.wallet) {
-            setWalletBalance(userRes.user.wallet.balance || 0);
-          }
-          if (userRes.user?.plans?.isActive) {
-            const userPlanName = userRes.user.plans.name;
-            const activePlan = plansRes.data.find(p => p.name === userPlanName);
+        if (plansRes.success && userRes.success && userRes.user?.plans?.isActive) {
+          const userPlanName = userRes.user.plans.name;
+          const activePlan = plansRes.data.find(p => p.name === userPlanName);
 
-            if (activePlan) {
-              setPlanBenefits({
-                name: activePlan.name,
-                freeCategories: activePlan.freeCategories || [],
-                freeBrands: activePlan.freeBrands || [],
-                freeServices: activePlan.freeServices || []
-              });
-            }
+          if (activePlan) {
+            setPlanBenefits({
+              name: activePlan.name,
+              freeCategories: activePlan.freeCategories || [],
+              freeBrands: activePlan.freeBrands || [],
+              freeServices: activePlan.freeServices || []
+            });
+
           }
         }
       } catch (e) {
@@ -1345,25 +1298,13 @@ const Checkout = () => {
   const pointsNeeded = Math.ceil(netBeforeLoyalty / loyaltyRedemptionRate);
   const maxLoyaltyRedeemable = Math.min(loyaltyPoints, pointsNeeded);
   const loyaltyDiscount = useLoyaltyPoints ? (maxLoyaltyRedeemable * loyaltyRedemptionRate) : 0;
-  const baseTotalAmount = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
-
-  // Wallet Deduction
-  const maxWalletUsePercentage = 30; // matches backend
-  const maxWalletUse = baseTotalAmount * (maxWalletUsePercentage / 100);
-  const parsedWalletInput = parseFloat(walletAmountInput) || 0;
-  const walletDiscount = useWallet
-    ? (walletAmountInput !== '' ? Math.min(parsedWalletInput, walletBalance, maxWalletUse) : Math.min(walletBalance, maxWalletUse))
-    : 0;
-
-  const totalAmount = Math.max(0, baseTotalAmount - walletDiscount);
-  // Add instant booking markup on top if instant type is selected and enabled
-  const instantSurcharge = (bookingType === 'instant' && isInstantBookingEnabled && totalAmount > 0) ? instantBookingMarkup : 0;
-  const amountToPay = totalAmount + instantSurcharge;
+  const totalAmount = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
+  const amountToPay = totalAmount;
 
   // Helper for Free Plan Full Breakdown Display
   const displayTax = 0;
   const displayFee = 0;
-  const displaySavings = amountToPay === 0 ? (totalOriginalPrice + displayTax + displayFee) : (savings + promoDiscount);
+  const displaySavings = totalAmount === 0 ? (totalOriginalPrice + displayTax + displayFee) : (savings + promoDiscount);
 
   // Date and time slot helper functions
   const getDates = () => {
@@ -1401,15 +1342,13 @@ const Checkout = () => {
       return allSlots;
     }
 
-    // Get current hour and minutes to filter slots within the instant booking window
+    // Get current hour + 3 (minimum 3 hour buffer to hide upcoming 2 hours)
     const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentDecimalHour = currentHour + currentMinute / 60;
+    const minHour = currentHour + 3;
 
     return allSlots.filter(slot => {
       const slotHour = parseInt(slot.value.split(':')[0], 10);
-      const diff = slotHour - currentDecimalHour;
-      return diff >= instantBookingWindowHours;
+      return slotHour >= minHour;
     });
   };
 
@@ -1482,7 +1421,7 @@ const Checkout = () => {
         const selectedBid = bids.find(b => b.bidId === bidId);
         setAcceptedVendor(selectedBid);
         setCurrentStep('accepted');
-        
+
         setTimeout(() => {
           setShowVendorModal(false);
           navigate(`/user/booking-confirmation/${bookingRequest._id}`, { replace: true });
@@ -1498,7 +1437,7 @@ const Checkout = () => {
 
   const handleWait = () => {
     if (!bookingRequest?._id || bids.length === 0 || !socket) return;
-    
+
     // Emit wait request to existing socket context
     socket.emit('user_wait_request', {
       bookingId: bookingRequest._id,
@@ -1713,7 +1652,7 @@ const Checkout = () => {
                     <label className="block text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>
                       {field.label} {field.isRequired && <span className="text-red-500">*</span>}
                     </label>
-                    
+
                     {/* Render inputs based on type */}
                     {field.fieldType === 'text' && (
                       <input
@@ -1822,7 +1761,7 @@ const Checkout = () => {
                           disabled={uploadingFiles[field.name]}
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                                handleFileUpload(field.name, e.target.files[0]);
+                              handleFileUpload(field.name, e.target.files[0]);
                             }
                           }}
                           className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
@@ -1954,138 +1893,6 @@ const Checkout = () => {
           )}
         </div>
 
-         {/* Wallet Balance Panel */}
-        {walletBalance > 0 && (
-          <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-            {/* Header row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 bg-blue-50 text-blue-500 rounded-xl text-lg shrink-0">💳</span>
-                <div>
-                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Wallet Balance</h3>
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Available: ₹{walletBalance.toLocaleString('en-IN')}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setUseWallet(prev => !prev);
-                  setWalletAmountInput('');
-                }}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  useWallet ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                    useWallet ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Custom Amount Input — shown when wallet is enabled */}
-            {useWallet && (
-              <div className="mt-3 pt-3 border-t border-dashed" style={{ borderColor: 'var(--border)' }}>
-                <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Enter wallet amount to use <span className="text-gray-400">(max ₹{Math.floor(maxWalletUse)} or leave blank to auto-apply)</span>
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>₹</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max={Math.floor(Math.min(walletBalance, maxWalletUse))}
-                      value={walletAmountInput}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || (parseFloat(val) >= 0 && parseFloat(val) <= Math.min(walletBalance, maxWalletUse))) {
-                          setWalletAmountInput(val);
-                        }
-                      }}
-                      placeholder={`0 – ${Math.floor(Math.min(walletBalance, maxWalletUse))}`}
-                      className="w-full pl-7 pr-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setWalletAmountInput(String(Math.floor(Math.min(walletBalance, maxWalletUse))))}
-                    className="px-3 py-2 text-xs font-bold rounded-lg bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition-colors"
-                  >
-                    Max
-                  </button>
-                </div>
-                {walletDiscount > 0 && (
-                  <div className="flex justify-between text-xs text-green-600 font-semibold mt-2">
-                    <span>Wallet discount applied:</span>
-                    <span>-₹{walletDiscount.toFixed(2)}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Payment Method Selector */}
-        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">💰</span>
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Payment Method</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {/* Online Payment */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('online')}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
-                paymentMethod === 'online'
-                  ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-                  : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-2xl">📱</span>
-              <span className="text-xs font-semibold" style={{ color: paymentMethod === 'online' ? '#0d9488' : 'var(--text-secondary)' }}>Online Payment</span>
-              <span className="text-[10px] text-gray-400">UPI / Card / Net Banking</span>
-              {paymentMethod === 'online' && (
-                <span className="text-[10px] font-bold text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">Selected ✓</span>
-              )}
-            </button>
-
-            {/* Cash on Delivery */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('pay_at_home')}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
-                paymentMethod === 'pay_at_home'
-                  ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
-                  : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-2xl">💵</span>
-              <span className="text-xs font-semibold" style={{ color: paymentMethod === 'pay_at_home' ? '#ea580c' : 'var(--text-secondary)' }}>Cash on Delivery</span>
-              <span className="text-[10px] text-gray-400">Pay after service</span>
-              {paymentMethod === 'pay_at_home' && (
-                <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">Selected ✓</span>
-              )}
-            </button>
-          </div>
-          {paymentMethod === 'pay_at_home' && (
-            <div className="mt-3 flex flex-col gap-2 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <span className="text-orange-500 text-sm mt-0.5">ℹ️</span>
-                <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">
-                  To confirm this Cash on Delivery booking, an advance online payment of {codAdvancePercentage}% (₹{Math.ceil(amountToPay * (codAdvancePercentage / 100))}) is required.
-                </p>
-              </div>
-              <p className="text-[10px] text-orange-600/80 font-semibold pl-6">
-                The remaining balance (₹{amountToPay - Math.ceil(amountToPay * (codAdvancePercentage / 100))}) will be payable in cash/UPI to the professional after service completion.
-              </p>
-            </div>
-          )}
-        </div>
-
         {/* Loyalty Points Panel */}
         {loyaltyPoints > 0 && (
           <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
@@ -2102,14 +1909,12 @@ const Checkout = () => {
               <button
                 type="button"
                 onClick={() => setUseLoyaltyPoints(prev => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                  useLoyaltyPoints ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'
-                }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${useLoyaltyPoints ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'
+                  }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                    useLoyaltyPoints ? 'translate-x-5' : 'translate-x-0'
-                  }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${useLoyaltyPoints ? 'translate-x-5' : 'translate-x-0'
+                    }`}
                 />
               </button>
             </div>
@@ -2176,30 +1981,12 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* Wallet Applied Row */}
-            {walletDiscount > 0 && (
-              <div className="flex justify-between items-center text-green-600">
-                <span className="text-sm font-medium">Wallet Applied</span>
-                <span className="text-sm font-bold">-₹{walletDiscount.toLocaleString('en-IN')}</span>
-              </div>
-            )}
-
-            {/* Instant Booking Surcharge */}
-            {instantSurcharge > 0 && (
-              <div className="flex justify-between items-center" style={{ color: 'var(--text-primary)' }}>
-                <span className="text-sm font-medium flex items-center gap-1">
-                  <span className="text-yellow-500">⚡</span> Instant Booking Fee
-                </span>
-                <span className="text-sm font-bold">+₹{instantSurcharge.toLocaleString('en-IN')}</span>
-              </div>
-            )}
-
             {/* Divider */}
             <div className="border-t pt-4 mt-2" style={{ borderColor: 'var(--border)' }}>
               <div className="flex justify-between items-center">
                 <span className="text-base font-normal" style={{ color: 'var(--text-primary)' }}>Total Payable</span>
                 <div className="flex flex-col items-end">
-                  {amountToPay === 0 ? (
+                  {totalAmount === 0 ? (
                     <>
                       <span className="text-sm font-medium text-gray-400 line-through">
                         ₹{Math.round(totalOriginalPrice + displayTax + displayFee).toLocaleString('en-IN')}
@@ -2208,7 +1995,7 @@ const Checkout = () => {
                     </>
                   ) : (
                     <span className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>
-                      ₹{amountToPay.toLocaleString('en-IN')}
+                      ₹{totalAmount.toLocaleString('en-IN')}
                     </span>
                   )}
                 </div>
@@ -2272,44 +2059,24 @@ const Checkout = () => {
         {/* Booking Type Toggle */}
         <div className="px-4 pt-3 pb-0">
           <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
-            {/* Slot Booking - Always shown, always default */}
+            <button
+              onClick={() => setBookingType('instant')}
+              className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
+              style={bookingType === 'instant' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
+            >
+              <span className="text-yellow-500">⚡</span> Book
+            </button>
             <button
               onClick={() => setBookingType('scheduled')}
               className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
               style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
             >
-              <span>📅</span> Slot Booking
+              <span>📅</span> Slot
             </button>
-
-            {/* Instant Booking - Only shown if admin has enabled it */}
-            {isInstantBookingEnabled && (
-              <button
-                onClick={() => setBookingType('instant')}
-                className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
-                style={bookingType === 'instant'
-                  ? { backgroundColor: '#fef9c3', color: '#854d0e', fontWeight: 600 }
-                  : { color: 'var(--text-muted)' }}
-              >
-                <span className="text-yellow-500">⚡</span>
-                Instant
-                {instantBookingMarkup > 0 && (
-                  <span className="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
-                    +₹{instantBookingMarkup}
-                  </span>
-                )}
-              </button>
-            )}
           </div>
-
-          {/* Info text below toggle */}
-          {bookingType === 'scheduled' && (
-            <p className="text-[10px] text-center font-medium mt-1 mb-1" style={{ color: 'var(--text-muted)' }}>
-              📅 Choose a date & time slot below
-            </p>
-          )}
           {bookingType === 'instant' && (
-            <p className="text-xs text-center text-yellow-700 font-medium mt-1 mb-1">
-              ⚡ Priority Service{showArrivalTime ? `: Professional arrives in ~${instantBookingWaitTime} mins` : ''} · +₹{instantBookingMarkup} surcharge
+            <p className="text-xs text-center text-green-600 font-medium mt-1 mb-1">
+              <span className="font-normal">⚡ Priority Service:</span> Vendor arrives in ~45 mins
             </p>
           )}
         </div>
@@ -2398,12 +2165,12 @@ const Checkout = () => {
             style={{ backgroundColor: themeColors.button }}
           >
             {searchingVendors ? 'Searching for vendors...' :
-              currentStep === 'payment' ? (amountToPay === 0 ? 'Confirm Booking (Free)' : (paymentMethod === 'online' ? 'Proceed to Pay' : 'Confirm Booking')) :
+              currentStep === 'payment' ? (totalAmount === 0 ? 'Confirm Booking (Free)' : (paymentMethod === 'online' ? 'Proceed to Pay' : 'Confirm Booking')) :
                 plan ? 'Proceed to Payment' :
-                  bookingType === 'instant' ? '⚡ Book Instantly Now' :
+                  bookingType === 'instant' ? 'Find nearby vendors now' :
                     (selectedDate && selectedTime && houseNumber ?
-                      'Find Vendors for Slot' :
-                      (houseNumber || addressDetails) ? 'Select Date & Time Slot' : 'Add address to proceed')}
+                      'Find nearby vendors' :
+                      (houseNumber || addressDetails) ? 'Select Time Slot' : 'Add address to proceed')}
           </button>
         </div>
       </div>

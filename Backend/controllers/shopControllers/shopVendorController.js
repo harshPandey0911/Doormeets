@@ -1,6 +1,7 @@
 const Vendor = require('../../models/Vendor');
 const Settings = require('../../models/Settings');
 const Profession = require('../../models/Profession');
+const { generateTokenPair } = require('../../utils/tokenService');
 
 /**
  * Add a new vendor by Shop Owner
@@ -58,6 +59,14 @@ const addVendor = async (req, res) => {
       }
     });
 
+    // Generate tokens for the vendor so the shop owner frontend can make calls on their behalf
+    const loginSessionId = Date.now().toString();
+    const tokens = generateTokenPair({
+      userId: vendor._id,
+      role: 'VENDOR',
+      loginSessionId
+    });
+
     res.status(201).json({
       success: true,
       message: 'Vendor registered successfully. The vendor can now complete onboarding on their app/panel.',
@@ -66,7 +75,8 @@ const addVendor = async (req, res) => {
         name: vendor.name,
         phone: vendor.phone,
         approvalStatus: vendor.approvalStatus
-      }
+      },
+      tokens
     });
   } catch (error) {
     console.error('Add Vendor error:', error);

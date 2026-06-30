@@ -21,8 +21,7 @@ const {
   getVendorRatings,
   getPendingBookings,
   reconfirmBooking,
-  cancelAcceptedBooking,
-  requestCancelBooking
+  cancelAcceptedBooking
 } = require('../../controllers/bookingControllers/vendorBookingController');
 
 // Validation rules
@@ -71,7 +70,6 @@ router.post('/:id/pay-worker', authenticate, isVendor, payWorker);
 
 // Reconfirmation Route
 router.put('/:id/reconfirm', authenticate, isVendor, reconfirmBooking);
-router.post('/:id/request-cancel', authenticate, isVendor, requestCancelBooking);
 
 module.exports = router;
 

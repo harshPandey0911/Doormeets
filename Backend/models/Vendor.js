@@ -458,37 +458,100 @@ vendorSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Helper function to parse scheduled start time
+function parseScheduledStartTime(scheduledDate, timeStr) {
+  const date = new Date(scheduledDate);
+  if (isNaN(date.getTime())) return new Date();
+  
+  let hours = 0;
+  let minutes = 0;
+  if (typeof timeStr === 'string') {
+    const cleanTime = timeStr.trim().toUpperCase();
+    const isPM = cleanTime.includes('PM');
+    const isAM = cleanTime.includes('AM');
+    let numericTime = cleanTime.replace(/[AP]M/, '').trim();
+    const parts = numericTime.split(':');
+    if (parts.length >= 1) {
+      hours = parseInt(parts[0], 10) || 0;
+    }
+    if (parts.length >= 2) {
+      minutes = parseInt(parts[1], 10) || 0;
+    }
+    if (isPM && hours < 12) {
+      hours += 12;
+    } else if (isAM && hours === 12) {
+      hours = 0;
+    }
+  }
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
 // Static method to update workload status based on active self jobs
 vendorSchema.statics.updateWorkStatus = async function (vendorId) {
   if (!vendorId) return;
   const Booking = mongoose.model('Booking');
-  const activeSelfJob = await Booking.findOne({
+  const Settings = mongoose.model('Settings');
+  
+  // Find all active bookings
+  const activeJobs = await Booking.find({
     vendorId: vendorId,
     status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] }
   });
 
+  const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+  const busyBufferHours = (globalSettings && globalSettings.vendorBusyBufferHours !== undefined)
+    ? globalSettings.vendorBusyBufferHours
+    : 1;
+
+  let isBusy = false;
+  const now = new Date();
+
+  for (const job of activeJobs) {
+    const status = job.status?.toLowerCase();
+    
+    // 1. If currently working on site, busy
+    if (['visited', 'in_progress', 'work_done', 'final_settlement'].includes(status)) {
+      isBusy = true;
+      break;
+    }
+
+    // 2. If scheduled, only busy starting dynamic buffer hours before scheduled time
+    if (['accepted', 'assigned', 'confirmed'].includes(status)) {
+      const scheduledStart = parseScheduledStartTime(job.scheduledDate, job.timeSlot?.start || job.scheduledTime);
+      const busyBufferMs = busyBufferHours * 60 * 60 * 1000;
+      const bufferBeforeStart = new Date(scheduledStart.getTime() - busyBufferMs);
+      
+      if (now >= bufferBeforeStart) {
+        isBusy = true;
+        break;
+      }
+    }
+  }
+
   const vendor = await this.findById(vendorId).select('isOnline');
   const isOnline = vendor ? vendor.isOnline : false;
 
-  const newStatus = activeSelfJob ? 'busy' : 'available';
-  const newAvailability = activeSelfJob ? 'ON_JOB' : (isOnline ? 'AVAILABLE' : 'OFFLINE');
-  const availabilityStatus = activeSelfJob ? 'BUSY' : (isOnline ? 'ONLINE' : 'OFFLINE');
+  const newStatus = isBusy ? 'busy' : 'available';
+  const newAvailability = isBusy ? 'ON_JOB' : (isOnline ? 'AVAILABLE' : 'OFFLINE');
+  const availabilityStatus = isBusy ? 'BUSY' : (isOnline ? 'ONLINE' : 'OFFLINE');
 
   const updateFields = {
     workStatus: newStatus,
     availability: newAvailability
   };
 
-  // If no active jobs, clean up reservation fields and reset availabilityStatus
-  if (!activeSelfJob) {
+  // If no busy jobs, clean up reservation fields and reset availabilityStatus
+  if (!isBusy) {
     updateFields.availabilityStatus = availabilityStatus;
     updateFields.reservedFrom = null;
     updateFields.reservedBookingId = null;
+  } else {
+    updateFields.availabilityStatus = 'BUSY';
   }
 
-  await this.findByIdAndUpdate(vendorId, updateFields);
+  await this.findByIdAndUpdate(vendorId, { $set: updateFields });
   return newStatus;
 };
 
 module.exports = mongoose.model('Vendor', vendorSchema);
-
