@@ -399,8 +399,8 @@ const AllVendors = () => {
                             <FiEdit className="w-3.5 h-3.5" />
                           </button>
 
-                          {/* Approve/Reject (Only for pending) */}
-                          {vendor.approvalStatus === 'pending' && (
+                          {/* Approve/Reject (Only for pending or training_pending) */}
+                          {(vendor.approvalStatus === 'pending' || vendor.approvalStatus === 'training_pending') && (
                             <>
                               <button
                                 onClick={() => handleApprove(vendor.id)}
@@ -593,7 +593,7 @@ const AllVendors = () => {
               </div>
             </div>
 
-            {selectedVendor.approvalStatus === 'pending' && (
+            {(selectedVendor.approvalStatus === 'pending' || selectedVendor.approvalStatus === 'training_pending') && (
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button
                   onClick={async () => {
