@@ -146,7 +146,8 @@ const initializeSocket = (server) => {
     socket.on('set_availability', async (data) => {
       try {
         const Vendor = require('../models/Vendor');
-        const Worker = require('../models/Worker');
+        const mongoose = require('mongoose');
+        const Worker = mongoose.model('Worker');
 
         if (socket.userRole === 'VENDOR') {
           await Vendor.findByIdAndUpdate(socket.userId, {
@@ -213,7 +214,8 @@ const initializeSocket = (server) => {
       // 3. Save latest location to Database (for initial tracking load)
       try {
         const Vendor = require('../models/Vendor');
-        const Worker = require('../models/Worker');
+        const mongoose = require('mongoose');
+        const Worker = mongoose.model('Worker');
 
         const updateData = {
           location: {
@@ -273,7 +275,8 @@ const updateVendorOnlineStatus = async (vendorId, isOnline, socketId) => {
 // Helper function to update worker online status
 const updateWorkerOnlineStatus = async (workerId, isOnline, socketId) => {
   try {
-    const Worker = require('../models/Worker');
+    const mongoose = require('mongoose');
+    const Worker = mongoose.model('Worker');
 
     const updateData = {
       status: isOnline ? 'ONLINE' : 'OFFLINE',

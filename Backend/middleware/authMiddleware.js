@@ -2,6 +2,7 @@ const { verifyAccessToken } = require('../utils/tokenService');
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const Admin = require('../models/Admin');
+const ShopOwner = require('../models/ShopOwner');
 const { USER_ROLES } = require('../utils/constants');
 
 /**
@@ -49,6 +50,7 @@ const authenticate = async (req, res, next) => {
         }
         break;
       case USER_ROLES.VENDOR:
+      case 'vendor':
         user = await Vendor.findById(decoded.userId).select('-password').lean();
         if (user && user.approvalStatus !== 'approved') {
           // Allow access to verification, training, and profile endpoints during pending state
@@ -81,11 +83,22 @@ const authenticate = async (req, res, next) => {
           });
         }
         break;
+      case USER_ROLES.WORKER:
+        user = await Worker.findById(decoded.userId).select('-password').lean();
+        // SINGLE DEVICE LOGOUT Logic
+        if (process.env.NODE_ENV === 'production' && user && user.loginSessionId && decoded.loginSessionId && user.loginSessionId !== decoded.loginSessionId) {
+          return res.status(401).json({ success: false, message: 'Account logged in on another device. Please login again.' });
+        }
+        break;
       case USER_ROLES.ADMIN:
       case 'super_admin':
       case 'admin':
       case 'ADMIN':
         user = await Admin.findById(decoded.userId).select('-password').lean();
+        break;
+      case USER_ROLES.SHOP_OWNER:
+      case 'shop_owner':
+        user = await ShopOwner.findById(decoded.userId).select('-password').lean();
         break;
       default:
         console.error('Role mismatch in middleware:', decoded.role);

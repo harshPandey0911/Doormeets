@@ -215,6 +215,8 @@ app.use('/api/admin', require('./routes/admin-routes/cityManagement.routes.js'))
 app.use('/api/admin', require('./routes/admin-routes/dashboard.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorManagement.routes'));
+app.use('/api/admin/shop-owners', require('./routes/admin-routes/shopManagement.routes'));
+// app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/categoryManagement.routes'));
 app.use('/api/admin/professions', require('./routes/admin-routes/profession.routes'));
 app.use('/api/admin/subcategories', require('./routes/admin-routes/subCategoryManagement.routes'));
@@ -240,6 +242,9 @@ app.use('/api/admin/settlements', require('./routes/admin-routes/settlementManag
 app.use('/api/admin/admins', require('./routes/admin-routes/adminManagement.routes'));
 app.use('/api/admin/promos', require('./routes/admin-routes/promo.routes'));
 app.use('/api/admin/vouchers', require('./routes/admin-routes/voucher.routes'));
+
+// Shop Owner routes
+app.use('/api/shop', require('./routes/shop-routes/shop.routes'));
 app.use('/api/admin/support', require('./routes/admin-routes/support.routes'));
 app.use('/api/admin/banners', require('./routes/admin-routes/banner.routes'));
 app.use('/api/admin/training', require('./routes/admin-routes/trainingManagement.routes'));

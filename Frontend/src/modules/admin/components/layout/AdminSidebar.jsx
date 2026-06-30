@@ -28,6 +28,7 @@ import {
   FiInbox,
   FiGift,
   FiSliders,
+  FiZap,
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
@@ -66,6 +67,7 @@ const iconMap = {
   "Vendor Requests": FiInbox,
   "Package based": FiPackage,
   "Painting Mgmt": FiGrid,
+  "Instant Booking": FiZap,
   "SOS Alerts": FiShield
 };
 
@@ -162,6 +164,10 @@ const getChildRoute = (parentRoute, childName) => {
       "City Admins": "/admin/admin-management",
       "Pending Proposals": "/admin/admin-management/proposals"
     },
+    "/admin/shop-owners": {
+      "All Shop Owners": "/admin/shop-owners/all",
+      "Referral Settings": "/admin/shop-owners/referrals"
+    }
   };
 
   return routeMap[parentRoute]?.[childName] || parentRoute;

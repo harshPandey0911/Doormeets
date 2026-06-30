@@ -19,6 +19,7 @@ import {
 import vendorBillService from '../../../../services/vendorBillService';
 import { CashCollectionModal, ConfirmDialog, WorkerPaymentModal, OtpVerificationModal, ReachedPhotoModal } from '../../components/common';
 import VisitVerificationModal from '../../components/common/VisitVerificationModal';
+// Import shared WorkCompletionModal from worker directory or move to shared
 import WorkCompletionModal from '../../components/common/WorkCompletionModal';
 // import BillingModal from '../../components/bookings/BillingModal'; // Consumed by page now
 import vendorWalletService from '../../../../services/vendorWalletService';

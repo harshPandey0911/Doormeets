@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import UserRoutes from '../modules/user/routes';
 import VendorRoutes from '../modules/vendor/routes';
 import AdminRoutes from '../modules/admin/routes';
+import ShopRoutes from '../modules/shop/routes';
 
 import LandingPage from '../modules/landing/pages/LandingPage';
 
@@ -25,6 +26,9 @@ const AppRoutes = () => {
 
       {/* Admin Routes */}
       <Route path="/admin/*" element={<AdminRoutes />} />
+
+      {/* Shop Owner Routes */}
+      <Route path="/shop/*" element={<ShopRoutes />} />
     </Routes>
   );
 };

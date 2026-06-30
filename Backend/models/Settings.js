@@ -293,17 +293,19 @@ const settingsSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  showVendorProfitToVendor: {
-    type: Boolean,
-    default: true
+  shopReferralRewardShopOwner: {
+    type: Number,
+    default: 100,
+    min: 0
   },
-  showVendorNameToUser: {
-    type: Boolean,
-    default: true
+  shopReferralRewardVendor: {
+    type: Number,
+    default: 50,
+    min: 0
   },
-  showVendorPhoneToUser: {
-    type: Boolean,
-    default: true
+  shopReferralQrCodeUrl: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

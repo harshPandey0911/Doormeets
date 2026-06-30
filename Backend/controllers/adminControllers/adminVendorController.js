@@ -163,8 +163,64 @@ const approveVendor = async (req, res) => {
       });
     }
 
+    const wasApproved = vendor.approvalStatus === VENDOR_STATUS.APPROVED;
+
     vendor.approvalStatus = VENDOR_STATUS.APPROVED;
     vendor.approvalDate = new Date();
+
+    // Process Shop Owner Referral Rewards if not already approved
+    if (!wasApproved && vendor.referredByShopOwner) {
+      try {
+        const Settings = require('../../models/Settings');
+        const ShopOwner = require('../../models/ShopOwner');
+        const Transaction = require('../../models/Transaction');
+
+        const settings = await Settings.findOne({ type: 'global' });
+        const shopOwnerReward = settings?.shopReferralRewardShopOwner || 100;
+        const vendorReward = settings?.shopReferralRewardVendor || 50;
+
+        // Credit Shop Owner
+        const shopOwner = await ShopOwner.findById(vendor.referredByShopOwner);
+        if (shopOwner) {
+          const balanceBefore = shopOwner.wallet?.balance || 0;
+          shopOwner.wallet = shopOwner.wallet || { balance: 0 };
+          shopOwner.wallet.balance += shopOwnerReward;
+          await shopOwner.save();
+
+          // Create transaction for shop owner
+          await Transaction.create({
+            shopOwnerId: shopOwner._id,
+            type: 'shop_referral_earned',
+            amount: shopOwnerReward,
+            status: 'completed',
+            paymentMethod: 'system',
+            description: `Referral Reward: You referred vendor ${vendor.name} (${vendor.phone}) who has been approved!`,
+            balanceBefore,
+            balanceAfter: balanceBefore + shopOwnerReward
+          });
+        }
+
+        // Credit Vendor
+        const vendorBalanceBefore = vendor.wallet?.earnings || 0;
+        vendor.wallet = vendor.wallet || { earnings: 0, dues: 0 };
+        vendor.wallet.earnings += vendorReward;
+
+        // Create transaction for vendor
+        await Transaction.create({
+          vendorId: vendor._id,
+          type: 'earnings_credit',
+          amount: vendorReward,
+          status: 'completed',
+          paymentMethod: 'system',
+          description: `Welcome Reward: Onboarded via Shop Owner referral.`,
+          balanceBefore: vendorBalanceBefore,
+          balanceAfter: vendorBalanceBefore + vendorReward
+        });
+      } catch (err) {
+        console.error('[Shop Referral] Error distributing rewards on vendor approval:', err);
+      }
+    }
+
     await vendor.save();
 
     // Send notification to vendor

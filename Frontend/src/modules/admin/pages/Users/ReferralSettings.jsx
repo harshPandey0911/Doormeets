@@ -30,7 +30,10 @@ const ReferralSettings = () => {
   const [form, setForm] = useState({
     referralRewardReferrer: 100,
     referralRewardReferee: 100,
-    maxWalletUsagePercentage: 30
+    maxWalletUsagePercentage: 30,
+    shopReferralRewardShopOwner: 100,
+    shopReferralRewardVendor: 50,
+    shopReferralQrCodeUrl: ''
   });
 
   useEffect(() => {
@@ -46,7 +49,10 @@ const ReferralSettings = () => {
         setForm({
           referralRewardReferrer: settingsData.settings.referralRewardReferrer !== undefined ? settingsData.settings.referralRewardReferrer : 100,
           referralRewardReferee: settingsData.settings.referralRewardReferee !== undefined ? settingsData.settings.referralRewardReferee : 100,
-          maxWalletUsagePercentage: settingsData.settings.maxWalletUsagePercentage !== undefined ? settingsData.settings.maxWalletUsagePercentage : 30
+          maxWalletUsagePercentage: settingsData.settings.maxWalletUsagePercentage !== undefined ? settingsData.settings.maxWalletUsagePercentage : 30,
+          shopReferralRewardShopOwner: settingsData.settings.shopReferralRewardShopOwner !== undefined ? settingsData.settings.shopReferralRewardShopOwner : 100,
+          shopReferralRewardVendor: settingsData.settings.shopReferralRewardVendor !== undefined ? settingsData.settings.shopReferralRewardVendor : 50,
+          shopReferralQrCodeUrl: settingsData.settings.shopReferralQrCodeUrl !== undefined ? settingsData.settings.shopReferralQrCodeUrl : ''
         });
       }
 
@@ -73,7 +79,7 @@ const ReferralSettings = () => {
     const { name, value } = e.target;
     setForm(prev => ({
       ...prev,
-      [name]: value === '' ? '' : Number(value)
+      [name]: name === 'shopReferralQrCodeUrl' ? value : (value === '' ? '' : Number(value))
     }));
   };
 
@@ -262,6 +268,79 @@ const ReferralSettings = () => {
                 <p className="text-xs text-gray-500">
                   Maximum percentage of booking final amount that can be paid using the user's wallet.
                 </p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-6 space-y-4">
+              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide text-left">Shop Owner / Merchant Referral settings</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
+                {/* Shop Owner reward */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Shop Owner Reward (Amount in ₹)
+                  </label>
+                  <div className="relative rounded-xl border border-gray-200 overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                      <span className="text-sm font-semibold text-gray-500">₹</span>
+                    </div>
+                    <input
+                      name="shopReferralRewardShopOwner"
+                      type="number"
+                      min="0"
+                      required
+                      value={form.shopReferralRewardShopOwner}
+                      onChange={handleChange}
+                      className="block w-full pl-9 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                      placeholder="100"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Amount credited to referring Shop Owner's wallet after referred vendor gets approved.
+                  </p>
+                </div>
+
+                {/* Vendor reward */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Onboarded Vendor Reward (Amount in ₹)
+                  </label>
+                  <div className="relative rounded-xl border border-gray-200 overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                      <span className="text-sm font-semibold text-gray-500">₹</span>
+                    </div>
+                    <input
+                      name="shopReferralRewardVendor"
+                      type="number"
+                      min="0"
+                      required
+                      value={form.shopReferralRewardVendor}
+                      onChange={handleChange}
+                      className="block w-full pl-9 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                      placeholder="50"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Welcome balance credited to vendor's wallet upon signup and approval.
+                  </p>
+                </div>
+
+                {/* Optional global QR url */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Global Referral QR Image URL
+                  </label>
+                  <input
+                    name="shopReferralQrCodeUrl"
+                    type="text"
+                    value={form.shopReferralQrCodeUrl}
+                    onChange={handleChange}
+                    className="block w-full px-4 py-3 bg-transparent border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition"
+                    placeholder="https://cloudinary.com/.../qr.png"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Optional QR image URL uploaded by admin to display on merchant dashboard.
+                  </p>
+                </div>
               </div>
             </div>
 

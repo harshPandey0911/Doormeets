@@ -21,9 +21,14 @@ const transactionSchema = new mongoose.Schema({
     ref: 'Booking',
     default: null
   },
+  shopOwnerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ShopOwner',
+    default: null
+  },
   type: {
     type: String,
-    enum: ['credit', 'debit', 'refund', 'withdrawal', 'commission', 'cash_collected', 'settlement', 'worker_payment', 'earnings_credit', 'tds_deduction', 'payment', 'platform_fee', 'convenience_fee', 'gst', 'penalty', 'cash_collection', 'online_collection'],
+    enum: ['credit', 'debit', 'refund', 'withdrawal', 'commission', 'cash_collected', 'settlement', 'worker_payment', 'earnings_credit', 'tds_deduction', 'payment', 'platform_fee', 'convenience_fee', 'gst', 'penalty', 'cash_collection', 'online_collection', 'shop_referral_earned'],
     required: true
   },
   amount: {
@@ -72,6 +77,7 @@ const transactionSchema = new mongoose.Schema({
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ vendorId: 1, createdAt: -1 });
 transactionSchema.index({ workerId: 1, createdAt: -1 });
+transactionSchema.index({ shopOwnerId: 1, createdAt: -1 });
 transactionSchema.index({ bookingId: 1 });
 transactionSchema.index({ type: 1, status: 1 });
 
