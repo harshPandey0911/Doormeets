@@ -133,11 +133,7 @@ export const playAlertRing = (loop = false) => {
     if (loop) audio.loop = true;
     currentAudio = audio; // Track the new audio instance
 
-    audio.play().catch(e => {
-      console.error('Error playing alert file:', e);
-      // Fallback to Web Audio API synthesis
-      playNotificationSound();
-    });
+    audio.play().catch(e => console.error('Error playing alert file:', e));
 
     // Cleanup when audio finishes (if not looping)
     audio.onended = () => {
@@ -204,26 +200,26 @@ export const playSirenAlarm = () => {
     if (audioContext.state === 'suspended') {
       audioContext.resume();
     }
-    
+
     // Stop any existing siren first
     stopSirenAlarm();
-    
+
     sirenOscillator = audioContext.createOscillator();
     sirenGain = audioContext.createGain();
-    
+
     sirenOscillator.type = 'sawtooth';
     const now = audioContext.currentTime;
     sirenOscillator.frequency.setValueAtTime(600, now);
-    
+
     sirenOscillator.frequency.linearRampToValueAtTime(1000, now + 0.45);
-    
+
     sirenOscillator.connect(sirenGain);
     sirenGain.connect(audioContext.destination);
-    
+
     sirenGain.gain.setValueAtTime(0.25, now);
-    
+
     sirenOscillator.start(now);
-    
+
     let goingUp = true;
     sirenInterval = setInterval(() => {
       if (!audioContext || !sirenOscillator) return;
@@ -235,7 +231,7 @@ export const playSirenAlarm = () => {
       }
       goingUp = !goingUp;
     }, 450);
-    
+
     // Auto stop after 30 seconds
     sirenTimeout = setTimeout(() => {
       stopSirenAlarm();
@@ -261,13 +257,13 @@ export const stopSirenAlarm = () => {
     try {
       sirenOscillator.stop();
       sirenOscillator.disconnect();
-    } catch (e) {}
+    } catch (e) { }
     sirenOscillator = null;
   }
   if (sirenGain) {
     try {
       sirenGain.disconnect();
-    } catch (e) {}
+    } catch (e) { }
     sirenGain = null;
   }
 };

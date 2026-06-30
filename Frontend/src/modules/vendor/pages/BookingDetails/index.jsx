@@ -12,13 +12,15 @@ import {
   startSelfJob,
   vendorReached,
   verifySelfVisit,
-  completeSelfJob
+  completeSelfJob,
+  requestCancel,
+  cancelAccepted
 } from '../../services/bookingService';
 import vendorBillService from '../../../../services/vendorBillService';
 import { CashCollectionModal, ConfirmDialog, WorkerPaymentModal, OtpVerificationModal, ReachedPhotoModal } from '../../components/common';
 import VisitVerificationModal from '../../components/common/VisitVerificationModal';
 // Import shared WorkCompletionModal from worker directory or move to shared
-import { WorkCompletionModal } from '../../../worker/components/common';
+import WorkCompletionModal from '../../components/common/WorkCompletionModal';
 // import BillingModal from '../../components/bookings/BillingModal'; // Consumed by page now
 import vendorWalletService from '../../../../services/vendorWalletService';
 import { toast } from 'react-hot-toast';
@@ -267,7 +269,7 @@ export default function BookingDetails() {
         },
         status: apiData.status,
         description: apiData.description || apiData.notes || 'No description provided',
-        assignedTo: apiData.workerId ? { name: apiData.workerId.name } : (apiData.assignedAt ? { name: 'You (Self)' } : null),
+        assignedTo: { name: 'You (Self)' },
         workerResponse: apiData.workerResponse,
         workerResponseAt: apiData.workerResponseAt,
         paymentMethod: apiData.paymentMethod,
@@ -482,18 +484,47 @@ export default function BookingDetails() {
   };
 
   const handleCancelBooking = async () => {
+    const requiresRequest = !canCancel;
+
+    if (requiresRequest) {
+      const reason = window.prompt('Please enter the reason for requesting cancellation:');
+      if (reason === null) return; // Vendor cancelled
+      if (!reason.trim()) {
+        toast.error('Cancellation reason is required');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await requestCancel(id, reason);
+        toast.success('Cancellation request submitted successfully.');
+        window.dispatchEvent(new Event('vendorJobsUpdated'));
+        loadBooking();
+      } catch (error) {
+        console.error('Error requesting cancellation:', error);
+        toast.error(error.response?.data?.message || 'Failed to submit cancellation request.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     setConfirmDialog({
       isOpen: true,
       title: 'Cancel Booking',
-      message: 'Are you sure you want to cancel this booking? This action cannot be undone.',
+      message: 'Are you sure you want to cancel this booking? This will return the booking to the search pool. This action cannot be undone.',
       type: 'danger',
       onConfirm: async () => {
         setLoading(true);
         try {
-          await updateBookingStatus(id, 'cancelled');
-          toast.success('Booking cancelled successfully.');
-          window.dispatchEvent(new Event('vendorJobsUpdated'));
-          loadBooking();
+          const response = await cancelAccepted(id);
+          if (response.success) {
+            toast.success('Booking cancelled successfully.');
+            window.dispatchEvent(new Event('vendorJobsUpdated'));
+            loadBooking();
+          } else {
+            toast.error(response.message || 'Failed to cancel booking.');
+          }
         } catch (error) {
           console.error('Error cancelling booking:', error);
           toast.error(error.response?.data?.message || 'Failed to cancel booking.');
@@ -793,6 +824,22 @@ export default function BookingDetails() {
       <Header title="Booking Details" />
 
       <main className="px-4 py-6">
+        {/* Cancelled Booking Banner */}
+        {booking.status?.toLowerCase() === 'cancelled' && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex items-center gap-2">
+            <FiXCircle className="w-4 h-4 shrink-0 text-red-500" />
+            <span>This booking has been cancelled.</span>
+          </div>
+        )}
+
+        {/* Payment Warning Banner */}
+        {booking.paymentMethod === 'online' && (booking.paymentStatus !== 'SUCCESS' && booking.paymentStatus !== 'paid' && booking.paymentStatus?.toLowerCase() !== 'completed') && booking.status?.toLowerCase() !== 'cancelled' && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex items-center gap-2 animate-pulse">
+            <FiAlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+            <span>PAYMENT PENDING: Customer chose Online payment but has not paid yet. Please verify payment before starting work.</span>
+          </div>
+        )}
+
         {/* Bidding Section */}
         {booking.status?.toLowerCase() === 'bidding' && !booking.vendorId && (
           <>
@@ -803,7 +850,7 @@ export default function BookingDetails() {
                 <p className="text-sm text-purple-100 mb-6 font-medium">
                   This category requires bidding. Enter your best price to get hired.
                 </p>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-purple-200 mb-1">Your Price (₹)</label>
@@ -830,7 +877,7 @@ export default function BookingDetails() {
                       const price = document.getElementById('bidPriceInput').value;
                       const note = document.getElementById('bidNoteInput').value;
                       if (!price) return toast.error('Please enter a price');
-                      
+
                       try {
                         const { submitBid } = await import('../../services/bookingService');
                         await submitBid(id, price, note);
@@ -1542,10 +1589,10 @@ export default function BookingDetails() {
                   <div className="mt-3 flex items-start gap-2 text-[11px] text-orange-700/80 leading-relaxed">
                     <FiClock className="w-3 h-3 mt-0.5" />
                     <span>Customer chose {
-                      booking.paymentMethod === 'cash collected' ? 'Cash Collected' : 
-                      booking.paymentMethod === 'Qr online' ? 'QR Online' : 
-                      booking.paymentMethod === 'online' ? 'Online Paid' : 
-                      booking.paymentMethod?.replace('_', ' ') || 'Cash'
+                      booking.paymentMethod === 'cash collected' ? 'Cash Collected' :
+                        booking.paymentMethod === 'Qr online' ? 'QR Online' :
+                          booking.paymentMethod === 'online' ? 'Online Paid' :
+                            booking.paymentMethod?.replace('_', ' ') || 'Cash'
                     } payment. Please verify collection to proceed.</span>
                   </div>
                 </div>
@@ -1681,14 +1728,20 @@ export default function BookingDetails() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {canCancel && (
-            <button
-              onClick={handleCancelBooking}
-              className="w-full py-4 rounded-xl font-bold text-red-600 border-2 border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
-            >
-              <FiXCircle className="w-5 h-5 text-red-500 animate-pulse" />
-              Cancel Booking (Active for 2m)
-            </button>
+          {booking.cancelRequestStatus === 'pending' && booking.status !== 'cancelled' ? (
+            <div className="w-full py-4 rounded-xl font-bold text-sm bg-amber-50 text-amber-700 border border-amber-200 text-center animate-pulse mb-1">
+              Cancellation Request Pending Admin Approval
+            </div>
+          ) : (
+            !['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && (
+              <button
+                onClick={handleCancelBooking}
+                className="w-full py-4 rounded-xl font-bold text-red-600 border-2 border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
+              >
+                <FiXCircle className="w-5 h-5 text-red-500 animate-pulse" />
+                {canCancel ? 'Cancel Booking (Direct)' : 'Request Cancellation'}
+              </button>
+            )
           )}
 
           <button
@@ -1931,16 +1984,15 @@ export default function BookingDetails() {
                     return (
                       <div
                         key={item._id}
-                        className={`p-4 rounded-2xl border transition-all ${
-                          selected ? 'bg-blue-50/40 border-blue-200' : 'bg-white border-gray-100 hover:border-gray-200'
-                        }`}
+                        className={`p-4 rounded-2xl border transition-all ${selected ? 'bg-blue-50/40 border-blue-200' : 'bg-white border-gray-100 hover:border-gray-200'
+                          }`}
                       >
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
                             <h4 className="font-bold text-gray-900 text-sm leading-snug">{item.name}</h4>
                             <p className="text-xs font-black text-blue-600 mt-1">₹{item.price}</p>
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
                             {selected ? (
                               <div className="flex items-center gap-2 bg-blue-50 p-1 rounded-xl border border-blue-100">

@@ -3,7 +3,7 @@ const Booking = require('../../models/Booking');
 const VendorBill = require('../../models/VendorBill');
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
-const Worker = require('../../models/Worker');
+const Worker = null; // Worker system removed
 const PlatformEarning = require('../../models/PlatformEarning');
 const { getBookingQueryFilter, getAdminFilterConfig } = require('../../utils/adminFilterHelper');
 
@@ -22,7 +22,7 @@ const getAllTransactions = async (req, res) => {
       let bookingQuery = {
         status: { $in: ['COMPLETED', 'completed', 'paid', 'PAID'] } // Assuming revenue realized on completion
       };
-      
+
       const bookingFilter = await getBookingQueryFilter(req.user);
       Object.assign(bookingQuery, bookingFilter);
 
@@ -285,7 +285,7 @@ const getTransactionStats = async (req, res) => {
       status: 'completed',
       type: { $in: ['credit', 'debit', 'refund', 'commission', 'cash_collected', 'payment'] }
     };
-    
+
     const bookingFilter = await getBookingQueryFilter(req.user);
     Object.assign(matchQuery, bookingFilter);
 

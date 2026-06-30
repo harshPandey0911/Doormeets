@@ -196,17 +196,6 @@ const AdminDashboard = () => {
       iconBg: 'bg-white/20',
       link: '/admin/vendors/analytics'
     },
-    {
-      title: 'New Workers',
-      value: (stats.totalWorkers || 0).toLocaleString(),
-      change: 0,
-      icon: FiUsers,
-      color: 'text-white',
-      bgColor: 'bg-gradient-to-br from-rose-500 to-pink-600',
-      cardBg: 'bg-gradient-to-br from-rose-50 to-pink-50',
-      iconBg: 'bg-white/20',
-      link: '/admin/workers/analytics'
-    },
   ];
 
   return (

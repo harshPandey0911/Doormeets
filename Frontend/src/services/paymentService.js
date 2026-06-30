@@ -7,8 +7,8 @@ import api from './api';
 
 export const paymentService = {
   // Create Razorpay order for booking payment
-  createOrder: async (bookingId) => {
-    const response = await api.post('/payments/create-order', { bookingId });
+  createOrder: async (bookingId, paymentMethod = 'online') => {
+    const response = await api.post('/payments/create-order', { bookingId, paymentMethod });
     return response.data;
   },
 

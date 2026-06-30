@@ -3,7 +3,7 @@ const Transaction = require('../../models/Transaction');
 const Settlement = require('../../models/Settlement');
 const Withdrawal = require('../../models/Withdrawal');
 const Booking = require('../../models/Booking');
-const Worker = require('../../models/Worker');
+const Worker = null; // Worker system removed
 const { uploadPaymentScreenshot } = require('../../utils/cloudinaryUpload');
 
 /**
@@ -247,7 +247,7 @@ const recordCashCollection = async (req, res) => {
     }
 
     await Vendor.findByIdAndUpdate(vendorId, updateQuery);
-    
+
     // Update booking status
     booking.status = 'completed';
     booking.paymentStatus = 'collected by vendor';
@@ -818,11 +818,11 @@ const getEarningsAnalytics = async (req, res) => {
     // Time ranges
     const now = new Date();
     const todayStart = new Date(now.setHours(0, 0, 0, 0));
-    
+
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - 7);
     weekStart.setHours(0, 0, 0, 0);
-    
+
     const monthStart = new Date(now);
     monthStart.setMonth(now.getMonth() - 1);
     monthStart.setHours(0, 0, 0, 0);

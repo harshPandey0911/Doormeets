@@ -7,8 +7,7 @@ const {
   getAllBookings,
   getBookingById,
   cancelBooking,
-  getBookingAnalytics,
-  assignVendor
+  getBookingAnalytics
 } = require('../../controllers/bookingControllers/adminBookingController');
 
 // Validation rules
@@ -21,7 +20,6 @@ router.get('/bookings', authenticate, isAdmin, getAllBookings);
 router.get('/bookings/analytics', authenticate, isAdmin, getBookingAnalytics);
 router.get('/bookings/:id', authenticate, isAdmin, getBookingById);
 router.post('/bookings/:id/cancel', authenticate, isAdmin, cancelBookingValidation, cancelBooking);
-router.post('/bookings/:id/assign', authenticate, isAdmin, assignVendor);
 
 module.exports = router;
 

@@ -14,7 +14,8 @@ const TimeSlotModal = ({
   getTimeSlots,
   formatDate,
   isDateSelected,
-  isTimeSelected
+  isTimeSelected,
+  instantBookingWindowHours = 4
 }) => {
   const [isClosing, setIsClosing] = useState(false);
 
@@ -103,7 +104,9 @@ const TimeSlotModal = ({
             }}
           >
             <h2 className="text-xl font-normal mb-1" style={{ color: 'var(--text-primary)' }}>When should the professional arrive?</h2>
-            <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>Service will take approx. 45 mins</p>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+              For today, slots available {instantBookingWindowHours}+ hours from now
+            </p>
 
             {/* Date Selection */}
             <div className="flex flex-wrap gap-2 pb-2 mb-4" style={{ WebkitOverflowScrolling: 'touch' }}>

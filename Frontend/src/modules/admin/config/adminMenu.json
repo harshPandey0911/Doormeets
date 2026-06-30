@@ -26,21 +26,6 @@
     ]
   },
   {
-    "title": "Workers",
-    "route": "/admin/workers",
-    "section": "USER MANAGEMENT",
-    "allowedRoles": [
-      "super_admin",
-      "admin",
-      "city_admin"
-    ],
-    "children": [
-      "All Workers",
-      "Worker Jobs",
-      "Worker Analytics"
-    ]
-  },
-  {
     "title": "Vendors",
     "route": "/admin/vendors",
     "section": "VENDOR MANAGEMENT",
@@ -101,6 +86,19 @@
     "children": []
   },
   {
+    "title": "Shop Owners",
+    "route": "/admin/shop-owners",
+    "section": "SHOP OWNER MANAGEMENT",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": [
+      "All Shop Owners",
+      "Referral Settings"
+    ]
+  },
+  {
     "title": "Bookings",
     "route": "/admin/bookings",
     "section": "BOOKING MANAGEMENT",
@@ -111,7 +109,8 @@
     "children": [
       "All Bookings",
       "Booking Tracking",
-      "Booking Notifications"
+      "Booking Notifications",
+      "Instant Booking"
     ]
   },
   {

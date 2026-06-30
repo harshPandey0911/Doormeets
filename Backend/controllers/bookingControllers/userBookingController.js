@@ -5,7 +5,6 @@ const Category = require('../../models/Category');
 const Cart = require('../../models/Cart');
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
-const Worker = require('../../models/Worker');
 const Review = require('../../models/Review');
 const { validationResult } = require('express-validator');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
@@ -147,6 +146,35 @@ const createBooking = async (req, res) => {
       vendorObj.distance = 0; // Dist is not critical for direct booking
       nearbyVendors = [vendorObj];
     } else {
+      // Sync geoLocation coordinates from address.lat/lng for all approved/active/online vendors who have no real-time coordinates
+      try {
+        await Vendor.updateMany(
+          {
+            isActive: true,
+            approvalStatus: 'APPROVED',
+            isOnline: true,
+            $or: [
+              { geoLocation: { $exists: false } },
+              { 'geoLocation.coordinates': [0, 0] }
+            ],
+            'address.lat': { $ne: null },
+            'address.lng': { $ne: null }
+          },
+          [
+            {
+              $set: {
+                geoLocation: {
+                  type: 'Point',
+                  coordinates: ['$address.lng', '$address.lat']
+                }
+              }
+            }
+          ]
+        );
+      } catch (syncErr) {
+        console.error('[CreateBooking] Background vendor geoLocation sync failed:', syncErr);
+      }
+
       // Find vendors who offer the category of this service
       let qualifiedVendorIds = [];
       const searchCategoryTitle = category ? category.title : (reqServiceCategory || service.category);
@@ -310,6 +338,17 @@ const createBooking = async (req, res) => {
       }
     }
 
+    // Calculate Instant Booking Surcharge
+    let instantMarkupCharged = 0;
+    if (bookingType === 'instant' && paymentMethod !== 'plan_benefit') {
+      const Settings = require('../../models/Settings');
+      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+      if (globalSettings?.isInstantBookingEnabled !== false) {
+        instantMarkupCharged = globalSettings?.instantBookingMarkup !== undefined ? globalSettings.instantBookingMarkup : 99;
+        finalAmount = parseFloat((finalAmount + instantMarkupCharged).toFixed(2));
+      }
+    }
+
     // Calculate Loyalty Points Redemption
     let pointsToRedeem = 0;
     if (redeemLoyaltyPoints && (paymentMethod === 'razorpay' || paymentMethod === 'wallet' || paymentMethod === 'online' || paymentMethod === 'pay_at_home' || paymentMethod === 'cash')) {
@@ -419,6 +458,7 @@ const createBooking = async (req, res) => {
       brandIcon: reqBrandIcon || brandIcon,
       bookingType: bookingType || 'scheduled',
       isConsultation: isConsultation || false,
+      instantMarkupCharged,
 
       description: service.description,
       serviceImages: service.images || [],
@@ -834,6 +874,25 @@ const getUserBookings = async (req, res) => {
     // Get total count
     const total = await Booking.countDocuments(query);
 
+    // Apply Settings Privacy Masks for Customers
+    const Settings = require('../../models/Settings');
+    const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+    const showVendorNameToUser = globalSettings ? globalSettings.showVendorNameToUser !== false : true;
+    const showVendorPhoneToUser = globalSettings ? globalSettings.showVendorPhoneToUser !== false : true;
+
+    for (const b of bookings) {
+      if (b.vendorId) {
+        if (!showVendorNameToUser) {
+          b.vendorId.name = "Service Provider";
+          b.vendorId.businessName = "Service Provider";
+        }
+        if (!showVendorPhoneToUser) {
+          b.vendorId.phone = undefined;
+          b.vendorId.email = undefined;
+        }
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: bookings,
@@ -877,17 +936,26 @@ const getBookingById = async (req, res) => {
       });
     }
 
+    const Settings = require('../../models/Settings');
+    const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+    const showVendorNameToUser = globalSettings ? globalSettings.showVendorNameToUser !== false : true;
+    const showVendorPhoneToUser = globalSettings ? globalSettings.showVendorPhoneToUser !== false : true;
+
     const phoneRevealedStatuses = ['visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
-    const canSeePhone = phoneRevealedStatuses.includes(booking.status);
+    const canSeePhone = phoneRevealedStatuses.includes(booking.status) && showVendorPhoneToUser;
     
-    if (!canSeePhone) {
-      if (booking.vendorId) {
+    if (booking.vendorId) {
+      if (!showVendorNameToUser) {
+        booking.vendorId.name = "Service Provider";
+        booking.vendorId.businessName = "Service Provider";
+      }
+      if (!canSeePhone) {
         booking.vendorId.phone = undefined;
         booking.vendorId.email = undefined;
       }
-      if (booking.workerId) {
-        booking.workerId.phone = undefined;
-      }
+    }
+    if (booking.workerId && !canSeePhone) {
+      booking.workerId.phone = undefined;
     }
 
     // Fetch Vendor Bill if exists
@@ -1395,9 +1463,24 @@ const getUserRatings = async (req, res) => {
       .populate('workerId', 'name profilePhoto')
       .sort({ reviewedAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     const total = await Booking.countDocuments({ userId, rating: { $ne: null } });
+
+    // Apply name masking if settings dictate
+    const Settings = require('../../models/Settings');
+    const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+    const showVendorNameToUser = globalSettings ? globalSettings.showVendorNameToUser !== false : true;
+
+    if (!showVendorNameToUser) {
+      bookings.forEach(b => {
+        if (b.vendorId) {
+          b.vendorId.name = "Service Provider";
+          b.vendorId.businessName = "Service Provider";
+        }
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -1537,6 +1620,97 @@ const approveInspectionEstimate = async (req, res) => {
   }
 };
 
+const requestCancelBooking = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+    }
+
+    const booking = await Booking.findOne({ _id: id, userId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (['cancelled', 'completed'].includes(booking.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot request cancellation for a booking that is already ${booking.status}` 
+      });
+    }
+
+    booking.cancelRequestStatus = 'pending';
+    booking.cancelRequestedBy = 'user';
+    booking.cancelRequestReason = reason;
+    booking.cancelRequestAt = new Date();
+    await booking.save();
+
+    console.log(`[CancelRequest] User ${userId} requested cancellation for booking ${booking.bookingNumber}`);
+
+    // Send notifications to admins
+    try {
+      const Admin = require('../../models/Admin');
+      const City = require('../../models/City');
+      const { createNotification } = require('../notificationControllers/notificationController');
+
+      const city = booking.address?.city || '';
+      const cityDoc = await City.findOne({ name: new RegExp(`^${city}$`, 'i') });
+      let adminQuery = { role: { $in: ['admin', 'super_admin', 'super-admin'] } };
+      if (cityDoc) {
+        adminQuery = {
+          $or: [
+            { role: { $in: ['admin', 'super_admin', 'super-admin'] } },
+            { role: 'CITY_ADMIN', assignedCities: cityDoc._id }
+          ]
+        };
+      }
+
+      const admins = await Admin.find(adminQuery);
+      const io = req.app.get('io');
+      const msg = `User has requested cancellation for Booking #${booking.bookingNumber}. Reason: ${reason}`;
+
+      for (const admin of admins) {
+        await createNotification({
+          adminId: admin._id,
+          type: 'booking_escalation',
+          title: 'Cancellation Request (User)',
+          message: msg,
+          relatedId: booking._id,
+          relatedType: 'booking',
+          pushData: {
+            type: 'booking_escalation',
+            bookingId: booking._id.toString(),
+            link: `/admin/bookings/${booking._id}`
+          }
+        });
+
+        if (io) {
+          io.to(`admin_${admin._id.toString()}`).emit('booking_escalation', {
+            bookingId: booking._id,
+            bookingNumber: booking.bookingNumber,
+            message: msg,
+            severity: 'MEDIUM'
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error('Error notifying admins about user cancellation request:', notifErr);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Cancellation request submitted to admin successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('User request cancel booking error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit cancellation request' });
+  }
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
@@ -1545,6 +1719,7 @@ module.exports = {
   rescheduleBooking,
   addReview,
   getUserRatings,
-  approveInspectionEstimate
+  approveInspectionEstimate,
+  requestCancelBooking
 };
 

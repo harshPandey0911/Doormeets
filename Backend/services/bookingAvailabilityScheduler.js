@@ -4,7 +4,7 @@ const Vendor = require('../models/Vendor');
 function parseScheduledStartTime(scheduledDate, timeStr) {
   const date = new Date(scheduledDate);
   if (isNaN(date.getTime())) return new Date();
-  
+
   let hours = 0;
   let minutes = 0;
   if (typeof timeStr === 'string') {
@@ -43,7 +43,7 @@ class BookingAvailabilityScheduler {
     }
     this.isRunning = true;
     console.log('[BookingAvailabilityScheduler] Started — running every 60s');
-    
+
     this.intervalId = setInterval(async () => {
       await this.runTasks();
     }, 60000);

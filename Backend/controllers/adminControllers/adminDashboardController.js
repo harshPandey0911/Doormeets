@@ -1,6 +1,6 @@
 const User = require('../../models/User');
 const Vendor = require('../../models/Vendor');
-const Worker = require('../../models/Worker');
+const Worker = null; // Worker system removed
 const Booking = require('../../models/Booking');
 const Withdrawal = require('../../models/Withdrawal');
 const Settlement = require('../../models/Settlement');
@@ -52,7 +52,7 @@ const getDashboardStats = async (req, res) => {
     // Total counts (filtered by creation date if provided)
     const totalUsers = await User.countDocuments({ isActive: true, ...dateFilter, ...cityFilter });
     const totalVendors = await Vendor.countDocuments({ isActive: true, ...dateFilter, ...vendorFilter });
-    const totalWorkers = await Worker.countDocuments({ isActive: true, ...dateFilter, ...workerFilter });
+    const totalWorkers = 0;
     const totalBookings = await Booking.countDocuments({ ...dateFilter, ...bookingFilter });
 
     // Booking stats

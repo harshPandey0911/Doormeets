@@ -16,12 +16,12 @@ const Settings = lazy(() => import('../pages/Settings'));
 const UserCategories = lazy(() => import('../pages/UserCategories'));
 const Users = lazy(() => import('../pages/Users'));
 const Vendors = lazy(() => import('../pages/Vendors'));
-const Workers = lazy(() => import('../pages/Workers'));
 const VendorsZone = lazy(() => import('../pages/VendorsZone'));
 const Bookings = lazy(() => import('../pages/Bookings'));
 const BookingDetails = lazy(() => import('../pages/Bookings/BookingDetails'));
 const BookingTracking = lazy(() => import('../pages/Bookings/Tracking'));
 const BookingNotifications = lazy(() => import('../pages/Bookings/BookingNotifications'));
+const InstantBookingSettings = lazy(() => import('../pages/Bookings/InstantBookingSettings'));
 const Payments = lazy(() => import('../pages/Payments'));
 const Reports = lazy(() => import('../pages/Reports'));
 const Notifications = lazy(() => import('../pages/Notifications'));
@@ -35,13 +35,13 @@ const VendorSubscriptionManagement = lazy(() => import('../pages/VendorSubscript
 const Training = lazy(() => import('../pages/Training'));
 const VendorRequests = lazy(() => import('../pages/VendorRequests'));
 const AdminManagement = lazy(() => import('../pages/AdminManagement'));
-const PoliceVerification = lazy(() => import('../pages/PoliceVerification'));
 const Commission = lazy(() => import('../pages/Commission'));
 const PromoManagement = lazy(() => import('../pages/PromoManagement'));
 const VoucherManagement = lazy(() => import('../pages/VoucherManagement'));
 const PackageBased = lazy(() => import('../pages/PackageBased'));
 const PaintingManagement = lazy(() => import('../pages/Painting'));
 const VendorWallets = lazy(() => import('../pages/VendorWallets'));
+const ShopOwners = lazy(() => import('../pages/ShopOwners/index'));
 
 
 
@@ -75,11 +75,11 @@ const AdminRoutes = () => {
           <Route path="vendors/*" element={<Vendors />} />
           <Route path="vendors-zone" element={<VendorsZone />} />
           <Route path="vendor-subscriptions/*" element={<VendorSubscriptionManagement />} />
-          <Route path="workers/*" element={<Workers />} />
           <Route path="bookings" element={<Bookings />} />
           <Route path="bookings/:id" element={<BookingDetails />} />
           <Route path="bookings/tracking" element={<BookingTracking />} />
           <Route path="bookings/notifications" element={<BookingNotifications />} />
+          <Route path="bookings/instant" element={<InstantBookingSettings />} />
           <Route path="user-categories/*" element={<UserCategories />} />
           <Route path="payments/*" element={<Payments />} />
           <Route path="reports/*" element={<Reports />} />
@@ -92,14 +92,12 @@ const AdminRoutes = () => {
           <Route path="sos-alerts" element={<SOSAlerts />} />
           <Route path="offer-banners" element={<OfferBanners />} />
           <Route path="training" element={<Training />} />
+          <Route path="shop-owners/*" element={<ShopOwners />} />
           <Route path="vendor-requests" element={<VendorRequests />} />
           <Route path="promos" element={<PromoManagement />} />
           <Route path="vouchers" element={<VoucherManagement />} />
           <Route path="package-based" element={<PackageBased />} />
           <Route path="painting" element={<PaintingManagement />} />
-          <Route path="vendors/police-verification" element={
-            <SuperAdminRoute><PoliceVerification /></SuperAdminRoute>
-          } />
           <Route path="commission" element={<Commission />} />
           <Route path="vendor-wallets" element={<VendorWallets />} />
           <Route path="admin-management/*" element={

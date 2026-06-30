@@ -58,10 +58,6 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  assignedByAdmin: {
-    type: Boolean,
-    default: false
-  },
   isBidding: {
     type: Boolean,
     default: false
@@ -361,33 +357,6 @@ const bookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
-  uniformSelfieUrl: {
-    type: String,
-    default: null
-  },
-  beforeWorkPhotoUrl: {
-    type: String,
-    default: null
-  },
-  estimateStatus: {
-    type: String,
-    enum: ['none', 'pending', 'approved', 'declined'],
-    default: 'none'
-  },
-  inspectionEstimate: {
-    services: [{
-      name: String,
-      price: Number,
-      quantity: { type: Number, default: 1 }
-    }],
-    parts: [{
-      name: String,
-      price: Number,
-      quantity: { type: Number, default: 1 }
-    }],
-    notes: String,
-    totalAmount: Number
-  },
   // Note: Detailed billing (items/parts) is now handled by VendorBill model
   // workDoneDetails and extraCharges are deprecated in favor of VendorBill
 
@@ -465,9 +434,9 @@ const bookingSchema = new mongoose.Schema({
     label: { type: String },
     value: { type: mongoose.Schema.Types.Mixed }
   }],
-  visits: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'BookingVisit' 
+  visits: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'BookingVisit'
   }],
   loyaltyPointsRedeemed: {
     type: Number,
@@ -508,7 +477,7 @@ bookingSchema.pre('save', async function (next) {
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     this.bookingNumber = `BK${timestamp}${random}`;
   }
-  
+
   // Refund loyalty points and wallet applied if cancelled or search failed
   if (this.isModified('status') && (this.status === 'cancelled' || this.status === 'no_vendors')) {
     if (this.loyaltyPointsRedeemed > 0 && !this.loyaltyPointsRefunded) {
@@ -516,7 +485,7 @@ bookingSchema.pre('save', async function (next) {
         const User = mongoose.model('User');
         await User.findByIdAndUpdate(this.userId, { $inc: { loyaltyPoints: this.loyaltyPointsRedeemed } });
         console.log(`[LoyaltyPoints] Refunded ${this.loyaltyPointsRedeemed} points to user ${this.userId} due to status change to ${this.status}`);
-        
+
         const Transaction = mongoose.model('Transaction');
         await Transaction.create({
           userId: this.userId,
@@ -528,7 +497,7 @@ bookingSchema.pre('save', async function (next) {
           bookingId: this._id,
           metadata: { type: 'loyalty_points', pointsRefunded: this.loyaltyPointsRedeemed }
         });
-        
+
         this.loyaltyPointsRefunded = true;
       } catch (err) {
         console.error('[LoyaltyPoints] Error refunding points in pre-save hook:', err);
@@ -540,7 +509,7 @@ bookingSchema.pre('save', async function (next) {
         const User = mongoose.model('User');
         await User.findByIdAndUpdate(this.userId, { $inc: { 'wallet.balance': this.walletAmountApplied } });
         console.log(`[Wallet] Refunded ₹${this.walletAmountApplied} to user ${this.userId} due to status change to ${this.status}`);
-        
+
         const Transaction = mongoose.model('Transaction');
         await Transaction.create({
           userId: this.userId,
@@ -551,7 +520,7 @@ bookingSchema.pre('save', async function (next) {
           description: `Refunded ₹${this.walletAmountApplied} wallet balance for booking #${this.bookingNumber} (${this.status})`,
           bookingId: this._id
         });
-        
+
         this.walletAmountRefunded = true;
       } catch (err) {
         console.error('[Wallet] Error refunding wallet balance in pre-save hook:', err);
@@ -565,7 +534,7 @@ bookingSchema.pre('save', async function (next) {
       const Settings = mongoose.model('Settings');
       const globalSettings = await Settings.findOne({ type: 'global' }).lean();
       const cancellationPenalty = globalSettings?.loyaltyPointsCancellationPenalty || 0;
-      
+
       if (cancellationPenalty > 0) {
         const User = mongoose.model('User');
         const user = await User.findById(this.userId);
@@ -574,7 +543,7 @@ bookingSchema.pre('save', async function (next) {
           if (penaltyAmount > 0) {
             user.loyaltyPoints -= penaltyAmount;
             await user.save();
-            
+
             const Transaction = mongoose.model('Transaction');
             await Transaction.create({
               userId: this.userId,
@@ -605,14 +574,14 @@ bookingSchema.post('save', async function (doc) {
       const globalSettings = await Settings.findOne({ type: 'global' }).lean();
       const earningRate = globalSettings?.loyaltyPointsEarningRate !== undefined ? globalSettings.loyaltyPointsEarningRate : 1;
       const fixedAward = globalSettings?.loyaltyPointsFixedCompletionAward || 0;
-      
+
       // Award points based on amount spent + flat completion award
       const pointsEarned = (Math.floor(doc.finalAmount / 100) * earningRate) + fixedAward;
-      
+
       if (pointsEarned > 0) {
-        await mongoose.model('Booking').findByIdAndUpdate(doc._id, { 
+        await mongoose.model('Booking').findByIdAndUpdate(doc._id, {
           loyaltyPointsEarned: pointsEarned,
-          loyaltyPointsAwarded: true 
+          loyaltyPointsAwarded: true
         });
 
         const User = mongoose.model('User');
@@ -651,13 +620,13 @@ bookingSchema.post('save', async function (doc) {
         const Settings = mongoose.model('Settings');
         const globalSettings = await Settings.findOne({ type: 'global' }).lean();
         const referrerReward = globalSettings?.referralRewardReferrer !== undefined ? globalSettings.referralRewardReferrer : 100;
-        
+
         if (referrerReward > 0) {
           // Credit referrer's wallet balance
           await User.findByIdAndUpdate(refereeUser.referredBy, {
             $inc: { 'wallet.balance': referrerReward }
           });
-          
+
           // Log Transaction for referrer
           const Transaction = mongoose.model('Transaction');
           await Transaction.create({
@@ -669,7 +638,7 @@ bookingSchema.post('save', async function (doc) {
             description: `Referral Reward: Your referred friend completed their first booking #${doc.bookingNumber}`,
             bookingId: doc._id
           });
-          
+
           // Send notification to referrer
           const { createNotification } = require('../controllers/notificationControllers/notificationController');
           await createNotification({
@@ -686,11 +655,11 @@ bookingSchema.post('save', async function (doc) {
             }
           });
         }
-        
+
         // Update user's referralStatus to rewarded
         refereeUser.referralStatus = 'rewarded';
         await refereeUser.save();
-        
+
         // Mark booking.referralProcessed = true
         await mongoose.model('Booking').findByIdAndUpdate(doc._id, { referralProcessed: true });
       } else {
@@ -719,5 +688,13 @@ bookingSchema.index({ notifiedVendors: 1, status: 1 });
 bookingSchema.index({ 'potentialVendors.vendorId': 1 });
 // Dashboard: $or on { vendorId: null, serviceCategory: ..., status: ... }
 bookingSchema.index({ vendorId: 1, serviceCategory: 1, status: 1 });
+
+if (!mongoose.models.Worker) {
+  mongoose.model('Worker', new mongoose.Schema({
+    name: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    profilePhoto: { type: String, default: null }
+  }));
+}
 
 module.exports = mongoose.model('Booking', bookingSchema);

@@ -204,7 +204,8 @@ async function removeInvalidTokens(tokens) {
     console.log(`[FCM Cleanup] Removing ${tokens.length} invalid tokens...`);
     const User = require('../models/User');
     const Vendor = require('../models/Vendor');
-    const Worker = require('../models/Worker');
+    const mongoose = require('mongoose');
+    const Worker = mongoose.model('Worker');
 
     const updateQuery = {
       $pull: {
@@ -321,7 +322,8 @@ async function sendNotificationToVendor(vendorId, payload, includeMobile = true)
  */
 async function sendNotificationToWorker(workerId, payload, includeMobile = true) {
   try {
-    const Worker = require('../models/Worker');
+    const mongoose = require('mongoose');
+    const Worker = mongoose.model('Worker');
     const worker = await Worker.findById(workerId);
 
     if (!worker) {

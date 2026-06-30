@@ -29,7 +29,7 @@ export default function GlobalBookingAlert() {
             if (response.success && response.data) {
               const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
               const vId = String(vendorData._id || vendorData.id);
-              
+
               const serverJobs = response.data
                 .filter(b => {
                   const status = b.status?.toLowerCase();

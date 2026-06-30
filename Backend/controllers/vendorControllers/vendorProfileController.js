@@ -50,7 +50,8 @@ const getProfile = async (req, res) => {
         isPhoneVerified: vendor.isPhoneVerified || false,
         isEmailVerified: vendor.isEmailVerified || false,
         profilePhoto: vendor.profilePhoto || null,
-        aadharDocument: vendor.aadhar?.document || null,
+        aadhar: vendor.aadhar || null,
+        pan: vendor.pan || null,
         policeVerification: vendor.policeVerification || null,
         isOnline: vendor.isOnline || false,
         availability: vendor.availability || 'OFFLINE',
@@ -82,7 +83,7 @@ const updateProfile = async (req, res) => {
     }
 
     const vendorId = req.user.id;
-    const { name, businessName, address, profilePhoto, serviceCategory, skills, aadharNumber, aadharDocument, panNumber, panDocument, serviceRange } = req.body;
+    const { name, businessName, address, profilePhoto, serviceCategory, skills, aadharNumber, aadharDocument, aadharBackDocument, panNumber, panDocument, serviceRange } = req.body;
 
     console.log('Update Vendor Profile Body:', JSON.stringify(req.body, null, 2));
 
@@ -163,21 +164,29 @@ const updateProfile = async (req, res) => {
     if (skills !== undefined) {
       vendor.skills = Array.isArray(skills) ? skills : [];
     }
-    // If aadharDocument exists and is not empty, update it
-    if (aadharDocument || aadharNumber) {
+    // If aadharDocument/aadharBackDocument exists and is not empty, update it
+    if (aadharDocument || aadharBackDocument || aadharNumber) {
       let aadharUrl = aadharDocument || vendor.aadhar?.document;
       if (aadharUrl && aadharUrl.startsWith('data:')) {
         const uploadRes = await cloudinaryService.uploadFile(aadharUrl, { folder: 'vendors/documents' });
         if (uploadRes.success) aadharUrl = uploadRes.url;
       }
 
+      let aadharBackUrl = aadharBackDocument || vendor.aadhar?.backDocument;
+      if (aadharBackUrl && aadharBackUrl.startsWith('data:')) {
+        const uploadRes = await cloudinaryService.uploadFile(aadharBackUrl, { folder: 'vendors/documents' });
+        if (uploadRes.success) aadharBackUrl = uploadRes.url;
+      }
+
       if (vendor.aadhar) {
         if (aadharNumber) vendor.aadhar.number = aadharNumber;
         if (aadharDocument) vendor.aadhar.document = aadharUrl;
+        if (aadharBackDocument) vendor.aadhar.backDocument = aadharBackUrl;
       } else {
         vendor.aadhar = {
           number: aadharNumber || '',
-          document: aadharUrl || ''
+          document: aadharUrl || '',
+          backDocument: aadharBackUrl || ''
         };
       }
     }
@@ -208,15 +217,15 @@ const updateProfile = async (req, res) => {
       try {
         const City = require('../../models/City');
         const Admin = require('../../models/Admin');
-        
+
         // Find the city document matching the vendor's city name
         const cityDoc = await City.findOne({ name: new RegExp(`^${vendor.address.city}$`, 'i') });
         if (cityDoc) {
           // Add this vendor to all City Admins assigned to this city
           await Admin.updateMany(
-            { 
+            {
               role: { $in: ['CITY_ADMIN', 'admin'] },
-              assignedCities: cityDoc._id 
+              assignedCities: cityDoc._id
             },
             { $addToSet: { assignedVendors: vendor._id } }
           );
@@ -367,12 +376,12 @@ const updateStatus = async (req, res) => {
     vendor.isOnline = isOnline;
     vendor.availability = isOnline ? 'AVAILABLE' : 'OFFLINE';
     vendor.availabilityStatus = isOnline ? 'ONLINE' : 'OFFLINE';
-    
+
     // Set lastSeenAt if going offline
     if (!isOnline) {
       vendor.lastSeenAt = new Date();
     }
-    
+
     await vendor.save();
 
     // Sync to Redis cache (fast lookup)
@@ -384,8 +393,8 @@ const updateStatus = async (req, res) => {
       console.error('[UpdateStatus] Redis sync failed:', redisErr);
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: `Status updated to ${isOnline ? 'Online' : 'Offline'}`,
       isOnline: vendor.isOnline,
       availability: vendor.availability

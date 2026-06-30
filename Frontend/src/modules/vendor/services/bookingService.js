@@ -121,6 +121,35 @@ export const updateBookingStatus = async (bookingId, status, data = {}) => {
 };
 
 /**
+ * Request cancellation of a booking
+ * @param {string} bookingId - Booking ID
+ * @param {string} reason - Reason for cancellation
+ */
+export const requestCancel = async (bookingId, reason) => {
+  try {
+    const response = await api.post(`/vendors/bookings/${bookingId}/request-cancel`, { reason });
+    return response.data;
+  } catch (error) {
+    console.error('Error requesting cancellation:', error);
+    throw error;
+  }
+};
+
+/**
+ * Direct cancel accepted booking (within 3m window)
+ * @param {string} bookingId - Booking ID
+ */
+export const cancelAccepted = async (bookingId) => {
+  try {
+    const response = await api.post(`/vendors/bookings/${bookingId}/cancel-accepted`);
+    return response.data;
+  } catch (error) {
+    console.error('Error cancelling accepted booking:', error);
+    throw error;
+  }
+};
+
+/**
  * Start Self Job (Vendor)
  */
 export const startSelfJob = async (bookingId) => {

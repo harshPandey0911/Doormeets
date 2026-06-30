@@ -205,11 +205,10 @@ const BookingDetails = () => {
           {booking.status === 'pending_admin' && (
             <button
               onClick={handleOpenAssignModal}
-              className={`px-4 py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm ${
-                booking.cancellationReason && booking.cancellationReason.toLowerCase().includes('rejected')
+              className={`px-4 py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm ${booking.cancellationReason && booking.cancellationReason.toLowerCase().includes('rejected')
                   ? 'bg-amber-500 hover:bg-amber-650'
                   : 'bg-green-600 hover:bg-green-700'
-              }`}
+                }`}
             >
               <FiUser className="w-3.5 h-3.5" />
               {booking.cancellationReason && booking.cancellationReason.toLowerCase().includes('rejected')
@@ -489,7 +488,7 @@ const BookingDetails = () => {
           <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center border-b border-gray-150 pb-3">
               <h3 className="text-base font-bold text-gray-800">Assign Vendor Manually</h3>
-              <button 
+              <button
                 onClick={() => setShowAssignModal(false)}
                 className="text-gray-400 hover:text-gray-600 text-lg font-bold"
               >
@@ -525,9 +524,8 @@ const BookingDetails = () => {
                         <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold ${vendor.isActive !== false ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                           {vendor.isActive !== false ? 'Active' : 'Inactive'}
                         </span>
-                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold capitalize ${
-                          vendor.approvalStatus === 'approved' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-yellow-50 text-yellow-700 border border-yellow-100'
-                        }`}>
+                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold capitalize ${vendor.approvalStatus === 'approved' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-yellow-50 text-yellow-700 border border-yellow-100'
+                          }`}>
                           {vendor.approvalStatus || 'pending'}
                         </span>
                       </div>

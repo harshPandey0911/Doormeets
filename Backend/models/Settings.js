@@ -195,6 +195,10 @@ const settingsSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isInstantBookingEnabled: {
+    type: Boolean,
+    default: true
+  },
   policeVerificationDays: {
     type: Number,
     default: 7, // Vendors have 7 days to complete verification by default
@@ -262,6 +266,46 @@ const settingsSchema = new mongoose.Schema({
     default: 30,
     min: 0,
     max: 100
+  },
+  vendorBusyBufferHours: {
+    type: Number,
+    default: 1, // default 1 hour before scheduled time
+    min: 0
+  },
+  instantBookingMarkup: {
+    type: Number,
+    default: 99, // default 99 Rs extra markup fee
+    min: 0
+  },
+  instantBookingWaitTime: {
+    type: Number,
+    default: 45, // default 45 minutes arrival wait time
+    min: 5
+  },
+  // how many hours from booking-time onwards are treated as "instant"
+  instantBookingWindowHours: {
+    type: Number,
+    default: 4, // slots within the next 4 hours count as instant
+    min: 1
+  },
+  // whether to show estimated arrival time to the user at checkout
+  showArrivalTime: {
+    type: Boolean,
+    default: true
+  },
+  shopReferralRewardShopOwner: {
+    type: Number,
+    default: 100,
+    min: 0
+  },
+  shopReferralRewardVendor: {
+    type: Number,
+    default: 50,
+    min: 0
+  },
+  shopReferralQrCodeUrl: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

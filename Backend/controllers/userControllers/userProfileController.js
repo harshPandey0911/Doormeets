@@ -185,7 +185,7 @@ const getCheckoutData = async (req, res) => {
     const [user, cart, settings] = await Promise.all([
       User.findById(userId).select('addresses phone name loyaltyPoints wallet'),
       Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl slug').populate('items.categoryId', 'title slug'),
-      Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage')
+      Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage loyaltyPointsRedemptionRate isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime')
     ]);
 
     if (!user) {
@@ -260,7 +260,7 @@ const getReferralDetails = async (req, res) => {
 
     // Get stats
     const successfulReferrals = await User.countDocuments({ referredBy: userId, referralStatus: 'rewarded' });
-    
+
     // Sum referral reward credits from Transactions
     const referralTransactions = await Transaction.find({
       userId,

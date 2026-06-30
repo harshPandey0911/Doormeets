@@ -471,14 +471,6 @@ const BookingConfirmation = () => {
                 </div>
               )}
 
-              {/* Wallet Applied */}
-              {booking.walletAmountApplied > 0 && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-600 font-medium">Wallet Applied</span>
-                  <span className="font-medium text-slate-900">-₹{booking.walletAmountApplied.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-
               {/* Tax block removed since GST is included in base price */}
 
               {/* Convenience Fee block removed per user request */}

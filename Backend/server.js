@@ -3,9 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const originalConsoleError = console.error;
-console.error = function() {
-    try { fs.appendFileSync('error.log', Array.from(arguments).join(' ') + '\\n'); } catch(e) {}
-    originalConsoleError.apply(console, arguments);
+console.error = function () {
+  try { fs.appendFileSync('error.log', Array.from(arguments).join(' ') + '\\n'); } catch (e) { }
+  originalConsoleError.apply(console, arguments);
 };
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
@@ -199,7 +199,6 @@ app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/walle
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/dashboard.routes'));
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/service.routes'));
 app.use('/api/vendors/bookings', checkSubscription, require('./routes/vendor-routes/booking.routes'));
-app.use('/api/vendors/workers', checkSubscription, require('./routes/vendor-routes/worker.routes'));
 app.use('/api/vendors/fcm-tokens', checkSubscription, require('./routes/vendor-routes/fcmToken.routes'));
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/vendorBill.routes'));
 app.use('/api/vendors/catalog', checkSubscription, require('./routes/vendor-routes/catalog.routes'));
@@ -209,13 +208,7 @@ app.use('/api/vendors/products', checkSubscription, require('./routes/vendor-rou
 app.use('/api/vendors/support', checkSubscription, require('./routes/vendor-routes/support.routes'));
 app.use('/api/vendors/painting-consultations', checkSubscription, require('./routes/vendor-routes/painting-consultation.routes'));
 
-// Worker routes
-app.use('/api/workers/auth', require('./routes/worker-routes/auth.routes'));
-app.use('/api/workers', require('./routes/worker-routes/profile.routes'));
-app.use('/api/workers', require('./routes/worker-routes/job.routes'));
-app.use('/api/workers', require('./routes/worker-routes/dashboard.routes'));
-app.use('/api/workers/wallet', require('./routes/worker-routes/wallet.routes'));
-app.use('/api/workers/fcm-tokens', require('./routes/worker-routes/fcmToken.routes'));
+
 
 
 // Admin routes
@@ -224,7 +217,8 @@ app.use('/api/admin', require('./routes/admin-routes/cityManagement.routes.js'))
 app.use('/api/admin', require('./routes/admin-routes/dashboard.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorManagement.routes'));
-app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
+app.use('/api/admin/shop-owners', require('./routes/admin-routes/shopManagement.routes'));
+// app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/categoryManagement.routes'));
 app.use('/api/admin/professions', require('./routes/admin-routes/profession.routes'));
 app.use('/api/admin/subcategories', require('./routes/admin-routes/subCategoryManagement.routes'));
@@ -250,6 +244,9 @@ app.use('/api/admin/settlements', require('./routes/admin-routes/settlementManag
 app.use('/api/admin/admins', require('./routes/admin-routes/adminManagement.routes'));
 app.use('/api/admin/promos', require('./routes/admin-routes/promo.routes'));
 app.use('/api/admin/vouchers', require('./routes/admin-routes/voucher.routes'));
+
+// Shop Owner routes
+app.use('/api/shop', require('./routes/shop-routes/shop.routes'));
 app.use('/api/admin/support', require('./routes/admin-routes/support.routes'));
 app.use('/api/admin/banners', require('./routes/admin-routes/banner.routes'));
 app.use('/api/admin/training', require('./routes/admin-routes/trainingManagement.routes'));
