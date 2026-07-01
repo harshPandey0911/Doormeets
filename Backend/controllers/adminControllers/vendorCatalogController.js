@@ -13,6 +13,7 @@ const getAllVendorServices = async (req, res) => {
     const [globalServices, vendorBrands] = await Promise.all([
       VendorServiceCatalog.find()
         .populate('categoryId', 'title')
+        .populate('serviceIds', 'title')
         .sort({ createdAt: -1 }),
       Brand.find({ vendorId: { $exists: true }, type: 'service' })
         .populate('categoryId', 'title')
@@ -29,7 +30,10 @@ const getAllVendorServices = async (req, res) => {
       description: b.description,
       categoryId: b.categoryId,
       vendorId: b.vendorId,
-      isVendorCreated: true
+      isVendorCreated: true,
+      serviceIds: [],
+      customerPrice: b.basePrice,
+      vendorPayoutBase: b.basePrice
     }));
 
     const services = [...globalServices, ...formattedVendorServices];
@@ -46,7 +50,7 @@ const getAllVendorServices = async (req, res) => {
  */
 const createVendorService = async (req, res) => {
   try {
-    const { name, price, basePrice, status, description, categoryId } = req.body;
+    const { name, price, basePrice, status, description, categoryId, serviceIds, customerPrice, vendorPayoutBase } = req.body;
     // Handle either price or basePrice from frontend
     const finalPrice = price || basePrice;
 
@@ -55,7 +59,10 @@ const createVendorService = async (req, res) => {
       price: finalPrice,
       status,
       description,
-      categoryId
+      categoryId,
+      serviceIds,
+      customerPrice,
+      vendorPayoutBase
     });
     res.status(201).json({ success: true, service });
   } catch (error) {
@@ -125,6 +132,7 @@ const getAllVendorParts = async (req, res) => {
     const [globalParts, vendorBrands] = await Promise.all([
       VendorPartsCatalog.find()
         .populate('categoryId', 'title')
+        .populate('serviceIds', 'title')
         .sort({ createdAt: -1 }),
       Brand.find({ vendorId: { $exists: true }, type: 'product' })
         .populate('categoryId', 'title')
@@ -142,7 +150,10 @@ const getAllVendorParts = async (req, res) => {
       categoryId: b.categoryId,
       vendorId: b.vendorId,
       isVendorCreated: true,
-      hsnCode: b.hsnCode || ''
+      hsnCode: b.hsnCode || '',
+      serviceIds: [],
+      customerPrice: b.basePrice,
+      vendorPayoutBase: b.basePrice
     }));
 
     const parts = [...globalParts, ...formattedVendorParts];
@@ -159,7 +170,7 @@ const getAllVendorParts = async (req, res) => {
  */
 const createVendorPart = async (req, res) => {
   try {
-    const { name, price, basePrice, hsnCode, gstApplicable, gstPercentage, status, description, categoryId } = req.body;
+    const { name, price, basePrice, hsnCode, gstApplicable, gstPercentage, status, description, categoryId, serviceIds, customerPrice, vendorPayoutBase } = req.body;
     const finalPrice = price || basePrice;
     const part = await VendorPartsCatalog.create({
       name,
@@ -169,7 +180,10 @@ const createVendorPart = async (req, res) => {
       gstPercentage,
       status,
       description,
-      categoryId
+      categoryId,
+      serviceIds,
+      customerPrice,
+      vendorPayoutBase
     });
     res.status(201).json({ success: true, part });
   } catch (error) {
@@ -234,6 +248,24 @@ const deleteVendorPart = async (req, res) => {
   }
 };
 
+/**
+ * Get active addons/parts linked to a specific Service
+ * GET /api/admin/vendor-catalog/addons-for-service/:serviceId
+ */
+const getAddonsForService = async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const [services, parts] = await Promise.all([
+      VendorServiceCatalog.find({ serviceIds: serviceId, status: SERVICE_STATUS.ACTIVE }),
+      VendorPartsCatalog.find({ serviceIds: serviceId, status: SERVICE_STATUS.ACTIVE })
+    ]);
+    res.status(200).json({ success: true, services, parts });
+  } catch (error) {
+    console.error('Error fetching addons for service:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch addons for service' });
+  }
+};
+
 module.exports = {
   getAllVendorServices,
   createVendorService,
@@ -242,5 +274,6 @@ module.exports = {
   getAllVendorParts,
   createVendorPart,
   updateVendorPart,
-  deleteVendorPart
+  deleteVendorPart,
+  getAddonsForService
 };

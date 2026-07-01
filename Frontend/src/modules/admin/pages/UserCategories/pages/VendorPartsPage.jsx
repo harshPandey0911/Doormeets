@@ -3,7 +3,8 @@ import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiSearch } from "react-icons/fi
 import { toast } from "react-hot-toast";
 import CardShell from "../components/CardShell";
 import Modal from "../components/Modal";
-import { vendorCatalogService, categoryService } from "../../../../../services/catalogService";
+import { vendorCatalogService, categoryService, serviceService } from "../../../../../services/catalogService";
+import api from "../../../../../services/api";
 import { z } from "zod";
 
 const schema = z.object({
@@ -11,12 +12,17 @@ const schema = z.object({
   hsnCode: z.string().optional(),
   basePrice: z.number().min(0, "Price must be non-negative"),
   description: z.string().optional(),
-  categoryId: z.string().min(1, "Category is required")
+  categoryId: z.string().min(1, "Category is required"),
+  serviceIds: z.array(z.string()).optional(),
+  customerPrice: z.number().min(0).optional(),
+  vendorPayoutBase: z.number().min(0).optional()
 });
 
 const VendorPartsPage = ({ selectedCity }) => {
   const [parts, setParts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [servicesList, setServicesList] = useState([]);
+  const [globalSettings, setGlobalSettings] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,11 +30,51 @@ const VendorPartsPage = ({ selectedCity }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: "", hsnCode: "", basePrice: "", description: "", categoryId: "" });
+  const [form, setForm] = useState({
+    name: "",
+    hsnCode: "",
+    basePrice: "",
+    description: "",
+    categoryId: "",
+    serviceIds: [],
+    customerPrice: "",
+    vendorPayoutBase: ""
+  });
+
+  // Fetch global settings to calculate GST splits on preview
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await api.get('/admin/settings/general');
+        if (res.data && res.data.success) {
+          setGlobalSettings(res.data.settings);
+        }
+      } catch (e) {
+        setGlobalSettings({
+          commissionPercentage: 25,
+          vendorCgstPercentage: 2.5,
+          vendorSgstPercentage: 2.5
+        });
+      }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     loadData();
+    loadServicesList();
   }, []);
+
+  const loadServicesList = async () => {
+    try {
+      const response = await serviceService.getAll();
+      if (response.success) {
+        setServicesList(response.services || []);
+      }
+    } catch (error) {
+      console.error("Failed to load services list:", error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -56,9 +102,12 @@ const VendorPartsPage = ({ selectedCity }) => {
     const data = {
       name: form.name,
       hsnCode: form.hsnCode,
-      basePrice: Number(form.basePrice),
+      basePrice: Number(form.customerPrice || form.basePrice || 0),
       description: form.description,
-      categoryId: form.categoryId || undefined
+      categoryId: form.categoryId || undefined,
+      serviceIds: form.serviceIds || [],
+      customerPrice: Number(form.customerPrice || 0),
+      vendorPayoutBase: Number(form.vendorPayoutBase || 0)
     };
 
     const result = schema.safeParse(data);
@@ -110,7 +159,16 @@ const VendorPartsPage = ({ selectedCity }) => {
 
   const reset = () => {
     setEditingId(null);
-    setForm({ name: "", hsnCode: "", basePrice: "", description: "", categoryId: "" });
+    setForm({
+      name: "",
+      hsnCode: "",
+      basePrice: "",
+      description: "",
+      categoryId: "",
+      serviceIds: [],
+      customerPrice: "",
+      vendorPayoutBase: ""
+    });
     setIsModalOpen(false);
   };
 
@@ -119,9 +177,12 @@ const VendorPartsPage = ({ selectedCity }) => {
     setForm({
       name: part.name,
       hsnCode: part.hsnCode || "",
-      basePrice: part.basePrice || part.price,
+      basePrice: part.customerPrice || part.basePrice || part.price || 0,
       description: part.description || "",
-      categoryId: part.categoryId?._id || part.categoryId || ""
+      categoryId: part.categoryId?._id || part.categoryId || "",
+      serviceIds: (part.serviceIds || []).map(id => id._id || id),
+      customerPrice: part.customerPrice || part.price || part.basePrice || 0,
+      vendorPayoutBase: part.vendorPayoutBase || part.price || part.basePrice || 0
     });
     setIsModalOpen(true);
   };
@@ -194,49 +255,65 @@ const VendorPartsPage = ({ selectedCity }) => {
         ) : filteredParts.length === 0 ? (
           <div className="text-center py-8 text-gray-500">No parts found matching filters.</div>
         ) : (
-          <div className="overflow-x-auto border rounded-xl">
+          <div className="overflow-x-auto border rounded-xl bg-white shadow-sm">
             <table className="w-full">
-              <thead className="bg-gray-50 text-left">
+              <thead className="bg-gray-50 text-left border-b">
                 <tr>
-                  <th className="p-3 text-xs font-bold text-gray-500 uppercase">Category</th>
-                  <th className="p-3 text-xs font-bold text-gray-500 uppercase">HSN</th>
-                  <th className="p-3 text-xs font-bold text-gray-500 uppercase">Name</th>
-                  <th className="p-3 text-xs font-bold text-gray-500 uppercase">Price (₹)</th>
-                  <th className="p-3 text-xs font-bold text-gray-500 uppercase">Description</th>
-                  <th className="p-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
+                  <th className="p-3.5 text-xs font-bold text-gray-500 uppercase">Category</th>
+                  <th className="p-3.5 text-xs font-bold text-gray-500 uppercase">HSN</th>
+                  <th className="p-3.5 text-xs font-bold text-gray-500 uppercase">Name</th>
+                  <th className="p-3.5 text-xs font-bold text-gray-500 uppercase">Linked Services</th>
+                  <th className="p-3.5 text-xs font-bold text-gray-500 uppercase">Cust. Price</th>
+                  <th className="p-3.5 text-xs font-bold text-gray-500 uppercase">Vendor Base</th>
+                  <th className="p-3.5 text-xs font-bold text-gray-500 uppercase">Description</th>
+                  <th className="p-3.5 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y text-gray-700">
                 {filteredParts.map((s) => (
-                  <tr key={s._id || s.id} className="hover:bg-gray-50">
-                    <td className="p-3 text-xs">
+                  <tr key={s._id || s.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="p-3.5">
                       {s.categoryId?.title ? (
-                        <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium border border-blue-100">
+                        <span className="px-2.5 py-1 bg-violet-50 text-violet-700 border border-violet-100 rounded-full text-xs font-bold">
                           {s.categoryId.title}
                         </span>
                       ) : (
-                        <span className="text-gray-400 italic">Uncategorized</span>
+                        <span className="text-gray-400 italic text-xs">Uncategorized</span>
                       )}
                     </td>
-                    <td className="p-3 font-medium text-xs text-gray-500">{s.hsnCode || "—"}</td>
-                    <td className="p-3 font-medium">
+                    <td className="p-3.5 font-medium text-xs text-gray-500">{s.hsnCode || "—"}</td>
+                    <td className="p-3.5 font-bold text-gray-800">
                       <div className="flex flex-col">
                         <span>{s.name}</span>
                         {s.isVendorCreated && s.vendorId && (
-                          <span className="text-[10px] text-purple-600 font-bold uppercase mt-1">
+                          <span className="text-[10px] text-purple-600 font-extrabold uppercase mt-1">
                             Added by: {s.vendorId.businessName || s.vendorId.name || 'Vendor'}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="p-3">₹{s.basePrice || s.price}</td>
-                    <td className="p-3 text-sm text-gray-600 truncate max-w-xs">{s.description || "—"}</td>
-                    <td className="p-3 text-right flex justify-end gap-2">
-                      <button onClick={() => openEdit(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                        <FiEdit2 />
+                    <td className="p-3.5">
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {s.serviceIds && s.serviceIds.length > 0 ? (
+                          s.serviceIds.map((srv, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold">
+                              {srv.title || srv.name || srv}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 italic text-xs">All Category Services</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3.5 font-bold text-emerald-600">₹{s.customerPrice || s.price || 0}</td>
+                    <td className="p-3.5 font-bold text-indigo-600">₹{s.vendorPayoutBase || s.price || 0}</td>
+                    <td className="p-3.5 text-sm text-gray-500 truncate max-w-xs">{s.description || "—"}</td>
+                    <td className="p-3.5 text-right flex justify-end gap-2">
+                      <button onClick={() => openEdit(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <FiEdit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(s._id || s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded">
-                        <FiTrash2 />
+                      <button onClick={() => handleDelete(s._id || s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <FiTrash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
@@ -247,64 +324,139 @@ const VendorPartsPage = ({ selectedCity }) => {
         )}
       </CardShell>
 
-      <Modal isOpen={isModalOpen} onClose={reset} title={editingId ? "Edit Vendor Part" : "Add Vendor Part"}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold mb-1">Category</label>
-            <select
-              value={form.categoryId}
-              onChange={(e) => setForm(p => ({ ...p, categoryId: e.target.value }))}
-              className="w-full px-4 py-2 border rounded-xl bg-white"
-            >
-              <option value="">Select Category</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.title}</option>
-              ))}
-            </select>
+      <Modal isOpen={isModalOpen} onClose={reset} title={editingId ? "Edit Vendor Part Addon" : "Add Vendor Part Addon"}>
+        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Category *</label>
+              <select
+                value={form.categoryId}
+                onChange={(e) => setForm(p => ({ ...p, categoryId: e.target.value, serviceIds: [] }))}
+                className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                <option value="">Select Category</option>
+                {categories.map(cat => (
+                  <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.title}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Part Name *</label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
+                className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="e.g. Copper Pipe (1m)"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-bold mb-1">Part Name</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
-              className="w-full px-4 py-2 border rounded-xl"
-              placeholder="e.g. Copper Pipe (1m)"
-            />
+
+          {/* Service mapping selector */}
+          {form.categoryId && (
+            <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/50">
+              <label className="block text-xs font-bold text-gray-700 mb-2">🎯 Apply specifically to Services:</label>
+              <div className="max-h-32 overflow-y-auto space-y-1.5 pr-2">
+                {servicesList.filter(s => String(s.categoryId?._id || s.categoryId) === String(form.categoryId)).map(srv => {
+                  const srvId = srv._id || srv.id;
+                  const isChecked = form.serviceIds.includes(srvId);
+                  return (
+                    <label key={srvId} className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer hover:text-gray-900">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => setForm(p => ({
+                          ...p,
+                          serviceIds: isChecked ? p.serviceIds.filter(id => id !== srvId) : [...p.serviceIds, srvId]
+                        }))}
+                        className="accent-primary-600 rounded"
+                      />
+                      {srv.title}
+                    </label>
+                  );
+                })}
+                {servicesList.filter(s => String(s.categoryId?._id || s.categoryId) === String(form.categoryId)).length === 0 && (
+                  <span className="text-xs text-gray-400 italic">No services configured under this category. Addon will apply to all.</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">HSN Number (Optional)</label>
+              <input
+                value={form.hsnCode}
+                onChange={(e) => setForm(p => ({ ...p, hsnCode: e.target.value }))}
+                className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="e.g. 8415"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Cust. Price *</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.customerPrice}
+                  onChange={(e) => setForm(p => ({ ...p, customerPrice: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500 font-bold"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Vendor Base *</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.vendorPayoutBase}
+                  onChange={(e) => setForm(p => ({ ...p, vendorPayoutBase: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500 font-bold"
+                  placeholder="0"
+                />
+              </div>
+            </div>
           </div>
+
+          {/* Splits Preview Card */}
+          {form.customerPrice > 0 && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Live Price Matrix Split Preview</span>
+              {(() => {
+                const splits = getSplitsPreview();
+                return (
+                  <div className="grid grid-cols-2 gap-3 text-[11px] font-semibold text-gray-600">
+                    <div className="bg-white p-2 rounded border border-slate-100 shadow-sm space-y-1">
+                      <div className="flex justify-between"><span>Admin Share Gross:</span><span className="font-bold text-slate-800">₹{splits.adminGrossShare.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span>Admin GST (18%):</span><span className="font-bold text-slate-800">₹{splits.platformGstAmount.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-indigo-700 font-extrabold border-t pt-1"><span>Admin Net Share:</span><span>₹{splits.adminTaxableEarning.toFixed(2)}</span></div>
+                    </div>
+                    <div className="bg-white p-2 rounded border border-slate-100 shadow-sm space-y-1">
+                      <div className="flex justify-between"><span>Vendor CGST (2.5%):</span><span className="font-bold text-slate-800">₹{splits.vendorCgstAmount.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span>Vendor SGST (2.5%):</span><span className="font-bold text-slate-800">₹{splits.vendorSgstAmount.toFixed(2)}</span></div>
+                      <div className="flex justify-between border-b pb-1"><span>Platform Comm ({globalSettings?.commissionPercentage ?? 25}%):</span><span className="font-bold text-slate-800">₹{splits.platformCommissionAmount.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-emerald-700 font-extrabold pt-1"><span>Net Vendor Share:</span><span>₹{splits.netVendorShare.toFixed(2)}</span></div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-bold mb-1">HSN Number (Optional)</label>
-            <input
-              value={form.hsnCode}
-              onChange={(e) => setForm(p => ({ ...p, hsnCode: e.target.value }))}
-              className="w-full px-4 py-2 border rounded-xl"
-              placeholder="e.g. 8415"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold mb-1">Base Price (₹)</label>
-            <input
-              type="number"
-              value={form.basePrice}
-              onChange={(e) => setForm(p => ({ ...p, basePrice: e.target.value }))}
-              className="w-full px-4 py-2 border rounded-xl"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold mb-1">Description (Optional)</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Description (Optional)</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))}
-              className="w-full px-4 py-2 border rounded-xl"
-              rows={3}
+              className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500"
+              rows={2}
             />
           </div>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50"
+            className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 transition-colors shadow-md text-sm"
           >
-            {loading ? "Saving..." : "Save Part"}
+            {loading ? "Saving..." : "Save Part Item"}
           </button>
         </div>
       </Modal>

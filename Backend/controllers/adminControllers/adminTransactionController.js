@@ -339,7 +339,164 @@ const getTransactionStats = async (req, res) => {
   }
 };
 
+const getEarningsBreakdown = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search, taxType, vendorId } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // 1. Build Query for Bookings
+    let bookingQuery = {
+      status: { $in: ['COMPLETED', 'completed', 'paid', 'PAID'] }
+    };
+
+    if (vendorId && vendorId !== 'all') {
+      bookingQuery.vendorId = vendorId;
+    }
+
+    const bookingFilter = await getBookingQueryFilter(req.user);
+    Object.assign(bookingQuery, bookingFilter);
+
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      const [users, vendors] = await Promise.all([
+        User.find({ $or: [{ name: searchRegex }, { email: searchRegex }] }).select('_id'),
+        Vendor.find({ $or: [{ name: searchRegex }, { email: searchRegex }, { businessName: searchRegex }] }).select('_id')
+      ]);
+      bookingQuery.$or = [
+        { bookingNumber: searchRegex },
+        { userId: { $in: users.map(u => u._id) } },
+        { vendorId: { $in: vendors.map(v => v._id) } }
+      ];
+    }
+
+    const bookings = await Booking.find(bookingQuery)
+      .populate('userId', 'name email phone')
+      .populate('vendorId', 'name email phone businessName level')
+      .sort({ createdAt: -1 });
+
+    // 2. Fetch PricingConfigs in batch to avoid N+1 queries
+    const serviceIds = bookings.map(b => b.serviceId).filter(Boolean);
+    const PricingConfig = require('../../models/PricingConfig');
+    const pricings = await PricingConfig.find({ serviceId: { $in: serviceIds } });
+    
+    // Map serviceId -> pricingConfigs
+    const pricingMap = {};
+    pricings.forEach(p => {
+      const sId = p.serviceId.toString();
+      if (!pricingMap[sId]) pricingMap[sId] = [];
+      pricingMap[sId].push(p);
+    });
+
+    const breakdownData = [];
+
+    bookings.forEach(booking => {
+      const sId = booking.serviceId ? booking.serviceId.toString() : '';
+      const list = pricingMap[sId] || [];
+      let pricing = null;
+      if (list.length > 0) {
+        if (booking.cityId) {
+          pricing = list.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+        }
+        if (!pricing && booking.brandId) {
+          pricing = list.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+        }
+        if (!pricing) {
+          pricing = list.find(p => !p.cityId && !p.brandId) || list[0];
+        }
+      }
+
+      // Calculations
+      const cp = Number(booking.finalAmount || booking.basePrice || 0);
+      const vPayoutBase = pricing ? Number(pricing.vendorPayoutBase || 0) : 0;
+      
+      const gstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
+      const vSgstPct = pricing ? Number(pricing.vendorSgstPercentage ?? 2.5) : 2.5;
+      const vCgstPct = pricing ? Number(pricing.vendorCgstPercentage ?? 2.5) : 2.5;
+      const pCommPct = pricing ? Number(pricing.platformCommission ?? 25) : 25;
+      
+      // Determine level commission based on vendor level (L1/L2/L3)
+      let lCommPct = 0;
+      if (booking.vendorId) {
+        const level = booking.vendorId.level || 'L1';
+        if (level === 'L1') lCommPct = pricing ? Number(pricing.l1Commission ?? 0) : 0;
+        else if (level === 'L2') lCommPct = pricing ? Number(pricing.l2Commission ?? 0) : 0;
+        else if (level === 'L3') lCommPct = pricing ? Number(pricing.l3Commission ?? 0) : 0;
+      }
+
+      // Math
+      const adminGrossShare = Math.max(0, cp - vPayoutBase);
+      const platformGstAmount = adminGrossShare - (adminGrossShare / (1 + (gstPct / 100)));
+      const adminTaxableEarning = adminGrossShare - platformGstAmount;
+
+      const vendorSgstAmount = vPayoutBase * (vSgstPct / 100);
+      const vendorCgstAmount = vPayoutBase * (vCgstPct / 100);
+      const remainingVendorBase = Math.max(0, vPayoutBase - vendorSgstAmount - vendorCgstAmount);
+      
+      const platformCommissionAmount = remainingVendorBase * (pCommPct / 100);
+      const levelCommissionAmount = remainingVendorBase * (lCommPct / 100);
+      const totalCommissionEarned = platformCommissionAmount + levelCommissionAmount;
+      const netVendorPayout = remainingVendorBase - totalCommissionEarned;
+
+      const totalGstCalculated = platformGstAmount + vendorSgstAmount + vendorCgstAmount;
+
+      const row = {
+        _id: booking._id,
+        bookingId: booking._id,
+        bookingNumber: booking.bookingNumber,
+        createdAt: booking.completedAt || booking.updatedAt || booking.createdAt,
+        user: booking.userId,
+        vendor: booking.vendorId,
+        customerPay: cp,
+        vendorPayoutBase: vPayoutBase,
+        adminGrossShare,
+        adminTaxableEarning,
+        
+        // Taxes
+        platformGstAmount,
+        vendorSgstAmount,
+        vendorCgstAmount,
+        totalGstCalculated,
+        
+        // Commissions
+        platformCommissionAmount,
+        levelCommissionAmount,
+        totalCommissionEarned,
+        netVendorPayout,
+        vendorLevel: booking.vendorId ? (booking.vendorId.level || 'L1') : 'L1'
+      };
+
+      // Filter by taxType if specified
+      if (taxType && taxType !== 'all') {
+        if (taxType === 'gst' && platformGstAmount <= 0) return;
+        if (taxType === 'cgst' && vendorCgstAmount <= 0) return;
+        if (taxType === 'sgst' && vendorSgstAmount <= 0) return;
+      }
+
+      breakdownData.push(row);
+    });
+
+    const total = breakdownData.length;
+    const paginatedData = breakdownData.slice(skip, skip + parseInt(limit));
+
+    res.status(200).json({
+      success: true,
+      data: paginatedData,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching earnings breakdown:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch earnings breakdown data' });
+  }
+};
+
 module.exports = {
   getAllTransactions,
-  getTransactionStats
+  getTransactionStats,
+  getEarningsBreakdown
 };

@@ -55,8 +55,16 @@ export const adminTransactionService = {
 
   // Reports
   getPaymentReports: async (params) => {
-    // Re-using transactions endpoint with report-specific filters if needed
-    // or we can implement specific report endpoint later
     return adminTransactionService.getAllTransactions(params);
+  },
+
+  getEarningsBreakdown: async (params) => {
+    try {
+      const response = await api.get('/admin/transactions/earnings-breakdown', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching earnings breakdown:', error);
+      throw error;
+    }
   }
 };

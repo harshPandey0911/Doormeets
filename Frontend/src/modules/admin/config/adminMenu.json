@@ -66,14 +66,18 @@
     "children": []
   },
   {
-    "title": "Vendor Services",
-    "route": "/admin/user-categories/vendor-services",
-    "section": "VENDOR MANAGEMENT",
+    "title": "Add-on Library",
+    "route": "/admin/addon-library",
+    "section": "CENTRALIZED LIBRARY",
     "allowedRoles": [
       "super_admin",
-      "admin"
+      "admin",
+      "city_admin"
     ],
-    "children": []
+    "children": [
+      "Extra Services",
+      "Materials & Parts"
+    ]
   },
   {
     "title": "Vendor Wallets",

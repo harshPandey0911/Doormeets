@@ -1018,55 +1018,63 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   // ── Live pricing split calculations (mirrors PricingMatrixPage logic)
   const getInlinePricingCalcs = () => {
     const cp = Number(pricingForm.customerPrice) || 0;
-    const gstPct = Number(pricingForm.gstPercentage) || 0;
-    const gstInc = pricingForm.gstIncluded;
-    const pCommPct = Number(pricingForm.platformCommission) || 0;
-    const l1Pct = Number(pricingForm.l1Commission) || 0;
-    const l2Pct = Number(pricingForm.l2Commission) || 0;
-    const l3Pct = Number(pricingForm.l3Commission) || 0;
+    const gstPct = Number(globalSettings?.serviceGstPercentage ?? 18);
+    const gstInc = true; // GST is included in price
+    const pCommPct = Number(globalSettings?.commissionPercentage ?? 25);
+    const l1Pct = Number(globalSettings?.commissionRates?.level1 ?? 0);
+    const l2Pct = Number(globalSettings?.commissionRates?.level2 ?? 0);
+    const l3Pct = Number(globalSettings?.commissionRates?.level3 ?? 0);
 
-    let totalCustomerPay = 0;
-    let vendorShareInclusive = 0;
-    let platformFeeInclusive = 0;
+    const vPayoutBase = Number(pricingForm.vendorPayoutBase) || 0;
+    const vSgstPct = Number(globalSettings?.vendorSgstPercentage ?? 2.5);
+    const vCgstPct = Number(globalSettings?.vendorCgstPercentage ?? 2.5);
+    const vTdsPct = 0; // TDS is removed entirely u/s request "Vendor TDS (%) hatao"
+
+    // 1. Admin/Company Gross Margin
+    const adminGrossMargin = Math.max(0, cp - vPayoutBase);
+    let adminTaxableBase = 0;
+    let adminGstAmount = 0;
 
     if (gstInc) {
-      totalCustomerPay = cp;
-      platformFeeInclusive = cp * (pCommPct / 100);
-      vendorShareInclusive = cp - platformFeeInclusive;
+      adminTaxableBase = adminGrossMargin / (1 + (gstPct / 100));
+      adminGstAmount = adminGrossMargin - adminTaxableBase;
     } else {
-      const platformBase = cp * (pCommPct / 100);
-      const vendorBase = cp - platformBase;
-      const platformGST = platformBase * (gstPct / 100);
-      const vendorGST = vendorBase * 0.05;
-      platformFeeInclusive = platformBase + platformGST;
-      vendorShareInclusive = vendorBase + vendorGST;
-      totalCustomerPay = platformFeeInclusive + vendorShareInclusive;
+      adminTaxableBase = adminGrossMargin;
+      adminGstAmount = adminGrossMargin * (gstPct / 100);
     }
 
-    const platformTaxableBase = platformFeeInclusive / (1 + (gstPct / 100));
-    const platformGstAmount = platformFeeInclusive - platformTaxableBase;
-    const vendorTaxableBase = vendorShareInclusive / (1 + 0.05);
-    const vendorGstAmount = vendorShareInclusive - vendorTaxableBase;
-    const totalTaxableAmount = platformTaxableBase + vendorTaxableBase;
-    const totalGstAmount = platformGstAmount + vendorGstAmount;
-    const cgstAmount = (platformGstAmount / 2) + (vendorGstAmount / 2);
-    const sgstAmount = cgstAmount;
+    // 2. Vendor Payout Breakdown
+    const sgstAmount = vPayoutBase * (vSgstPct / 100);
+    const cgstAmount = vPayoutBase * (vCgstPct / 100);
+    const tdsAmount = vPayoutBase * (vTdsPct / 100);
+    
+    // Remaining Base after taxes & TDS
+    const remainingBase = Math.max(0, vPayoutBase - sgstAmount - cgstAmount - tdsAmount);
+    
+    // Platform Commission is deducted from remainingBase using Platform Commission (%) from settings
+    const platformCommissionAmount = remainingBase * (pCommPct / 100);
+    const netVendorShare = Math.max(0, remainingBase - platformCommissionAmount);
 
-    const l1CommAmount = vendorShareInclusive * (l1Pct / 100);
-    const l2CommAmount = vendorShareInclusive * (l2Pct / 100);
-    const l3CommAmount = vendorShareInclusive * (l3Pct / 100);
-    const payoutL1 = vendorShareInclusive - l1CommAmount;
-    const payoutL2 = vendorShareInclusive - l2CommAmount;
-    const payoutL3 = vendorShareInclusive - l3CommAmount;
-    const profitL1 = platformTaxableBase + l1CommAmount;
-    const profitL2 = platformTaxableBase + l2CommAmount;
-    const profitL3 = platformTaxableBase + l3CommAmount;
+    const l1CommAmount = remainingBase * (l1Pct / 100);
+    const l2CommAmount = remainingBase * (l2Pct / 100);
+    const l3CommAmount = remainingBase * (l3Pct / 100);
+    const payoutL1 = Math.max(0, remainingBase - platformCommissionAmount - l1CommAmount);
+    const payoutL2 = Math.max(0, remainingBase - platformCommissionAmount - l2CommAmount);
+    const payoutL3 = Math.max(0, remainingBase - platformCommissionAmount - l3CommAmount);
+    const profitL1 = adminTaxableBase + platformCommissionAmount + l1CommAmount;
+    const profitL2 = adminTaxableBase + platformCommissionAmount + l2CommAmount;
+    const profitL3 = adminTaxableBase + platformCommissionAmount + l3CommAmount;
 
     return {
-      taxableAmount: totalTaxableAmount, gstAmount: totalGstAmount, cgstAmount, sgstAmount,
-      platformCommissionAmount: platformFeeInclusive, vendorShare: vendorShareInclusive,
+      taxableAmount: adminTaxableBase + remainingBase,
+      gstAmount: adminGstAmount + sgstAmount + cgstAmount,
+      cgstAmount: (adminGstAmount / 2) + cgstAmount,
+      sgstAmount: (adminGstAmount / 2) + sgstAmount,
+      platformCommissionAmount,
+      vendorShare: netVendorShare,
       l1CommAmount, l2CommAmount, l3CommAmount, payoutL1, payoutL2, payoutL3,
-      profitL1, profitL2, profitL3, totalCustomerPay, platformTaxableBase, vendorTaxableBase
+      profitL1, profitL2, profitL3, totalCustomerPay: cp, platformTaxableBase: adminTaxableBase, vendorTaxableBase: remainingBase,
+      adminGrossMargin, adminTaxableBase, adminGstAmount, tdsAmount, remainingBase
     };
   };
 
@@ -1095,13 +1103,18 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       visitsCredits: isSubscription ? Number(pricingForm.visitsCredits || 4) : null,
       packageTitle: isSubscription ? pricingForm.packageTitle || null : null,
       pricingType: isMinuteBased ? 'per_minute' : (isSubscription ? 'subscription' : 'fixed'),
-      gstPercentage: Number(pricingForm.gstPercentage || 18),
-      gstIncluded: !!pricingForm.gstIncluded,
-      platformCommission: Number(pricingForm.platformCommission ?? 20),
-      l1Commission: Number(pricingForm.l1Commission ?? 10),
-      l2Commission: Number(pricingForm.l2Commission ?? 15),
-      l3Commission: Number(pricingForm.l3Commission ?? 20),
-      isActive: !!pricingForm.isActive
+      gstPercentage: Number(globalSettings?.serviceGstPercentage ?? 18),
+      gstIncluded: true,
+      platformCommission: Number(globalSettings?.commissionPercentage ?? 25),
+      l1Commission: Number(globalSettings?.commissionRates?.level1 ?? 0),
+      l2Commission: Number(globalSettings?.commissionRates?.level2 ?? 0),
+      l3Commission: Number(globalSettings?.commissionRates?.level3 ?? 0),
+      isActive: !!pricingForm.isActive,
+      vendorPayoutBase: Number(pricingForm.vendorPayoutBase || 0),
+      vendorSgstPercentage: Number(globalSettings?.vendorSgstPercentage ?? 2.5),
+      vendorCgstPercentage: Number(globalSettings?.vendorCgstPercentage ?? 2.5),
+      vendorTdsPercentage: 0,
+      commissionPercentage: Number(globalSettings?.commissionPercentage ?? 25)
     };
 
     if (currentService) {
@@ -2437,28 +2450,21 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           </div>
                         )}
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">GST Percentage</label>
+                            <label className="block text-[10px] font-bold text-indigo-700 uppercase mb-1">Vendor Payout Base (₹) *</label>
                             <input
                               type="number"
-                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
-                              value={pricingForm.gstPercentage}
-                              onChange={e => setPricingForm({ ...pricingForm, gstPercentage: parseFloat(e.target.value) || 0 })}
-                              required
                               min="0"
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-bold text-indigo-800 outline-none focus:ring-2 focus:ring-indigo-400"
+                              value={pricingForm.vendorPayoutBase === 0 ? '' : pricingForm.vendorPayoutBase}
+                              onChange={e => {
+                                const val = parseFloat(e.target.value);
+                                setPricingForm({ ...pricingForm, vendorPayoutBase: isNaN(val) ? 0 : Math.max(0, val) });
+                              }}
+                              placeholder="e.g. 500"
+                              required
                             />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">GST Type</label>
-                            <select
-                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
-                              value={pricingForm.gstIncluded ? 'true' : 'false'}
-                              onChange={e => setPricingForm({ ...pricingForm, gstIncluded: e.target.value === 'true' })}
-                            >
-                              <option value="true">Included in Price</option>
-                              <option value="false">Excluded from Price</option>
-                            </select>
                           </div>
                           <div className="flex items-center gap-2 pt-5">
                             <input
@@ -2472,49 +2478,39 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           </div>
                         </div>
 
-                        {/* Commission fields — editable, pre-filled from global settings */}
-                        <div className="grid grid-cols-4 gap-2">
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Platform Comm %</label>
-                            <input
-                              type="number"
-                              min="0" max="100"
-                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
-                              value={pricingForm.platformCommission}
-                              onChange={e => setPricingForm({ ...pricingForm, platformCommission: parseFloat(e.target.value) || 0 })}
-                            />
+                        {/* Applied Global Configuration Overview */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Global Configurations Applied (Read-Only)</span>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[9px] font-extrabold text-slate-400 uppercase">Platform GST</span>
+                              <span className="font-bold text-slate-700">{globalSettings?.serviceGstPercentage ?? 18}%</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[9px] font-extrabold text-slate-400 uppercase">Vendor SGST</span>
+                              <span className="font-bold text-slate-700">{globalSettings?.vendorSgstPercentage ?? 2.5}%</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[9px] font-extrabold text-slate-400 uppercase">Vendor CGST</span>
+                              <span className="font-bold text-slate-700">{globalSettings?.vendorCgstPercentage ?? 2.5}%</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[9px] font-extrabold text-slate-400 uppercase">Platform Commission</span>
+                              <span className="font-bold text-slate-700">{globalSettings?.commissionPercentage ?? 25}%</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[9px] font-extrabold text-slate-400 uppercase">L1 Commission</span>
+                              <span className="font-bold text-slate-700">{globalSettings?.commissionRates?.level1 ?? 0}%</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[9px] font-extrabold text-slate-400 uppercase">L2 Commission</span>
+                              <span className="font-bold text-slate-700">{globalSettings?.commissionRates?.level2 ?? 0}%</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[9px] font-extrabold text-slate-400 uppercase">L3 Commission</span>
+                              <span className="font-bold text-slate-700">{globalSettings?.commissionRates?.level3 ?? 0}%</span>
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">L1 Commission %</label>
-                            <input
-                              type="number"
-                              min="0" max="100"
-                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
-                              value={pricingForm.l1Commission}
-                              onChange={e => setPricingForm({ ...pricingForm, l1Commission: parseFloat(e.target.value) || 0 })}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">L2 Commission %</label>
-                            <input
-                              type="number"
-                              min="0" max="100"
-                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
-                              value={pricingForm.l2Commission}
-                              onChange={e => setPricingForm({ ...pricingForm, l2Commission: parseFloat(e.target.value) || 0 })}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">L3 Commission %</label>
-                            <input
-                              type="number"
-                              min="0" max="100"
-                              className="w-full p-2 border border-gray-300 bg-white text-gray-800 rounded-lg text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-400"
-                              value={pricingForm.l3Commission}
-                              onChange={e => setPricingForm({ ...pricingForm, l3Commission: parseFloat(e.target.value) || 0 })}
-                            />
-                          </div>
-                          <p className="col-span-4 text-[10px] text-gray-400 font-medium">* Pre-filled from global settings — override per pricing config if needed.</p>
                         </div>
 
                         {/* Live Split Calculation Details */}
@@ -2524,7 +2520,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
                               <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider">Live Split Calculation Details</h4>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Tax column */}
+                                {/* Tax calculations column */}
                                 <div className="space-y-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
                                   <div className="text-[10px] font-bold uppercase text-slate-500">Tax Calculations</div>
                                   <div className="flex justify-between items-center text-xs border-b pb-1">
@@ -2532,19 +2528,33 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                     <span className="font-bold text-slate-800">₹{calcs.totalCustomerPay.toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between items-center text-xs">
-                                    <span className="text-slate-500">Taxable Amount</span>
-                                    <span className="font-bold text-slate-800">₹{calcs.taxableAmount.toFixed(2)}</span>
+                                    <span className="text-slate-500">Vendor Payout Base</span>
+                                    <span className="font-semibold text-slate-700">₹{pricingForm.vendorPayoutBase}</span>
+                                  </div>
+                                  <div className="text-[10px] bg-slate-50 p-1.5 rounded space-y-1 ml-2">
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>Vendor CGST ({globalSettings?.vendorCgstPercentage ?? 2.5}%)</span>
+                                      <span>₹{((Number(pricingForm.vendorPayoutBase) || 0) * (Number(globalSettings?.vendorCgstPercentage ?? 2.5) / 100)).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-500">
+                                      <span>Vendor SGST ({globalSettings?.vendorSgstPercentage ?? 2.5}%)</span>
+                                      <span>₹{((Number(pricingForm.vendorPayoutBase) || 0) * (Number(globalSettings?.vendorSgstPercentage ?? 2.5) / 100)).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs font-semibold text-indigo-700">
+                                    <span>Admin Gross Share</span>
+                                    <span>₹{calcs.adminGrossMargin.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs pt-1 border-t">
+                                    <span className="text-slate-500">Admin Taxable Base</span>
+                                    <span className="font-semibold text-slate-700">₹{calcs.adminTaxableBase.toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between items-center text-xs">
-                                    <span className="text-slate-500">CGST ({(pricingForm.gstPercentage / 2)}%)</span>
-                                    <span className="font-semibold text-gray-600">₹{calcs.cgstAmount.toFixed(2)}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-xs">
-                                    <span className="text-slate-500">SGST ({(pricingForm.gstPercentage / 2)}%)</span>
-                                    <span className="font-semibold text-gray-600">₹{calcs.sgstAmount.toFixed(2)}</span>
+                                    <span className="text-slate-500">GST on Admin (18%)</span>
+                                    <span className="font-semibold text-gray-600">₹{calcs.adminGstAmount.toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between items-center text-xs font-bold border-t pt-1">
-                                    <span className="text-slate-700">Total GST ({pricingForm.gstPercentage}%)</span>
+                                    <span className="text-slate-700">Total GST Calculated</span>
                                     <span className="text-slate-700">₹{calcs.gstAmount.toFixed(2)}</span>
                                   </div>
                                 </div>
@@ -2555,39 +2565,49 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                   <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5 border-r border-gray-100 pr-3">
                                       <div className="flex justify-between items-center text-xs text-gray-500">
-                                        <span>Platform Fee ({pricingForm.platformCommission}%)</span>
+                                        <span>Platform Comm ({globalSettings?.commissionPercentage ?? 25}%)</span>
                                         <span className="font-semibold">₹{calcs.platformCommissionAmount.toFixed(2)}</span>
                                       </div>
                                       <div className="flex justify-between items-center text-xs text-gray-500 pb-1.5 border-b">
-                                        <span>Vendor Share (Base)</span>
+                                        <span>Net Vendor Share</span>
                                         <span className="font-semibold">₹{calcs.vendorShare.toFixed(2)}</span>
                                       </div>
-                                      <div className="pt-1 text-xs font-bold text-blue-600">Commissions &amp; Final Payouts</div>
+                                      <div className="pt-1 text-xs font-bold text-blue-600">Level Commissions &amp; Payouts</div>
                                       <div className="text-xs flex justify-between text-gray-600">
-                                        <span>L1 Payout (₹{calcs.l1CommAmount.toFixed(1)} / {pricingForm.l1Commission}%)</span>
+                                        <span>L1 Payout ({globalSettings?.commissionRates?.level1 ?? 0}%)</span>
                                         <span className="font-bold text-green-600">₹{calcs.payoutL1.toFixed(1)}</span>
                                       </div>
                                       <div className="text-xs flex justify-between text-gray-600">
-                                        <span>L2 Payout (₹{calcs.l2CommAmount.toFixed(1)} / {pricingForm.l2Commission}%)</span>
+                                        <span>L2 Payout ({globalSettings?.commissionRates?.level2 ?? 0}%)</span>
                                         <span className="font-bold text-green-600">₹{calcs.payoutL2.toFixed(1)}</span>
                                       </div>
                                       <div className="text-xs flex justify-between text-gray-600">
-                                        <span>L3 Payout (₹{calcs.l3CommAmount.toFixed(1)} / {pricingForm.l3Commission}%)</span>
+                                        <span>L3 Payout ({globalSettings?.commissionRates?.level3 ?? 0}%)</span>
                                         <span className="font-bold text-green-600">₹{calcs.payoutL3.toFixed(1)}</span>
                                       </div>
                                     </div>
                                     <div className="space-y-1.5">
                                       <div className="text-xs font-bold text-blue-700">Admin Net Profit</div>
+                                      <div className="text-[10px] bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1 my-1">
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Customer Share Net:</span>
+                                          <span className="font-semibold text-slate-700">₹{calcs.adminTaxableBase.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-slate-500">Platform Comm:</span>
+                                          <span className="font-semibold text-slate-700">+₹{calcs.platformCommissionAmount.toFixed(2)}</span>
+                                        </div>
+                                      </div>
                                       <div className="text-xs flex justify-between text-gray-700 font-semibold mt-1">
-                                        <span>Admin Profit (L1 Vendor)</span>
+                                        <span>Admin Profit (L1)</span>
                                         <span className="text-blue-700 font-bold">₹{calcs.profitL1.toFixed(1)}</span>
                                       </div>
                                       <div className="text-xs flex justify-between text-gray-700 font-semibold">
-                                        <span>Admin Profit (L2 Vendor)</span>
+                                        <span>Admin Profit (L2)</span>
                                         <span className="text-blue-700 font-bold">₹{calcs.profitL2.toFixed(1)}</span>
                                       </div>
                                       <div className="text-xs flex justify-between text-gray-700 font-semibold">
-                                        <span>Admin Profit (L3 Vendor)</span>
+                                        <span>Admin Profit (L3)</span>
                                         <span className="text-blue-700 font-bold">₹{calcs.profitL3.toFixed(1)}</span>
                                       </div>
                                     </div>

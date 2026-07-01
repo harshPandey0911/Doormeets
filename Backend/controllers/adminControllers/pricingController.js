@@ -3,86 +3,98 @@ const Category = require('../../models/Category');
 const Settings = require('../../models/Settings');
 const { validationResult } = require('express-validator');
 
-// Helper to calculate pricing fields live
-const calculatePricingDetails = (customerPrice, gstPercentage, gstIncluded, platformCommission, l1Commission, l2Commission, l3Commission) => {
+// Helper to calculate pricing fields live using the new Price Matrix model
+const calculatePricingDetails = (
+  customerPrice,
+  gstPercentage,
+  gstIncluded,
+  platformCommission,
+  l1Commission,
+  l2Commission,
+  l3Commission,
+  vendorPayoutBase = 0,
+  vendorSgstPercentage = 2.5,
+  vendorCgstPercentage = 2.5,
+  vendorTdsPercentage = 0,
+  commissionPercentage = 10
+) => {
   const price = Number(customerPrice) || 0;
   const gstPct = Number(gstPercentage) || 0;
-  const platCommPct = Number(platformCommission) || 0;
+  const vPayoutBase = Number(vendorPayoutBase) || 0;
+  const vSgstPct = Number(vendorSgstPercentage) || 0;
+  const vCgstPct = Number(vendorCgstPercentage) || 0;
+  const vTdsPct = Number(vendorTdsPercentage) || 0;
+  const vCommPct = Number(commissionPercentage) || 0;
+
+  // 1. Admin/Company Gross Margin
+  const adminGrossMargin = Math.max(0, price - vPayoutBase);
+  let adminTaxableBase = 0;
+  let adminGstAmount = 0;
+
+  if (gstIncluded) {
+    adminTaxableBase = adminGrossMargin / (1 + (gstPct / 100));
+    adminGstAmount = adminGrossMargin - adminTaxableBase;
+  } else {
+    adminTaxableBase = adminGrossMargin;
+    adminGstAmount = adminGrossMargin * (gstPct / 100);
+  }
+
+  // 2. Vendor Payout Breakdown
+  const sgstAmount = vPayoutBase * (vSgstPct / 100);
+  const cgstAmount = vPayoutBase * (vCgstPct / 100);
+  const tdsAmount = vPayoutBase * (vTdsPct / 100);
+  
+  // Remaining Base after taxes & TDS
+  const remainingBase = Math.max(0, vPayoutBase - sgstAmount - cgstAmount - tdsAmount);
+  
+  // Platform Commission deducted from Remaining Base
+  const platformCommAmt = remainingBase * (vCommPct / 100);
+  const netVendorPayout = Math.max(0, remainingBase - platformCommAmt);
+
+  // For multi-level commission preview (using level percentages if configured)
   const l1Pct = Number(l1Commission) || 0;
   const l2Pct = Number(l2Commission) || 0;
   const l3Pct = Number(l3Commission) || 0;
 
-  let totalCustomerPay = 0;
-  let vendorShareInclusive = 0;
-  let platformFeeInclusive = 0;
+  const l1CommAmount = remainingBase * (l1Pct / 100);
+  const l2CommAmount = remainingBase * (l2Pct / 100);
+  const l3CommAmount = remainingBase * (l3Pct / 100);
 
-  if (gstIncluded) {
-    totalCustomerPay = price;
-    platformFeeInclusive = price * (platCommPct / 100);
-    vendorShareInclusive = price - platformFeeInclusive;
-  } else {
-    const platformBase = price * (platCommPct / 100);
-    const vendorBase = price - platformBase;
-    const platformGST = platformBase * (gstPct / 100);
-    const vendorGST = vendorBase * 0.05; // 5% Vendor GST (2.5% CGST + 2.5% SGST)
-
-    platformFeeInclusive = platformBase + platformGST;
-    vendorShareInclusive = vendorBase + vendorGST;
-    totalCustomerPay = platformFeeInclusive + vendorShareInclusive;
-  }
-
-  const platformTaxableBase = platformFeeInclusive / (1 + (gstPct / 100));
-  const platformGstAmount = platformFeeInclusive - platformTaxableBase;
-
-  const vendorTaxableBase = vendorShareInclusive / (1 + 0.05);
-  const vendorGstAmount = vendorShareInclusive - vendorTaxableBase;
-
-  const totalTaxableAmount = platformTaxableBase + vendorTaxableBase;
-  const totalGstAmount = platformGstAmount + vendorGstAmount;
-
-  const cgstAmount = (platformGstAmount / 2) + (vendorGstAmount / 2);
-  const sgstAmount = (platformGstAmount / 2) + (vendorGstAmount / 2);
-
-  const l1CommAmount = vendorShareInclusive * (l1Pct / 100);
-  const l2CommAmount = vendorShareInclusive * (l2Pct / 100);
-  const l3CommAmount = vendorShareInclusive * (l3Pct / 100);
-
-  const vendorFinalPayoutL1 = vendorShareInclusive - l1CommAmount;
-  const vendorFinalPayoutL2 = vendorShareInclusive - l2CommAmount;
-  const vendorFinalPayoutL3 = vendorShareInclusive - l3CommAmount;
-
-  const adminNetProfitL1 = platformTaxableBase + l1CommAmount;
-  const adminNetProfitL2 = platformTaxableBase + l2CommAmount;
-  const adminNetProfitL3 = platformTaxableBase + l3CommAmount;
+  const vendorFinalPayoutL1 = Math.max(0, remainingBase - l1CommAmount);
+  const vendorFinalPayoutL2 = Math.max(0, remainingBase - l2CommAmount);
+  const vendorFinalPayoutL3 = Math.max(0, remainingBase - l3CommAmount);
 
   return {
     customerPrice: price,
     gstPercentage: gstPct,
     gstIncluded,
-    platformCommission: platCommPct,
-    l1Commission: l1Pct,
-    l2Commission: l2Pct,
-    l3Commission: l3Pct,
+    vendorPayoutBase: vPayoutBase,
+    vendorSgstPercentage: vSgstPct,
+    vendorCgstPercentage: vCgstPct,
+    vendorTdsPercentage: vTdsPct,
+    commissionPercentage: vCommPct,
+
+    adminGrossMargin: Number(adminGrossMargin.toFixed(2)),
+    adminTaxableBase: Number(adminTaxableBase.toFixed(2)),
+    adminGstAmount: Number(adminGstAmount.toFixed(2)),
     
-    finalCustomerPrice: Number(totalCustomerPay.toFixed(2)),
-    taxableAmount: Number(totalTaxableAmount.toFixed(2)),
-    gstAmount: Number(totalGstAmount.toFixed(2)),
-    cgstAmount: Number(cgstAmount.toFixed(2)),
     sgstAmount: Number(sgstAmount.toFixed(2)),
-    platformCommissionAmount: Number(platformFeeInclusive.toFixed(2)),
-    vendorShare: Number(vendorShareInclusive.toFixed(2)),
-    
+    cgstAmount: Number(cgstAmount.toFixed(2)),
+    tdsAmount: Number(tdsAmount.toFixed(2)),
+    remainingBase: Number(remainingBase.toFixed(2)),
+    platformCommissionAmount: Number(platformCommAmt.toFixed(2)),
+    vendorShare: Number(netVendorPayout.toFixed(2)), // Net payout
+
     l1CommAmount: Number(l1CommAmount.toFixed(2)),
     l2CommAmount: Number(l2CommAmount.toFixed(2)),
     l3CommAmount: Number(l3CommAmount.toFixed(2)),
-    
     vendorFinalPayoutL1: Number(vendorFinalPayoutL1.toFixed(2)),
     vendorFinalPayoutL2: Number(vendorFinalPayoutL2.toFixed(2)),
     vendorFinalPayoutL3: Number(vendorFinalPayoutL3.toFixed(2)),
-    
-    adminNetProfitL1: Number(adminNetProfitL1.toFixed(2)),
-    adminNetProfitL2: Number(adminNetProfitL2.toFixed(2)),
-    adminNetProfitL3: Number(adminNetProfitL3.toFixed(2))
+
+    adminNetProfitL1: Number((adminTaxableBase + l1CommAmount).toFixed(2)),
+    adminNetProfitL2: Number((adminTaxableBase + l2CommAmount).toFixed(2)),
+    adminNetProfitL3: Number((adminTaxableBase + l3CommAmount).toFixed(2))
   };
 };
 
@@ -134,7 +146,12 @@ exports.createPricing = async (req, res) => {
       pricing.platformCommission,
       pricing.l1Commission,
       pricing.l2Commission,
-      pricing.l3Commission
+      pricing.l3Commission,
+      pricing.vendorPayoutBase,
+      pricing.vendorSgstPercentage,
+      pricing.vendorCgstPercentage,
+      pricing.vendorTdsPercentage,
+      pricing.commissionPercentage
     );
 
     res.status(201).json({ 
@@ -178,7 +195,12 @@ exports.getAllPricing = async (req, res) => {
         item.platformCommission,
         item.l1Commission,
         item.l2Commission,
-        item.l3Commission
+        item.l3Commission,
+        item.vendorPayoutBase,
+        item.vendorSgstPercentage,
+        item.vendorCgstPercentage,
+        item.vendorTdsPercentage,
+        item.commissionPercentage
       );
       return {
         ...item.toObject(),
@@ -246,7 +268,12 @@ exports.updatePricing = async (req, res) => {
       pricing.platformCommission,
       pricing.l1Commission,
       pricing.l2Commission,
-      pricing.l3Commission
+      pricing.l3Commission,
+      pricing.vendorPayoutBase,
+      pricing.vendorSgstPercentage,
+      pricing.vendorCgstPercentage,
+      pricing.vendorTdsPercentage,
+      pricing.commissionPercentage
     );
 
     res.status(200).json({ 

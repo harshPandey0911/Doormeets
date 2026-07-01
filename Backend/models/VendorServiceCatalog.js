@@ -17,6 +17,21 @@ const vendorServiceCatalogSchema = new mongoose.Schema({
     ref: 'Category',
     index: true
   },
+  serviceIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service',
+    index: true
+  }],
+  customerPrice: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  vendorPayoutBase: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   price: {
     type: Number,
     required: [true, 'Please provide a price'],

@@ -10,7 +10,8 @@ const {
   getAllVendorParts,
   createVendorPart,
   updateVendorPart,
-  deleteVendorPart
+  deleteVendorPart,
+  getAddonsForService
 } = require('../../controllers/adminControllers/vendorCatalogController');
 
 // Vendor Service Routes
@@ -24,5 +25,8 @@ router.get('/vendor-parts', authenticate, isAdmin, getAllVendorParts);
 router.post('/vendor-parts', authenticate, isAdmin, createVendorPart);
 router.put('/vendor-parts/:id', authenticate, isAdmin, updateVendorPart);
 router.delete('/vendor-parts/:id', authenticate, isAdmin, deleteVendorPart);
+
+// Get addons for a specific service (Accessible by Admin and Vendor)
+router.get('/vendor-catalog/addons-for-service/:serviceId', authenticate, getAddonsForService);
 
 module.exports = router;

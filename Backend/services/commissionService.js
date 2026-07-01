@@ -22,16 +22,97 @@ async function processBookingCompletion(bookingId) {
     // 2. Determine base amount to calculate commission on (finalAmount / Grand Total)
     const amount = Number(booking.finalAmount || booking.basePrice || 0);
 
-    // 3. Compute Splits (Take Instant Booking Surcharge into account)
+    // 3. Compute Splits (Use custom Price Matrix if configured, otherwise fallback to percentage split)
     let adminCommission = 0;
     let vendorShare = 0;
 
-    if (booking.bookingType === 'instant' && settings) {
+    const PricingConfig = require('../models/PricingConfig');
+    let pricing = null;
+
+    if (booking.serviceId) {
+      const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
+      if (pricings.length > 0) {
+        if (booking.cityId) {
+          pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+        }
+        if (!pricing && booking.brandId) {
+          pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+        }
+        if (!pricing) {
+          pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+        }
+      }
+    }
+
+    if (pricing && pricing.vendorPayoutBase > 0) {
+      let totalVendorPayoutBase = pricing.vendorPayoutBase;
+
+      // Check if there is a generated VendorBill for this booking to aggregate addon prices
+      try {
+        const VendorBill = require('../models/VendorBill');
+        const VendorServiceCatalog = require('../models/VendorServiceCatalog');
+        const VendorPartsCatalog = require('../models/VendorPartsCatalog');
+
+        const bill = await VendorBill.findOne({ bookingId: booking._id });
+        if (bill) {
+          // Add vendorPayoutBase for selected services
+          if (bill.services && bill.services.length > 0) {
+            const svcCatalogIds = bill.services.map(s => s.catalogId).filter(Boolean);
+            const svcCatalogItems = await VendorServiceCatalog.find({ _id: { $in: svcCatalogIds } });
+            const svcCatalogMap = {};
+            svcCatalogItems.forEach(item => { svcCatalogMap[item._id.toString()] = item; });
+
+            bill.services.forEach(s => {
+              if (s.catalogId) {
+                const catalogItem = svcCatalogMap[s.catalogId.toString()];
+                if (catalogItem && catalogItem.vendorPayoutBase > 0) {
+                  totalVendorPayoutBase += catalogItem.vendorPayoutBase * (s.quantity || 1);
+                }
+              }
+            });
+          }
+
+          // Add vendorPayoutBase for selected parts
+          if (bill.parts && bill.parts.length > 0) {
+            const partCatalogIds = bill.parts.map(p => p.catalogId).filter(Boolean);
+            const partCatalogItems = await VendorPartsCatalog.find({ _id: { $in: partCatalogIds } });
+            const partCatalogMap = {};
+            partCatalogItems.forEach(item => { partCatalogMap[item._id.toString()] = item; });
+
+            bill.parts.forEach(p => {
+              if (p.catalogId) {
+                const catalogItem = partCatalogMap[p.catalogId.toString()];
+                if (catalogItem && catalogItem.vendorPayoutBase > 0) {
+                  totalVendorPayoutBase += catalogItem.vendorPayoutBase * (p.quantity || 1);
+                }
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[CommissionService] Error aggregating addon prices:', err);
+      }
+
+      const vPayoutBase = totalVendorPayoutBase;
+      const vSgstPct = pricing.vendorSgstPercentage ?? 2.5;
+      const vCgstPct = pricing.vendorCgstPercentage ?? 2.5;
+      const vTdsPct = pricing.vendorTdsPercentage ?? 0;
+      const vCommPct = pricing.commissionPercentage ?? 10;
+
+      const sgstAmount = vPayoutBase * (vSgstPct / 100);
+      const cgstAmount = vPayoutBase * (vCgstPct / 100);
+      const tdsAmount = vPayoutBase * (vTdsPct / 100);
+      const remainingBase = Math.max(0, vPayoutBase - sgstAmount - cgstAmount - tdsAmount);
+      const platformCommAmt = remainingBase * (vCommPct / 100);
+      const netVendorPayout = Math.max(0, remainingBase - platformCommAmt);
+
+      vendorShare = parseFloat(netVendorPayout.toFixed(2));
+      adminCommission = parseFloat((amount - netVendorPayout).toFixed(2));
+    } else if (booking.bookingType === 'instant' && settings) {
       const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
       const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
       const adminMarkupShare = Math.max(0, markupFee - vendorMarkupShare);
 
-      // Surcharge is subtracted first, regular commission is computed on base amount, then shares are added back
       const baseForCommission = Math.max(0, amount - markupFee);
       const baseAdminCommission = parseFloat(((baseForCommission * commissionPct) / 100).toFixed(2));
       const baseVendorShare = parseFloat((baseForCommission - baseAdminCommission).toFixed(2));

@@ -23,6 +23,7 @@ import VisitVerificationModal from '../../components/common/VisitVerificationMod
 import WorkCompletionModal from '../../components/common/WorkCompletionModal';
 // import BillingModal from '../../components/bookings/BillingModal'; // Consumed by page now
 import vendorWalletService from '../../../../services/vendorWalletService';
+import { vendorCatalogService } from '../../../../services/catalogService';
 import { toast } from 'react-hot-toast';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 import { useLocationTracking } from '../../../../hooks/useLocationTracking';
@@ -48,19 +49,33 @@ export default function BookingDetails() {
   const [existingBill, setExistingBill] = useState(null);
   const [addonLoading, setAddonLoading] = useState(false);
 
-  // Load catalog and existing bill when modal opens
   useEffect(() => {
     if (isAddonModalOpen) {
       const loadAddonData = async () => {
         try {
           setAddonLoading(true);
+          const serviceId = booking?.serviceId?._id || booking?.serviceId;
           const [catalogRes, billRes] = await Promise.all([
-            vendorBillService.getServiceCatalog(),
+            serviceId ? vendorCatalogService.getAddonsForService(serviceId) : vendorBillService.getServiceCatalog(),
             vendorBillService.getBill(id).catch(() => ({ success: false }))
           ]);
 
           if (catalogRes && catalogRes.success) {
-            setAddonCatalog(catalogRes.services || []);
+            if (catalogRes.services || catalogRes.parts) {
+              const services = (catalogRes.services || []).map(s => ({
+                ...s,
+                price: s.customerPrice !== undefined ? s.customerPrice : s.price,
+                isPart: false
+              }));
+              const parts = (catalogRes.parts || []).map(p => ({
+                ...p,
+                price: p.customerPrice !== undefined ? p.customerPrice : p.price,
+                isPart: true
+              }));
+              setAddonCatalog([...services, ...parts]);
+            } else {
+              setAddonCatalog(catalogRes.services || []);
+            }
           }
 
           if (billRes && billRes.success && billRes.bill) {
@@ -72,9 +87,19 @@ export default function BookingDetails() {
                 name: s.name,
                 price: s.price,
                 quantity: s.quantity || 1,
-                note: s.note || ''
+                note: s.note || '',
+                isPart: false
               }));
-            setSelectedAddons(savedAddons);
+            const savedParts = (billRes.bill.parts || [])
+              .map(p => ({
+                catalogId: p.catalogId?._id || p.catalogId,
+                name: p.name,
+                price: p.price,
+                quantity: p.quantity || 1,
+                note: p.note || '',
+                isPart: true
+              }));
+            setSelectedAddons([...savedAddons, ...savedParts]);
           } else {
             setExistingBill(null);
             setSelectedAddons([]);
@@ -88,14 +113,17 @@ export default function BookingDetails() {
       };
       loadAddonData();
     }
-  }, [isAddonModalOpen, id]);
+  }, [isAddonModalOpen, id, booking]);
 
   const handleSaveAddons = async () => {
     try {
       setAddonLoading(true);
+      const services = selectedAddons.filter(a => !a.isPart);
+      const parts = selectedAddons.filter(a => a.isPart);
+
       const res = await vendorBillService.createOrUpdateBill(id, {
-        services: selectedAddons,
-        parts: existingBill?.parts || [],
+        services,
+        parts: [...(existingBill?.parts || []).filter(p => !p.catalogId), ...parts],
         customItems: existingBill?.customItems || [],
         transportCharges: existingBill?.transportCharges || 0,
         applyPartsGST: existingBill?.applyPartsGST !== undefined ? existingBill?.applyPartsGST : true
@@ -127,7 +155,8 @@ export default function BookingDetails() {
         name: item.name,
         price: item.price,
         quantity: 1,
-        note: ''
+        note: '',
+        isPart: !!item.isPart
       }];
     });
   };
@@ -1989,8 +2018,13 @@ export default function BookingDetails() {
                       >
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
-                            <h4 className="font-bold text-gray-900 text-sm leading-snug">{item.name}</h4>
-                            <p className="text-xs font-black text-blue-600 mt-1">₹{item.price}</p>
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="font-bold text-gray-900 text-sm leading-snug">{item.name}</h4>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${item.isPart ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                                {item.isPart ? 'Material / Part' : 'Addon Service'}
+                              </span>
+                            </div>
+                            <p className="text-xs font-black text-blue-600">₹{item.price}</p>
                           </div>
 
                           <div className="flex items-center gap-2">

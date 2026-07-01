@@ -102,6 +102,31 @@ const pricingConfigSchema = new mongoose.Schema({
     type: String,
     default: null,
     index: true
+  },
+  vendorPayoutBase: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  vendorSgstPercentage: {
+    type: Number,
+    default: 2.5,
+    min: 0
+  },
+  vendorCgstPercentage: {
+    type: Number,
+    default: 2.5,
+    min: 0
+  },
+  vendorTdsPercentage: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  commissionPercentage: {
+    type: Number,
+    default: 10,
+    min: 0
   }
 }, {
   timestamps: true
@@ -134,8 +159,21 @@ pricingConfigSchema.post('save', async function(doc) {
       finalCustomerPrice = price + gstAmount;
     }
 
-    const platformCommAmt = taxableAmount * (doc.platformCommission / 100);
-    const vendorProfit = taxableAmount - platformCommAmt;
+    // New Price Matrix model calculations for vendorProfit sync
+    const vPayoutBase = doc.vendorPayoutBase || 0;
+    const vSgstPct = doc.vendorSgstPercentage || 2.5;
+    const vCgstPct = doc.vendorCgstPercentage || 2.5;
+    const vTdsPct = doc.vendorTdsPercentage || 0;
+    const vCommPct = doc.commissionPercentage || 10;
+
+    const sgstAmount = vPayoutBase * (vSgstPct / 100);
+    const cgstAmount = vPayoutBase * (vCgstPct / 100);
+    const tdsAmount = vPayoutBase * (vTdsPct / 100);
+    const remainingBase = Math.max(0, vPayoutBase - sgstAmount - cgstAmount - tdsAmount);
+    const platformCommAmt = remainingBase * (vCommPct / 100);
+    const netVendorPayout = Math.max(0, remainingBase - platformCommAmt);
+
+    const vendorProfit = vPayoutBase > 0 ? netVendorPayout : (taxableAmount - (taxableAmount * (doc.platformCommission / 100)));
 
     await ServiceBrandPricing.findOneAndUpdate(
       {

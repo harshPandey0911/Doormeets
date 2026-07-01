@@ -256,6 +256,10 @@ export const vendorCatalogService = {
   deletePart: async (id) => {
     const response = await api.delete(`/admin/vendor-parts/${id}`);
     return response.data;
+  },
+  getAddonsForService: async (serviceId) => {
+    const response = await api.get(`/admin/vendor-catalog/addons-for-service/${serviceId}`);
+    return response.data;
   }
 };
 

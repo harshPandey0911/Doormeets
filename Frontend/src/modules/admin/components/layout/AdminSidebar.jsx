@@ -47,6 +47,7 @@ const iconMap = {
   "Home Management": FiGrid,
   "Vendor Services": FiGrid,
   "Vendor Parts": FiPackage,
+  "Add-on Library": FiSliders,
   Payments: FiDollarSign,
   Reports: FiFileText,
   Notifications: FiBell,
@@ -114,6 +115,10 @@ const getChildRoute = (parentRoute, childName) => {
       "Manage Professions": "/admin/user-categories/professions",
       "Category Templates": "/admin/user-categories/templates",
       "Featured Sections": "/admin/user-categories/featured-sections"
+    },
+    "/admin/addon-library": {
+      "Extra Services": "/admin/user-categories/vendor-services",
+      "Materials & Parts": "/admin/user-categories/vendor-parts"
     },
     "/admin/home-management": {
       "Banners & Categories": "/admin/user-categories/home",
@@ -202,6 +207,7 @@ const permissionMap = {
   "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",
+  "Add-on Library": "view_vendor_services",
   "Stock Management": "manage_stock",
   "Scrap Items": "view_scrap_items",
   "Notifications": "manage_notifications",

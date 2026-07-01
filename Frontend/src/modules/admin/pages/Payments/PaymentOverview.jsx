@@ -10,9 +10,11 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiClock,
-  FiXCircle
+  FiXCircle,
+  FiPercent
 } from 'react-icons/fi';
 import { adminTransactionService } from '../../../../services/adminTransactionService';
+import api from '../../../../services/api';
 import toast from 'react-hot-toast';
 import { exportToCSV } from '../../../../utils/csvExport';
 
@@ -40,7 +42,25 @@ const PaymentOverview = () => {
 
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  // Debounce search
+  // ── NEW: Tab and Breakdown States ──
+  const [activeTab, setActiveTab] = useState('transactions');
+  const [vendors, setVendors] = useState([]);
+  const [breakdownData, setBreakdownData] = useState([]);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const [breakdownPagination, setBreakdownPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  });
+  const [breakdownFilters, setBreakdownFilters] = useState({
+    search: '',
+    taxType: 'all',
+    vendorId: 'all'
+  });
+  const [debouncedBreakdownSearch, setDebouncedBreakdownSearch] = useState('');
+
+  // Debounce search for transactions
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(filters.search);
@@ -48,9 +68,66 @@ const PaymentOverview = () => {
     return () => clearTimeout(timer);
   }, [filters.search]);
 
+  // Debounce search for breakdown
   useEffect(() => {
-    fetchData();
-  }, [pagination.page, debouncedSearch, filters.status, filters.type]);
+    const timer = setTimeout(() => {
+      setDebouncedBreakdownSearch(breakdownFilters.search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [breakdownFilters.search]);
+
+  // Fetch vendors list for filters on mount
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const res = await adminTransactionService.getVendorBalances();
+        if (res.success) {
+          setVendors(res.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching vendors for filter:', err);
+      }
+    };
+    fetchVendors();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'transactions') {
+      fetchData();
+    }
+  }, [pagination.page, debouncedSearch, filters.status, filters.type, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'commissions' || activeTab === 'taxes') {
+      fetchBreakdownData();
+    }
+  }, [breakdownPagination.page, debouncedBreakdownSearch, breakdownFilters.taxType, breakdownFilters.vendorId, activeTab]);
+
+  const fetchBreakdownData = async () => {
+    try {
+      setBreakdownLoading(true);
+      const res = await adminTransactionService.getEarningsBreakdown({
+        page: breakdownPagination.page,
+        limit: breakdownPagination.limit,
+        search: debouncedBreakdownSearch,
+        taxType: breakdownFilters.taxType,
+        vendorId: breakdownFilters.vendorId
+      });
+      if (res.success) {
+        setBreakdownData(res.data);
+        setBreakdownPagination(prev => ({
+          ...prev,
+          total: res.pagination.total,
+          pages: res.pagination.pages
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching breakdown data:', err);
+      toast.error('Failed to load earnings breakdown');
+    } finally {
+      setBreakdownLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -203,163 +280,470 @@ const PaymentOverview = () => {
         </div>
       </div>
 
-      {/* Filters & Actions */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
-        <div className="relative w-full sm:w-64">
-          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            value={filters.search}
-            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-          />
-        </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500"
-          >
-            <option value="all">All Status</option>
-            <option value="completed">Completed</option>
-            <option value="pending">Pending</option>
-            <option value="failed">Failed</option>
-            <option value="refunded">Refunded</option>
-          </select>
-
-          <select
-            value={filters.type}
-            onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
-            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500"
-          >
-            <option value="all">All Types</option>
-            <option value="credit">Credit (Platform)</option>
-            <option value="debit">Debit (Wallet)</option>
-            <option value="payment">Online Payment</option>
-            <option value="cash_collected">Cash Collected</option>
-            <option value="refund">Refund</option>
-          </select>
-
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
-          >
-            <FiDownload className="w-4 h-4" />
-            Export CSV
-          </button>
-        </div>
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-gray-200 bg-white px-2 rounded-xl shadow-sm border border-gray-100">
+        <button
+          onClick={() => { setActiveTab('transactions'); }}
+          className={`py-3 px-4 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'transactions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          💳 Transactions Overview
+        </button>
+        <button
+          onClick={() => { setActiveTab('commissions'); }}
+          className={`py-3 px-4 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'commissions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          💰 Commission Earnings
+        </button>
+        <button
+          onClick={() => { setActiveTab('taxes'); }}
+          className={`py-3 px-4 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'taxes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          📈 Tax Earnings
+        </button>
       </div>
 
-      {/* Transactions Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaction ID</th>
-                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User / Entity</th>
-                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ref ID</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="py-8 text-center text-gray-500">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                      <p className="text-sm">Loading transactions...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : transactions.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="py-8 text-center text-gray-500">
-                    <p className="text-sm">No transactions found</p>
-                  </td>
-                </tr>
-              ) : (
-                transactions.map((tx) => (
-                  <tr key={tx._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4">
-                      <span className="text-xs font-mono text-gray-500">#{tx._id.slice(-6).toUpperCase()}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-800">
-                            {tx.userId?.name || tx.vendorId?.businessName || tx.vendorId?.name || tx.workerId?.name || 'Unknown'}
-                          </span>
-                          {tx.userId && <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-medium">User</span>}
-                          {tx.vendorId && <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-medium">Vendor</span>}
-                          {tx.workerId && <span className="text-[10px] bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium">Worker</span>}
-                        </div>
-                        <span className="text-xs text-gray-400">
-                          {tx.userId?.email || tx.vendorId?.email || tx.workerId?.email || ''}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getTypeColor(tx.type)}`}>
-                        {tx.type}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`text-sm font-semibold ${['credit', 'payment', 'cash_collected'].includes(tx.type) ? 'text-green-600' : 'text-gray-800'}`}>
-                        {['credit', 'payment', 'cash_collected'].includes(tx.type) ? '+' : '-'}{formatCurrency(tx.amount)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(tx.status)}`}>
-                        {getStatusIcon(tx.status)}
-                        <span className="capitalize">{tx.status}</span>
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-sm text-gray-500">{formatDate(tx.createdAt)}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-xs text-gray-400 font-mono" title={tx.razorpayOrderId || tx.referenceId}>
-                        {(tx.razorpayOrderId || tx.referenceId || '-').slice(0, 10)}...
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {!loading && transactions.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
-            <div className="text-xs text-gray-500">
-              Showing <span className="font-medium">{((pagination.page - 1) * pagination.limit) + 1}</span> to <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> results
+      {activeTab === 'transactions' && (
+        <>
+          {/* Filters & Actions */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full sm:w-64">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search transactions..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500"
               >
-                Previous
-              </button>
-              <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.pages}
-                className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                <option value="all">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+                <option value="refunded">Refunded</option>
+              </select>
+
+              <select
+                value={filters.type}
+                onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500"
               >
-                Next
+                <option value="all">All Types</option>
+                <option value="credit">Credit (Platform)</option>
+                <option value="debit">Debit (Wallet)</option>
+                <option value="payment">Online Payment</option>
+                <option value="cash_collected">Cash Collected</option>
+                <option value="refund">Refund</option>
+              </select>
+
+              <button
+                onClick={handleExport}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
+              >
+                <FiDownload className="w-4 h-4" />
+                Export CSV
               </button>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Transactions Table */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaction ID</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User / Entity</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ref ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan="7" className="py-8 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          <p className="text-sm">Loading transactions...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : transactions.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-8 text-center text-gray-500">
+                        <p className="text-sm">No transactions found</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    transactions.map((tx) => (
+                      <tr key={tx._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4">
+                          <span className="text-xs font-mono text-gray-500">#{tx._id.slice(-6).toUpperCase()}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-800">
+                                {tx.userId?.name || tx.vendorId?.businessName || tx.vendorId?.name || tx.workerId?.name || 'Unknown'}
+                              </span>
+                              {tx.userId && <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-medium">User</span>}
+                              {tx.vendorId && <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-medium">Vendor</span>}
+                              {tx.workerId && <span className="text-[10px] bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-medium">Worker</span>}
+                            </div>
+                            <span className="text-xs text-gray-400">
+                              {tx.userId?.email || tx.vendorId?.email || tx.workerId?.email || ''}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getTypeColor(tx.type)}`}>
+                            {tx.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-sm font-semibold ${['credit', 'payment', 'cash_collected'].includes(tx.type) ? 'text-green-600' : 'text-gray-800'}`}>
+                            {['credit', 'payment', 'cash_collected'].includes(tx.type) ? '+' : '-'}{formatCurrency(tx.amount)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(tx.status)}`}>
+                            {getStatusIcon(tx.status)}
+                            <span className="capitalize">{tx.status}</span>
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm text-gray-500">{formatDate(tx.createdAt)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-xs text-gray-400 font-mono" title={tx.razorpayOrderId || tx.referenceId}>
+                            {(tx.razorpayOrderId || tx.referenceId || '-').slice(0, 10)}...
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {!loading && transactions.length > 0 && (
+              <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+                <div className="text-xs text-gray-500">
+                  Showing <span className="font-medium">{((pagination.page - 1) * pagination.limit) + 1}</span> to <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> results
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={pagination.page === 1}
+                    className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={pagination.page === pagination.pages}
+                    className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'commissions' && (
+        <>
+          {/* Commission Filters & Actions */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full sm:w-64">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by Booking # or User..."
+                value={breakdownFilters.search}
+                onChange={(e) => setBreakdownFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select
+                value={breakdownFilters.vendorId}
+                onChange={(e) => setBreakdownFilters(prev => ({ ...prev, vendorId: e.target.value }))}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500 w-full sm:w-56"
+              >
+                <option value="all">All Vendors</option>
+                {vendors.map(v => (
+                  <option key={v.vendorId?._id || v.vendorId} value={v.vendorId?._id || v.vendorId}>
+                    {v.vendorId?.businessName || v.vendorId?.name || 'Unknown Vendor'}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                onClick={() => {
+                  exportToCSV(breakdownData, 'commission_earnings', [
+                    { key: 'bookingNumber', label: 'Booking Number' },
+                    { key: 'createdAt', label: 'Completed Date', type: 'datetime' },
+                    { key: 'vendor.businessName', label: 'Vendor' },
+                    { key: 'vendorLevel', label: 'Vendor Level' },
+                    { key: 'customerPay', label: 'Customer Pay', type: 'currency' },
+                    { key: 'vendorPayoutBase', label: 'Vendor Base', type: 'currency' },
+                    { key: 'platformCommissionAmount', label: 'Platform Commission', type: 'currency' },
+                    { key: 'levelCommissionAmount', label: 'Level Commission', type: 'currency' },
+                    { key: 'totalCommissionEarned', label: 'Total Earnings', type: 'currency' }
+                  ]);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
+              >
+                <FiDownload className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Commission Table */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Booking Number</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor / Level</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Pay</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor Base</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Platform Comm</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Level Comm</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Commission</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {breakdownLoading ? (
+                    <tr>
+                      <td colSpan="8" className="py-8 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          <p className="text-sm">Loading commission details...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : breakdownData.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="py-8 text-center text-gray-500">
+                        <p className="text-sm">No commission records found</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    breakdownData.map((row) => (
+                      <tr key={row._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4 font-bold text-gray-800">#{row.bookingNumber}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-gray-800">{row.vendor?.businessName || row.vendor?.name || '—'}</span>
+                            <span className="text-xs text-indigo-600 font-bold uppercase">{row.vendorLevel} Vendor</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-medium text-gray-700">{formatCurrency(row.customerPay)}</td>
+                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.vendorPayoutBase)}</td>
+                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.platformCommissionAmount)}</td>
+                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.levelCommissionAmount)}</td>
+                        <td className="py-3 px-4 font-bold text-emerald-600">{formatCurrency(row.totalCommissionEarned)}</td>
+                        <td className="py-3 px-4 text-gray-500 text-sm">{formatDate(row.createdAt)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Commission Pagination */}
+            {!breakdownLoading && breakdownData.length > 0 && (
+              <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+                <div className="text-xs text-gray-500">
+                  Showing <span className="font-medium">{((breakdownPagination.page - 1) * breakdownPagination.limit) + 1}</span> to <span className="font-medium">{Math.min(breakdownPagination.page * breakdownPagination.limit, breakdownPagination.total)}</span> of <span className="font-medium">{breakdownPagination.total}</span> results
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setBreakdownPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                    disabled={breakdownPagination.page === 1}
+                    className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setBreakdownPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                    disabled={breakdownPagination.page === breakdownPagination.pages}
+                    className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'taxes' && (
+        <>
+          {/* Tax Filters & Actions */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full sm:w-64">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by Booking # or User..."
+                value={breakdownFilters.search}
+                onChange={(e) => setBreakdownFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select
+                value={breakdownFilters.taxType}
+                onChange={(e) => setBreakdownFilters(prev => ({ ...prev, taxType: e.target.value }))}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Taxes</option>
+                <option value="gst">Platform GST (18%)</option>
+                <option value="cgst">Vendor CGST (2.5%)</option>
+                <option value="sgst">Vendor SGST (2.5%)</option>
+              </select>
+
+              <select
+                value={breakdownFilters.vendorId}
+                onChange={(e) => setBreakdownFilters(prev => ({ ...prev, vendorId: e.target.value }))}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500 w-full sm:w-56"
+              >
+                <option value="all">All Vendors</option>
+                {vendors.map(v => (
+                  <option key={v.vendorId?._id || v.vendorId} value={v.vendorId?._id || v.vendorId}>
+                    {v.vendorId?.businessName || v.vendorId?.name || 'Unknown Vendor'}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                onClick={() => {
+                  exportToCSV(breakdownData, 'tax_earnings', [
+                    { key: 'bookingNumber', label: 'Booking Number' },
+                    { key: 'createdAt', label: 'Date', type: 'datetime' },
+                    { key: 'customerPay', label: 'Customer Pay', type: 'currency' },
+                    { key: 'adminGrossShare', label: 'Admin Gross Share', type: 'currency' },
+                    { key: 'platformGstAmount', label: 'Platform GST (18%)', type: 'currency' },
+                    { key: 'vendorPayoutBase', label: 'Vendor Base', type: 'currency' },
+                    { key: 'vendorCgstAmount', label: 'Vendor CGST (2.5%)', type: 'currency' },
+                    { key: 'vendorSgstAmount', label: 'Vendor SGST (2.5%)', type: 'currency' },
+                    { key: 'totalGstCalculated', label: 'Total Tax', type: 'currency' }
+                  ]);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
+              >
+                <FiDownload className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Tax Table */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Booking Number</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Pay</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Gross</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Platform GST (18%)</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor Base</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor CGST (2.5%)</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor SGST (2.5%)</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Tax</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {breakdownLoading ? (
+                    <tr>
+                      <td colSpan="9" className="py-8 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          <p className="text-sm">Loading tax details...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : breakdownData.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="py-8 text-center text-gray-500">
+                        <p className="text-sm">No tax records found</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    breakdownData.map((row) => (
+                      <tr key={row._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4 font-bold text-gray-800">#{row.bookingNumber}</td>
+                        <td className="py-3 px-4 font-medium text-gray-700">{formatCurrency(row.customerPay)}</td>
+                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.adminGrossShare)}</td>
+                        <td className="py-3 px-4 font-semibold text-indigo-600">{formatCurrency(row.platformGstAmount)}</td>
+                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.vendorPayoutBase)}</td>
+                        <td className="py-3 px-4 text-gray-500">{formatCurrency(row.vendorCgstAmount)}</td>
+                        <td className="py-3 px-4 text-gray-500">{formatCurrency(row.vendorSgstAmount)}</td>
+                        <td className="py-3 px-4 font-extrabold text-blue-700">{formatCurrency(row.totalGstCalculated)}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-gray-700">{row.vendor?.businessName || row.vendor?.name || '—'}</span>
+                            <span className="text-[10px] text-gray-400 font-mono">{formatDate(row.createdAt)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Tax Pagination */}
+            {!breakdownLoading && breakdownData.length > 0 && (
+              <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+                <div className="text-xs text-gray-500">
+                  Showing <span className="font-medium">{((breakdownPagination.page - 1) * breakdownPagination.limit) + 1}</span> to <span className="font-medium">{Math.min(breakdownPagination.page * breakdownPagination.limit, breakdownPagination.total)}</span> of <span className="font-medium">{breakdownPagination.total}</span> results
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setBreakdownPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                    disabled={breakdownPagination.page === 1}
+                    className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setBreakdownPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                    disabled={breakdownPagination.page === breakdownPagination.pages}
+                    className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </motion.div>
   );
 };
