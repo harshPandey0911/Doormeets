@@ -51,7 +51,22 @@ const authenticate = async (req, res, next) => {
         break;
       case USER_ROLES.VENDOR:
       case 'vendor':
-        user = await Vendor.findById(decoded.userId).select('-password').lean();
+        let userDoc = await Vendor.findById(decoded.userId).select('-password');
+        if (userDoc) {
+          const now = new Date();
+          const pv = userDoc.policeVerification || {};
+          const isPending = pv.status === 'pending' || !pv.documentUrl;
+          if (userDoc.approvalStatus !== 'approved' && isPending && pv.dueDate && new Date(pv.dueDate) < now) {
+            userDoc.approvalStatus = 'rejected';
+            userDoc.policeVerification.status = 'rejected';
+            userDoc.policeVerification.documentUrl = null;
+            userDoc.policeVerification.rejectionReason = 'Police verification deadline expired. Please re-fill documents.';
+            userDoc.aadhar = { number: null, document: null, backDocument: null };
+            userDoc.pan = { number: null, document: null };
+            await userDoc.save();
+          }
+        }
+        user = userDoc ? userDoc.toObject() : null;
         if (user && user.approvalStatus !== 'approved') {
           // Allow access to verification, training, and profile endpoints during pending state
           const allowedPaths = ['/verification', '/training', '/profile', '/subscription', '/auth'];

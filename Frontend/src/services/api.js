@@ -178,7 +178,8 @@ api.interceptors.response.use(
         }
       } else if (code === 'ACCOUNT_PENDING') {
         console.warn('Account is pending. Redirecting to verification...');
-        if (!window.location.pathname.includes('/vendor/verification')) {
+        const path = window.location.pathname;
+        if (!path.includes('/vendor/verification') && !path.includes('/vendor/login') && !path.includes('/vendor/register')) {
           window.location.href = '/vendor/verification';
         }
       } else if (code === 'ACCOUNT_FROZEN') {

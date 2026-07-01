@@ -13,7 +13,9 @@ const CashLimitModal = () => {
     try {
       // Check if user is logged in before making the call
       const token = sessionStorage.getItem('vendorAccessToken') || localStorage.getItem('vendorAccessToken');
-      if (!token) return;
+      const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+      const isApproved = vendorData.approvalStatus?.toLowerCase() === 'approved';
+      if (!token || !isApproved) return;
 
       const wallet = await getWalletBalance();
       if (wallet) {

@@ -18,6 +18,8 @@ import VendorAnalytics from './VendorAnalytics';
 import IncentivesPage from './IncentivesPage';
 import VendorsZone from '../VendorsZone';
 import ManualAssignment from './ManualAssignment';
+import PoliceVerification from './PoliceVerification';
+import { FiShield } from 'react-icons/fi';
 
 const Vendors = () => {
   const location = useLocation();
@@ -28,6 +30,7 @@ const Vendors = () => {
     { name: 'Manual Assignment', path: '/admin/vendors/manual', icon: FiAlertTriangle },
     { name: 'Vendor Bookings', path: '/admin/vendors/bookings', icon: FiBriefcase },
     { name: 'Vendor Analytics', path: '/admin/vendors/analytics', icon: FiActivity },
+    { name: 'Police Verification', path: '/admin/vendors/police-verification', icon: FiShield },
   ];
 
   const getPageTitle = () => {
@@ -74,6 +77,7 @@ const Vendors = () => {
           <Route path="bookings" element={<VendorBookings />} />
           <Route path="analytics" element={<VendorAnalytics />} />
           <Route path="incentives" element={<IncentivesPage />} />
+          <Route path="police-verification" element={<PoliceVerification />} />
         </Routes>
       </motion.div>
     </div>

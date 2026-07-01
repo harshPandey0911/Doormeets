@@ -176,11 +176,10 @@ const TrainingPage = () => {
               {/* Video Header */}
               <div className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    video.isWatched
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${video.isWatched
                       ? 'bg-green-500/30 border border-green-400/50'
                       : 'bg-purple-500/30 border border-purple-400/50'
-                  }`}>
+                    }`}>
                     {video.isWatched
                       ? <FiCheckCircle className="text-green-400" size={20} />
                       : <span className="text-purple-200 font-bold text-sm">{idx + 1}</span>
@@ -219,11 +218,10 @@ const TrainingPage = () => {
                 {/* Watch Button */}
                 <button
                   onClick={() => setActiveVideo(activeVideo === video._id ? null : video._id)}
-                  className={`mt-3 w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-300 ${
-                    video.isWatched
+                  className={`mt-3 w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-300 ${video.isWatched
                       ? 'bg-green-500/20 border border-green-400/30 text-green-300 hover:bg-green-500/30'
                       : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-purple-900/50'
-                  }`}
+                    }`}
                 >
                   {video.isWatched ? (
                     <><FiCheckCircle size={16} /> Watched — Rewatch</>

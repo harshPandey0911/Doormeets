@@ -82,9 +82,8 @@ const StatsTab = ({ stats }) => {
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2.5">
                 <div
-                  className={`h-2.5 rounded-full transition-all duration-700 ${
-                    level === 'L1' ? 'bg-yellow-400' : level === 'L2' ? 'bg-blue-500' : 'bg-red-500'
-                  }`}
+                  className={`h-2.5 rounded-full transition-all duration-700 ${level === 'L1' ? 'bg-yellow-400' : level === 'L2' ? 'bg-blue-500' : 'bg-red-500'
+                    }`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -511,7 +510,7 @@ const AttemptsTab = () => {
                     )}
                   </div>
                   <p className="text-gray-500 text-sm font-medium">{vendor.email} · {vendor.phone}</p>
-                  
+
                   <div className="flex items-center gap-4 mt-4 p-3 bg-gray-50 rounded-xl text-sm text-gray-600 font-medium border border-gray-100">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-900 shadow-sm">
@@ -524,7 +523,7 @@ const AttemptsTab = () => {
                     <div className="w-px h-6 bg-gray-200"></div>
                     <div>{new Date(attempt.completedAt).toLocaleDateString()}</div>
                   </div>
-                  
+
                   {/* Score bar */}
                   <div className="mt-4 w-full bg-gray-100 rounded-full h-2">
                     <div
@@ -606,7 +605,7 @@ const AdminTrainingPage = () => {
   useEffect(() => {
     getTrainingStats()
       .then(res => setStats(res.data))
-      .catch(() => {});
+      .catch(() => { });
 
     const fetchMcqSettings = async () => {
       try {
@@ -626,7 +625,7 @@ const AdminTrainingPage = () => {
   const saveMcqSettings = async () => {
     setSavingSettings(true);
     try {
-      await updateSettings({ 
+      await updateSettings({
         mcqTimeLimitMinutes: timeLimit,
         mcqMinScoreL1: minL1Score,
         mcqMinScoreL2: minL2Score
@@ -657,11 +656,10 @@ const AdminTrainingPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-4 text-sm font-bold whitespace-nowrap border-b-[3px] transition-all ${
-                  activeTab === tab.id
+                className={`flex items-center gap-2 px-4 py-4 text-sm font-bold whitespace-nowrap border-b-[3px] transition-all ${activeTab === tab.id
                     ? 'text-[#347989] border-[#347989]'
                     : 'text-gray-500 border-transparent hover:text-gray-800 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <tab.icon size={16} />
                 {tab.label}
@@ -678,7 +676,7 @@ const AdminTrainingPage = () => {
           <h3 className="text-gray-900 font-extrabold text-base mb-4 flex items-center gap-2">
             ⚙️ MCQ Test & Level Configuration
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
             {/* Time Limit */}
             <div>

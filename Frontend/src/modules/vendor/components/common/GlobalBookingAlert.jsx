@@ -22,12 +22,13 @@ export default function GlobalBookingAlert() {
 
         // Every few heartbeats or if forced, sync with Server API for missed sockets
         const token = localStorage.getItem('vendorAccessToken') || sessionStorage.getItem('vendorAccessToken');
-        if (token && (forceServerSync || (Math.random() > 0.8))) {
+        const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+        const isApproved = vendorData.approvalStatus?.toLowerCase() === 'approved';
+        if (token && isApproved && (forceServerSync || (Math.random() > 0.8))) {
           try {
             const { getBookings } = await import('../../services/bookingService');
             const response = await getBookings();
             if (response.success && response.data) {
-              const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
               const vId = String(vendorData._id || vendorData.id);
 
               const serverJobs = response.data
@@ -58,20 +59,16 @@ export default function GlobalBookingAlert() {
         }
 
         const validJobs = pendingJobs.filter(job => {
-          if (!job.expiresAt) return true;
-          return new Date(job.expiresAt).getTime() > now;
+          return (now - (job.assignedAt || now)) < (maxSearchTime * 60 * 1000);
         });
 
-        if (validJobs.length > 0) {
-          setActiveAlertBookings(prev => {
-            const currentIds = new Set(prev.map(b => String(b.id || b._id)));
-            const newJobsToAdd = validJobs.filter(v => !currentIds.has(String(v.id || v._id)));
-            if (newJobsToAdd.length === 0) return prev;
-            return [...newJobsToAdd, ...prev];
-          });
+        setActiveAlertBookings(validJobs);
+        if (validJobs.length !== pendingJobs.length) {
+          localStorage.setItem('vendorPendingJobs', JSON.stringify(validJobs));
         }
+
       } catch (err) {
-        console.error('[GlobalAlert] Sync error:', err);
+        console.error('syncAlerts error:', err);
       }
     };
 
@@ -86,7 +83,9 @@ export default function GlobalBookingAlert() {
     // Fetch global config for accurate timer
     const fetchConfig = async () => {
       const token = localStorage.getItem('vendorAccessToken') || sessionStorage.getItem('vendorAccessToken');
-      if (!token) return;
+      const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+      const isApproved = vendorData.approvalStatus?.toLowerCase() === 'approved';
+      if (!token || !isApproved) return;
 
       try {
         const { vendorDashboardService } = await import('../../services/dashboardService');

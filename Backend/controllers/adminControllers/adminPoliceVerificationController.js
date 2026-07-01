@@ -39,16 +39,22 @@ const getPendingVerifications = async (req, res) => {
   }
 };
 
-/**
- * Approve Police Verification
- */
 const approveVerification = async (req, res) => {
   try {
     const { id } = req.params;
+    const { documentUrl } = req.body;
     
     const vendor = await Vendor.findById(id);
     if (!vendor) {
       return res.status(404).json({ success: false, message: 'Vendor not found.' });
+    }
+
+    if (vendor.policeVerification?.method === 'admin' && !vendor.policeVerification.documentUrl && !documentUrl) {
+      return res.status(400).json({ success: false, message: 'Police verification document is required for Admin method.' });
+    }
+
+    if (documentUrl) {
+      vendor.policeVerification.documentUrl = documentUrl;
     }
 
     vendor.policeVerification.status = 'approved';

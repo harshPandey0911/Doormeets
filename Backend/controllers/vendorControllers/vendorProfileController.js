@@ -83,7 +83,7 @@ const updateProfile = async (req, res) => {
     }
 
     const vendorId = req.user.id;
-    const { name, businessName, address, profilePhoto, serviceCategory, skills, aadharNumber, aadharDocument, aadharBackDocument, panNumber, panDocument, serviceRange } = req.body;
+    const { name, businessName, address, profilePhoto, serviceCategory, skills, aadharNumber, aadharDocument, aadharBackDocument, panNumber, panDocument, serviceRange, policeVerificationMethod } = req.body;
 
     console.log('Update Vendor Profile Body:', JSON.stringify(req.body, null, 2));
 
@@ -94,6 +94,43 @@ const updateProfile = async (req, res) => {
         success: false,
         message: 'Vendor not found'
       });
+    }
+
+    // Handle police verification choice & grace period
+    if (policeVerificationMethod) {
+      const Settings = require('../../models/Settings');
+      let graceDays = 7;
+      try {
+        const settings = await Settings.findOne({ type: 'global' });
+        if (settings && settings.policeVerificationDays) {
+          graceDays = settings.policeVerificationDays;
+        }
+      } catch (err) {
+        console.error('Error fetching settings for PV days:', err);
+      }
+
+      vendor.policeVerification = vendor.policeVerification || {};
+      
+      // If method is changed, reset previous document and status to pending
+      if (vendor.policeVerification.method !== policeVerificationMethod) {
+        vendor.policeVerification.status = 'pending';
+      }
+
+      vendor.policeVerification.method = policeVerificationMethod;
+      vendor.policeVerification.isGracePeriodActive = true;
+      
+      // If method is admin, clear any self-uploaded document
+      if (policeVerificationMethod === 'admin') {
+        vendor.policeVerification.documentUrl = null;
+      }
+      
+      const pvDueDate = new Date();
+      pvDueDate.setDate(pvDueDate.getDate() + graceDays);
+      vendor.policeVerification.dueDate = pvDueDate;
+    }
+
+    if (vendor.approvalStatus === 'rejected') {
+      vendor.approvalStatus = 'pending';
     }
 
     // Update fields

@@ -163,6 +163,15 @@ const vendorSchema = new mongoose.Schema({
     dueDate: {
       type: Date,
       default: null
+    },
+    method: {
+      type: String,
+      enum: ['self', 'admin'],
+      default: 'self'
+    },
+    isGracePeriodActive: {
+      type: Boolean,
+      default: true
     }
   },
   approvalStatus: {
