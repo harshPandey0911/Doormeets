@@ -11,6 +11,7 @@ import LogoLoader from '../../../components/common/LogoLoader';
 import Login from '../pages/login';
 
 // Lazy load admin pages for code splitting
+const Workers = lazy(() => import('../pages/Workers'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Settings = lazy(() => import('../pages/Settings'));
 const UserCategories = lazy(() => import('../pages/UserCategories'));
@@ -73,6 +74,7 @@ const AdminRoutes = () => {
           <Route path="management" element={<Navigate to="/admin/user-categories/templates/MINUTE_BASED/manage" replace />} />
           <Route path="users/*" element={<Users />} />
           <Route path="vendors/*" element={<Vendors />} />
+          <Route path="workers/*" element={<Workers />} />
           <Route path="vendors-zone" element={<VendorsZone />} />
           <Route path="vendor-subscriptions/*" element={<VendorSubscriptionManagement />} />
           <Route path="bookings" element={<Bookings />} />
@@ -98,6 +100,7 @@ const AdminRoutes = () => {
           <Route path="vouchers" element={<VoucherManagement />} />
           <Route path="package-based" element={<PackageBased />} />
           <Route path="painting" element={<PaintingManagement />} />
+
           <Route path="commission" element={<Commission />} />
           <Route path="vendor-wallets" element={<VendorWallets />} />
           <Route path="admin-management/*" element={

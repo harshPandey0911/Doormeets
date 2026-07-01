@@ -94,6 +94,13 @@ const settingsSchema = new mongoose.Schema({
     default: 10, // 10 km default search radius
     min: 1
   },
+  // COD (Cash on Delivery) Settings
+  codAdvancePercentage: {
+    type: Number,
+    default: 0, // % advance for COD bookings (0 = no advance)
+    min: 0,
+    max: 100
+  },
   // Razorpay Settings
   razorpayKeyId: {
     type: String,
@@ -341,6 +348,13 @@ const settingsSchema = new mongoose.Schema({
       putty_work: { rate: { type: Number, default: 12 } },
       enamel_painting: { rate: { type: Number, default: 30 } }
     },
+    brands: [{
+      name: { type: String, required: true },
+      standardRate: { type: Number, default: 12 },
+      premiumRate: { type: Number, default: 18 },
+      luxuryRate: { type: Number, default: 25 }
+    }],
+    wallBaseRate: { type: Number, default: 10 },
     // Dynamic area/dimension-based pricing range configurations
     sqftRanges: [{
       minSqft: { type: Number, required: true },

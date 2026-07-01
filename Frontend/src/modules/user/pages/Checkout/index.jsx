@@ -619,7 +619,7 @@ const Checkout = () => {
         toast.success(`${vendorData.businessName} accepted!`);
         setTimeout(() => {
           setShowVendorModal(false);
-          navigate(`/user/booking-confirmation/${bookingRequest._id}`, { replace: true });
+          navigate(`/user/booking/${bookingRequest._id}`, { replace: true });
         }, 2000);
       }
     });
@@ -669,6 +669,10 @@ const Checkout = () => {
                 setCurrentStep('accepted');
                 setSearchingVendors(false);
                 clearInterval(pollInterval);
+                setTimeout(() => {
+                  setShowVendorModal(false);
+                  navigate(`/user/booking/${bookingRequest._id}`, { replace: true });
+                }, 2000);
               }
             }
           }

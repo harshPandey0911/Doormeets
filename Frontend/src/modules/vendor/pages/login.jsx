@@ -149,6 +149,23 @@ const VendorLogin = () => {
             state: { phone: phoneNumber.replace(/\D/g, ''), verificationToken: response.verificationToken }
           });
         } else {
+          if (response.isWorker) {
+            localStorage.setItem('vendorAccessToken', response.accessToken);
+            localStorage.setItem('vendorRefreshToken', response.refreshToken);
+            localStorage.setItem('vendorData', JSON.stringify(response.worker));
+            localStorage.setItem('role', 'worker');
+
+            toast.success(
+              <div className="flex flex-col">
+                <span className="font-bold">Welcome Back!</span>
+                <span className="text-xs">Successfully logged into your worker account.</span>
+              </div>,
+              { icon: <FiCheckCircle className="text-green-500" /> }
+            );
+            navigate('/vendor', { replace: true });
+            return;
+          }
+
           // Check for rejected status
           if (response.vendor?.adminApproval === 'rejected' || response.vendor?.adminApproval === 'REJECTED' || response.vendor?.approvalStatus === 'REJECTED') {
             toast.error('Your application has been rejected.');

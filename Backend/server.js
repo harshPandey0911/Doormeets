@@ -199,6 +199,7 @@ app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/walle
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/dashboard.routes'));
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/service.routes'));
 app.use('/api/vendors/bookings', checkSubscription, require('./routes/vendor-routes/booking.routes'));
+app.use('/api/vendors/workers', checkSubscription, require('./routes/vendor-routes/worker.routes'));
 app.use('/api/vendors/fcm-tokens', checkSubscription, require('./routes/vendor-routes/fcmToken.routes'));
 app.use('/api/vendors', checkSubscription, require('./routes/vendor-routes/vendorBill.routes'));
 app.use('/api/vendors/catalog', checkSubscription, require('./routes/vendor-routes/catalog.routes'));
@@ -218,7 +219,7 @@ app.use('/api/admin', require('./routes/admin-routes/dashboard.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorManagement.routes'));
 app.use('/api/admin/shop-owners', require('./routes/admin-routes/shopManagement.routes'));
-// app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
+app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/categoryManagement.routes'));
 app.use('/api/admin/professions', require('./routes/admin-routes/profession.routes'));
 app.use('/api/admin/subcategories', require('./routes/admin-routes/subCategoryManagement.routes'));

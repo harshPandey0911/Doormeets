@@ -1,4 +1,5 @@
 const Vendor = require('../../models/Vendor');
+const Worker = require('../../models/Worker');
 const { generateOTP, hashOTP, storeOTP, verifyOTP, checkRateLimit } = require('../../utils/redisOtp.util');
 const { generateTokenPair, verifyRefreshToken, generateVerificationToken, verifyVerificationToken } = require('../../utils/tokenService');
 const { sendOTP: sendSMSOTP } = require('../../services/smsService');
@@ -27,19 +28,32 @@ const sendOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid phone number format.' });
     }
 
-    // Check existing vendor status to prevent OTP if restricted
-    const existingVendor = await Vendor.findOne({ phone: cleanPhone });
+    // Check existing vendor/worker status to prevent OTP if restricted
+    let actor = await Vendor.findOne({ phone: cleanPhone });
+    let isWorker = false;
+    if (!actor) {
+      actor = await Worker.findOne({ phone: cleanPhone });
+      if (actor) {
+        isWorker = true;
+      }
+    }
     
     // User requested: If not registered, do not send OTP, tell them to register first.
-    if (!existingVendor) {
+    if (!actor) {
       return res.status(404).json({
         success: false,
         message: 'Number not registered. Please register first.'
       });
     }
 
-    if (existingVendor.approvalStatus === VENDOR_STATUS.REJECTED || existingVendor.approvalStatus === VENDOR_STATUS.SUSPENDED) {
-      return res.status(403).json({ success: false, message: 'Account restricted.' });
+    if (isWorker) {
+      if (actor.status === 'inactive' || actor.status === 'suspended') {
+        return res.status(403).json({ success: false, message: 'Account restricted.' });
+      }
+    } else {
+      if (actor.approvalStatus === VENDOR_STATUS.REJECTED || actor.approvalStatus === VENDOR_STATUS.SUSPENDED) {
+        return res.status(403).json({ success: false, message: 'Account restricted.' });
+      }
     }
 
     // 1. Rate limit check
@@ -162,6 +176,39 @@ const verifyLogin = async (req, res) => {
       });
 
     } else {
+      // Check if worker exists
+      const workerDoc = await Worker.findOne({ phone: cleanPhone });
+      if (workerDoc) {
+        if (workerDoc.status === 'inactive' || workerDoc.status === 'suspended') {
+          return res.status(403).json({ success: false, message: 'Account suspended or inactive. Please contact your vendor.' });
+        }
+
+        const loginSessionId = Date.now().toString();
+        const tokens = generateTokenPair({
+          userId: workerDoc._id,
+          role: USER_ROLES.WORKER,
+          loginSessionId
+        });
+
+        return res.status(200).json({
+          success: true,
+          isNewUser: false,
+          isWorker: true,
+          message: 'Worker login successful',
+          worker: {
+            id: workerDoc._id,
+            name: workerDoc.name,
+            phone: workerDoc.phone,
+            email: workerDoc.email,
+            status: workerDoc.status,
+            vendorId: workerDoc.vendorId,
+            approvalStatus: 'approved',
+            isSubscriptionActive: true
+          },
+          ...tokens
+        });
+      }
+
       // NEW VENDOR -> RETURN VERIFICATION TOKEN
       const verificationToken = generateVerificationToken(phone);
 

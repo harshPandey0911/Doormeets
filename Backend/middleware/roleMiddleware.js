@@ -14,10 +14,10 @@ const isUser = (req, res, next) => {
 };
 
 const isVendor = (req, res, next) => {
-  if (req.userRole !== USER_ROLES.VENDOR) {
+  if (req.userRole !== USER_ROLES.VENDOR && req.userRole !== USER_ROLES.WORKER) {
     return res.status(403).json({
       success: false,
-      message: 'Access denied. Vendor role required.'
+      message: 'Access denied. Vendor or Worker role required.'
     });
   }
   next();

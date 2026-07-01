@@ -25,18 +25,22 @@ const getVendorBookings = async (req, res) => {
     const vId = new mongoose.Types.ObjectId(vendorId);
 
     // ── Build Base Query ──
-    // This Or condition ensures vendors see their own jobs OR relevant unassigned alerts
-    const query = {
-      $or: [
-        { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
-        {
-          vendorId: null,
-          status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.BIDDING] },
-          serviceCategory: { $in: vendorCategories },
-          'potentialVendors.vendorId': vId // Only show jobs where THIS vendor is within range
-        }
-      ]
-    };
+    let query;
+    if (req.userRole === 'WORKER' || req.user?.role === 'WORKER') {
+      query = { workerId: new mongoose.Types.ObjectId(vendorId) };
+    } else {
+      query = {
+        $or: [
+          { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
+          {
+            vendorId: null,
+            status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.BIDDING] },
+            serviceCategory: { $in: vendorCategories },
+            'potentialVendors.vendorId': vId // Only show jobs where THIS vendor is within range
+          }
+        ]
+      };
+    }
 
     // ── Apply Status Group Filters ──
     if (status && status !== 'all') {
@@ -164,13 +168,19 @@ const getBookingById = async (req, res) => {
     const vendorId = req.user.id;
     const { id } = req.params;
 
-    const booking = await Booking.findOne({
-      _id: id,
-      $or: [
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+
+    let query = { _id: id };
+    if (isWorkerRole) {
+      query.workerId = vendorId;
+    } else {
+      query.$or = [
         { vendorId },
         { vendorId: null, status: { $in: ['requested', 'searching', 'bidding'] } }
-      ]
-    })
+      ];
+    }
+
+    const booking = await Booking.findOne(query)
       .populate('userId', 'name phone email profilePhoto')
       .populate('vendorId', 'name businessName phone email')
       .populate('serviceId', 'title description iconUrl images')
@@ -190,7 +200,7 @@ const getBookingById = async (req, res) => {
 
     const bookingData = booking.toObject();
     const phoneRevealedStatuses = ['visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
-    const canSeePhone = phoneRevealedStatuses.includes(booking.status) && booking.vendorId && booking.vendorId._id.toString() === vendorId.toString();
+    const canSeePhone = phoneRevealedStatuses.includes(booking.status) && (isWorkerRole || (booking.vendorId && booking.vendorId._id.toString() === vendorId.toString()));
 
     if (!canSeePhone) {
       if (bookingData.userId) {
@@ -1139,7 +1149,15 @@ const startSelfJob = async (req, res) => {
     const vendorId = req.user.id;
     const { id } = req.params;
 
-    const booking = await Booking.findOne({ _id: id, vendorId });
+    let query = { _id: id };
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+    if (isWorkerRole) {
+      query.workerId = vendorId;
+    } else {
+      query.vendorId = vendorId;
+    }
+
+    const booking = await Booking.findOne(query);
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -1148,7 +1166,7 @@ const startSelfJob = async (req, res) => {
     // Ensure no worker is assigned (or self-assigned flag?) implementation assumes workerId null means unassigned or self?
     // User says: "if vendor didn't assignes to worker and do himself"
     // Usually means workerId is null.
-    if (booking.workerId) {
+    if (!isWorkerRole && booking.workerId) {
       return res.status(400).json({ success: false, message: 'Worker is assigned to this booking. You cannot start it yourself unless you unassign worker.' });
     }
 
@@ -1171,16 +1189,25 @@ const startSelfJob = async (req, res) => {
     booking.status = BOOKING_STATUS.JOURNEY_STARTED;
     booking.journeyStartedAt = new Date();
     booking.visitOtp = otp;
-    booking.assignedAt = new Date(); // Implicitly assigned to self now
+    if (!isWorkerRole) {
+      booking.assignedAt = new Date(); // Implicitly assigned to self now
+    }
 
     await booking.save();
 
-    const Vendor = require('../../models/Vendor');
-    await Vendor.findByIdAndUpdate(vendorId, {
-      availability: 'ON_JOB',
-      workStatus: 'busy',
-      availabilityStatus: 'BUSY'
-    });
+    if (isWorkerRole) {
+      const Worker = require('../../models/Worker');
+      await Worker.findByIdAndUpdate(vendorId, {
+        status: 'BUSY'
+      });
+    } else {
+      const Vendor = require('../../models/Vendor');
+      await Vendor.findByIdAndUpdate(vendorId, {
+        availability: 'ON_JOB',
+        workStatus: 'busy',
+        availabilityStatus: 'BUSY'
+      });
+    }
 
     // Notify user
     const { createNotification } = require('../notificationControllers/notificationController');
@@ -1231,8 +1258,15 @@ const vendorReachedLocation = async (req, res) => {
     const { id } = req.params;
     const { reachedPhotos } = req.body;
 
-    // Need visitOtp to resend it
-    const booking = await Booking.findOne({ _id: id, vendorId }).select('+visitOtp');
+    let query = { _id: id };
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+    if (isWorkerRole) {
+      query.workerId = vendorId;
+    } else {
+      query.vendorId = vendorId;
+    }
+
+    const booking = await Booking.findOne(query).select('+visitOtp');
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -1285,7 +1319,15 @@ const verifySelfVisit = async (req, res) => {
     const { id } = req.params;
     const { otp, location } = req.body;
 
-    const booking = await Booking.findOne({ _id: id, vendorId }).select('+visitOtp');
+    let query = { _id: id };
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+    if (isWorkerRole) {
+      query.workerId = vendorId;
+    } else {
+      query.vendorId = vendorId;
+    }
+
+    const booking = await Booking.findOne(query).select('+visitOtp');
 
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     if (booking.status !== BOOKING_STATUS.JOURNEY_STARTED) return res.status(400).json({ success: false, message: 'Journey not started' });
@@ -1355,7 +1397,15 @@ const completeSelfJob = async (req, res) => {
     const { id } = req.params;
     const { workPhotos, workDoneDetails, billDetails } = req.body;
 
-    const booking = await Booking.findOne({ _id: id, vendorId });
+    let query = { _id: id };
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+    if (isWorkerRole) {
+      query.workerId = vendorId;
+    } else {
+      query.vendorId = vendorId;
+    }
+
+    const booking = await Booking.findOne(query);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
     // Status guard — allow work_done for idempotent re-trigger (e.g. vendor clicks again after partial failure)
@@ -1376,7 +1426,8 @@ const completeSelfJob = async (req, res) => {
       const Settings = require('../../models/Settings');
       const Vendor = require('../../models/Vendor');
       const settings = await Settings.findOne({ type: 'global' });
-      const vendor = await Vendor.findById(vendorId).select('commissionRate level');
+      const actualVendorId = isWorkerRole ? booking.vendorId : vendorId;
+      const vendor = await Vendor.findById(actualVendorId).select('commissionRate level');
 
       // Dynamic split based on vendor performance
       // If it's a cash job, we calculate commission now to add to DUES.
@@ -1656,7 +1707,15 @@ const collectSelfCash = async (req, res) => {
     const { id } = req.params;
     const { otp } = req.body;
 
-    const booking = await Booking.findOne({ _id: id, vendorId }).select('+paymentOtp');
+    let query = { _id: id };
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+    if (isWorkerRole) {
+      query.workerId = vendorId;
+    } else {
+      query.vendorId = vendorId;
+    }
+
+    const booking = await Booking.findOne(query).select('+paymentOtp');
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     if (booking.status !== BOOKING_STATUS.WORK_DONE) return res.status(400).json({ success: false, message: 'Work not done yet' });
     if (booking.paymentOtp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
@@ -1667,6 +1726,7 @@ const collectSelfCash = async (req, res) => {
     if (!bill) return res.status(500).json({ success: false, message: 'Bill not found — cannot process payment' });
 
     const grandTotal = Number(bill.grandTotal) || 0;
+    const actualVendorId = isWorkerRole ? booking.vendorId : vendorId;
 
     // ── Generate Invoices (Dual-Invoice Flow with Safeguards) ──
     let vendorEarning = 0;
@@ -1675,15 +1735,15 @@ const collectSelfCash = async (req, res) => {
     let transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
 
     try {
-      if (!booking.invoiceGenerated && booking.vendorId) {
+      if (!booking.invoiceGenerated && actualVendorId) {
         const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
 
         const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
         platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
         vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
 
-        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
-        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
+        const vendorInv = await generateVendorInvoice(booking._id, actualVendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, actualVendorId, booking.userId, platformFeeAmount, transactionGroupId);
 
         vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
 
@@ -1708,7 +1768,7 @@ const collectSelfCash = async (req, res) => {
     booking.paymentMethod = 'cash collected'; // Standardized label
     booking.paymentStatus = PAYMENT_STATUS.COLLECTED_BY_VENDOR;
     booking.cashCollected = true;
-    booking.cashCollectedBy = 'vendor';
+    booking.cashCollectedBy = isWorkerRole ? 'worker' : 'vendor';
     booking.cashCollectorId = vendorId;
     booking.cashCollectedAt = new Date();
     booking.completedAt = new Date();
@@ -1728,7 +1788,7 @@ const collectSelfCash = async (req, res) => {
 
     // ── Update Vendor Wallet (Atomic with $inc) ──
     const Vendor = require('../../models/Vendor');
-    const vendorDoc = await Vendor.findById(vendorId).select('wallet');
+    const vendorDoc = await Vendor.findById(actualVendorId).select('wallet');
 
     if (vendorDoc) {
       const currentDues = (vendorDoc.wallet.dues || 0) + grandTotal;
@@ -1753,14 +1813,14 @@ const collectSelfCash = async (req, res) => {
         };
       }
 
-      await Vendor.findByIdAndUpdate(vendorId, updateQuery);
+      await Vendor.findByIdAndUpdate(actualVendorId, updateQuery);
 
       // ── Create Transaction Records ──
       const Transaction = require('../../models/Transaction');
 
       // Transaction 1: Cash Collected (Platform is owed this amount)
       await Transaction.create({
-        vendorId,
+        vendorId: actualVendorId,
         bookingId: booking._id,
         type: 'cash_collected',
         amount: grandTotal,
@@ -1769,7 +1829,7 @@ const collectSelfCash = async (req, res) => {
         description: `Cash ₹${grandTotal} collected for booking #${booking.bookingNumber}. Dues increased.`,
         metadata: {
           type: 'dues_increase',
-          collectedBy: 'vendor',
+          collectedBy: isWorkerRole ? 'worker' : 'vendor',
           billId: bill._id.toString(),
           grandTotal,
           vendorEarning,
@@ -1781,7 +1841,7 @@ const collectSelfCash = async (req, res) => {
       // Transaction 2: Earnings Credit (Vendor's rightful share - base only)
       if (vendorEarning > 0) {
         await Transaction.create({
-          vendorId,
+          vendorId: actualVendorId,
           bookingId: booking._id,
           type: 'earnings_credit',
           amount: vendorEarning,
@@ -1813,11 +1873,14 @@ const collectSelfCash = async (req, res) => {
 
     // ── Update Vendor Performance Stats & Availability ──
     try {
-      const { updateVendorStats } = require('../../utils/vendorStatsHelper');
-      updateVendorStats(vendorId);
-
-      // Also free up the vendor's availability status cleanly (checks active jobs and updates availabilityStatus to ONLINE/AVAILABLE)
-      await Vendor.updateWorkStatus(vendorId);
+      if (isWorkerRole) {
+        const Worker = require('../../models/Worker');
+        await Worker.findByIdAndUpdate(vendorId, { status: 'ONLINE' });
+      } else {
+        const { updateVendorStats } = require('../../utils/vendorStatsHelper');
+        updateVendorStats(vendorId);
+        await Vendor.updateWorkStatus(vendorId);
+      }
     } catch (statsErr) {
       console.error('Error updating vendor stats after cash collection:', statsErr);
     }

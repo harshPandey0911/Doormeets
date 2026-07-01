@@ -91,6 +91,7 @@ const getChildRoute = (parentRoute, childName) => {
       "Vendor Payments": "/admin/vendors/payments",
       "Police Verification": "/admin/vendors/police-verification",
       "Incentives": "/admin/vendors/incentives",
+      "Vendor Wallets": "/admin/vendor-wallets",
     },
     "/admin/labours": {
       "All Labours": "/admin/labours/all",
@@ -120,6 +121,7 @@ const getChildRoute = (parentRoute, childName) => {
       "Extra Services": "/admin/user-categories/vendor-services",
       "Materials & Parts": "/admin/user-categories/vendor-parts"
     },
+
     "/admin/home-management": {
       "Banners & Categories": "/admin/user-categories/home",
       "Combined Categories": "/admin/user-categories/combined-categories",

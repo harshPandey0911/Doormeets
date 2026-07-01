@@ -220,12 +220,27 @@ const BookingDetails = () => {
         }
       };
 
+      // Handler for payment_required event — auto-trigger Razorpay
+      const handlePaymentRequired = (data) => {
+        if (data.bookingId === id) {
+          toast.success(data.message || 'Vendor accepted! Please pay to confirm.', { icon: '💳', duration: 5000 });
+          // Reload booking to get latest status
+          loadBooking();
+          // Auto-trigger online payment after short delay (to ensure booking state is loaded)
+          setTimeout(() => {
+            handleOnlinePayment();
+          }, 1500);
+        }
+      };
+
       socket.on('booking_updated', handleUpdate);
       socket.on('notification', handleUpdate);
+      socket.on('payment_required', handlePaymentRequired);
 
       return () => {
         socket.off('booking_updated', handleUpdate);
         socket.off('notification', handleUpdate);
+        socket.off('payment_required', handlePaymentRequired);
       };
     }
   }, [socket, id]);
@@ -1395,8 +1410,14 @@ const BookingDetails = () => {
                 <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-brand/20">
                   <FiDollarSign className="w-8 h-8 text-brand" />
                 </div>
-                <h3 className="text-lg font-bold text-dark-text">Payment Required</h3>
-                <p className="text-sm text-secondary-text">The professional has completed the work. Please choose a payment method to verify and close your booking.</p>
+                <h3 className="text-lg font-bold text-dark-text">
+                  {['online', 'razorpay'].includes(booking.paymentMethod) ? 'Payment Required to Confirm' : 'Payment Required'}
+                </h3>
+                <p className="text-sm text-secondary-text">
+                  {['online', 'razorpay'].includes(booking.paymentMethod) 
+                    ? 'The professional has accepted your booking request. Please complete the online payment to confirm the slot and start the service.' 
+                    : 'The professional has completed the work. Please choose a payment method to verify and close your booking.'}
+                </p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -1408,13 +1429,15 @@ const BookingDetails = () => {
                   Pay Online (Razorpay/UPI)
                 </button>
 
-                <button
-                  onClick={handlePayAtHome}
-                  className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
-                >
-                  <FiHome className="w-5 h-5" />
-                  Pay at Home (After Service)
-                </button>
+                {!['online', 'razorpay'].includes(booking.paymentMethod) && (
+                  <button
+                    onClick={handlePayAtHome}
+                    className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
+                  >
+                    <FiHome className="w-5 h-5" />
+                    Pay at Home (After Service)
+                  </button>
+                )}
               </div>
             </div>
           )}

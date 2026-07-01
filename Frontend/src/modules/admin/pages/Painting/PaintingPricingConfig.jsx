@@ -47,6 +47,9 @@ const PaintingPricingConfig = () => {
   const [doorSizeRates, setDoorSizeRates] = useState([]);
   const [windowSizeRates, setWindowSizeRates] = useState([]);
   const [propertyLayouts, setPropertyLayouts] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [wallBaseRate, setWallBaseRate] = useState(10);
+  const [newBrand, setNewBrand] = useState({ name: '', standardRate: 10, premiumRate: 15, luxuryRate: 22 });
 
   useEffect(() => {
     fetchRates();
@@ -77,6 +80,12 @@ const PaintingPricingConfig = () => {
         setSqftRanges(pr.sqftRanges || []);
         setDoorSizeRates(pr.doorSizeRates || []);
         setWindowSizeRates(pr.windowSizeRates || []);
+        setBrands(pr.brands || [
+          { name: 'Asian Paints', standardRate: 12, premiumRate: 18, luxuryRate: 25 },
+          { name: 'Dulux', standardRate: 11, premiumRate: 17, luxuryRate: 24 },
+          { name: 'Berger', standardRate: 11, premiumRate: 16, luxuryRate: 23 }
+        ]);
+        setWallBaseRate(pr.wallBaseRate ?? 10);
         setPropertyLayouts(res.data.settings.propertyLayouts || []);
       }
     } catch (err) {
@@ -95,7 +104,9 @@ const PaintingPricingConfig = () => {
           additionalServices: addlServices,
           sqftRanges,
           doorSizeRates,
-          windowSizeRates
+          windowSizeRates,
+          brands,
+          wallBaseRate
         },
         propertyLayouts
       });
@@ -120,6 +131,26 @@ const PaintingPricingConfig = () => {
       ...prev,
       [key]: { rate: Number(value) || 0 }
     }));
+  };
+
+  const updateBrandRate = (idx, field, value) => {
+    const updated = [...brands];
+    updated[idx] = {
+      ...updated[idx],
+      [field]: field === 'name' ? value : Number(value) || 0
+    };
+    setBrands(updated);
+  };
+
+  const handleAddBrand = () => {
+    if (!newBrand.name.trim()) return toast.error('Enter brand name');
+    setBrands([...brands, { ...newBrand }]);
+    setNewBrand({ name: '', standardRate: 10, premiumRate: 15, luxuryRate: 22 });
+    toast.success('Brand added!');
+  };
+
+  const handleRemoveBrand = (idx) => {
+    setBrands(brands.filter((_, i) => i !== idx));
   };
 
   if (loading) {
@@ -155,13 +186,152 @@ const PaintingPricingConfig = () => {
         </div>
       </div>
 
+      {/* Wall Base Setup */}
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <h3 className="font-bold text-gray-800 flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
+            </svg>
+            Wall Painting Base Setup
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">Configure base painting rate per square foot (sqft).</p>
+        </div>
+        <div className="p-6">
+          <div className="max-w-xs">
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Wall Paint Base Rate (₹ / sqft)</label>
+            <input
+              type="number"
+              min="0"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:border-blue-500 bg-slate-50"
+              value={wallBaseRate}
+              onChange={e => setWallBaseRate(Number(e.target.value))}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Brands Setup */}
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+          <div>
+            <h3 className="font-bold text-gray-800 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                <path d="M12 6v12M6 12h12"/>
+              </svg>
+              Brands & Tier Multipliers
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">Set rates per sqft for Economy, Premium, and Luxury brand packages.</p>
+          </div>
+        </div>
+        <div className="p-6 space-y-4">
+          {brands.map((b, idx) => (
+            <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+              <input
+                type="text"
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-bold text-gray-800 outline-none w-full md:w-48 focus:border-blue-500"
+                value={b.name}
+                onChange={e => updateBrandRate(idx, 'name', e.target.value)}
+              />
+              <div className="flex gap-3 items-center flex-wrap">
+                <div>
+                  <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Std (₹/sqft)</span>
+                  <input
+                    type="number"
+                    className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800 focus:border-blue-500"
+                    value={b.standardRate}
+                    onChange={e => updateBrandRate(idx, 'standardRate', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Prem (₹/sqft)</span>
+                  <input
+                    type="number"
+                    className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800 focus:border-blue-500"
+                    value={b.premiumRate}
+                    onChange={e => updateBrandRate(idx, 'premiumRate', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Lux (₹/sqft)</span>
+                  <input
+                    type="number"
+                    className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800 focus:border-blue-500"
+                    value={b.luxuryRate}
+                    onChange={e => updateBrandRate(idx, 'luxuryRate', e.target.value)}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={() => handleRemoveBrand(idx)}
+                className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold transition-all"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+
+          {/* Add New Brand */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-dashed border-gray-200 bg-white">
+            <input
+              type="text"
+              placeholder="New Brand (e.g. Nerolac)"
+              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-bold text-gray-800 outline-none w-full md:w-48 focus:border-blue-500"
+              value={newBrand.name}
+              onChange={e => setNewBrand({ ...newBrand, name: e.target.value })}
+            />
+            <div className="flex gap-3 items-center flex-wrap">
+              <div>
+                <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Std (₹)</span>
+                <input
+                  type="number"
+                  className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800"
+                  value={newBrand.standardRate}
+                  onChange={e => setNewBrand({ ...newBrand, standardRate: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Prem (₹)</span>
+                <input
+                  type="number"
+                  className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800"
+                  value={newBrand.premiumRate}
+                  onChange={e => setNewBrand({ ...newBrand, premiumRate: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Lux (₹)</span>
+                <input
+                  type="number"
+                  className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800"
+                  value={newBrand.luxuryRate}
+                  onChange={e => setNewBrand({ ...newBrand, luxuryRate: Number(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleAddBrand}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all"
+            >
+              + Add Brand
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Section 1: Utility Rates */}
       <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
-            <span className="text-lg">🚪</span> Utility Item Rates
+            <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 3v18"/>
+            </svg>
+            Utility Item Rates
           </h3>
-          <p className="text-xs text-gray-500 mt-1">Enamel painting rates and additional service rates per utility item (doors, grills, windows, panels).</p>
+          <p className="text-xs text-gray-500 mt-1">Enamel painting rates and additional service rates per utility item (doors, grills, windows, panels) calculated per sqft.</p>
         </div>
 
         <div className="p-6">
@@ -171,7 +341,7 @@ const PaintingPricingConfig = () => {
               return (
                 <div key={meta.key} className="border border-gray-100 rounded-xl p-5 hover:shadow-sm transition-shadow">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center text-xl border border-orange-100 text-orange-600">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-xl border border-blue-100 text-blue-600">
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
@@ -182,7 +352,7 @@ const PaintingPricingConfig = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Enamel Rate (₹/item)</label>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Enamel Rate (₹/sqft)</label>
                       <input
                         type="number"
                         min="0"
@@ -192,7 +362,7 @@ const PaintingPricingConfig = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Addl. Service (₹/item)</label>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Addl. Service (₹/sqft)</label>
                       <input
                         type="number"
                         min="0"
@@ -213,7 +383,10 @@ const PaintingPricingConfig = () => {
       <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
-            <span className="text-lg">🔧</span> Additional Room Services Rates
+            <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            Additional Room Services Rates
           </h3>
           <p className="text-xs text-gray-500 mt-1">Per-room additional services — waterproofing, POP repair, texture work, etc. These rates appear in the vendor quote wizard.</p>
         </div>
@@ -269,7 +442,10 @@ const PaintingPricingConfig = () => {
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-lg">📏</span> Sqft Base Price Multiplier Ranges
+              <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21.3 8.11 15.89 2.7a1 1 0 0 0-1.41 0L2.7 14.48a1 1 0 0 0 0 1.41l5.41 5.41a1 1 0 0 0 1.42 0L21.3 9.52a1 1 0 0 0 0-1.41zM16 8l-2-2M13 11l-2-2M10 14l-2-2M7 17l-2-2"/>
+              </svg>
+              Sqft Base Price Multiplier Ranges
             </h3>
             <p className="text-xs text-gray-500 mt-1">Configure pricing multipliers or adjustments for larger/smaller overall sqft areas.</p>
           </div>
@@ -341,12 +517,17 @@ const PaintingPricingConfig = () => {
         </div>
       </div>
 
+
       {/* Section 4: Door Size Ranges & Prices */}
       <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-lg">🚪</span> Door Size Price Ranges
+              <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="5" y="3" width="14" height="18" rx="2"/>
+                <path d="M14 12h.01"/>
+              </svg>
+              Door Size Price Ranges
             </h3>
             <p className="text-xs text-gray-500 mt-1">Configure different pricing tiers for doors depending on their area (width x height).</p>
           </div>
@@ -422,7 +603,11 @@ const PaintingPricingConfig = () => {
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-lg">🪟</span> Window Size Price Ranges
+              <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 12h18M12 3v18"/>
+              </svg>
+              Window Size Price Ranges
             </h3>
             <p className="text-xs text-gray-500 mt-1">Configure different pricing tiers for windows depending on their area (width x height).</p>
           </div>
@@ -498,7 +683,11 @@ const PaintingPricingConfig = () => {
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
-              <span className="text-lg">🏠</span> Dynamic Property Layouts
+              <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              Dynamic Property Layouts
             </h3>
             <p className="text-xs text-gray-500 mt-1">Configure layout cards, images, tag details, and room characteristics shown to users.</p>
           </div>

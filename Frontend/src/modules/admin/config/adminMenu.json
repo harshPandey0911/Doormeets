@@ -41,7 +41,8 @@
       "Vendor Bookings",
       "Vendor Analytics",
       "Police Verification",
-      "Incentives"
+      "Incentives",
+      "Vendor Wallets"
     ]
   },
   {
@@ -66,6 +67,22 @@
     "children": []
   },
   {
+    "title": "Workers",
+    "route": "/admin/workers",
+    "section": "VENDOR MANAGEMENT",
+    "allowedRoles": [
+      "super_admin",
+      "admin",
+      "city_admin"
+    ],
+    "children": [
+      "All Workers",
+      "Worker Jobs",
+      "Worker Analytics",
+      "Worker Payments"
+    ]
+  },
+  {
     "title": "Add-on Library",
     "route": "/admin/addon-library",
     "section": "CENTRALIZED LIBRARY",
@@ -78,16 +95,6 @@
       "Extra Services",
       "Materials & Parts"
     ]
-  },
-  {
-    "title": "Vendor Wallets",
-    "route": "/admin/vendor-wallets",
-    "section": "VENDOR MANAGEMENT",
-    "allowedRoles": [
-      "super_admin",
-      "admin"
-    ],
-    "children": []
   },
   {
     "title": "Shop Owners",

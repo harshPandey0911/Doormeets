@@ -19,6 +19,7 @@ import PopularServicesPage from "./pages/PopularServicesPage";
 import LoyaltyPointsConfig from "./pages/LoyaltyPointsConfig";
 
 import { cityService } from "../../services/cityService";
+import PaintingRatesSettings from "./pages/PaintingRatesSettings";
 
 const UserCategories = () => {
   const [catalog, setCatalog] = useState(() => ensureIds(loadCatalog()));

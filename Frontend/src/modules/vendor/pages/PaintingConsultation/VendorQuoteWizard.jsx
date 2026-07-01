@@ -90,10 +90,35 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
             const adminUtilRates = paintingRates?.utilities?.[u.id];
             const enamelRate = adminUtilRates?.enamelRate ?? 120;
             const addlRate = adminUtilRates?.addlRate ?? 80;
+            
+            let totalSqft = 0;
+            let count = 0;
+            (finalData.rooms || []).filter(r => r.selected).forEach(r => {
+              (r.walls || []).forEach(w => {
+                if (u.id === 'doors' && w.doors) {
+                  w.doors.forEach(d => {
+                    totalSqft += (parseFloat(d.width) || 0) * (parseFloat(d.height) || 0);
+                    count++;
+                  });
+                } else if (u.id === 'windows' && w.windows) {
+                  w.windows.forEach(win => {
+                    totalSqft += (parseFloat(win.width) || 0) * (parseFloat(win.height) || 0);
+                    count++;
+                  });
+                }
+              });
+            });
+
+            if (totalSqft === 0) {
+              const defaultSqftMap = { doors: 21, windows: 12, grills: 15, panels: 10 };
+              totalSqft = defaultSqftMap[u.id] || 10;
+              count = 1;
+            }
+
             return {
-              name: `${u.label} (${u.enamel ? 'Enamel' : 'Basic'})`,
-              quantity: 1,
-              cost: (u.enamel ? enamelRate : 0) + (u.additionalService ? addlRate : 0),
+              name: `${u.label} (${u.enamel ? 'Enamel' : 'Basic'}) - ${totalSqft.toFixed(0)} sqft`,
+              quantity: count || 1,
+              cost: (u.enamel ? enamelRate : 0) * totalSqft + (u.additionalService ? addlRate : 0) * totalSqft,
             };
           }),
           ...(finalData.rooms || []).filter(r => r.selected).flatMap(r => 
@@ -179,7 +204,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
         {step === 1 && <VStep2RoomDetails quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
         {step === 2 && <VStep3UtilitiesSelection quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
         {step === 3 && <VStep5GenerateMeasurements quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
-        {step === 4 && <VStep6PaintPackage quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} />}
+        {step === 4 && <VStep6PaintPackage quoteData={quoteData} updateQuoteData={updateQuoteData} onNext={goNext} onBack={goBack} paintingRates={paintingRates} />}
         {step === 5 && <VStep7Finalize quoteData={quoteData} updateQuoteData={updateQuoteData} onBack={goBack} onSubmit={handleFinalSubmit} submitting={submitting} />}
       </div>
     </div>

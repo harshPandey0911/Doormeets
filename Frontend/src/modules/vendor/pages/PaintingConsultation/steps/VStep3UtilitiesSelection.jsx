@@ -89,7 +89,7 @@ const VStep3UtilitiesSelection = ({ quoteData, updateQuoteData, onNext, onBack, 
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-semibold text-gray-700">Enamel Painting?</p>
-                      <p className="text-xs text-gray-400">₹{meta.enamelRate}/item · High gloss finish</p>
+                      <p className="text-xs text-gray-400">₹{meta.enamelRate}/sqft · High gloss finish</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] font-bold uppercase ${!state.enamel ? 'text-orange-500' : 'text-gray-400'}`}>No</span>
@@ -108,7 +108,7 @@ const VStep3UtilitiesSelection = ({ quoteData, updateQuoteData, onNext, onBack, 
                   <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                     <div>
                       <p className="text-sm font-semibold text-gray-700">Additional Service</p>
-                      <p className="text-xs text-gray-400">₹{meta.addlRate}/item · Cost per item basis</p>
+                      <p className="text-xs text-gray-400">₹{meta.addlRate}/sqft · Cost per sqft basis</p>
                     </div>
                     <input
                       type="checkbox"

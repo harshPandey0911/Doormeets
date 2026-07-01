@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../../../../../services/api';
 
-const BRANDS = ['Asian Paints', 'Dulux', 'Berger', 'Nerolac'];
+const DEFAULT_BRANDS = ['Asian Paints', 'Dulux', 'Berger', 'Nerolac'];
 
 const UPGRADES = [
   { id: 'standard', label: 'STANDARD', name: 'Standard Emulsion', pricePerSqft: 0, desc: 'Basic matte finish. Good for low-traffic areas.' },
@@ -8,15 +9,60 @@ const UPGRADES = [
   { id: 'luxury', label: 'LUXURY', name: 'Premium Matte', pricePerSqft: 5, desc: 'Non-reflective velvet finish that hides surface imperfections perfectly.' },
 ];
 
-const VStep6PaintPackage = ({ quoteData, updateQuoteData, onNext, onBack }) => {
+const VStep6PaintPackage = ({ quoteData, updateQuoteData, onNext, onBack, paintingRates }) => {
+  const [brandsList, setBrandsList] = useState([]);
   const [brand, setBrand] = useState(quoteData.paintBrand || 'Asian Paints');
   const [upgradeId, setUpgradeId] = useState(quoteData.paintTier || 'standard');
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await api.get('/public/brands');
+        let brandsData = [];
+        if (response.data?.success) {
+          brandsData = response.data.brands || response.data.data || [];
+        }
+        const titles = brandsData.map(b => b.title || b.name).filter(Boolean);
+        if (titles.length > 0) {
+          setBrandsList(titles);
+          if (quoteData.paintBrand && !titles.includes(quoteData.paintBrand)) {
+            setBrand(titles[0]);
+          } else if (!quoteData.paintBrand) {
+            setBrand(titles[0]);
+          }
+        } else {
+          setBrandsList(DEFAULT_BRANDS);
+        }
+      } catch (err) {
+        console.error('Failed to load brands:', err);
+        setBrandsList(DEFAULT_BRANDS);
+      }
+    };
+    fetchBrands();
+  }, []);
 
   const { measurements = {} } = quoteData;
   const { interiorEstimate = 0, totalArea = 0, roomBreakdown = [], totalGlobalAddl = 0 } = measurements;
 
-  const activeUpgrade = UPGRADES.find(u => u.id === upgradeId) || UPGRADES[0];
-  const upgradeCost = totalArea * activeUpgrade.pricePerSqft;
+  // Resolve dynamic brand rates
+  const selectedBrandConfig = paintingRates?.brands?.find(b => b.name === brand);
+  const standardRate = selectedBrandConfig?.standardRate ?? 12;
+  const premiumRate = selectedBrandConfig?.premiumRate ?? 18;
+  const luxuryRate = selectedBrandConfig?.luxuryRate ?? 25;
+
+  const dynamicUpgrades = [
+    { id: 'standard', label: 'STANDARD', name: 'Standard Emulsion', pricePerSqft: 0, desc: 'Basic matte finish. Good for low-traffic areas.' },
+    { id: 'premium', label: 'PREMIUM', name: 'Semi-gloss Finish', pricePerSqft: premiumRate - standardRate, desc: 'Durable, easy to clean, and reflects light beautifully for a modern look.' },
+    { id: 'luxury', label: 'LUXURY', name: 'Premium Matte', pricePerSqft: luxuryRate - standardRate, desc: 'Non-reflective velvet finish that hides surface imperfections perfectly.' }
+  ];
+
+  const activeUpgrade = dynamicUpgrades.find(u => u.id === upgradeId) || dynamicUpgrades[0];
+  
+  // Account for difference between brand standard rate and base wall rate calculated in Step 5
+  const baseWallRate = paintingRates?.wallBaseRate ?? 10;
+  const brandBaseAdjustment = Math.max(0, standardRate - baseWallRate);
+  
+  const upgradeCost = totalArea * (activeUpgrade.pricePerSqft + brandBaseAdjustment);
   const grandTotal = interiorEstimate + upgradeCost;
 
   const [openAccordion, setOpenAccordion] = useState('interior');
@@ -59,7 +105,7 @@ const VStep6PaintPackage = ({ quoteData, updateQuoteData, onNext, onBack }) => {
       <div>
         <h3 className="text-sm font-bold text-gray-800 mb-3">Select Brand</h3>
         <div className="flex flex-wrap gap-2">
-          {BRANDS.map(b => (
+          {(brandsList.length > 0 ? brandsList : DEFAULT_BRANDS).map(b => (
             <button
               key={b}
               onClick={() => setBrand(b)}
@@ -79,7 +125,7 @@ const VStep6PaintPackage = ({ quoteData, updateQuoteData, onNext, onBack }) => {
       <div>
         <h3 className="text-sm font-bold text-gray-800 mb-3">Upgrade Options</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {UPGRADES.slice(1).map(u => (
+          {dynamicUpgrades.slice(1).map(u => (
             <div
               key={u.id}
               onClick={() => setUpgradeId(u.id)}
@@ -105,7 +151,7 @@ const VStep6PaintPackage = ({ quoteData, updateQuoteData, onNext, onBack }) => {
             onClick={() => setUpgradeId('standard')}
             className="mt-3 text-xs font-bold text-gray-500 hover:text-orange-500 transition-colors"
           >
-            ← Downgrade to {UPGRADES[0].name} (Save ₹{upgradeCost.toLocaleString()})
+            ← Downgrade to {dynamicUpgrades[0].name} (Save ₹{(totalArea * activeUpgrade.pricePerSqft).toLocaleString()})
           </button>
         )}
       </div>

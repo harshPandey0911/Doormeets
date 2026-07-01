@@ -149,6 +149,7 @@ const verifyPaymentWebhook = async (req, res) => {
     booking.paymentId = razorpay_payment_id;
 
     // Update booking status based on current state
+    const wasAwaitingPayment = booking.status === BOOKING_STATUS.AWAITING_PAYMENT;
     if ([BOOKING_STATUS.PENDING, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.AWAITING_PAYMENT].includes(booking.status)) {
       booking.status = BOOKING_STATUS.CONFIRMED;
     } else if (booking.status === BOOKING_STATUS.WORK_DONE) {
@@ -164,6 +165,26 @@ const verifyPaymentWebhook = async (req, res) => {
     }
 
     await booking.save();
+
+    // Notify vendor via socket when online payment is confirmed (was awaiting_payment)
+    if (wasAwaitingPayment && booking.vendorId) {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          message: `Payment of ₹${booking.finalAmount} received for booking ${booking.bookingNumber}. You can now start the service.`
+        });
+        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          message: 'Payment successful! Your booking is now confirmed.'
+        });
+      }
+    }
 
     // Trigger Commission & Collection System
     const { processBookingCompletion } = require('../../services/commissionService');

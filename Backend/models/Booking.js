@@ -689,12 +689,6 @@ bookingSchema.index({ 'potentialVendors.vendorId': 1 });
 // Dashboard: $or on { vendorId: null, serviceCategory: ..., status: ... }
 bookingSchema.index({ vendorId: 1, serviceCategory: 1, status: 1 });
 
-if (!mongoose.models.Worker) {
-  mongoose.model('Worker', new mongoose.Schema({
-    name: { type: String, default: '' },
-    phone: { type: String, default: '' },
-    profilePhoto: { type: String, default: null }
-  }));
-}
+require('./Worker');
 
 module.exports = mongoose.model('Booking', bookingSchema);

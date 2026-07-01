@@ -520,6 +520,129 @@ const Dashboard = memo(() => {
     );
   }
 
+  const isWorker = localStorage.getItem('role') === 'worker';
+
+  if (isWorker) {
+    return (
+      <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
+        <Header title="Xpert Dashboard" showBack={false} />
+
+        <main className="pt-4 px-4 space-y-6">
+          {/* Welcome Card */}
+          <div
+            className="rounded-2xl p-5 shadow-lg relative overflow-hidden border border-white/10"
+            style={{
+              background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
+            }}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex items-center gap-4 relative z-10">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg border-2 border-indigo-500/30 text-white"
+                style={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)'
+                }}
+              >
+                {vendorProfile.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="text-base font-black text-white leading-tight">
+                  Hello, {vendorProfile.name}!
+                </h2>
+                <p className="text-xs font-semibold text-indigo-300/80 uppercase tracking-wider mt-1">
+                  Assigned Professional
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between">
+              <span className="text-2xl font-black text-indigo-600">{stats.activeJobs}</span>
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">Active Jobs</span>
+            </div>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between">
+              <span className="text-2xl font-black text-green-600">{stats.completedJobs}</span>
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">Completed</span>
+            </div>
+          </div>
+
+          {/* Jobs List */}
+          <div>
+            <h3 className="text-base font-black text-gray-800 mb-3 px-1">Your Assigned Jobs</h3>
+            {recentJobs.length > 0 ? (
+              <div className="space-y-3">
+                {recentJobs.map((job, index) => {
+                  const accentColor = index % 2 === 0 ? '#B33A35' : '#D56C67';
+                  return (
+                    <div
+                      key={job.id}
+                      onClick={() => navigate(`/vendor/booking/${job.id}`)}
+                      className="bg-white rounded-2xl shadow-md cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
+                      style={{
+                        border: '1px solid rgba(0, 0, 0, 0.05)',
+                      }}
+                    >
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl"
+                        style={{
+                          background: `linear-gradient(180deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+                        }}
+                      />
+                      <div className="px-4 py-3.5 flex items-center justify-between">
+                        <div className="flex-1 min-w-0 pr-3">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-sm font-bold text-gray-800 truncate">{job.customerName}</span>
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 rounded-md text-white"
+                              style={{ background: accentColor }}
+                            >
+                              {job.serviceType}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 truncate mb-2">📍 {job.location}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold text-gray-600">⏱ {job.timeSlot?.date} {job.timeSlot?.time}</span>
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                              style={{
+                                background: `${accentColor}15`,
+                                color: accentColor,
+                              }}
+                            >
+                              {getStatusLabel(job.status)}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/vendor/booking/${job.id}`);
+                          }}
+                          className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-700 transition-colors"
+                        >
+                          <FiArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-gray-100">
+                <FiBriefcase className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-sm text-gray-600 mb-1">No assigned jobs today</p>
+                <p className="text-xs text-gray-400">New assignments will appear here</p>
+              </div>
+            )}
+          </div>
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
       <Header title="Dashboard" showBack={false} notificationCount={stats.pendingAlerts} />

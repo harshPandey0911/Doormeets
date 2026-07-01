@@ -989,7 +989,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         l2Commission: globalL2,
         l3Commission: globalL3,
         isActive: config.isActive ?? true,
-        packageTitle: config.packageTitle || ''
+        packageTitle: config.packageTitle || '',
+        codEnabled: config.codEnabled ?? true,
+        codAdvanceAmount: config.codAdvanceAmount ?? 0
       });
     } else {
       setEditingPricingConfigIdx(null);
@@ -1009,7 +1011,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         l2Commission: globalL2,
         l3Commission: globalL3,
         isActive: true,
-        packageTitle: ''
+        packageTitle: '',
+        codEnabled: true,
+        codAdvanceAmount: 0
       });
     }
     setIsPricingModalOpen(true);
@@ -1114,7 +1118,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       vendorSgstPercentage: Number(globalSettings?.vendorSgstPercentage ?? 2.5),
       vendorCgstPercentage: Number(globalSettings?.vendorCgstPercentage ?? 2.5),
       vendorTdsPercentage: 0,
-      commissionPercentage: Number(globalSettings?.commissionPercentage ?? 25)
+      commissionPercentage: Number(globalSettings?.commissionPercentage ?? 25),
+      codEnabled: pricingForm.codEnabled !== false,
+      codAdvanceAmount: Number(pricingForm.codAdvanceAmount || 0)
     };
 
     if (currentService) {
@@ -2476,6 +2482,33 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             />
                             <label htmlFor="configIsActiveToggle" className="text-xs font-bold text-gray-600">Active configuration</label>
                           </div>
+                        </div>
+
+                        {/* COD Configurations section */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-3 mt-2">
+                          <div className="flex items-center gap-2 pt-2">
+                            <input
+                              id="configCodEnabledToggle"
+                              type="checkbox"
+                              checked={pricingForm.codEnabled !== false}
+                              onChange={e => setPricingForm({ ...pricingForm, codEnabled: e.target.checked })}
+                              className="h-4 w-4 accent-indigo-600"
+                            />
+                            <label htmlFor="configCodEnabledToggle" className="text-xs font-bold text-gray-600">COD (Pay at Home) Enabled</label>
+                          </div>
+                          {pricingForm.codEnabled !== false && (
+                            <div>
+                              <label className="block text-[10px] font-bold text-indigo-700 uppercase mb-1">COD Advance Amount (₹)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                value={pricingForm.codAdvanceAmount || ''}
+                                onChange={e => setPricingForm({ ...pricingForm, codAdvanceAmount: e.target.value })}
+                                placeholder="e.g. 0 for no advance"
+                              />
+                            </div>
+                          )}
                         </div>
 
                         {/* Applied Global Configuration Overview */}

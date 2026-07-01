@@ -127,6 +127,16 @@ const pricingConfigSchema = new mongoose.Schema({
     type: Number,
     default: 10,
     min: 0
+  },
+  // COD (Cash on Delivery) per-service config
+  codEnabled: {
+    type: Boolean,
+    default: true // Admin can disable COD for specific services
+  },
+  codAdvanceAmount: {
+    type: Number,
+    default: 0, // Fixed ₹ advance for COD (0 = no advance required)
+    min: 0
   }
 }, {
   timestamps: true

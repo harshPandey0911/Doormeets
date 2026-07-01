@@ -34,14 +34,21 @@ const BottomNav = memo(() => {
   }, []);
 
   const navItems = useMemo(() => {
-    // Count jobs that require attention (Pending, Accepted, In Progress)
     const badgeCount = pendingJobsCount;
+    const isWorker = localStorage.getItem('role') === 'worker';
 
-    return [
+    const items = [
       { path: '/vendor/dashboard', icon: FiHome, activeIcon: HiHome, label: 'Home' },
       { path: '/vendor/jobs', icon: FiBriefcase, activeIcon: HiBriefcase, label: 'Active Jobs', badge: badgeCount },
-      { path: '/vendor/profile', icon: FiUser, activeIcon: HiUser, label: 'Profile' },
     ];
+
+    if (!isWorker) {
+      items.push({ path: '/vendor/workers', icon: FiUsers, activeIcon: HiUsers, label: 'Workers' });
+    }
+
+    items.push({ path: '/vendor/profile', icon: FiUser, activeIcon: HiUser, label: 'Profile' });
+
+    return items;
   }, [pendingJobsCount]);
 
   const handleNavClick = (path) => {

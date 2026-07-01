@@ -659,7 +659,7 @@ export default function BookingDetails() {
     }
 
     // Cash can be collected when booking is completed/work_done and payment was cash/at home
-    const isSelfJob = booking?.assignedTo?.name === 'You (Self)';
+    const isSelfJob = booking?.assignedTo?.name === 'You (Self)' || localStorage.getItem('role') === 'worker';
     const validStatus = isSelfJob
       ? (booking?.status === 'work_done' || booking?.status === 'completed')
       : booking?.status === 'completed';
@@ -740,7 +740,7 @@ export default function BookingDetails() {
 
   const handleStartJourney = async () => {
     // If self-job, call the start API first
-    if (booking.assignedTo?.name === 'You (Self)') {
+    if (booking.assignedTo?.name === 'You (Self)' || localStorage.getItem('role') === 'worker') {
       try {
         setLoading(true);
         await startSelfJob(id);
@@ -1785,6 +1785,13 @@ export default function BookingDetails() {
             <FiArrowRight className="w-5 h-5" />
           </button>
 
+          {booking.status === 'awaiting_payment' && ['online', 'razorpay'].includes(booking.paymentMethod) && !booking.assignedTo && (
+            <div className="w-full p-4 rounded-xl text-center text-amber-700 bg-amber-50 border border-amber-200 font-semibold text-sm">
+              ⏳ Waiting for Customer Payment...
+              <p className="text-xs font-normal text-amber-600 mt-1">Once the customer completes the online payment, you can assign workers and start the job.</p>
+            </div>
+          )}
+
           {(booking.status === 'confirmed' || booking.status === 'accepted' || (booking.assignedTo && booking.workerResponse === 'rejected')) && (
             <div className="flex gap-3">
               <button
@@ -1812,8 +1819,15 @@ export default function BookingDetails() {
           )}
 
           {/* Self-Job Operational Buttons */}
-          {booking.assignedTo?.name === 'You (Self)' && (
+          {(booking.assignedTo?.name === 'You (Self)' || localStorage.getItem('role') === 'worker') && (
             <div className="space-y-3 pt-2">
+              {booking.status === 'awaiting_payment' && ['online', 'razorpay'].includes(booking.paymentMethod) && (
+                <div className="w-full p-4 rounded-xl text-center text-amber-700 bg-amber-50 border border-amber-200 font-semibold text-sm">
+                  ⏳ Waiting for Customer Payment...
+                  <p className="text-xs font-normal text-amber-600 mt-1">Once the customer completes the online payment, you will be notified and can start the journey.</p>
+                </div>
+              )}
+
               {(booking.status === 'confirmed' || booking.status === 'accepted' || booking.status === 'assigned') && (
                 <button
                   onClick={handleStartJourney}

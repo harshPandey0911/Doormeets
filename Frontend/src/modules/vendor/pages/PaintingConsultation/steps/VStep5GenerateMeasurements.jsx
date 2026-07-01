@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 
-const PAINT_RATE_PER_SQFT   = 12;  // ₹/sqft paint cost
-const LABOUR_RATE_PER_SQFT  = 8;   // ₹/sqft labour
-const PRIMER_RATE_PER_SQFT  = 4;   // ₹/sqft
-const PUTTY_RATE_PER_SQFT   = 5;   // ₹/sqft
+// Default fallback values if admin hasn't set them yet
+const DEFAULT_PAINT_RATE = 10;
+const DEFAULT_LABOUR_RATE = 8;
+const DEFAULT_PRIMER_RATE = 4;
+const DEFAULT_PUTTY_RATE = 5;
 const PAINT_COVERAGE        = 12;  // sqft per litre
 const PRIMER_COVERAGE       = 14;
 const PUTTY_COVERAGE_KG     = 3;   // sqft per kg
@@ -11,6 +12,11 @@ const PUTTY_COVERAGE_KG     = 3;   // sqft per kg
 const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack, paintingRates }) => {
   const rooms = (quoteData.rooms || []).filter(r => r.selected);
   const globalServices = (quoteData.globalServices || []).filter(s => s.enabled);
+
+  const wallBaseRate = paintingRates?.wallBaseRate ?? DEFAULT_PAINT_RATE;
+  const labourRate = DEFAULT_LABOUR_RATE; 
+  const primerRate = paintingRates?.additionalServices?.enamel_painting?.rate ?? DEFAULT_PRIMER_RATE;
+  const puttyRate = paintingRates?.additionalServices?.putty_work?.rate ?? DEFAULT_PUTTY_RATE;
 
   const roomBreakdown = useMemo(() => rooms.map(room => {
     let wallArea = 0;
@@ -22,22 +28,13 @@ const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack
       // Calculate custom doors and windows area deductions using size rates
       const windowArea = (w.windows || []).reduce((acc, win) => {
         const wSqft = (parseFloat(win.width) || 0) * (parseFloat(win.height) || 0);
-        // Find custom price range if registered
-        let customPrice = 12 * wSqft; // Default area base deduct
-        if (paintingRates?.windowSizeRates?.length > 0) {
-          const match = paintingRates.windowSizeRates.find(r => wSqft >= r.minSqft && wSqft <= r.maxSqft);
-          if (match) customPrice = match.price;
-        }
+        let customPrice = (paintingRates?.utilities?.windows?.enamelRate ?? 100) * wSqft;
         return acc + wSqft;
       }, 0);
 
       const doorArea = (w.doors || []).reduce((acc, door) => {
         const dSqft = (parseFloat(door.width) || 0) * (parseFloat(door.height) || 0);
-        let customPrice = 21 * dSqft; // Default area base deduct
-        if (paintingRates?.doorSizeRates?.length > 0) {
-          const match = paintingRates.doorSizeRates.find(r => dSqft >= r.minSqft && dSqft <= r.maxSqft);
-          if (match) customPrice = match.price;
-        }
+        let customPrice = (paintingRates?.utilities?.doors?.enamelRate ?? 120) * dSqft;
         return acc + dSqft;
       }, 0);
 
@@ -65,10 +62,10 @@ const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack
     const hasPrimer = ['primer', 'putty_primer'].includes(repairType);
     const hasPutty  = repairType === 'putty_primer';
 
-    const paintCost   = netArea * PAINT_RATE_PER_SQFT * dynamicMultiplier;
-    const labourCost  = netArea * LABOUR_RATE_PER_SQFT * dynamicMultiplier;
-    const primerCost  = hasPrimer ? netArea * PRIMER_RATE_PER_SQFT * dynamicMultiplier : 0;
-    const puttyCost   = hasPutty  ? netArea * PUTTY_RATE_PER_SQFT * dynamicMultiplier : 0;
+    const paintCost   = netArea * wallBaseRate * dynamicMultiplier;
+    const labourCost  = netArea * labourRate * dynamicMultiplier;
+    const primerCost  = hasPrimer ? netArea * primerRate * dynamicMultiplier : 0;
+    const puttyCost   = hasPutty  ? netArea * puttyRate * dynamicMultiplier : 0;
     const addlServicesCost = (room.additionalServices || []).reduce((acc, s) => acc + (s.rate || 0) * (s.quantity || 1), 0);
 
     return {
@@ -92,7 +89,35 @@ const VStep5GenerateMeasurements = ({ quoteData, updateQuoteData, onNext, onBack
   const totalPrimer     = roomBreakdown.reduce((acc, r) => acc + r.primerCost, 0);
   const totalPutty      = roomBreakdown.reduce((acc, r) => acc + r.puttyCost, 0);
   const totalRoomAddl   = roomBreakdown.reduce((acc, r) => acc + r.addlServicesCost, 0);
-  const totalGlobalAddl = globalServices.reduce((acc, s) => acc + (s.totalCost || 0), 0);
+
+  const utilitiesCost = (quoteData.utilities || []).filter(u => u.selected).reduce((acc, u) => {
+    const adminUtilRates = paintingRates?.utilities?.[u.id];
+    const enamelRate = adminUtilRates?.enamelRate ?? 120;
+    const addlRate = adminUtilRates?.addlRate ?? 80;
+    let totalSqft = 0;
+    rooms.forEach(r => {
+      (r.walls || []).forEach(w => {
+        if (u.id === 'doors' && w.doors) {
+          w.doors.forEach(d => {
+            totalSqft += (parseFloat(d.width) || 0) * (parseFloat(d.height) || 0);
+          });
+        } else if (u.id === 'windows' && w.windows) {
+          w.windows.forEach(win => {
+            totalSqft += (parseFloat(win.width) || 0) * (parseFloat(win.height) || 0);
+          });
+        }
+      });
+    });
+    if (totalSqft === 0) {
+      const defaultSqftMap = { doors: 21, windows: 12, grills: 15, panels: 10 };
+      totalSqft = defaultSqftMap[u.id] || 10;
+    }
+    const enamelCost = u.enamel ? (enamelRate * totalSqft) : 0;
+    const addlCost = u.additionalService ? (addlRate * totalSqft) : 0;
+    return acc + enamelCost + addlCost;
+  }, 0);
+
+  const totalGlobalAddl = globalServices.reduce((acc, s) => acc + (s.totalCost || 0), 0) + utilitiesCost;
   const interiorEstimate = totalPaint + totalLabour + totalPrimer + totalPutty + totalRoomAddl + totalGlobalAddl;
 
   const totalPaintLitres  = (totalArea / PAINT_COVERAGE).toFixed(1);

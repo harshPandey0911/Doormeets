@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAvailableConsultations, acceptConsultation, declineConsultation } from '../../services/paintingConsultationService';
 import { toast } from 'react-hot-toast';
+import { FiClock, FiMapPin } from 'react-icons/fi';
 
 // Relative timestamp helper
 const relativeTime = (dateStr) => {
@@ -111,21 +112,27 @@ const ActiveConsultations = ({ onGenerateQuote }) => {
                   }`}>
                     {consultation.status === 'PENDING' ? 'New Inquiry' : consultation.status.replace(/_/g, ' ')}
                   </span>
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">schedule</span> 
+                  <span className="text-xs text-gray-500 flex items-center gap-1 font-semibold">
+                    <FiClock className="text-sm" /> 
                     {relativeTime(consultation.createdAt)}
                   </span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-1">
                   {consultation.userId?.name || 'Customer'} - {consultation.propertyType}
                 </h3>
-                <p className="text-sm text-gray-600 flex items-center gap-2 mb-2">
-                  <span className="material-symbols-outlined text-[18px] text-orange-500">location_on</span>
+                <p className="text-sm text-gray-600 flex items-center gap-2 mb-2 font-semibold">
+                  <FiMapPin className="text-sm text-orange-500" />
                   {consultation.address?.city || 'Location Pending'}
                 </p>
                 {/* Service type badge */}
-                <div className="flex gap-1 mb-4 flex-wrap">
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">🎨 Painting</span>
+                <div className="flex gap-1 mb-4 flex-wrap items-center">
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                      <path d="M12 6v12M6 12h12"/>
+                    </svg>
+                    Painting
+                  </span>
                   {consultation.wizardData?.paintBrand && (
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                       {consultation.wizardData.paintBrand.replace('_', ' ')}
@@ -138,14 +145,14 @@ const ActiveConsultations = ({ onGenerateQuote }) => {
                   )}
                 </div>
                 
-                <div className="bg-orange-50 rounded-lg p-4 mb-6 border border-orange-100 flex-1">
+                <div className="bg-slate-50/80 rounded-xl p-4 mb-6 border border-slate-100 flex-1">
                   <div className="flex justify-between items-center mb-3">
-                    <p className="text-xs font-bold text-gray-500 uppercase">Phone</p>
-                    <p className="text-sm font-semibold text-gray-800">{consultation.userId?.phone || 'N/A'}</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase">Phone</p>
+                    <p className="text-sm font-bold text-slate-800">{consultation.userId?.phone || 'N/A'}</p>
                   </div>
                   <div className="flex justify-between items-center">
-                    <p className="text-xs font-bold text-gray-500 uppercase">Property</p>
-                    <p className="text-sm font-semibold text-gray-800">{consultation.propertyType}</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase">Property</p>
+                    <p className="text-sm font-bold text-slate-800">{consultation.propertyType}</p>
                   </div>
                 </div>
                 

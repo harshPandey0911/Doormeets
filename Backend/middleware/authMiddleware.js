@@ -1,6 +1,7 @@
 const { verifyAccessToken } = require('../utils/tokenService');
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
+const Worker = require('../models/Worker');
 const Admin = require('../models/Admin');
 const ShopOwner = require('../models/ShopOwner');
 const { USER_ROLES } = require('../utils/constants');

@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { BookingAlertModal } from '../bookings';
 import { acceptBooking, rejectBooking, assignWorker } from '../../services/bookingService';
 import { playAlertRing, stopAlertRing } from '../../../../utils/notificationSound';
+import { FiMapPin } from 'react-icons/fi';
 
 export default function GlobalBookingAlert() {
   const [activeAlertBookings, setActiveAlertBookings] = useState([]);
@@ -277,11 +278,20 @@ export default function GlobalBookingAlert() {
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border-2 border-orange-500 animate-bounce-short">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
-                <span className="material-symbols-outlined text-2xl">format_paint</span>
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                  <path d="M12 6v12M6 12h12"/>
+                </svg>
               </div>
               <div>
                 <span className="bg-orange-100 text-orange-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">New Consultation Request</span>
-                <h3 className="text-lg font-bold text-gray-900 mt-1">🎨 Painting Inquiry</h3>
+                <h3 className="text-lg font-bold text-gray-900 mt-1 flex items-center gap-1.5">
+                  <svg className="w-5 h-5 text-orange-500 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  </svg>
+                  Painting Inquiry
+                </h3>
               </div>
             </div>
 
@@ -297,7 +307,7 @@ export default function GlobalBookingAlert() {
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 font-medium">Location</span>
                 <span className="font-bold text-gray-800 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm text-orange-500">location_on</span>
+                  <FiMapPin className="text-sm text-orange-500" />
                   {consultation.city}
                 </span>
               </div>
