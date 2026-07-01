@@ -277,6 +277,11 @@ const settingsSchema = new mongoose.Schema({
     default: 99, // default 99 Rs extra markup fee
     min: 0
   },
+  instantBookingVendorShare: {
+    type: Number,
+    default: 50, // default 50 Rs goes to the vendor, remaining (e.g. 49 Rs) to admin
+    min: 0
+  },
   instantBookingWaitTime: {
     type: Number,
     default: 45, // default 45 minutes arrival wait time
@@ -306,6 +311,60 @@ const settingsSchema = new mongoose.Schema({
   shopReferralQrCodeUrl: {
     type: String,
     default: null
+  },
+  // Painting Consultation Rates Settings (Dynamic configs for quote calculations)
+  paintingRates: {
+    utilities: {
+      doors: {
+        enamelRate: { type: Number, default: 120 },
+        addlRate: { type: Number, default: 80 }
+      },
+      grills: {
+        enamelRate: { type: Number, default: 90 },
+        addlRate: { type: Number, default: 60 }
+      },
+      windows: {
+        enamelRate: { type: Number, default: 100 },
+        addlRate: { type: Number, default: 70 }
+      },
+      panels: {
+        enamelRate: { type: Number, default: 150 },
+        addlRate: { type: Number, default: 100 }
+      }
+    },
+    additionalServices: {
+      waterproofing: { rate: { type: Number, default: 15 } },
+      pop_repair: { rate: { type: Number, default: 22 } },
+      wallpaper_removal: { rate: { type: Number, default: 500 } },
+      texture_painting: { rate: { type: Number, default: 800 } },
+      deep_cleaning: { rate: { type: Number, default: 350 } },
+      putty_work: { rate: { type: Number, default: 12 } },
+      enamel_painting: { rate: { type: Number, default: 30 } }
+    },
+    // Dynamic area/dimension-based pricing range configurations
+    sqftRanges: [{
+      minSqft: { type: Number, required: true },
+      maxSqft: { type: Number, required: true },
+      rateMultiplier: { type: Number, default: 1.0 } // Multiplier or adjustments for large/small areas
+    }],
+    doorSizeRates: [{
+      minSqft: { type: Number, required: true },
+      maxSqft: { type: Number, required: true },
+      price: { type: Number, required: true }
+    }],
+    windowSizeRates: [{
+      minSqft: { type: Number, required: true },
+      maxSqft: { type: Number, required: true },
+      price: { type: Number, required: true }
+    }],
+    // Dynamic user-side room layouts configurations
+    propertyLayouts: [{
+      id: { type: String, required: true }, // e.g. 1BHK, 2BHK, Villa
+      name: { type: String, required: true },
+      tag: { type: String, default: '' },
+      imageUrl: { type: String, default: '' },
+      details: [{ type: String }] // e.g. ["1 Bedroom", "1 Kitchen"]
+    }]
   }
 }, { timestamps: true });
 

@@ -73,7 +73,10 @@ exports.updateSettings = async (req, res, next) => {
       instantBookingMarkup,
       instantBookingWaitTime,
       showArrivalTime,
-      instantBookingWindowHours
+      instantBookingWindowHours,
+      instantBookingVendorShare,
+      paintingRates,
+      propertyLayouts
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -81,29 +84,38 @@ exports.updateSettings = async (req, res, next) => {
     if (!settings) {
       settings = await Settings.create({
         type: 'global',
-        visitedCharges,
-        serviceGstPercentage,
-        partsGstPercentage,
-        servicePayoutPercentage,
-        partsPayoutPercentage,
-        tdsPercentage,
-        platformFeePercentage,
-        vendorCashLimit, // Add this
-        cancellationPenalty,
+        visitedCharges: visitedCharges !== undefined ? Number(visitedCharges) : 29,
+        serviceGstPercentage: serviceGstPercentage !== undefined ? Number(serviceGstPercentage) : 18,
+        partsGstPercentage: partsGstPercentage !== undefined ? Number(partsGstPercentage) : 18,
+        servicePayoutPercentage: servicePayoutPercentage !== undefined ? Number(servicePayoutPercentage) : 80,
+        partsPayoutPercentage: partsPayoutPercentage !== undefined ? Number(partsPayoutPercentage) : 80,
+        tdsPercentage: tdsPercentage !== undefined ? Number(tdsPercentage) : 1,
+        platformFeePercentage: platformFeePercentage !== undefined ? Number(platformFeePercentage) : 10,
+        vendorCashLimit: vendorCashLimit !== undefined ? Number(vendorCashLimit) : 5000,
+        cancellationPenalty: cancellationPenalty !== undefined ? Number(cancellationPenalty) : 50,
         razorpayKeyId,
         razorpayKeySecret,
         razorpayWebhookSecret,
         cloudinaryCloudName,
         cloudinaryApiKey,
         cloudinaryApiSecret,
-        mcqMinScoreL1,
-        mcqMinScoreL2,
+        supportEmail,
+        supportPhone,
+        supportWhatsapp,
+        companyName,
+        companyAddress,
+        companyCity,
+        companyState,
+        companyPincode,
+        companyPhone,
+        companyEmail,
+        isOnlinePaymentEnabled: isOnlinePaymentEnabled !== undefined ? isOnlinePaymentEnabled : true,
         welcomeVideoUrl,
-        commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 20,
+        commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 10,
         loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : 1,
         loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : 1,
-        loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : 0,
-        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 0,
+        loyaltyPointsCancellationPenalty: loyaltyPointsCancellationPenalty !== undefined ? Number(loyaltyPointsCancellationPenalty) : 10,
+        loyaltyPointsFixedCompletionAward: loyaltyPointsFixedCompletionAward !== undefined ? Number(loyaltyPointsFixedCompletionAward) : 50,
         referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
         referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
         maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30,
@@ -112,7 +124,10 @@ exports.updateSettings = async (req, res, next) => {
         instantBookingMarkup: instantBookingMarkup !== undefined ? Number(instantBookingMarkup) : 99,
         instantBookingWaitTime: instantBookingWaitTime !== undefined ? Number(instantBookingWaitTime) : 45,
         showArrivalTime: showArrivalTime !== undefined ? showArrivalTime : true,
-        instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4
+        instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4,
+        instantBookingVendorShare: instantBookingVendorShare !== undefined ? Number(instantBookingVendorShare) : 50,
+        paintingRates: paintingRates !== undefined ? paintingRates : undefined,
+        propertyLayouts: propertyLayouts !== undefined ? propertyLayouts : undefined
       });
     } else {
       // Update fields if provided
@@ -123,15 +138,13 @@ exports.updateSettings = async (req, res, next) => {
       if (partsPayoutPercentage !== undefined) settings.partsPayoutPercentage = partsPayoutPercentage;
       if (tdsPercentage !== undefined) settings.tdsPercentage = tdsPercentage;
       if (platformFeePercentage !== undefined) settings.platformFeePercentage = platformFeePercentage;
-      if (vendorCashLimit !== undefined) settings.vendorCashLimit = vendorCashLimit; // Add this
+      if (vendorCashLimit !== undefined) settings.vendorCashLimit = vendorCashLimit;
       if (cancellationPenalty !== undefined) settings.cancellationPenalty = cancellationPenalty;
       if (razorpayKeyId !== undefined) settings.razorpayKeyId = razorpayKeyId;
       if (razorpayKeySecret !== undefined) settings.razorpayKeySecret = razorpayKeySecret;
       if (razorpayWebhookSecret !== undefined) settings.razorpayWebhookSecret = razorpayWebhookSecret;
       if (cloudinaryCloudName !== undefined) settings.cloudinaryCloudName = cloudinaryCloudName;
       if (cloudinaryApiKey !== undefined) settings.cloudinaryApiKey = cloudinaryApiKey;
-      if (cloudinaryApiSecret !== undefined) settings.cloudinaryApiSecret = cloudinaryApiSecret;
-
       if (cloudinaryApiSecret !== undefined) settings.cloudinaryApiSecret = cloudinaryApiSecret;
 
       // Billing update
@@ -168,7 +181,6 @@ exports.updateSettings = async (req, res, next) => {
       // MCQ Test update
       if (mcqTimeLimitMinutes !== undefined) settings.mcqTimeLimitMinutes = mcqTimeLimitMinutes;
       if (mcqMinScoreL1 !== undefined) settings.mcqMinScoreL1 = mcqMinScoreL1;
-      if (mcqMinScoreL2 !== undefined) undefined; // handled below
       if (mcqMinScoreL2 !== undefined) settings.mcqMinScoreL2 = mcqMinScoreL2;
       if (welcomeVideoUrl !== undefined) settings.welcomeVideoUrl = welcomeVideoUrl;
       if (commissionPercentage !== undefined) settings.commissionPercentage = Number(commissionPercentage);
@@ -185,6 +197,9 @@ exports.updateSettings = async (req, res, next) => {
       if (instantBookingWaitTime !== undefined) settings.instantBookingWaitTime = Number(instantBookingWaitTime);
       if (showArrivalTime !== undefined) settings.showArrivalTime = showArrivalTime;
       if (instantBookingWindowHours !== undefined) settings.instantBookingWindowHours = Number(instantBookingWindowHours);
+      if (instantBookingVendorShare !== undefined) settings.instantBookingVendorShare = Number(instantBookingVendorShare);
+      if (paintingRates !== undefined) settings.paintingRates = paintingRates;
+      if (propertyLayouts !== undefined) settings.propertyLayouts = propertyLayouts;
 
       await settings.save();
     }
@@ -248,7 +263,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime policeVerificationDays');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts');
 
     // Default if not found (fallback values)
     if (!settings) {

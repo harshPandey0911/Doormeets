@@ -362,6 +362,16 @@ export const SocketProvider = ({ children }) => {
         if (isSoundEnabled('vendor')) playNotificationSound();
         window.dispatchEvent(new CustomEvent('vendorUserWaiting', { detail: data }));
       });
+
+      // Listen for new_painting_consultation real-time alerts
+      newSocket.on('new_painting_consultation', (data) => {
+        console.log('[Socket] New Painting Consultation Request:', data);
+        if (isSoundEnabled('vendor')) {
+          playNotificationSound();
+        }
+        // Save to pending jobs/local notifications list if needed, and dispatch global window event
+        window.dispatchEvent(new CustomEvent('showPaintingConsultationAlert', { detail: data }));
+      });
     }
     // Listen for New Bid Received (User Side)
     if (userType === 'user') {

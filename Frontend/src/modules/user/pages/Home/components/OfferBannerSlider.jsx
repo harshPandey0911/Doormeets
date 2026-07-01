@@ -23,7 +23,11 @@ const OfferBannerSlider = ({ banners }) => {
         navigate('/' + cleanLink);
       } else {
         // It's a simple category/service slug, route to category page
-        navigate(`/user/category/${cleanLink}`);
+        if (cleanLink === 'painting' || cleanLink.toLowerCase() === 'painting') {
+          navigate('/user/painting-consultation');
+        } else {
+          navigate(`/user/category/${cleanLink}`);
+        }
       }
     }
   };

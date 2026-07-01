@@ -10,6 +10,7 @@ const InstantBookingSettings = () => {
   const [config, setConfig] = useState({
     isInstantBookingEnabled: true,
     instantBookingMarkup: 99,
+    instantBookingVendorShare: 50,
     instantBookingWaitTime: 45,
     instantBookingWindowHours: 4,
     showArrivalTime: true
@@ -23,6 +24,7 @@ const InstantBookingSettings = () => {
           setConfig({
             isInstantBookingEnabled: res.settings.isInstantBookingEnabled !== undefined ? res.settings.isInstantBookingEnabled : true,
             instantBookingMarkup: res.settings.instantBookingMarkup !== undefined ? res.settings.instantBookingMarkup : 99,
+            instantBookingVendorShare: res.settings.instantBookingVendorShare !== undefined ? res.settings.instantBookingVendorShare : 50,
             instantBookingWaitTime: res.settings.instantBookingWaitTime !== undefined ? res.settings.instantBookingWaitTime : 45,
             instantBookingWindowHours: res.settings.instantBookingWindowHours !== undefined ? res.settings.instantBookingWindowHours : 4,
             showArrivalTime: res.settings.showArrivalTime !== undefined ? res.settings.showArrivalTime : true
@@ -104,8 +106,8 @@ const InstantBookingSettings = () => {
         {config.isInstantBookingEnabled && (
           <div className="space-y-5 pt-2">
             
-            {/* Markup Fee */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/50 space-y-3">
+            {/* Markup Fee & Split Payout */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/50 space-y-4">
               <div>
                 <p className="font-semibold text-gray-800">Instant Booking Markup Fee (₹)</p>
                 <p className="text-xs text-gray-500 mt-1">Extra priority fee added to the customer's total at checkout</p>
@@ -125,6 +127,31 @@ const InstantBookingSettings = () => {
                 >
                   {saving['instantBookingMarkup'] ? 'Saving...' : 'Save'}
                 </button>
+              </div>
+
+              {/* Vendor Share Split Input */}
+              <div className="pt-3 border-t border-gray-200/50 space-y-2">
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">Vendor Share (₹)</p>
+                  <p className="text-[10px] text-gray-400">Out of ₹{config.instantBookingMarkup}, how much is paid directly to the vendor (Remaining ₹{Math.max(0, config.instantBookingMarkup - config.instantBookingVendorShare)} goes to Admin)</p>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={config.instantBookingVendorShare}
+                    onChange={(e) => setConfig(prev => ({ ...prev, instantBookingVendorShare: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-yellow-500 bg-white"
+                    min="0"
+                    max={config.instantBookingMarkup}
+                  />
+                  <button
+                    onClick={() => handleSave('instantBookingVendorShare', config.instantBookingVendorShare)}
+                    disabled={saving['instantBookingVendorShare']}
+                    className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5"
+                  >
+                    {saving['instantBookingVendorShare'] ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
               </div>
             </div>
 

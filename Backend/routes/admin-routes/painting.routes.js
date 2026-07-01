@@ -18,11 +18,15 @@ const {
   getQuotations,
   createQuotation,
   updateQuotation,
-  deleteQuotation
+  deleteQuotation,
+  getConsultationOverview
 } = require('../../controllers/adminControllers/paintingController');
 
 // All routes are protected and for admin only
 router.use(authenticate, isAdmin);
+
+// Painting Consultations Overview
+router.route('/painting/consultation-overview').get(getConsultationOverview);
 
 // Paint Brands
 router.route('/painting/brands')

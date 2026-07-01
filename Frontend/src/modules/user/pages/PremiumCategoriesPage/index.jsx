@@ -133,12 +133,22 @@ const PremiumCategoriesPage = () => {
   }, [categoriesWithSubs, query]);
 
   const handleSubCategoryClick = (category, subCategory) => {
+    const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
+    if (isPainting) {
+      navigate('/user/painting-consultation');
+      return;
+    }
     navigate(`/user/category/${category.slug || category.id}`, {
       state: { category, subCategory }
     });
   };
 
   const handleServiceClick = (category, service) => {
+    const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
+    if (isPainting) {
+      navigate('/user/painting-consultation');
+      return;
+    }
     navigate(`/user/category/${category.slug || category.id}`, {
       state: { category, selectedService: service }
     });
@@ -215,7 +225,14 @@ const PremiumCategoriesPage = () => {
                     {category.title}
                   </h2>
                   <button
-                    onClick={() => navigate(`/user/category/${category.slug || category.id}`, { state: { category } })}
+                    onClick={() => {
+                      const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
+                      if (isPainting) {
+                        navigate('/user/painting-consultation');
+                      } else {
+                        navigate(`/user/category/${category.slug || category.id}`, { state: { category } });
+                      }
+                    }}
                     className="text-xs font-semibold text-brand hover:text-brand-dark transition-colors"
                   >
                     See all

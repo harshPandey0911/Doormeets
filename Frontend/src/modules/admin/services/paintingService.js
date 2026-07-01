@@ -91,3 +91,9 @@ export const deleteQuotation = async (id) => {
   const response = await api.delete(`/admin/painting/quotations/${id}`);
   return response.data;
 };
+
+// CONSULTATION OVERVIEW
+export const getConsultationOverview = async () => {
+  const response = await api.get('/admin/painting/consultation-overview');
+  return response.data;
+};

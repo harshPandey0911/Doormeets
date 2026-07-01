@@ -71,6 +71,16 @@ const addToCart = async (req, res) => {
     let service = null;
     if (serviceId) {
       service = await Service.findById(serviceId);
+      
+      if (!service) {
+        try {
+          const PaintProduct = require('../../models/PaintProduct');
+          service = await PaintProduct.findById(serviceId);
+        } catch (e) {
+          console.error("PaintProduct fallback error:", e);
+        }
+      }
+
       if (!service) {
         return res.status(404).json({
           success: false,
