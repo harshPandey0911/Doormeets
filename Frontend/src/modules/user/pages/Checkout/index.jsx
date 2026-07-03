@@ -1978,9 +1978,9 @@ const Checkout = () => {
             </button>
           </div>
           {paymentMethod === 'pay_at_home' && (
-            <div className="mt-3 flex items-start gap-2 bg-orange-50 dark:bg-orange-950/10 border border-orange-100 rounded-lg p-2.5">
-              <span className="text-orange-500 text-sm mt-0.5">ℹ️</span>
-              <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">
+            <div className="mt-3 flex items-start gap-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-2.5">
+              <span className="text-gray-500 text-sm">ℹ️</span>
+              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                 You will pay in cash or UPI directly to the professional after the service is completed.
               </p>
             </div>

@@ -138,21 +138,23 @@ const Notifications = () => {
   return (
     <div className="min-h-screen pb-20 bg-light-bg text-dark-text">
       {/* Header */}
-      <div className="backdrop-blur-xl bg-card-bg/40 sticky top-0 z-50 border-b border-border-color px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-1.5 hover:bg-light-bg rounded-full transition-colors text-dark-text"
-          >
-            <FiArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-dark-text">Notifications</h1>
+      <div className="backdrop-blur-xl bg-card-bg/40 sticky top-0 z-50 border-b border-border-color w-full">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-1.5 hover:bg-light-bg rounded-full transition-colors text-dark-text"
+            >
+              <FiArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-dark-text">Notifications</h1>
+            </div>
           </div>
         </div>
       </div>
 
-      <main className="px-4 py-6">
+      <main className="max-w-5xl mx-auto px-4 py-6">
         {/* Filter Buttons */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
           {[

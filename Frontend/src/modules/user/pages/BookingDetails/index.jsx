@@ -623,27 +623,31 @@ const BookingDetails = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-card-bg/40 border-b border-border-color px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/user/my-bookings')}
-              className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color"
-            >
-              <FiArrowLeft className="w-5 h-5 text-dark-text" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold text-dark-text tracking-tight">Booking Details</h1>
-              <p className="text-[10px] text-secondary-text font-semibold uppercase tracking-widest mt-0.5">
-                ID: <span className="font-mono">{booking.bookingNumber || booking._id?.slice(-8).toUpperCase()}</span>
-              </p>
+        <header className="sticky top-0 z-40 backdrop-blur-xl bg-card-bg/40 border-b border-border-color w-full">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/user/my-bookings')}
+                className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color"
+              >
+                <FiArrowLeft className="w-5 h-5 text-dark-text" />
+              </button>
+              <div className="flex-1">
+                <h1 className="text-xl font-semibold text-dark-text tracking-tight">Booking Details</h1>
+                <p className="text-[10px] text-secondary-text font-semibold uppercase tracking-widest mt-0.5">
+                  ID: <span className="font-mono">{booking.bookingNumber || booking._id?.slice(-8).toUpperCase()}</span>
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+            </div>
           </div>
         </header>
 
-        <main className="max-w-xl mx-auto px-4 py-6 space-y-6">
+        <main className="max-w-7xl mx-auto px-4 py-6 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:items-start space-y-6 lg:space-y-0">
+          {/* LEFT COLUMN: Main details, tracker, images, vendor info */}
+          <div className="space-y-6">
 
 
           {/* Visual Progress Stepper */}
@@ -951,85 +955,80 @@ const BookingDetails = () => {
           {(((booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online') && booking.paymentStatus?.toLowerCase() === 'pending') || booking.customerConfirmationOTP || booking.paymentStatus === 'success') && !booking.cashCollected && !['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
             <div
               onClick={() => { if (booking.customerConfirmationOTP) setShowPaymentModal(true); }}
-              className={`relative overflow-hidden rounded-3xl shadow-lg border active:scale-[0.98] transition-all ${booking.paymentStatus === 'success' ? 'border-green-100' : 'border-orange-100'} ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}>
-              {/* Animated gradient background */}
-              <div className={`absolute inset-0 opacity-95 ${booking.paymentStatus === 'success'
-                ? 'bg-linear-to-br from-green-500 via-green-600 to-emerald-700'
-                : 'bg-linear-to-br from-orange-500 via-orange-600 to-red-600'
-                }`}></div>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.15)_0%,transparent_50%)]"></div>
-
-              <div className="relative z-10 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                    {booking.paymentStatus === 'success' ? (
-                      <FiCheckCircle className="w-6 h-6 text-white" />
-                    ) : (
-                      <FiDollarSign className="w-6 h-6 text-white" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white tracking-tight">
-                      {booking.paymentStatus === 'success' ? 'Payment Received' : 'Online Payment'}
-                    </h3>
-                    <p className={`text-xs font-medium ${booking.paymentStatus === 'success' ? 'text-green-50' : 'text-orange-100'}`}>
-                      {booking.paymentStatus === 'success' ? 'Transaction verified successfully' : 'Complete your online payment'}
-                    </p>
-                  </div>
+              className={`relative overflow-hidden rounded-3xl shadow-sm border border-border-color p-4 bg-white dark:bg-zinc-900 ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                  booking.paymentStatus === 'success' 
+                    ? 'bg-green-500/10 border-green-500/20 text-green-600' 
+                    : 'bg-teal-500/10 border-teal-500/20 text-teal-600'
+                }`}>
+                  {booking.paymentStatus === 'success' ? (
+                    <FiCheckCircle className="w-5 h-5" />
+                  ) : (
+                    <FiDollarSign className="w-5 h-5" />
+                  )}
                 </div>
+                <div>
+                  <h3 className="text-sm font-bold text-dark-text tracking-tight">
+                    {booking.paymentStatus === 'success' ? 'Payment Received' : 'Online Payment'}
+                  </h3>
+                  <p className="text-xs text-secondary-text font-medium">
+                    {booking.paymentStatus === 'success' ? 'Transaction verified successfully' : 'Complete your online payment'}
+                  </p>
+                </div>
+              </div>
 
-                {/* Action Button for Online Payment - Only show if not paid */}
-                {booking.paymentStatus !== 'success' && (
-                  <>
-                    <button
-                      onClick={handleOnlinePayment}
-                      className="w-full py-4 mb-4 bg-white text-orange-600 rounded-2xl font-black text-sm shadow-xl hover:bg-orange-50 active:scale-95 transition-all flex items-center justify-center gap-2 group"
-                    >
-                      <FiDollarSign className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                      Pay Online Now
-                      <FiChevronRight className="w-4 h-4" />
-                    </button>
+              {/* Action Button for Online Payment - Only show if not paid */}
+              {booking.paymentStatus !== 'success' && (
+                <>
+                  <button
+                    onClick={handleOnlinePayment}
+                    className="w-full py-3 mb-4 bg-brand text-white rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all hover:bg-brand-light flex items-center justify-center gap-2 group"
+                  >
+                    <FiDollarSign className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                    Pay Online Now
+                    <FiChevronRight className="w-4 h-4" />
+                  </button>
 
-                    {booking.customerConfirmationOTP && (
-                      <div className="flex flex-col items-center mb-6">
-                        <p className="text-[10px] font-bold text-orange-100 uppercase tracking-[0.2em] mb-3 opacity-90">Verification Code</p>
-                        <div className="flex justify-center gap-2">
-                          {String(booking.customerConfirmationOTP).split('').map((digit, idx) => (
-                            <div
-                              key={idx}
-                              className="w-12 h-14 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-lg"
-                            >
-                              <span className="text-2xl font-black text-white">{digit}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <p className="text-[10px] text-orange-50 mt-3 font-medium bg-black/10 px-3 py-1 rounded-full backdrop-blur-sm">
-                          Share this code with the professional ONLY after your satisfaction
-                        </p>
+                  {booking.customerConfirmationOTP && (
+                    <div className="flex flex-col items-center mb-4">
+                      <p className="text-[10px] font-bold text-secondary-text uppercase tracking-[0.2em] mb-2">Verification Code</p>
+                      <div className="flex justify-center gap-2">
+                        {String(booking.customerConfirmationOTP).split('').map((digit, idx) => (
+                          <div
+                            key={idx}
+                            className="w-10 h-12 bg-light-bg rounded-lg flex items-center justify-center border border-border-color shadow-sm"
+                          >
+                            <span className="text-xl font-bold text-dark-text">{digit}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </>
-                )}
-
-                <div className={`backdrop-blur-sm rounded-xl p-4 border ${booking.paymentStatus === 'success' ? 'bg-white/10 border-white/10' : 'bg-white/15 border-white/20'
-                  }`}>
-                  <div className="flex items-center gap-3 text-white">
-                    {booking.paymentStatus === 'success' ? (
-                      <FiCheckCircle className="w-5 h-5 text-green-200" />
-                    ) : (
-                      <FiClock className="w-5 h-5 text-orange-200" />
-                    )}
-                    <div className="text-sm">
-                      {booking.paymentStatus === 'success'
-                        ? (
-                          booking.paymentMethod === 'plan_benefit'
-                            ? <p className="font-medium">Covered by your Membership Plan</p>
-                            : <p className="font-medium">Booking completed successfully. Thank you for choosing us!</p>
-                        )
-                        : <p className="font-medium">Total Amount: <span className="text-lg font-black ml-1">₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}</span></p>
-                      }
-                      {booking.paymentStatus !== 'success' && <p className="text-[10px] text-orange-100 mt-0.5 opacity-80">Pay online above or prepare cash for the professional.</p>}
+                      <p className="text-[9px] text-secondary-text mt-2 font-medium bg-light-bg border border-border-color px-3 py-1 rounded-full">
+                        Share this code with the professional ONLY after your satisfaction
+                      </p>
                     </div>
+                  )}
+                </>
+              )}
+
+              <div className="bg-light-bg rounded-xl p-3.5 border border-border-color">
+                <div className="flex items-center gap-2.5 text-dark-text">
+                  {booking.paymentStatus === 'success' ? (
+                    <FiCheckCircle className="w-4.5 h-4.5 text-green-500" />
+                  ) : (
+                    <FiClock className="w-4.5 h-4.5 text-teal-500" />
+                  )}
+                  <div className="text-xs">
+                    {booking.paymentStatus === 'success'
+                      ? (
+                        booking.paymentMethod === 'plan_benefit'
+                          ? <p className="font-semibold">Covered by your Membership Plan</p>
+                          : <p className="font-semibold">Booking completed successfully. Thank you for choosing us!</p>
+                      )
+                      : <p className="font-semibold">Total Amount: <span className="text-sm font-bold text-brand ml-1">₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}</span></p>
+                    }
+                    {booking.paymentStatus !== 'success' && <p className="text-[9px] text-secondary-text mt-0.5">Pay online above or prepare cash for the professional.</p>}
                   </div>
                 </div>
               </div>
@@ -1503,12 +1502,58 @@ const BookingDetails = () => {
           </div>
 
           {/* Rate & Review (Conditional) */}
-          {/* Rate & Review (Conditional) */}
           <ReviewCard
             booking={booking}
             onWriteReview={() => setShowRatingModal(true)}
           />
+          </div>
 
+          {/* RIGHT COLUMN: Summary and Actions (Sidebar) */}
+          <div className="lg:sticky lg:top-24 space-y-6">
+            {/* Booking Actions Sidebar panel */}
+            <div className="bg-card-bg rounded-3xl p-5 border border-border-color shadow-sm space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-secondary-text">Booking Actions</h3>
+              
+              {/* Payment Action */}
+              {booking.paymentStatus === 'pending' && booking.status !== 'cancelled' && (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  disabled={paying}
+                  className="w-full py-3 bg-[#B33A35] text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
+                >
+                  {paying ? 'Processing...' : '⚡ Pay Booking Bill'}
+                </button>
+              )}
+
+              {/* Cancellation Option */}
+              {['pending', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
+                <button
+                  onClick={handleCancelBooking}
+                  className="w-full py-3 border border-red-500/30 text-red-500 hover:bg-red-500/5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
+                >
+                  Cancel Booking
+                </button>
+              )}
+
+              {/* Reschedule Option */}
+              {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
+                <button
+                  onClick={() => navigate(`/user/reschedule-booking/${booking._id}`)}
+                  className="w-full py-3 border border-border-color text-dark-text hover:bg-divider text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
+                >
+                  Reschedule Slot
+                </button>
+              )}
+
+              {/* Chat Support */}
+              <button
+                onClick={() => navigate('/user/inbox', { state: { vendorId: booking.vendorId, bookingId: booking._id } })}
+                className="w-full py-3 bg-[#00A6A6] text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:opacity-95 transition-all active:scale-[0.98]"
+              >
+                Chat Support
+              </button>
+            </div>
+          </div>
         </main>
 
         {/* Rating Modal */}

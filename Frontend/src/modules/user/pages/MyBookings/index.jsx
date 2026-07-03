@@ -213,24 +213,32 @@ const MyBookings = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-4 py-4 flex items-center justify-between w-full">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color cursor-pointer text-dark-text"
-            >
-              <FiArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl font-bold text-dark-text tracking-tight">My Bookings</h1>
-          </div>
-          <div className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color relative">
-            <NotificationBell />
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-4 py-4 w-full">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (window.history.length > 2) {
+                    navigate(-1);
+                  } else {
+                    navigate('/user/home');
+                  }
+                }}
+                className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color cursor-pointer text-dark-text"
+              >
+                <FiArrowLeft className="w-5 h-5" />
+              </button>
+              <h1 className="text-xl font-bold text-dark-text tracking-tight">My Bookings</h1>
+            </div>
+            <div className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color relative">
+              <NotificationBell />
+            </div>
           </div>
         </header>
 
         {/* Filter Tabs */}
         <div className="bg-card-bg border-b border-border-color fixed top-[72px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
-          <div className="flex overflow-x-auto px-4 py-3 gap-2.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="max-w-7xl mx-auto flex overflow-x-auto px-4 py-3 gap-2.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: 'all', label: 'All Bookings' },
               { id: 'confirmed', label: 'Confirmed' },
@@ -254,7 +262,7 @@ const MyBookings = () => {
         </div>
 
         {/* Bookings List */}
-        <main className="px-4 pt-[150px] pb-5 max-w-lg mx-auto w-full">
+        <main className="px-4 pt-[150px] pb-5 max-w-7xl mx-auto w-full">
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
@@ -315,7 +323,7 @@ const MyBookings = () => {
                   transition: { staggerChildren: 0.1 }
                 }
               }}
-              className="space-y-4"
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
             >
               {bookings.map((booking) => {
                 const bookingImage = getBookingImage(booking) || getBookingDummyImage(booking.serviceName);

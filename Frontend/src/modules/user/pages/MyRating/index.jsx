@@ -44,8 +44,8 @@ const MyRating = () => {
   return (
     <div className="min-h-screen bg-light-bg pb-24">
       {/* Header */}
-      <header className="bg-transparent backdrop-blur-xl border-b border-border-color sticky top-0 z-30">
-        <div className="px-4 pt-4 pb-3">
+      <header className="bg-transparent backdrop-blur-xl border-b border-border-color sticky top-0 z-30 w-full">
+        <div className="max-w-5xl mx-auto px-4 pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -58,14 +58,14 @@ const MyRating = () => {
         </div>
       </header>
 
-      <main className="px-4 py-6 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 py-6">
         {isLoading && pagination.page === 1 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <FiLoader className="w-10 h-10 text-[#B33A35] animate-spin mb-4" />
             <p className="text-gray-500 font-medium">Fetching your reviews...</p>
           </div>
         ) : ratings.length > 0 ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {ratings.map((rating, idx) => (
               <div
                 key={rating._id || idx}

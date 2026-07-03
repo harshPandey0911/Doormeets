@@ -382,7 +382,7 @@ const PremiumCategoryPage = () => {
         {/* Subcategories Grid Cards */}
         {subCategories.length > 0 && (
           <div className="mb-8">
-            <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
               {subCategories.map((sub, index) => {
                 const color = pastelPalettes[index % pastelPalettes.length];
                 const subImage = toAssetUrl(sub.iconUrl) || 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
