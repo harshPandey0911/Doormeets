@@ -69,7 +69,7 @@ const ServiceCategories = React.memo(({
       </div>
 
       {/* Grid Layout of Rounded rectangular cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3 lg:gap-5">
         {displayCategories.map((category, index) => {
           return (
             <div
@@ -78,7 +78,8 @@ const ServiceCategories = React.memo(({
               className="relative flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.01] transition-all duration-200 border text-center aspect-square shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden"
               style={{
                 backgroundColor: category.colorScheme.bg,
-                borderColor: category.colorScheme.border
+                borderColor: category.colorScheme.border,
+                boxShadow: `0 8px 20px -4px ${category.colorScheme.text}33`
               }}
             >
               {category.icon ? (
@@ -92,7 +93,7 @@ const ServiceCategories = React.memo(({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
                   </div>
                   <span 
-                    className="absolute bottom-2 left-0 right-0 px-2 text-[11px] font-bold tracking-tight truncate text-white z-10"
+                    className="absolute bottom-2 lg:bottom-3.5 left-0 right-0 px-2 text-[11px] lg:text-[14px] font-bold tracking-tight truncate text-white z-10"
                   >
                     {category.title}
                   </span>
@@ -105,7 +106,7 @@ const ServiceCategories = React.memo(({
                     </svg>
                   </div>
                   <span 
-                    className="text-[11px] font-semibold tracking-tight truncate w-full"
+                    className="text-[11px] lg:text-[14px] font-semibold tracking-tight truncate w-full"
                     style={{ color: '#1F2937' }}
                   >
                     {category.title}

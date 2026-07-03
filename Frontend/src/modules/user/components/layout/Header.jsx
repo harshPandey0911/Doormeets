@@ -1,12 +1,25 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FiHome, FiCalendar, FiShoppingCart, FiUser } from 'react-icons/fi';
+import { useCart } from '../../../../context/CartContext';
 import NotificationBell from '../common/NotificationBell';
 import api from '../../../../services/api';
 import { useTheme } from '../../../../context/ThemeContext';
+import SearchBar from '../../pages/Home/components/SearchBar';
 
-const Header = ({ location, onLocationClick }) => {
-  const navigate_unused = null; // kept for future use
+const Header = ({ location, onLocationClick, onSearchClick }) => {
+  const navigate = useNavigate();
+  const locationPath = useLocation();
+  const { cartCount } = useCart();
   const [unreadCount, setUnreadCount] = useState(0);
   const { toggleTheme, isDark } = useTheme();
+
+  const menuItems = [
+    { id: 'home', label: 'Home', icon: FiHome, path: '/user/home' },
+    { id: 'bookings', label: 'Bookings', icon: FiCalendar, path: '/user/my-bookings' },
+    { id: 'cart', label: 'Cart', icon: FiShoppingCart, path: '/user/cart', isCart: true },
+    { id: 'account', label: 'Account', icon: FiUser, path: '/user/account' },
+  ];
 
   // Load dynamic unread notifications count
   useEffect(() => {
@@ -36,7 +49,7 @@ const Header = ({ location, onLocationClick }) => {
 
   return (
     <header className="w-full bg-transparent px-5 pt-6 pb-2">
-      <div className="max-w-lg lg:max-w-2xl mx-auto flex items-start justify-between">
+      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto flex items-start justify-between">
 
         {/* Left Side: Location Selector & Bold Heading */}
         <div className="flex flex-col min-w-0">
@@ -58,15 +71,51 @@ const Header = ({ location, onLocationClick }) => {
             </svg>
           </div>
           <h1
-            className="text-[21px] font-semibold leading-[1.25] tracking-tight mt-1.5 max-w-[280px]"
+            className="text-[21px] font-semibold leading-[1.25] tracking-tight mt-1.5 max-w-[280px] md:max-w-none md:whitespace-nowrap"
             style={{ color: 'var(--text-primary)' }}
           >
             What you are looking for today
           </h1>
         </div>
 
-        {/* Right Side: Theme Toggle + Notification Bell */}
+        {/* Middle Search Bar on Desktop */}
+        <div className="hidden md:block flex-1 max-w-2xl mx-8 self-center">
+          <SearchBar onInputClick={onSearchClick} />
+        </div>
+
+        {/* Right Side: Desktop Nav Menu + Theme Toggle + Notification Bell */}
         <div className="flex items-center gap-3.5 shrink-0 pt-1">
+
+          {/* Desktop Horizontal Menu Bar - hidden on mobile */}
+          <nav className="hidden lg:flex items-center gap-1 mr-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = locationPath.pathname === item.path ||
+                (item.path === '/user/home' && locationPath.pathname === '/user/home/');
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(item.path)}
+                  className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 active:scale-95"
+                  style={isActive ? {
+                    backgroundColor: 'var(--primary)',
+                    color: '#ffffff',
+                  } : {
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                  {item.isCart && cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 border-white">
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
           {/* Theme Toggle Button */}
           <button

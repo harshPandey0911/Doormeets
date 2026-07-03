@@ -46,33 +46,39 @@ const OfferBannerSlider = ({ banners }) => {
           clickable: true,
           dynamicBullets: true,
         }}
-        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px]"
+        breakpoints={{
+          1024: {
+            slidesPerView: 1,
+            spaceBetween: 0,
+          }
+        }}
+        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[21/9] md:aspect-[3/1] lg:aspect-[3.2/1]"
       >
         {banners.map((banner) => (
-          <SwiperSlide key={banner._id}>
-            <div 
-              className="relative aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden rounded-[24px]"
-              onClick={() => handleBannerClick(banner)}
-            >
-              {banner.mediaType === 'video' ? (
-                <video 
-                  src={banner.imageUrl} 
-                  autoPlay 
-                  muted 
-                  loop 
-                  playsInline 
-                  className="w-full h-full object-cover scale-[1.08] translate-y-[2px]"
-                />
-              ) : (
-                <img 
-                  src={banner.imageUrl} 
-                  alt={banner.title} 
-                  className="w-full h-full object-cover scale-[1.08] translate-y-[2px]"
-                  loading="lazy"
-                />
-              )}
-              {/* Optional: Add a subtle overlay or text if needed */}
-            </div>
+          <SwiperSlide 
+            key={banner._id}
+            className="relative w-full h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
+            onClick={() => handleBannerClick(banner)}
+          >
+            {banner.mediaType === 'video' ? (
+              <video 
+                src={banner.imageUrl} 
+                autoPlay 
+                muted 
+                loop 
+                playsInline 
+                className="scale-[1.22] translate-y-[2px]"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <img 
+                src={banner.imageUrl} 
+                alt={banner.title} 
+                className="scale-[1.22] translate-y-[2px]"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                loading="lazy"
+              />
+            )}
           </SwiperSlide>
         ))}
       </Swiper>
