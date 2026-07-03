@@ -69,13 +69,15 @@ const BLOCK_PALETTE = [
   { key: 'rate_card',          label: 'Rate Card Link',           emoji: '💰',  color: '#10b981' },
   { key: 'how_it_works',       label: 'How It Works',             emoji: '🔄',  color: '#3b82f6' },
   { key: 'comparison',         label: 'Comparison Link',          emoji: '⚖️',  color: '#6366f1' },
-  { key: 'offer_image',        label: 'Offer Image',              emoji: '🎁',  color: '#ec4899' }
+  { key: 'offer_image',        label: 'Offer Image',              emoji: '🎁',  color: '#ec4899' },
+  { key: 'before_after',       label: 'Before & After Image',     emoji: '🔄',  color: '#e11d48' }
 ];
 
 // Default data for each block type
 const getDefaultBlockData = (blockType) => {
   switch (blockType) {
     case 'image_gallery':    return { images: [] };
+    case 'before_after':     return { beforeImage: '', afterImage: '', title: 'Before & After' };
     case 'banner_slider':    return { banners: [] };
     case 'heading_text':     return { heading: 'Section Title', text: 'Add your description here...' };
     case 'whats_included':   return { title: "What's Included", items: ['Professional cleaning staff', 'Eco-friendly supplies'] };
@@ -328,6 +330,77 @@ const BlockDataEditor = ({ block, onChange }) => {
   };
 
   switch (blockType) {
+    case 'before_after':
+      return (
+        <div className="space-y-4">
+          <div>
+            <label className={labelCls}>Section Title</label>
+            <input className={inputCls} value={data.title || ''} onChange={e => update('title', e.target.value)} placeholder="e.g. Before & After Result" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 border border-gray-200 rounded-xl bg-white shadow-sm space-y-2">
+              <span className="text-xs font-bold text-gray-700 block">Before Image</span>
+              {data.beforeImage && data.beforeImage.startsWith('http') ? (
+                <div className="relative aspect-video rounded-lg overflow-hidden border">
+                  <img src={data.beforeImage} alt="Before" className="w-full h-full object-cover" />
+                  <span className="absolute top-2 right-2 bg-black/75 text-white text-[9px] uppercase font-bold px-1.5 py-0.5 rounded">Before</span>
+                </div>
+              ) : (
+                <div className="aspect-video bg-gray-50 border rounded-lg flex items-center justify-center text-xs text-gray-400">No Image Uploaded</div>
+              )}
+              <input className={inputCls} value={data.beforeImage || ''} onChange={e => update('beforeImage', e.target.value)} placeholder="Before Image URL (https://...)" />
+              <label className={`text-purple-600 text-xs font-bold hover:underline cursor-pointer flex items-center gap-1 ${uploading ? 'opacity-50' : ''}`}>
+                {uploading ? 'Uploading...' : '+ Upload Before Image'}
+                <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    setUploading(true);
+                    const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+                    const url = await uploadToCloudinary(file, 'service_blocks');
+                    if (url) update('beforeImage', url);
+                  } catch (err) {
+                    console.error('Upload failed', err);
+                  } finally {
+                    setUploading(false);
+                  }
+                }} />
+              </label>
+            </div>
+
+            <div className="p-3 border border-gray-200 rounded-xl bg-white shadow-sm space-y-2">
+              <span className="text-xs font-bold text-gray-700 block">After Image</span>
+              {data.afterImage && data.afterImage.startsWith('http') ? (
+                <div className="relative aspect-video rounded-lg overflow-hidden border">
+                  <img src={data.afterImage} alt="After" className="w-full h-full object-cover" />
+                  <span className="absolute top-2 right-2 bg-black/75 text-white text-[9px] uppercase font-bold px-1.5 py-0.5 rounded">After</span>
+                </div>
+              ) : (
+                <div className="aspect-video bg-gray-50 border rounded-lg flex items-center justify-center text-xs text-gray-400">No Image Uploaded</div>
+              )}
+              <input className={inputCls} value={data.afterImage || ''} onChange={e => update('afterImage', e.target.value)} placeholder="After Image URL (https://...)" />
+              <label className={`text-purple-600 text-xs font-bold hover:underline cursor-pointer flex items-center gap-1 ${uploading ? 'opacity-50' : ''}`}>
+                {uploading ? 'Uploading...' : '+ Upload After Image'}
+                <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    setUploading(true);
+                    const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+                    const url = await uploadToCloudinary(file, 'service_blocks');
+                    if (url) update('afterImage', url);
+                  } catch (err) {
+                    console.error('Upload failed', err);
+                  } finally {
+                    setUploading(false);
+                  }
+                }} />
+              </label>
+            </div>
+          </div>
+        </div>
+      );
+
     case 'image_gallery':
       return (
         <div className="space-y-3">

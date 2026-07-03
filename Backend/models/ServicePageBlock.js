@@ -30,7 +30,8 @@ const servicePageBlockSchema = new mongoose.Schema({
       'rate_card',           // 12. Rate Card Link
       'how_it_works',        // 13. How It Works with/without Image
       'comparison',          // 14. Comparison Link
-      'offer_image'          // 15. Offer Image
+      'offer_image',         // 15. Offer Image
+      'before_after'         // 16. Before and After Image Block
     ]
   },
   order: {

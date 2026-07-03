@@ -1378,6 +1378,27 @@ const PremiumServiceDetailPage = () => {
             {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, i) => {
               const data = block.data || {};
               switch (block.blockType) {
+                case 'before_after':
+                  return (
+                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+                      {data.title && <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>}
+                      <div className="grid grid-cols-2 gap-4">
+                        {data.beforeImage && (
+                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                            <img src={toAssetUrl(data.beforeImage)} alt="Before" className="w-full h-full object-cover" />
+                            <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg backdrop-blur-xs">Before</span>
+                          </div>
+                        )}
+                        {data.afterImage && (
+                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                            <img src={toAssetUrl(data.afterImage)} alt="After" className="w-full h-full object-cover" />
+                            <span className="absolute top-2 right-2 bg-green-600/90 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg shadow-sm">After</span>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  );
+
                 case 'heading_text':
                   return (
                     <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
