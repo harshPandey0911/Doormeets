@@ -166,8 +166,8 @@ const ManageAddresses = () => {
   return (
     <div className="min-h-screen bg-light-bg pb-4">
       {/* Header */}
-      <header className="bg-transparent border-b border-border-color sticky top-0 z-30">
-        <div className="px-4 pt-4 pb-3">
+      <header className="bg-transparent border-b border-border-color sticky top-0 z-30 w-full">
+        <div className="max-w-5xl mx-auto px-4 pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -180,7 +180,7 @@ const ManageAddresses = () => {
         </div>
       </header>
 
-      <main className="px-4 py-4">
+      <main className="max-w-5xl mx-auto px-4 py-4">
 
 
         {/* Saved Addresses Section */}
@@ -214,7 +214,7 @@ const ManageAddresses = () => {
         )}
 
         {/* Address List */}
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {addresses.map((address) => (
             <div
               key={address._id || address.id}

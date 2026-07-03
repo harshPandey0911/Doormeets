@@ -149,7 +149,7 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
             <div className="space-y-4">
               <div className="flex justify-between items-end border-b border-border-color pb-2">
                 <p className="text-xs font-bold text-secondary-text uppercase tracking-wide">Total Amount</p>
-                <p className="text-3xl font-black text-dark-text">
+                <p className="text-3xl font-bold text-dark-text">
                   ₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
               </div>
@@ -289,7 +289,7 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                     <div className="bg-light-bg border border-border-color rounded-xl p-4 text-center">
                       <p className="text-xs font-bold text-dark-text mb-2">Paying Cash? Share Code</p>
                       <div className="bg-card-bg border-2 border-dashed border-border-color rounded-lg py-2 px-4 inline-block mb-1">
-                        <span className="text-2xl font-black font-mono text-dark-text tracking-[0.2em]">
+                        <span className="text-2xl font-bold font-mono text-dark-text tracking-[0.2em]">
                           {booking.customerConfirmationOTP || booking.paymentOtp || '....'}
                         </span>
                       </div>

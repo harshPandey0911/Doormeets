@@ -238,26 +238,27 @@ const Account = () => {
       </div>
 
       <div className="relative z-10">
-        {/* Premium Transparent Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-5 py-5 flex items-center justify-between w-full">
-          <div className="flex items-center gap-4">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => navigate(-1)}
-              className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color"
-            >
-              <FiArrowLeft className="w-5 h-5 text-dark-text" />
-            </motion.button>
-            <h1 className="text-xl font-bold text-dark-text tracking-tight">Account</h1>
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-5 py-5 w-full">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => navigate(-1)}
+                className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color"
+              >
+                <FiArrowLeft className="w-5 h-5 text-dark-text" />
+              </motion.button>
+              <h1 className="text-xl font-bold text-dark-text tracking-tight">Account</h1>
+            </div>
+            <NotificationBell />
           </div>
-          <NotificationBell />
         </header>
 
         <motion.main
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="px-4 pt-[96px] max-w-lg mx-auto"
+          className="px-4 pt-[96px] max-w-7xl md:max-w-4xl mx-auto w-full"
         >
           {/* Elevated Profile Card */}
           <motion.div
