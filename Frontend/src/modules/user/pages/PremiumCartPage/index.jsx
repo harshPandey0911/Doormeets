@@ -87,25 +87,27 @@ const PremiumCartPage = () => {
     >
       {/* Header */}
       <div
-        className="sticky top-0 z-30 px-4 py-4 flex items-center gap-3 border-b"
+        className="sticky top-0 z-30 border-b"
         style={{
           backgroundColor: 'var(--background)',
           borderColor: 'var(--border)',
         }}
       >
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full transition-all active:scale-95"
-          style={{ backgroundColor: 'var(--card-bg)' }}
-        >
-          <FiArrowLeft className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
-        </button>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          My cart
-        </h1>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full transition-all active:scale-95"
+            style={{ backgroundColor: 'var(--card-bg)' }}
+          >
+            <FiArrowLeft className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
+          </button>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            My cart
+          </h1>
+        </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 pt-4 pb-6">
+      <div className="max-w-7xl mx-auto px-4 pt-4 pb-6">
 
 
         {/* Empty cart */}
@@ -136,7 +138,9 @@ const PremiumCartPage = () => {
             </button>
           </div>
         ) : (
-          <>
+          <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-8 lg:items-start">
+            {/* LEFT: Cart items */}
+            <div>
             {/* Cart items grouped by category */}
             <div className="space-y-4 mb-6">
               {Object.entries(groupedItems).map(([category, items]) => (
@@ -400,8 +404,10 @@ const PremiumCartPage = () => {
                 </div>
               ))}
             </div>
+            </div>
 
-            {/* Payment Summary */}
+            {/* RIGHT: Payment summary + Continue (sidebar on desktop, bottom on mobile) */}
+            <div className="lg:sticky lg:top-24">
             <div
               className="rounded-2xl border p-4 mb-6"
               style={{
@@ -454,7 +460,8 @@ const PremiumCartPage = () => {
             >
               Continue
             </button>
-          </>
+            </div>
+          </div>
         )}
       </div>
     </div>

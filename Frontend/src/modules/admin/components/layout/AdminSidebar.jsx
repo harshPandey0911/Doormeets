@@ -118,8 +118,7 @@ const getChildRoute = (parentRoute, childName) => {
       "Featured Sections": "/admin/user-categories/featured-sections"
     },
     "/admin/addon-library": {
-      "Extra Services": "/admin/user-categories/vendor-services",
-      "Materials & Parts": "/admin/user-categories/vendor-parts"
+      "Extra Services": "/admin/user-categories/vendor-services"
     },
 
     "/admin/home-management": {

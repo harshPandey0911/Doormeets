@@ -41,7 +41,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
       onClick={() => onOpen?.(service)}
       className="rounded-xl border p-4 shadow-[0_4px_20px_rgba(17,24,39,0.02)] transition-all cursor-pointer flex justify-between items-center gap-4"
       style={{
-        backgroundColor: 'var(--card-bg)',
+        backgroundColor: 'var(--surface)',
         borderColor: 'var(--border)'
       }}
     >

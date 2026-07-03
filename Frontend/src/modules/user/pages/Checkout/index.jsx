@@ -1496,25 +1496,24 @@ const Checkout = () => {
   return (
     <div className="min-h-screen pb-80" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
-      <header style={{ backgroundColor: 'var(--background)' }}>
-        <div className="px-4 pt-4 pb-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleBack}
-              className="p-1 rounded-full transition-colors"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <FiArrowLeft className="w-6 h-6" />
-            </button>
-            <h1 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>
-              {category ? `${category} Checkout` : 'Your cart'}
-            </h1>
-          </div>
+      <header className="border-b" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
+          <button
+            onClick={handleBack}
+            className="p-1 rounded-full transition-colors"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <FiArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl font-normal" style={{ color: 'var(--text-primary)' }}>
+            {category ? `${category} Checkout` : 'Your cart'}
+          </h1>
         </div>
-        <div className="border-b" style={{ borderColor: 'var(--border)' }}></div>
       </header>
 
-      <main className="px-4 py-4">
+      <main className="max-w-7xl mx-auto px-4 py-4 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:items-start">
+        {/* LEFT COLUMN: Items and Options */}
+        <div>
         {/* Savings Banner */}
         {savings > 0 && (
           <div className="bg-green-50 border border-green-100 rounded-2xl p-4 mb-6 flex items-center justify-between">
@@ -1942,40 +1941,44 @@ const Checkout = () => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {/* Online Payment */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('online')}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
-                paymentMethod === 'online'
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'
-                  : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-2xl">📱</span>
-              <span className="text-xs font-semibold" style={{ color: paymentMethod === 'online' ? '#ea580c' : 'var(--text-secondary)' }}>Online Payment</span>
-              <span className="text-[10px] text-gray-400">UPI / Card / Net Banking</span>
-              {paymentMethod === 'online' && (
-                <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">Selected ✓</span>
-              )}
-            </button>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('online')}
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg border-2 transition-all w-full max-w-[160px] min-h-[80px] justify-center ${
+                  paymentMethod === 'online'
+                    ? 'border-red-600 bg-transparent'
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 bg-transparent'
+                }`}
+              >
+                <span className="text-base">📱</span>
+                <span className="text-[11px] font-bold" style={{ color: paymentMethod === 'online' ? '#dc2626' : 'var(--text-secondary)' }}>Online Payment</span>
+                <span className="text-[8px] text-gray-400 leading-none">UPI/Card/NetBank</span>
+                {paymentMethod === 'online' && (
+                  <span className="text-[8px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full mt-0.5">Selected ✓</span>
+                )}
+              </button>
+            </div>
 
             {/* Cash on Delivery */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('pay_at_home')}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
-                paymentMethod === 'pay_at_home'
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'
-                  : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-2xl">💵</span>
-              <span className="text-xs font-semibold" style={{ color: paymentMethod === 'pay_at_home' ? '#ea580c' : 'var(--text-secondary)' }}>Pay At Home</span>
-              <span className="text-[10px] text-gray-400">Pay after service</span>
-              {paymentMethod === 'pay_at_home' && (
-                <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">Selected ✓</span>
-              )}
-            </button>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('pay_at_home')}
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg border-2 transition-all w-full max-w-[160px] min-h-[80px] justify-center ${
+                  paymentMethod === 'pay_at_home'
+                    ? 'border-red-600 bg-transparent'
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 bg-transparent'
+                }`}
+              >
+                <span className="text-base">💵</span>
+                <span className="text-[11px] font-bold" style={{ color: paymentMethod === 'pay_at_home' ? '#dc2626' : 'var(--text-secondary)' }}>Pay At Home</span>
+                <span className="text-[8px] text-gray-400 leading-none">Pay after service</span>
+                {paymentMethod === 'pay_at_home' && (
+                  <span className="text-[8px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full mt-0.5">Selected ✓</span>
+                )}
+              </button>
+            </div>
           </div>
           {paymentMethod === 'pay_at_home' && (
             <div className="mt-3 flex items-start gap-2 bg-orange-50 dark:bg-orange-950/10 border border-orange-100 rounded-lg p-2.5">
@@ -1986,6 +1989,98 @@ const Checkout = () => {
             </div>
           )}
         </div>
+        </div>
+
+        {/* RIGHT COLUMN: Sidebar (Sticky on Desktop) */}
+        <div className="lg:sticky lg:top-24 space-y-6">
+          {/* Booking Type Toggle (Desktop Sidebar View) */}
+          <div className="hidden lg:block border rounded-xl p-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <span>🕒</span> Booking Schedule
+            </h3>
+            <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
+              {isInstantBookingEnabled && (
+                <button
+                  onClick={() => setBookingType('instant')}
+                  className="flex-1 py-2 text-xs font-normal rounded-lg transition-all flex items-center justify-center gap-1.5"
+                  style={bookingType === 'instant'
+                    ? { backgroundColor: '#fef9c3', color: '#854d0e', fontWeight: 600 }
+                    : { color: 'var(--text-muted)' }}
+                >
+                  <span className="text-yellow-500">⚡</span> Instant
+                  {instantBookingMarkup > 0 && (
+                    <span className="text-[9px] font-bold bg-yellow-100 text-yellow-700 px-1 py-0.5 rounded-full">
+                      +₹{instantBookingMarkup}
+                    </span>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={() => setBookingType('scheduled')}
+                className="flex-1 py-2 text-xs font-normal rounded-lg transition-all flex items-center justify-center gap-1.5"
+                style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
+              >
+                <span>📅</span> Slot Booking
+              </button>
+            </div>
+            {bookingType === 'scheduled' && (
+              <p className="text-[10px] text-center font-medium mt-1 mb-1" style={{ color: 'var(--text-muted)' }}>
+                📅 Choose date & slot via Edit button below
+              </p>
+            )}
+            {bookingType === 'instant' && isInstantBookingEnabled && (
+              <p className="text-[10px] text-center text-yellow-700 font-medium mt-1 mb-1">
+                ⚡ Priority Service{showArrivalTime ? `: Arrives in ~${instantBookingWaitTime} mins` : ''} · +₹{instantBookingMarkup}
+              </p>
+            )}
+
+            {/* Address & Slot summary inside sidebar for Desktop */}
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+              {(houseNumber || addressDetails) ? (
+                <div className="space-y-3">
+                  {/* Address info */}
+                  <div className="flex items-start gap-2.5">
+                    <FiHome className="w-4 h-4 mt-0.5 text-gray-400" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Address</p>
+                      <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                        {houseNumber ? `${houseNumber}, ` : ''}{address || 'Select Address'}
+                      </p>
+                    </div>
+                    <button onClick={() => setShowAddressModal(true)} className="text-xs text-teal-600 font-semibold hover:underline">Edit</button>
+                  </div>
+                  {/* Time slot info */}
+                  {bookingType === 'scheduled' && (
+                    <div className="flex items-start gap-2.5">
+                      <FiClock className="w-4 h-4 mt-0.5 text-gray-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Slot</p>
+                        <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {selectedDate ? (() => {
+                            const { day, date: dateNum } = formatDate(selectedDate);
+                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            const month = monthNames[selectedDate.getMonth()];
+                            const timeStr = selectedTime && getTimeSlots().find(slot => slot.value === selectedTime)?.display ? ` • ${getTimeSlots().find(slot => slot.value === selectedTime).display}` : '';
+                            return `${day}, ${dateNum} ${month}${timeStr}`;
+                          })() : (
+                            <span className="text-gray-400">Select Date & Time</span>
+                          )}
+                        </p>
+                      </div>
+                      <button onClick={() => setShowTimeSlotModal(true)} className="text-xs text-teal-600 font-semibold hover:underline">Edit</button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAddressModal(true)}
+                  className="w-full py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-semibold transition-all"
+                >
+                  + Add Delivery Address
+                </button>
+              )}
+            </div>
+          </div>
 
         {/* Payment Summary */}
         <div className="border-2 rounded-2xl p-5 mb-6 shadow-sm overflow-hidden relative" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
@@ -2075,7 +2170,7 @@ const Checkout = () => {
         </div>
 
         {/* Important Note regarding Base Price */}
-        <div className="bg-blue-50/10 border border-blue-100/30 rounded-xl p-4 mb-6 flex items-start gap-4 shadow-sm">
+        <div className="bg-blue-50/10 border border-blue-100/30 rounded-xl p-4 mb-4 flex items-start gap-4 shadow-sm">
           <div className="bg-blue-100/20 p-2 rounded-full shrink-0 mt-0.5">
             <FiInfo className="w-5 h-5 text-blue-600" />
           </div>
@@ -2089,7 +2184,7 @@ const Checkout = () => {
 
         {/* Free Plan Benefit Card */}
         {totalAmount === 0 && (
-          <div className="bg-linear-to-br from-green-50/10 to-emerald-100/10 border border-green-200/30 rounded-2xl p-5 mb-6 relative overflow-hidden">
+          <div className="bg-linear-to-br from-green-50/10 to-emerald-100/10 border border-green-200/30 rounded-2xl p-5 mb-4 relative overflow-hidden">
             <div className="flex items-start gap-4 z-10 relative">
               <div className="bg-green-500 rounded-full p-2 shadow-lg shadow-green-200 shrink-0">
                 <FiCheckCircle className="w-6 h-6 text-white" />
@@ -2120,11 +2215,31 @@ const Checkout = () => {
           </button>
         </div>
 
-
+        {/* Desktop Direct Action Button inside Sidebar */}
+        <div className="hidden lg:block">
+          <button
+            onClick={plan ? handlePlanPayment :
+              (houseNumber || addressDetails) ?
+                (currentStep === 'payment' ? handlePayment : handleSearchVendors) :
+                handleProceed}
+            disabled={searchingVendors}
+            className="w-full text-white py-4 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 shadow-lg shadow-teal-500/30"
+            style={{ backgroundColor: themeColors.button }}
+          >
+            {searchingVendors ? 'Searching for vendors...' :
+              currentStep === 'payment' ? (totalAmount === 0 ? 'Confirm Booking (Free)' : (paymentMethod === 'online' ? 'Proceed to Pay' : 'Confirm Booking')) :
+                plan ? 'Proceed to Payment' :
+                  bookingType === 'instant' ? '⚡ Book Instantly Now' :
+                    (selectedDate && selectedTime && houseNumber ?
+                      'Find Vendors for Slot' :
+                      (houseNumber || addressDetails) ? 'Select Date & Time Slot' : 'Add address to proceed')}
+          </button>
+        </div>
+        </div>
       </main>
 
-      {/* Bottom Action Button */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+      {/* Bottom Action Button (Mobile View Only) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t lg:hidden" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
 
         {/* Booking Type Toggle */}
         <div className="px-4 pt-3 pb-0">

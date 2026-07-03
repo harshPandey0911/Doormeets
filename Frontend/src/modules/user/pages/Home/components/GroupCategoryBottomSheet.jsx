@@ -58,9 +58,8 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
 
   return createPortal(
     <>
-      {/* Backdrop */}
+      {/* Backdrop (now purely visual, click-to-close handled by modal wrapper) */}
       <div
-        onClick={handleBackdropClick}
         className="fixed inset-0 transition-all duration-300"
         style={{
           zIndex: 99998,
@@ -70,28 +69,29 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
         }}
       />
 
-      {/* Sheet */}
+      {/* Centered Modal Container */}
       <div
-        ref={sheetRef}
-        className="fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl transition-transform duration-500 ease-out"
+        className="fixed inset-0 flex items-center justify-center p-4"
         style={{
           zIndex: 99999,
-          backgroundColor: 'var(--background, #ffffff)',
-          transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
-          maxHeight: '85vh',
-          minHeight: '50vh',
-          overflowY: 'auto',
-          paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 16px))',
+          pointerEvents: isOpen ? 'auto' : 'none',
         }}
+        onClick={handleBackdropClick}
       >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-4 pb-2">
-          <div
-            className="w-10 h-1 rounded-full"
-            style={{ backgroundColor: 'var(--border, #E5E7EB)' }}
-          />
-        </div>
-
+      <div
+        ref={sheetRef}
+        className="rounded-3xl shadow-2xl w-full max-w-xl transition-all duration-300"
+        style={{
+          backgroundColor: 'var(--background, #ffffff)',
+          transform: isOpen ? 'scale(1)' : 'scale(0.92)',
+          opacity: isOpen ? 1 : 0,
+          height: 'min(576px, 85vh)',
+          maxHeight: '85vh',
+          overflowY: 'auto',
+          paddingBottom: '16px',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pb-4 pt-1">
           <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
                       onClose();
                       onCategoryClick?.(mc);
                     }}
-                    className="relative flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-200 border text-center aspect-square shadow-sm overflow-hidden"
+                    className="relative flex flex-col items-center justify-center p-2.5 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-200 border text-center aspect-square shadow-sm overflow-hidden"
                     style={{
                       backgroundColor: mc.icon ? 'transparent' : color.bg,
                       borderColor: mc.icon ? 'transparent' : color.border,
@@ -204,6 +204,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
             </div>
           )}
         </div>
+      </div>
       </div>
     </>,
     document.body

@@ -359,7 +359,7 @@ const PremiumCategoryPage = () => {
       </div>
 
       {/* Main Container */}
-      <main className="max-w-4xl mx-auto px-4 md:px-6 mt-6 relative z-10">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 mt-6 relative z-10">
         
         {/* Category Description block in normal flow */}
         <div className="mb-6">
@@ -488,7 +488,7 @@ const PremiumCategoryPage = () => {
                     {sub.title}
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {subServices.map((service) => (
                       <div key={service.id} className="relative group">
                         <ServiceCard
@@ -513,7 +513,7 @@ const PremiumCategoryPage = () => {
                   General Services
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {groupedServices['other'].map((service) => (
                     <ServiceCard
                       key={service.id}
@@ -565,19 +565,27 @@ const PremiumCategoryPage = () => {
                 setSelectedVariants([]);
               }}
             />
-            {/* Bottom Sheet */}
+            {/* Centered Modal */}
             <motion.div
               key="variant-sheet"
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              className="fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] shadow-2xl pb-[env(safe-area-inset-bottom)]"
-              style={{
-                backgroundColor: isDark ? '#0A0911' : '#FFFFFF',
-                borderTop: `1px solid ${isDark ? '#232733' : '#slate-100'}`
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => {
+                setShowVariantPopup(false);
+                setSelectedServiceForPopup(null);
+                setSelectedVariants([]);
               }}
             >
+              <div
+                className="w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
+                style={{
+                  backgroundColor: isDark ? '#0A0911' : '#FFFFFF',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
               {/* Header */}
               <div 
                 className="flex items-center justify-between px-5 pt-5 pb-4 border-b"
@@ -695,6 +703,7 @@ const PremiumCategoryPage = () => {
                 >
                   Add to Cart — ₹{selectedServiceForPopup.price + selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0), 0)}
                 </button>
+              </div>
               </div>
             </motion.div>
           </>

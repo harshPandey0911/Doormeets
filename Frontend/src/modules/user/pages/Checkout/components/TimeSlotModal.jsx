@@ -58,14 +58,14 @@ const TimeSlotModal = ({
       />
 
       {/* Modal Container */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Modal */}
         <div
-          className={`rounded-t-3xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'
+          className={`rounded-3xl w-full max-w-xl shadow-2xl transition-all duration-300 ${isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
             }`}
           style={{
             backgroundColor: 'var(--card-bg)',
-            maxHeight: '90vh',
+            maxHeight: '85vh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
