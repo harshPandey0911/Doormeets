@@ -611,10 +611,11 @@ const Home = () => {
           <Header
             location={address}
             onLocationClick={handleLocationClick}
+            onSearchClick={() => setIsSearchOpen(true)}
           />
         </motion.div>
  
-        <main className="pt-[140px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
+        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -655,7 +656,7 @@ const Home = () => {
               )}
  
               {/* Search Bar Section */}
-              <div className="mt-5 px-5 max-w-lg lg:max-w-2xl mx-auto w-full flex items-center gap-3">
+              <div className="mt-5 px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center gap-3">
                 <div className="flex-1">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>
@@ -772,7 +773,7 @@ const Home = () => {
               {upcomingCategories.length > 0 && (() => {
                 const activeCat = upcomingCategories[currentStackIndex] || upcomingCategories[0];
                 return (
-                  <motion.section variants={itemVariants} className="px-5 space-y-4">
+                  <motion.section variants={itemVariants} className="px-5 space-y-4 max-w-lg md:max-w-2xl lg:max-w-screen-xl mx-auto w-full">
                     <div className="flex items-center justify-between">
                       <h2
                         className="text-[17px] font-semibold tracking-tight"
@@ -945,9 +946,9 @@ const Home = () => {
                         <div
                           key={service.id || index}
                           onClick={() => handleAddClick(service)}
-                          className="flex-shrink-0 rounded-3xl p-5 flex items-center justify-between w-[285px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
+                          className="flex-shrink-0 rounded-3xl p-5 lg:p-6 flex items-center justify-between w-[285px] lg:w-[340px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
                           style={{
-                            backgroundColor: 'var(--card-bg)',
+                            backgroundColor: 'var(--surface)',
                             border: '1px solid var(--border)',
                             boxShadow: 'var(--shadow)',
                           }}
@@ -956,7 +957,7 @@ const Home = () => {
                           <div className="flex-1 min-w-0 pr-3 space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <h3
-                                className="text-xs font-extrabold truncate leading-tight"
+                                className="text-xs lg:text-sm font-extrabold truncate leading-tight"
                                 style={{ color: 'var(--text-primary)' }}
                               >
                                 {service.title}
@@ -969,12 +970,12 @@ const Home = () => {
                               </span>
                             </div>
 
-                            <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
+                            <p className="text-[10px] lg:text-xs font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
                               by {service.vendorName}
                             </p>
 
                             <div className="flex items-baseline gap-1.5 pt-1">
-                              <span className="text-sm font-extrabold" style={{ color: 'var(--primary)' }}>
+                              <span className="text-sm lg:text-base font-extrabold" style={{ color: 'var(--primary)' }}>
                                 ₹{(service.price || 0).toLocaleString('en-IN')}
                               </span>
                               {service.originalPrice && service.originalPrice > service.price && (
@@ -992,18 +993,18 @@ const Home = () => {
 
                           {/* Service Icon/Visual (Right Side) */}
                           <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+                            className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
                             style={{ backgroundColor: 'rgba(179,58,53,0.08)', border: '1px solid rgba(179,58,53,0.12)' }}
                           >
                             {service.image ? (
                               <img
                                 src={service.image}
                                 alt={service.title}
-                                className="w-12 h-12 object-contain"
+                                className="w-12 h-12 lg:w-14 lg:h-14 object-contain"
                                 loading="lazy"
                               />
                             ) : (
-                              <svg className="w-8 h-8" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                              <svg className="w-8 h-8 lg:w-10 lg:h-10" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
                             )}
@@ -1123,9 +1124,6 @@ const Home = () => {
                   </Suspense>
                 </motion.div>
               ))}
-
-
-
 
             </>
           )}

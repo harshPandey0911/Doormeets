@@ -75,7 +75,7 @@ const SearchBar = ({ onInputClick }) => {
           <div
             className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-[15px] border transition-all duration-300 flex items-center h-[52px] overflow-hidden"
             style={{
-              backgroundColor: 'var(--card-bg)',
+              backgroundColor: 'var(--surface)',
               borderColor: 'var(--border)',
               color: 'var(--text-primary)',
               boxShadow: 'var(--shadow)',

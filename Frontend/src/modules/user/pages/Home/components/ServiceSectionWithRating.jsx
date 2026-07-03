@@ -95,7 +95,7 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
         </div>
       </div>
 
-      <div ref={cardsRef} className="flex gap-4 overflow-x-auto px-4 lg:px-4 pb-4 scrollbar-hide lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible -mx-0">
+      <div ref={cardsRef} className="flex gap-4 overflow-x-auto px-4 pb-4 scrollbar-hide lg:grid lg:grid-cols-3 xl:grid-cols-4 lg:gap-6 lg:overflow-visible">
         {services.map((service) => (
           <ServiceWithRatingCard
             key={service.id}

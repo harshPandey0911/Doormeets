@@ -127,16 +127,16 @@ const SubCategoryCard = ({ subCategory, onClick }) => (
     onClick={() => onClick(subCategory)}
     className="group flex flex-col items-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
   >
-    <div className="w-20 h-20 rounded-[24px] bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center mb-2 overflow-hidden relative group-hover:border-[#9634f7] group-hover:shadow-md transition-all">
+    <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center mb-1.5 overflow-hidden relative group-hover:border-[#9634f7] group-hover:shadow-md transition-all">
       <div className="absolute inset-0 bg-gradient-to-tr from-[#9634f7] to-[#1fd8d1] opacity-0 group-hover:opacity-10 transition-opacity" />
       {subCategory.iconUrl ? (
         <img src={toAssetUrl(subCategory.iconUrl)} alt={subCategory.title} className="w-full h-full object-cover" />
       ) : (
-        <FiLayers className="w-8 h-8 text-gray-300 group-hover:text-[#9634f7] transition-colors" />
+        <FiLayers className="w-6 h-6 text-gray-300 group-hover:text-[#9634f7] transition-colors" />
       )}
     </div>
     <div className="text-center">
-      <h3 className="text-xs font-bold text-gray-800 line-clamp-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#9634f7] group-hover:to-[#1fd8d1] transition-all">
+      <h3 className="text-[10px] font-bold text-gray-800 line-clamp-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#9634f7] group-hover:to-[#1fd8d1] transition-all">
         {subCategory.title}
       </h3>
     </div>
@@ -148,16 +148,16 @@ const BrandCard = ({ brand, onClick, onInfoClick }) => (
     onClick={() => onClick(brand)}
     className="flex flex-col items-center cursor-pointer group active:scale-95 transition-all relative"
   >
-    <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mb-2 group-hover:bg-gray-100 transition-colors shadow-sm overflow-hidden border border-gray-100 relative">
+    <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-1.5 group-hover:bg-gray-100 transition-colors shadow-sm overflow-hidden border border-gray-100 relative">
       {brand.icon ? (
         <img
           src={toAssetUrl(brand.icon)}
           alt={brand.title}
-          className="w-14 h-14 object-contain group-hover:scale-110 transition-transform"
+          className="w-10 h-10 object-contain group-hover:scale-110 transition-transform"
           loading="lazy"
         />
       ) : (
-        <FiLayers className="w-8 h-8 text-gray-300" />
+        <FiLayers className="w-6 h-6 text-gray-300" />
       )}
       {brand.badge && (
         <span className="absolute top-0 right-0 bg-purple-100 text-purple-700 text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg">
@@ -165,13 +165,13 @@ const BrandCard = ({ brand, onClick, onInfoClick }) => (
         </span>
       )}
     </div>
-    <p className="text-[11px] font-black text-gray-900 text-center leading-tight line-clamp-1 px-1">
+    <p className="text-[10px] font-black text-gray-900 text-center leading-tight line-clamp-1 px-1">
       {brand.title}
     </p>
     <div className="flex flex-col items-center mt-0.5">
-      <span className="text-[10px] font-bold text-emerald-600">₹{brand.price || 0}</span>
+      <span className="text-[9px] font-bold text-emerald-600">₹{brand.price || 0}</span>
       <div className="flex items-center gap-1">
-        <span className="text-[8px] font-medium text-gray-400 truncate max-w-[70px]">
+        <span className="text-[8px] font-medium text-gray-400 truncate max-w-[60px]">
           by {brand.vendor?.businessName || brand.vendor?.name || 'Pro'}
         </span>
         <button
@@ -452,31 +452,24 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
               }}
             />
 
-            {/* Modal Container */}
+            {/* Modal Container - Centered on all screen sizes */}
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-[9999]"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+              onClick={onClose}
               style={{
-                position: 'fixed',
                 willChange: 'transform',
                 backfaceVisibility: 'hidden',
                 WebkitBackfaceVisibility: 'hidden',
               }}
             >
-              {/* Close Button */}
-              <div className="absolute -top-12 right-4 z-[60]">
-                <button
-                  onClick={onClose}
-                  className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-50 transition-colors"
-                >
-                  <FiX className="w-6 h-6 text-gray-800" />
-                </button>
-              </div>
-
-              <div className="bg-white rounded-t-3xl max-h-[90vh] overflow-y-auto min-h-[50vh]">
+              <div
+                className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {isRedirecting ? (
                   <div className="flex flex-col items-center justify-center min-h-[40vh] py-12">
                     <motion.div
@@ -491,9 +484,9 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                     <p className="text-gray-500 text-sm">Proceeding to checkout...</p>
                   </div>
                 ) : (
-                  <div className="px-4 py-6">
+                  <div className="px-4 py-5">
                     {/* Header */}
-                    <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center gap-3 mb-4">
                       {view === 'services' && (category?.hasBrand !== false || category?.hasSubCategory !== false) && (
                         <button
                           onClick={() => {
@@ -505,7 +498,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                           }}
                           className="p-1 rounded-full hover:bg-gray-100"
                         >
-                          <FiArrowLeft className="w-6 h-6 text-gray-800" />
+                          <FiArrowLeft className="w-5 h-5 text-gray-800" />
                         </button>
                       )}
                       {view === 'brands' && category?.hasSubCategory !== false && (
@@ -513,18 +506,25 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                           onClick={handleBackToSubCategories}
                           className="p-1 rounded-full hover:bg-gray-100"
                         >
-                          <FiArrowLeft className="w-6 h-6 text-gray-800" />
+                          <FiArrowLeft className="w-5 h-5 text-gray-800" />
                         </button>
                       )}
-                      <div>
-                        <h1 className="text-xl font-bold text-gray-900">
+                      <div className="flex-1">
+                        <h1 className="text-lg font-bold text-gray-900">
                           {view === 'subcategories' ? (category?.title || 'Categories') :
                             view === 'brands' ? (selectedSubCategory?.title || category?.title || 'Brands') :
                               (selectedBrand?.title || 'Services')}
                         </h1>
                         {view === 'services' && <p className="text-xs text-gray-500">Select a service to add</p>}
                       </div>
-                      {loading && <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin ml-auto"></div>}
+                      {loading && <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>}
+                      {/* Close button inside header */}
+                      <button
+                        onClick={onClose}
+                        className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors flex-shrink-0"
+                      >
+                        <FiX className="w-4 h-4 text-gray-600" />
+                      </button>
                     </div>
 
                     {/* Content */}

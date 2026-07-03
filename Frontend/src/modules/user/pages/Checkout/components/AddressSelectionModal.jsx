@@ -80,11 +80,12 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
         className={`fixed inset-0 bg-black/50 z-50 transition-opacity ${isClosing ? 'opacity-0' : 'opacity-100'}`}
         onClick={handleClose}
       />
-      <div className="fixed bottom-0 left-0 right-0 z-50">
+      <div className="fixed bottom-0 left-0 right-0 md:inset-0 md:flex md:items-center md:justify-center z-50 pointer-events-none">
         <div
-          className={`shadow-2xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'}`}
+          className={`shadow-2xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'} w-full md:max-w-xl lg:max-w-2xl md:rounded-3xl pointer-events-auto md:border`}
           style={{
             backgroundColor: 'var(--card-bg)',
+            borderColor: 'var(--border)',
             height: '85vh',
             maxHeight: '90vh',
             display: 'flex',
