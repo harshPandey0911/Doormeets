@@ -67,7 +67,7 @@ const iconMap = {
   "Vendor Subscriptions": FiDollarSign,
   "Vendor Requests": FiInbox,
   "Package based": FiPackage,
-  "Painting Mgmt": FiGrid,
+  "Painting": FiGrid,
   "Instant Booking": FiZap,
   "SOS Alerts": FiShield
 };
@@ -173,6 +173,15 @@ const getChildRoute = (parentRoute, childName) => {
     "/admin/shop-owners": {
       "All Shop Owners": "/admin/shop-owners/all",
       "Referral Settings": "/admin/shop-owners/referrals"
+    },
+    "/admin/painting": {
+      "Paint Brands": "/admin/painting/brands",
+      "Paint Products": "/admin/painting/products",
+      "Property Layouts": "/admin/painting/layouts",
+      "Labour Rates": "/admin/painting/rates",
+      "Page Builder": "/admin/painting/page-builder",
+      "Painting Quotations": "/admin/painting/quotations",
+      "Painting Consultations": "/admin/painting/consultations"
     }
   };
 
@@ -204,7 +213,7 @@ const permissionMap = {
   "User Catalog": "propose_categories",
   "Management": "propose_categories",
   "Package based": "propose_categories",
-  "Painting Mgmt": "propose_categories",
+  "Painting": "propose_categories",
   "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",

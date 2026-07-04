@@ -10,8 +10,13 @@ import uploadToCloudinary from '../../../../utils/cloudinaryUpload';
 import ConsultationDashboard from './ConsultationDashboard';
 import PaintingPricingConfig from './PaintingPricingConfig';
 
-const PaintingManagement = () => {
-  const [activeTab, setActiveTab] = useState('brands'); // 'brands' | 'products' | 'rates' | 'quotations' | 'consultations'
+const PaintingManagement = ({ defaultTab = 'brands' }) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
+
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 

@@ -135,7 +135,7 @@ const PremiumCategoriesPage = () => {
   const handleSubCategoryClick = (category, subCategory) => {
     const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
     if (isPainting) {
-      navigate('/user/painting-consultation');
+      navigate('/user/painting');
       return;
     }
     navigate(`/user/category/${category.slug || category.id}`, {
@@ -146,7 +146,7 @@ const PremiumCategoriesPage = () => {
   const handleServiceClick = (category, service) => {
     const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
     if (isPainting) {
-      navigate('/user/painting-consultation');
+      navigate('/user/painting');
       return;
     }
     navigate(`/user/category/${category.slug || category.id}`, {
@@ -228,7 +228,7 @@ const PremiumCategoriesPage = () => {
                     onClick={() => {
                       const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
                       if (isPainting) {
-                        navigate('/user/painting-consultation');
+                        navigate('/user/painting');
                       } else {
                         navigate(`/user/category/${category.slug || category.id}`, { state: { category } });
                       }

@@ -24,3 +24,35 @@ export const getPaintingRates = async () => {
   const response = await api.get('/public/config');
   return response.data?.settings?.paintingRates || null;
 };
+
+// --- New Quotation Builder endpoints ---
+
+export const getQuotationByConsultationId = async (consultationId) => {
+  const response = await api.get(`/vendor/painting/quotations/${consultationId}`);
+  return response.data;
+};
+
+export const saveQuotationDraft = async (data) => {
+  const response = await api.post('/vendor/painting/quotations', data);
+  return response.data;
+};
+
+export const updateQuotationDraft = async (id, data) => {
+  const response = await api.put(`/vendor/painting/quotations/${id}`, data);
+  return response.data;
+};
+
+export const submitQuotationToAdmin = async (id) => {
+  const response = await api.post(`/vendor/painting/quotations/${id}/submit`);
+  return response.data;
+};
+
+export const getPaintingProducts = async () => {
+  const response = await api.get('/vendor/painting/products');
+  return response.data;
+};
+
+export const getLabourRatesForVendor = async () => {
+  const response = await api.get('/vendor/painting/labour-rates');
+  return response.data;
+};

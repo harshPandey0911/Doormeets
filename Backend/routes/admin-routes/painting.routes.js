@@ -4,12 +4,21 @@ const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin } = require('../../middleware/roleMiddleware');
 const {
   getBrands,
+  getBrandById,
   createBrand,
   updateBrand,
+  updateBrandStatus,
+  reorderBrands,
   deleteBrand,
   getProducts,
+  getProductById,
   createProduct,
   updateProduct,
+  updateProductStatus,
+  updateProductFeature,
+  updateProductRecommend,
+  updateProductVendorVisibility,
+  reorderProducts,
   deleteProduct,
   getLabourRates,
   createLabourRate,
@@ -33,18 +42,41 @@ router.route('/painting/brands')
   .get(getBrands)
   .post(createBrand);
 
+router.route('/painting/brands/reorder')
+  .put(reorderBrands);
+
 router.route('/painting/brands/:id')
+  .get(getBrandById)
   .put(updateBrand)
   .delete(deleteBrand);
+
+router.route('/painting/brands/:id/status')
+  .patch(updateBrandStatus);
 
 // Paint Products
 router.route('/painting/products')
   .get(getProducts)
   .post(createProduct);
 
+router.route('/painting/products/reorder')
+  .put(reorderProducts);
+
 router.route('/painting/products/:id')
+  .get(getProductById)
   .put(updateProduct)
   .delete(deleteProduct);
+
+router.route('/painting/products/:id/status')
+  .patch(updateProductStatus);
+
+router.route('/painting/products/:id/feature')
+  .patch(updateProductFeature);
+
+router.route('/painting/products/:id/recommend')
+  .patch(updateProductRecommend);
+
+router.route('/painting/products/:id/vendor-visibility')
+  .patch(updateProductVendorVisibility);
 
 // Labour Rates
 router.route('/painting/labour-rates')
