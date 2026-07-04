@@ -45,6 +45,7 @@ const VendorLogin = () => {
     localStorage.removeItem('vendorAccessToken');
     localStorage.removeItem('vendorRefreshToken');
     localStorage.removeItem('vendorData');
+    localStorage.removeItem('role');
 
     if (step === 'phone' && phoneInputRef.current) {
       setTimeout(() => phoneInputRef.current.focus(), 100);
@@ -150,9 +151,9 @@ const VendorLogin = () => {
           });
         } else {
           if (response.isWorker) {
-            localStorage.setItem('vendorAccessToken', response.accessToken);
-            localStorage.setItem('vendorRefreshToken', response.refreshToken);
-            localStorage.setItem('vendorData', JSON.stringify(response.worker));
+            localStorage.setItem('workerAccessToken', response.accessToken);
+            localStorage.setItem('workerRefreshToken', response.refreshToken);
+            localStorage.setItem('workerData', JSON.stringify(response.worker));
             localStorage.setItem('role', 'worker');
 
             toast.success(
@@ -162,7 +163,7 @@ const VendorLogin = () => {
               </div>,
               { icon: <FiCheckCircle className="text-green-500" /> }
             );
-            navigate('/vendor', { replace: true });
+            navigate('/worker', { replace: true });
             return;
           }
 

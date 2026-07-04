@@ -209,6 +209,9 @@ app.use('/api/vendors/products', checkSubscription, require('./routes/vendor-rou
 app.use('/api/vendors/support', checkSubscription, require('./routes/vendor-routes/support.routes'));
 app.use('/api/vendors/painting-consultations', checkSubscription, require('./routes/vendor-routes/painting-consultation.routes'));
 
+// Worker routes
+app.use('/api/workers', require('./routes/worker-routes/workerWallet.routes'));
+
 
 
 

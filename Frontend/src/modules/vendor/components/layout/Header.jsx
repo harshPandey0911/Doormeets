@@ -52,7 +52,10 @@ const Header = memo(({
 
   // Sync online status
   useEffect(() => {
-    const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+    let vendorData = {};
+    const isWorker = localStorage.getItem('role') === 'worker';
+    const storageKey = isWorker ? 'workerData' : 'vendorData';
+    try { vendorData = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (e) { /* corrupted */ }
     if (vendorData.isOnline !== undefined) {
       setIsOnline(vendorData.isOnline);
     }
@@ -78,9 +81,12 @@ const Header = memo(({
         toast.success(`You are now ${newStatus ? 'Online' : 'Offline'}`);
         
         // Update localStorage
-        const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+        let vendorData = {};
+        const isWorker = localStorage.getItem('role') === 'worker';
+        const storageKey = isWorker ? 'workerData' : 'vendorData';
+        try { vendorData = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (e) { /* corrupted */ }
         vendorData.isOnline = newStatus;
-        localStorage.setItem('vendorData', JSON.stringify(vendorData));
+        localStorage.setItem(storageKey, JSON.stringify(vendorData));
 
         // Dispatch event for other components (like Dashboard)
         window.dispatchEvent(new CustomEvent('vendorStatusChanged', { detail: { isOnline: newStatus } }));

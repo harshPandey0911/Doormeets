@@ -100,7 +100,7 @@ export const SocketProvider = ({ children }) => {
         tokenKey = 'vendorAccessToken';
         break;
       case 'worker':
-        tokenKey = 'workerAccessToken';
+        tokenKey = localStorage.getItem('workerAccessToken') ? 'workerAccessToken' : 'vendorAccessToken';
         break;
       case 'admin':
         tokenKey = 'adminAccessToken';
@@ -170,12 +170,15 @@ export const SocketProvider = ({ children }) => {
         });
       }
 
-      // If vendor, join vendor-specific room just in case backend expects it
-      if (userType === 'vendor') {
-        const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
-        const vendorId = vendorData.id || vendorData._id;
-        if (vendorId) {
-          newSocket.emit('join_vendor_room', vendorId);
+      // Join appropriate socket room
+      if (userType === 'vendor' || userType === 'worker') {
+        let profileData = {};
+        const isWorker = userType === 'worker';
+        const storageKey = isWorker ? 'workerData' : 'vendorData';
+        try { profileData = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (e) { /* corrupted */ }
+        const profileId = profileData.id || profileData._id;
+        if (profileId) {
+          newSocket.emit(isWorker ? 'join_worker_room' : 'join_vendor_room', profileId);
         }
       }
     });
@@ -191,7 +194,10 @@ export const SocketProvider = ({ children }) => {
 
     // Listen for generic notifications
     newSocket.on('notification', (data) => {
-      // console.log('🔔 App Notification received:', data);
+      // Skip screen popup for worker assignment notifications
+      if (data.type === 'worker_assigned' || data.title?.includes('Assigned')) {
+        return;
+      }
 
       if (isSoundEnabled(userType)) {
         playNotificationSound();

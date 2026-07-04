@@ -218,11 +218,14 @@ const verifyPaymentWebhook = async (req, res) => {
         const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
         const platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
         const vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+        let vendorEarning = bill ? bill.vendorTotalEarning : (booking.vendorShare || vendorBaseAmount);
 
-        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
-        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorEarning, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, parseFloat((totalBase - vendorEarning).toFixed(2)), transactionGroupId);
 
-        const vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+        if (vendorInv) {
+          vendorEarning = vendorInv.baseAmount;
+        }
 
         // Mark booking as invoice generated
         booking.invoiceGenerated = true;
@@ -442,11 +445,14 @@ const processWalletPayment = async (req, res) => {
         const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
         const platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
         const vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+        let vendorEarning = bill ? bill.vendorTotalEarning : (booking.vendorShare || vendorBaseAmount);
 
-        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
-        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorEarning, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, parseFloat((totalBase - vendorEarning).toFixed(2)), transactionGroupId);
 
-        const vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+        if (vendorInv) {
+          vendorEarning = vendorInv.baseAmount;
+        }
 
         // Mark booking as invoice generated
         booking.invoiceGenerated = true;

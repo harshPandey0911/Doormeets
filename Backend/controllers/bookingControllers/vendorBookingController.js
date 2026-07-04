@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Booking = require('../../models/Booking');
-const Worker = null; // Worker system removed
+const Worker = require('../../models/Worker');
 const { validationResult } = require('express-validator');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
@@ -744,7 +744,8 @@ const assignWorker = async (req, res) => {
       });
     }
 
-    // Enforce 30 minutes before slot start validation
+    // Enforce 30 minutes before slot start validation (Removed to allow advance scheduling)
+    /*
     if (booking.bookingType === 'scheduled') {
       const slotStart = parseScheduledStartTime(booking.scheduledDate, booking.timeSlot?.start || booking.scheduledTime);
       const now = new Date();
@@ -756,6 +757,7 @@ const assignWorker = async (req, res) => {
         });
       }
     }
+    */
 
     // Handle "Assign to Self"
     if (workerId === 'SELF') {
@@ -1914,10 +1916,31 @@ const payWorker = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Worker already paid' });
     }
 
-    // Update booking payment status
+    // Update booking payment status and worker wallet balance
     booking.isWorkerPaid = true;
     booking.workerPaymentStatus = 'SUCCESS';
     booking.workerPaidAt = new Date();
+
+    const workerObj = await require('../../models/Worker').findById(booking.workerId);
+    if (workerObj) {
+      if (!workerObj.wallet) workerObj.wallet = { balance: 0 };
+      const payoutAmount = parseFloat(booking.workerShare || booking.finalAmount || 0);
+      workerObj.wallet.balance += payoutAmount;
+      await workerObj.save();
+
+      // Record Transaction
+      const Transaction = require('../../models/Transaction');
+      await Transaction.create({
+        vendorId,
+        workerId: workerObj._id,
+        bookingId: booking._id,
+        type: 'worker_payment',
+        amount: payoutAmount,
+        status: 'completed',
+        paymentMethod: 'cash',
+        description: `Payment for booking #${booking.bookingNumber}.`,
+      });
+    }
 
     await booking.save();
 
@@ -1933,7 +1956,7 @@ const payWorker = async (req, res) => {
     });
 
     // Send High Priority Push Notification to Worker
-    const worker = await Worker.findById(booking.workerId);
+    const worker = await require('../../models/Worker').findById(booking.workerId);
     if (worker) {
       const fcmTokens = [
         ...(worker.fcmTokens || []),

@@ -80,6 +80,9 @@ const Checkout = () => {
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
   const [loyaltyRedemptionRate, setLoyaltyRedemptionRate] = useState(1);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [useWallet, setUseWallet] = useState(false);
+  const [maxWalletUsagePercentage, setMaxWalletUsagePercentage] = useState(30);
   const [isInstantBookingEnabled, setIsInstantBookingEnabled] = useState(true);
   const [instantBookingMarkup, setInstantBookingMarkup] = useState(99);
   const [instantBookingWaitTime, setInstantBookingWaitTime] = useState(45);
@@ -232,6 +235,8 @@ const Checkout = () => {
             setVisitedFee(0); // Plans usually have 0 visitor fee
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
             setLoyaltyPoints(response.user?.loyaltyPoints || 0);
+            setWalletBalance(response.user?.wallet?.balance || 0);
+            setMaxWalletUsagePercentage(response.settings?.maxWalletUsagePercentage !== undefined ? response.settings.maxWalletUsagePercentage : 30);
             setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
             const instantEnabled = response.settings?.isInstantBookingEnabled ?? true;
             setIsInstantBookingEnabled(instantEnabled);
@@ -265,6 +270,8 @@ const Checkout = () => {
             setVisitedFee(response.settings?.visitedCharges || 29);
             setGstPercentage(response.settings?.serviceGstPercentage || 18);
             setLoyaltyPoints(response.user?.loyaltyPoints || 0);
+            setWalletBalance(response.user?.wallet?.balance || 0);
+            setMaxWalletUsagePercentage(response.settings?.maxWalletUsagePercentage !== undefined ? response.settings.maxWalletUsagePercentage : 30);
             setLoyaltyRedemptionRate(response.settings?.loyaltyPointsRedemptionRate || 1);
             const instantEnabled = response.settings?.isInstantBookingEnabled ?? true;
             setIsInstantBookingEnabled(instantEnabled);
@@ -532,8 +539,9 @@ const Checkout = () => {
           phone: contactDetails.phone.length === 10 && !contactDetails.phone.includes('+') ? `+91${contactDetails.phone}` : contactDetails.phone
         },
 
-        paymentMethod: 'online',
+        paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
         redeemLoyaltyPoints: useLoyaltyPoints,
+        applyWallet: useWallet,
         bookedItems: bookedItemsData,
         dynamicFields: dynamicFieldsPayload
       });
@@ -808,6 +816,7 @@ const Checkout = () => {
         paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
         amount: amountToPay,
         redeemLoyaltyPoints: useLoyaltyPoints,
+        applyWallet: useWallet,
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
@@ -1302,7 +1311,13 @@ const Checkout = () => {
   const pointsNeeded = Math.ceil(netBeforeLoyalty / loyaltyRedemptionRate);
   const maxLoyaltyRedeemable = Math.min(loyaltyPoints, pointsNeeded);
   const loyaltyDiscount = useLoyaltyPoints ? (maxLoyaltyRedeemable * loyaltyRedemptionRate) : 0;
-  const totalAmount = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
+  
+  const netAfterLoyalty = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
+  const walletLimit = parseFloat((netAfterLoyalty * (maxWalletUsagePercentage / 100)).toFixed(2));
+  const maxWalletRedeemable = Math.min(walletBalance, walletLimit);
+  const walletDiscount = useWallet ? maxWalletRedeemable : 0;
+  
+  const totalAmount = Math.max(0, netAfterLoyalty - walletDiscount);
   const amountToPay = totalAmount;
 
   // Helper for Free Plan Full Breakdown Display
@@ -1899,39 +1914,78 @@ const Checkout = () => {
           )}
         </div>
 
+        {/* Wallet Balance Panel */}
+        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 bg-emerald-50 text-emerald-500 rounded-xl text-lg shrink-0">
+                👛
+              </span>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>User Wallet Balance</h3>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  Available: ₹{walletBalance}
+                  {walletBalance > 0 && (
+                    <span className="text-[10px] text-gray-400 block mt-0.5">
+                      (Max {maxWalletUsagePercentage}% usage per booking: ₹{walletLimit} max)
+                    </span>
+                  )}
+                </p>
+            </div>
+            {walletBalance > 0 ? (
+              <button
+                type="button"
+                onClick={() => setUseWallet(prev => !prev)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${useWallet ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${useWallet ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+            ) : (
+              <span className="text-[10px] text-gray-400 font-bold uppercase bg-gray-50 border px-2 py-0.5 rounded">Empty</span>
+            )}
+          </div>
+          {useWallet && maxWalletRedeemable > 0 && (
+            <div className="mt-2.5 pt-2.5 border-t border-dashed flex justify-between text-xs text-green-600 font-medium" style={{ borderColor: 'var(--border)' }}>
+              <span>Deducted from wallet:</span>
+              <span>-₹{maxWalletRedeemable}</span>
+            </div>
+          )}
+        </div>
+
         {/* Loyalty Points Panel */}
-        {loyaltyPoints > 0 && (
-          <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 bg-amber-50 text-amber-500 rounded-xl text-lg shrink-0">
-                  🎁
-                </span>
-                <div>
-                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Loyalty Points</h3>
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Balance: {loyaltyPoints} points (1 Point = ₹{loyaltyRedemptionRate})</p>
-                </div>
+        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 bg-amber-50 text-amber-500 rounded-xl text-lg shrink-0">
+                🎁
+              </span>
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Loyalty Points</h3>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Balance: {loyaltyPoints} points (1 Point = ₹{loyaltyRedemptionRate})</p>
               </div>
+            </div>
+            {loyaltyPoints > 0 ? (
               <button
                 type="button"
                 onClick={() => setUseLoyaltyPoints(prev => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${useLoyaltyPoints ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'
-                  }`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${useLoyaltyPoints ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'}`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${useLoyaltyPoints ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${useLoyaltyPoints ? 'translate-x-5' : 'translate-x-0'}`}
                 />
               </button>
-            </div>
-            {useLoyaltyPoints && maxLoyaltyRedeemable > 0 && (
-              <div className="mt-2.5 pt-2.5 border-t border-dashed flex justify-between text-xs text-green-600 font-medium" style={{ borderColor: 'var(--border)' }}>
-                <span>Points to redeem:</span>
-                <span>-{maxLoyaltyRedeemable} points (Saved ₹{maxLoyaltyRedeemable * loyaltyRedemptionRate})</span>
-              </div>
+            ) : (
+              <span className="text-[10px] text-gray-400 font-bold uppercase bg-gray-50 border px-2 py-0.5 rounded">0 Points</span>
             )}
           </div>
-        )}
+          {useLoyaltyPoints && maxLoyaltyRedeemable > 0 && (
+            <div className="mt-2.5 pt-2.5 border-t border-dashed flex justify-between text-xs text-green-600 font-medium" style={{ borderColor: 'var(--border)' }}>
+              <span>Points to redeem:</span>
+              <span>-{maxLoyaltyRedeemable} points (Saved ₹{maxLoyaltyRedeemable * loyaltyRedemptionRate})</span>
+            </div>
+          )}
+        </div>
 
         {/* Payment Method Selector */}
         <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
@@ -2133,6 +2187,14 @@ const Checkout = () => {
               <div className="flex justify-between items-center text-green-600">
                 <span className="text-sm font-medium">Loyalty Discount</span>
                 <span className="text-sm font-bold">-₹{loyaltyDiscount.toLocaleString('en-IN')}</span>
+              </div>
+            )}
+
+            {/* Wallet Balance Discount Row */}
+            {walletDiscount > 0 && (
+              <div className="flex justify-between items-center text-green-600">
+                <span className="text-sm font-medium">Wallet Discount</span>
+                <span className="text-sm font-bold">-₹{walletDiscount.toLocaleString('en-IN')}</span>
               </div>
             )}
 

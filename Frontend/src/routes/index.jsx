@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Import module routes
 import UserRoutes from '../modules/user/routes';
 import VendorRoutes from '../modules/vendor/routes';
+import WorkerRoutes from '../modules/vendor/routes/WorkerRoutes';
 import AdminRoutes from '../modules/admin/routes';
 import ShopRoutes from '../modules/shop/routes';
 
@@ -23,6 +24,9 @@ const AppRoutes = () => {
 
       {/* Vendor Routes */}
       <Route path="/vendor/*" element={<VendorRoutes />} />
+
+      {/* Worker Routes */}
+      <Route path="/worker/*" element={<WorkerRoutes />} />
 
       {/* Admin Routes */}
       <Route path="/admin/*" element={<AdminRoutes />} />

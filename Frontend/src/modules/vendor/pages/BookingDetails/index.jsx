@@ -31,6 +31,7 @@ import { useLocationTracking } from '../../../../hooks/useLocationTracking';
 export default function BookingDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isWorker = localStorage.getItem('role') === 'worker' || window.location.pathname.startsWith('/worker');
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isPayWorkerModalOpen, setIsPayWorkerModalOpen] = useState(false);
@@ -54,29 +55,23 @@ export default function BookingDetails() {
       const loadAddonData = async () => {
         try {
           setAddonLoading(true);
-          const serviceId = booking?.serviceId?._id || booking?.serviceId;
-          const [catalogRes, billRes] = await Promise.all([
-            serviceId ? vendorCatalogService.getAddonsForService(serviceId) : vendorBillService.getServiceCatalog(),
+          const [servicesRes, partsRes, billRes] = await Promise.all([
+            vendorBillService.getServiceCatalog().catch(() => ({ success: false })),
+            vendorBillService.getPartsCatalog().catch(() => ({ success: false })),
             vendorBillService.getBill(id).catch(() => ({ success: false }))
           ]);
 
-          if (catalogRes && catalogRes.success) {
-            if (catalogRes.services || catalogRes.parts) {
-              const services = (catalogRes.services || []).map(s => ({
-                ...s,
-                price: s.customerPrice !== undefined ? s.customerPrice : s.price,
-                isPart: false
-              }));
-              const parts = (catalogRes.parts || []).map(p => ({
-                ...p,
-                price: p.customerPrice !== undefined ? p.customerPrice : p.price,
-                isPart: true
-              }));
-              setAddonCatalog([...services, ...parts]);
-            } else {
-              setAddonCatalog(catalogRes.services || []);
-            }
-          }
+          const services = (servicesRes?.services || []).map(s => ({
+            ...s,
+            price: s.customerPrice !== undefined ? s.customerPrice : s.price,
+            isPart: false
+          }));
+          const parts = (partsRes?.parts || []).map(p => ({
+            ...p,
+            price: p.customerPrice !== undefined ? p.customerPrice : p.price,
+            isPart: true
+          }));
+          setAddonCatalog([...services, ...parts]);
 
           if (billRes && billRes.success && billRes.bill) {
             setExistingBill(billRes.bill);
@@ -298,7 +293,11 @@ export default function BookingDetails() {
         },
         status: apiData.status,
         description: apiData.description || apiData.notes || 'No description provided',
-        assignedTo: { name: 'You (Self)' },
+        assignedTo: apiData.isSelfJob
+          ? { name: 'You (Self)' }
+          : apiData.workerId
+            ? { name: apiData.workerId.name, phone: apiData.workerId.phone }
+            : null,
         workerResponse: apiData.workerResponse,
         workerResponseAt: apiData.workerResponseAt,
         paymentMethod: apiData.paymentMethod,
@@ -457,6 +456,7 @@ export default function BookingDetails() {
   };
 
   const canPayWorker = (booking) => {
+    if (isWorker) return false;
     // If assigned to self, no worker payment needed
     if (booking?.assignedTo?.name === 'You (Self)') return false;
 
@@ -469,7 +469,7 @@ export default function BookingDetails() {
     // Check if payment is already done (Online SUCCESS or Cash COLLECTED)
     // Robust check for various status strings (case-insensitive)
     const pStatus = booking?.paymentStatus?.toLowerCase() || '';
-    const isPaid = pStatus === 'success' || pStatus === 'paid' || booking?.cashCollected;
+    const isPaid = pStatus === 'success' || pStatus === 'paid' || pStatus === 'completed' || booking?.cashCollected;
 
     const status = booking?.status?.toLowerCase() || '';
     const isWorkDone = status === 'work_done' || status === 'completed' || status === 'worker_paid';
@@ -633,7 +633,7 @@ export default function BookingDetails() {
       setIsCashModalOpen(true);
     } else {
       // Navigate to the full page billing flow
-      navigate(`/vendor/booking/${booking.id || id}/billing`);
+      navigate(isWorker ? `/worker/booking/${booking.id || id}/billing` : `/vendor/booking/${booking.id || id}/billing`);
     }
   };
 
@@ -659,7 +659,7 @@ export default function BookingDetails() {
     }
 
     // Cash can be collected when booking is completed/work_done and payment was cash/at home
-    const isSelfJob = booking?.assignedTo?.name === 'You (Self)' || localStorage.getItem('role') === 'worker';
+    const isSelfJob = booking?.assignedTo?.name === 'You (Self)' || isWorker;
     const validStatus = isSelfJob
       ? (booking?.status === 'work_done' || booking?.status === 'completed')
       : booking?.status === 'completed';
@@ -672,7 +672,7 @@ export default function BookingDetails() {
       return true;
     }
 
-    if (booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid') {
+    if (booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid' || booking?.paymentStatus === 'completed') {
       return false;
     }
 
@@ -704,11 +704,11 @@ export default function BookingDetails() {
   };
 
   const handleViewTimeline = () => {
-    navigate(`/vendor/booking/${booking.id}/timeline`);
+    navigate(isWorker ? `/worker/booking/${booking.id || booking._id || id}/timeline` : `/vendor/booking/${booking.id || booking._id || id}/timeline`);
   };
 
   const handleAssignWorker = () => {
-    navigate(`/vendor/booking/${booking.id}/assign-worker`);
+    navigate(isWorker ? `/worker/booking/${booking.id}/assign-worker` : `/vendor/booking/${booking.id}/assign-worker`);
   };
 
   const handleAssignToSelf = async () => {
@@ -740,7 +740,7 @@ export default function BookingDetails() {
 
   const handleStartJourney = async () => {
     // If self-job, call the start API first
-    if (booking.assignedTo?.name === 'You (Self)' || localStorage.getItem('role') === 'worker') {
+    if (booking.assignedTo?.name === 'You (Self)' || isWorker) {
       try {
         setLoading(true);
         await startSelfJob(id);
@@ -758,7 +758,7 @@ export default function BookingDetails() {
       }
     }
 
-    navigate(`/vendor/booking/${booking.id || id}/map`);
+    navigate(isWorker ? `/worker/booking/${booking.id || id}/map` : `/vendor/booking/${booking.id || id}/map`);
   };
 
 
@@ -840,9 +840,12 @@ export default function BookingDetails() {
     partsGST += (parseFloat(c.gstAmount) || 0);
   });
 
-  // Tax Logic
-  const originalGST = bill ? (bill.originalGST || 0) : (originalBase * 0.18);
+  // Tax Logic — when no bill exists, use the stored tax from booking (GST is already included in customer price)
+  const originalGST = bill ? (bill.originalGST || 0) : (parseFloat(booking?.tax) || 0);
   const totalGST = originalGST + extraServiceGST + partsGST;
+
+  // Instant Booking Markup
+  const instantMarkup = parseFloat(booking?.instantMarkupCharged) || 0;
 
   // Final Total from bill or booking
   const finalTotal = bill?.grandTotal || (booking?.finalAmount || 0);
@@ -1017,7 +1020,7 @@ export default function BookingDetails() {
           </div>
 
           {/* Map Embed */}
-          <div className="w-full h-48 rounded-lg overflow-hidden mb-3 bg-gray-200 relative group cursor-pointer" onClick={() => navigate(`/vendor/booking/${booking.id}/map`)}>
+          <div className="w-full h-48 rounded-lg overflow-hidden mb-3 bg-gray-200 relative group cursor-pointer" onClick={() => navigate(isWorker ? `/worker/booking/${booking.id}/map` : `/vendor/booking/${booking.id}/map`)}>
             {(() => {
               const hasCoordinates = booking.location.lat && booking.location.lng && booking.location.lat !== 0 && booking.location.lng !== 0;
               const mapQuery = hasCoordinates
@@ -1048,7 +1051,7 @@ export default function BookingDetails() {
 
           <div className="flex gap-3 mt-4">
             <button
-              onClick={() => navigate(`/vendor/booking/${booking.id || id}/map`)}
+              onClick={() => navigate(isWorker ? `/worker/booking/${booking.id || id}/map` : `/vendor/booking/${booking.id || id}/map`)}
               className="flex-1 py-3.5 rounded-xl font-bold border-2 flex items-center justify-center gap-2 transition-all active:scale-95 bg-white"
               style={{
                 borderColor: themeColors.button,
@@ -1220,26 +1223,28 @@ export default function BookingDetails() {
                   <span>Original Booking : {booking.serviceType || 'Service'}</span>
                   {isPlanBenefit ? (
                     <div className="flex items-center gap-2">
-                      <span className="line-through text-gray-400 text-xs">₹{originalBase.toFixed(2)}</span>
+                      <span className="line-through text-gray-400 text-xs">₹{(originalBase + originalGST).toFixed(2)}</span>
                       <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">FREE</span>
                     </div>
                   ) : (
-                    <span className="font-medium text-gray-900">₹{originalBase.toFixed(2)}</span>
+                    <span className="font-medium text-gray-900">₹{(originalBase + originalGST).toFixed(2)}</span>
                   )}
                 </div>
 
                 {services.map((s, i) => (
                   <div key={i} className="flex justify-between text-gray-600">
                     <span>{s.name} x {s.quantity}</span>
-                    <span className="font-mono">₹{((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1)).toFixed(2)}</span>
+                    <span className="font-mono">₹{(s.total || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
                   </div>
                 ))}
 
-                {/* Service GST */}
-                <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
-                  <span>Service GST (18%)</span>
-                  <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
-                </div>
+                {/* Service GST — only show when there is actual GST */}
+                {(originalGST + extraServiceGST) > 0 && (
+                  <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
+                    <span>Service GST (18%)</span>
+                    <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
+                  </div>
+                )}
 
                 {/* Service Subtotal */}
                 <div className="flex justify-between font-bold text-gray-800 pt-1">
@@ -1248,6 +1253,20 @@ export default function BookingDetails() {
                 </div>
               </div>
             </div>
+
+            {/* Instant Booking Fee */}
+            {instantMarkup > 0 && (
+              <div>
+                <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+                  <span className="w-6 h-6 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center text-xs">⚡</span>
+                  Instant Booking
+                </h4>
+                <div className="flex justify-between pl-2 font-bold text-gray-800">
+                  <span>Instant Booking Fee</span>
+                  <span>₹{instantMarkup.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
 
             {/* Parts Section */}
             {(parts.length > 0 || customItems.length > 0) && (
@@ -1317,45 +1336,45 @@ export default function BookingDetails() {
             )}
           </div>
 
-          {/* Vendor Earnings Footer - ONLY SHOW WHEN COMPLETED */}
-          {(booking.status === 'completed' || booking.status === 'work_done' || booking.cashCollected) ? (
+          {/* Vendor Earnings Footer */}
+          {!['cancelled', 'rejected'].includes(booking?.status?.toLowerCase()) && !isWorker ? (
             <div className="bg-emerald-50 px-6 py-4 border-t border-emerald-100">
               <div className="space-y-2 mb-3 text-sm">
                 <div className="flex justify-between items-center text-emerald-700">
-                  <span>Service Earnings ({bill?.payoutConfig?.serviceSplitPercentage || 70}%)</span>
-                  <span className="font-bold">₹{(bill?.vendorServiceEarning || (booking.vendorEarnings || 0)).toFixed(2)}</span>
+                  <span>Service Profit / Share</span>
+                  <span className="font-bold">₹{parseFloat(booking?.bookingType === 'instant' ? ((bill?.vendorServiceEarning || booking?.vendorShare || 500) - (bill?.vendorInstantMarkupEarning || 50)) : (bill?.vendorServiceEarning || booking?.vendorShare || 500)).toFixed(2)}</span>
                 </div>
-                {(parts.length > 0 || customItems.length > 0 || bill?.vendorPartsEarning > 0) && (
+                {booking?.bookingType === 'instant' && (
                   <div className="flex justify-between items-center text-emerald-700">
-                    <span>Parts Earnings ({bill?.payoutConfig?.partsSplitPercentage || 10}%)</span>
+                    <span>⚡ Instant Booking Profit / Share</span>
+                    <span className="font-bold">₹{parseFloat(bill?.vendorInstantMarkupEarning || 50).toFixed(2)}</span>
+                  </div>
+                )}
+                {(parts.length > 0 || customItems.length > 0 || (bill?.vendorPartsEarning || 0) > 0) && (
+                  <div className="flex justify-between items-center text-emerald-700">
+                    <span>Parts Earnings</span>
                     <span className="font-bold">₹{(bill?.vendorPartsEarning || 0).toFixed(2)}</span>
                   </div>
                 )}
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-emerald-200/50">
                 <span className="text-emerald-800 font-bold text-xs uppercase tracking-wider">
-                  {(booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid' || booking?.cashCollected)
-                    ? 'Total Net Earnings'
-                    : 'Estimated Net Earnings'}
+                  {(booking?.status === 'completed' || booking?.cashCollected)
+                    ? 'Total Profit Received'
+                    : 'Estimated Profit'}
                 </span>
                 <span className="text-emerald-700 font-black text-xl">
-                  ₹{(bill?.vendorTotalEarning || booking.vendorEarnings || 0).toFixed(2)}
+                  ₹{(bill?.vendorTotalEarning || booking?.vendorShare || ((parseFloat(booking?.basePrice) || 0) * 0.8)).toFixed(2)}
                 </span>
               </div>
 
-              <div className="flex justify-between text-emerald-600/70 text-[10px] mt-2">
-                <span>Platform Commission</span>
-                <span>-₹{(booking.adminCommission || booking.platformCommission || 0).toFixed(2)}</span>
-              </div>
+              {(booking?.status === 'completed' || booking?.cashCollected) && (
+                <div className="mt-2.5 p-2 bg-emerald-100/50 rounded-lg text-[11px] text-emerald-800 text-center font-bold">
+                  ✓ ₹{(bill?.vendorTotalEarning || booking?.vendorShare || 0).toFixed(2)} credited to your wallet balance for this service.
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-100/50 text-center">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2">
-                <FiAlertCircle className="w-3 h-3" />
-                Net Earnings will be visible once completed
-              </p>
-            </div>
-          )}
+          ) : null}
         </div>
 
         {/* Work Photos (after completion) */}
@@ -1383,7 +1402,7 @@ export default function BookingDetails() {
             </div>
 
             {/* Approval/Reject Buttons */}
-            {booking.status === 'work_done' && booking.workerPaymentStatus !== 'PAID' && booking.assignedTo?.name !== 'You (Self)' && (
+            {booking.status === 'work_done' && booking.workerPaymentStatus !== 'PAID' && booking.assignedTo?.name !== 'You (Self)' && !isWorker && (
               <div className="flex gap-3 mt-4 pt-3 border-t border-gray-100">
                 <button
                   onClick={() => {
@@ -1629,7 +1648,7 @@ export default function BookingDetails() {
 
               <div className="flex flex-col gap-3 w-full">
                 <button
-                  onClick={() => navigate(`/vendor/booking/${booking.id || id}/billing`)}
+                  onClick={() => navigate(isWorker ? `/worker/booking/${booking.id || id}/billing` : `/vendor/booking/${booking.id || id}/billing`)}
                   disabled={loading}
                   className="w-full py-4 rounded-xl font-bold bg-blue-600 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
                   style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }}
@@ -1655,7 +1674,7 @@ export default function BookingDetails() {
         )}
 
         {/* Online Payment Done State */}
-        {(booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid') && booking?.status !== 'completed' && (
+        {(booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid' || booking?.paymentStatus === 'completed') && booking?.status !== 'completed' && (
           <div className="bg-white rounded-2xl mb-4 overflow-hidden shadow-lg border-none relative group"
             style={{ boxShadow: '0 10px 30px -5px rgba(16, 185, 129, 0.2)' }}
           >
@@ -1819,7 +1838,7 @@ export default function BookingDetails() {
           )}
 
           {/* Self-Job Operational Buttons */}
-          {(booking.assignedTo?.name === 'You (Self)' || localStorage.getItem('role') === 'worker') && (
+          {(booking.assignedTo?.name === 'You (Self)' || isWorker) && (
             <div className="space-y-3 pt-2">
               {booking.status === 'awaiting_payment' && ['online', 'razorpay'].includes(booking.paymentMethod) && (
                 <div className="w-full p-4 rounded-xl text-center text-amber-700 bg-amber-50 border border-amber-200 font-semibold text-sm">

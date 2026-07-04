@@ -10,6 +10,33 @@ const getProfile = async (req, res) => {
   try {
     const vendorId = req.user.id;
 
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+
+    if (isWorkerRole) {
+      const Worker = require('../../models/Worker');
+      const worker = await Worker.findById(vendorId).select('-__v');
+      if (!worker) {
+        return res.status(404).json({ success: false, message: 'Worker not found' });
+      }
+      return res.status(200).json({
+        success: true,
+        vendor: {
+          _id: worker._id,
+          name: worker.name,
+          email: worker.email,
+          phone: worker.phone,
+          profilePhoto: worker.profilePhoto,
+          address: worker.address || { addressLine1: 'Address not available' },
+          rating: worker.rating || 4.5,
+          totalJobs: worker.totalJobs || 0,
+          completionRate: worker.completionRate || 100,
+          skills: worker.skills || [],
+          role: 'worker',
+          approvalStatus: 'approved'
+        }
+      });
+    }
+
     const vendor = await Vendor.findById(vendorId).select('-password -__v');
     if (!vendor) {
       return res.status(404).json({ success: false, message: 'Vendor not found' });

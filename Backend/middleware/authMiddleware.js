@@ -100,7 +100,7 @@ const authenticate = async (req, res, next) => {
         }
         break;
       case USER_ROLES.WORKER:
-        user = await Worker.findById(decoded.userId).select('-password').lean();
+        user = await require('../models/Worker').findById(decoded.userId).select('-password').lean();
         // SINGLE DEVICE LOGOUT Logic
         if (process.env.NODE_ENV === 'production' && user && user.loginSessionId && decoded.loginSessionId && user.loginSessionId !== decoded.loginSessionId) {
           return res.status(401).json({ success: false, message: 'Account logged in on another device. Please login again.' });

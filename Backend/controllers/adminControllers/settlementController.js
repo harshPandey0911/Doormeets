@@ -566,6 +566,7 @@ module.exports = {
 
       const withdrawals = await Withdrawal.find(matchQuery)
         .populate('vendorId', 'name businessName phone wallet.earnings')
+        .populate('workerId', 'name phone wallet.balance')
         .sort({ createdAt: 1 })
         .skip(skip)
         .limit(parseInt(limit));
@@ -602,6 +603,58 @@ module.exports = {
       const withdrawal = await Withdrawal.findById(withdrawalId);
       if (!withdrawal) return res.status(404).json({ success: false, message: 'Withdrawal not found' });
       if (withdrawal.status !== 'pending') return res.status(400).json({ success: false, message: 'Not pending' });
+
+      if (withdrawal.userType === 'worker') {
+        const Worker = require('../../models/Worker');
+        const worker = await Worker.findById(withdrawal.workerId);
+        if (!worker) return res.status(404).json({ success: false, message: 'Worker not found' });
+
+        if ((worker.wallet?.balance || 0) < withdrawal.amount) {
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient worker balance. Available: ₹${worker.wallet?.balance || 0}`
+          });
+        }
+
+        // Deduct from worker balance
+        worker.wallet.balance -= withdrawal.amount;
+        worker.wallet.totalWithdrawn = (worker.wallet.totalWithdrawn || 0) + withdrawal.amount;
+        await worker.save();
+
+        withdrawal.status = 'approved';
+        withdrawal.processedBy = adminId;
+        withdrawal.processedDate = new Date();
+        withdrawal.transactionReference = transactionReference;
+        withdrawal.adminNotes = notes;
+        withdrawal.netAmount = withdrawal.amount;
+        await withdrawal.save();
+
+        recordWithdrawal(new Date(), withdrawal.amount);
+
+        // Transaction log for Worker
+        await Transaction.create({
+          workerId: worker._id,
+          type: 'withdrawal',
+          amount: withdrawal.amount,
+          status: 'completed',
+          paymentMethod: 'bank_transfer',
+          description: `Withdrawal payout processed. Amount: ₹${withdrawal.amount}`,
+          referenceId: transactionReference,
+          metadata: {
+            withdrawalId: withdrawal._id
+          }
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'Worker withdrawal approved successfully',
+          data: {
+            grossAmount: withdrawal.amount,
+            netAmount: withdrawal.amount,
+            transactionReference
+          }
+        });
+      }
 
       const vendor = await Vendor.findById(withdrawal.vendorId);
       if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });

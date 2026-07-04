@@ -57,6 +57,16 @@ const workerSchema = new mongoose.Schema({
   profilePhoto: {
     type: String,
     default: null
+  },
+  wallet: {
+    balance: {
+      type: Number,
+      default: 0
+    },
+    totalWithdrawn: {
+      type: Number,
+      default: 0
+    }
   }
 }, {
   timestamps: true

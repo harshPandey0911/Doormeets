@@ -12,6 +12,7 @@ import api from '../../../../services/api';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const isWorker = localStorage.getItem('role') === 'worker' || window.location.pathname.startsWith('/worker');
 
   // Helper function to convert hex to rgba
   const hexToRgba = (hex, alpha) => {
@@ -21,7 +22,11 @@ const Profile = () => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
-  const menuItems = [
+  const menuItems = isWorker ? [
+    { id: 2, label: 'Wallet & Payouts', icon: FaWallet, path: '/worker/wallet' },
+    { id: 8, label: 'Settings', icon: FiSettings, path: '/worker/settings' },
+    { id: 9, label: 'About Doormeets', icon: null, customIcon: 'S', path: '/worker/about-cleaning-expert' },
+  ] : [
     { id: 2, label: 'Wallet', icon: FaWallet, path: '/vendor/wallet' },
     { id: 5, label: 'My Ratings', icon: FiStar, path: '/vendor/my-ratings' },
     { id: 10, label: 'Categories', icon: FiGrid, path: '/vendor/categories' },
@@ -97,11 +102,12 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       // Try to load from local storage first for immediate display
-      const storedVendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+      const storageKey = isWorker ? 'workerData' : 'vendorData';
+      const storedVendorData = JSON.parse(localStorage.getItem(storageKey) || '{}');
       if (storedVendorData && Object.keys(storedVendorData).length > 0) {
         setProfile({
-          name: storedVendorData.name || 'Vendor Name',
-          businessName: storedVendorData.businessName || null,
+          name: storedVendorData.name || (isWorker ? 'Worker Name' : 'Vendor Name'),
+          businessName: isWorker ? 'Worker' : (storedVendorData.businessName || null),
           phone: storedVendorData.phone || '',
           email: storedVendorData.email || '',
           address: storedVendorData.address ?
@@ -114,7 +120,7 @@ const Profile = () => {
           serviceCategory: storedVendorData.service || '',
           skills: [],
           photo: storedVendorData.profilePhoto || null,
-          approvalStatus: storedVendorData.approvalStatus,
+          approvalStatus: storedVendorData.approvalStatus || 'approved',
           isPhoneVerified: storedVendorData.isPhoneVerified || false,
           isEmailVerified: storedVendorData.isEmailVerified || false
         });
@@ -133,8 +139,8 @@ const Profile = () => {
             : 'Not set';
 
           setProfile({
-            name: vendorData.name || 'Vendor Name',
-            businessName: vendorData.businessName || null,
+            name: vendorData.name || (isWorker ? 'Worker Name' : 'Vendor Name'),
+            businessName: isWorker ? 'Worker' : (vendorData.businessName || null),
             phone: vendorData.phone || '',
             email: vendorData.email || '',
             address: addressString,
@@ -144,11 +150,11 @@ const Profile = () => {
             serviceCategory: vendorData.service || '',
             skills: [],
             photo: vendorData.profilePhoto || null,
-            approvalStatus: vendorData.approvalStatus,
+            approvalStatus: vendorData.approvalStatus || 'approved',
             isPhoneVerified: vendorData.isPhoneVerified || false,
             isEmailVerified: vendorData.isEmailVerified || false
           });
-          localStorage.setItem('vendorData', JSON.stringify(vendorData));
+          localStorage.setItem(storageKey, JSON.stringify(vendorData));
         } else {
           // If API fails but we have local data, stick with it?
           if (!storedVendorData || Object.keys(storedVendorData).length === 0) {
@@ -157,7 +163,7 @@ const Profile = () => {
           }
         }
       } catch (err) {
-        console.error('Error fetching vendor profile:', err);
+        console.error('Error fetching profile:', err);
         if (!storedVendorData || Object.keys(storedVendorData).length === 0) {
           setError(err.response?.data?.message || 'Failed to fetch profile');
           toast.error(err.response?.data?.message || 'Failed to fetch profile');
@@ -168,12 +174,13 @@ const Profile = () => {
     };
 
     fetchProfile();
+    const updateEvent = isWorker ? 'workerProfileUpdated' : 'vendorProfileUpdated';
     window.addEventListener('vendorDataUpdated', fetchProfile);
-    window.addEventListener('vendorProfileUpdated', fetchProfile);
+    window.addEventListener(updateEvent, fetchProfile);
 
     return () => {
       window.removeEventListener('vendorDataUpdated', fetchProfile);
-      window.removeEventListener('vendorProfileUpdated', fetchProfile);
+      window.removeEventListener(updateEvent, fetchProfile);
     };
   }, []);
 
@@ -283,7 +290,7 @@ const Profile = () => {
 
               {/* Navigate Button */}
               <button
-                onClick={() => navigate('/vendor/profile/details')}
+                onClick={() => navigate(isWorker ? '/worker/profile/details' : '/vendor/profile/details')}
                 className="p-3.5 rounded-2xl flex-shrink-0 transition-all duration-500 active:scale-90 group bg-white shadow-lg"
               >
                 <FiArrowRight className="w-5 h-5 text-orange-600 group-hover:translate-x-1 transition-transform" />
@@ -293,108 +300,110 @@ const Profile = () => {
         </div>
 
         {/* Three Cards Section - Horizontal */}
-        <div className="mb-5">
-          <div className="grid grid-cols-3 gap-3">
-            {/* Active Jobs */}
-            <button
-              onClick={() => navigate('/vendor/jobs')}
-              className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
-              style={{
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
-                border: '1.5px solid rgba(0, 166, 166, 0.15)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
-                e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
-              }}
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+        {!isWorker && (
+          <div className="mb-5">
+            <div className="grid grid-cols-3 gap-3">
+              {/* Active Jobs */}
+              <button
+                onClick={() => navigate('/vendor/jobs')}
+                className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
-                  backgroundColor: hexToRgba(themeColors.button, 0.12),
-                  boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
+                  border: '1.5px solid rgba(0, 166, 166, 0.15)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
                 }}
               >
-                <FiBriefcase className="w-5 h-5" style={{ color: themeColors.button }} />
-              </div>
-              <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
-                Active Jobs
-              </span>
-            </button>
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+                  style={{
+                    backgroundColor: hexToRgba(themeColors.button, 0.12),
+                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                  }}
+                >
+                  <FiBriefcase className="w-5 h-5" style={{ color: themeColors.button }} />
+                </div>
+                <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
+                  Active Jobs
+                </span>
+              </button>
 
-            {/* Wallet */}
-            <button
-              onClick={() => navigate('/vendor/wallet')}
-              className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
-              style={{
-                boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
-                border: '1.5px solid rgba(0, 166, 166, 0.15)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
-                e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
-              }}
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+              {/* Wallet */}
+              <button
+                onClick={() => navigate('/vendor/wallet')}
+                className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
-                  backgroundColor: hexToRgba(themeColors.button, 0.12),
-                  boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                  boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
+                  border: '1.5px solid rgba(0, 166, 166, 0.15)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
                 }}
               >
-                <FaWallet className="w-5 h-5" style={{ color: themeColors.button }} />
-              </div>
-              <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
-                Wallet
-              </span>
-            </button>
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+                  style={{
+                    backgroundColor: hexToRgba(themeColors.button, 0.12),
+                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                  }}
+                >
+                  <FaWallet className="w-5 h-5" style={{ color: themeColors.button }} />
+                </div>
+                <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
+                  Wallet
+                </span>
+              </button>
 
-            {/* Workers */}
-            <button
-              onClick={() => navigate('/vendor/workers')}
-              className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
-              style={{
-                boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
-                border: '1.5px solid rgba(0, 166, 166, 0.15)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
-                e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
-                e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
-              }}
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+              {/* Workers */}
+              <button
+                onClick={() => navigate('/vendor/workers')}
+                className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
-                  backgroundColor: hexToRgba(themeColors.button, 0.12),
-                  boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                  boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
+                  border: '1.5px solid rgba(0, 166, 166, 0.15)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
                 }}
               >
-                <FiUser className="w-5 h-5" style={{ color: themeColors.button }} />
-              </div>
-              <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
-                Workers
-              </span>
-            </button>
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+                  style={{
+                    backgroundColor: hexToRgba(themeColors.button, 0.12),
+                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                  }}
+                >
+                  <FiUser className="w-5 h-5" style={{ color: themeColors.button }} />
+                </div>
+                <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
+                  Workers
+                </span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Menu List Section */}
         <div className="mb-4 space-y-3">
@@ -464,14 +473,22 @@ const Profile = () => {
             onClick={async (e) => {
               e.preventDefault();
               e.stopPropagation();
-              try {
-                await vendorAuthService.logout();
-                toast.success('Logged out successfully');
-                navigate('/vendor/login');
-              } catch (error) {
+              const clearAllTokens = () => {
                 localStorage.removeItem('vendorAccessToken');
                 localStorage.removeItem('vendorRefreshToken');
                 localStorage.removeItem('vendorData');
+                localStorage.removeItem('workerAccessToken');
+                localStorage.removeItem('workerRefreshToken');
+                localStorage.removeItem('workerData');
+                localStorage.removeItem('role');
+              };
+              try {
+                await vendorAuthService.logout();
+                clearAllTokens();
+                toast.success('Logged out successfully');
+                navigate('/vendor/login');
+              } catch (error) {
+                clearAllTokens();
                 toast.success('Logged out successfully');
                 navigate('/vendor/login');
               }

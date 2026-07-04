@@ -600,9 +600,12 @@ const BookingDetails = () => {
     partsGST += (parseFloat(c.gstAmount) || 0);
   });
 
-  // Use bill.originalGST if available
-  const originalGST = bill ? (bill.originalGST || 0) : (originalBase * 0.18);
+  // Use bill.originalGST if available — when no bill, use stored tax (GST already included in customer price)
+  const originalGST = bill ? (bill.originalGST || 0) : (parseFloat(booking.tax) || 0);
   const totalGST = originalGST + extraServiceGST + partsGST;
+
+  // Instant Booking Markup
+  const instantMarkup = parseFloat(booking.instantMarkupCharged) || 0;
 
   // Final Total
   const hasBill = !!bill;

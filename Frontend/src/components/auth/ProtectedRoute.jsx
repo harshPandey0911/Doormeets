@@ -77,9 +77,14 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null }) => {
 
   // Prevent pending vendors from accessing routes other than verification
   if (userType === 'vendor' && isAuthenticated) {
-    const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
-    if (vendorData.approvalStatus?.toLowerCase() === 'pending' && !location.pathname.includes('/verification')) {
-      return <Navigate to="/vendor/verification" replace />;
+    try {
+      const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+      if (vendorData.approvalStatus?.toLowerCase() === 'pending' && !location.pathname.includes('/verification')) {
+        return <Navigate to="/vendor/verification" replace />;
+      }
+    } catch (e) {
+      // vendorData might be corrupted (e.g., "undefined" string) — skip the check
+      console.warn('ProtectedRoute: Failed to parse vendorData:', e.message);
     }
   }
 

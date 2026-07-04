@@ -515,7 +515,38 @@ const refreshToken = async (req, res) => {
       });
     }
 
-    // Check if vendor exists
+    // Handle both vendor and worker tokens (workers login via vendor login page)
+    if (decoded.role === USER_ROLES.WORKER) {
+      // Worker token refresh
+      const workerDoc = await Worker.findById(decoded.userId);
+      if (!workerDoc) {
+        return res.status(404).json({
+          success: false,
+          message: 'Worker not found'
+        });
+      }
+
+      if (workerDoc.status === 'inactive' || workerDoc.status === 'suspended') {
+        return res.status(403).json({
+          success: false,
+          message: 'Worker account is inactive or suspended'
+        });
+      }
+
+      const tokens = generateTokenPair({
+        userId: workerDoc._id,
+        role: USER_ROLES.WORKER,
+        loginSessionId: decoded.loginSessionId
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Token refreshed successfully',
+        ...tokens
+      });
+    }
+
+    // Vendor token refresh (default)
     const vendor = await Vendor.findById(decoded.userId);
     if (!vendor) {
       return res.status(404).json({

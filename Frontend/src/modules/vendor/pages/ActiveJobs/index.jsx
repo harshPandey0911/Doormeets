@@ -62,7 +62,11 @@ const ActiveJobs = memo(() => {
         },
         price: (job.finalAmount ? job.finalAmount * 0.9 : 0).toFixed(2),
         status: job.status,
-        assignedTo: { name: 'You (Self)' },
+        assignedTo: job.isSelfJob
+          ? { name: 'You (Self)' }
+          : job.workerId
+            ? { name: job.workerId.name, phone: job.workerId.phone }
+            : null,
         timeSlot: {
           date: job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : 'Date',
           time: job.scheduledTime || 'Time'

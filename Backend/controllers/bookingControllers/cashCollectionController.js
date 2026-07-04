@@ -28,6 +28,14 @@ exports.initiateOnlineCollection = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid payment amount' });
     }
 
+    // Calculate completed payments already paid
+    const amountAlreadyPaid = booking.basePrice + (booking.tax || 0);
+    const netAmountToCollect = Math.max(0, booking.finalAmount - amountAlreadyPaid);
+
+    if (netAmountToCollect <= 0) {
+      return res.status(400).json({ success: false, message: 'This booking has already been fully paid.' });
+    }
+
     // Store extra items for proper commission calculation
     if (extraItems && Array.isArray(extraItems) && extraItems.length > 0) {
       booking.workDoneDetails = {
@@ -51,9 +59,9 @@ exports.initiateOnlineCollection = async (req, res) => {
       booking.markModified('extraCharges');
     }
 
-    // Create QR Code
+    // Create QR Code for remaining amount
     const qrResult = await createQRCode(
-      booking.finalAmount,
+      netAmountToCollect,
       booking.bookingNumber,
       {
         bookingId: booking._id.toString(),
@@ -81,6 +89,7 @@ exports.initiateOnlineCollection = async (req, res) => {
       io.to(`user_${booking.userId}`).emit('booking_updated', {
         bookingId: booking._id,
         finalAmount: booking.finalAmount,
+        netAmountToCollect: netAmountToCollect,
         workDoneDetails: booking.workDoneDetails,
         qrPaymentInitiated: true,
         customerConfirmationOTP: otp,
@@ -95,7 +104,7 @@ exports.initiateOnlineCollection = async (req, res) => {
         userId: booking.userId,
         type: 'work_done',
         title: 'Payment Request & Bill Ready',
-        message: `Bill: ₹${booking.finalAmount}. OTP: ${otp}. Please verify bill and pay online or share OTP.`,
+        message: `Bill: ₹${booking.finalAmount} (Remaining: ₹${netAmountToCollect}). OTP: ${otp}. Please verify bill and pay online or share OTP.`,
         relatedId: booking._id,
         relatedType: 'booking',
         priority: 'high',
@@ -116,7 +125,7 @@ exports.initiateOnlineCollection = async (req, res) => {
       data: {
         qrImageUrl: qrResult.imageUrl,
         paymentUrl: qrResult.paymentUrl,
-        amount: booking.finalAmount,
+        amount: netAmountToCollect,
         isManualUpi: qrResult.isManualUpi || false
       }
     });
@@ -152,6 +161,10 @@ exports.initiateCashCollection = async (req, res) => {
       // Assuming no partial payment has been made yet (as status is pending/work_done)
       booking.userPayableAmount = Number(totalAmount);
     }
+
+    // Calculate completed payments already paid
+    const amountAlreadyPaid = booking.basePrice + (booking.tax || 0);
+    const netAmountToCollect = Math.max(0, booking.finalAmount - amountAlreadyPaid);
 
     // Store extra items for proper commission calculation
     if (extraItems && Array.isArray(extraItems) && extraItems.length > 0) {
@@ -201,6 +214,7 @@ exports.initiateCashCollection = async (req, res) => {
       io.to(`user_${booking.userId}`).emit('booking_updated', {
         bookingId: booking._id,
         finalAmount: booking.finalAmount,
+        netAmountToCollect: netAmountToCollect,
         customerConfirmationOTP: booking.customerConfirmationOTP,
         paymentOtp: booking.paymentOtp,
         workDoneDetails: booking.workDoneDetails,
@@ -214,7 +228,7 @@ exports.initiateCashCollection = async (req, res) => {
       userId: booking.userId,
       type: 'work_done',
       title: 'Payment Request & Bill Ready',
-      message: `Bill: ₹${booking.finalAmount}. OTP: ${otp}. Please verify bill and share OTP to complete payment.`,
+      message: `Bill: ₹${booking.finalAmount} (Remaining: ₹${netAmountToCollect}). OTP: ${otp}. Please verify bill and share OTP to complete payment.`,
       relatedId: booking._id,
       relatedType: 'booking',
       priority: 'high',
@@ -229,7 +243,8 @@ exports.initiateCashCollection = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Bill finalized',
-      totalAmount: booking.finalAmount
+      totalAmount: booking.finalAmount,
+      netAmountToCollect: netAmountToCollect
     });
   } catch (error) {
     console.error('Initiate cash collection error:', error);
@@ -326,32 +341,28 @@ exports.confirmCashCollection = async (req, res) => {
     }
 
     try {
+      const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+      let targetEarningBase = bill ? bill.vendorTotalEarning : (booking.vendorShare || parseFloat((totalBase * 0.8).toFixed(2)));
+      platformFeeAmount = parseFloat((totalBase - targetEarningBase).toFixed(2));
+
       if (!booking.invoiceGenerated && booking.vendorId) {
         const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
 
-        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-
-        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, targetEarningBase, transactionGroupId);
         const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
 
-        vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+        vendorEarning = vendorInv ? vendorInv.baseAmount : targetEarningBase;
 
         // Mark booking as invoice generated
         booking.invoiceGenerated = true;
       } else {
-        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-        vendorEarning = vendorBaseAmount;
+        vendorEarning = targetEarningBase;
       }
     } catch (invoiceErr) {
       console.error('[INVOICE FLOW ERROR] Invoice generation failed during confirm cash collection but booking completed:', invoiceErr);
       const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-      platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-      vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-      vendorEarning = vendorBaseAmount;
+      vendorEarning = bill ? bill.vendorTotalEarning : (booking.vendorShare || parseFloat((totalBase * 0.8).toFixed(2)));
+      platformFeeAmount = parseFloat((totalBase - vendorEarning).toFixed(2));
     }
 
     if (bill) {
@@ -616,33 +627,29 @@ exports.verifyOnlinePayment = async (req, res) => {
         }
 
         try {
+          const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+          let targetEarningBase = bill ? bill.vendorTotalEarning : (booking.vendorShare || parseFloat((totalBase * 0.8).toFixed(2)));
+          platformFeeAmount = parseFloat((totalBase - targetEarningBase).toFixed(2));
+
           if (!booking.invoiceGenerated && booking.vendorId) {
             const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
 
-            const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-            platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-            vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-
-            const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+            const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, targetEarningBase, transactionGroupId);
             const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
 
-            vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+            vendorEarning = vendorInv ? vendorInv.baseAmount : targetEarningBase;
 
             // Mark booking as invoice generated
             booking.invoiceGenerated = true;
             await booking.save();
           } else {
-            const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-            platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-            vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-            vendorEarning = vendorBaseAmount;
+            vendorEarning = targetEarningBase;
           }
         } catch (invoiceErr) {
           console.error('[INVOICE FLOW ERROR] Invoice generation failed during verify online payment but booking completed:', invoiceErr);
           const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-          platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-          vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-          vendorEarning = vendorBaseAmount;
+          vendorEarning = bill ? bill.vendorTotalEarning : (booking.vendorShare || parseFloat((totalBase * 0.8).toFixed(2)));
+          platformFeeAmount = parseFloat((totalBase - vendorEarning).toFixed(2));
         }
 
         if (bill) {
@@ -800,33 +807,29 @@ exports.confirmManualOnlinePayment = async (req, res) => {
     }
 
     try {
+      const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+      let targetEarningBase = bill ? bill.vendorTotalEarning : (booking.vendorShare || parseFloat((totalBase * 0.8).toFixed(2)));
+      platformFeeAmount = parseFloat((totalBase - targetEarningBase).toFixed(2));
+
       if (!booking.invoiceGenerated && booking.vendorId) {
         const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
 
-        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-
-        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorBaseAmount, transactionGroupId);
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, targetEarningBase, transactionGroupId);
         const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, platformFeeAmount, transactionGroupId);
 
-        vendorEarning = vendorInv ? vendorInv.baseAmount : vendorBaseAmount;
+        vendorEarning = vendorInv ? vendorInv.baseAmount : targetEarningBase;
 
         // Mark booking as invoice generated
         booking.invoiceGenerated = true;
         await booking.save();
       } else {
-        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-        platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-        vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-        vendorEarning = vendorBaseAmount;
+        vendorEarning = targetEarningBase;
       }
     } catch (invoiceErr) {
       console.error('[INVOICE FLOW ERROR] Invoice generation failed during manual QR confirmation but booking completed:', invoiceErr);
       const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
-      platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
-      vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
-      vendorEarning = vendorBaseAmount;
+      vendorEarning = bill ? bill.vendorTotalEarning : (booking.vendorShare || parseFloat((totalBase * 0.8).toFixed(2)));
+      platformFeeAmount = parseFloat((totalBase - vendorEarning).toFixed(2));
     }
 
     if (bill) {
