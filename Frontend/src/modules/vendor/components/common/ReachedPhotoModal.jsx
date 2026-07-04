@@ -156,7 +156,6 @@ const ReachedPhotoModal = ({ isOpen, onClose, onComplete, loading }) => {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     ref={cameraInputRef}
                     onChange={handlePhotoUpload}
                     className="hidden"

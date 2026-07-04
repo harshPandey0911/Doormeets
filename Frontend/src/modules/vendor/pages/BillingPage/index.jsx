@@ -349,7 +349,45 @@ const BillingPage = () => {
   }
 
 
-  // --- Settings (fetched for vendor-side preview) ---
+  const serviceAddons = useMemo(() => {
+    if (!booking || !booking.serviceId) return [];
+    const currentServiceId = booking.serviceId._id || booking.serviceId;
+    
+    // Filter parts matching this service ID
+    const filteredParts = partsCatalog.filter(part => 
+      part.serviceIds && part.serviceIds.some(id => String(id) === String(currentServiceId))
+    );
+    
+    // Filter services matching this service ID
+    const filteredServices = servicesCatalog.filter(svc => 
+      svc.serviceIds && svc.serviceIds.some(id => String(id) === String(currentServiceId))
+    );
+    
+    return [
+      ...filteredParts.map(p => ({ ...p, type: 'part' })),
+      ...filteredServices.map(s => ({ ...s, type: 'service' }))
+    ];
+  }, [booking, partsCatalog, servicesCatalog]);
+
+  const addPredefinedAddon = (addon) => {
+    const gstPercentage = addon.gstPercentage || 18;
+    const gstAmount = addon.gstApplicable !== false ? (addon.price * gstPercentage) / 100 : 0;
+    
+    setCustomItems(prev => [
+      ...prev,
+      {
+        name: addon.name,
+        hsnCode: addon.hsnCode || '',
+        price: addon.price,
+        gstApplicable: addon.gstApplicable !== false,
+        gstPercentage: gstPercentage,
+        quantity: 1,
+        gstAmount: gstAmount,
+        total: addon.price + gstAmount
+      }
+    ]);
+    toast.success(`${addon.name} added to extras`);
+  };
   const [payoutSettings, setPayoutSettings] = useState({
     serviceGstPct: 18,
     partsGstPct: 18,
@@ -367,15 +405,17 @@ const BillingPage = () => {
 
     // Original booking base (service)
     const isPlanBooking = booking.paymentMethod === 'plan_benefit';
-    const originalBase = isPlanBooking ? 0 : (booking.basePrice || 0);
-    const originalServiceGST = isPlanBooking ? 0 : parseFloat(((originalBase * serviceGstPct) / 100).toFixed(2));
+    const originalBasePrice = isPlanBooking ? 0 : (booking.basePrice || 0);
+    const originalServiceBase = booking.tax > 0 ? booking.basePrice : parseFloat((originalBasePrice / 1.18).toFixed(2));
+    const originalServiceGST = booking.tax > 0 ? booking.tax : parseFloat((originalBasePrice - originalServiceBase).toFixed(2));
 
-    // Extra Services: price is base, GST calculated separately
+    // Extra Services: treat price as GST-inclusive
     let extraServiceBase = 0;
     let extraServiceGST = 0;
     selectedServices.forEach(s => {
-      const base = s.price * s.quantity;
-      const gst = parseFloat(((base * serviceGstPct) / 100).toFixed(2));
+      const total = s.price * s.quantity;
+      const base = parseFloat((total / 1.18).toFixed(2));
+      const gst = parseFloat((total - base).toFixed(2));
       extraServiceBase += base;
       extraServiceGST += gst;
     });
@@ -404,7 +444,7 @@ const BillingPage = () => {
     const visitingCharges = Number(booking.visitingCharges) || 0;
     const finalTransportCharges = Number(transportCharges) || 0;
 
-    const totalServiceBase = originalBase + extraServiceBase;
+    const totalServiceBase = originalServiceBase + extraServiceBase;
     const totalServiceGST = originalServiceGST + extraServiceGST;
     const totalPartsBase = partsBase + customBase;
     const totalPartsGST = partsGST + customGST;
@@ -417,7 +457,7 @@ const BillingPage = () => {
     const totalVendorEarnings = parseFloat((vendorServiceEarnings + vendorPartsEarnings).toFixed(2));
 
     return {
-      originalBase,
+      originalBase: originalServiceBase,
       extraServiceBase,
       partsBase: totalPartsBase,
       serviceGstPct,
@@ -621,6 +661,67 @@ const BillingPage = () => {
           </div>
         </div>
         <div className="p-4 space-y-3 pb-48">
+          {serviceAddons.filter(a => a.type === 'service').length > 0 && (
+            <div className="mb-4 bg-blue-50/20 border border-blue-100/50 rounded-2xl p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 ml-1">Predefined Add-ons for this Service</p>
+              <div className="grid grid-cols-1 gap-3">
+                {serviceAddons.filter(a => a.type === 'service').map((addon) => {
+                  const selected = isServiceSelected(addon._id);
+                  return (
+                    <div key={addon._id}
+                      onClick={() => !selected && toggleService(addon)}
+                      className={`p-4 rounded-xl border shadow-sm flex justify-between items-center cursor-pointer transition-all active:scale-[0.98] ${selected ? 'bg-blue-50/50 border-blue-200 ring-1 ring-blue-100' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
+                      <div className="flex-1">
+                        <h4 className={`font-bold text-base mb-1 ${selected ? 'text-blue-900' : 'text-gray-900'}`}>{addon.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-bold ${selected ? 'text-blue-700' : 'text-gray-900'}`}>₹{addon.price}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-bold border border-blue-100">RECOMMENDED</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {selected ? (
+                          <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-1 border border-blue-100">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const currentQty = selectedServices.find(s => s.catalogId === addon._id).quantity;
+                                if (currentQty > 1) {
+                                  const idx = selectedServices.findIndex(s => s.catalogId === addon._id);
+                                  updateServiceQty(idx, -1);
+                                } else {
+                                  toggleService(addon);
+                                }
+                              }}
+                              className="w-8 h-8 flex items-center justify-center bg-white rounded-md text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-50 active:scale-95 transition-all">
+                              <span className="font-bold text-lg leading-none mb-0.5">-</span>
+                            </button>
+                            <span className="font-bold text-sm min-w-[20px] text-center text-blue-900">
+                              {selectedServices.find(s => s.catalogId === addon._id).quantity}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const idx = selectedServices.findIndex(s => s.catalogId === addon._id);
+                                updateServiceQty(idx, 1);
+                              }}
+                              className="w-8 h-8 flex items-center justify-center bg-blue-600 rounded-md text-white shadow-md hover:bg-blue-700 active:scale-95 transition-all">
+                              <FiPlus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleService(addon); }}
+                            className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90">
+                            <FiPlus className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {filteredServices.map(item => {
             const selected = isServiceSelected(item._id);
             return (
@@ -740,9 +841,9 @@ const BillingPage = () => {
           </button>
           <button onClick={() => {
             setViewMode('timeline');
-            setCurrentStep(3); // Go to Extras
+            setCurrentStep(3); // Go to Transport
           }} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
-            Next: Extras <FiArrowRight className="w-5 h-5" />
+            Next: Transport <FiArrowRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -769,9 +870,8 @@ const BillingPage = () => {
           {[
             { id: 1, label: 'Services', icon: FiTool },
             { id: 2, label: 'Parts', icon: FiPackage },
-            { id: 3, label: 'Extras', icon: FiPlus },
-            { id: 4, label: 'Transport', icon: FiPackage },
-            { id: 5, label: 'Review', icon: FiFileText }
+            { id: 3, label: 'Transport', icon: FiPackage },
+            { id: 4, label: 'Review', icon: FiFileText }
           ].map((step) => {
             const isCompleted = step.id < currentStep;
             const isActive = step.id === currentStep;
@@ -788,7 +888,7 @@ const BillingPage = () => {
             );
           })}
           <div className="absolute top-8 left-0 right-0 h-0.5 bg-gray-200 -z-0 mx-8">
-            <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${((maxStep - 1) / 4) * 100}%` }}></div>
+            <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${((maxStep - 1) / 3) * 100}%` }}></div>
           </div>
         </div>
       </div>
@@ -851,105 +951,6 @@ const BillingPage = () => {
 
         {currentStep === 3 && (
           <div className="animate-in fade-in slide-in-from-right-4">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="font-bold text-lg text-gray-800">Add Extra Items</h3>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Parts & Materials</p>
-              </div>
-              <button onClick={addCustomItem} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 hover:bg-blue-700 active:scale-95 transition-all">
-                <FiPlus className="w-4 h-4" /> Add Row
-              </button>
-            </div>
-
-            <div className="space-y-5">
-              {customItems.map((item, idx) => {
-                return (
-                  <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative animate-in slide-in-from-bottom-2">
-                    <button
-                      onClick={() => removeCustomItem(idx)}
-                      className="absolute -top-1 -right-1 w-7 h-7 bg-white text-red-500 rounded-full border border-red-100 flex items-center justify-center hover:bg-red-50 transition-all shadow-sm z-10"
-                    >
-                      <FiTrash2 className="w-3.5 h-3.5" />
-                    </button>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Item Name</label>
-                        <input
-                          placeholder="e.g. Copper Pipe"
-                          value={item.name}
-                          onChange={e => updateCustomItem(idx, 'name', e.target.value)}
-                          className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">HSN Code</label>
-                        <input
-                          placeholder="Optional code"
-                          value={item.hsnCode || ''}
-                          onChange={e => updateCustomItem(idx, 'hsnCode', e.target.value)}
-                          className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 uppercase text-gray-800"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Price (₹)</label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={item.price || ''}
-                            onChange={e => updateCustomItem(idx, 'price', Number(e.target.value))}
-                            className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800"
-                          />
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Quantity</label>
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            onChange={e => updateCustomItem(idx, 'quantity', Number(e.target.value))}
-                            className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500 text-gray-800"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-1 md:col-span-2 md:pt-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`gst-${idx}`}
-                            checked={item.gstApplicable}
-                            onChange={e => updateCustomItem(idx, 'gstApplicable', e.target.checked)}
-                            className="w-4 h-4 rounded text-blue-600 border-gray-300"
-                          />
-                          <label htmlFor={`gst-${idx}`} className="text-xs font-bold text-gray-600">Apply 18% GST</label>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Subtotal: </span>
-                          <span className="text-base font-black text-gray-900">₹{item.total.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {customItems.length === 0 && (
-                <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-100">
-                  <FiPackage className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-400 font-bold text-sm">No extra items added</p>
-                  <button onClick={addCustomItem} className="text-blue-600 font-bold text-xs mt-1 hover:underline underline-offset-4">+ Add Item Row</button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {currentStep === 4 && (
-          <div className="animate-in fade-in slide-in-from-right-4">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
               <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
                 <FiPackage className="w-8 h-8" />
@@ -974,12 +975,17 @@ const BillingPage = () => {
           </div>
         )}
 
-        {currentStep === 5 && calculations && (
+        {currentStep === 4 && calculations && (
           <div className="animate-in fade-in slide-in-from-right-4 pb-10">
             <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 mb-6">
               <div className="bg-gray-900 px-6 py-6 text-white text-center">
-                <p className="text-gray-400 text-xs font-medium uppercase tracking-widest mb-1">TOTAL INVOICE AMOUNT</p>
-                <h2 className="text-4xl font-black">₹{calculations.finalBillAmount.toFixed(2)}</h2>
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-widest mb-1">NET AMOUNT PAYABLE</p>
+                <h2 className="text-4xl font-black">₹{Math.max(0, calculations.finalBillAmount - ((booking.basePrice || 0) + (booking.tax || 0))).toFixed(2)}</h2>
+                {(((booking.basePrice || 0) + (booking.tax || 0)) > 0) && (
+                  <p className="text-[10px] text-gray-400 mt-1.5 font-bold uppercase tracking-wide">
+                    Total Bill: ₹{calculations.finalBillAmount.toFixed(2)} | Already Paid: -₹{((booking.basePrice || 0) + (booking.tax || 0)).toFixed(2)}
+                  </p>
+                )}
               </div>
               <div className="p-6 space-y-6">
                 <div>
@@ -1166,7 +1172,7 @@ const BillingPage = () => {
           <>
             <button onClick={() => setCurrentStep(1)} className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl">Back</button>
             <button onClick={() => setCurrentStep(3)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
-              Next: Extras <FiArrowRight />
+              Next: Transport <FiArrowRight />
             </button>
           </>
         )}
@@ -1174,29 +1180,21 @@ const BillingPage = () => {
           <>
             <button onClick={() => setCurrentStep(2)} className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl">Back</button>
             <button onClick={() => setCurrentStep(4)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
-              Next: Transport <FiArrowRight />
+              Next: Review Bill <FiArrowRight />
             </button>
           </>
         )}
         {currentStep === 4 && (
           <>
-            <button onClick={() => setCurrentStep(3)} className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl">Back</button>
-            <button onClick={() => setCurrentStep(5)} className="flex-[2] py-3.5 bg-gray-900 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg">
-              Next: Final Review <FiArrowRight />
-            </button>
-          </>
-        )}
-        {currentStep === 5 && (
-          <>
             <button
-              onClick={() => setCurrentStep(4)}
+              onClick={() => setCurrentStep(3)}
               disabled={submitting || otpLoading}
               className="flex-1 py-3 text-gray-600 font-bold bg-white border border-gray-200 rounded-xl disabled:opacity-50"
             >
               Back
             </button>
 
-            {/* Payment Options Grid for Step 5 */}
+            {/* Payment Options Grid for Step 4 */}
             <div className="flex-[2] grid grid-cols-2 gap-2">
               {/* Cash/OTP Option - Show if either cash mode or QR generated OTP */}
               {(isOtpSent && paymentMode === 'cash') ? (

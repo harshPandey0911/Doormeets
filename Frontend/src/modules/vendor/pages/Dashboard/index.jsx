@@ -5,6 +5,7 @@ import { FaWallet } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
+import BottomNav from '../../components/layout/BottomNav';
 import { vendorDashboardService } from '../../services/dashboardService';
 import { acceptBooking, rejectBooking, assignWorker } from '../../services/bookingService';
 // Booking alert handled globally
@@ -100,7 +101,10 @@ const Dashboard = memo(() => {
 
     // Build pending bookings map
     const mergedMap = new Map();
-    const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+    let vendorData = {};
+    const isWorker = localStorage.getItem('role') === 'worker';
+    const storageKey = isWorker ? 'workerData' : 'vendorData';
+    try { vendorData = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (e) { /* corrupted data */ }
     const vendorId = vendorData._id || vendorData.id;
 
     requestedBookings.forEach(b => {
@@ -201,9 +205,10 @@ const Dashboard = memo(() => {
     // Update vendorData in localStorage to keep subscription status and other fields in sync
     // If we reached here, the subscription is active (otherwise middleware would have blocked it)
     try {
-      const currentVendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+      let currentVendorData = {};
+      try { currentVendorData = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (e) { /* corrupted data */ }
       if (currentVendorData.id || currentVendorData._id) {
-        localStorage.setItem('vendorData', JSON.stringify({
+        localStorage.setItem(storageKey, JSON.stringify({
           ...currentVendorData,
           isSubscriptionActive: apiStats.isSubscriptionActive ?? true,
           isOnline: apiStats.isOnline ?? currentVendorData.isOnline
@@ -231,7 +236,8 @@ const Dashboard = memo(() => {
     setRecentJobs(recentJobsData);
 
     // Load vendor profile from localStorage (once)
-    const profile = JSON.parse(localStorage.getItem('vendorData') || '{}');
+    let profile = {};
+    try { profile = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (e) { /* corrupted data */ }
     setVendorProfile({
       name: profile.name || 'Vendor Name',
       businessName: profile.businessName || 'Business Name',
@@ -398,9 +404,12 @@ const Dashboard = memo(() => {
         setStats(prev => ({ ...prev, isOnline: newStatus }));
 
         // Update localStorage
-        const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
+        let vendorData = {};
+        const isWorker = localStorage.getItem('role') === 'worker';
+        const storageKey = isWorker ? 'workerData' : 'vendorData';
+        try { vendorData = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (e) { /* corrupted */ }
         vendorData.isOnline = newStatus;
-        localStorage.setItem('vendorData', JSON.stringify(vendorData));
+        localStorage.setItem(storageKey, JSON.stringify(vendorData));
 
         // Dispatch event for other components (like Header)
         window.dispatchEvent(new CustomEvent('vendorStatusChanged', { detail: { isOnline: newStatus } }));
@@ -578,7 +587,7 @@ const Dashboard = memo(() => {
                   return (
                     <div
                       key={job.id}
-                      onClick={() => navigate(`/vendor/booking/${job.id}`)}
+                      onClick={() => navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`)}
                       className="bg-white rounded-2xl shadow-md cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
                       style={{
                         border: '1px solid rgba(0, 0, 0, 0.05)',
@@ -618,7 +627,7 @@ const Dashboard = memo(() => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/vendor/booking/${job.id}`);
+                            navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`);
                           }}
                           className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-700 transition-colors"
                         >
@@ -867,7 +876,7 @@ const Dashboard = memo(() => {
                   return (
                     <div
                       key={job.id}
-                      onClick={() => navigate(`/vendor/booking/${job.id}`)}
+                      onClick={() => navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`)}
                       className="bg-white rounded-xl shadow-lg cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
                       style={{
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.08)',
@@ -953,7 +962,7 @@ const Dashboard = memo(() => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/vendor/booking/${job.id}`);
+                              navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`);
                             }}
                             className="p-2 rounded-lg flex-shrink-0 transition-all duration-300 active:scale-95"
                             style={{

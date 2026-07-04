@@ -72,12 +72,17 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
     partsGST += (parseFloat(c.gstAmount) || 0);
   });
 
-  // Tax Logic
-  const originalGST = bill ? (bill.originalGST || 0) : (originalBase * 0.18);
+  // Tax Logic — when no bill exists, use the stored tax from booking (GST is already included in customer price)
+  const originalGST = bill ? (bill.originalGST || 0) : (parseFloat(booking.tax) || 0);
   const totalGST = originalGST + extraServiceGST + partsGST;
+
+  // Instant Booking Markup
+  const instantMarkup = parseFloat(booking.instantMarkupCharged) || 0;
 
   // Final Total
   const finalTotal = bill?.grandTotal || (booking.finalAmount || 0);
+
+  const isCashPayment = booking.paymentMethod === 'pay_at_home' || booking.paymentMethod === 'cash';
 
   // --- 2. Identity Helpers ---
   const categoryName = booking.serviceCategory || 'General';
@@ -147,12 +152,28 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
 
             {/* Bill Details */}
             <div className="space-y-4">
-              <div className="flex justify-between items-end border-b border-border-color pb-2">
-                <p className="text-xs font-bold text-secondary-text uppercase tracking-wide">Total Amount</p>
-                <p className="text-3xl font-bold text-dark-text">
-                  ₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </p>
-              </div>
+              {(() => {
+                const amountAlreadyPaid = (booking.paymentMethod === 'online' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'SUCCESS') 
+                  ? ((booking.basePrice || 0) + (booking.tax || 0)) 
+                  : 0;
+                const netAmountPayable = Math.max(0, finalTotal - amountAlreadyPaid);
+
+                return (
+                  <div className="flex justify-between items-end border-b border-border-color pb-2">
+                    <div>
+                      <p className="text-xs font-bold text-secondary-text uppercase tracking-wide">Net Amount Payable</p>
+                      {amountAlreadyPaid > 0 && (
+                        <p className="text-[10px] text-secondary-text/80 font-bold mt-0.5">
+                          Total Bill: ₹{finalTotal.toFixed(2)} | Already Paid: -₹{amountAlreadyPaid.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-3xl font-bold text-brand font-mono">
+                      ₹{netAmountPayable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* 1. Services */}
               <div>
@@ -165,23 +186,25 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                     <span>{originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
                     {isPlanBenefit ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="line-through text-secondary-text">₹{originalBase.toFixed(2)}</span>
+                        <span className="line-through text-secondary-text">₹{(originalBase + originalGST).toFixed(2)}</span>
                         <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 rounded">FREE</span>
                       </div>
                     ) : (
-                      <span className="font-medium font-mono">₹{originalBase.toFixed(2)}</span>
+                      <span className="font-medium font-mono">₹{(originalBase + originalGST).toFixed(2)}</span>
                     )}
                   </div>
                   {services.map((s, idx) => (
-                    <div key={`s-${idx}`} className="flex justify-between text-xs text-dark-text">
-                      <span>{s.name} <span className="text-secondary-text">x{s.quantity}</span></span>
-                      <span className="font-medium font-mono">₹{((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1)).toFixed(2)}</span>
+                    <div key={idx} className="flex justify-between text-xs text-dark-text">
+                      <span>{s.name} x {s.quantity}</span>
+                      <span className="font-medium font-mono">₹{(s.total || (s.price * s.quantity)).toFixed(2)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-xs text-secondary-text border-t border-dashed border-border-color pt-1 mt-1">
-                    <span>GST (18%)</span>
-                    <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
-                  </div>
+                  {(originalGST + extraServiceGST) > 0 && (
+                    <div className="flex justify-between text-xs text-secondary-text border-t border-dashed border-border-color pt-1 mt-1">
+                      <span>GST (18%)</span>
+                      <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-xs font-bold text-dark-text pt-1">
                     <span>Total Service</span>
                     <span>₹{(totalServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
@@ -261,7 +284,7 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
               ) : (
                 <>
                   {/* Online Pay - CONDITIONALLY RENDERED */}
-                  {!configLoading && isOnlinePaymentEnabled ? (
+                  {!isCashPayment && !configLoading && isOnlinePaymentEnabled ? (
                     <button
                       onClick={onPayOnline}
                       className="w-full py-3.5 rounded-xl bg-brand text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all hover:bg-brand-light"
@@ -269,7 +292,7 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                       Pay Online Securely
                     </button>
                   ) : (
-                    !configLoading && (
+                    !isCashPayment && !configLoading && (
                       <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-start gap-2">
                         <FiAlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                         <p className="text-[10px] font-bold text-amber-500 uppercase tracking-tight">
@@ -279,12 +302,23 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                     )
                   )}
 
-                  <div className="relative py-2 text-center">
-                    <span className="bg-card-bg px-2 text-[10px] font-bold text-secondary-text relative z-10 uppercase tracking-wider">OR</span>
-                    <div className="absolute top-1/2 left-0 right-0 h-px bg-border-color z-0"></div>
-                  </div>
+                  {!isCashPayment && (
+                    <div className="relative py-2 text-center">
+                      <span className="bg-card-bg px-2 text-[10px] font-bold text-secondary-text relative z-10 uppercase tracking-wider">OR</span>
+                      <div className="absolute top-1/2 left-0 right-0 h-px bg-border-color z-0"></div>
+                    </div>
+                  )}
 
                   {/* Cash Code */}
+                  {isCashPayment && !(booking.customerConfirmationOTP || booking.paymentOtp) && (
+                    <div className="bg-light-bg border border-border-color rounded-xl p-4 text-center">
+                      <p className="text-xs font-bold text-dark-text mb-1">Paying in Cash</p>
+                      <p className="text-[10px] text-secondary-text leading-normal">
+                        Please pay ₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} in cash to the professional. Once they initiate collection, the verification OTP will appear here.
+                      </p>
+                    </div>
+                  )}
+
                   {(booking.customerConfirmationOTP || booking.paymentOtp) && (
                     <div className="bg-light-bg border border-border-color rounded-xl p-4 text-center">
                       <p className="text-xs font-bold text-dark-text mb-2">Paying Cash? Share Code</p>

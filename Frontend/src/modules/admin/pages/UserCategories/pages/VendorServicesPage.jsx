@@ -117,6 +117,11 @@ const VendorServicesPage = ({ selectedCity }) => {
       return;
     }
 
+    if (data.vendorPayoutBase > data.customerPrice) {
+      toast.error("Vendor payout cannot be greater than customer price");
+      return;
+    }
+
     try {
       setLoading(true);
       if (editingId) {
@@ -213,6 +218,33 @@ const VendorServicesPage = ({ selectedCity }) => {
     
     return matchesSearch && matchesCategory && matchesCity;
   });
+
+  const getSplitsPreview = () => {
+    const custPrice = parseFloat(form.customerPrice) || 0;
+    const commPct = globalSettings?.commissionPercentage ?? 25;
+    const cgstPct = globalSettings?.vendorCgstPercentage ?? 2.5;
+    const sgstPct = globalSettings?.vendorSgstPercentage ?? 2.5;
+
+    const platformCommissionAmount = (custPrice * commPct) / 100;
+    const vendorCgstAmount = (custPrice * cgstPct) / 100;
+    const vendorSgstAmount = (custPrice * sgstPct) / 100;
+    const netVendorShare = custPrice - platformCommissionAmount + vendorCgstAmount + vendorSgstAmount;
+    const adminGrossShare = platformCommissionAmount;
+    
+    // Taxable base and GST calculation for Platform Share
+    const adminTaxableEarning = adminGrossShare / 1.18;
+    const platformGstAmount = adminGrossShare - adminTaxableEarning;
+
+    return {
+      adminGrossShare,
+      platformGstAmount,
+      adminTaxableEarning,
+      vendorCgstAmount,
+      vendorSgstAmount,
+      platformCommissionAmount,
+      netVendorShare
+    };
+  };
 
   return (
     <div className="space-y-6">
@@ -402,31 +434,6 @@ const VendorServicesPage = ({ selectedCity }) => {
               />
             </div>
           </div>
-
-          {/* Splits Preview Card */}
-          {form.customerPrice > 0 && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Live Price Matrix Split Preview</span>
-              {(() => {
-                const splits = getSplitsPreview();
-                return (
-                  <div className="grid grid-cols-2 gap-3 text-[11px] font-semibold text-gray-600">
-                    <div className="bg-white p-2 rounded border border-slate-100 shadow-sm space-y-1">
-                      <div className="flex justify-between"><span>Admin Share Gross:</span><span className="font-bold text-slate-800">₹{splits.adminGrossShare.toFixed(2)}</span></div>
-                      <div className="flex justify-between"><span>Admin GST (18%):</span><span className="font-bold text-slate-800">₹{splits.platformGstAmount.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-indigo-700 font-extrabold border-t pt-1"><span>Admin Net Share:</span><span>₹{splits.adminTaxableEarning.toFixed(2)}</span></div>
-                    </div>
-                    <div className="bg-white p-2 rounded border border-slate-100 shadow-sm space-y-1">
-                      <div className="flex justify-between"><span>Vendor CGST (2.5%):</span><span className="font-bold text-slate-800">₹{splits.vendorCgstAmount.toFixed(2)}</span></div>
-                      <div className="flex justify-between"><span>Vendor SGST (2.5%):</span><span className="font-bold text-slate-800">₹{splits.vendorSgstAmount.toFixed(2)}</span></div>
-                      <div className="flex justify-between border-b pb-1"><span>Platform Comm ({globalSettings?.commissionPercentage ?? 25}%):</span><span className="font-bold text-slate-800">₹{splits.platformCommissionAmount.toFixed(2)}</span></div>
-                      <div className="flex justify-between text-emerald-700 font-extrabold pt-1"><span>Net Vendor Share:</span><span>₹{splits.netVendorShare.toFixed(2)}</span></div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">Description (Optional)</label>

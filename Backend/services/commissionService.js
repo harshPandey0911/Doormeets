@@ -26,10 +26,32 @@ async function processBookingCompletion(bookingId) {
     let adminCommission = 0;
     let vendorShare = 0;
 
+    // Check Combo Package Payout in Service Model first!
+    let packageVendorPayout = 0;
+    try {
+      const Service = require('../models/Service');
+      const serviceDoc = await Service.findById(booking.serviceId);
+      if (serviceDoc && serviceDoc.packages && serviceDoc.packages.length > 0 && booking.bookedItems && booking.bookedItems.length > 0) {
+        const bookedTitle = booking.bookedItems[0].card?.title;
+        if (bookedTitle) {
+          const matchingPackage = serviceDoc.packages.find(pkg => 
+            pkg.title === bookedTitle || 
+            bookedTitle.includes(pkg.title) || 
+            pkg.title.includes(bookedTitle)
+          );
+          if (matchingPackage && matchingPackage.vendorPayout > 0) {
+            packageVendorPayout = matchingPackage.vendorPayout;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[CommissionService] Error finding package vendor payout:', err);
+    }
+
     const PricingConfig = require('../models/PricingConfig');
     let pricing = null;
 
-    if (booking.serviceId) {
+    if (packageVendorPayout === 0 && booking.serviceId) {
       const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
       if (pricings.length > 0) {
         if (booking.cityId) {
@@ -44,8 +66,8 @@ async function processBookingCompletion(bookingId) {
       }
     }
 
-    if (pricing && pricing.vendorPayoutBase > 0) {
-      let totalVendorPayoutBase = pricing.vendorPayoutBase;
+    if (packageVendorPayout > 0 || (pricing && pricing.vendorPayoutBase > 0)) {
+      let totalVendorPayoutBase = packageVendorPayout > 0 ? packageVendorPayout : pricing.vendorPayoutBase;
 
       // Check if there is a generated VendorBill for this booking to aggregate addon prices
       try {
@@ -93,21 +115,18 @@ async function processBookingCompletion(bookingId) {
         console.error('[CommissionService] Error aggregating addon prices:', err);
       }
 
-      const vPayoutBase = totalVendorPayoutBase;
-      const vSgstPct = pricing.vendorSgstPercentage ?? 2.5;
-      const vCgstPct = pricing.vendorCgstPercentage ?? 2.5;
-      const vTdsPct = pricing.vendorTdsPercentage ?? 0;
-      const vCommPct = pricing.commissionPercentage ?? 10;
+      let vPayoutBase = totalVendorPayoutBase;
+      if (booking.bookingType === 'instant' && settings) {
+        const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+        vPayoutBase += vendorMarkupShare;
+      }
+      const vSgstPct = pricing ? (pricing.vendorSgstPercentage ?? 2.5) : 2.5;
+      const vCgstPct = pricing ? (pricing.vendorCgstPercentage ?? 2.5) : 2.5;
+      const vTdsPct = pricing ? (pricing.vendorTdsPercentage ?? 0) : 0;
+      const vCommPct = pricing ? (pricing.commissionPercentage ?? 10) : 10;
 
-      const sgstAmount = vPayoutBase * (vSgstPct / 100);
-      const cgstAmount = vPayoutBase * (vCgstPct / 100);
-      const tdsAmount = vPayoutBase * (vTdsPct / 100);
-      const remainingBase = Math.max(0, vPayoutBase - sgstAmount - cgstAmount - tdsAmount);
-      const platformCommAmt = remainingBase * (vCommPct / 100);
-      const netVendorPayout = Math.max(0, remainingBase - platformCommAmt);
-
-      vendorShare = parseFloat(netVendorPayout.toFixed(2));
-      adminCommission = parseFloat((amount - netVendorPayout).toFixed(2));
+      vendorShare = parseFloat(vPayoutBase.toFixed(2));
+      adminCommission = parseFloat((amount - vendorShare).toFixed(2));
     } else if (booking.bookingType === 'instant' && settings) {
       const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
       const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;

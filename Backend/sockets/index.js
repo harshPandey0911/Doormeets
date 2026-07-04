@@ -260,13 +260,15 @@ const updateVendorOnlineStatus = async (vendorId, isOnline, socketId) => {
     const Vendor = require('../models/Vendor');
 
     const updateData = {
-      currentSocketId: socketId
+      currentSocketId: socketId,
+      isOnline: isOnline,
+      availability: isOnline ? 'AVAILABLE' : 'OFFLINE'
     };
 
     // Update MongoDB
     await Vendor.findByIdAndUpdate(vendorId, updateData);
 
-    console.log(`[Socket] Vendor ${vendorId} socket connection updated: socketId=${socketId}`);
+    console.log(`[Socket] Vendor ${vendorId} is now ${isOnline ? 'ONLINE' : 'OFFLINE'} (socketId=${socketId})`);
   } catch (error) {
     console.error('[Socket] Error updating vendor online status:', error);
   }

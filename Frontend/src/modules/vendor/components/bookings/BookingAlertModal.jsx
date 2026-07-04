@@ -211,18 +211,34 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             disabled={!!loadingAction}
             onClick={() => handleAction(onReject, 'reject')}
-            className="flex-1 py-4 rounded-2xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 font-bold text-xs uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 py-3.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
           >
             {loadingAction === 'reject' ? '...' : 'Decline'}
           </button>
+          
+          {!isProduct && onAssign && (
+            <button
+              disabled={!!loadingAction}
+              onClick={() => handleAction(onAssign, 'assign')}
+              className="flex-1 py-3.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+            >
+              {loadingAction === 'assign' ? '...' : (
+                <>
+                  <FiUsers className="w-3.5 h-3.5" />
+                  <span>Assign</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
             disabled={!!loadingAction}
             onClick={() => handleAction(onAccept, 'accept')}
-            className={`flex-[2] py-4 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${isProduct ? 'bg-purple-600 shadow-purple-200' : 'bg-gray-900 shadow-gray-200'}`}
+            className={`py-3.5 rounded-xl text-white font-black text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 ${isProduct ? 'flex-[2] bg-purple-600 shadow-purple-200' : 'flex-1 bg-gray-900 shadow-gray-200'}`}
           >
             {loadingAction === 'accept' ? 'Processing...' : (isProduct ? 'Send Quote' : 'Accept')}
           </button>

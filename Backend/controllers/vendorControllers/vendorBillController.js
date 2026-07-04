@@ -52,9 +52,10 @@ const createOrUpdateBill = async (req, res) => {
     // 1. ORIGINAL SERVICE (from booking)
     // ═══════════════════════════════════════
     const isPlanBooking = booking.paymentMethod === 'plan_benefit';
-    const originalServiceBaseForBill = isPlanBooking ? 0 : (booking.basePrice || 0);
-    const originalServiceBaseForEarnings = booking.basePrice || 0;
-    const originalGST = isPlanBooking ? 0 : parseFloat(((originalServiceBaseForBill * serviceGstPct) / 100).toFixed(2));
+    const basePriceRaw = booking.basePrice || 0;
+    const originalServiceBaseForBill = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw / (1 + serviceGstPct / 100)).toFixed(2)));
+    const originalServiceBaseForEarnings = originalServiceBaseForBill;
+    const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw - originalServiceBaseForBill).toFixed(2)));
     const visitingCharges = Number(booking.visitingCharges) || 0;
 
     // ═══════════════════════════════════════
@@ -72,18 +73,18 @@ const createOrUpdateBill = async (req, res) => {
         }
 
         const name = catalogItem ? catalogItem.name : item.name;
-        // Catalog prices are BASE PRICES (excl GST)
-        const unitBasePrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
+        // Treat catalog prices as GST-inclusive customer prices
+        const customerPrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
         const quantity = Number(item.quantity) || 1;
 
-        const base = unitBasePrice * quantity;
-        const gst = parseFloat(((base * serviceGstPct) / 100).toFixed(2));
-        const totalInclusive = parseFloat((base + gst).toFixed(2));
+        const totalInclusive = customerPrice * quantity;
+        const base = parseFloat((totalInclusive / 1.18).toFixed(2));
+        const gst = parseFloat((totalInclusive - base).toFixed(2));
 
         processedServices.push({
           catalogId: item.catalogId,
           name,
-          price: unitBasePrice,
+          price: base,
           gstPercentage: serviceGstPct,
           quantity,
           gstAmount: gst,
@@ -185,12 +186,84 @@ const createOrUpdateBill = async (req, res) => {
     // ═══════════════════════════════════════
     // 5. REVENUE SPLIT (% applied on BASE only)
     // ═══════════════════════════════════════
-    // TODO:
-    // New dual-invoice accounting logic will be implemented here.
-    const vendorServiceEarning = 0;
-    const vendorPartsEarning = 0;
-    const vendorTotalEarning = 0;
-    const companyRevenue = 0;
+    let packageVendorPayout = 0;
+    try {
+      const Service = require('../../models/Service');
+      const serviceDoc = await Service.findById(booking.serviceId);
+      if (serviceDoc && serviceDoc.packages && serviceDoc.packages.length > 0 && booking.bookedItems && booking.bookedItems.length > 0) {
+        const bookedTitle = booking.bookedItems[0].card?.title;
+        if (bookedTitle) {
+          const matchingPackage = serviceDoc.packages.find(pkg => 
+            pkg.title === bookedTitle || 
+            bookedTitle.includes(pkg.title) || 
+            pkg.title.includes(bookedTitle)
+          );
+          if (matchingPackage && matchingPackage.vendorPayout > 0) {
+            packageVendorPayout = matchingPackage.vendorPayout;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error finding package vendor payout:', err);
+    }
+
+    const PricingConfig = require('../../models/PricingConfig');
+    let pricing = null;
+    if (packageVendorPayout === 0 && booking.serviceId) {
+      const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
+      if (pricings.length > 0) {
+        if (booking.cityId) {
+          pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+        }
+        if (!pricing && booking.brandId) {
+          pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+        }
+        if (!pricing) {
+          pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+        }
+      }
+    }
+
+    let vendorServiceEarning = 0;
+    if (packageVendorPayout > 0) {
+      vendorServiceEarning = packageVendorPayout;
+    } else if (pricing && pricing.vendorPayoutBase > 0) {
+      vendorServiceEarning = pricing.vendorPayoutBase;
+    } else {
+      vendorServiceEarning = parseFloat((originalServiceBaseForBill * (serviceSplitPct / 100)).toFixed(2));
+    }
+
+    // Add vendor's instant booking markup share if applicable
+    let vendorInstantMarkupShare = 0;
+    if (booking.bookingType === 'instant') {
+      vendorInstantMarkupShare = settings?.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+      vendorServiceEarning = parseFloat((vendorServiceEarning + vendorInstantMarkupShare).toFixed(2));
+    }
+
+    // Add extra services vendor earnings (using catalog vendorPayoutBase if configured)
+    let extraServicesEarning = 0;
+    if (services && Array.isArray(services)) {
+      for (const item of services) {
+        let catalogItem = null;
+        if (item.catalogId) {
+          catalogItem = await VendorServiceCatalog.findById(item.catalogId);
+        }
+        const qty = Number(item.quantity) || 1;
+        if (catalogItem && catalogItem.vendorPayoutBase !== undefined && catalogItem.vendorPayoutBase > 0) {
+          extraServicesEarning += catalogItem.vendorPayoutBase * qty;
+        } else {
+          const unitPrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
+          extraServicesEarning += parseFloat(((unitPrice * qty) * (serviceSplitPct / 100)).toFixed(2));
+        }
+      }
+    }
+    vendorServiceEarning = parseFloat((vendorServiceEarning + extraServicesEarning).toFixed(2));
+
+    // Parts earnings (partsSplitPct)
+    const vendorPartsEarning = parseFloat((totalPartsBase * (partsSplitPct / 100)).toFixed(2));
+
+    const vendorTotalEarning = parseFloat((vendorServiceEarning + vendorPartsEarning).toFixed(2));
+    const companyRevenue = parseFloat((grandTotal - vendorTotalEarning).toFixed(2));
 
     // ═══════════════════════════════════════
     // 6. ALL SERVICES (original + vendor-added)
@@ -238,6 +311,7 @@ const createOrUpdateBill = async (req, res) => {
       vendorServiceEarning,
       vendorPartsEarning,
       vendorTotalEarning,
+      vendorInstantMarkupEarning: vendorInstantMarkupShare,
       companyRevenue,
       applyPartsGST,
       status: BILL_STATUS.GENERATED,

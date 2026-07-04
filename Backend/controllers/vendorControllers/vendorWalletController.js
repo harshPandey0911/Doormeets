@@ -3,7 +3,7 @@ const Transaction = require('../../models/Transaction');
 const Settlement = require('../../models/Settlement');
 const Withdrawal = require('../../models/Withdrawal');
 const Booking = require('../../models/Booking');
-const Worker = null; // Worker system removed
+const Worker = require('../../models/Worker');
 const { uploadPaymentScreenshot } = require('../../utils/cloudinaryUpload');
 
 /**
@@ -668,7 +668,7 @@ const payWorker = async (req, res) => {
       });
     }
 
-    const worker = await Worker.findById(booking.workerId);
+    const worker = await require('../../models/Worker').findById(booking.workerId);
     if (!worker) {
       return res.status(404).json({
         success: false,

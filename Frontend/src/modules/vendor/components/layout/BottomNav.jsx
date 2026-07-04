@@ -36,17 +36,18 @@ const BottomNav = memo(() => {
   const navItems = useMemo(() => {
     const badgeCount = pendingJobsCount;
     const isWorker = localStorage.getItem('role') === 'worker';
+    const prefix = isWorker ? '/worker' : '/vendor';
 
     const items = [
-      { path: '/vendor/dashboard', icon: FiHome, activeIcon: HiHome, label: 'Home' },
-      { path: '/vendor/jobs', icon: FiBriefcase, activeIcon: HiBriefcase, label: 'Active Jobs', badge: badgeCount },
+      { path: `${prefix}/dashboard`, icon: FiHome, activeIcon: HiHome, label: 'Home' },
+      { path: `${prefix}/jobs`, icon: FiBriefcase, activeIcon: HiBriefcase, label: 'Active Jobs', badge: badgeCount },
     ];
 
     if (!isWorker) {
       items.push({ path: '/vendor/workers', icon: FiUsers, activeIcon: HiUsers, label: 'Workers' });
     }
 
-    items.push({ path: '/vendor/profile', icon: FiUser, activeIcon: HiUser, label: 'Profile' });
+    items.push({ path: `${prefix}/profile`, icon: FiUser, activeIcon: HiUser, label: 'Profile' });
 
     return items;
   }, [pendingJobsCount]);
@@ -95,8 +96,9 @@ const BottomNav = memo(() => {
     >
       <div className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
+          const prefix = localStorage.getItem('role') === 'worker' ? '/worker' : '/vendor';
           const isActive = location.pathname === item.path ||
-            (item.path === '/vendor/dashboard' && location.pathname === '/vendor');
+            (item.path === `${prefix}/dashboard` && (location.pathname === '/vendor' || location.pathname === '/worker'));
           const IconComponent = isActive ? item.activeIcon : item.icon;
 
           return (

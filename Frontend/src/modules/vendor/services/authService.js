@@ -45,7 +45,9 @@ export const verifyLogin = async (data) => {
     // Check if vendor is pending approval
     const isPending = response.data.vendor?.adminApproval?.toLowerCase() === 'pending';
 
-    if (response.data.success && !response.data.isNewUser && response.data.accessToken && !isPending) {
+    // Only store vendor-specific data for actual vendor logins (not worker logins)
+    // For workers, response.data.vendor is undefined — storing it would corrupt localStorage
+    if (response.data.success && !response.data.isNewUser && response.data.accessToken && !isPending && !response.data.isWorker) {
       localStorage.setItem('vendorAccessToken', response.data.accessToken);
       localStorage.setItem('vendorRefreshToken', response.data.refreshToken);
       localStorage.setItem('vendorData', JSON.stringify(response.data.vendor));

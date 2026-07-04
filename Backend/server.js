@@ -210,6 +210,9 @@ app.use('/api/vendors/support', checkSubscription, require('./routes/vendor-rout
 app.use('/api/vendors/painting-consultations', checkSubscription, require('./routes/vendor-routes/painting-consultation.routes'));
 app.use('/api/vendor/painting', checkSubscription, require('./routes/vendor-routes/painting-quotation.routes'));
 
+// Worker routes
+app.use('/api/workers', require('./routes/worker-routes/workerWallet.routes'));
+
 
 
 

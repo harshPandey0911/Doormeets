@@ -8,6 +8,7 @@ import { FiMapPin } from 'react-icons/fi';
 
 export default function GlobalBookingAlert() {
   const [activeAlertBookings, setActiveAlertBookings] = useState([]);
+  const [activeWorkerAlerts, setActiveWorkerAlerts] = useState([]);
   const ignoredBookingIds = useRef(new Set());
   const navigate = useNavigate();
   const location = useLocation();
@@ -135,14 +136,26 @@ export default function GlobalBookingAlert() {
       }
     };
 
+    const handleWorkerAlert = (e) => {
+      if (e.detail) {
+        setActiveWorkerAlerts(prev => {
+          const wId = String(e.detail.id || e.detail._id);
+          if (prev.find(w => String(w.id || w._id) === wId)) return prev;
+          return [e.detail, ...prev];
+        });
+      }
+    };
+
     window.addEventListener('showDashboardBookingAlert', handleShowAlert);
     window.addEventListener('removeVendorBooking', handleRemoveBooking);
     window.addEventListener('showPaintingConsultationAlert', handlePaintingConsultationAlert);
+    window.addEventListener('showWorkerJobAlert', handleWorkerAlert);
 
     return () => {
       window.removeEventListener('showDashboardBookingAlert', handleShowAlert);
       window.removeEventListener('removeVendorBooking', handleRemoveBooking);
       window.removeEventListener('showPaintingConsultationAlert', handlePaintingConsultationAlert);
+      window.removeEventListener('showWorkerJobAlert', handleWorkerAlert);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(heartbeat);
     };
@@ -152,13 +165,13 @@ export default function GlobalBookingAlert() {
 
   // Effect to manage sound based on pending bookings
   useEffect(() => {
-    if (activeAlertBookings.length > 0 || activeConsultationAlerts.length > 0) {
-      playAlertRing(true); // Always loop for vendor until actioned
+    if (activeAlertBookings.length > 0 || activeConsultationAlerts.length > 0 || activeWorkerAlerts.length > 0) {
+      playAlertRing(true); // Always loop for vendor/worker until actioned
     } else {
       stopAlertRing();
     }
     return () => stopAlertRing();
-  }, [activeAlertBookings.length, activeConsultationAlerts.length]);
+  }, [activeAlertBookings.length, activeConsultationAlerts.length, activeWorkerAlerts.length]);
 
   const handleAcceptConsultation = async (id) => {
     try {
@@ -325,6 +338,69 @@ export default function GlobalBookingAlert() {
                 className="px-4 py-3 border-2 border-gray-200 text-gray-500 font-semibold rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
               >
                 Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Worker Job Live Alert Modal Overlay */}
+      {activeWorkerAlerts.map((job) => (
+        <div key={job.id || job._id} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border-2 border-indigo-500 animate-bounce-short">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                  <path d="M12 6v12M6 12h12"/>
+                </svg>
+              </div>
+              <div>
+                <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">New Job Assigned!</span>
+                <h3 className="text-lg font-bold text-gray-900 mt-1 flex items-center gap-1.5">
+                  Action Required
+                </h3>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-6 border border-gray-100 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">Service</span>
+                <span className="font-bold text-gray-800">{job.serviceType}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">Customer</span>
+                <span className="font-bold text-gray-800">{job.customerName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">Address</span>
+                <span className="font-bold text-gray-800 truncate max-w-[180px]">{job.location?.address}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">Amount</span>
+                <span className="font-bold text-green-600">₹{job.price}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  stopAlertRing();
+                  setActiveWorkerAlerts(prev => prev.filter(w => String(w.id || w._id) !== String(job.id || job._id)));
+                  navigate(`/worker/booking/${job.id || job._id}`);
+                }}
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold rounded-xl transition-all shadow-md shadow-indigo-200"
+              >
+                View Details
+              </button>
+              <button
+                onClick={() => {
+                  stopAlertRing();
+                  setActiveWorkerAlerts(prev => prev.filter(w => String(w.id || w._id) !== String(job.id || job._id)));
+                }}
+                className="px-4 py-3 border-2 border-gray-200 text-gray-500 font-semibold rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+              >
+                Dismiss
               </button>
             </div>
           </div>

@@ -4,7 +4,18 @@ const withdrawalSchema = new mongoose.Schema({
   vendorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor',
-    required: true
+    required: false
+  },
+  workerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Worker',
+    required: false,
+    index: true
+  },
+  userType: {
+    type: String,
+    enum: ['vendor', 'worker'],
+    default: 'vendor'
   },
   amount: {
     type: Number,
