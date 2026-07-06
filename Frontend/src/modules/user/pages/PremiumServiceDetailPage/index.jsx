@@ -443,7 +443,7 @@ const PremiumServiceDetailPage = () => {
 
     const cartData = buildCartItemData({ service, category, brand });
     if (service?.serviceType === 'package_base') {
-      if (selectedPackage) {
+      if (selectedPackage && !isCustomizing) {
         cartData.card.title = `${service.title} - ${selectedPackage.title}`;
         if (selectedPackage.duration) cartData.card.duration = selectedPackage.duration;
         dynamicFieldsPayload.push({
@@ -1878,6 +1878,7 @@ const PremiumServiceDetailPage = () => {
 
                           setCustomSelectedItems(updatedSelections);
                           setIsCustomizing(true);
+                          setSelectedPackage(null); // Clear active combo package
                           setActiveCategoryModal(null);
                           toast.success(`Selected ${item.title}`);
                         }

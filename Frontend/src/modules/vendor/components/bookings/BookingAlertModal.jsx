@@ -98,10 +98,32 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
 
   const isProduct = booking.serviceType === 'product' || booking.bookingType === 'product';
 
+  const getBookingDisplayTitle = () => {
+    if (booking.dynamicFields && booking.dynamicFields.length > 0) {
+      const groupFields = booking.dynamicFields.filter(f => f.name && f.name.startsWith('Group:'));
+      if (groupFields.length > 0) {
+        const items = groupFields
+          .map(f => {
+            const val = String(f.value || '');
+            if (val.toLowerCase().includes('skipped')) return null;
+            return val.replace(/\s*\(₹\d+\)/gi, '');
+          })
+          .filter(Boolean);
+        if (items.length > 0) {
+          return items.join(', ');
+        }
+      }
+    }
+    if (booking.serviceType === 'product') {
+      return booking.serviceName || booking.serviceId?.title;
+    }
+    return booking.serviceType || booking.serviceName || 'Service Request';
+  };
+
   return (
     <div className="bg-white w-full sm:w-[320px] flex-none rounded-[2.5rem] overflow-y-auto max-h-[85vh] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] relative scrollbar-hide snap-center">
       {/* Header Section */}
-      <div className={`relative h-24 flex flex-col items-center justify-center transition-colors duration-500 ${isWaiting ? 'bg-gradient-to-br from-indigo-600 to-purple-700' : 'bg-gradient-to-br from-teal-600 to-emerald-700'}`}>
+      <div className={`relative h-24 flex flex-col items-center justify-center transition-colors duration-500 ${isWaiting ? 'bg-gradient-to-br from-indigo-600 to-purple-700' : (booking.assignedByAdmin ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gradient-to-br from-teal-600 to-emerald-700')}`}>
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }} transition={{ duration: 4, repeat: Infinity }} className="absolute -top-10 -left-10 w-32 h-32 bg-white rounded-full" />
         </div>
@@ -112,10 +134,10 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
           </div>
           <div>
             <h2 className="text-white text-lg font-black tracking-tight leading-none">
-              {isWaiting ? 'USER IS WAITING' : 'New Order!'}
+              {isWaiting ? 'USER IS WAITING' : (booking.assignedByAdmin ? 'Admin Assigned!' : 'New Order!')}
             </h2>
             <div className="text-[8px] font-black text-white/70 uppercase tracking-widest mt-1">
-              {isWaiting ? 'Comparing quotes... 5:00' : 'Action Required Immediately'}
+              {isWaiting ? 'Comparing quotes... 5:00' : (booking.assignedByAdmin ? 'Manual Assignment Required' : 'Action Required Immediately')}
             </div>
           </div>
         </div>
@@ -150,6 +172,14 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
           </div>
         )}
 
+        {booking.assignedByAdmin && (
+          <div className="mb-4 bg-blue-50 border border-blue-100 p-3 rounded-2xl">
+            <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest text-center">
+              🛡️ Assigned by Admin (1 min to respond)
+            </p>
+          </div>
+        )}
+
         <div className="mb-4 space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
@@ -165,7 +195,7 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
           <div className="bg-white rounded-[1.2rem] p-4 border border-gray-100 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
             <h4 className="text-[15px] font-black text-gray-900 leading-tight">
-              {booking.serviceType === 'product' ? (booking.serviceName || booking.serviceId?.title) : (booking.serviceType || booking.serviceName || 'Service Request')}
+              {getBookingDisplayTitle()}
             </h4>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-[10px] font-bold text-gray-400">Customer:</span>

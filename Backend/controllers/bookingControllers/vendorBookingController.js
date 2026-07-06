@@ -176,7 +176,7 @@ const getBookingById = async (req, res) => {
     } else {
       query.$or = [
         { vendorId },
-        { vendorId: null, status: { $in: ['requested', 'searching', 'bidding'] } }
+        { vendorId: null, status: { $in: ['requested', 'searching', 'bidding', 'pending_admin'] } }
       ];
     }
 
@@ -332,44 +332,132 @@ const acceptBooking = async (req, res) => {
       });
     }
 
-    const isInstant = bookingCheck.bookingType === 'instant';
+    const booking = bookingCheck;
+    const isInstant = booking.bookingType === 'instant';
     const statusToSet = isInstant ? BOOKING_STATUS.CONFIRMED : BOOKING_STATUS.ACCEPTED;
     const isSelfJobToSet = isInstant ? true : false;
 
-    const updatedBooking = await Booking.findOneAndUpdate(
-      {
-        _id: id,
-        status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
-        vendorId: null // Crucial: Ensures another request didn't just take it
-      },
-      {
-        $set: {
-          vendorId: vendorId,
-          acceptedAt: new Date(),
-          status: statusToSet,
-          isSelfJob: isSelfJobToSet
-        }
-      },
-      { new: true } // Return updated doc
-    );
+    // Check if the booking is already accepted by another vendor
+    if (booking.vendorId && booking.vendorId.toString() !== vendorId.toString()) {
+      return res.status(409).json({
+        success: false,
+        message: 'Sorry, this job has already been accepted by another vendor.'
+      });
+    }
 
-    if (!updatedBooking) {
-      // If update failed, check why (likely already taken)
-      const existing = await Booking.findById(id);
-      if (existing && existing.vendorId) {
-        return res.status(409).json({ // 409 Conflict
-          success: false,
-          message: 'Sorry, this job has already been accepted by another vendor.'
-        });
-      }
+    // Verify booking is in an acceptable state
+    const allowedStatuses = [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING, 'pending_admin'];
+    if (!allowedStatuses.includes(booking.status)) {
       return res.status(400).json({
         success: false,
         message: 'Booking is no longer available.'
       });
     }
 
+    // Calculate estimated vendorShare (payout) based on Admin Pricing Config or Package Payouts
+    let packageVendorPayout = 0;
+    try {
+      const Service = require('../../models/Service');
+      const serviceDoc = await Service.findById(booking.serviceId);
+      if (serviceDoc && serviceDoc.packages && serviceDoc.packages.length > 0 && booking.bookedItems && booking.bookedItems.length > 0) {
+        const bookedTitle = booking.bookedItems[0].card?.title;
+        if (bookedTitle) {
+          const matchingPackage = serviceDoc.packages.find(pkg => 
+            pkg.title === bookedTitle || 
+            bookedTitle.includes(pkg.title) || 
+            pkg.title.includes(bookedTitle)
+          );
+          if (matchingPackage && matchingPackage.vendorPayout > 0) {
+            packageVendorPayout = matchingPackage.vendorPayout;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error finding package vendor payout during accept:', err);
+    }
+
+    const PricingConfig = require('../../models/PricingConfig');
+    let pricing = null;
+    if (packageVendorPayout === 0 && booking.serviceId) {
+      const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
+      if (pricings.length > 0) {
+        if (booking.cityId) {
+          pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+        }
+        if (!pricing && booking.brandId) {
+          pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+        }
+        if (!pricing) {
+          pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+        }
+      }
+    }
+
+    let calculatedVendorShare = 0;
+    let customItemsPayoutSum = 0;
+    let hasCustomItems = false;
+
+    if (booking.dynamicFields && booking.dynamicFields.length > 0) {
+      try {
+        const Service = require('../../models/Service');
+        const serviceDoc = await Service.findById(booking.serviceId);
+        if (serviceDoc && serviceDoc.serviceGroups) {
+          booking.dynamicFields.forEach(field => {
+            const valStr = String(field.value || '');
+            serviceDoc.serviceGroups.forEach(group => {
+              group.items.forEach(item => {
+                // If this item is present in the dynamic field value, add its payout
+                if (valStr.toLowerCase().includes(item.title.toLowerCase())) {
+                  customItemsPayoutSum += (item.vendorPayout || 0);
+                  hasCustomItems = true;
+                }
+              });
+            });
+          });
+        }
+      } catch (err) {
+        console.error('Error parsing custom items payout:', err);
+      }
+    }
+
+    if (packageVendorPayout > 0) {
+      calculatedVendorShare = packageVendorPayout;
+    } else if (hasCustomItems && customItemsPayoutSum > 0) {
+      calculatedVendorShare = customItemsPayoutSum;
+    } else if (pricing && pricing.vendorPayoutBase > 0) {
+      calculatedVendorShare = pricing.vendorPayoutBase;
+    } else {
+      const Settings = require('../../models/Settings');
+      const settings = await Settings.findOne({ type: 'global' });
+      const serviceSplitPct = settings?.servicePayoutPercentage ?? 70;
+      const serviceGstPct = settings?.serviceGstPercentage ?? 18;
+      
+      const isPlanBooking = booking.paymentMethod === 'plan_benefit';
+      const basePriceRaw = booking.basePrice || 0;
+      const originalServiceBase = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw / (1 + serviceGstPct / 100)).toFixed(2)));
+      
+      calculatedVendorShare = parseFloat((originalServiceBase * (serviceSplitPct / 100)).toFixed(2));
+    }
+
+    if (booking.bookingType === 'instant') {
+      const Settings = require('../../models/Settings');
+      const settings = await Settings.findOne({ type: 'global' });
+      const vendorInstantMarkupShare = settings?.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+      calculatedVendorShare = parseFloat((calculatedVendorShare + vendorInstantMarkupShare).toFixed(2));
+    }
+
+    // Update booking properties
+    booking.vendorId = vendorId;
+    booking.acceptedAt = new Date();
+    booking.status = statusToSet;
+    booking.isSelfJob = isSelfJobToSet;
+    booking.assignedByAdmin = booking.assignedByAdmin || false;
+    booking.vendorShare = calculatedVendorShare;
+
+    await booking.save();
+    const updatedBooking = booking;
+
     // Booking successfully accepted by THIS vendor
-    const booking = updatedBooking;
 
     // Update vendor availability to ON_JOB / RESERVED depending on bookingType
     const Vendor = require('../../models/Vendor');
@@ -571,22 +659,20 @@ const rejectBooking = async (req, res) => {
     const remainingPotential = booking.potentialVendors.length;
 
     if (pendingRequests === 0 && remainingPotential === 0) {
-      // No vendors left - mark booking as failed
-      booking.status = BOOKING_STATUS.NO_VENDORS;
-      booking.cancelledAt = new Date();
-      booking.cancelledBy = 'system';
-      booking.cancellationReason = 'All vendors rejected the request';
+      // No vendors left - route to admin
+      booking.status = 'pending_admin';
+      booking.cancellationReason = 'All vendors rejected the request. Awaiting admin review.';
 
-      // Notify user that no vendors are available
+      // Notify user that no vendors accepted and routed to admin
       await createNotification({
         userId: booking.userId,
-        type: 'booking_rejected',
-        title: 'No Vendors Available',
-        message: `Sorry, no vendors are available for booking ${booking.bookingNumber}. Please try again later.`,
+        type: 'booking_request',
+        title: 'Booking Routing Update',
+        message: `No immediate professionals accepted booking ${booking.bookingNumber}. Request has been sent to Admin for manual assignment.`,
         relatedId: booking._id,
         relatedType: 'booking',
         pushData: {
-          type: 'booking_rejected',
+          type: 'booking_updated',
           bookingId: booking._id.toString(),
           link: `/user/booking/${booking._id}`
         }
@@ -598,20 +684,22 @@ const rejectBooking = async (req, res) => {
         const userIdStr = booking.userId.toString();
         const bookingIdStr = booking._id.toString();
 
-        console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Notifying rooms: user_${userIdStr}, booking_${bookingIdStr}`);
+        console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Routing to pending_admin. Notifying user_${userIdStr}, all_admins`);
 
         const payload = {
           bookingId: bookingIdStr,
-          status: BOOKING_STATUS.NO_VENDORS,
-          message: 'All nearby vendors are currently unavailable for this request.'
+          bookingNumber: booking.bookingNumber,
+          status: 'pending_admin',
+          message: 'Booking request sent to admin for manual assignment.'
         };
 
         // Emit to user room
-        io.to(`user_${userIdStr}`).emit('booking_search_failed', payload);
         io.to(`user_${userIdStr}`).emit('booking_updated', payload);
 
+        // Emit to admins room
+        io.to('all_admins').emit('admin_booking_requested', payload);
+
         // Also emit to specific booking room (as fallback)
-        io.to(`booking_${bookingIdStr}`).emit('booking_search_failed', payload);
         io.to(`booking_${bookingIdStr}`).emit('booking_updated', payload);
       }
     }
@@ -670,16 +758,24 @@ const cancelAcceptedBooking = async (req, res) => {
     booking.vendorId = null;
     booking.workerId = null;
     booking.isSelfJob = false;
-    booking.status = BOOKING_STATUS.SEARCHING;
     booking.acceptedAt = null;
     booking.assignedAt = null;
-    booking.currentWave = 1; // Restart waves
-    booking.waveStartedAt = new Date(); // Start wave timer now
+    
     // Remove this vendor from potential vendors so they don't get pinged again
     booking.potentialVendors = booking.potentialVendors.filter(v => v.vendorId?.toString() !== vendorId.toString());
 
     // Also remove from notified vendors so they don't get the 'booking_taken' later
     booking.notifiedVendors = booking.notifiedVendors.filter(v => v.toString() !== vendorId.toString());
+
+    const isPendingAdmin = booking.potentialVendors.length === 0;
+    if (isPendingAdmin) {
+      booking.status = 'pending_admin';
+      booking.cancellationReason = 'Vendor cancelled and no other potential professionals left in area.';
+    } else {
+      booking.status = BOOKING_STATUS.SEARCHING;
+      booking.currentWave = 1; // Restart waves
+      booking.waveStartedAt = new Date(); // Start wave timer now
+    }
 
     await booking.save();
 
@@ -693,14 +789,24 @@ const cancelAcceptedBooking = async (req, res) => {
       reservedFrom: null
     });
 
-    // Notify user
+    // Notify user and admin
     const io = req.app.get('io');
     if (io) {
       io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
         bookingId: booking._id,
-        status: BOOKING_STATUS.SEARCHING,
-        message: 'Vendor had to cancel. We are searching for another vendor...'
+        status: booking.status,
+        message: isPendingAdmin 
+          ? 'Vendor cancelled and no other professionals available. Sent to Admin.' 
+          : 'Vendor had to cancel. We are searching for another vendor...'
       });
+      if (isPendingAdmin) {
+        io.to('all_admins').emit('admin_booking_requested', {
+          bookingId: booking._id.toString(),
+          bookingNumber: booking.bookingNumber,
+          status: 'pending_admin',
+          message: 'Booking request sent to admin for manual assignment.'
+        });
+      }
     }
 
     res.status(200).json({
@@ -1449,9 +1555,10 @@ const completeSelfJob = async (req, res) => {
       // ═══════════════════════════════════════════
 
       // -- Original booking service (from basePrice) --
-      const originalBase = Number(booking.basePrice) || 0;
-      // Use stored tax from booking to ensure 100% consistency with initial quote
-      const originalGST = Number(booking.tax) || parseFloat(((originalBase * serviceGstPct) / 100).toFixed(2));
+      const isPlanBooking = booking.paymentMethod === 'plan_benefit';
+      const basePriceRaw = Number(booking.basePrice) || 0;
+      const originalBase = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw / (1 + serviceGstPct / 100)).toFixed(2)));
+      const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw - originalBase).toFixed(2)));
 
       // -- Vendor-added services --
       const billServices = (billDetails?.services || []).map(svc => {
@@ -2310,12 +2417,14 @@ const requestCancelBooking = async (req, res) => {
         });
 
         if (io) {
-          io.to(`admin_${admin._id.toString()}`).emit('booking_escalation', {
+          const payload = {
             bookingId: booking._id,
             bookingNumber: booking.bookingNumber,
             message: msg,
             severity: 'MEDIUM'
-          });
+          };
+          io.to(`admin_${admin._id.toString()}`).emit('booking_escalation', payload);
+          io.to('all_admins').emit('booking_escalation', payload);
         }
       }
     } catch (notifErr) {

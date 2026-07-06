@@ -81,7 +81,7 @@ const Checkout = () => {
   const [useLoyaltyPoints, setUseLoyaltyPoints] = useState(false);
   const [loyaltyRedemptionRate, setLoyaltyRedemptionRate] = useState(1);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [useWallet, setUseWallet] = useState(false);
+  const [walletInputVal, setWalletInputVal] = useState('');
   const [maxWalletUsagePercentage, setMaxWalletUsagePercentage] = useState(30);
   const [isInstantBookingEnabled, setIsInstantBookingEnabled] = useState(true);
   const [instantBookingMarkup, setInstantBookingMarkup] = useState(99);
@@ -350,6 +350,12 @@ const Checkout = () => {
     fetchData();
   }, [category, plan]);
 
+  useEffect(() => {
+    if (!loading && cartItems.length === 0 && currentStep === 'details' && !searchingVendors && !showVendorModal) {
+      navigate('/user/home', { replace: true });
+    }
+  }, [loading, cartItems.length, currentStep, searchingVendors, showVendorModal, navigate]);
+
   const loadCart = async () => {
     try {
       setLoading(true);
@@ -541,7 +547,8 @@ const Checkout = () => {
 
         paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
         redeemLoyaltyPoints: useLoyaltyPoints,
-        applyWallet: useWallet,
+        applyWallet: walletDiscount > 0,
+        walletAmountRequested: walletDiscount,
         bookedItems: bookedItemsData,
         dynamicFields: dynamicFieldsPayload
       });
@@ -646,6 +653,11 @@ const Checkout = () => {
           setSearchingVendors(false);
           setCurrentStep('failed');
           toast.error(data.message || 'All vendors are currently unavailable.');
+        } else if (data.status === 'pending_admin') {
+          setSearchingVendors(false);
+          setShowVendorModal(false);
+          toast.success('Request sent to Admin for manual assignment!', { icon: '🛡️' });
+          navigate(`/user/booking/${bookingRequest._id}`, { replace: true });
         }
       }
     });
@@ -663,6 +675,13 @@ const Checkout = () => {
               setSearchingVendors(false);
               setCurrentStep('failed');
               clearInterval(pollInterval);
+            } else if (status === 'pending_admin') {
+              console.log('[Checkout] Polling detected pending_admin status');
+              setSearchingVendors(false);
+              setShowVendorModal(false);
+              clearInterval(pollInterval);
+              toast.success('Request sent to Admin for manual assignment!', { icon: '🛡️' });
+              navigate(`/user/booking/${bookingRequest._id}`, { replace: true });
             } else if (status === 'accepted' || status === 'assigned') {
               // Also handle success via polling as fallback
               console.log('[Checkout] Polling detected success status:', status);
@@ -795,15 +814,24 @@ const Checkout = () => {
 
 
 
-      const dynamicFieldsPayload = Object.keys(dynamicAnswers).map(key => {
-        const field = dynamicFieldsConfig.find(f => f.name === key);
-        return {
-          fieldId: field?._id || field?.id,
-          name: key,
-          label: field?.label || key,
-          value: dynamicAnswers[key]
-        };
-      });
+      const itemDynamicFields = firstItem.dynamicFields || [];
+      const dynamicFieldsPayload = [
+        ...itemDynamicFields.map(df => ({
+          fieldId: df.fieldId || null,
+          name: df.name,
+          label: df.label,
+          value: df.value
+        })),
+        ...Object.keys(dynamicAnswers).map(key => {
+          const field = dynamicFieldsConfig.find(f => f.name === key);
+          return {
+            fieldId: field?._id || field?.id,
+            name: key,
+            label: field?.label || key,
+            value: dynamicAnswers[key]
+          };
+        })
+      ];
 
       const bookingResponse = await bookingService.create({
         bookingType, // 'instant' or 'scheduled'
@@ -816,7 +844,8 @@ const Checkout = () => {
         paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
         amount: amountToPay,
         redeemLoyaltyPoints: useLoyaltyPoints,
-        applyWallet: useWallet,
+        applyWallet: walletDiscount > 0,
+        walletAmountRequested: walletDiscount,
 
         // Pass Full Breakdown to Backend
         basePrice: totalOriginalPrice,
@@ -849,27 +878,25 @@ const Checkout = () => {
       setBookingRequest(booking);
       toast.dismiss();
 
-      // Clear cart immediately as search starts (consumes items) - ONLY if vendors found
-      if (!bookingResponse.noVendorsFound) {
-        try {
-          if (category) {
-            await removeCategoryGlobal(category);
-          } else {
-            await clearCartGlobal();
-          }
-          setCartItems([]);
-        } catch (err) {
-          console.error('Failed to clear cart after search start', err);
+      // Clear cart immediately as search starts (consumes items)
+      try {
+        if (category) {
+          await removeCategoryGlobal(category);
+        } else {
+          await clearCartGlobal();
         }
+        setCartItems([]);
+      } catch (err) {
+        console.error('Failed to clear cart after search start', err);
       }
 
-      // If no vendors found, keep cart and show failure status
+      // If no vendors found, route immediately to admin details
       if (bookingResponse.noVendorsFound) {
         toast.dismiss();
         setSearchingVendors(false);
         setShowVendorModal(false);
-        setCurrentStep('details');
-        toast.error('No vendors currently available for this service in your area. Please try again later or adjust your slot.');
+        toast.success('No immediate professionals found. Request sent to Admin for manual assignment!', { icon: '🛡️' });
+        navigate(`/user/booking/${booking._id}`, { replace: true });
       } else {
         // Move to waiting state - alerts sent to nearby vendors
         setCurrentStep('waiting');
@@ -1315,7 +1342,8 @@ const Checkout = () => {
   const netAfterLoyalty = Math.max(0, netBeforeLoyalty - loyaltyDiscount);
   const walletLimit = parseFloat((netAfterLoyalty * (maxWalletUsagePercentage / 100)).toFixed(2));
   const maxWalletRedeemable = Math.min(walletBalance, walletLimit);
-  const walletDiscount = useWallet ? maxWalletRedeemable : 0;
+  const parsedWalletInput = parseFloat(walletInputVal) || 0;
+  const walletDiscount = Math.max(0, Math.min(parsedWalletInput, maxWalletRedeemable));
   
   const totalAmount = Math.max(0, netAfterLoyalty - walletDiscount);
   const amountToPay = totalAmount;
@@ -1917,41 +1945,84 @@ const Checkout = () => {
 
         {/* Wallet Balance Panel */}
         <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="p-2 bg-emerald-50 text-emerald-500 rounded-xl text-lg shrink-0">
-                👛
-              </span>
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>User Wallet Balance</h3>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Available: ₹{walletBalance}
-                  {walletBalance > 0 && (
-                    <span className="text-[10px] text-gray-400 block mt-0.5">
-                      (Max {maxWalletUsagePercentage}% usage per booking: ₹{walletLimit} max)
-                    </span>
-                  )}
-                </p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 bg-emerald-50 text-emerald-500 rounded-xl text-lg shrink-0">
+                  👛
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>User Wallet Balance</h3>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Available: ₹{walletBalance}
+                  </p>
+                </div>
+              </div>
+              {walletBalance > 0 && (
+                <span className="text-[10px] text-gray-400 font-bold bg-slate-50 border px-2.5 py-1 rounded-xl">
+                  Max Allowed: ₹{maxWalletRedeemable}
+                </span>
+              )}
             </div>
+
             {walletBalance > 0 ? (
-              <button
-                type="button"
-                onClick={() => setUseWallet(prev => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${useWallet ? 'bg-teal-600' : 'bg-gray-200 dark:bg-zinc-700'}`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${useWallet ? 'translate-x-5' : 'translate-x-0'}`}
-                />
-              </button>
+              <div className="space-y-2 mt-1">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={maxWalletRedeemable}
+                      step="any"
+                      placeholder="Enter amount to redeem"
+                      value={walletInputVal}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setWalletInputVal('');
+                          return;
+                        }
+                        const num = parseFloat(val);
+                        if (num > maxWalletRedeemable) {
+                          setWalletInputVal(maxWalletRedeemable.toString());
+                          toast.error(`Maximum allowable wallet usage is ₹${maxWalletRedeemable}`);
+                        } else if (num < 0) {
+                          setWalletInputVal('0');
+                        } else {
+                          setWalletInputVal(val);
+                        }
+                      }}
+                      className="w-full pl-7 pr-12 py-2.5 border rounded-xl text-sm font-semibold placeholder:text-gray-400 focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                      style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setWalletInputVal(maxWalletRedeemable.toString())}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-all"
+                    >
+                      MAX
+                    </button>
+                  </div>
+                </div>
+                {walletDiscount > 0 && (
+                  <p className="text-xs text-green-600 font-bold pl-1 flex items-center gap-1">
+                    <span>✓</span> Deducted from wallet: -₹{walletDiscount}
+                  </p>
+                )}
+                {walletBalance > 0 && (
+                  <p className="text-[10px] text-slate-400 pl-1">
+                    (Max {maxWalletUsagePercentage}% usage per booking: ₹{walletLimit} max)
+                  </p>
+                )}
+              </div>
             ) : (
-              <span className="text-[10px] text-gray-400 font-bold uppercase bg-gray-50 border px-2 py-0.5 rounded">Empty</span>
+              <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-dashed text-xs text-slate-400 font-semibold">
+                <span>Wallet is empty</span>
+                <span className="text-[10px] font-bold uppercase bg-gray-150 px-2 py-0.5 rounded">0 Balance</span>
+              </div>
             )}
           </div>
-          {useWallet && maxWalletRedeemable > 0 && (
-            <div className="mt-2.5 pt-2.5 border-t border-dashed flex justify-between text-xs text-green-600 font-medium" style={{ borderColor: 'var(--border)' }}>
-              <span>Deducted from wallet:</span>
-              <span>-₹{maxWalletRedeemable}</span>
-            </div>
-          )}
         </div>
 
         {/* Loyalty Points Panel */}

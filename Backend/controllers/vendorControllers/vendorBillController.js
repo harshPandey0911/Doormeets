@@ -30,9 +30,13 @@ const createOrUpdateBill = async (req, res) => {
 
     const { USER_ROLES } = require('../../utils/constants');
 
+    if (!booking.vendorId) {
+      return res.status(400).json({ success: false, message: 'Cannot generate bill for an unassigned booking' });
+    }
+
     // Auth check: Vendor or assigned Worker
     const isVendorAuth = booking.vendorId.toString() === req.user.id && req.userRole === USER_ROLES.VENDOR;
-    const isWorkerAuth = booking.workerId?.toString() === req.user.id && req.userRole === USER_ROLES.WORKER;
+    const isWorkerAuth = booking.workerId && booking.workerId.toString() === req.user.id && req.userRole === USER_ROLES.WORKER;
 
     if (!isVendorAuth && !isWorkerAuth) {
       return res.status(403).json({ success: false, message: 'Not authorized for this booking' });
@@ -370,8 +374,12 @@ const getBillByBookingId = async (req, res) => {
 
     const { USER_ROLES } = require('../../utils/constants');
 
+    if (!booking.vendorId) {
+      return res.status(200).json({ success: true, bill: null, message: 'Booking is unassigned. No bill exists.' });
+    }
+
     const isVendorAuth = booking.vendorId.toString() === req.user.id && req.userRole === USER_ROLES.VENDOR;
-    const isWorkerAuth = booking.workerId?.toString() === req.user.id && req.userRole === USER_ROLES.WORKER;
+    const isWorkerAuth = booking.workerId && booking.workerId.toString() === req.user.id && req.userRole === USER_ROLES.WORKER;
 
     if (!isVendorAuth && !isWorkerAuth) {
       return res.status(403).json({ success: false, message: 'Not authorized for this booking' });

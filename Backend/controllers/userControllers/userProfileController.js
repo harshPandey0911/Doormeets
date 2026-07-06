@@ -1,6 +1,8 @@
 const User = require('../../models/User');
 const Cart = require('../../models/Cart');
 const Settings = require('../../models/Settings');
+const Service = require('../../models/Service');
+const Category = require('../../models/Category');
 const { validationResult } = require('express-validator');
 const cloudinaryService = require('../../services/cloudinaryService');
 

@@ -45,6 +45,7 @@ const PaintProductsPage = lazy(() => import('../pages/Painting/PaintProductsPage
 const PaintingConfigPage = lazy(() => import('../pages/Painting/PaintingConfigPage'));
 const VendorWallets = lazy(() => import('../pages/VendorWallets'));
 const ShopOwners = lazy(() => import('../pages/ShopOwners/index'));
+const WebsiteManagement = lazy(() => import('../pages/WebsiteManagement'));
 
 
 
@@ -114,6 +115,7 @@ const AdminRoutes = () => {
 
           <Route path="commission" element={<Commission />} />
           <Route path="vendor-wallets" element={<VendorWallets />} />
+           <Route path="website/*" element={<WebsiteManagement />} />
           <Route path="admin-management/*" element={
             <SuperAdminRoute><AdminManagement /></SuperAdminRoute>
           } />
