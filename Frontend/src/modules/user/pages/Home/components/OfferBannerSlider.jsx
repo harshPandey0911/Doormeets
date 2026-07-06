@@ -52,7 +52,7 @@ const OfferBannerSlider = ({ banners }) => {
             spaceBetween: 0,
           }
         }}
-        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[21/9] md:aspect-[3/1] lg:aspect-[3.2/1]"
+        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[16/9] md:aspect-[3.2/1] lg:aspect-[3.6/1]"
       >
         {banners.map((banner) => (
           <SwiperSlide 
@@ -61,23 +61,43 @@ const OfferBannerSlider = ({ banners }) => {
             onClick={() => handleBannerClick(banner)}
           >
             {banner.mediaType === 'video' ? (
-              <video 
-                src={banner.imageUrl} 
-                autoPlay 
-                muted 
-                loop 
-                playsInline 
-                className="scale-[1.22] translate-y-[2px]"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <>
+                {/* Desktop Video */}
+                <video 
+                  src={banner.imageUrl} 
+                  autoPlay 
+                  muted 
+                  loop 
+                  playsInline 
+                  className="hidden md:block w-full h-full object-cover"
+                />
+                {/* Mobile Video */}
+                <video 
+                  src={banner.mobileImageUrl || banner.imageUrl} 
+                  autoPlay 
+                  muted 
+                  loop 
+                  playsInline 
+                  className="block md:hidden w-full h-full object-cover"
+                />
+              </>
             ) : (
-              <img 
-                src={banner.imageUrl} 
-                alt={banner.title} 
-                className="scale-[1.22] translate-y-[2px]"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                loading="lazy"
-              />
+              <>
+                {/* Desktop Image */}
+                <img 
+                  src={banner.imageUrl} 
+                  alt={banner.title} 
+                  className="hidden md:block w-full h-full object-cover"
+                  loading="lazy"
+                />
+                {/* Mobile Image */}
+                <img 
+                  src={banner.mobileImageUrl || banner.imageUrl} 
+                  alt={banner.title} 
+                  className="block md:hidden w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </>
             )}
           </SwiperSlide>
         ))}

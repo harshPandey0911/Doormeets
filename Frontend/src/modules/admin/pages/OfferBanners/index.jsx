@@ -8,16 +8,22 @@ import Modal from '../UserCategories/components/Modal';
 const OfferBanners = () => {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const setIsModalOpen = (isOpen) => {
+    setIsModalOpenState(isOpen);
+  };
+  const [isModalOpenState, setIsModalOpenState] = useState(false);
+  const isModalOpen = isModalOpenState;
   const [editingBanner, setEditingBanner] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     link: '',
     priority: 0,
     mediaType: 'image',
-    image: null
+    image: null,
+    mobileImage: null
   });
   const [preview, setPreview] = useState(null);
+  const [mobilePreview, setMobilePreview] = useState(null);
 
   useEffect(() => {
     loadBanners();
@@ -38,14 +44,19 @@ const OfferBanners = () => {
     }
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = (e, target) => {
     const file = e.target.files[0];
     if (file) {
       const fileType = file.type.startsWith('video/') ? 'video' : 'image';
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result);
-        setFormData(prev => ({ ...prev, image: reader.result, mediaType: fileType }));
+        if (target === 'mobile') {
+          setMobilePreview(reader.result);
+          setFormData(prev => ({ ...prev, mobileImage: reader.result }));
+        } else {
+          setPreview(reader.result);
+          setFormData(prev => ({ ...prev, image: reader.result, mediaType: fileType }));
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -95,9 +106,11 @@ const OfferBanners = () => {
         priority: banner.priority,
         isActive: banner.isActive,
         mediaType: banner.mediaType || 'image',
-        image: null
+        image: null,
+        mobileImage: null
       });
       setPreview(banner.imageUrl);
+      setMobilePreview(banner.mobileImageUrl || banner.imageUrl);
     } else {
       setEditingBanner(null);
       setFormData({
@@ -105,18 +118,21 @@ const OfferBanners = () => {
         link: '',
         priority: banners.length,
         mediaType: 'image',
-        image: null
+        image: null,
+        mobileImage: null
       });
       setPreview(null);
+      setMobilePreview(null);
     }
-    setIsModalOpen(true);
+    setIsModalOpenState(true);
   };
 
   const closeModal = () => {
-    setIsModalOpen(false);
+    setIsModalOpenState(false);
     setEditingBanner(null);
-    setFormData({ title: '', link: '', priority: 0, mediaType: 'image', image: null });
+    setFormData({ title: '', link: '', priority: 0, mediaType: 'image', image: null, mobileImage: null });
     setPreview(null);
+    setMobilePreview(null);
   };
 
   const toggleActive = async (banner) => {
@@ -161,6 +177,11 @@ const OfferBanners = () => {
                     <video src={banner.imageUrl} autoPlay muted loop playsInline className="w-full h-full object-cover" />
                   ) : (
                     <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                  )}
+                  {banner.mobileImageUrl && banner.mobileImageUrl !== banner.imageUrl && (
+                    <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm font-semibold">
+                      Mobile Version Added
+                    </div>
                   )}
                   <div className="absolute top-2 right-2 flex gap-2">
                     <button
@@ -246,32 +267,63 @@ const OfferBanners = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Banner Media (Image/Video)</label>
-            <div className="mt-1 flex flex-col items-center">
-              {preview ? (
-                <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden border mb-2">
-                  {formData.mediaType === 'video' ? (
-                    <video src={preview} controls autoPlay muted loop className="w-full h-full object-cover" />
-                  ) : (
-                    <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => { setPreview(null); setFormData(p => ({ ...p, image: null, mediaType: 'image' })); }}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
-                  >
-                    <FiX size={14} />
-                  </button>
-                </div>
-              ) : (
-                <label className="w-full aspect-[21/9] flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                  <FiImage className="text-3xl text-gray-400 mb-2" />
-                  <span className="text-xs text-gray-500 font-medium">Click to upload Image or Video</span>
-                  <input type="file" className="hidden" accept="image/*,video/*" onChange={handleImageChange} />
-                </label>
-              )}
-              <p className="text-[10px] text-gray-400 mt-2">Recommended aspect ratio 21:9 for best fit.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Website Banner (Desktop)</label>
+              <div className="mt-1 flex flex-col items-center">
+                {preview ? (
+                  <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden border mb-2">
+                    {formData.mediaType === 'video' ? (
+                      <video src={preview} controls autoPlay muted loop className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={preview} alt="Web Preview" className="w-full h-full object-cover" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setPreview(null); setFormData(p => ({ ...p, image: null })); }}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
+                    >
+                      <FiX size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-full aspect-[21/9] flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                    <FiImage className="text-3xl text-gray-400 mb-2" />
+                    <span className="text-xs text-gray-500 font-medium text-center px-2">Click to upload Website Banner</span>
+                    <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => handleImageChange(e, 'web')} />
+                  </label>
+                )}
+                <p className="text-[10px] text-gray-400 mt-2">Recommended aspect ratio 21:9.</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Mobile UI Banner</label>
+              <div className="mt-1 flex flex-col items-center">
+                {mobilePreview ? (
+                  <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border mb-2">
+                    {formData.mediaType === 'video' ? (
+                      <video src={mobilePreview} controls autoPlay muted loop className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={mobilePreview} alt="Mobile Preview" className="w-full h-full object-cover" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setMobilePreview(null); setFormData(p => ({ ...p, mobileImage: null })); }}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
+                    >
+                      <FiX size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-full aspect-[16/9] flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                    <FiImage className="text-3xl text-gray-400 mb-2" />
+                    <span className="text-xs text-gray-500 font-medium text-center px-2">Click to upload Mobile Banner</span>
+                    <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => handleImageChange(e, 'mobile')} />
+                  </label>
+                )}
+                <p className="text-[10px] text-gray-400 mt-2">Recommended aspect ratio 16:9.</p>
+              </div>
             </div>
           </div>
 

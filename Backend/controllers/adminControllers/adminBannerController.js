@@ -26,7 +26,7 @@ const getOfferBanners = async (req, res) => {
  */
 const addOfferBanner = async (req, res) => {
   try {
-    const { title, link, priority, image, mediaType } = req.body;
+    const { title, link, priority, image, mobileImage, mediaType } = req.body;
 
     if (!image) {
       return res.status(400).json({ success: false, message: 'Image/Video is required' });
@@ -38,11 +38,21 @@ const addOfferBanner = async (req, res) => {
       return res.status(500).json({ success: false, message: 'Upload failed' });
     }
 
+    // Upload mobile banner if present
+    let mobileImageUrl = '';
+    if (mobileImage) {
+      const uploadMobileRes = await cloudinaryService.uploadFile(mobileImage, { folder: 'banners/offers' });
+      if (uploadMobileRes.success) {
+        mobileImageUrl = uploadMobileRes.url;
+      }
+    }
+
     const banner = await OfferBanner.create({
       title,
       link,
       priority: priority || 0,
       imageUrl: uploadRes.url,
+      mobileImageUrl: mobileImageUrl || uploadRes.url, // Fallback to main image
       mediaType: mediaType || 'image'
     });
 
@@ -66,7 +76,7 @@ const addOfferBanner = async (req, res) => {
 const updateOfferBanner = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, link, priority, isActive, image, mediaType } = req.body;
+    const { title, link, priority, isActive, image, mobileImage, mediaType } = req.body;
 
     let updateData = { title, link, priority, isActive, mediaType };
 
@@ -75,6 +85,14 @@ const updateOfferBanner = async (req, res) => {
       const uploadRes = await cloudinaryService.uploadFile(image, { folder: 'banners/offers' });
       if (uploadRes.success) {
         updateData.imageUrl = uploadRes.url;
+      }
+    }
+
+    if (mobileImage && mobileImage.startsWith('data:')) {
+      // Upload new mobile image
+      const uploadMobileRes = await cloudinaryService.uploadFile(mobileImage, { folder: 'banners/offers' });
+      if (uploadMobileRes.success) {
+        updateData.mobileImageUrl = uploadMobileRes.url;
       }
     }
 
