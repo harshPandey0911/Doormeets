@@ -317,7 +317,7 @@ const PackageBased = () => {
   const handleAddItemToGroup = () => {
     setGroupForm(p => ({
       ...p,
-      items: [...p.items, { title: '', price: 0, description: '', duration: '' }]
+      items: [...p.items, { title: '', price: 0, vendorPayout: 0, description: '', duration: '' }]
     }));
   };
 
@@ -664,7 +664,10 @@ const PackageBased = () => {
                                 <div key={item._id || itemIdx} className="bg-white border rounded-xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex justify-between items-center">
                                   <div className="min-w-0 pr-2">
                                     <p className="text-xs font-bold text-gray-800 truncate">{item.title}</p>
-                                    {item.duration && <span className="text-[10px] text-gray-400 block">{item.duration}</span>}
+                                    <div className="flex gap-1.5 items-center mt-0.5 flex-wrap">
+                                      {item.duration && <span className="text-[10px] text-gray-400">{item.duration}</span>}
+                                      <span className="text-[10px] text-indigo-600 font-extrabold bg-indigo-50 px-1 py-0.25 rounded">Payout: ₹{item.vendorPayout || 0}</span>
+                                    </div>
                                   </div>
                                   <span className="text-xs font-extrabold text-emerald-600 shrink-0">₹{item.price}</span>
                                 </div>
@@ -1058,7 +1061,7 @@ const PackageBased = () => {
                       >
                         Remove
                       </button>
-                      <div className="grid grid-cols-2 gap-2 pr-12">
+                      <div className="grid grid-cols-3 gap-2 pr-12">
                         <input
                           type="text"
                           required
@@ -1074,6 +1077,15 @@ const PackageBased = () => {
                           onChange={e => handleUpdateItemInGroup(i, 'price', Number(e.target.value))}
                           placeholder="Price ₹"
                           className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white font-bold text-emerald-600"
+                          min="0"
+                        />
+                        <input
+                          type="number"
+                          required
+                          value={item.vendorPayout === 0 ? '' : item.vendorPayout}
+                          onChange={e => handleUpdateItemInGroup(i, 'vendorPayout', Number(e.target.value) || 0)}
+                          placeholder="Payout ₹"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white font-bold text-blue-600"
                           min="0"
                         />
                       </div>

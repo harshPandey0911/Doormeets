@@ -1,6 +1,6 @@
 const Booking = require('../../models/Booking');
 const Vendor = require('../../models/Vendor');
-const Worker = null; // Worker system removed
+const Worker = require('../../models/Worker');
 const User = require('../../models/User');
 const Service = require('../../models/UserService');
 const { BOOKING_STATUS, PAYMENT_STATUS, VENDOR_STATUS } = require('../../utils/constants');
@@ -147,7 +147,7 @@ exports.getWorkerReport = async (req, res) => {
       availabilityQueryMatch.vendorId = { $ne: null };
     }
 
-    // Top workers by jobs completed
+    // Top workers by jobs completed formatted as totalBookings / fullName
     const topWorkers = await Booking.aggregate([
       { $match: workerQueryMatch },
       {
@@ -173,25 +173,33 @@ exports.getWorkerReport = async (req, res) => {
       },
       {
         $project: {
-          name: '$worker.name',
+          fullName: '$worker.name',
+          totalBookings: '$completedJobs',
           phone: '$worker.phone',
-          completedJobs: 1,
           avgRating: 1
         }
       }
     ]);
 
-    // Worker availability distribution
-    const availabilityDistribution = await Worker.aggregate([
+    // Worker approval status distribution
+    const statusDistribution = await Worker.aggregate([
       { $match: availabilityQueryMatch },
-      { $group: { _id: '$isAvailable', count: { $sum: 1 } } }
+      { $group: { _id: { $ifNull: ['$approvalStatus', 'approved'] }, count: { $sum: 1 } } }
+    ]);
+
+    // Average rating distribution
+    const ratingDistribution = await Booking.aggregate([
+      { $match: { workerId: { $ne: null }, rating: { $exists: true, $ne: null } } },
+      { $group: { _id: { $floor: '$rating' }, count: { $sum: 1 } } },
+      { $sort: { _id: -1 } }
     ]);
 
     res.status(200).json({
       success: true,
       data: {
         topWorkers,
-        availabilityDistribution
+        statusDistribution,
+        ratingDistribution
       }
     });
   } catch (error) {

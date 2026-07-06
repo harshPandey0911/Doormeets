@@ -108,6 +108,11 @@ const pricingConfigSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  vendorPayoutExtra: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   vendorSgstPercentage: {
     type: Number,
     default: 2.5,
