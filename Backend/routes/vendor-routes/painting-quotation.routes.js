@@ -9,7 +9,9 @@ const {
   updateQuotation,
   submitQuotation,
   getProducts,
-  getLabourRates
+  getLabourRates,
+  getTemplatesForVendor,
+  getSettingsForVendor
 } = require('../../controllers/vendorControllers/paintingQuotationController');
 
 // All routes are restricted to authenticated vendors
@@ -21,5 +23,7 @@ router.put('/quotations/:id', updateQuotation);
 router.post('/quotations/:id/submit', submitQuotation);
 router.get('/products', getProducts);
 router.get('/labour-rates', getLabourRates);
+router.get('/templates', getTemplatesForVendor);
+router.get('/settings', getSettingsForVendor);
 
 module.exports = router;

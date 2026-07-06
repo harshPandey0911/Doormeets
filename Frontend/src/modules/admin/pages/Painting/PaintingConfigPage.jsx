@@ -1,25 +1,43 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiTag, FiSliders, FiLayout, FiDollarSign, FiMonitor } from 'react-icons/fi';
+import { 
+  FiTag, FiSliders, FiLayout, FiDollarSign, FiMonitor, 
+  FiFileText, FiTrendingUp, FiActivity, FiSettings
+} from 'react-icons/fi';
 import PaintBrandsPage from './PaintBrandsPage';
 import PaintProductsPage from './PaintProductsPage';
 import PropertyLayoutsPage from './PropertyLayoutsPage';
 import PaintingRatesSettings from '../UserCategories/pages/PaintingRatesSettings';
 import PaintingPageWizard from './PaintingPageWizard';
+import PaintingQuotationsPage from './PaintingQuotationsPage';
+import ConsultationDashboard from './ConsultationDashboard';
+import PaintingPricingConfig from './PaintingPricingConfig';
+import PaintingSettingsPage from './PaintingSettingsPage';
 
 const PaintingConfigPage = ({ defaultTab = 'brands' }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
 
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    navigate(`/admin/painting/${tabId}`);
+  };
+
   const tabItems = [
     { id: 'brands', label: 'Paint Brands', icon: FiTag },
     { id: 'products', label: 'Paint Products', icon: FiSliders },
-    { id: 'layouts', label: 'Property Layouts', icon: FiLayout },
+    { id: 'layouts', label: 'Property Templates', icon: FiLayout },
     { id: 'rates', label: 'Labour Rates', icon: FiDollarSign },
-    { id: 'page-builder', label: 'Page Builder', icon: FiMonitor }
+    { id: 'settings', label: 'Settings Dashboard', icon: FiSettings },
+    { id: 'page-builder', label: 'Page Builder', icon: FiMonitor },
+    { id: 'quotations', label: 'Painting Quotations', icon: FiFileText },
+    { id: 'pricing', label: 'Pricing Config', icon: FiTrendingUp },
+    { id: 'consultations', label: 'Live Consultations', icon: FiActivity }
   ];
 
   return (
@@ -32,7 +50,7 @@ const PaintingConfigPage = ({ defaultTab = 'brands' }) => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 font-sans">Painting Configuration</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Manage master catalog layouts, pricing matrices, products, and brands.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Manage master catalog layouts, pricing matrices, settings profiles, and brands.</p>
           </div>
         </div>
       </div>
@@ -45,7 +63,7 @@ const PaintingConfigPage = ({ defaultTab = 'brands' }) => {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+               onClick={() => handleTabClick(tab.id)}
               className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all cursor-pointer ${
                 active
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10 scale-[1.02]'
@@ -70,7 +88,11 @@ const PaintingConfigPage = ({ defaultTab = 'brands' }) => {
         {activeTab === 'products' && <PaintProductsPage isNested={true} />}
         {activeTab === 'layouts' && <PropertyLayoutsPage />}
         {activeTab === 'rates' && <PaintingRatesSettings />}
+        {activeTab === 'settings' && <PaintingSettingsPage />}
         {activeTab === 'page-builder' && <PaintingPageWizard />}
+        {activeTab === 'quotations' && <PaintingQuotationsPage />}
+        {activeTab === 'pricing' && <PaintingPricingConfig />}
+        {activeTab === 'consultations' && <ConsultationDashboard />}
       </motion.div>
     </div>
   );

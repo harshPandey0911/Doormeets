@@ -254,9 +254,18 @@ const Notifications = () => {
                       <button
                         onClick={() => {
                           if (notif.relatedType === 'booking' && notif.relatedId) {
-                            navigate(`/vendor/booking/${notif.relatedId}`);
+                            if (notif.data?.isPainting || notif.title?.toLowerCase().includes('painting')) {
+                              const consultationId = notif.data?.consultationId || notif.relatedId;
+                              navigate(`/vendor/painting-consultations?consultationId=${consultationId}`);
+                            } else {
+                              navigate(`/vendor/booking/${notif.relatedId}`);
+                            }
                           } else if (notif.action === 'view_booking' && notif.bookingId) {
-                            navigate(`/vendor/booking/${notif.bookingId}`);
+                            if (notif.title?.toLowerCase().includes('painting')) {
+                              navigate(`/vendor/painting-consultations?consultationId=${notif.bookingId}`);
+                            } else {
+                              navigate(`/vendor/booking/${notif.bookingId}`);
+                            }
                           } else if (notif.action === 'view_wallet') {
                             navigate('/vendor/wallet');
                           }

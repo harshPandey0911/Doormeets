@@ -24,12 +24,20 @@ const {
   createLabourRate,
   updateLabourRate,
   deleteLabourRate,
-  getQuotations,
-  createQuotation,
-  updateQuotation,
-  deleteQuotation,
   getConsultationOverview
 } = require('../../controllers/adminControllers/paintingController');
+
+const {
+  getQuotations,
+  getQuotationById,
+  updateQuotation,
+  startReview,
+  approveQuotation,
+  rejectQuotation,
+  requestRevision,
+  getQuotationHistory,
+  deleteQuotation
+} = require('../../controllers/adminControllers/paintingAdminController');
 
 // All routes are protected and for admin only
 router.use(authenticate, isAdmin);
@@ -89,11 +97,26 @@ router.route('/painting/labour-rates/:id')
 
 // Painting Quotations
 router.route('/painting/quotations')
-  .get(getQuotations)
-  .post(createQuotation);
+  .get(getQuotations);
 
 router.route('/painting/quotations/:id')
+  .get(getQuotationById)
   .put(updateQuotation)
   .delete(deleteQuotation);
+
+router.route('/painting/quotations/:id/start-review')
+  .post(startReview);
+
+router.route('/painting/quotations/:id/approve')
+  .post(approveQuotation);
+
+router.route('/painting/quotations/:id/reject')
+  .post(rejectQuotation);
+
+router.route('/painting/quotations/:id/request-revision')
+  .post(requestRevision);
+
+router.route('/painting/quotations/:id/history')
+  .get(getQuotationHistory);
 
 module.exports = router;

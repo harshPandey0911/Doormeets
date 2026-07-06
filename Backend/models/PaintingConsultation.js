@@ -1,37 +1,79 @@
 const mongoose = require('mongoose');
 
-const subtractionSchema = new mongoose.Schema({
-  type: { type: String, enum: ['DOOR', 'WINDOW', 'CUSTOM'], default: 'DOOR' },
-  length: { type: Number, default: 0 },
-  width: { type: Number, default: 0 }
+const openingSchema = new mongoose.Schema({
+  type: { type: String, default: 'Door' }, // Door, Window, French Window, Sliding Window, Ventilator, Arch, Custom
+  width: { type: Number, default: 0 },
+  height: { type: Number, default: 0 },
+  paint: { type: Boolean, default: false },
+  frameMaterial: { type: String, default: '' },
+  remarks: { type: String, default: '' }
+}, { _id: false });
+
+const paintItemSchema = new mongoose.Schema({
+  name: { type: String, default: '' }, // Door, Window, Grill, Railing, Cupboard, Wardrobe, False Ceiling, Beam, Column, TV Unit, Cabinet, Shelf, Custom
+  quantity: { type: Number, default: 1 },
+  unitArea: { type: Number, default: 0 },
+  totalArea: { type: Number, default: 0 },
+  itemType: { type: String, default: 'Custom' }
 }, { _id: false });
 
 const wallSchema = new mongoose.Schema({
-  wallNumber: { type: Number, default: 1 },
-  length: { type: Number, default: 0 },
+  name: { type: String, default: '' },
+  width: { type: Number, default: 0 }, // Represents Wall Length
   height: { type: Number, default: 0 },
-  windows: { type: Number, default: 0 },
-  doors: { type: Number, default: 0 },
-  conditions: {
-    dampness: { type: Boolean, default: false },
-    crackFilling: { type: Boolean, default: false }
-  },
-  netArea: { type: Number, default: 0 }
+  thickness: { type: Number, default: 0 },
+  wallType: { type: String, default: 'Standard' }, // Standard, Partition, Exterior, Curved, Glass, Feature, Texture
+  material: { type: String, default: 'Concrete' }, // Concrete, Brick, POP, Gypsum, Wood, Metal, Glass
+  condition: { type: String, default: 'Good' }, // Excellent, Good, Average, Damp, Peeling, Cracked, Seepage
+  openings: [openingSchema],
+  saved: { type: Boolean, default: false }
 }, { _id: false });
 
 const roomSchema = new mongoose.Schema({
   name: { type: String, default: 'Room' }, // "Bedroom", "Living Room", etc.
+  roomCode: { type: String, default: 'CUSTOM' },
   finishStyle: { type: String, enum: ['LIGHT', 'DARK'], default: 'LIGHT' },
-  repairType: { type: String, enum: ['NON_PUTTY', 'PRIMER', 'PUTTY'], default: 'PRIMER' },
+  repairType: { type: String, default: 'PRIMER' },
   length: { type: Number, default: 0 },
   width: { type: Number, default: 0 },
   netArea: { type: Number, default: 0 },
-  subtractions: [subtractionSchema],
-  paintingNeeded: { type: Boolean, default: true },
-  additionalServiceNeeded: { type: Boolean, default: false },
-  // Wall-level detail (Screen 11)
   walls: [wallSchema],
-  // Paint selection (Screen 12)
+  paintItems: [paintItemSchema],
+  measurementMode: { type: String, default: 'DIMENSIONS' }, // DIMENSIONS, WALLS, FLOOR_PLAN, MANUAL
+  roomProgress: { type: Number, default: 0 },
+  photos: {
+    before: [{ type: String }],
+    damage: [{ type: String }],
+    reference: [{ type: String }],
+    after: [{ type: String }],
+    video: { type: String, default: '' }
+  },
+  calculationBreakdown: {
+    grossWallArea: { type: Number, default: 0 },
+    doorDeduction: { type: Number, default: 0 },
+    windowDeduction: { type: Number, default: 0 },
+    cabinetDeduction: { type: Number, default: 0 },
+    tileDeduction: { type: Number, default: 0 },
+    mirrorDeduction: { type: Number, default: 0 },
+    ventilatorDeduction: { type: Number, default: 0 },
+    wallpaperDeduction: { type: Number, default: 0 },
+    textureArea: { type: Number, default: 0 },
+    featureWallArea: { type: Number, default: 0 },
+    doorPaintArea: { type: Number, default: 0 },
+    windowPaintArea: { type: Number, default: 0 },
+    grillPaintArea: { type: Number, default: 0 },
+    ceilingArea: { type: Number, default: 0 },
+    additionalPaintItems: { type: Number, default: 0 },
+    netPaintableArea: { type: Number, default: 0 }
+  },
+  vendorOverride: {
+    overrideActive: { type: Boolean, default: false },
+    manualArea: { type: Number, default: 0 },
+    reason: { type: String, default: '' },
+    photoEvidence: [{ type: String }],
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    approvedAt: { type: Date }
+  },
   paintTier: { type: String, enum: ['ECONOMY', 'PREMIUM', 'LUXURY'], default: 'PREMIUM' },
   paintProduct: { type: String, default: '' },
   finish: { type: String, enum: ['MATT', 'SATIN', 'GLOSS'], default: 'MATT' },

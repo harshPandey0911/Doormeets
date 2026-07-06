@@ -177,8 +177,9 @@ const getChildRoute = (parentRoute, childName) => {
     "/admin/painting": {
       "Paint Brands": "/admin/painting/brands",
       "Paint Products": "/admin/painting/products",
-      "Property Layouts": "/admin/painting/layouts",
+      "Property Templates": "/admin/painting/layouts",
       "Labour Rates": "/admin/painting/rates",
+      "Settings Dashboard": "/admin/painting/settings",
       "Page Builder": "/admin/painting/page-builder",
       "Painting Quotations": "/admin/painting/quotations",
       "Painting Consultations": "/admin/painting/consultations"
@@ -423,7 +424,11 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
         };
       });
     }
-    navigate(route);
+    if (location.pathname === route) {
+      window.location.reload();
+    } else {
+      navigate(route);
+    }
     if (window.innerWidth < 1024) {
       onClose();
     }

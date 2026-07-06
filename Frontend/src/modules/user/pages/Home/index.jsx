@@ -33,6 +33,8 @@ import ScrapPromotionCard from './components/ScrapPromotionCard';
 import FeaturedSection from '../../components/premium/FeaturedSection';
 import PromoTicker from './components/PromoTicker';
 import promoService from '../../../../services/promoService';
+import QuoteApproval from '../PaintingConsultation/QuoteApproval';
+import { getMyConsultations } from '../../services/paintingConsultationService';
 
 
 
@@ -62,6 +64,27 @@ const Home = () => {
   // Clean up legacy storage keys on mount
   useEffect(() => {
     ['userAddress', 'detectedCity', 'user_formatted_address', 'user_city'].forEach(key => localStorage.removeItem(key));
+  }, []);
+
+  const [pendingQuotes, setPendingQuotes] = useState([]);
+  const [fetchingQuotes, setFetchingQuotes] = useState(true);
+
+  const fetchPendingQuotes = async () => {
+    try {
+      const response = await getMyConsultations();
+      if (response.success && response.data) {
+        const quotes = response.data.filter(c => c.status === 'QUOTE_GENERATED');
+        setPendingQuotes(quotes);
+      }
+    } catch (err) {
+      console.error('Error fetching pending quotes on home:', err);
+    } finally {
+      setFetchingQuotes(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingQuotes();
   }, []);
 
   // Sync detectedCityName with Address on mount/update if not already set
@@ -674,6 +697,23 @@ const Home = () => {
                   </svg>
                 </button>
               </div>
+
+              {/* Painting Quote Approval Section */}
+              {pendingQuotes.length > 0 && (
+                <motion.div variants={itemVariants} className="px-5 max-w-lg lg:max-w-2xl mx-auto w-full mt-4">
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-ping" />
+                    🎨 Painting Quotes Awaiting Your Approval
+                  </h3>
+                  {pendingQuotes.map(consultation => (
+                    <QuoteApproval
+                      key={consultation._id}
+                      consultation={consultation}
+                      onActionComplete={fetchPendingQuotes}
+                    />
+                  ))}
+                </motion.div>
+              )}
 
               {/* Hero Section - Promo Carousel */}
               {homeContent?.isPromosVisible !== false && (
