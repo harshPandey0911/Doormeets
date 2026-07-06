@@ -27,6 +27,33 @@ const serviceImages = [
   "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=800"  // Painter
 ];
 
+const timelineContainerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const timelineItemVariants = {
+  hidden: { opacity: 0, scale: 0.85, y: 30 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const timelineLineVariants = {
+  hidden: { scaleX: 0 },
+  visible: { 
+    scaleX: 1,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [settings, setSettings] = useState(null);
@@ -34,6 +61,16 @@ const LandingPage = () => {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [activeFaq, setActiveFaq] = useState(null);
   const [currentStatsImage, setCurrentStatsImage] = useState(0);
+  const [cardOrder, setCardOrder] = useState([0, 1, 2]);
+
+  const handleCardSwap = () => {
+    setCardOrder((prev) => {
+      const next = [...prev];
+      const front = next.shift();
+      next.push(front);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const statsTimer = setInterval(() => {
@@ -168,8 +205,8 @@ const LandingPage = () => {
         className="relative pt-24 pb-36 md:pt-36 md:pb-48 bg-slate-950 overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: "url('/hero-bg.png')" }}
       >
-        {/* Dark gradient overlay for readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-900/30"></div>
+        {/* Faded overlay for text readability while keeping the right side bright and clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/20 to-transparent"></div>
 
         <div className="container mx-auto px-6 max-w-[1440px] relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -505,11 +542,14 @@ const LandingPage = () => {
             </h2>
           </div>
 
-          <div className="relative">
-            {/* Horizontal Connecting Line (Desktop Only) */}
-            <div className="absolute top-[40px] left-[12%] right-[12%] h-[1.5px] bg-gradient-to-r from-cyan-600/30 via-cyan-500/20 to-emerald-500/30 hidden md:block z-0"></div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 relative z-10">
+          <div className="relative overflow-hidden md:overflow-visible">
+            <motion.div 
+              variants={timelineContainerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: false, amount: 0.25 }}
+              className="flex flex-col md:flex-row items-center md:items-start justify-between relative z-10 gap-12 md:gap-0"
+            >
               {[
                 {
                   title: "Request a Quote",
@@ -531,17 +571,32 @@ const LandingPage = () => {
                   desc: "Your home service is finished on time, every time, with complete warranty.",
                   icon: <FaCheckDouble className="text-2xl text-white" />
                 }
-              ].map((item, idx) => (
-                <div key={idx} className="flex flex-col items-center text-center group">
-                  {/* Circle Gradient Icon Badge */}
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/15 group-hover:scale-105 transition-transform duration-300 z-10 relative mb-6">
-                    {item.icon}
-                  </div>
-                  <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-2">{item.title}</h4>
-                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-[220px] mx-auto">{item.desc}</p>
-                </div>
+              ].map((item, idx, arr) => (
+                <React.Fragment key={idx}>
+                  {/* Step block */}
+                  <motion.div 
+                    variants={timelineItemVariants}
+                    className="flex flex-col items-center text-center group w-full md:w-[20%]"
+                  >
+                    {/* Circle Gradient Icon Badge */}
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/15 group-hover:scale-105 transition-transform duration-300 z-10 relative mb-6">
+                      {item.icon}
+                    </div>
+                    <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-2">{item.title}</h4>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-[220px] mx-auto">{item.desc}</p>
+                  </motion.div>
+
+                  {/* Connecting Line Segment (Desktop Only) */}
+                  {idx < arr.length - 1 && (
+                    <motion.div 
+                      variants={timelineLineVariants}
+                      style={{ originX: 0 }}
+                      className="hidden md:block h-[1.5px] flex-grow bg-gradient-to-r from-cyan-500/30 to-emerald-500/30 self-start mt-10"
+                    />
+                  )}
+                </React.Fragment>
               ))}
-            </div>
+            </motion.div>
           </div>
 
         </div>
@@ -833,27 +888,38 @@ const LandingPage = () => {
               </a>
             </div>
 
-            <div className="relative h-[280px] md:h-[340px] w-full md:w-2/5 flex items-center justify-center mt-12 md:mt-0">
-              {/* Back Card */}
-              <img 
-                src="https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=400" 
-                alt="Doormeets Painter Back" 
-                className="absolute h-[80%] aspect-[4/3] object-cover rounded-2xl border-2 border-slate-800 shadow-lg z-0 -translate-x-8 -translate-y-6 -rotate-6 opacity-40"
-              />
-              
-              {/* Middle Card */}
-              <img 
-                src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=400" 
-                alt="Doormeets Cleaner Middle" 
-                className="absolute h-[80%] aspect-[4/3] object-cover rounded-2xl border-2 border-slate-800 shadow-xl z-10 -translate-x-4 -translate-y-3 -rotate-3 opacity-70"
-              />
+            <div 
+              onClick={handleCardSwap}
+              className="relative h-[280px] md:h-[340px] w-full md:w-2/5 flex items-center justify-center mt-12 md:mt-0 cursor-pointer select-none group"
+            >
+              {[
+                { id: 0, src: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=400", alt: "Doormeets Electrician Front" },
+                { id: 1, src: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=400", alt: "Doormeets Cleaner Middle" },
+                { id: 2, src: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=400", alt: "Doormeets Painter Back" }
+              ].map((card) => {
+                const position = cardOrder.indexOf(card.id);
+                let styleClass = "";
+                let zIndex = "";
+                if (position === 0) {
+                  styleClass = "translate-x-0 translate-y-0 rotate-2 opacity-100 scale-100 group-hover:scale-105";
+                  zIndex = "z-20";
+                } else if (position === 1) {
+                  styleClass = "-translate-x-4 -translate-y-3 -rotate-3 opacity-70 scale-95";
+                  zIndex = "z-10";
+                } else {
+                  styleClass = "-translate-x-8 -translate-y-6 -rotate-6 opacity-40 scale-90";
+                  zIndex = "z-0";
+                }
 
-              {/* Front Card */}
-              <img 
-                src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=400" 
-                alt="Doormeets Electrician Front" 
-                className="absolute h-[80%] aspect-[4/3] object-cover rounded-2xl border-4 border-slate-800 shadow-2xl z-20 translate-x-0 translate-y-0 rotate-2 hover:scale-105 transition-transform duration-300"
-              />
+                return (
+                  <img 
+                    key={card.id}
+                    src={card.src} 
+                    alt={card.alt} 
+                    className={`absolute h-[80%] aspect-[4/3] object-cover rounded-2xl shadow-2xl transition-all duration-500 transform ${styleClass} ${zIndex}`}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
