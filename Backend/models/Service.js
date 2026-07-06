@@ -8,6 +8,7 @@ const { SERVICE_STATUS } = require('../utils/constants');
 const serviceGroupItemSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },     // "Haircut for men"
   price: { type: Number, required: true, default: 0 },     // 199
+  vendorPayout: { type: Number, default: 0 },
   description: { type: String, trim: true, default: '' },  // Optional description
   duration: { type: String, trim: true, default: '' },     // "30 mins"
   isActive: { type: Boolean, default: true }

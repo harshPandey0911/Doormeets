@@ -1064,7 +1064,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         isActive: config.isActive ?? true,
         packageTitle: config.packageTitle || '',
         codEnabled: config.codEnabled ?? true,
-        codAdvanceAmount: config.codAdvanceAmount ?? 0
+        codAdvanceAmount: config.codAdvanceAmount ?? 0,
+        vendorPayoutBase: config.vendorPayoutBase ?? 0,
+        vendorPayoutExtra: config.vendorPayoutExtra ?? 0
       });
     } else {
       setEditingPricingConfigIdx(null);
@@ -1086,7 +1088,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         isActive: true,
         packageTitle: '',
         codEnabled: true,
-        codAdvanceAmount: 0
+        codAdvanceAmount: 0,
+        vendorPayoutBase: 0,
+        vendorPayoutExtra: 0
       });
     }
     setIsPricingModalOpen(true);
@@ -1188,6 +1192,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       l3Commission: Number(globalSettings?.commissionRates?.level3 ?? 0),
       isActive: !!pricingForm.isActive,
       vendorPayoutBase: Number(pricingForm.vendorPayoutBase || 0),
+      vendorPayoutExtra: isMinuteBased ? Number(pricingForm.vendorPayoutExtra || 0) : 0,
       vendorSgstPercentage: Number(globalSettings?.vendorSgstPercentage ?? 2.5),
       vendorCgstPercentage: Number(globalSettings?.vendorCgstPercentage ?? 2.5),
       vendorTdsPercentage: 0,
@@ -2333,16 +2338,20 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                         Base: ₹{config.customerPrice} ({config.minimumMinutes || 30} mins)
                                         <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{totalCustomerPay.toFixed(1)}</span>
                                         <span className="block text-[10px] text-blue-600 font-normal mt-0.25">Extra: ₹{config.pricePerMinute}/10 min</span>
+                                        <span className="block text-[10px] text-indigo-600 font-bold mt-0.5">Payout Base: ₹{config.vendorPayoutBase}</span>
+                                        <span className="block text-[10px] text-indigo-500 font-normal mt-0.25">Payout Extra: ₹{config.vendorPayoutExtra}/10 min</span>
                                       </span>
                                     ) : serviceType === 'subscription_base' ? (
                                       <span>
                                         ₹{config.customerPrice} (Subscription{config.packageTitle ? `: ${config.packageTitle}` : ''})
                                         <span className="block text-[10px] text-blue-600 font-bold mt-0.5">{config.visitsCredits || 4} Visits / {config.validityDays || 30} Days</span>
+                                        <span className="block text-[10px] text-indigo-600 font-bold mt-0.5">Payout: ₹{config.vendorPayoutBase}</span>
                                       </span>
                                     ) : (
                                       <span>
                                         ₹{config.customerPrice}
                                         {!gstInc && <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">Total Pay: ₹{totalCustomerPay.toFixed(1)}</span>}
+                                        <span className="block text-[10px] text-indigo-600 font-bold mt-0.5">Payout: ₹{config.vendorPayoutBase}</span>
                                       </span>
                                     )}
                                   </td>
@@ -2529,7 +2538,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div>
                             <label className="block text-[10px] font-bold text-indigo-700 uppercase mb-1">Vendor Payout Base (₹) *</label>
                             <input
@@ -2545,6 +2554,23 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                               required
                             />
                           </div>
+                          {serviceType === 'minute_base' && (
+                            <div>
+                              <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Vendor Payout Extra (₹/10 min) *</label>
+                              <input
+                                type="number"
+                                min="0"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-bold text-blue-800 outline-none focus:ring-2 focus:ring-blue-400"
+                                value={pricingForm.vendorPayoutExtra === 0 ? '' : pricingForm.vendorPayoutExtra}
+                                onChange={e => {
+                                  const val = parseFloat(e.target.value);
+                                  setPricingForm({ ...pricingForm, vendorPayoutExtra: isNaN(val) ? 0 : Math.max(0, val) });
+                                }}
+                                placeholder="e.g. 15"
+                                required
+                              />
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 pt-5">
                             <input
                               id="configIsActiveToggle"

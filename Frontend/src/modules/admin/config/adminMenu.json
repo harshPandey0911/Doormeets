@@ -69,7 +69,7 @@
   {
     "title": "Workers",
     "route": "/admin/workers",
-    "section": "VENDOR MANAGEMENT",
+    "section": "WORKER MANAGEMENT",
     "allowedRoles": [
       "super_admin",
       "admin",
