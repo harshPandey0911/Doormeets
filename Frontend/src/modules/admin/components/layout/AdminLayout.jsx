@@ -15,6 +15,14 @@ const AdminLayout = () => {
   const socket = useSocket();
   const navigate = useNavigate();
   const [currentSOS, setCurrentSOS] = useState(null);
+  const [panelMode, setPanelMode] = useState(() => {
+    return localStorage.getItem('adminPanelMode') || 'app';
+  });
+
+  const handleTogglePanelMode = (mode) => {
+    setPanelMode(mode);
+    localStorage.setItem('adminPanelMode', mode);
+  };
 
   // Bottom nav height is 64px (h-16)
   const bottomNavHeight = 64;
@@ -135,31 +143,66 @@ const AdminLayout = () => {
       playNotificationSound().catch(e => console.warn('Admin notification sound failed:', e));
     };
 
+    const handleBookingEscalation = (data) => {
+      console.log('🚨 Booking Escalation/Cancellation received:', data);
+      window.dispatchEvent(new CustomEvent('adminBookingUpdated'));
+      toast.custom((t) => (
+        <div className="bg-white dark:bg-gray-800 border-2 border-red-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3 max-w-sm pointer-events-auto transition-all animate-slide-up">
+          <span className="text-2xl">⚠️</span>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-sm text-red-600 dark:text-red-400">Cancellation Request Received</h4>
+            <p className="text-xs text-gray-700 dark:text-gray-300 mt-1">{data.message}</p>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                navigate(`/admin/bookings/${data.bookingId}`);
+              }}
+              className="mt-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
+            >
+              Review Booking
+            </button>
+          </div>
+          <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+        </div>
+      ), {
+        duration: Infinity,
+        position: 'top-right'
+      });
+      playNotificationSound().catch(e => console.warn('Admin notification sound failed:', e));
+    };
+
     socket.on('sos_alert_triggered', handleSOSAlert);
     socket.on('admin_booking_requested', handleAdminBookingRequest);
     socket.on('admin_booking_rejected', handleAdminBookingRejected);
+    socket.on('booking_escalation', handleBookingEscalation);
     return () => {
       socket.off('sos_alert_triggered', handleSOSAlert);
       socket.off('admin_booking_requested', handleAdminBookingRequest);
       socket.off('admin_booking_rejected', handleAdminBookingRejected);
+      socket.off('booking_escalation', handleBookingEscalation);
       stopSirenAlarm(); // Ensure sound stops if layout unmounts
     };
   }, [socket]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <AdminSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         isCollapsed={isCollapsed}
         onToggleCollapse={toggleCollapse}
+        panelMode={panelMode}
       />
 
       {/* Main Content */}
       <div className={`flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden transition-all duration-300 ${isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[320px]'}`}>
         {/* Header */}
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} isCollapsed={isCollapsed} />
+        <AdminHeader 
+          onMenuClick={() => setSidebarOpen(true)} 
+          isCollapsed={isCollapsed} 
+          panelMode={panelMode}
+          onTogglePanelMode={handleTogglePanelMode}
+        />
 
         {/* Page Content - with dynamic padding to account for fixed header and bottom nav */}
         <main

@@ -353,7 +353,23 @@ const BookingTimeline = () => {
       title: booking?.isSelfJob ? 'Collect Payment' : 'Approve Worker Work',
       icon: FiCheckCircle,
       action: (() => {
-        if (booking?.status === 'completed' || booking?.status === 'COMPLETED' || booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid') return null;
+        const isPaid = ['success', 'paid', 'completed'].includes(booking?.paymentStatus?.toLowerCase());
+        if (booking?.status === 'completed' || booking?.status === 'COMPLETED') return null;
+
+        if (isPaid && currentStage === 7) {
+          return async () => {
+            try {
+              setActionLoading(true);
+              await updateBookingStatus(id, 'completed');
+              toast.success('Booking completed successfully');
+              window.location.reload();
+            } catch (err) {
+              toast.error(err.response?.data?.message || 'Failed to complete booking');
+            } finally {
+              setActionLoading(false);
+            }
+          };
+        }
 
         if (booking?.isSelfJob && currentStage === 7) {
           return () => navigate(`/vendor/booking/${id}/billing`);
@@ -370,8 +386,8 @@ const BookingTimeline = () => {
       id: 8,
       title: 'Pay Worker',
       icon: FiDollarSign,
-      action: (currentStage === 8 && !(booking?.isWorkerPaid || booking?.workerPaymentStatus === 'PAID' || booking?.workerPaymentStatus === 'SUCCESS')) ? handleWorkerPayment : null,
-      description: (booking?.isWorkerPaid || booking?.workerPaymentStatus === 'PAID' || booking?.workerPaymentStatus === 'SUCCESS') ? 'Worker Paid' : 'Settle payment with worker',
+      action: (currentStage === 8 && !['paid', 'success', 'completed'].includes(booking?.workerPaymentStatus?.toLowerCase() || '')) ? handleWorkerPayment : null,
+      description: ['paid', 'success', 'completed'].includes(booking?.workerPaymentStatus?.toLowerCase() || '') ? 'Worker Paid' : 'Settle payment with worker',
     },
     {
       id: 9,
@@ -510,8 +526,8 @@ const BookingTimeline = () => {
                               stage.id === 5 ? 'Mark Arrived' :
                                 stage.id === 6 ? 'Mark workdone' :
                                   stage.id === 7 ? (
-                                    (booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid')
-                                      ? 'Online Payment Done'
+                                    ['success', 'paid', 'completed'].includes(booking?.paymentStatus?.toLowerCase())
+                                      ? 'Complete Booking'
                                       : (booking?.isSelfJob ? 'Collect Cash' : 'Approve Work')
                                   ) :
                                     stage.id === 8 ? 'Pay Worker' :
@@ -520,7 +536,7 @@ const BookingTimeline = () => {
                       )}
 
                       {/* Online Payment Status Badge for Stage 7 */}
-                      {stage.id === 7 && (booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid') && !isCompleted && (
+                      {stage.id === 7 && ['success', 'paid', 'completed'].includes(booking?.paymentStatus?.toLowerCase()) && !isCompleted && (
                         <div className="mt-2 flex items-center gap-1.5 text-green-600 font-bold text-xs bg-green-50 px-3 py-1.5 rounded-lg border border-green-100">
                           <FiCheckCircle className="w-4 h-4" />
                           ONLINE PAYMENT RECEIVED
