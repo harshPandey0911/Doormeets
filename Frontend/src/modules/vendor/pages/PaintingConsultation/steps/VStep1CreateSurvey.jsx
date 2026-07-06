@@ -112,7 +112,7 @@ const VStep1CreateSurvey = ({ quoteData, updateQuoteData, onNext }) => {
       <div>
         <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Painting Scope</h3>
         <div className="space-y-2">
-          {SCOPES.map(s => (
+          {SCOPES.filter(s => s.id === scope).map(s => (
             <div
               key={s.id}
               onClick={() => handleScopeChange(s.id)}

@@ -76,7 +76,8 @@ exports.updateSettings = async (req, res, next) => {
       instantBookingWindowHours,
       instantBookingVendorShare,
       paintingRates,
-      propertyLayouts
+      propertyLayouts,
+      paintingPageConfig
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -127,7 +128,8 @@ exports.updateSettings = async (req, res, next) => {
         instantBookingWindowHours: instantBookingWindowHours !== undefined ? Number(instantBookingWindowHours) : 4,
         instantBookingVendorShare: instantBookingVendorShare !== undefined ? Number(instantBookingVendorShare) : 50,
         paintingRates: paintingRates !== undefined ? paintingRates : undefined,
-        propertyLayouts: propertyLayouts !== undefined ? propertyLayouts : undefined
+        propertyLayouts: propertyLayouts !== undefined ? propertyLayouts : undefined,
+        paintingPageConfig: paintingPageConfig !== undefined ? paintingPageConfig : undefined
       });
     } else {
       // Update fields if provided
@@ -200,6 +202,7 @@ exports.updateSettings = async (req, res, next) => {
       if (instantBookingVendorShare !== undefined) settings.instantBookingVendorShare = Number(instantBookingVendorShare);
       if (paintingRates !== undefined) settings.paintingRates = paintingRates;
       if (propertyLayouts !== undefined) settings.propertyLayouts = propertyLayouts;
+      if (paintingPageConfig !== undefined) settings.paintingPageConfig = paintingPageConfig;
 
       await settings.save();
     }
@@ -263,7 +266,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig');
 
     // Default if not found (fallback values)
     if (!settings) {

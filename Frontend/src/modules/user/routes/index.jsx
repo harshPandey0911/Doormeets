@@ -85,6 +85,8 @@ const Notifications = lazyLoad(() => import('../pages/Notifications'));
 const HelpSupport = lazyLoad(() => import('../pages/HelpSupport'));
 const CancellationPolicy = lazyLoad(() => import('../pages/CancellationPolicy'));
 const PaintingConsultation = lazyLoad(() => import('../pages/PaintingConsultation'));
+// Lazy loaded property details screen
+const PaintingLayoutDetails = lazyLoad(() => import('../pages/PaintingConsultation/PaintingLayoutDetails'));
 
 // Loading fallback component
 import LogoLoader from '../../../components/common/LogoLoader';
@@ -199,7 +201,8 @@ const UserRoutes = () => {
                 <Route path="/notifications" element={<ProtectedRoute userType="user"><Notifications /></ProtectedRoute>} />
                 <Route path="/help-support" element={<ProtectedRoute userType="user"><HelpSupport /></ProtectedRoute>} />
                 <Route path="/cancellation-policy" element={<ProtectedRoute userType="user"><CancellationPolicy /></ProtectedRoute>} />
-                <Route path="/painting-consultation" element={<ProtectedRoute userType="user"><PaintingConsultation /></ProtectedRoute>} />
+                <Route path="/painting" element={<ProtectedRoute userType="user"><PaintingConsultation /></ProtectedRoute>} />
+                <Route path="/painting/:layoutId" element={<ProtectedRoute userType="user"><PaintingLayoutDetails /></ProtectedRoute>} />
               </Routes>
             </PageTransition>
           </Suspense>

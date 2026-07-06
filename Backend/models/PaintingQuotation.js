@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// --- Legacy Sub-schemas (kept for backward compatibility) ---
 const breakdownItemSchema = new mongoose.Schema({
   category: { type: String, enum: ['CEILING', 'WALLS', 'ADD_ONS', 'OTHERS'], default: 'WALLS' },
   product: { type: String, default: '' },
@@ -68,16 +69,104 @@ const enamelItemSchema = new mongoose.Schema({
   cost: { type: Number, default: 0 }
 }, { _id: false });
 
+// --- New Model Specifications ---
+
+const productSnapshotSchema = new mongoose.Schema({
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaintProduct', required: true },
+  brandId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaintBrand', required: true },
+  productName: { type: String, required: true },
+  productCode: { type: String, required: true },
+  productType: { type: String, enum: ['Paint', 'Primer', 'Putty'], required: true },
+  selectedPackSize: {
+    size: { type: Number, required: true },
+    unit: { type: String, required: true }
+  },
+  coverage: { type: Number, required: true }, // numerical sq.ft/L or sq.ft/Kg coverage
+  unitPrice: { type: Number, required: true },
+  quantityRequired: { type: Number, required: true }, // dynamically calculated
+  quantityPurchased: { type: Number, required: true }, // calculated pack count
+  subtotal: { type: Number, required: true },
+  appliedArea: { type: Number, required: true } // the specific paintable area applied to
+}, { _id: false });
+
+const labourSnapshotSchema = new mongoose.Schema({
+  labourRateId: { type: mongoose.Schema.Types.ObjectId, ref: 'LabourRate', required: true },
+  workType: { type: String, required: true },
+  pricePerSqFt: { type: Number, required: true },
+  area: { type: Number, required: true },
+  subtotal: { type: Number, required: true }
+}, { _id: false });
+
+const additionalChargeSchema = new mongoose.Schema({
+  title: { type: String, required: true }, // e.g. Transportation, Scaffolding, Wall Repair, Texture Work
+  amount: { type: Number, required: true, default: 0 },
+  remarks: { type: String, default: '' }
+}, { _id: false });
+
+const discountDetailsSchema = new mongoose.Schema({
+  type: { type: String, enum: ['FLAT', 'PERCENTAGE', 'NONE'], default: 'NONE' },
+  value: { type: Number, default: 0 },
+  reason: { type: String, default: '' }
+}, { _id: false });
+
+const gstDetailsSchema = new mongoose.Schema({
+  gstPercentage: { type: Number, default: 18 },
+  gstAmount: { type: Number, default: 0 }
+}, { _id: false });
+
+const summarySchema = new mongoose.Schema({
+  materialCost: { type: Number, default: 0 },
+  labourCost: { type: Number, default: 0 },
+  additionalCharges: { type: Number, default: 0 },
+  discount: { type: Number, default: 0 },
+  gst: { type: Number, default: 0 },
+  grandTotal: { type: Number, default: 0 }
+}, { _id: false });
+
+const remarksSchema = new mongoose.Schema({
+  vendorRemarks: { type: String, default: '' },
+  customerRemarks: { type: String, default: '' },
+  adminRemarks: { type: String, default: '' }
+}, { _id: false });
+
+const attachmentsSchema = new mongoose.Schema({
+  inspectionPhotos: [{ type: String }],
+  beforePhotos: [{ type: String }],
+  referenceImages: [{ type: String }]
+}, { _id: false });
+
+const propertyDetailsSchema = new mongoose.Schema({
+  propertyType: { type: String, default: '' },
+  interiorArea: { type: Number, default: 0 },
+  exteriorArea: { type: Number, default: 0 },
+  ceilingArea: { type: Number, default: 0 },
+  balconyArea: { type: Number, default: 0 },
+  totalPaintableArea: { type: Number, default: 0 }
+}, { _id: false });
+
 const paintingQuotationSchema = new mongoose.Schema({
   customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  customerName: { type: String, required: true },
-  customerPhone: { type: String, required: true },
+  customerName: { type: String, required: false },
+  customerPhone: { type: String, required: false },
+
+  // New Property Breakdown fields
+  property: propertyDetailsSchema,
+
+  // New Snapshot Lists
+  products: [productSnapshotSchema],
+  labour: [labourSnapshotSchema],
+
+  // New Pricing Components
+  additionalCharges: [additionalChargeSchema],
+  discount: discountDetailsSchema,
+  gst: gstDetailsSchema,
+  summary: summarySchema,
+  remarks: remarksSchema,
+  attachments: attachmentsSchema,
 
   // Legacy simple fields (kept for backward compat)
   interiorArea: { type: Number, default: 0 },
   exteriorArea: { type: Number, default: 0 },
-
-  // Rich vendor-side data (Screen 5 — Generate Bill & Quote)
   timeline: { type: String, default: '' },       // e.g. "3-5 Days"
   finishing: { type: String, default: '' },      // e.g. "Premium Emulsion"
   vendorNotes: { type: String, default: '' },
@@ -115,6 +204,7 @@ const paintingQuotationSchema = new mongoose.Schema({
 
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: null },
   consultationId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaintingConsultation', default: null },
+  bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', default: null },
 
   // Final pricing (Screen 9, 20)
   couponCode: { type: String, default: '' },
@@ -123,6 +213,7 @@ const paintingQuotationSchema = new mongoose.Schema({
   estimatedWorkDays: { type: Number, default: 3 },
   numberOfPainters: { type: Number, default: 2 },
 
+  // Legacy calculation (kept to avoid breakage in any other routes)
   calculation: {
     paintCost: { type: Number, default: 0 },
     puttyCost: { type: Number, default: 0 },
@@ -137,7 +228,22 @@ const paintingQuotationSchema = new mongoose.Schema({
     grandTotal: { type: Number, default: 0 }
   },
 
-  status: { type: String, enum: ['PENDING', 'ACCEPTED', 'EXPIRED'], default: 'PENDING' }
+  status: { 
+    type: String, 
+    enum: [
+      'DRAFT', 
+      'SUBMITTED_TO_ADMIN', 
+      'UNDER_REVIEW', 
+      'ADMIN_APPROVED', 
+      'ADMIN_REJECTED', 
+      'SENT_TO_CUSTOMER', 
+      'CUSTOMER_ACCEPTED', 
+      'CUSTOMER_REJECTED', 
+      'EXPIRED', 
+      'CONVERTED_TO_ORDER'
+    ], 
+    default: 'DRAFT' 
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('PaintingQuotation', paintingQuotationSchema);

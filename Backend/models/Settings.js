@@ -378,7 +378,46 @@ const settingsSchema = new mongoose.Schema({
       tag: { type: String, default: '' },
       imageUrl: { type: String, default: '' },
       details: [{ type: String }] // e.g. ["1 Bedroom", "1 Kitchen"]
-    }]
+    }],
+    // Painting landing page content configuration (admin-editable)
+    paintingPageConfig: {
+      isEnabled: { type: Boolean, default: true },
+      badgeText: { type: String, default: '' },        // Hero badge chip text
+      heroTitle: { type: String, default: '' },        // H1 headline
+      heroSubtitle: { type: String, default: '' },     // Paragraph below H1
+      metaTitle: { type: String, default: '' },        // SEO meta title
+      metaDescription: { type: String, default: '' },  // SEO meta description
+      featureCards: [{                                  // Mini highlight cards in hero banner
+        icon: { type: String, default: 'home_repair_service' },  // Material icon name
+        title: { type: String, default: '' },
+        description: { type: String, default: '' }
+      }],
+      inclusions: [{ type: String }],                  // What's included in consultation
+      workflowSteps: [{                                 // How it works steps
+        title: { type: String },
+        description: { type: String }
+      }],
+      valueProps: [{                                    // USP / value proposition cards
+        icon: { type: String, default: 'check_circle' },
+        title: { type: String },
+        description: { type: String }
+      }],
+      supportSection: {                                 // Bottom support CTA block
+        title: { type: String, default: '' },
+        description: { type: String, default: '' },
+        buttonLabel: { type: String, default: '' }
+      },
+      // Details page specific custom texts
+      detailsBadgeText: { type: String, default: 'Free Consultation' },
+      overviewTitle: { type: String, default: 'Property Overview' },
+      howItWorksTitle: { type: String, default: 'How It Works' },
+      whyChooseTitle: { type: String, default: 'Why Choose Doormeets Painting' },
+      inclusionsTitle: { type: String, default: "What's Included in Consultation" },
+      infoNoteText: { type: String, default: 'Final pricing is calculated after measuring the actual paintable area and understanding your requirements.' },
+      bottomBarTitle: { type: String, default: 'Free Site Inspection' },
+      bottomBarSubtitle: { type: String, default: 'Book a consultation today and receive a personalized quotation.' },
+      bottomBarButtonLabel: { type: String, default: 'Confirm & Book Consultation' }
+    }
   }
 }, { timestamps: true });
 

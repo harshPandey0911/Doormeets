@@ -24,7 +24,7 @@ const OfferBannerSlider = ({ banners }) => {
       } else {
         // It's a simple category/service slug, route to category page
         if (cleanLink === 'painting' || cleanLink.toLowerCase() === 'painting') {
-          navigate('/user/painting-consultation');
+          navigate('/user/painting');
         } else {
           navigate(`/user/category/${cleanLink}`);
         }

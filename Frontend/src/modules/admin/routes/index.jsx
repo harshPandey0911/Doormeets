@@ -41,6 +41,9 @@ const PromoManagement = lazy(() => import('../pages/PromoManagement'));
 const VoucherManagement = lazy(() => import('../pages/VoucherManagement'));
 const PackageBased = lazy(() => import('../pages/PackageBased'));
 const PaintingManagement = lazy(() => import('../pages/Painting'));
+const PaintBrandsPage = lazy(() => import('../pages/Painting/PaintBrandsPage'));
+const PaintProductsPage = lazy(() => import('../pages/Painting/PaintProductsPage'));
+const PaintingConfigPage = lazy(() => import('../pages/Painting/PaintingConfigPage'));
 const VendorWallets = lazy(() => import('../pages/VendorWallets'));
 const ShopOwners = lazy(() => import('../pages/ShopOwners/index'));
 
@@ -99,7 +102,14 @@ const AdminRoutes = () => {
           <Route path="promos" element={<PromoManagement />} />
           <Route path="vouchers" element={<VoucherManagement />} />
           <Route path="package-based" element={<PackageBased />} />
-          <Route path="painting" element={<PaintingManagement />} />
+          <Route path="painting" element={<PaintingConfigPage />} />
+          <Route path="painting/brands" element={<PaintingConfigPage defaultTab="brands" />} />
+          <Route path="painting/products" element={<PaintingConfigPage defaultTab="products" />} />
+          <Route path="painting/layouts" element={<PaintingConfigPage defaultTab="layouts" />} />
+          <Route path="painting/rates" element={<PaintingConfigPage defaultTab="rates" />} />
+          <Route path="painting/page-builder" element={<PaintingConfigPage defaultTab="page-builder" />} />
+          <Route path="painting/quotations" element={<PaintingManagement defaultTab="quotations" />} />
+          <Route path="painting/consultations" element={<PaintingManagement defaultTab="consultations" />} />
 
           <Route path="commission" element={<Commission />} />
           <Route path="vendor-wallets" element={<VendorWallets />} />
