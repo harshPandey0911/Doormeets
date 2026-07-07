@@ -1362,7 +1362,8 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                           {(wall.openings && wall.openings.length > 0) && (
                                             <div className="space-y-1.5">
                                               {wall.openings.map((op, opIdx) => (
-                                                <div key={opIdx} className="grid grid-cols-1 sm:grid-cols-6 gap-2 bg-gray-50/50 p-2 rounded-xl border border-gray-100 items-center">
+                                                <div key={opIdx} className="flex flex-wrap items-center gap-2 bg-gray-50/50 p-2 rounded-xl border border-gray-100">
+                                                  {/* Type dropdown */}
                                                   <select
                                                     disabled={isReadOnly}
                                                     value={op.type || 'Door'}
@@ -1371,13 +1372,15 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                       updated[idx].walls[wIdx].openings[opIdx].type = e.target.value;
                                                       setRooms(updated);
                                                     }}
-                                                    className="border border-gray-150 rounded-lg p-1 bg-white text-gray-700 outline-none text-[10px] font-bold"
+                                                    className="border border-gray-150 rounded-lg p-1 bg-white text-gray-700 outline-none text-[10px] font-bold shrink-0"
+                                                    style={{ minWidth: '80px' }}
                                                   >
                                                     {OPENING_TYPES.map(ot => (
                                                       <option key={ot} value={ot}>{ot}</option>
                                                     ))}
                                                   </select>
 
+                                                  {/* W × H inputs — kept as a single group */}
                                                   <div className="flex items-center gap-1 shrink-0">
                                                     <input 
                                                       disabled={isReadOnly}
@@ -1389,9 +1392,9 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                         updated[idx].walls[wIdx].openings[opIdx].width = Number(e.target.value) || 0;
                                                         setRooms(updated);
                                                       }}
-                                                      className="border border-gray-300 rounded-lg p-1.5 text-center w-14 text-[10px] font-bold text-gray-800 bg-white"
+                                                      className="border border-gray-300 rounded-lg p-1.5 text-center w-12 text-[10px] font-bold text-gray-800 bg-white"
                                                     />
-                                                    <span className="text-[9px] font-black text-gray-400">×</span>
+                                                    <span className="text-[9px] font-black text-gray-400 shrink-0">×</span>
                                                     <input 
                                                       disabled={isReadOnly}
                                                       type="number"
@@ -1402,11 +1405,12 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                         updated[idx].walls[wIdx].openings[opIdx].height = Number(e.target.value) || 0;
                                                         setRooms(updated);
                                                       }}
-                                                      className="border border-gray-300 rounded-lg p-1.5 text-center w-14 text-[10px] font-bold text-gray-800 bg-white"
+                                                      className="border border-gray-300 rounded-lg p-1.5 text-center w-12 text-[10px] font-bold text-gray-800 bg-white"
                                                     />
                                                   </div>
 
-                                                  <div className="flex items-center gap-1 select-none font-bold text-gray-650">
+                                                  {/* Paint? checkbox */}
+                                                  <label className="flex items-center gap-1 select-none cursor-pointer shrink-0">
                                                     <input 
                                                       disabled={isReadOnly}
                                                       type="checkbox"
@@ -1418,9 +1422,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                       }}
                                                       className="rounded text-orange-500 border-gray-200 w-3.5 h-3.5"
                                                     />
-                                                    <span className="text-[9px]">Paint?</span>
-                                                  </div>
+                                                    <span className="text-[9px] font-bold text-gray-600">Paint?</span>
+                                                  </label>
 
+                                                  {/* Material */}
                                                   <input 
                                                     disabled={isReadOnly}
                                                     type="text"
@@ -1431,9 +1436,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                       updated[idx].walls[wIdx].openings[opIdx].frameMaterial = e.target.value;
                                                       setRooms(updated);
                                                     }}
-                                                    className="border border-gray-150 rounded-lg p-1 text-[10px]"
+                                                    className="border border-gray-150 rounded-lg p-1 text-[10px] min-w-[70px] flex-1"
                                                   />
 
+                                                  {/* Remarks */}
                                                   <input 
                                                     disabled={isReadOnly}
                                                     type="text"
@@ -1444,9 +1450,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                       updated[idx].walls[wIdx].openings[opIdx].remarks = e.target.value;
                                                       setRooms(updated);
                                                     }}
-                                                    className="border border-gray-150 rounded-lg p-1 text-[10px]"
+                                                    className="border border-gray-150 rounded-lg p-1 text-[10px] min-w-[70px] flex-1"
                                                   />
 
+                                                  {/* Delete */}
                                                   <button
                                                     type="button"
                                                     disabled={isReadOnly}
@@ -1455,7 +1462,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                       updated[idx].walls[wIdx].openings = updated[idx].walls[wIdx].openings.filter((_, i) => i !== opIdx);
                                                       setRooms(updated);
                                                     }}
-                                                    className="text-red-400 hover:text-red-650 text-right font-black transition-all"
+                                                    className="text-red-400 hover:text-red-600 text-[10px] font-black transition-all shrink-0 ml-auto"
                                                   >
                                                     Delete
                                                   </button>
