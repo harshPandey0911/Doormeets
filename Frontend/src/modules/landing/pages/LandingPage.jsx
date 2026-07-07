@@ -21,11 +21,41 @@ const toAssetUrl = (url) => {
 };
 
 const serviceImages = [
-  "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=800", // Electrician/Handyman
-  "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800", // Cleaner
-  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=800", // Plumber
-  "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=800"  // Painter
+  "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=800"
 ];
+
+// ── Global animation variants ──────────────────────────────────────────────
+const VP = { once: false, amount: 0.18 };
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 48 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+};
+const fadeLeft = {
+  hidden: { opacity: 0, x: -56 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+};
+const fadeRight = {
+  hidden: { opacity: 0, x: 56 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+};
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.88 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+};
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.13, delayChildren: 0.05 } }
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 36 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+};
+// ──────────────────────────────────────────────────────────────────────────
+
 
 const timelineContainerVariants = {
   hidden: {},
@@ -148,13 +178,23 @@ const LandingPage = () => {
             </span>
           </Link>
 
-          {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-700">
-            <a href="#hero" className="hover:text-cyan-600 transition-colors">Home</a>
-            <a href="#about" className="hover:text-cyan-600 transition-colors">About Us</a>
-            <a href="#services" className="hover:text-cyan-600 transition-colors">Services</a>
-            <a href="#stats" className="hover:text-cyan-600 transition-colors">Why Us</a>
-            <a href="#join" className="hover:text-cyan-600 transition-colors">Partners</a>
+            {[
+              { label: "Home", href: "#hero" },
+              { label: "About Us", href: "#about" },
+              { label: "Services", href: "#services" },
+              { label: "Why Us", href: "#stats" },
+              { label: "Partners", href: "#team" }
+            ].map((link, idx) => (
+              <a 
+                key={idx}
+                href={link.href} 
+                className="relative py-1.5 hover:text-cyan-600 transition-colors group"
+              >
+                {link.label}
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+              </a>
+            ))}
             
             <Link
               to="/user"
@@ -211,21 +251,26 @@ const LandingPage = () => {
         <div className="container mx-auto px-6 max-w-[1440px] relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
-            {/* Left Hero Content - spans half width so text sits beautifully over the left side */}
-            <div className="lg:col-span-6 text-center lg:text-left">
-              <span className="inline-block text-[11px] font-normal uppercase tracking-widest text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-4 py-1.5 rounded-full mb-6">
+            {/* Left Hero Content */}
+            <motion.div
+              className="lg:col-span-6 text-center lg:text-left"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.span variants={staggerItem} className="inline-block text-[11px] font-normal uppercase tracking-widest text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-4 py-1.5 rounded-full mb-6">
                 ✦ Smart Home Repairs. Verified Experts.
-              </span>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-normal text-white leading-[1.1] mb-6">
+              </motion.span>
+              <motion.h1 variants={staggerItem} className="text-4xl sm:text-5xl md:text-6xl font-normal text-white leading-[1.1] mb-6">
                 Moving Home Services <br />
                 <span className="text-cyan-400">Forward, Together.</span>
-              </h1>
-              <p className="text-base sm:text-lg text-slate-300 leading-relaxed mb-8 max-w-lg">
+              </motion.h1>
+              <motion.p variants={staggerItem} className="text-base sm:text-lg text-slate-300 leading-relaxed mb-8 max-w-lg">
                 We deliver seamless logistics and technical support for home repairs, maintenance, and diagnostics. Connecting Indore homeowners directly to certified spare parts and platform-guaranteed service experts.
-              </p>
+              </motion.p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4 justify-center lg:justify-start items-center">
+              <motion.div variants={staggerItem} className="flex flex-wrap gap-4 justify-center lg:justify-start items-center">
                 <Link
                   to="/user"
                   className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-base font-bold shadow-lg hover:shadow-cyan-600/20 transition-all flex items-center gap-2 group"
@@ -239,10 +284,10 @@ const LandingPage = () => {
                   <span className="w-6 h-6 rounded-full bg-cyan-600 flex items-center justify-center text-white text-[10px]"><FaPlay className="ml-0.5" /></span>
                   Watch Our Story
                 </a>
-              </div>
+              </motion.div>
 
               {/* Avatars Widget */}
-              <div className="mt-10 flex items-center justify-center lg:justify-start gap-4">
+              <motion.div variants={staggerItem} className="mt-10 flex items-center justify-center lg:justify-start gap-4">
                 <div className="flex -space-x-3">
                   <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Avatar" className="w-10 h-10 rounded-full border-2 border-slate-900 object-cover" />
                   <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100" alt="Avatar" className="w-10 h-10 rounded-full border-2 border-slate-900 object-cover" />
@@ -254,8 +299,8 @@ const LandingPage = () => {
                   </div>
                   <p className="text-xs text-slate-400 font-semibold mt-0.5">Trusted by 12K+ customers (4.9 Reviews)</p>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
           </div>
         </div>
@@ -296,11 +341,13 @@ const LandingPage = () => {
       </section>
 
       {/* 4. ABOUT & MULTI-IMAGE COLLAGE SECTION */}
-      <section id="about" className="py-20 md:py-28 bg-slate-50 relative">
+      <section id="about" className="py-12 md:py-16 bg-slate-50 relative">
         <div className="container mx-auto px-6 max-w-[1440px]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-                       {/* Left Side Features List */}
-            <div className="lg:col-span-6">
+          <motion.div
+            variants={fadeLeft} initial="hidden" whileInView="visible" viewport={VP}
+            className="lg:col-span-6"
+          >
               <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
                 ← ABOUT US →
               </span>
@@ -352,10 +399,12 @@ const LandingPage = () => {
                   <FaArrowRight className="text-[10px]" />
                 </span>
               </Link>
-            </div>
+          </motion.div>
 
-            {/* Right Side Multi-Image Collage (Premium Overlapping SaaS Collage) */}
-            <div className="lg:col-span-6 relative w-full min-h-[520px] sm:min-h-[580px] pl-6 md:pl-12">
+          <motion.div
+            variants={fadeRight} initial="hidden" whileInView="visible" viewport={VP}
+            className="lg:col-span-6 relative w-full min-h-[520px] sm:min-h-[580px] pl-6 md:pl-12"
+          >
               
               {/* Card 1 - Main Portrait Image (z-index: 1 base layer) */}
               <div className="absolute top-0 left-[6%] w-[300px] max-w-[50%] aspect-[300/360] rounded-[22px] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.12)] border-[1.5px] border-white/80 bg-slate-200 z-0">
@@ -385,31 +434,33 @@ const LandingPage = () => {
               </div>
 
               {/* Statistics Card (z-index: 2 layer, sits behind Card 3 but in front of Card 2) */}
-              <div className="absolute bottom-[14%] left-[38%] w-[220px] max-w-[44%] bg-white p-5 rounded-[22px] shadow-[0_25px_60px_rgba(0,0,0,0.12)] border border-slate-100/50 flex flex-col justify-center min-h-[100px] z-20">
-                <h3 className="text-3xl sm:text-4xl font-normal text-emerald-500">98%</h3>
+              <div className="absolute bottom-[14%] left-[38%] w-[220px] max-w-[44%] bg-white p-5 rounded-[22px] shadow-[0_25px_60px_rgba(0,0,0,0.12)] border border-slate-100/50 flex flex-col items-center justify-center text-center min-h-[100px] z-20">
+                <h3 className="text-3xl sm:text-4xl font-normal text-cyan-600">98%</h3>
                 <p className="text-[11px] sm:text-xs font-bold text-slate-800 mt-1.5 leading-tight">
-                  Customer <br />
-                  Satisfaction
+                  Customer Satisfaction
                 </p>
               </div>
 
-            </div>
+            </motion.div>
 
           </div>
         </div>
       </section>
 
       {/* 5. SERVICES SECTION */}
-      <section id="services" className="py-20 md:py-28 bg-white">
+      <section id="services" className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-6 max-w-[1440px] text-center">
-          <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+          <motion.span variants={fadeUp} initial="hidden" whileInView="visible" viewport={VP} className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
             ← OUR SERVICES →
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight mb-16">
+          </motion.span>
+          <motion.h2 variants={fadeUp} initial="hidden" whileInView="visible" viewport={VP} className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight mb-16">
             End-to-End <span className="text-cyan-600">Home Services</span> <br />Tailored to You
-          </h2>
+          </motion.h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <motion.div
+            variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VP}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
             {[
               {
                 title: "Appliance Repair",
@@ -436,8 +487,9 @@ const LandingPage = () => {
                 link: "/user"
               }
             ].map((service, index) => (
-              <div 
+              <motion.div 
                 key={index}
+                variants={staggerItem}
                 className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-cyan-200 p-8 rounded-3xl text-center transition-all duration-300 hover:shadow-xl flex flex-col items-center justify-center min-h-[250px]"
               >
                 <div className="w-14 h-14 rounded-full bg-white border border-cyan-500/20 flex items-center justify-center shadow-sm mb-6 transition-colors group-hover:bg-cyan-50 flex-shrink-0">
@@ -445,9 +497,9 @@ const LandingPage = () => {
                 </div>
                 <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-3">{service.title}</h4>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{service.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           <div className="mt-16">
             <Link
@@ -461,12 +513,12 @@ const LandingPage = () => {
       </section>
 
       {/* 6. STATISTICS SECTION (Mockup-aligned White Background) */}
-      <section id="stats" className="py-20 bg-white relative overflow-hidden">
+      <section id="stats" className="py-12 bg-white relative overflow-hidden">
         <div className="container mx-auto px-6 max-w-[1440px] relative z-10">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Texts */}
-            <div className="lg:col-span-5 text-center lg:text-left">
+            <motion.div variants={fadeLeft} initial="hidden" whileInView="visible" viewport={VP} className="lg:col-span-5 text-center lg:text-left">
               <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
                 ← WHY CHOOSE US →
               </span>
@@ -485,10 +537,10 @@ const LandingPage = () => {
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
 
-            {/* Right Side Stats Container - Unified Dark Banner Card */}
-            <div className="lg:col-span-7">
+            {/* Right Side Stats Container */}
+            <motion.div variants={fadeRight} initial="hidden" whileInView="visible" viewport={VP} className="lg:col-span-7">
               <div className="relative rounded-[32px] overflow-hidden bg-slate-900 border border-slate-800 p-10 sm:p-12 shadow-md min-h-[380px] flex items-center">
                 {/* Swapping Background Images with Crossfade */}
                 {serviceImages.map((img, idx) => (
@@ -523,24 +575,24 @@ const LandingPage = () => {
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
         </div>
       </section>
 
       {/* 7. OUR WORK PROCESS (Timeline Process Section matching mockup) */}
-      <section id="process" className="py-20 md:py-28 bg-slate-50 border-t border-slate-100">
+      <section id="process" className="py-12 md:py-16 bg-slate-50 border-t border-slate-100">
         <div className="container mx-auto px-6 max-w-[1440px]">
           
-          <div className="text-center mb-20">
-            <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+          <motion.div className="text-center mb-20" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VP}>
+            <motion.span variants={fadeUp} className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
               ← OUR WORK PROCESS →
-            </span>
+            </motion.span>
             <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight">
               How We Deliver <span className="text-cyan-600">Excellence</span>
             </h2>
-          </div>
+          </motion.div>
 
           <div className="relative overflow-hidden md:overflow-visible">
             <motion.div 
@@ -579,7 +631,7 @@ const LandingPage = () => {
                     className="flex flex-col items-center text-center group w-full md:w-[20%]"
                   >
                     {/* Circle Gradient Icon Badge */}
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/15 group-hover:scale-105 transition-transform duration-300 z-10 relative mb-6">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-700 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-600/20 group-hover:scale-105 transition-transform duration-300 z-10 relative mb-6">
                       {item.icon}
                     </div>
                     <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-2">{item.title}</h4>
@@ -591,7 +643,7 @@ const LandingPage = () => {
                     <motion.div 
                       variants={timelineLineVariants}
                       style={{ originX: 0 }}
-                      className="hidden md:block h-[1.5px] flex-grow bg-gradient-to-r from-cyan-500/30 to-emerald-500/30 self-start mt-10"
+                      className="hidden md:block h-[1.5px] flex-grow bg-gradient-to-r from-cyan-600/30 to-cyan-600/10 self-start mt-10"
                     />
                   )}
                 </React.Fragment>
@@ -603,7 +655,7 @@ const LandingPage = () => {
       </section>
 
       {/* 8. TESTIMONIALS SECTION */}
-      <section className="py-20 md:py-28 bg-white border-t border-slate-100">
+      <section className="py-12 md:py-16 bg-white border-t border-slate-100">
         <div className="container mx-auto px-6 max-w-[1440px] text-center">
           <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
             ← CLIENT TESTIMONIALS →
@@ -713,7 +765,7 @@ const LandingPage = () => {
       </section>
 
       {/* 9. OUR TEAM SECTION (Mockup aligned) */}
-      <section id="team" className="py-20 md:py-28 bg-slate-50 border-t border-slate-100">
+      <section id="team" className="py-12 md:py-16 bg-slate-50 border-t border-slate-100">
         <div className="container mx-auto px-6 max-w-[1440px]">
           
           <div className="text-center mb-16">
@@ -725,7 +777,13 @@ const LandingPage = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <motion.div 
+            variants={staggerContainer} 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={VP} 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
             {[
               {
                 name: "Michael Brown",
@@ -748,7 +806,7 @@ const LandingPage = () => {
                 image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300"
               }
             ].map((member, idx) => (
-              <div key={idx} className="group bg-white border border-slate-100 hover:border-cyan-200 p-5 rounded-3xl text-center transition-all duration-300 hover:shadow-xl">
+              <motion.div key={idx} variants={staggerItem} className="group bg-white border border-slate-100 hover:border-cyan-200 p-5 rounded-3xl text-center transition-all duration-300 hover:shadow-xl">
                 <div className="overflow-hidden rounded-2xl mb-4 aspect-[4/5]">
                   <img 
                     src={member.image} 
@@ -766,21 +824,27 @@ const LandingPage = () => {
                     <FaTwitter className="text-xs" />
                   </span>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
         </div>
       </section>
 
       {/* 10. FAQ ACCORDION SECTION (Mockup aligned) */}
-      <section id="faqs" className="py-20 md:py-28 bg-white border-t border-slate-100">
+      <section id="faqs" className="py-12 md:py-16 bg-white border-t border-slate-100">
         <div className="container mx-auto px-6 max-w-[1440px]">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-stretch">
             
             {/* Left Column - Badge, Heading and Contact Card */}
-            <div className="lg:col-span-5 text-center lg:text-left flex flex-col justify-between h-full">
+            <motion.div 
+              variants={fadeLeft} 
+              initial="hidden" 
+              whileInView="visible" 
+              viewport={VP}
+              className="lg:col-span-5 text-center lg:text-left flex flex-col justify-between h-full"
+            >
               <div className="mb-6 lg:mb-0">
                 <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
                   ← FAQS →
@@ -800,20 +864,26 @@ const LandingPage = () => {
                 />
                 
                 {/* Overlay Green/Teal Phone Card */}
-                <div className="bg-gradient-to-r from-cyan-600 to-emerald-500 p-6 flex items-center gap-4 text-white">
-                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-cyan-600 flex-shrink-0 shadow-md">
-                    <FaPhoneAlt className="text-lg" />
+                <div className="bg-gradient-to-r from-cyan-400 to-cyan-500 py-2 px-4 flex items-center gap-3 text-white">
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-cyan-600 flex-shrink-0 shadow-md">
+                    <FaPhoneAlt className="text-xs" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-white/90">Have More Questions?</p>
-                    <p className="text-base sm:text-lg font-black tracking-wide mt-0.5">+91 74470 52361</p>
+                    <p className="text-[10px] font-semibold text-white/90">Have More Questions?</p>
+                    <p className="text-xs font-bold tracking-wide mt-0.5">+91 74470 52361</p>
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Column - Accordion Items */}
-            <div className="lg:col-span-7 space-y-4">
+            <motion.div 
+              variants={fadeRight} 
+              initial="hidden" 
+              whileInView="visible" 
+              viewport={VP}
+              className="lg:col-span-7 space-y-4"
+            >
               {[
                 {
                   q: "How can I book a service?",
@@ -858,7 +928,7 @@ const LandingPage = () => {
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
 
           </div>
 
@@ -890,7 +960,7 @@ const LandingPage = () => {
 
             <div 
               onClick={handleCardSwap}
-              className="relative h-[280px] md:h-[340px] w-full md:w-2/5 flex items-center justify-center mt-12 md:mt-0 cursor-pointer select-none group"
+              className="relative h-[280px] md:h-[380px] w-full md:w-3/5 flex items-center justify-center mt-12 md:mt-0 cursor-pointer select-none group"
             >
               {[
                 { id: 0, src: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=400", alt: "Doormeets Electrician Front" },
@@ -916,7 +986,7 @@ const LandingPage = () => {
                     key={card.id}
                     src={card.src} 
                     alt={card.alt} 
-                    className={`absolute h-[80%] aspect-[4/3] object-cover rounded-2xl shadow-2xl transition-all duration-500 transform ${styleClass} ${zIndex}`}
+                    className={`absolute h-[90%] aspect-[4/3] object-cover rounded-2xl shadow-2xl transition-all duration-500 transform ${styleClass} ${zIndex}`}
                   />
                 );
               })}
@@ -926,7 +996,7 @@ const LandingPage = () => {
       </section>
 
       {/* 10. DYNAMIC FOOTER */}
-      <footer className="bg-slate-950 text-slate-400 py-16 px-6 border-t border-slate-900 relative overflow-hidden">
+      <footer className="bg-slate-950 text-slate-400 py-10 px-6 border-t border-slate-900 relative overflow-hidden">
         <div className="container mx-auto max-w-[1440px] relative z-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12 border-b border-slate-900 pb-12">
             
