@@ -446,7 +446,7 @@ const Home = () => {
     }
     const isPainting = category.slug === 'painting' || (category.title && category.title.toLowerCase() === 'painting');
     if (isPainting) {
-      navigate('/user/painting-consultation');
+      navigate('/user/painting');
       return;
     }
     navigate(`/user/category/${category.slug || category.id}`, { state: { category } });

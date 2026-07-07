@@ -197,14 +197,22 @@
     "children": []
   },
   {
-    "title": "Painting Mgmt",
+    "title": "Painting",
     "route": "/admin/painting",
     "section": "CATALOG MANAGEMENT",
     "allowedRoles": [
       "super_admin",
       "admin"
     ],
-    "children": []
+    "children": [
+      "Paint Brands",
+      "Paint Products",
+      "Property Layouts",
+      "Labour Rates",
+      "Page Builder",
+      "Painting Quotations",
+      "Painting Consultations"
+    ]
   },
   {
     "title": "Offer Banners",

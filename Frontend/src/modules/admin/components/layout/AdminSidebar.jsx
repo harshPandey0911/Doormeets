@@ -15,6 +15,7 @@ import {
   FiChevronDown,
   FiChevronLeft,
   FiChevronRight,
+  FiMenu,
   FiSearch,
   FiX,
   FiPackage,
@@ -29,6 +30,12 @@ import {
   FiGift,
   FiSliders,
   FiZap,
+  FiImage,
+  FiInfo,
+  FiLayers,
+  FiHelpCircle,
+  FiMail,
+  FiBookOpen,
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
@@ -67,9 +74,17 @@ const iconMap = {
   "Vendor Subscriptions": FiDollarSign,
   "Vendor Requests": FiInbox,
   "Package based": FiPackage,
-  "Painting Mgmt": FiGrid,
+  "Painting": FiGrid,
   "Instant Booking": FiZap,
-  "SOS Alerts": FiShield
+  "SOS Alerts": FiShield,
+  // Website Panel icons
+  "Hero Banner": FiImage,
+  "About Page": FiInfo,
+  "Services Showcase": FiLayers,
+  "FAQ Manager": FiHelpCircle,
+  "Blog Manager": FiBookOpen,
+  "Inquiries": FiMail,
+  "SEO & Global": FiSettings
 };
 
 // Helper function to convert child name to route path
@@ -173,6 +188,15 @@ const getChildRoute = (parentRoute, childName) => {
     "/admin/shop-owners": {
       "All Shop Owners": "/admin/shop-owners/all",
       "Referral Settings": "/admin/shop-owners/referrals"
+    },
+    "/admin/painting": {
+      "Paint Brands": "/admin/painting/brands",
+      "Paint Products": "/admin/painting/products",
+      "Property Layouts": "/admin/painting/layouts",
+      "Labour Rates": "/admin/painting/rates",
+      "Page Builder": "/admin/painting/page-builder",
+      "Painting Quotations": "/admin/painting/quotations",
+      "Painting Consultations": "/admin/painting/consultations"
     }
   };
 
@@ -204,7 +228,7 @@ const permissionMap = {
   "User Catalog": "propose_categories",
   "Management": "propose_categories",
   "Package based": "propose_categories",
-  "Painting Mgmt": "propose_categories",
+  "Painting": "propose_categories",
   "Home Management": "manage_homepage",
   "Vendor Services": "view_vendor_services",
   "Vendor Parts": "view_vendor_parts",
@@ -215,7 +239,7 @@ const permissionMap = {
   "Police Verification": "view_police_verification",
 };
 
-const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
+const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { admin, role, isSuperAdmin, isCityAdmin, hasPermission } = useAdminRole();
@@ -248,32 +272,46 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   }, []);
 
   // Filter menu items by role and permissions
-  const filteredMenu = useMemo(() => adminMenu.filter(item => {
-    // Basic allowedRoles array check (fallback)
-    const allowedByRole = !item.allowedRoles || item.allowedRoles.includes(role) || item.allowedRoles.includes(role.toLowerCase()) || item.allowedRoles.includes(role.toUpperCase());
-
-    // Super Admin sees everything allowed by their role
-    if (isSuperAdmin) {
-      return allowedByRole;
+  const filteredMenu = useMemo(() => {
+    if (panelMode === 'website') {
+      return [
+        { "title": "Hero Banner", "route": "/admin/website/hero", "section": "WEBSITE CONFIGS", "children": [] },
+        { "title": "About Page", "route": "/admin/website/about", "section": "WEBSITE CONFIGS", "children": [] },
+        { "title": "Services Showcase", "route": "/admin/website/services", "section": "WEBSITE CONFIGS", "children": [] },
+        { "title": "FAQ Manager", "route": "/admin/website/faqs", "section": "WEBSITE CONFIGS", "children": [] },
+        { "title": "Blog Manager", "route": "/admin/website/blogs", "section": "WEBSITE CONFIGS", "children": [] },
+        { "title": "Inquiries", "route": "/admin/website/inquiries", "section": "COMMUNICATION", "children": [] },
+        { "title": "SEO & Global", "route": "/admin/website/seo", "section": "SYSTEM", "children": [] }
+      ];
     }
 
-    // For City Admin, check dynamic permissions
-    if (isCityAdmin) {
-      // Admin Management is NEVER allowed for City Admin, regardless of role array or permissions
-      if (item.title === 'Admin Management') return false;
+    return adminMenu.filter(item => {
+      // Basic allowedRoles array check (fallback)
+      const allowedByRole = !item.allowedRoles || item.allowedRoles.includes(role) || item.allowedRoles.includes(role.toLowerCase()) || item.allowedRoles.includes(role.toUpperCase());
 
-      // If there's a mapped permission key, check it
-      const requiredPerm = permissionMap[item.title];
-      if (requiredPerm) {
-        return hasPermission(requiredPerm);
+      // Super Admin sees everything allowed by their role
+      if (isSuperAdmin) {
+        return allowedByRole;
       }
 
-      // If no permission mapped but role allows it, show it (e.g., Dashboard if no perm mapped)
-      return allowedByRole;
-    }
+      // For City Admin, check dynamic permissions
+      if (isCityAdmin) {
+        // Admin Management is NEVER allowed for City Admin, regardless of role array or permissions
+        if (item.title === 'Admin Management') return false;
 
-    return allowedByRole;
-  }), [role, isSuperAdmin, isCityAdmin, hasPermission]);
+        // If there's a mapped permission key, check it
+        const requiredPerm = permissionMap[item.title];
+        if (requiredPerm) {
+          return hasPermission(requiredPerm);
+        }
+
+        // If no permission mapped but role allows it, show it (e.g., Dashboard if no perm mapped)
+        return allowedByRole;
+      }
+
+      return allowedByRole;
+    });
+  }, [role, isSuperAdmin, isCityAdmin, hasPermission, panelMode]);
 
   // Filter menu items by search query
   const searchedMenu = useMemo(() => {
@@ -587,11 +625,7 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
             onClick={onToggleCollapse}
             className="hidden lg:flex p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
-            {isCollapsed ? (
-              <FiChevronRight className="text-xl text-gray-300" />
-            ) : (
-              <FiChevronLeft className="text-xl text-gray-300" />
-            )}
+            <FiMenu className="text-xl text-gray-300" />
           </button>
 
           {/* Close Button - Mobile Only */}

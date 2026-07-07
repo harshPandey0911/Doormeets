@@ -1169,6 +1169,16 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       return;
     }
 
+    if (Number(pricingForm.vendorPayoutBase || 0) > Number(pricingForm.customerPrice || 0)) {
+      alert(`Vendor Payout Base (₹${pricingForm.vendorPayoutBase}) cannot be greater than Customer Price (₹${pricingForm.customerPrice})`);
+      return;
+    }
+
+    if (isMinuteBased && Number(pricingForm.vendorPayoutExtra || 0) > Number(pricingForm.pricePerMinute || 0)) {
+      alert(`Vendor Payout Extra (₹${pricingForm.vendorPayoutExtra}) cannot be greater than Extra Price (₹${pricingForm.pricePerMinute})`);
+      return;
+    }
+
     const selectedCategory = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
     
     const payload = {

@@ -68,7 +68,7 @@ const PremiumCategoryPage = () => {
   // Redirect painting category to the painting consultation flow
   useEffect(() => {
     if (slug === 'painting' || (slug && slug.toLowerCase() === 'painting')) {
-      navigate('/user/painting-consultation', { replace: true });
+      navigate('/user/painting', { replace: true });
     }
   }, [slug, navigate]);
 

@@ -53,7 +53,8 @@ const createBooking = async (req, res) => {
       promoCode,
       dynamicFields,
       redeemLoyaltyPoints,
-      applyWallet
+      applyWallet,
+      walletAmountRequested
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -379,7 +380,14 @@ const createBooking = async (req, res) => {
 
       if (maxWalletUsagePercentage > 0) {
         const maxWalletUse = finalAmount * (maxWalletUsagePercentage / 100);
-        walletAmountUsed = Math.min(user.wallet.balance, maxWalletUse);
+        let allowedMax = Math.min(user.wallet.balance, maxWalletUse);
+        allowedMax = parseFloat(allowedMax.toFixed(2));
+
+        if (walletAmountRequested !== undefined && walletAmountRequested !== null) {
+          walletAmountUsed = Math.min(parseFloat(walletAmountRequested) || 0, allowedMax);
+        } else {
+          walletAmountUsed = allowedMax;
+        }
         walletAmountUsed = parseFloat(walletAmountUsed.toFixed(2));
 
         if (walletAmountUsed > 0) {
@@ -566,6 +574,17 @@ const createBooking = async (req, res) => {
 
     if (nearbyVendors.length === 0) {
       responsePayload.noVendorsFound = true;
+      // Emit socket notification to admins immediately!
+      const io = req.app.get('io');
+      if (io) {
+        console.log(`[CreateBooking] No vendors found. Emitting admin_booking_requested to all_admins for booking ${booking.bookingNumber}`);
+        io.to('all_admins').emit('admin_booking_requested', {
+          bookingId: booking._id.toString(),
+          bookingNumber: booking.bookingNumber,
+          status: 'pending_admin',
+          message: 'Booking request sent to admin for manual assignment.'
+        });
+      }
     }
 
     res.status(201).json(responsePayload);

@@ -15,6 +15,11 @@ async function processBookingCompletion(bookingId) {
       return { success: false, message: 'Booking not found' };
     }
 
+    if (booking.commissionStatus && booking.commissionStatus !== 'none') {
+      console.log(`[CommissionService] Booking #${bookingId} commission already processed.`);
+      return { success: true, booking };
+    }
+
     // 1. Load System Commission Rate from settings
     const settings = await Settings.findOne({ type: 'global' });
     const commissionPct = settings && settings.commissionPercentage !== undefined ? settings.commissionPercentage : 20;
@@ -66,8 +71,35 @@ async function processBookingCompletion(bookingId) {
       }
     }
 
-    if (packageVendorPayout > 0 || (pricing && pricing.vendorPayoutBase > 0)) {
-      let totalVendorPayoutBase = packageVendorPayout > 0 ? packageVendorPayout : pricing.vendorPayoutBase;
+    let customItemsPayoutSum = 0;
+    let hasCustomItems = false;
+
+    if (packageVendorPayout === 0 && (!pricing || !pricing.vendorPayoutBase) && booking.dynamicFields && booking.dynamicFields.length > 0) {
+      try {
+        const Service = require('../models/Service');
+        const serviceDoc = await Service.findById(booking.serviceId);
+        if (serviceDoc && serviceDoc.serviceGroups) {
+          booking.dynamicFields.forEach(field => {
+            const valStr = String(field.value || '');
+            serviceDoc.serviceGroups.forEach(group => {
+              group.items.forEach(item => {
+                if (valStr.toLowerCase().includes(item.title.toLowerCase())) {
+                  customItemsPayoutSum += (item.vendorPayout || 0);
+                  hasCustomItems = true;
+                }
+              });
+            });
+          });
+        }
+      } catch (err) {
+        console.error('[CommissionService] Custom items payout parse error:', err);
+      }
+    }
+
+    if (packageVendorPayout > 0 || (hasCustomItems && customItemsPayoutSum > 0) || (pricing && pricing.vendorPayoutBase > 0)) {
+      let totalVendorPayoutBase = packageVendorPayout > 0 
+        ? packageVendorPayout 
+        : (hasCustomItems && customItemsPayoutSum > 0 ? customItemsPayoutSum : pricing.vendorPayoutBase);
 
       // Check if there is a generated VendorBill for this booking to aggregate addon prices
       try {
@@ -182,6 +214,46 @@ async function processBookingCompletion(bookingId) {
         commissionPercentage: commissionPct
       }
     });
+
+    // 6. Update Vendor's wallet balance
+    if (vendorId) {
+      const Vendor = require('../models/Vendor');
+      const vendor = await Vendor.findById(vendorId);
+      if (vendor) {
+        if (!vendor.wallet) {
+          vendor.wallet = { dues: 0, earnings: 0, totalCashCollected: 0, totalWithdrawn: 0, totalSettled: 0, cashLimit: 10000 };
+        }
+        
+        if (isCash) {
+          // Cash booking: dues increase by total amount, earnings increase by vendorShare
+          vendor.wallet.dues = parseFloat(((vendor.wallet.dues || 0) + amount).toFixed(2));
+          vendor.wallet.earnings = parseFloat(((vendor.wallet.earnings || 0) + vendorShare).toFixed(2));
+          vendor.wallet.totalCashCollected = parseFloat(((vendor.wallet.totalCashCollected || 0) + amount).toFixed(2));
+        } else {
+          // Online booking: only earnings increase by vendorShare (no dues change)
+          vendor.wallet.earnings = parseFloat(((vendor.wallet.earnings || 0) + vendorShare).toFixed(2));
+        }
+        await vendor.save();
+        console.log(`[CommissionService] Updated wallet for Vendor ${vendorId}. Dues: ${vendor.wallet.dues}, Earnings: ${vendor.wallet.earnings}`);
+      }
+    }
+
+    // 7. Create earnings credit transaction for ledger visibility
+    if (vendorId && vendorShare > 0) {
+      await Transaction.create({
+        vendorId: vendorId,
+        bookingId: booking._id,
+        amount: vendorShare,
+        type: 'earnings_credit',
+        status: 'completed',
+        paymentMethod: 'system',
+        description: `Earnings ₹${vendorShare} credited for booking #${booking.bookingNumber}`,
+        metadata: {
+          type: 'earnings_increase',
+          vendorShare
+        }
+      });
+    }
 
     console.log(`[CommissionService] Booking #${booking.bookingNumber} completed successfully. Cash=${isCash}, Commission=${adminCommission}, VendorShare=${vendorShare}`);
     return { success: true, booking };

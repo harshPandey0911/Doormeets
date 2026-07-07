@@ -426,6 +426,7 @@ const assignVendor = async (req, res) => {
     booking.assignedByAdmin = true;
     booking.notifiedVendors = [vendor._id];
     booking.assignedAt = new Date();
+    booking.adminAssignExpiresAt = new Date(Date.now() + 60 * 1000); // 1 minute expiry
 
     await booking.save();
 
@@ -438,7 +439,7 @@ const assignVendor = async (req, res) => {
       status: 'PENDING',
       wave: 1,
       sentAt: new Date(),
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      expiresAt: new Date(Date.now() + 60 * 1000) // 1 minute
     });
 
     // Trigger socket notifications for vendor and user
@@ -463,10 +464,11 @@ const assignVendor = async (req, res) => {
           brandName: booking.brandName,
           brandIcon: booking.brandIcon,
           categoryIcon: booking.categoryIcon,
-          createdAt: booking.createdAt || new Date(),
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(), // Use current time for admin-assigned
+          expiresAt: new Date(Date.now() + 60 * 1000).toISOString(), // 1 minute
           status: booking.status,
           serviceType: booking.serviceType || 'service',
+          assignedByAdmin: true,
           playSound: true,
           message: `Admin has manually assigned a booking request to you!`
         });
@@ -487,7 +489,7 @@ const assignVendor = async (req, res) => {
       if (vendor.fcmToken) {
         await sendNotificationToVendor(vendor._id.toString(), {
           title: '🎉 New Job Assigned by Admin!',
-          body: `Admin has assigned you booking #${booking.bookingNumber}. Please respond.`,
+          body: `Admin has assigned you booking #${booking.bookingNumber}. Please respond within 1 minute.`,
           bookingId: booking._id.toString()
         });
       }
@@ -495,9 +497,48 @@ const assignVendor = async (req, res) => {
       console.error('[AdminAssignVendor] FCM notification error:', fcmErr);
     }
 
+    // Schedule auto-revert after 1 minute if vendor doesn't accept
+    setTimeout(async () => {
+      try {
+        const freshBooking = await Booking.findById(booking._id);
+        if (freshBooking && freshBooking.status === 'requested' && freshBooking.assignedByAdmin) {
+          console.log(`[AdminAssign] Timer expired for booking ${freshBooking.bookingNumber}. Reverting to pending_admin.`);
+          freshBooking.vendorId = null;
+          freshBooking.status = 'pending_admin';
+          freshBooking.assignedByAdmin = false;
+          freshBooking.cancellationReason = `Vendor ${vendor.businessName || vendor.name} did not respond to admin assignment within 1 minute.`;
+          await freshBooking.save();
+
+          // Expire the BookingRequest
+          await BookingRequest.updateMany(
+            { bookingId: booking._id, vendorId: vendor._id, status: 'PENDING' },
+            { status: 'EXPIRED', respondedAt: new Date() }
+          );
+
+          const io = req.app.get('io');
+          if (io) {
+            // Notify admin
+            io.to('all_admins').emit('admin_booking_requested', {
+              bookingId: booking._id.toString(),
+              bookingNumber: freshBooking.bookingNumber,
+              status: 'pending_admin',
+              message: `Vendor ${vendor.businessName || vendor.name} did not respond. Please reassign.`
+            });
+            // Remove popup from vendor
+            io.to(`vendor_${vendor._id.toString()}`).emit('booking_taken', {
+              bookingId: booking._id.toString(),
+              message: 'Admin assignment expired. You did not respond in time.'
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[AdminAssign] Timer revert error:', err);
+      }
+    }, 60 * 1000); // 1 minute
+
     res.status(200).json({
       success: true,
-      message: 'Vendor assigned successfully',
+      message: 'Vendor assigned successfully. They have 1 minute to respond.',
       data: booking
     });
   } catch (error) {

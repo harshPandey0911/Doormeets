@@ -281,6 +281,14 @@ const PackageBased = () => {
       return;
     }
 
+    // Validation: Vendor payout cannot exceed customer price
+    for (let item of groupForm.items) {
+      if (Number(item.vendorPayout || 0) > Number(item.price || 0)) {
+        toast.error(`Vendor Payout (₹${item.vendorPayout}) cannot be greater than Customer Price (₹${item.price}) for item "${item.title}"`);
+        return;
+      }
+    }
+
     const updatedGroups = [...(activeService.serviceGroups || [])];
     if (editingGroupIdx === 'new') {
       updatedGroups.push({ ...groupForm, order: updatedGroups.length });
