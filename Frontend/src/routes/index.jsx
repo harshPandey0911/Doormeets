@@ -14,10 +14,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Landing Page */}
-      <Route path="/Home" element={<LandingPage />} />
-
-      {/* Redirect Root Slash to User App */}
-      <Route path="/" element={<Navigate to="/user" replace />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/Home" element={<Navigate to="/" replace />} />
 
       {/* User Routes */}
       <Route path="/user/*" element={<UserRoutes />} />

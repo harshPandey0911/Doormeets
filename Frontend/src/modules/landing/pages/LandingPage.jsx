@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FaUser, FaStore, FaHammer, FaCheckCircle, FaClock, FaArrowRight, FaChevronDown, FaChevronLeft, FaChevronRight, FaQuoteLeft, FaStar, FaHandshake, FaTruck, FaBroom, FaToolbox, FaBolt, FaPaintRoller, FaBug, FaAirFreshener, FaMapMarkerAlt, FaTv, FaTemperatureLow, FaTshirt, FaUtensils, FaMicrochip, FaGooglePlay, FaShieldAlt, FaMapMarker, FaFileInvoiceDollar, FaBars, FaTimes, FaMobileAlt, FaChartLine, FaTools } from 'react-icons/fa';
+import { 
+  FaUser, FaStore, FaHammer, FaClock, FaArrowRight, FaChevronDown, 
+  FaStar, FaShieldAlt, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, 
+  FaGooglePlay, FaBars, FaTimes, FaBroom, FaTools, FaBolt, 
+  FaPaintRoller, FaQuoteLeft, FaPlay, FaCheck, FaHandshake, 
+  FaCalendarCheck, FaAward, FaClipboardList, FaCalendarAlt, 
+  FaCheckDouble, FaLinkedin, FaTwitter
+} from 'react-icons/fa';
 import { configService } from '../../../services/configService';
 import { publicCatalogService } from '../../../services/catalogService';
 
@@ -13,25 +20,96 @@ const toAssetUrl = (url) => {
   return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
 };
 
+const serviceImages = [
+  "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=800"
+];
+
+// ── Global animation variants ──────────────────────────────────────────────
+const VP = { once: false, amount: 0.18 };
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 48 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+};
+const fadeLeft = {
+  hidden: { opacity: 0, x: -56 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+};
+const fadeRight = {
+  hidden: { opacity: 0, x: 56 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+};
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.88 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+};
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.13, delayChildren: 0.05 } }
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 36 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+};
+// ──────────────────────────────────────────────────────────────────────────
+
+
+const timelineContainerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const timelineItemVariants = {
+  hidden: { opacity: 0, scale: 0.85, y: 30 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const timelineLineVariants = {
+  hidden: { scaleX: 0 },
+  visible: { 
+    scaleX: 1,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
 const LandingPage = () => {
-  const scrollRef = React.useRef(null);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [settings, setSettings] = useState(null);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const { scrollYProgress } = useScroll();
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
+  const [activeFaq, setActiveFaq] = useState(null);
+  const [currentStatsImage, setCurrentStatsImage] = useState(0);
+  const [cardOrder, setCardOrder] = useState([0, 1, 2]);
 
-  const PLAY_STORE_URL = "https://play.google.com/store/search?q=doormeets&c=apps";
+  const handleCardSwap = () => {
+    setCardOrder((prev) => {
+      const next = [...prev];
+      const front = next.shift();
+      next.push(front);
+      return next;
+    });
+  };
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const statsTimer = setInterval(() => {
+      setCurrentStatsImage((prev) => (prev + 1) % serviceImages.length);
+    }, 3000);
+    return () => clearInterval(statsTimer);
+  }, []);
 
+  useEffect(() => {
     const fetchSettings = async () => {
       const data = await configService.getSettings();
       if (data?.success) {
@@ -55,532 +133,937 @@ const LandingPage = () => {
 
     fetchSettings();
     fetchCategories();
-
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scroll = (direction) => {
-    if (scrollRef.current) {
-      const { scrollLeft, clientWidth } = scrollRef.current;
-      const scrollTo = direction === 'left' ? scrollLeft - clientWidth / 2 : scrollLeft + clientWidth / 2;
-      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
-    }
-  };
-
-  const categoryColors = [
-    'text-blue-500', 'text-purple-500', 'text-cyan-500', 'text-pink-500',
-    'text-orange-500', 'text-indigo-500', 'text-yellow-500', 'text-brand'
-  ];
-
-  const menuItems = [
-    { label: 'Glimpse', href: '#app-glimpse' },
-    { label: 'Expertise', href: '#expertise' },
-    { label: 'Why Us', href: '#expertise' },
-    { label: 'Join Us', href: '#join-platform' },
-  ];
+  const PLAY_STORE_URL = "https://play.google.com/store/search?q=doormeets&c=apps";
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden font-sans selection:bg-brand selection:text-white">
-      {/* 1. Permanent Professional Pure White Glassmorphism Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-xl border-b border-gray-100 py-3 shadow-sm transition-all duration-300">
-        <div className="container mx-auto px-4 sm:px-8 flex justify-between items-center max-w-7xl">
-          <Link to="/Home" className="flex items-center gap-3 group">
-            <div className="text-xl font-bold text-gray-900 border border-gray-100 rounded shadow-sm px-2 py-1">Doormeets</div>
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans overflow-x-hidden selection:bg-cyan-500 selection:text-white">
+      
+      {/* 1. TOP INFORMATION BAR */}
+      <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 border-b border-slate-800 hidden sm:block">
+        <div className="container mx-auto max-w-[1440px] flex justify-between items-center">
+          <div className="flex items-center gap-6">
+            <span className="flex items-center gap-2">
+              <FaPhoneAlt className="text-cyan-400" />
+              <a href={`tel:${settings?.supportPhone || '+919876543210'}`} className="hover:text-white transition-colors">{settings?.supportPhone || '+91 98765 43210'}</a>
+            </span>
+            <span className="flex items-center gap-2">
+              <FaEnvelope className="text-cyan-400" />
+              <a href={`mailto:${settings?.supportEmail || 'support@doormeets.com'}`} className="hover:text-white transition-colors">{settings?.supportEmail || 'support@doormeets.com'}</a>
+            </span>
+            <span className="flex items-center gap-2">
+              <FaMapMarkerAlt className="text-cyan-400" />
+              <span>{settings?.companyCity || 'Indore'}, Madhya Pradesh</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <FaClock className="text-cyan-400 mr-1" />
+              <span>Mon - Sat: 09:00 AM - 08:00 PM</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. MAIN HEADER / NAVIGATION */}
+      <header className="sticky top-0 z-[100] bg-white/95 backdrop-blur-md border-b border-slate-100 py-4 shadow-sm">
+        <div className="container mx-auto px-6 max-w-[1440px] flex justify-between items-center">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-2xl font-normal tracking-tight text-slate-900 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+              Doormeets
+            </span>
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full">
+              Pro
+            </span>
           </Link>
 
-          {/* Desktop Nav - Dark Text for Light Navbar */}
-          <nav className="hidden lg:flex gap-10 items-center font-bold text-[11px] text-gray-900">
-            {menuItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="hover:text-brand transition-all duration-300 relative group"
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-700">
+            {[
+              { label: "Home", href: "#hero" },
+              { label: "About Us", href: "#about" },
+              { label: "Services", href: "#services" },
+              { label: "Why Us", href: "#stats" },
+              { label: "Partners", href: "#team" }
+            ].map((link, idx) => (
+              <a 
+                key={idx}
+                href={link.href} 
+                className="relative py-1.5 hover:text-cyan-600 transition-colors group"
               >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand transition-all duration-300 group-hover:w-full shadow-[0_0_10px_rgba(52,121,137,0.5)]"></span>
+                {link.label}
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
               </a>
             ))}
+            
             <Link
               to="/user"
-              className="px-10 py-3.5 bg-brand text-white rounded-full hover:bg-gray-900 transition-all shadow-xl shadow-brand/20 font-bold"
+              className="ml-4 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-xl transition-all shadow-md font-bold text-sm tracking-wide"
             >
-              Order Repair
+              Book Service Now
             </Link>
           </nav>
 
-          {/* Mobile Toggle - Gray icons */}
+          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 text-gray-900 text-xl focus:outline-none"
+            className="lg:hidden p-2 text-slate-800 text-2xl focus:outline-none"
           >
             {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
           </button>
         </div>
 
-        {/* Mobile Menu Overlay - Light Theme */}
+        {/* Mobile Navigation Dropdown */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 py-8 px-8 flex flex-col gap-6 items-center text-center shadow-2xl z-50"
+              exit={{ opacity: 0, y: -10 }}
+              className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 py-6 px-8 flex flex-col gap-4 shadow-xl z-50 font-bold"
             >
-              {menuItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-gray-900 font-normal text-xs hover:text-brand transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
+              <a href="#hero" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-700 hover:text-cyan-600 py-1">Home</a>
+              <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-700 hover:text-cyan-600 py-1">About Us</a>
+              <a href="#services" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-700 hover:text-cyan-600 py-1">Services</a>
+              <a href="#stats" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-700 hover:text-cyan-600 py-1">Why Us</a>
+              <a href="#join" onClick={() => setIsMobileMenuOpen(false)} className="text-slate-700 hover:text-cyan-600 py-1">Partners</a>
               <Link
                 to="/user"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full max-w-xs py-4 bg-brand text-white rounded-2xl font-normal text-xs shadow-xl shadow-brand/20"
+                className="w-full text-center py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl text-sm"
               >
-                Order Repair
+                Book Service Now
               </Link>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
 
-      {/* 2. Floating Categories (Remains Pro) */}
-      <section className="relative pt-24 pb-12 bg-white overflow-hidden">
-        {/* Background Decorative Elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-brand/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 -z-10"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/2 -z-10"></div>
+      {/* 3. HERO SECTION */}
+      <section 
+        id="hero" 
+        className="relative pt-24 pb-36 md:pt-36 md:pb-48 bg-slate-950 overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: "url('/hero-bg.png')" }}
+      >
+        {/* Faded overlay for text readability while keeping the right side bright and clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/20 to-transparent"></div>
 
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl relative">
-          {/* Section Heading for Landing Feel */}
-          <div className="flex flex-col mb-10 text-center sm:text-left">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Expert Services</h2>
-            <p className="text-gray-400 text-xs font-normal mt-2">Professional repairs tailored for your home electronics</p>
-          </div>
-
-          <div className="relative group px-12 sm:px-16">
-            {/* Edge Fading Masks */}
-            <div className="absolute left-12 sm:left-16 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none transition-opacity"></div>
-            <div className="absolute right-12 sm:right-16 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none transition-opacity"></div>
-
-            {/* Navigation Buttons - Always Visible & Outside */}
-            <button
-              onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-14 sm:h-14 bg-white rounded-full shadow-xl border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand hover:scale-110 active:scale-90 transition-all shadow-brand/10 hover:shadow-brand/20"
-            >
-              <FaChevronLeft className="text-lg" />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-14 sm:h-14 bg-white rounded-full shadow-xl border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand hover:scale-110 active:scale-90 transition-all shadow-brand/10 hover:shadow-brand/20"
-            >
-              <FaChevronRight className="text-lg" />
-            </button>
-
-            <div
-              ref={scrollRef}
-              className="overflow-x-auto scrollbar-hide scroll-smooth py-6 px-1"
-            >
-              <div className="flex items-center gap-8 sm:gap-12 min-w-max">
-                {categoriesLoading ? (
-                  Array(8).fill(0).map((_, i) => (
-                    <div key={i} className="flex flex-col items-center gap-4 animate-pulse">
-                      <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gray-50 rounded-[2rem] mb-1"></div>
-                      <div className="w-12 h-2.5 bg-gray-50 rounded"></div>
-                    </div>
-                  ))
-                ) : categories.length > 0 ? (
-                  categories.map((cat, idx) => (
-                    <Link
-                      key={cat.id || idx}
-                      to="/user"
-                      state={{ openCategoryId: cat.id }}
-                      className="flex flex-col items-center gap-4 group cursor-pointer transition-all duration-500 hover:-translate-y-3"
-                    >
-                      <div className="relative">
-                        {/* Glow effect on hover */}
-                        <div className="absolute inset-0 bg-brand/20 blur-2xl rounded-full scale-0 group-hover:scale-110 transition-transform duration-500 opacity-0 group-hover:opacity-100"></div>
-
-                        <div className="relative w-20 h-20 lg:w-28 lg:h-28 bg-white rounded-[2.5rem] flex items-center justify-center p-5 lg:p-7 shadow-[0_8px_30px_rgb(0,0,0,0.04)] group-hover:shadow-[0_20px_50px_rgba(52,121,137,0.15)] border border-gray-100 group-hover:border-brand/20 transition-all duration-500 z-10 overflow-hidden">
-                          {/* Subtle background pattern in card */}
-                          <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                            <div className="absolute inset-0" style={{ backgroundImage: `radial-gradient(${idx % 2 === 0 ? '#347989' : '#D68F35'} 1px, transparent 1px)`, backgroundSize: '12px 12px' }}></div>
-                          </div>
-
-                          {cat.icon ? (
-                            <img
-                              src={toAssetUrl(cat.icon)}
-                              alt={cat.title}
-                              className="w-full h-full object-contain relative z-20 transition-transform duration-700 group-hover:scale-125 group-hover:rotate-6"
-                            />
-                          ) : (
-                            <FaShieldAlt className="text-4xl text-brand relative z-20" />
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="text-xs lg:text-sm font-bold text-gray-900 transition-colors tracking-tight text-center">
-                          {cat.title}
-                        </span>
-                        <div className="w-0 h-1 bg-brand rounded-full group-hover:w-full transition-all duration-300 shadow-[0_0_10px_rgba(52,121,137,0.4)]"></div>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-gray-400 text-xs font-normal w-full text-center">No categories available</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Main Hero */}
-      <section className="relative pt-12 sm:pt-16 pb-16 sm:pb-24 overflow-hidden bg-white">
-        <div className="absolute top-0 right-0 -z-10 w-full h-full bg-gradient-to-b from-gray-50/50 to-white"></div>
-        <div className="absolute top-[-10%] right-[-10%] -z-10 w-[50%] h-[70%] bg-brand/5 blur-[120px] rounded-full"></div>
-
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl">
-          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+        <div className="container mx-auto px-6 max-w-[1440px] relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left Hero Content */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="flex-1 text-center lg:text-left order-2 lg:order-1"
+              className="lg:col-span-6 text-center lg:text-left"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
             >
-              <div className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-gray-900 border border-white/10 text-white rounded-full mb-6 sm:mb-8 shadow-2xl">
-                <div className="flex items-center gap-1 text-brand">
-                  <FaMapMarkerAlt className="text-sm" />
-                  <span className="text-[10px] sm:text-xs font-normal">Indore Exclusive</span>
-                </div>
-                <div className="w-px h-3 bg-white/20"></div>
-                <span className="text-[9px] sm:text-[10px] font-normal text-gray-400">India's #1 Electronics Repair App</span>
-              </div>
+              <motion.span variants={staggerItem} className="inline-block text-[11px] font-normal uppercase tracking-widest text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-4 py-1.5 rounded-full mb-6">
+                ✦ Smart Home Repairs. Verified Experts.
+              </motion.span>
+              <motion.h1 variants={staggerItem} className="text-4xl sm:text-5xl md:text-6xl font-normal text-white leading-[1.1] mb-6">
+                Moving Home Services <br />
+                <span className="text-cyan-400">Forward, Together.</span>
+              </motion.h1>
+              <motion.p variants={staggerItem} className="text-base sm:text-lg text-slate-300 leading-relaxed mb-8 max-w-lg">
+                We deliver seamless logistics and technical support for home repairs, maintenance, and diagnostics. Connecting Indore homeowners directly to certified spare parts and platform-guaranteed service experts.
+              </motion.p>
 
-              <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold text-gray-900 leading-[1.1] sm:leading-[0.9] mb-6 sm:mb-8">
-                Genuine Parts, <br />
-                <span className="text-brand">Expert Repairs.</span>
-              </h1>
-              <p className="text-base sm:text-xl leading-relaxed text-gray-500 mb-8 sm:mb-10 max-w-xl font-normal">
-                "Our parts. Our warranty. Your peace of mind." — Doormeets uses only platform-certified genuine electronics parts for every repair.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 justify-center lg:justify-start items-center">
+              {/* Action Buttons */}
+              <motion.div variants={staggerItem} className="flex flex-wrap gap-4 justify-center lg:justify-start items-center">
                 <Link
                   to="/user"
-                  className="w-full sm:w-auto px-10 sm:px-14 py-4 sm:py-5 bg-gray-900 text-white rounded-2xl text-base sm:text-lg font-normal flex items-center justify-center gap-3 hover:bg-brand transition-all hover:shadow-2xl active:scale-95"
+                  className="px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-base font-bold shadow-lg hover:shadow-cyan-600/20 transition-all flex items-center gap-2 group"
                 >
-                  Book Repair <FaArrowRight />
+                  Get A Free Quote <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
-                  <p className="text-[10px] font-normal text-gray-400 mb-2">Available on</p>
-                  <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto flex items-center justify-center gap-3 bg-gray-50 border border-gray-100 px-6 sm:px-8 py-3 rounded-xl hover:bg-white hover:shadow-lg transition-all group overflow-hidden">
-                    <FaGooglePlay className="text-gray-900 text-xl sm:text-2xl group-hover:scale-110 transition-transform" />
-                    <span className="text-xs sm:text-sm font-normal text-gray-900 whitespace-nowrap">Play Store</span>
-                  </a>
+                <a
+                  href="#about"
+                  className="px-6 py-4 bg-slate-900/60 hover:bg-slate-800 text-slate-200 border border-slate-800/60 rounded-xl text-base font-bold transition-all flex items-center gap-2"
+                >
+                  <span className="w-6 h-6 rounded-full bg-cyan-600 flex items-center justify-center text-white text-[10px]"><FaPlay className="ml-0.5" /></span>
+                  Watch Our Story
+                </a>
+              </motion.div>
+
+              {/* Avatars Widget */}
+              <motion.div variants={staggerItem} className="mt-10 flex items-center justify-center lg:justify-start gap-4">
+                <div className="flex -space-x-3">
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Avatar" className="w-10 h-10 rounded-full border-2 border-slate-900 object-cover" />
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100" alt="Avatar" className="w-10 h-10 rounded-full border-2 border-slate-900 object-cover" />
+                  <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100" alt="Avatar" className="w-10 h-10 rounded-full border-2 border-slate-900 object-cover" />
                 </div>
-              </div>
+                <div className="text-left">
+                  <div className="flex text-amber-400 text-xs">
+                    <FaStar /><FaStar /><FaStar /><FaStar /><FaStar />
+                  </div>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">Trusted by 12K+ customers (4.9 Reviews)</p>
+                </div>
+              </motion.div>
             </motion.div>
 
-            <motion.div
-              style={{ opacity: heroOpacity, scale: heroScale }}
-              className="flex-1 relative w-full order-1 lg:order-2 px-4 sm:px-0"
-            >
-              <div className="relative z-10 p-2 sm:p-4 bg-gray-50 rounded-[3rem] sm:rounded-[4rem] border border-gray-100 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] overflow-hidden group">
-                <div className="overflow-hidden rounded-[2.5rem] sm:rounded-[3.5rem] relative aspect-[4/5] lg:aspect-square">
-                  <img src="/hero-image.png" alt="Doormeets Pro Electronics" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent"></div>
-                </div>
+          </div>
+        </div>
 
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                  className="absolute bottom-6 sm:bottom-10 left-6 sm:left-10 right-6 sm:right-10 bg-gray-900/90 backdrop-blur-md p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-2xl z-20 border border-white/20 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3 sm:gap-4 text-white">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand rounded-full flex items-center justify-center text-white shadow-lg">
-                      <FaShieldAlt className="text-base sm:text-2xl" />
+        {/* Bottom Curve Shape - Symmetrical gentle downward dip with highlight line and soft shadow */}
+        <div className="absolute bottom-0 left-0 right-0 overflow-visible line-height-0 z-20">
+          <svg viewBox="0 0 1440 160" preserveAspectRatio="none" className="relative block w-full h-[40px] sm:h-[80px] overflow-visible">
+            <defs>
+              {/* Premium soft shadow filter */}
+              <filter id="hero-curve-shadow" x="-10%" y="-10%" width="120%" height="130%">
+                <feDropShadow dx="0" dy="6" stdDeviation="12" floodColor="#0f172a" floodOpacity="0.05" />
+              </filter>
+            </defs>
+
+            {/* 1. Curved Drop Shadow Layer */}
+            <path 
+              d="M0,40 C300,40 500,120 720,120 C940,120 1140,40 1440,40 L1440,160 L0,160 Z" 
+              fill="#f8fafc" 
+              filter="url(#hero-curve-shadow)"
+            />
+
+            {/* 2. Main White/Slate-50 Solid Fill Layer */}
+            <path 
+              d="M0,40 C300,40 500,120 720,120 C940,120 1140,40 1440,40 L1440,160 L0,160 Z" 
+              fill="#f8fafc" 
+            />
+
+            {/* 3. Symmetrical 3px White Highlight along the top edge of the curve */}
+            <path 
+              d="M0,40 C300,40 500,120 720,120 C940,120 1140,40 1440,40" 
+              fill="none" 
+              stroke="#ffffff" 
+              strokeWidth="3.5" 
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </section>
+
+      {/* 4. ABOUT & MULTI-IMAGE COLLAGE SECTION */}
+      <section id="about" className="py-12 md:py-16 bg-slate-50 relative">
+        <div className="container mx-auto px-6 max-w-[1440px]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          <motion.div
+            variants={fadeLeft} initial="hidden" whileInView="visible" viewport={VP}
+            className="lg:col-span-6"
+          >
+              <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+                ← ABOUT US →
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight mb-6">
+                Reliable Cleaning & Repairs For A <br />
+                <span className="text-cyan-600">Connected Home</span>
+              </h2>
+              <p className="text-slate-500 mb-8 leading-relaxed text-sm sm:text-base">
+                From fast local emergency fixes to full-house appliance setups, Doormeets standardizes on-site technical repairs. We handle the hard details of parts, scheduling, and warranty so you can rest easy.
+              </p>
+ 
+              {/* Feature Items List */}
+              <div className="space-y-6">
+                {[
+                  {
+                    title: "Verified Xperts",
+                    desc: "Serving Indore with trusted, background-checked professionals.",
+                    icon: <FaUser className="text-cyan-600" />
+                  },
+                  {
+                    title: "Real-time Tracking",
+                    desc: "Track your technicians live on the map as they travel to you.",
+                    icon: <FaMapMarkerAlt className="text-cyan-600" />
+                  },
+                  {
+                    title: "24/7 Dedicated Support",
+                    desc: "Our friendly support team is always here to help you.",
+                    icon: <FaClock className="text-cyan-600" />
+                  }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex gap-4 items-center">
+                    <div className="w-12 h-12 rounded-full bg-white border border-cyan-500/20 flex items-center justify-center shadow-sm flex-shrink-0">
+                      {item.icon}
                     </div>
                     <div>
-                      <p className="text-[9px] sm:text-[10px] text-gray-400 font-normal leading-none mb-1">Doormeets Certified</p>
-                      <p className="text-xs sm:text-sm font-normal whitespace-nowrap">Genuine Platform Parts</p>
+                      <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-0.5">{item.title}</h4>
+                      <p className="text-xs sm:text-sm text-slate-500 leading-normal">{item.desc}</p>
                     </div>
                   </div>
-                </motion.div>
+                ))}
               </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Stats Section */}
-      <section className="py-12 sm:py-20 bg-gray-900 text-white overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-full bg-brand/5 opacity-20 -z-10"></div>
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {[
-              { label: 'Verified Xperts', value: '450+', color: 'text-brand' },
-              { label: 'Indore Families', value: '12k+', color: 'text-white' },
-              { label: 'Certified Parts', value: '1.5k+', color: 'text-brand' },
-              { label: 'Reliability Score', value: '99%', color: 'text-white' },
-            ].map((stat, idx) => (
-              <div key={idx} className="text-center group border-r border-white/5 last:border-0 lg:border-r">
-                <h3 className={`text-3xl sm:text-5xl md:text-6xl font-bold mb-2 sm:mb-3 transition-transform group-hover:scale-110 duration-500 ${stat.color}`}>{stat.value}</h3>
-                <p className="text-gray-500 font-normal text-[8px] sm:text-[10px]">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. APP GLIMPSE SECTION */}
-      <section id="app-glimpse" className="py-24 sm:py-32 bg-gray-50 overflow-hidden relative">
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl">
-          <div className="text-center mb-16 sm:mb-24">
-            <span className="text-brand font-normal text-[10px] mb-4 block">Platform Glimpse</span>
-            <h2 className="text-4xl sm:text-7xl font-bold text-gray-900 mb-6 leading-tight">One Ecosystem, <br /><span className="text-brand">Three Super Apps.</span></h2>
-            <p className="max-w-2xl mx-auto text-gray-500 font-normal">Experience the power of a unified technical ecosystem designed for speed, transparency, and global standards.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 sm:gap-16 lg:gap-20">
-            {/* User App Glimpse */}
-            <motion.div
-              whileHover={{ y: -10 }}
-              className="flex flex-col items-center text-center group"
-            >
-              <div className="relative w-full max-w-[260px] sm:max-w-[280px] mb-10">
-                <div className="absolute inset-0 bg-brand/20 blur-[80px] rounded-full scale-50 group-hover:scale-100 transition-transform duration-700"></div>
-                <div className="relative z-10 p-2.5 sm:p-4 bg-gray-900 rounded-[2.5rem] sm:rounded-[3rem] border-[4px] sm:border-[8px] border-white shadow-2xl aspect-[9/18.5] overflow-hidden transform group-hover:rotate-1 transition-transform duration-500">
-                  <img src="/cleaning-expert-user.png" alt="Doormeets User App" className="w-full h-full object-cover rounded-2xl brightness-95 group-hover:brightness-100 transition-all duration-500" />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-12 h-1 bg-white/20 rounded-full"></div>
-                </div>
-              </div>
-              <div className="w-14 h-14 bg-white shadow-xl rounded-2xl flex items-center justify-center mb-6 text-brand">
-                <FaMobileAlt size={24} />
-              </div>
-              <h4 className="text-2xl font-normal mb-3 text-nowrap">User App</h4>
-              <p className="text-gray-500 text-sm font-normal px-4">"Book world-class technical repairs in under 60 seconds."</p>
-            </motion.div>
-
-            {/* Vendor App Glimpse */}
-            <motion.div
-              whileHover={{ y: -10 }}
-              className="flex flex-col items-center text-center group"
-            >
-              <div className="relative w-full max-w-[260px] sm:max-w-[280px] mb-10">
-                <div className="absolute inset-0 bg-cyan-500/20 blur-[80px] rounded-full scale-50 group-hover:scale-100 transition-transform duration-700"></div>
-                <div className="relative z-10 p-2.5 sm:p-4 bg-gray-900 rounded-[2.5rem] sm:rounded-[3rem] border-[4px] sm:border-[8px] border-white shadow-2xl aspect-[9/18.5] overflow-hidden transform group-hover:-rotate-1 transition-transform duration-500">
-                  <img src="/cleaning-expert-vendor.png" alt="Doormeets Vendor App" className="w-full h-full object-contain bg-gray-50 rounded-2xl brightness-95 group-hover:brightness-100 transition-all duration-500" />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-12 h-1 bg-white/20 rounded-full"></div>
-                </div>
-              </div>
-              <div className="w-14 h-14 bg-white shadow-xl rounded-2xl flex items-center justify-center mb-6 text-cyan-600">
-                <FaChartLine size={24} />
-              </div>
-              <h4 className="text-2xl font-normal mb-3 text-nowrap">Vendor OS</h4>
-              <p className="text-gray-500 text-sm font-normal px-4">"Full-stack digital operating system to scale your local business."</p>
-            </motion.div>
-
-            {/* Xpert App Glimpse */}
-            <motion.div
-              whileHover={{ y: -10 }}
-              className="flex flex-col items-center text-center group"
-            >
-              <div className="relative w-full max-w-[260px] sm:max-w-[280px] mb-10">
-                <div className="absolute inset-0 bg-orange-500/20 blur-[80px] rounded-full scale-50 group-hover:scale-100 transition-transform duration-700"></div>
-                <div className="relative z-10 p-2.5 sm:p-4 bg-gray-900 rounded-[2.5rem] sm:rounded-[3rem] border-[4px] sm:border-[8px] border-white shadow-2xl aspect-[9/18.5] overflow-hidden transform group-hover:rotate-1 transition-transform duration-500">
-                  <img src="/cleaning-expert-xpert.png" alt="Doormeets Xpert App" className="w-full h-full object-contain bg-gray-50 rounded-2xl brightness-95 group-hover:brightness-100 transition-all duration-500" />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-12 h-1 bg-white/20 rounded-full"></div>
-                </div>
-              </div>
-              <div className="w-14 h-14 bg-white shadow-xl rounded-2xl flex items-center justify-center mb-6 text-orange-600">
-                <FaTools size={24} />
-              </div>
-              <h4 className="text-2xl font-normal mb-3">Xpert Pro</h4>
-              <p className="text-gray-500 text-sm font-normal px-4 text-nowrap">"Professional toolkit for engineers with live tracking and CRM."</p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Key Features Section */}
-      <section id="expertise" className="py-20 sm:py-32 bg-white relative">
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl text-center">
-          <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal text-gray-900 mb-6 leading-tight text-nowrap">Technical <span className="text-brand">Logistics.</span></h2>
-          <p className="text-xs sm:text-sm text-gray-500 font-normal mb-16 sm:mb-24">Standardizing repairs across Indore</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {[
-              { title: "Real-time Tracking", desc: "Monitor your Xpert live on the map as they head to your location.", icon: <FaMapMarker />, bg: "https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?auto=format&fit=crop&q=80&w=800" },
-              { title: "Doorstep Billing", desc: "Verified invoices generated at home. Transparency in every charge.", icon: <FaFileInvoiceDollar />, bg: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=800" },
-              { title: "Platform Warranty", desc: "6-month warranty on every certified Doormeets spare part replaced.", icon: <FaShieldAlt />, bg: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800" },
-              { title: "Direct Connect", desc: "Call or chat with your assigned technician directly in-app.", icon: <FaHandshake />, bg: "https://images.unsplash.com/photo-1521791136064-7986c2959213?auto=format&fit=crop&q=80&w=800" }
-            ].map((item, i) => (
-              <div key={i} className="group relative p-8 sm:p-10 rounded-[3rem] sm:rounded-[4rem] overflow-hidden transition-all duration-700 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] hover:-translate-y-4 h-[350px] sm:h-[400px] flex flex-col justify-end text-left border border-gray-100">
-                <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" style={{ backgroundImage: `url(${item.bg})` }}></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent group-hover:via-gray-900/60 transition-all duration-500"></div>
-                <div className="relative z-10">
-                  <div className="w-14 h-14 bg-brand text-white shadow-xl rounded-2xl flex items-center justify-center mb-6 transition-all duration-500 group-hover:rotate-[360deg] group-hover:scale-110">
-                    <div className="text-xl sm:text-2xl">{item.icon}</div>
-                  </div>
-                  <h4 className="text-xl sm:text-2xl font-normal mb-3 text-white">{item.title}</h4>
-                  <p className="text-xs sm:text-sm text-gray-300 font-normal leading-relaxed opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0 text-nowrap">"{item.desc}"</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 6. Join Platform Section */}
-      <section id="join-platform" className="py-20 sm:py-32 bg-gray-900 rounded-[3rem] sm:rounded-[6rem] mx-2 sm:mx-8 mb-8 overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-20">
-          <div className="absolute top-0 right-0 w-[80%] h-[80%] bg-brand/30 blur-[150px] rounded-full"></div>
-        </div>
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl">
-          <div className="text-center mb-16 sm:mb-24 text-white">
-            <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal mb-4 sm:mb-6">Become a Part.</h2>
-            <div className="w-16 sm:w-24 h-1 sm:h-1.5 bg-brand mx-auto rounded-full"></div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
-            {[
-              { to: "/user", icon: <FaUser />, title: "As a User", btn: "Book Service" },
-              { to: "/vendor/login", icon: <FaStore />, title: "Vendor Partner", btn: "Partner Now" },
-              { to: "/worker/login", icon: <FaHammer />, title: "As an Xpert", btn: "Start Earning" },
-            ].map((box, idx) => (
-              <Link key={idx} to={box.to} className="group p-8 sm:p-12 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] sm:rounded-[3.5rem] transition-all duration-700 hover:bg-white hover:shadow-2xl hover:-translate-y-2 flex flex-col items-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/10 text-white rounded-[1.5rem] sm:rounded-3xl flex items-center justify-center mb-6 sm:mb-10 transition-all duration-500 group-hover:bg-brand group-hover:text-white group-hover:rotate-6">
-                  <div className="text-3xl sm:text-4xl">{box.icon}</div>
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-normal mb-6 sm:mb-10 text-white group-hover:text-gray-900">{box.title}</h3>
-                <div className="flex items-center gap-3 text-brand font-normal text-xs sm:text-smr group-hover:gap-5 transition-all">
-                  {box.btn} <FaArrowRight />
-                </div>
+ 
+              <Link
+                to="/user"
+                className="inline-flex items-center gap-3 mt-10 px-7 py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all group"
+              >
+                Learn More About Us 
+                <span className="w-6 h-6 rounded-full bg-slate-950/20 flex items-center justify-center text-white transition-transform group-hover:translate-x-1">
+                  <FaArrowRight className="text-[10px]" />
+                </span>
               </Link>
-            ))}
+          </motion.div>
+
+          <motion.div
+            variants={fadeRight} initial="hidden" whileInView="visible" viewport={VP}
+            className="lg:col-span-6 relative w-full min-h-[520px] sm:min-h-[580px] pl-6 md:pl-12"
+          >
+              
+              {/* Card 1 - Main Portrait Image (z-index: 1 base layer) */}
+              <div className="absolute top-0 left-[6%] w-[300px] max-w-[50%] aspect-[300/360] rounded-[22px] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.12)] border-[1.5px] border-white/80 bg-slate-200 z-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=400" 
+                  alt="Professional Cleaner" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Card 2 - Smaller Portrait Image (z-index: 2 middle layer, overlaps Card 1) */}
+              <div className="absolute top-[70px] right-[40px] w-[250px] max-w-[44%] aspect-[250/360] rounded-[22px] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.12)] border-[1.5px] border-white/80 bg-slate-200 -translate-x-[50px] z-10">
+                <img 
+                  src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=400" 
+                  alt="Modern Luxury Home" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Card 3 - Large Square Image (z-index: 3 top image layer) */}
+              <div className="absolute bottom-[10%] -left-[2%] w-[270px] max-w-[52%] aspect-square rounded-[22px] overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.12)] border-[1.5px] border-white/80 bg-slate-200 z-30">
+                <img 
+                  src="https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=400" 
+                  alt="Vacuum Cleaning Team" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Statistics Card (z-index: 2 layer, sits behind Card 3 but in front of Card 2) */}
+              <div className="absolute bottom-[14%] left-[38%] w-[220px] max-w-[44%] bg-white p-5 rounded-[22px] shadow-[0_25px_60px_rgba(0,0,0,0.12)] border border-slate-100/50 flex flex-col items-center justify-center text-center min-h-[100px] z-20">
+                <h3 className="text-3xl sm:text-4xl font-normal text-cyan-600">98%</h3>
+                <p className="text-[11px] sm:text-xs font-bold text-slate-800 mt-1.5 leading-tight">
+                  Customer Satisfaction
+                </p>
+              </div>
+
+            </motion.div>
+
           </div>
         </div>
       </section>
 
-      {/* 7. Testimonials */}
-      <section className="py-20 sm:py-32 bg-white text-center border-t border-gray-50">
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl">
-          <div className="flex flex-col items-center mb-16 sm:mb-24">
-            <span className="text-brand font-bold text-[10px] uppercase tracking-[0.2em] mb-4">Trust Ecosystem</span>
-            <h2 className="text-3xl sm:text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">Loved by Indore.</h2>
-            <div className="flex justify-center gap-1.5 text-orange-400">
-              {[1, 2, 3, 4, 5].map(i => <FaStar key={i} />)}
+      {/* 5. SERVICES SECTION */}
+      <section id="services" className="py-12 md:py-16 bg-white">
+        <div className="container mx-auto px-6 max-w-[1440px] text-center">
+          <motion.span variants={fadeUp} initial="hidden" whileInView="visible" viewport={VP} className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+            ← OUR SERVICES →
+          </motion.span>
+          <motion.h2 variants={fadeUp} initial="hidden" whileInView="visible" viewport={VP} className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight mb-16">
+            End-to-End <span className="text-cyan-600">Home Services</span> <br />Tailored to You
+          </motion.h2>
+
+          <motion.div
+            variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VP}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
+            {[
+              {
+                title: "Appliance Repair",
+                desc: "AC service, Microwave fixing, RO purifiers, and Refrigerator diagnostics.",
+                icon: <FaTools className="text-2xl text-cyan-600" />,
+                link: "/user"
+              },
+              {
+                title: "Home Cleaning",
+                desc: "Deep clean, sofa washing, kitchen disinfecting, and bathroom sanitizing.",
+                icon: <FaBroom className="text-2xl text-cyan-600" />,
+                link: "/user"
+              },
+              {
+                title: "Electrical & Handyman",
+                desc: "Switchboard mounting, short circuit fix, geyser repair, and fan fitting.",
+                icon: <FaBolt className="text-2xl text-cyan-600" />,
+                link: "/user"
+              },
+              {
+                title: "Wall Painting",
+                desc: "Consultation, texture designs, waterproof coats, and color updates.",
+                icon: <FaPaintRoller className="text-2xl text-cyan-600" />,
+                link: "/user"
+              }
+            ].map((service, index) => (
+              <motion.div 
+                key={index}
+                variants={staggerItem}
+                className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-cyan-200 p-8 rounded-3xl text-center transition-all duration-300 hover:shadow-xl flex flex-col items-center justify-center min-h-[250px]"
+              >
+                <div className="w-14 h-14 rounded-full bg-white border border-cyan-500/20 flex items-center justify-center shadow-sm mb-6 transition-colors group-hover:bg-cyan-50 flex-shrink-0">
+                  {service.icon}
+                </div>
+                <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-3">{service.title}</h4>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{service.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <div className="mt-16">
+            <Link
+              to="/user"
+              className="px-8 py-3.5 bg-slate-900 hover:bg-cyan-600 text-white rounded-xl font-bold text-sm shadow-md transition-colors"
+            >
+              View All Services
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. STATISTICS SECTION (Mockup-aligned White Background) */}
+      <section id="stats" className="py-12 bg-white relative overflow-hidden">
+        <div className="container mx-auto px-6 max-w-[1440px] relative z-10">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Texts */}
+            <motion.div variants={fadeLeft} initial="hidden" whileInView="visible" viewport={VP} className="lg:col-span-5 text-center lg:text-left">
+              <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+                ← WHY CHOOSE US →
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight mb-6">
+                We Deliver More <br />Than Just <span className="text-cyan-600">Repairs</span>
+              </h2>
+              <p className="text-slate-500 mb-8 leading-relaxed text-sm sm:text-base">
+                Doormeets matches the speed of logistics with the precision of experienced engineers. We standardize the entire home service workflow, giving you clear tracking and reliable billing.
+              </p>
+              
+              <ul className="space-y-3 inline-block text-left">
+                {["Affordable Pricing", "On-Time Delivery", "Advanced Technology", "Dedicated Support"].map((li, idx) => (
+                  <li key={idx} className="flex items-center gap-3 text-sm text-slate-600 font-semibold">
+                    <span className="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[10px] text-cyan-600"><FaCheck /></span>
+                    {li}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Right Side Stats Container */}
+            <motion.div variants={fadeRight} initial="hidden" whileInView="visible" viewport={VP} className="lg:col-span-7">
+              <div className="relative rounded-[32px] overflow-hidden bg-slate-900 border border-slate-800 p-10 sm:p-12 shadow-md min-h-[380px] flex items-center">
+                {/* Swapping Background Images with Crossfade */}
+                {serviceImages.map((img, idx) => (
+                  <div
+                    key={idx}
+                    style={{ backgroundImage: `url(${img})` }}
+                    className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${
+                      currentStatsImage === idx ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                ))}
+                {/* Dark Overlay */}
+                <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[2px] z-0"></div>
+
+                {/* 2x2 Grid Content */}
+                <div className="relative z-10 w-full grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-10">
+                  {[
+                    { value: "250+", label: "Verified Partners", icon: <FaHandshake className="text-lg text-cyan-400" /> },
+                    { value: "12k+", label: "Bookings Completed", icon: <FaCalendarCheck className="text-lg text-cyan-400" /> },
+                    { value: "1.5k+", label: "Genuine Parts", icon: <FaTools className="text-lg text-cyan-400" /> },
+                    { value: "99%", label: "Satisfaction Rate", icon: <FaAward className="text-lg text-cyan-400" /> }
+                  ].map((stat, idx) => (
+                    <div key={idx} className="flex gap-4 items-center">
+                      <div className="w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center flex-shrink-0 shadow-inner">
+                        {stat.icon}
+                      </div>
+                      <div>
+                        <h3 className="text-2xl sm:text-3xl font-normal text-white">{stat.value}</h3>
+                        <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">{stat.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 7. OUR WORK PROCESS (Timeline Process Section matching mockup) */}
+      <section id="process" className="py-12 md:py-16 bg-slate-50 border-t border-slate-100">
+        <div className="container mx-auto px-6 max-w-[1440px]">
+          
+          <motion.div className="text-center mb-20" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={VP}>
+            <motion.span variants={fadeUp} className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+              ← OUR WORK PROCESS →
+            </motion.span>
+            <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight">
+              How We Deliver <span className="text-cyan-600">Excellence</span>
+            </h2>
+          </motion.div>
+
+          <div className="relative overflow-hidden md:overflow-visible">
+            <motion.div 
+              variants={timelineContainerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: false, amount: 0.25 }}
+              className="flex flex-col md:flex-row items-center md:items-start justify-between relative z-10 gap-12 md:gap-0"
+            >
+              {[
+                {
+                  title: "Request a Quote",
+                  desc: "Tell us your repair or cleaning requirements and get a quick quote.",
+                  icon: <FaClipboardList className="text-2xl text-white" />
+                },
+                {
+                  title: "Plan & Schedule",
+                  desc: "We assign the best certified local specialist for your preferred time.",
+                  icon: <FaCalendarAlt className="text-2xl text-white" />
+                },
+                {
+                  title: "Service with Care",
+                  desc: "Our professionals execute the job with top-tier precision and care.",
+                  icon: <FaHammer className="text-2xl text-white" />
+                },
+                {
+                  title: "Completed Successfully",
+                  desc: "Your home service is finished on time, every time, with complete warranty.",
+                  icon: <FaCheckDouble className="text-2xl text-white" />
+                }
+              ].map((item, idx, arr) => (
+                <React.Fragment key={idx}>
+                  {/* Step block */}
+                  <motion.div 
+                    variants={timelineItemVariants}
+                    className="flex flex-col items-center text-center group w-full md:w-[20%]"
+                  >
+                    {/* Circle Gradient Icon Badge */}
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-700 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-600/20 group-hover:scale-105 transition-transform duration-300 z-10 relative mb-6">
+                      {item.icon}
+                    </div>
+                    <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-2">{item.title}</h4>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-[220px] mx-auto">{item.desc}</p>
+                  </motion.div>
+
+                  {/* Connecting Line Segment (Desktop Only) */}
+                  {idx < arr.length - 1 && (
+                    <motion.div 
+                      variants={timelineLineVariants}
+                      style={{ originX: 0 }}
+                      className="hidden md:block h-[1.5px] flex-grow bg-gradient-to-r from-cyan-600/30 to-cyan-600/10 self-start mt-10"
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </motion.div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 8. TESTIMONIALS SECTION */}
+      <section className="py-12 md:py-16 bg-white border-t border-slate-100">
+        <div className="container mx-auto px-6 max-w-[1440px] text-center">
+          <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+            ← CLIENT TESTIMONIALS →
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 mb-6">
+            Loved by <span className="text-cyan-600">Clients</span>
+          </h2>
+          <div className="flex justify-center gap-1 text-amber-400 text-lg mb-16">
+            <FaStar /><FaStar /><FaStar /><FaStar /><FaStar />
+          </div>
+
+          {/* Infinite Sliding Testimonials Marquee */}
+          <div className="relative overflow-hidden w-full py-4 mb-8">
+            {/* Fade overlays on sides for a premium look */}
+            <div className="absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+
+            <style>{`
+              @keyframes marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+              }
+              .animate-marquee-track {
+                display: flex;
+                width: max-content;
+                animation: marquee 25s linear infinite;
+              }
+              .animate-marquee-track:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
+
+            <div className="animate-marquee-track gap-8">
+              {[
+                {
+                  text: "Highly professional service! The AC repair was completed on time using authentic brand parts, and the pricing was very transparent.",
+                  author: "Amit Sharma",
+                  location: "Vijay Nagar"
+                },
+                {
+                  text: "Integrating Doormeets has transformed how we distribute jobs. The live map tracking makes coordination extremely simple.",
+                  author: "Pooja Patel",
+                  location: "Bhawarkua"
+                },
+                {
+                  text: "Vetted experts and premium support. The doorstep billing and instant quotes are extremely convenient.",
+                  author: "Sanjay Verma",
+                  location: "Rajwada"
+                },
+                // Repeat cards to achieve seamless infinite loop
+                {
+                  text: "Highly professional service! The AC repair was completed on time using authentic brand parts, and the pricing was very transparent.",
+                  author: "Amit Sharma",
+                  location: "Vijay Nagar"
+                },
+                {
+                  text: "Integrating Doormeets has transformed how we distribute jobs. The live map tracking makes coordination extremely simple.",
+                  author: "Pooja Patel",
+                  location: "Bhawarkua"
+                },
+                {
+                  text: "Vetted experts and premium support. The doorstep billing and instant quotes are extremely convenient.",
+                  author: "Sanjay Verma",
+                  location: "Rajwada"
+                }
+              ].map((t, idx) => (
+                <div 
+                  key={idx}
+                  className="w-[300px] sm:w-[380px] flex-shrink-0 bg-slate-50 hover:bg-white border border-slate-100 hover:border-cyan-100 hover:shadow-xl transition-all p-8 rounded-3xl text-left relative"
+                >
+                  <FaQuoteLeft className="text-cyan-200/40 text-5xl absolute top-6 left-6" />
+                  <p className="text-slate-600 leading-relaxed italic mb-8 relative z-10 text-sm">
+                    "{t.text}"
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-cyan-600 text-white font-extrabold text-sm flex items-center justify-center uppercase shadow-sm">
+                      {t.author.charAt(0)}
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-slate-900 text-sm">{t.author}</h5>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider">{t.location}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
+          {/* Bottom Statistics Row (Mockup aligned under Testimonials) */}
+          <div className="mt-20 p-8 sm:p-10 bg-slate-50/70 rounded-[32px] border border-slate-100/80 grid grid-cols-2 md:grid-cols-4 gap-8 shadow-sm">
             {[
-              { name: 'Aravind Sharma', role: 'Vijay Nagar', text: 'Professional Xperts. My AC repair was done with internal brand parts within 2 hours.' },
-              { name: 'Priya Patel', role: 'AB Road', text: 'Registering as a partner was great for my tech hub. Excellent real-time tracking!' },
-              { name: 'Suresh Kumar', role: 'Rajwada', text: 'Steady flow of jobs. Transparent doorstep billing is a game changer for technical jobs.' },
-            ].map((t, i) => (
-              <div key={i} className="group p-8 sm:p-12 bg-gray-50 rounded-[2.5rem] sm:rounded-[4rem] relative transition-all hover:bg-white hover:shadow-2xl hover:shadow-gray-200/50 text-left">
-                <FaQuoteLeft className="text-brand/5 text-[60px] sm:text-[100px] absolute top-6 sm:top-8 left-6 sm:left-10" />
-                <p className="text-base sm:text-lg text-gray-600 leading-relaxed font-normal mb-8 sm:mb-10 relative z-10 italic">"{t.text}"</p>
-                <div className="flex items-center gap-4 sm:gap-5 relative z-10">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-[1.2rem] sm:rounded-[2rem] bg-brand/10 flex items-center justify-center text-brand font-bold text-xl uppercase">
-                    {t.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-base sm:text-lg leading-none mb-1 sm:mb-2">{t.name}</h4>
-                    <p className="text-gray-400 font-normal text-[10px] uppercase tracking-wider">{t.role}</p>
-                  </div>
+              { value: "250+", label: "Verified Partners", icon: <FaHandshake className="text-cyan-400 text-sm" /> },
+              { value: "12k+", label: "Bookings Completed", icon: <FaCalendarCheck className="text-cyan-400 text-sm" /> },
+              { value: "2.5k+", label: "Satisfied Customers", icon: <FaUser className="text-cyan-400 text-sm" /> },
+              { value: "99%", label: "Satisfaction Rate", icon: <FaAward className="text-cyan-400 text-sm" /> }
+            ].map((stat, idx) => (
+              <div key={idx} className="flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center mb-3 shadow-md">
+                  {stat.icon}
                 </div>
+                <h4 className="text-2xl sm:text-3xl font-normal text-slate-900 leading-none">{stat.value}</h4>
+                <p className="text-[10px] sm:text-xs text-slate-400 font-semibold mt-2 uppercase tracking-wider">{stat.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 8. Download App Banner */}
-      <section className="py-12 sm:py-20 mb-12 sm:mb-20 px-2 sm:px-0">
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl">
-          <div className="bg-gray-900 rounded-[3rem] sm:rounded-[4rem] p-8 sm:p-12 md:p-20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between border border-white/10 group shadow-2xl text-center md:text-left">
-            <div className="absolute top-0 right-0 w-64 h-64 sm:w-80 sm:h-80 bg-brand/20 blur-[100px] sm:blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
-            <div className="relative z-10 mb-10 md:mb-0 max-w-xl">
-              <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal text-white mb-6 sm:mb-8 leading-tight">Repair is a <br /><span className="text-brand">Tap Away.</span></h2>
-              <p className="text-gray-400 font-normal mb-8 sm:mb-10 text-[10px] sm:text-xs">Official Platform available on Android.</p>
-              <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 sm:gap-4 bg-white text-gray-900 px-8 sm:px-14 py-4 sm:py-5 rounded-2xl sm:rounded-3xl font-normal text-xs sm:text-sm hover:bg-brand hover:text-white transition-all shadow-xl active:scale-95">
-                <FaGooglePlay className="text-xl sm:text-2xl" /> Play Store
+      {/* 9. OUR TEAM SECTION (Mockup aligned) */}
+      <section id="team" className="py-12 md:py-16 bg-slate-50 border-t border-slate-100">
+        <div className="container mx-auto px-6 max-w-[1440px]">
+          
+          <div className="text-center mb-16">
+            <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+              ← OUR TEAM →
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight">
+              Meet the Experts Behind <span className="text-cyan-600">Our Success</span>
+            </h2>
+          </div>
+
+          <motion.div 
+            variants={staggerContainer} 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={VP} 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
+            {[
+              {
+                name: "Michael Brown",
+                role: "CEO & Founder",
+                image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=300"
+              },
+              {
+                name: "Sophia Miller",
+                role: "Operations Manager",
+                image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300"
+              },
+              {
+                name: "David Wilson",
+                role: "Service Manager",
+                image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300"
+              },
+              {
+                name: "Emma Taylor",
+                role: "Customer Support",
+                image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300"
+              }
+            ].map((member, idx) => (
+              <motion.div key={idx} variants={staggerItem} className="group bg-white border border-slate-100 hover:border-cyan-200 p-5 rounded-3xl text-center transition-all duration-300 hover:shadow-xl">
+                <div className="overflow-hidden rounded-2xl mb-4 aspect-[4/5]">
+                  <img 
+                    src={member.image} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <h4 className="text-base font-bold text-slate-900 mb-1">{member.name}</h4>
+                <p className="text-xs text-slate-500 mb-4">{member.role}</p>
+                <div className="flex justify-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-cyan-600/10 hover:bg-cyan-600/20 flex items-center justify-center text-cyan-600 transition-colors cursor-pointer">
+                    <FaLinkedin className="text-xs" />
+                  </span>
+                  <span className="w-8 h-8 rounded-full bg-cyan-600/10 hover:bg-cyan-600/20 flex items-center justify-center text-cyan-600 transition-colors cursor-pointer">
+                    <FaTwitter className="text-xs" />
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+        </div>
+      </section>
+
+      {/* 10. FAQ ACCORDION SECTION (Mockup aligned) */}
+      <section id="faqs" className="py-12 md:py-16 bg-white border-t border-slate-100">
+        <div className="container mx-auto px-6 max-w-[1440px]">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-stretch">
+            
+            {/* Left Column - Badge, Heading and Contact Card */}
+            <motion.div 
+              variants={fadeLeft} 
+              initial="hidden" 
+              whileInView="visible" 
+              viewport={VP}
+              className="lg:col-span-5 text-center lg:text-left flex flex-col justify-between h-full"
+            >
+              <div className="mb-6 lg:mb-0">
+                <span className="text-xs font-semibold text-cyan-600 uppercase tracking-widest block mb-4">
+                  ← FAQS →
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 leading-tight mb-4">
+                  Frequently Asked <br />
+                  <span className="text-cyan-600">Questions</span>
+                </h2>
+              </div>
+
+              {/* Support Image Card with CTA */}
+              <div className="relative rounded-[32px] overflow-hidden shadow-xl w-full mx-auto lg:mx-0 flex flex-col flex-grow lg:mt-6">
+                <img 
+                  src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=600" 
+                  alt="Doormeets Support Vehicle" 
+                  className="w-full h-48 lg:h-0 flex-grow object-cover"
+                />
+                
+                {/* Overlay Green/Teal Phone Card */}
+                <div className="bg-gradient-to-r from-cyan-400 to-cyan-500 py-2 px-4 flex items-center gap-3 text-white">
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-cyan-600 flex-shrink-0 shadow-md">
+                    <FaPhoneAlt className="text-xs" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[10px] font-semibold text-white/90">Have More Questions?</p>
+                    <p className="text-xs font-bold tracking-wide mt-0.5">+91 74470 52361</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column - Accordion Items */}
+            <motion.div 
+              variants={fadeRight} 
+              initial="hidden" 
+              whileInView="visible" 
+              viewport={VP}
+              className="lg:col-span-7 space-y-4"
+            >
+              {[
+                {
+                  q: "How can I book a service?",
+                  a: "You can easily book a service by logging into your portal, selecting your desired service (Appliance Repair, Home Cleaning, etc.), choosing a convenient time slot, and confirming the booking instantly."
+                },
+                {
+                  q: "What services do you offer?",
+                  a: "We offer end-to-end home solutions including professional appliance repair, deep home cleaning, electrical repairs, handyman tasks, and expert wall painting services tailored to Indore homes."
+                },
+                {
+                  q: "Are the service providers verified?",
+                  a: "Absolutely. Every professional on Doormeets undergoes a strict onboarding process including background checks, identity verification, and hands-on skill training to ensure your safety and quality of service."
+                },
+                {
+                  q: "How long does a service booking take?",
+                  a: "Most repair and technician tasks are completed within 1 to 2 hours of arrival. Deep cleaning and painting schedules vary depending on the area size and requirements, which will be estimated upfront."
+                },
+                {
+                  q: "How can I get a quote?",
+                  a: "Upfront pricing is visible when you select your service details inside our platform. For customized packages or complex repairs, our team will provide a transparent quote before any work starts."
+                }
+              ].map((faq, idx) => (
+                <div 
+                  key={idx} 
+                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                  className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-cyan-200 p-5 rounded-2xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md"
+                >
+                  <div className="flex justify-between items-center gap-4">
+                    <h4 className="text-sm sm:text-base font-bold text-slate-800 group-hover:text-cyan-600 transition-colors">
+                      {faq.q}
+                    </h4>
+                    <div className="w-8 h-8 rounded-full bg-cyan-600/10 flex items-center justify-center text-cyan-600 transition-colors group-hover:bg-cyan-600 group-hover:text-white flex-shrink-0">
+                      <FaChevronDown className={`text-xs transform transition-transform duration-300 ${activeFaq === idx ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+                  
+                  {/* Expandable Answer */}
+                  <div className={`overflow-hidden transition-all duration-300 ${activeFaq === idx ? 'max-h-[200px] mt-4 opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed border-t border-slate-100 pt-3">
+                      {faq.a}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 11. DOWNLOAD APP CTA BANNER */}
+      <section className="py-12 bg-white px-6">
+        <div className="container mx-auto max-w-[1440px]">
+          <div className="bg-slate-950 text-white rounded-[40px] p-8 md:p-16 relative overflow-hidden flex flex-col md:flex-row items-center justify-between border border-slate-800 shadow-2xl">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+            
+            <div className="max-w-xl text-center md:text-left mb-10 md:mb-0 relative z-10">
+              <h2 className="text-2xl sm:text-4xl font-normal text-white leading-tight mb-4">
+                Repair is just <br />a Single Tap Away!
+              </h2>
+              <p className="text-slate-400 text-sm mb-8 leading-relaxed max-w-sm">
+                Get the official Doormeets Mobile Application for android and track repairs live.
+              </p>
+              <a 
+                href={PLAY_STORE_URL} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 bg-white hover:bg-cyan-600 text-slate-950 hover:text-white px-6 py-3.5 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95"
+              >
+                <FaGooglePlay className="text-lg" /> Get on Play Store
               </a>
             </div>
-            <div className="relative h-64 sm:h-80 md:h-[400px] w-full md:w-1/3">
-              <img src="/hero-image.png" alt="App Preview" className="h-full w-full object-cover rounded-[2.5rem] sm:rounded-[4rem] border-8 border-white/10 sm:rotate-3 shadow-2xl transition-transform group-hover:rotate-0 duration-700" />
+
+            <div 
+              onClick={handleCardSwap}
+              className="relative h-[280px] md:h-[380px] w-full md:w-3/5 flex items-center justify-center mt-12 md:mt-0 cursor-pointer select-none group"
+            >
+              {[
+                { id: 0, src: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=400", alt: "Doormeets Electrician Front" },
+                { id: 1, src: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=400", alt: "Doormeets Cleaner Middle" },
+                { id: 2, src: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=400", alt: "Doormeets Painter Back" }
+              ].map((card) => {
+                const position = cardOrder.indexOf(card.id);
+                let styleClass = "";
+                let zIndex = "";
+                if (position === 0) {
+                  styleClass = "translate-x-0 translate-y-0 rotate-2 opacity-100 scale-100 group-hover:scale-105";
+                  zIndex = "z-20";
+                } else if (position === 1) {
+                  styleClass = "-translate-x-4 -translate-y-3 -rotate-3 opacity-70 scale-95";
+                  zIndex = "z-10";
+                } else {
+                  styleClass = "-translate-x-8 -translate-y-6 -rotate-6 opacity-40 scale-90";
+                  zIndex = "z-0";
+                }
+
+                return (
+                  <img 
+                    key={card.id}
+                    src={card.src} 
+                    alt={card.alt} 
+                    className={`absolute h-[90%] aspect-[4/3] object-cover rounded-2xl shadow-2xl transition-all duration-500 transform ${styleClass} ${zIndex}`}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 9. Dynamic Footer */}
-      <footer className="py-16 sm:py-24 bg-gray-900 text-white relative overflow-hidden text-nowrap">
-        <div className="absolute top-0 right-0 w-[40%] h-full bg-brand/5 blur-[120px] -z-10 rotate-12 translate-x-1/2"></div>
-        <div className="container mx-auto px-4 sm:px-8 max-w-7xl relative z-10 text-center lg:text-left">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 sm:gap-20 mb-12 sm:mb-20 border-b border-white/5 pb-12 sm:pb-20">
-            <div className="col-span-1 sm:col-span-2 lg:col-span-1 flex flex-col items-center lg:items-start text-nowrap">
-              <Link to="/Home" className="inline-block mb-8 sm:mb-10">
-                <div className="text-lg font-bold text-gray-900 bg-white border border-gray-100 rounded shadow-sm px-2 py-1">Doormeets</div>
+      {/* 10. DYNAMIC FOOTER */}
+      <footer className="bg-slate-950 text-slate-400 py-10 px-6 border-t border-slate-900 relative overflow-hidden">
+        <div className="container mx-auto max-w-[1440px] relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12 border-b border-slate-900 pb-12">
+            
+            {/* Col 1 */}
+            <div>
+              <Link to="/" className="flex items-center gap-2 mb-6">
+                <span className="text-2xl font-normal tracking-tight text-white bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                  Doormeets
+                </span>
               </Link>
-              <p className="text-gray-400 font-normal leading-[1.8] text-base sm:text-lg max-w-md whitespace-normal">
-                {settings?.companyName || 'Doormeets'} — Real-time tracking and doorstep billing across Indore. Exclusive genuine spare part ecosystem.
+              <p className="text-sm leading-relaxed text-slate-500 mb-6">
+                Standardized on-site repairs, genuine certified parts, and map-guided technicians across Indore.
+              </p>
+              <p className="text-xs text-slate-600">
+                Proudly Indore, India 🇮🇳
               </p>
             </div>
 
-            <div className="hidden sm:block text-nowrap">
-              <h4 className="text-[10px] font-normal text-brand mb-8 sm:mb-10">Technical Hub</h4>
-              <ul className="space-y-4 sm:space-y-6 text-gray-400 font-normal text-sm">
-                {categories.slice(0, 3).map((cat, i) => (
-                  <li key={cat.id || i}>
-                    <Link
-                      to="/user"
-                      state={{ openCategoryId: cat.id }}
-                      className="hover:text-white transition-all"
-                    >
-                      {cat.title}
-                    </Link>
-                  </li>
-                ))}
-                {!categoriesLoading && categories.length === 0 && (
-                  <li><Link to="/user" className="hover:text-white transition-all">All Services</Link></li>
-                )}
+            {/* Col 2 */}
+            <div>
+              <h5 className="font-bold text-white text-sm mb-6 uppercase tracking-wider">Services</h5>
+              <ul className="space-y-3 text-sm">
+                <li><Link to="/user" className="hover:text-cyan-400 transition-colors">AC repair</Link></li>
+                <li><Link to="/user" className="hover:text-cyan-400 transition-colors">Washing Machine</Link></li>
+                <li><Link to="/user" className="hover:text-cyan-400 transition-colors">Deep Cleaning</Link></li>
+                <li><Link to="/user" className="hover:text-cyan-400 transition-colors">Wall Painting</Link></li>
               </ul>
             </div>
 
-            <div className="flex flex-col items-center lg:items-start text-nowrap">
-              <h4 className="text-[10px] font-normal text-brand mb-8 sm:mb-10">Contact Support</h4>
-              <ul className="space-y-4 sm:space-y-6 text-gray-400 font-normal text-sm">
-                <li>Email: <a href={`mailto:${settings?.supportEmail || 'support@Doormeets.in'}`} className="hover:text-white transition-all">{settings?.supportEmail || 'support@Doormeets.in'}</a></li>
-                <li>Phone: <a href={`tel:${settings?.supportPhone || '+919876543210'}`} className="hover:text-white transition-all">{settings?.supportPhone || '+91 98765 43210'}</a></li>
-                <li className="text-[11px] opacity-50">
-                  {settings?.companyAddress ? `${settings.companyAddress}, ${settings.companyCity}` : 'Indore, Madhya Pradesh'}
+            {/* Col 3 */}
+            <div>
+              <h5 className="font-bold text-white text-sm mb-6 uppercase tracking-wider">Contact</h5>
+              <ul className="space-y-3 text-sm text-slate-500">
+                <li>Support: <a href={`mailto:${settings?.supportEmail || 'support@doormeets.com'}`} className="text-slate-400 hover:text-cyan-400 transition-colors">{settings?.supportEmail || 'support@doormeets.com'}</a></li>
+                <li>Phone: <a href={`tel:${settings?.supportPhone || '+919876543210'}`} className="text-slate-400 hover:text-cyan-400 transition-colors">{settings?.supportPhone || '+91 98765 43210'}</a></li>
+                <li className="text-xs leading-normal">
+                  {settings?.companyAddress ? `${settings.companyAddress}, ${settings.companyCity}` : 'Indore, Madhya Pradesh, India'}
                 </li>
               </ul>
             </div>
 
-            <div className="flex flex-col items-center lg:items-start text-nowrap">
-              <h4 className="text-[10px] font-bold tracking-[0.2em] text-brand mb-8 sm:mb-10">Android App</h4>
-              <div className="w-full max-w-[240px]">
-                <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 bg-white/5 border border-white/10 px-6 sm:px-8 py-4 sm:py-5 rounded-2xl text-xs font-bold hover:bg-white hover:text-gray-900 transition-all text-center justify-center">
-                  <FaGooglePlay size={20} /> Play Store
-                </a>
-              </div>
+            {/* Col 4 */}
+            <div>
+              <h5 className="font-bold text-white text-sm mb-6 uppercase tracking-wider">Android App</h5>
+              <p className="text-xs text-slate-500 mb-4">Download Doormeets client utility on Google Play Store.</p>
+              <a 
+                href={PLAY_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 bg-slate-900 border border-slate-800 text-white rounded-xl text-xs font-bold hover:bg-cyan-600 transition-all flex items-center justify-center gap-2"
+              >
+                <FaGooglePlay size={14} /> Download App
+              </a>
             </div>
+
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-10 text-gray-500 font-normal text-[8px] sm:text-[10px] text-center whitespace-nowrap">
-            <p>© {new Date().getFullYear()} {settings?.companyName || 'Doormeets'}. Proudly Indore 🇮🇳</p>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-600">
+            <p>© {new Date().getFullYear()} {settings?.companyName || 'Doormeets'}. All rights reserved.</p>
+            <div className="flex gap-4">
+              <a href="#" className="hover:text-slate-500 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-slate-500 transition-colors">Terms of Service</a>
+            </div>
           </div>
         </div>
       </footer>
+
     </div>
   );
 };

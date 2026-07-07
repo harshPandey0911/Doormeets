@@ -68,6 +68,29 @@
   --color-error:          var(--error);
   --color-info:           var(--info);
 
+  /* Override cyan and blue palettes globally to match the red brand color #b33a35 */
+  --color-cyan-50:  #fff5f5;
+  --color-cyan-100: #ffe3e3;
+  --color-cyan-200: #ffc9c9;
+  --color-cyan-300: #ffa8a8;
+  --color-cyan-400: #d56c67;
+  --color-cyan-500: #d56c67;
+  --color-cyan-600: #b33a35;
+  --color-cyan-700: #9e2e2a;
+  --color-cyan-800: #8a2420;
+  --color-cyan-900: #741d1a;
+
+  --color-blue-50:  #fff5f5;
+  --color-blue-100: #ffe3e3;
+  --color-blue-200: #ffc9c9;
+  --color-blue-300: #ffa8a8;
+  --color-blue-400: #d56c67;
+  --color-blue-500: #d56c67;
+  --color-blue-600: #b33a35;
+  --color-blue-700: #9e2e2a;
+  --color-blue-800: #8a2420;
+  --color-blue-900: #741d1a;
+
   /* Keep orange family mapped to brand shades */
   --color-orange-50:  var(--primary-hover);
   --color-orange-100: var(--primary-hover);
