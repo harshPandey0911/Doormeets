@@ -225,8 +225,8 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
       totalCustomerPay = platformFeeInclusive + vendorShareInclusive;
     }
 
-    const platformTaxableBase = platformFeeInclusive / (1 + (gstPct / 100));
-    const platformGstAmount = platformFeeInclusive - platformTaxableBase;
+    const platformGstAmount = platformFeeInclusive * (gstPct / 100);
+    const platformTaxableBase = platformFeeInclusive - platformGstAmount;
 
     const vendorTaxableBase = vendorShareInclusive / (1 + 0.05);
     const vendorGstAmount = vendorShareInclusive - vendorTaxableBase;
@@ -327,7 +327,7 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
               {filteredPricings.map(prc => {
                 const calculations = prc.calculations || {};
                 const displayPrice = prc.gstIncluded ? prc.customerPrice : prc.customerPrice * (1 + (prc.gstPercentage || 18) / 100);
-                const displayTaxable = prc.gstIncluded ? prc.customerPrice / (1 + (prc.gstPercentage || 18) / 100) : prc.customerPrice;
+                const displayTaxable = prc.gstIncluded ? prc.customerPrice - (prc.customerPrice * ((prc.gstPercentage || 18) / 100)) : prc.customerPrice;
                 const displayPlatComm = displayTaxable * ((prc.platformCommission || 15) / 100);
                 const profL1 = displayPlatComm + (displayTaxable * ((prc.l1Commission || 5) / 100));
                 const profL2 = displayPlatComm + (displayTaxable * ((prc.l2Commission || 8) / 100));

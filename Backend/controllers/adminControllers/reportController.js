@@ -287,8 +287,8 @@ const getGSTRReport = async (req, res) => {
 
       // Fallback if no bill exists
       if (!bill && b.finalAmount > 0) {
-        taxableValue = b.finalAmount / (1 + (gstRate / 100));
-        taxAmount = b.finalAmount - taxableValue;
+        taxAmount = b.finalAmount * (gstRate / 100);
+        taxableValue = b.finalAmount - taxAmount;
       }
 
       return {
