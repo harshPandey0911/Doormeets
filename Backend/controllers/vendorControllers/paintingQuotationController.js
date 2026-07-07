@@ -2,148 +2,38 @@ const PaintingQuotation = require('../../models/PaintingQuotation');
 const PaintingConsultation = require('../../models/PaintingConsultation');
 const PaintProduct = require('../../models/PaintProduct');
 const LabourRate = require('../../models/LabourRate');
+const Vendor = require('../../models/Vendor');
+const PropertyTemplate = require('../../models/PropertyTemplate');
+const PaintingSettings = require('../../models/PaintingSettings');
+const PaintingSettingsVersion = require('../../models/PaintingSettingsVersion');
+const { computeQuotationDetails } = require('../../utils/paintingCalculator');
 
-// Helper to compute all dynamic calculations
-const computeQuotationDetails = async (property, productsInput = [], labourInput = [], additionalChargesInput = [], discountInput = {}, gstPercentage = 18) => {
-  let materialCost = 0;
-  let labourCost = 0;
-  let additionalChargesCost = 0;
+// Helper to log version snapshot from vendor actions
+const logVersionSnapshot = async (quotation, changedById, changeSummary) => {
+  const vendor = await Vendor.findById(changedById);
+  const vendorName = vendor ? vendor.name : 'Vendor';
   
-  let paintQuantity = 0;
-  let primerQuantity = 0;
-  let puttyQuantity = 0;
-
-  // 1. Process Product Snapshots
-  const products = [];
-  for (const item of productsInput) {
-    const product = await PaintProduct.findOne({ _id: item.productId, isDeleted: false, status: true });
-    if (!product) {
-      throw new Error(`Product not found or inactive: ${item.productId}`);
+  quotation.versions.push({
+    version: quotation.currentVersion,
+    changedBy: changedById,
+    changedByName: vendorName,
+    changedByType: 'VENDOR',
+    changeSummary,
+    createdAt: new Date(),
+    snapshot: {
+      property: quotation.property,
+      products: quotation.products,
+      labour: quotation.labour,
+      additionalCharges: quotation.additionalCharges,
+      discount: quotation.discount,
+      gst: quotation.gst,
+      summary: quotation.summary,
+      remarks: quotation.remarks,
+      attachments: quotation.attachments
     }
-
-    const coverageVal = product.coverage?.value || 1;
-    const appliedArea = Number(item.appliedArea) || 0;
-    
-    // quantityRequired = appliedArea / coverage
-    const quantityRequired = parseFloat((appliedArea / coverageVal).toFixed(2));
-    
-    // Find selected pack size details
-    const selectedSize = item.selectedPackSize?.size || 1;
-    const selectedUnit = item.selectedPackSize?.unit || 'Litre';
-    
-    // quantityPurchased = Math.ceil(quantityRequired / selectedPackSize)
-    const quantityPurchased = Math.ceil(quantityRequired / selectedSize);
-    
-    // subtotal = quantityRequired * unitPrice
-    const subtotal = parseFloat((quantityRequired * product.price).toFixed(2));
-
-    products.push({
-      productId: product._id,
-      brandId: product.brandId,
-      productName: product.productName,
-      productCode: product.productCode,
-      productType: product.productType,
-      selectedPackSize: {
-        size: selectedSize,
-        unit: selectedUnit
-      },
-      coverage: coverageVal,
-      unitPrice: product.price,
-      quantityRequired,
-      quantityPurchased,
-      subtotal,
-      appliedArea
-    });
-
-    materialCost += subtotal;
-
-    // Track total quantities by type
-    if (product.productType === 'Paint') paintQuantity += quantityRequired;
-    if (product.productType === 'Primer') primerQuantity += quantityRequired;
-    if (product.productType === 'Putty') puttyQuantity += quantityRequired;
-  }
-
-  // 2. Process Labour Snapshots
-  const labour = [];
-  for (const item of labourInput) {
-    const labourRate = await LabourRate.findOne({ _id: item.labourRateId, status: true });
-    if (!labourRate) {
-      throw new Error(`Labour rate not found or inactive: ${item.labourRateId}`);
-    }
-
-    const area = Number(item.area) || 0;
-    const subtotal = parseFloat((area * labourRate.pricePerSqft).toFixed(2));
-
-    labour.push({
-      labourRateId: labourRate._id,
-      workType: labourRate.workType,
-      pricePerSqFt: labourRate.pricePerSqft,
-      area,
-      subtotal
-    });
-
-    labourCost += subtotal;
-  }
-
-  // 3. Process Additional Charges
-  const additionalCharges = additionalChargesInput.map(item => {
-    const amount = Number(item.amount) || 0;
-    additionalChargesCost += amount;
-    return {
-      title: item.title,
-      amount,
-      remarks: item.remarks || ''
-    };
   });
-
-  // 4. Calculate Discount
-  const discountType = discountInput.type || 'NONE';
-  const discountVal = Number(discountInput.value) || 0;
-  const discountReason = discountInput.reason || '';
-  
-  const baseTotal = materialCost + labourCost + additionalChargesCost;
-  let discountAmount = 0;
-  if (discountType === 'PERCENTAGE') {
-    discountAmount = parseFloat((baseTotal * (discountVal / 100)).toFixed(2));
-  } else if (discountType === 'FLAT') {
-    discountAmount = Math.min(baseTotal, discountVal);
-  }
-
-  // 5. Calculate GST
-  const taxableAmount = Math.max(0, baseTotal - discountAmount);
-  const gstPct = Number(gstPercentage) || 0;
-  const gstAmount = parseFloat((taxableAmount * (gstPct / 100)).toFixed(2));
-
-  // 6. Grand Total
-  const grandTotal = parseFloat((taxableAmount + gstAmount).toFixed(2));
-
-  return {
-    products,
-    labour,
-    additionalCharges,
-    discount: {
-      type: discountType,
-      value: discountVal,
-      reason: discountReason
-    },
-    gst: {
-      gstPercentage: gstPct,
-      gstAmount
-    },
-    summary: {
-      materialCost: parseFloat(materialCost.toFixed(2)),
-      labourCost: parseFloat(labourCost.toFixed(2)),
-      additionalCharges: parseFloat(additionalChargesCost.toFixed(2)),
-      discount: parseFloat(discountAmount.toFixed(2)),
-      gst: parseFloat(gstAmount.toFixed(2)),
-      grandTotal: parseFloat(grandTotal.toFixed(2))
-    },
-    // Quantities for legacy compatibility or summaries
-    paintQuantity: parseFloat(paintQuantity.toFixed(2)),
-    primerQuantity: parseFloat(primerQuantity.toFixed(2)),
-    puttyQuantity: parseFloat(puttyQuantity.toFixed(2))
-  };
 };
+
 
 // GET /api/vendor/painting/quotations/:consultationId
 exports.getQuotationByConsultationId = async (req, res) => {
@@ -212,12 +102,16 @@ exports.createQuotation = async (req, res) => {
       grandTotal: calculations.summary.grandTotal
     };
 
+    // Fetch active settings snapshot
+    const activeSettings = await PaintingSettings.findOne({ isDefault: true }).populate('activeVersionId');
+
     const quotation = await PaintingQuotation.create({
       consultationId,
       customerId: consultation.userId,
       vendorId,
       status: 'DRAFT',
       property,
+      rooms: req.body.rooms || [],
       products: calculations.products,
       labour: calculations.labour,
       additionalCharges: calculations.additionalCharges,
@@ -226,6 +120,12 @@ exports.createQuotation = async (req, res) => {
       summary: calculations.summary,
       remarks: remarks || {},
       attachments: attachments || {},
+      
+      // Settings Snapshot
+      settingsProfileId: activeSettings ? activeSettings._id : null,
+      settingsVersion: activeSettings ? (activeSettings.publishedVersion || activeSettings.currentVersion) : 1,
+      settingsSnapshot: activeSettings && activeSettings.activeVersionId ? activeSettings.activeVersionId.snapshot : null,
+      calculationVersion: 1,
       
       // Legacy backups
       interiorArea: property?.interiorArea || 0,
@@ -270,7 +170,7 @@ exports.updateQuotation = async (req, res) => {
     }
 
     // Check if quotation is read-only
-    if (quotation.status !== 'DRAFT' && quotation.status !== 'ADMIN_REJECTED') {
+    if (quotation.status !== 'DRAFT' && quotation.status !== 'ADMIN_REJECTED' && quotation.status !== 'REVISION_REQUESTED') {
       return res.status(400).json({
         success: false,
         message: `Quotation is in ${quotation.status} status and cannot be edited.`
@@ -300,6 +200,9 @@ exports.updateQuotation = async (req, res) => {
 
     // Update fields
     quotation.property = property;
+    if (req.body.rooms) {
+      quotation.rooms = req.body.rooms;
+    }
     quotation.products = calculations.products;
     quotation.labour = calculations.labour;
     quotation.additionalCharges = calculations.additionalCharges;
@@ -308,6 +211,16 @@ exports.updateQuotation = async (req, res) => {
     quotation.summary = calculations.summary;
     quotation.remarks = remarks || {};
     quotation.attachments = attachments || {};
+
+    if (!quotation.settingsProfileId) {
+      const activeSettings = await PaintingSettings.findOne({ isDefault: true }).populate('activeVersionId');
+      if (activeSettings) {
+        quotation.settingsProfileId = activeSettings._id;
+        quotation.settingsVersion = activeSettings.publishedVersion || activeSettings.currentVersion;
+        quotation.settingsSnapshot = activeSettings.activeVersionId?.snapshot || null;
+        quotation.calculationVersion = 1;
+      }
+    }
 
     // Legacy updates
     quotation.interiorArea = property?.interiorArea || 0;
@@ -338,15 +251,51 @@ exports.submitQuotation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Quotation not found.' });
     }
 
-    if (quotation.status !== 'DRAFT' && quotation.status !== 'ADMIN_REJECTED') {
+    if (quotation.status !== 'DRAFT' && quotation.status !== 'ADMIN_REJECTED' && quotation.status !== 'REVISION_REQUESTED') {
       return res.status(400).json({
         success: false,
         message: `Quotation cannot be submitted as it is currently in ${quotation.status} status.`
       });
     }
 
-    quotation.status = 'SUBMITTED_TO_ADMIN';
-    await quotation.save();
+     const isRevision = quotation.status === 'REVISION_REQUESTED' || quotation.status === 'ADMIN_REJECTED';
+     quotation.status = 'SUBMITTED_TO_ADMIN';
+     if (isRevision) {
+       quotation.currentVersion = (quotation.currentVersion || 1) + 1;
+       await logVersionSnapshot(quotation, vendorId, 'Vendor Revision');
+     } else {
+       quotation.currentVersion = 1;
+       await logVersionSnapshot(quotation, vendorId, 'Vendor Draft');
+     }
+     
+     // Reset review status to match submission
+     quotation.review = quotation.review || {};
+     quotation.review.status = 'SUBMITTED_TO_ADMIN';
+     
+     await quotation.save();
+
+    // Notify Admins of New Quotation Submission (Non-blocking)
+    (async () => {
+      try {
+        const { createNotification } = require('../notificationControllers/notificationController');
+        const Admin = require('../../models/Admin');
+        const admins = await Admin.find({ role: { $in: ['SUPER_ADMIN', 'CITY_ADMIN', 'super_admin', 'city_admin', 'admin'] } });
+        
+        const notificationData = {
+          type: 'general',
+          title: 'New Painting Quotation Submitted',
+          message: `Vendor has submitted a painting quotation of ₹${quotation.summary?.grandTotal || quotation.calculation?.grandTotal} for review.`,
+          relatedId: quotation._id,
+          relatedType: 'booking'
+        };
+
+        await Promise.all(admins.map(admin => 
+          createNotification({ ...notificationData, adminId: admin._id })
+        ));
+      } catch (e) {
+        console.error('Non-blocking admin notification error:', e);
+      }
+    })();
 
     res.status(200).json({
       success: true,
@@ -389,5 +338,27 @@ exports.getLabourRates = async (req, res) => {
   } catch (error) {
     console.error('Error fetching labour rates for vendor:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch labour rates', error: error.message });
+  }
+};
+
+// GET /api/vendor/painting/templates
+exports.getTemplatesForVendor = async (req, res) => {
+  try {
+    const templates = await PropertyTemplate.find({ status: 'PUBLISHED' }).sort({ displayOrder: 1 });
+    res.status(200).json({ success: true, data: templates });
+  } catch (error) {
+    console.error('Error fetching templates for vendor:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch templates', error: error.message });
+  }
+};
+
+// GET /api/vendor/painting/settings
+exports.getSettingsForVendor = async (req, res) => {
+  try {
+    const defaultProfile = await PaintingSettings.findOne({ isDefault: true }).populate('activeVersionId');
+    res.status(200).json({ success: true, data: defaultProfile });
+  } catch (error) {
+    console.error('Error fetching settings for vendor:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch settings', error: error.message });
   }
 };

@@ -1,32 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getAvailableConsultations, acceptConsultation, declineConsultation } from '../../services/paintingConsultationService';
 import { toast } from 'react-hot-toast';
-import { FiClock, FiMapPin } from 'react-icons/fi';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FiAlertCircle, FiPlus } from 'react-icons/fi';
 
-// Relative timestamp helper
-const relativeTime = (dateStr) => {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-};
+// Modular Redesigned Components
+import DashboardHeader from './components/DashboardHeader';
+import DashboardStats from './components/DashboardStats';
+import SearchToolbar from './components/SearchToolbar';
+import ConsultationCard from './components/ConsultationCard';
+import SkeletonLoader from './components/SkeletonLoader';
 
 const ActiveConsultations = ({ onGenerateQuote }) => {
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('ALL'); // 'ALL' or 'PENDING'
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState('ALL'); // 'ALL', 'PENDING', 'DRAFTS', 'REVIEW', 'REVISION', 'APPROVED'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [brandFilter, setBrandFilter] = useState('ALL');
+  const [sortOption, setSortOption] = useState('NEWEST');
+  const [declinedIds, setDeclinedIds] = useState([]);
 
   useEffect(() => {
     fetchConsultations();
   }, []);
 
-  const fetchConsultations = async () => {
+  const fetchConsultations = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
+      
       const data = await getAvailableConsultations();
       if (data.success) {
         setConsultations(data.data);
@@ -36,6 +39,7 @@ const ActiveConsultations = ({ onGenerateQuote }) => {
       toast.error('Failed to load consultations');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -43,7 +47,7 @@ const ActiveConsultations = ({ onGenerateQuote }) => {
     try {
       await acceptConsultation(id);
       toast.success('Consultation Accepted!');
-      fetchConsultations();
+      fetchConsultations(true);
     } catch (error) {
       console.error(error);
       toast.error('Failed to accept consultation');
@@ -55,154 +59,243 @@ const ActiveConsultations = ({ onGenerateQuote }) => {
       if (declineConsultation) {
         await declineConsultation(id);
       }
+      setDeclinedIds(prev => [...prev, id]);
       toast.success('Consultation Declined');
-      fetchConsultations();
+      fetchConsultations(true);
     } catch (error) {
       console.error(error);
       toast.error('Failed to decline');
     }
   };
 
-  const filteredConsultations = filter === 'PENDING' 
-    ? consultations.filter(c => c.status === 'PENDING')
-    : consultations;
+  // Export consultations client-side CSV download
+  const handleExport = () => {
+    if (consultations.length === 0) {
+      toast.error('No consultations to export.');
+      return;
+    }
+
+    const headers = ['ID', 'Customer Name', 'Phone', 'Property Type', 'City', 'Brand', 'Status', 'Quotation Status', 'Created At'];
+    const rows = consultations.map(c => [
+      c._id,
+      c.userId?.name || 'N/A',
+      c.userId?.phone || 'N/A',
+      c.propertyType || 'N/A',
+      c.address?.city || 'N/A',
+      c.wizardData?.paintBrand || 'N/A',
+      c.status || 'N/A',
+      c.quotationId?.status || 'N/A',
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'N/A'
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Doormeets_Consultations_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('CSV file download started!');
+  };
+
+  // Dynamic filter selections: unique brands
+  const uniqueBrands = useMemo(() => {
+    const brandsSet = new Set();
+    consultations.forEach(c => {
+      if (c.wizardData?.paintBrand) {
+        brandsSet.add(c.wizardData.paintBrand);
+      }
+    });
+    return Array.from(brandsSet);
+  }, [consultations]);
+
+  // Priority Queue: PENDING or REVISION_REQUESTED
+  const priorityConsultations = useMemo(() => {
+    return consultations.filter(c => 
+      !declinedIds.includes(c._id) && (
+        c.status === 'PENDING' || 
+        (c.quotationId && c.quotationId.status === 'REVISION_REQUESTED')
+      )
+    );
+  }, [consultations, declinedIds]);
+
+  // Standard main list filtering & sorting
+  const filteredAndSortedConsultations = useMemo(() => {
+    let list = consultations.filter(c => !declinedIds.includes(c._id));
+
+    // 1. Filter by status tabs
+    list = list.filter(c => {
+      if (filter === 'PENDING') return c.status === 'PENDING';
+      if (filter === 'DRAFTS') return c.status === 'ACCEPTED_BY_VENDOR' && (!c.quotationId || c.quotationId.status === 'DRAFT');
+      if (filter === 'REVIEW') return c.quotationId && (c.quotationId.status === 'SUBMITTED_TO_ADMIN' || c.quotationId.status === 'UNDER_REVIEW');
+      if (filter === 'REVISION') return c.quotationId && c.quotationId.status === 'REVISION_REQUESTED';
+      if (filter === 'APPROVED') return c.quotationId && ['ADMIN_APPROVED', 'SENT_TO_CUSTOMER', 'CUSTOMER_ACCEPTED', 'CONVERTED_TO_ORDER'].includes(c.quotationId.status);
+      return true;
+    });
+
+    // 2. Filter by Search Query
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(c => 
+        (c.userId?.name || '').toLowerCase().includes(q) ||
+        (c.userId?.phone || '').toLowerCase().includes(q) ||
+        (c.address?.city || '').toLowerCase().includes(q) ||
+        (c.address?.street || '').toLowerCase().includes(q) ||
+        (c.propertyType || '').toLowerCase().includes(q) ||
+        (c.wizardData?.paintBrand || '').toLowerCase().includes(q)
+      );
+    }
+
+    // 3. Filter by Brand
+    if (brandFilter !== 'ALL') {
+      list = list.filter(c => c.wizardData?.paintBrand === brandFilter);
+    }
+
+    // 4. Sort logic
+    list = [...list].sort((a, b) => {
+      if (sortOption === 'NEWEST') {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      if (sortOption === 'OLDEST') {
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      }
+      if (sortOption === 'AREA_DESC') {
+        const areaA = a.wizardData?.totalPaintableArea || 0;
+        const areaB = b.wizardData?.totalPaintableArea || 0;
+        return areaB - areaA;
+      }
+      if (sortOption === 'AREA_ASC') {
+        const areaA = a.wizardData?.totalPaintableArea || 0;
+        const areaB = b.wizardData?.totalPaintableArea || 0;
+        return areaA - areaB;
+      }
+      return 0;
+    });
+
+    return list;
+  }, [consultations, filter, searchQuery, brandFilter, sortOption, declinedIds]);
+
+  if (loading) {
+    return (
+      <div className="flex-1 px-4 py-8 max-w-7xl mx-auto w-full bg-[#FAFAFA]">
+        <div className="h-20 bg-gray-150 animate-pulse rounded-3xl mb-8"></div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-8 md:pb-8 bg-background font-body-lg">
+    <div className="flex-1 px-4 py-8 max-w-7xl mx-auto w-full bg-[#FAFAFA] font-sans selection:bg-[#E85D3F]/15 selection:text-[#E85D3F]">
       
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-orange-500">Consultation Portal</span>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mt-1">Active Consultations</h2>
-        </div>
-        <div className="flex gap-2 bg-surface-container p-1 rounded-lg self-start">
-          <button 
-            className={`px-4 py-2 rounded-md font-bold text-sm shadow-sm transition-colors ${filter === 'ALL' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:bg-orange-50'}`}
-            onClick={() => setFilter('ALL')}
-          >
-            All Tasks
-          </button>
-          <button 
-            className={`px-4 py-2 rounded-md font-bold text-sm shadow-sm transition-colors ${filter === 'PENDING' ? 'bg-orange-500 text-white' : 'text-gray-500 hover:bg-orange-50'}`}
-            onClick={() => setFilter('PENDING')}
-          >
-            Pending Only
-          </button>
-        </div>
-      </div>
+      {/* Header Panel */}
+      <DashboardHeader 
+        onRefresh={() => fetchConsultations(true)}
+        onExport={handleExport}
+        consultations={consultations}
+        isRefreshing={refreshing}
+      />
 
-      {loading ? (
-        <div>Loading...</div>
-      ) : filteredConsultations.length === 0 ? (
-        <div className="text-center text-secondary py-12">No active consultations found.</div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          
-          {filteredConsultations.map((consultation) => (
-            <div key={consultation._id} className="bg-white border border-orange-200 rounded-xl overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-xl hover:border-orange-400">
-              <div className="p-6 flex flex-col h-full">
-                <div className="flex justify-between items-start mb-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    consultation.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' 
-                    : consultation.status === 'ACCEPTED_BY_VENDOR' ? 'bg-blue-100 text-blue-600'
-                    : consultation.status === 'QUOTE_GENERATED' ? 'bg-purple-100 text-purple-600'
-                    : consultation.status === 'QUOTE_ACCEPTED' ? 'bg-emerald-100 text-emerald-600'
-                    : 'bg-orange-100 text-orange-600'
-                  }`}>
-                    {consultation.status === 'PENDING' ? 'New Inquiry' : consultation.status.replace(/_/g, ' ')}
-                  </span>
-                  <span className="text-xs text-gray-500 flex items-center gap-1 font-semibold">
-                    <FiClock className="text-sm" /> 
-                    {relativeTime(consultation.createdAt)}
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-1">
-                  {consultation.userId?.name || 'Customer'} - {consultation.propertyType}
-                </h3>
-                <p className="text-sm text-gray-600 flex items-center gap-2 mb-2 font-semibold">
-                  <FiMapPin className="text-sm text-orange-500" />
-                  {consultation.address?.city || 'Location Pending'}
-                </p>
-                {/* Service type badge */}
-                <div className="flex gap-1 mb-4 flex-wrap items-center">
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                      <path d="M12 6v12M6 12h12"/>
-                    </svg>
-                    Painting
-                  </span>
-                  {consultation.wizardData?.paintBrand && (
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                      {consultation.wizardData.paintBrand.replace('_', ' ')}
-                    </span>
-                  )}
-                  {consultation.wizardData?.rooms?.length > 0 && (
-                    <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-semibold">
-                      {consultation.wizardData.rooms.length} Room(s)
-                    </span>
-                  )}
-                </div>
-                
-                <div className="bg-slate-50/80 rounded-xl p-4 mb-6 border border-slate-100 flex-1">
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-xs font-bold text-slate-400 uppercase">Phone</p>
-                    <p className="text-sm font-bold text-slate-800">{consultation.userId?.phone || 'N/A'}</p>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-xs font-bold text-slate-400 uppercase">Property</p>
-                    <p className="text-sm font-bold text-slate-800">{consultation.propertyType}</p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2 mt-auto">
-                  {consultation.status === 'PENDING' && (
-                    <>
-                      <button 
-                        onClick={() => handleAccept(consultation._id)}
-                        className="flex-1 bg-orange-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform hover:bg-orange-600 shadow-md"
-                      >
-                        Accept Request
-                      </button>
-                      <button
-                        onClick={() => handleDecline(consultation._id)}
-                        className="px-4 py-3 border-2 border-gray-200 text-gray-500 font-bold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm"
-                      >
-                        Decline
-                      </button>
-                    </>
-                  )}
-                  {consultation.status === 'ACCEPTED_BY_VENDOR' && (
-                    <button 
-                      onClick={() => onGenerateQuote && onGenerateQuote(consultation)}
-                      className="flex-1 bg-orange-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform hover:bg-orange-600 shadow-md"
-                    >
-                      Generate Quote
-                    </button>
-                  )}
-                  {consultation.status === 'QUOTE_GENERATED' && (
-                    <button 
-                       disabled
-                       className="flex-1 bg-gray-200 text-gray-500 font-bold py-3 rounded-lg"
-                    >
-                      Quote Sent (Waiting)
-                    </button>
-                  )}
-                  {consultation.status === 'QUOTE_ACCEPTED' && (
-                     <button 
-                        className="flex-1 bg-green-500 text-white font-bold py-3 rounded-lg shadow-md hover:bg-green-600"
-                     >
-                       Quote Accepted! (Start Job)
-                     </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* KPI Stats overview panel */}
+      <DashboardStats consultations={consultations} />
 
+      {/* Smart search & filters toolbar */}
+      <SearchToolbar 
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        activeFilter={filter}
+        onFilterChange={setFilter}
+        brandFilter={brandFilter}
+        onBrandFilterChange={setBrandFilter}
+        sortOption={sortOption}
+        onSortChange={setSortOption}
+        brands={uniqueBrands}
+      />
+
+      {/* Priority Queue Needs attention */}
+      {priorityConsultations.length > 0 && filter === 'ALL' && searchQuery === '' && (
+        <div className="mb-8 p-6 bg-amber-50/40 border border-amber-200/50 rounded-3xl animate-fade-in">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+            <h3 className="text-sm font-black text-amber-950 uppercase tracking-wider flex items-center gap-2">
+              Needs Immediate Attention
+              <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black">
+                {priorityConsultations.length} Action Needed
+              </span>
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {priorityConsultations.map(c => (
+              <ConsultationCard 
+                key={c._id}
+                consultation={c}
+                onAccept={handleAccept}
+                onDecline={handleDecline}
+                onGenerateQuote={onGenerateQuote}
+              />
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Main Listing section */}
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-black text-gray-900 uppercase tracking-widest">
+            {filter === 'ALL' ? 'All Active Consultations' : `${filter} Consultations`}
+            <span className="text-xs bg-gray-100 text-gray-500 ml-2 px-2 py-0.5 rounded-full font-bold normal-case">
+              {filteredAndSortedConsultations.length} shown
+            </span>
+          </h2>
+        </div>
+
+        {filteredAndSortedConsultations.length === 0 ? (
+          <div className="text-center py-16 bg-white border border-gray-150 rounded-3xl p-8 max-w-md mx-auto shadow-sm">
+            <div className="w-16 h-16 bg-[#E85D3F]/5 text-[#E85D3F] rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiAlertCircle className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">No Consultations Found</h3>
+            <p className="text-sm font-medium text-gray-500 mt-2 leading-relaxed">
+              Try adjusting your search query, status tab selector, or paint brand options to locate active consults.
+            </p>
+            <button 
+              onClick={() => { setSearchQuery(''); setBrandFilter('ALL'); setFilter('ALL'); }}
+              className="mt-6 px-5 py-3 bg-[#E85D3F] hover:bg-[#E85D3F]/90 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredAndSortedConsultations.map((consultation) => (
+                <ConsultationCard 
+                  key={consultation._id}
+                  consultation={consultation}
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                  onGenerateQuote={onGenerateQuote}
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Floating quick actions widget */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+        <button 
+          onClick={() => fetchConsultations(true)}
+          className="p-4 bg-[#E85D3F] hover:bg-[#E85D3F]/95 text-white rounded-full shadow-lg shadow-[#E85D3F]/30 hover:shadow-xl active:scale-95 transition-all cursor-pointer focus:outline-none focus:ring-4 focus:ring-[#E85D3F]/20"
+          title="Sync Now"
+        >
+          <FiPlus className="w-6 h-6 rotate-45" />
+        </button>
+      </div>
     </div>
   );
 };

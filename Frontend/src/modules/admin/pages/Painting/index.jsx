@@ -9,6 +9,7 @@ import * as paintingService from '../../services/paintingService';
 import uploadToCloudinary from '../../../../utils/cloudinaryUpload';
 import ConsultationDashboard from './ConsultationDashboard';
 import PaintingPricingConfig from './PaintingPricingConfig';
+import QuotationReview from './QuotationReview';
 
 const PaintingManagement = ({ defaultTab = 'brands' }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -25,6 +26,17 @@ const PaintingManagement = ({ defaultTab = 'brands' }) => {
   const [products, setProducts] = useState([]);
   const [rates, setRates] = useState([]);
   const [quotations, setQuotations] = useState([]);
+  const [selectedQuotationId, setSelectedQuotationId] = useState(null);
+
+  // Filters & Search for quotations
+  const [quoteSearch, setQuoteSearch] = useState('');
+  const [quoteStatus, setQuoteStatus] = useState('all');
+  const [quoteVendor, setQuoteVendor] = useState('all');
+  const [quoteCustomer, setQuoteCustomer] = useState('all');
+  const [quotePropType, setQuotePropType] = useState('all');
+  const [quoteSort, setQuoteSort] = useState('newest');
+  const [quoteStartDate, setQuoteStartDate] = useState('');
+  const [quoteEndDate, setQuoteEndDate] = useState('');
 
   // Search/Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,7 +81,7 @@ const PaintingManagement = ({ defaultTab = 'brands' }) => {
 
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, [activeTab, quoteSearch, quoteStatus, quoteVendor, quoteCustomer, quotePropType, quoteSort, quoteStartDate, quoteEndDate]);
 
   const loadData = async () => {
     setLoading(true);
@@ -88,12 +100,22 @@ const PaintingManagement = ({ defaultTab = 'brands' }) => {
         const res = await paintingService.getLabourRates();
         if (res.success) setRates(res.data);
       } else if (activeTab === 'quotations') {
+        const params = {};
+        if (quoteSearch) params.search = quoteSearch;
+        if (quoteStatus && quoteStatus !== 'all') params.status = quoteStatus;
+        if (quoteVendor && quoteVendor !== 'all') params.vendorId = quoteVendor;
+        if (quoteCustomer && quoteCustomer !== 'all') params.customerId = quoteCustomer;
+        if (quotePropType && quotePropType !== 'all') params.propertyType = quotePropType;
+        if (quoteSort) params.sort = quoteSort;
+        if (quoteStartDate) params.startDate = quoteStartDate;
+        if (quoteEndDate) params.endDate = quoteEndDate;
+
         const [qRes, pRes, rRes] = await Promise.all([
-          paintingService.getQuotations(),
+          paintingService.getQuotations(params),
           paintingService.getProducts(),
           paintingService.getLabourRates()
         ]);
-        if (qRes.success) setQuotations(res => qRes.data);
+        if (qRes.success) setQuotations(qRes.data);
         if (pRes.success) setProducts(pRes.data);
         if (rRes.success) setRates(rRes.data);
       }
@@ -559,87 +581,235 @@ const PaintingManagement = ({ defaultTab = 'brands' }) => {
 
             {/* 4. QUOTATIONS TAB */}
             {activeTab === 'quotations' && (
-              <div className="space-y-4">
-                {quotations.length === 0 ? (
-                  <div className="text-center py-20 text-gray-400">No generated quotations found. Click "Add New Quotation" to calculate.</div>
-                ) : (
-                  <div className="space-y-6">
-                    {quotations.map(quote => (
-                      <div key={quote._id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow">
-                        <div className="flex flex-col md:flex-row justify-between gap-4 border-b border-gray-100 pb-4 mb-4">
-                          <div>
-                            <h3 className="font-extrabold text-gray-900 text-lg">{quote.customerName}</h3>
-                            <p className="text-xs text-gray-500">{quote.customerPhone}</p>
-                          </div>
-                          <div className="flex md:items-end flex-col">
-                            <span className="text-xs text-gray-400">Created: {new Date(quote.createdAt).toLocaleDateString()}</span>
-                            <span className="text-xl font-extrabold text-blue-600 mt-1">₹{quote.calculation?.grandTotal}</span>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Area Config</span>
-                            <div className="font-semibold text-gray-800 mt-1">
-                              {quote.interiorArea > 0 && <div>Interior: {quote.interiorArea} sqft</div>}
-                              {quote.exteriorArea > 0 && <div>Exterior: {quote.exteriorArea} sqft</div>}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Paint Selected</span>
-                            <div className="font-semibold text-gray-800 mt-1">
-                              {quote.interiorPaintId && <div>Int: {quote.interiorPaintId.paintName}</div>}
-                              {quote.exteriorPaintId && <div>Ext: {quote.exteriorPaintId.paintName}</div>}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Labour Configuration</span>
-                            <div className="font-semibold text-gray-800 mt-1">
-                              {quote.labourId ? `${quote.labourId.workType} Wall (₹${quote.labourId.pricePerSqft}/sqft)` : 'N/A'}
-                            </div>
-                          </div>
-                          <div className="flex justify-end items-center gap-2">
-                            <button onClick={() => handleEditQuotation(quote)} className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-xl text-xs font-bold cursor-pointer">
-                              <FiEdit className="w-4 h-4" /> Edit
-                            </button>
-                            <button onClick={() => handleDeleteQuotation(quote._id)} className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-xl text-xs font-bold cursor-pointer">
-                              <FiTrash2 className="w-4 h-4" /> Delete
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Cost breakdown drawer */}
-                        <div className="bg-gray-50 rounded-xl p-4 mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs">
-                          <div>
-                            <div className="text-gray-400">Paint Cost</div>
-                            <div className="font-bold text-gray-800 mt-0.5">₹{quote.calculation?.paintCost}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400">Putty Cost</div>
-                            <div className="font-bold text-gray-800 mt-0.5">₹{quote.calculation?.puttyCost}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400">Primer Cost</div>
-                            <div className="font-bold text-gray-800 mt-0.5">₹{quote.calculation?.primerCost}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400">Labour Cost</div>
-                            <div className="font-bold text-gray-800 mt-0.5">₹{quote.calculation?.labourCost}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400">GST</div>
-                            <div className="font-bold text-gray-800 mt-0.5">₹{quote.calculation?.gst}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400">Net Discount</div>
-                            <div className="font-bold text-red-600 mt-0.5">-₹{quote.calculation?.discount}</div>
-                          </div>
-                        </div>
+              selectedQuotationId ? (
+                <QuotationReview 
+                  quotationId={selectedQuotationId} 
+                  onBack={() => {
+                    setSelectedQuotationId(null);
+                    loadData();
+                  }} 
+                />
+              ) : (
+                <div className="space-y-6">
+                  {/* Filters Bar */}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      {/* Search */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Search</label>
+                        <input
+                          type="text"
+                          placeholder="ID, Customer, Phone..."
+                          value={quoteSearch}
+                          onChange={e => setQuoteSearch(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 font-semibold"
+                        />
                       </div>
-                    ))}
+                      
+                      {/* Status */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Status</label>
+                        <select
+                          value={quoteStatus}
+                          onChange={e => setQuoteStatus(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 font-semibold text-gray-700"
+                        >
+                          <option value="all">All Statuses</option>
+                          <option value="SUBMITTED_TO_ADMIN">Submitted to Admin</option>
+                          <option value="UNDER_REVIEW">Under Review</option>
+                          <option value="REVISION_REQUESTED">Revision Requested</option>
+                          <option value="ADMIN_APPROVED">Admin Approved</option>
+                          <option value="ADMIN_REJECTED">Admin Rejected</option>
+                          <option value="SENT_TO_CUSTOMER">Sent to Customer</option>
+                          <option value="CUSTOMER_ACCEPTED">Customer Accepted</option>
+                          <option value="CUSTOMER_REJECTED">Customer Rejected</option>
+                          <option value="CONVERTED_TO_ORDER">Converted to Order</option>
+                        </select>
+                      </div>
+
+                      {/* Vendor */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Vendor</label>
+                        <select
+                          value={quoteVendor}
+                          onChange={e => setQuoteVendor(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 font-semibold text-gray-700"
+                        >
+                          <option value="all">All Vendors</option>
+                          {Array.from(new Map(
+                            quotations
+                              .filter(q => q.vendorId)
+                              .map(q => [q.vendorId._id, q.vendorId.name])
+                          ).entries()).map(([id, name]) => (
+                            <option key={id} value={id}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Customer */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Customer</label>
+                        <select
+                          value={quoteCustomer}
+                          onChange={e => setQuoteCustomer(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 font-semibold text-gray-700"
+                        >
+                          <option value="all">All Customers</option>
+                          {Array.from(new Map(
+                            quotations
+                              .filter(q => q.customerId || q.customerName)
+                              .map(q => [q.customerId?._id || q.customerName, q.customerId?.name || q.customerName])
+                          ).entries()).map(([id, name]) => (
+                            <option key={id} value={id}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      {/* Date Range Start */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">From Date</label>
+                        <input
+                          type="date"
+                          value={quoteStartDate}
+                          onChange={e => setQuoteStartDate(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 font-semibold text-gray-750"
+                        />
+                      </div>
+
+                      {/* Date Range End */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">To Date</label>
+                        <input
+                          type="date"
+                          value={quoteEndDate}
+                          onChange={e => setQuoteEndDate(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 font-semibold text-gray-755"
+                        />
+                      </div>
+
+                      {/* Property Type */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Property Type</label>
+                        <select
+                          value={quotePropType}
+                          onChange={e => setQuotePropType(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 font-semibold text-gray-700"
+                        >
+                          <option value="all">All Types</option>
+                          <option value="1BHK">1 BHK</option>
+                          <option value="2BHK">2 BHK</option>
+                          <option value="3BHK">3 BHK</option>
+                          <option value="4BHK">4 BHK</option>
+                          <option value="Villa">Villa</option>
+                        </select>
+                      </div>
+
+                      {/* Sort */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Sort By</label>
+                        <select
+                          value={quoteSort}
+                          onChange={e => setQuoteSort(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 font-semibold text-gray-700"
+                        >
+                          <option value="newest">Newest</option>
+                          <option value="oldest">Oldest</option>
+                          <option value="highest_amount">Highest Amount</option>
+                          <option value="lowest_amount">Lowest Amount</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* Quotations List Table */}
+                  <div className="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left text-gray-600">
+                        <thead className="text-xs text-gray-400 uppercase bg-gray-50 border-b border-gray-100">
+                          <tr>
+                            <th className="px-5 py-4">Quotation ID</th>
+                            <th className="px-5 py-4">Customer</th>
+                            <th className="px-5 py-4">Vendor</th>
+                            <th className="px-5 py-4">Property</th>
+                            <th className="px-5 py-4">Quotation Date</th>
+                            <th className="px-5 py-4 text-right">Grand Total</th>
+                            <th className="px-5 py-4 text-center">Status</th>
+                            <th className="px-5 py-4">Last Updated</th>
+                            <th className="px-5 py-4 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {quotations.map((quote) => (
+                            <tr key={quote._id} className="border-b border-gray-50 hover:bg-gray-50">
+                              <td className="px-5 py-4 font-bold text-gray-800">
+                                #{quote._id.slice(-6).toUpperCase()}
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="font-extrabold text-gray-900">{quote.customerName || quote.customerId?.name || 'N/A'}</div>
+                                <div className="text-xs text-gray-500">{quote.customerPhone || quote.customerId?.phone}</div>
+                              </td>
+                              <td className="px-5 py-4">
+                                {quote.vendorId ? (
+                                  <>
+                                    <div className="font-bold text-gray-800">{quote.vendorId.name}</div>
+                                    <div className="text-xs text-gray-500">{quote.vendorId.phone}</div>
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400 italic">N/A</span>
+                                )}
+                              </td>
+                              <td className="px-5 py-4 font-semibold text-gray-700">
+                                {quote.property?.propertyType || 'N/A'}
+                                <div className="text-xs text-gray-400 font-normal">
+                                  {quote.property?.totalPaintableArea || 0} sqft
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 font-semibold text-gray-650">
+                                {new Date(quote.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className="px-5 py-4 text-right font-black text-blue-600">
+                                ₹{quote.summary?.grandTotal || quote.calculation?.grandTotal || 0}
+                              </td>
+                              <td className="px-5 py-4 text-center">
+                                <span className={`px-2.5 py-1 text-[10px] font-black tracking-wider uppercase rounded-full ${
+                                  quote.status === 'SUBMITTED_TO_ADMIN' ? 'bg-amber-100 text-amber-800' :
+                                  quote.status === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-800' :
+                                  quote.status === 'ADMIN_APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                                  quote.status === 'ADMIN_REJECTED' ? 'bg-red-100 text-red-800' :
+                                  quote.status === 'REVISION_REQUESTED' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {quote.status.replace(/_/g, ' ')}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 text-xs text-gray-450 font-semibold">
+                                {new Date(quote.updatedAt).toLocaleString()}
+                              </td>
+                              <td className="px-5 py-4 text-center">
+                                <button
+                                  onClick={() => setSelectedQuotationId(quote._id)}
+                                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 font-extrabold px-3.5 py-1.5 rounded-xl cursor-pointer text-xs shadow-sm transition-all"
+                                >
+                                  Review
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {quotations.length === 0 && (
+                            <tr>
+                              <td colSpan="9" className="px-5 py-12 text-center text-gray-400 italic">
+                                No quotations found matching these filters.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )
             )}
 
             {/* 5. PRICING CONFIG TAB */}

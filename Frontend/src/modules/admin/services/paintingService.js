@@ -117,8 +117,13 @@ export const deleteLabourRate = async (id) => {
 // ==========================================
 // PAINTING QUOTATIONS
 // ==========================================
-export const getQuotations = async () => {
-  const response = await api.get('/admin/painting/quotations');
+export const getQuotations = async (params = {}) => {
+  const response = await api.get('/admin/painting/quotations', { params });
+  return response.data;
+};
+
+export const getQuotationById = async (id) => {
+  const response = await api.get(`/admin/painting/quotations/${id}`);
   return response.data;
 };
 
@@ -127,8 +132,35 @@ export const createQuotation = async (data) => {
   return response.data;
 };
 
-export const updateQuotation = async (id, data) => {
-  const response = await api.put(`/admin/painting/quotations/${id}`, data);
+export const updateQuotation = async (id, data, dryRun = false) => {
+  const response = await api.put(`/admin/painting/quotations/${id}`, data, {
+    params: dryRun ? { dryRun: true } : {}
+  });
+  return response.data;
+};
+
+export const startReview = async (id) => {
+  const response = await api.post(`/admin/painting/quotations/${id}/start-review`);
+  return response.data;
+};
+
+export const approveQuotation = async (id, data = {}) => {
+  const response = await api.post(`/admin/painting/quotations/${id}/approve`, data);
+  return response.data;
+};
+
+export const rejectQuotation = async (id, rejectionReason, data = {}) => {
+  const response = await api.post(`/admin/painting/quotations/${id}/reject`, { rejectionReason, ...data });
+  return response.data;
+};
+
+export const requestRevision = async (id, revisionReason, data = {}) => {
+  const response = await api.post(`/admin/painting/quotations/${id}/request-revision`, { revisionReason, ...data });
+  return response.data;
+};
+
+export const getQuotationHistory = async (id) => {
+  const response = await api.get(`/admin/painting/quotations/${id}/history`);
   return response.data;
 };
 

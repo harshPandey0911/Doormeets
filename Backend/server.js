@@ -242,6 +242,8 @@ app.use('/api/admin', require('./routes/admin-routes/planManagement.routes'));
 app.use('/api/admin/vendor-subscriptions', require('./routes/admin-routes/vendorSubscriptionPlan.routes'));
 app.use('/api/admin', require('./routes/admin-routes/settings.routes'));
 app.use('/api/admin', require('./routes/admin-routes/painting.routes'));
+app.use('/api/admin/painting', require('./routes/admin-routes/property-template.routes'));
+app.use('/api/admin/painting', require('./routes/admin-routes/painting-settings.routes'));
 app.use('/api/admin', require('./routes/admin-routes/sosAdmin.routes'));
 app.use('/api/admin', require('./routes/admin-routes/reviewManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/reportManagement.routes'));

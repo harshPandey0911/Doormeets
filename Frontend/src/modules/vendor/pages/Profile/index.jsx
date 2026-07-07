@@ -29,6 +29,7 @@ const Profile = () => {
   ] : [
     { id: 2, label: 'Wallet', icon: FaWallet, path: '/vendor/wallet' },
     { id: 5, label: 'My Ratings', icon: FiStar, path: '/vendor/my-ratings' },
+    { id: 14, label: 'Painting Consultations', icon: FiBriefcase, path: '/vendor/painting-consultations' },
     { id: 10, label: 'Categories', icon: FiGrid, path: '/vendor/categories' },
     { id: 12, label: 'Performance & Stats', icon: FiBox, path: '/vendor/my-services' },
     { id: 7, label: 'Manage Address', icon: FiMapPin, path: '/vendor/address-management' },

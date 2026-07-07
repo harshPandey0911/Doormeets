@@ -56,3 +56,13 @@ export const getLabourRatesForVendor = async () => {
   const response = await api.get('/vendor/painting/labour-rates');
   return response.data;
 };
+
+export const getTemplatesForVendor = async () => {
+  const response = await api.get('/vendor/painting/templates');
+  return response.data;
+};
+
+export const getSettingsForVendor = async () => {
+  const response = await api.get('/vendor/painting/settings');
+  return response.data;
+};
