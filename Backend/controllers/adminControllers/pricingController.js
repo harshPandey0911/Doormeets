@@ -32,8 +32,8 @@ const calculatePricingDetails = (
   let adminGstAmount = 0;
 
   if (gstIncluded) {
-    adminTaxableBase = adminGrossMargin / (1 + (gstPct / 100));
-    adminGstAmount = adminGrossMargin - adminTaxableBase;
+    adminGstAmount = adminGrossMargin * (gstPct / 100);
+    adminTaxableBase = adminGrossMargin - adminGstAmount;
   } else {
     adminTaxableBase = adminGrossMargin;
     adminGstAmount = adminGrossMargin * (gstPct / 100);

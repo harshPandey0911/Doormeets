@@ -434,7 +434,8 @@ const acceptBooking = async (req, res) => {
       
       const isPlanBooking = booking.paymentMethod === 'plan_benefit';
       const basePriceRaw = booking.basePrice || 0;
-      const originalServiceBase = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw / (1 + serviceGstPct / 100)).toFixed(2)));
+      const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw * (serviceGstPct / 100)).toFixed(2)));
+      const originalServiceBase = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw - originalGST).toFixed(2)));
       
       calculatedVendorShare = parseFloat((originalServiceBase * (serviceSplitPct / 100)).toFixed(2));
     }
@@ -1557,8 +1558,8 @@ const completeSelfJob = async (req, res) => {
       // -- Original booking service (from basePrice) --
       const isPlanBooking = booking.paymentMethod === 'plan_benefit';
       const basePriceRaw = Number(booking.basePrice) || 0;
-      const originalBase = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw / (1 + serviceGstPct / 100)).toFixed(2)));
-      const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw - originalBase).toFixed(2)));
+      const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw * (serviceGstPct / 100)).toFixed(2)));
+      const originalBase = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw - originalGST).toFixed(2)));
 
       // -- Vendor-added services --
       const billServices = (billDetails?.services || []).map(svc => {

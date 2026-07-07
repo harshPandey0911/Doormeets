@@ -425,7 +425,7 @@ const getEarningsBreakdown = async (req, res) => {
 
       // Math
       const adminGrossShare = Math.max(0, cp - vPayoutBase);
-      const platformGstAmount = adminGrossShare - (adminGrossShare / (1 + (gstPct / 100)));
+      const platformGstAmount = adminGrossShare * (gstPct / 100);
       const adminTaxableEarning = adminGrossShare - platformGstAmount;
 
       const vendorSgstAmount = vPayoutBase * (vSgstPct / 100);

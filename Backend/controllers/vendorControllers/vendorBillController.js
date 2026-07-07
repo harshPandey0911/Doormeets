@@ -57,9 +57,9 @@ const createOrUpdateBill = async (req, res) => {
     // ═══════════════════════════════════════
     const isPlanBooking = booking.paymentMethod === 'plan_benefit';
     const basePriceRaw = booking.basePrice || 0;
-    const originalServiceBaseForBill = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw / (1 + serviceGstPct / 100)).toFixed(2)));
+    const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw * (serviceGstPct / 100)).toFixed(2)));
+    const originalServiceBaseForBill = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw - originalGST).toFixed(2)));
     const originalServiceBaseForEarnings = originalServiceBaseForBill;
-    const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw - originalServiceBaseForBill).toFixed(2)));
     const visitingCharges = Number(booking.visitingCharges) || 0;
 
     // ═══════════════════════════════════════
@@ -82,8 +82,8 @@ const createOrUpdateBill = async (req, res) => {
         const quantity = Number(item.quantity) || 1;
 
         const totalInclusive = customerPrice * quantity;
-        const base = parseFloat((totalInclusive / 1.18).toFixed(2));
-        const gst = parseFloat((totalInclusive - base).toFixed(2));
+        const gst = parseFloat((totalInclusive * 0.18).toFixed(2));
+        const base = parseFloat((totalInclusive - gst).toFixed(2));
 
         processedServices.push({
           catalogId: item.catalogId,

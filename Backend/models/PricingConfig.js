@@ -166,8 +166,8 @@ pricingConfigSchema.post('save', async function(doc) {
     
     if (doc.gstIncluded) {
       finalCustomerPrice = price;
-      taxableAmount = price / (1 + (gstPct / 100));
-      gstAmount = price - taxableAmount;
+      gstAmount = price * (gstPct / 100);
+      taxableAmount = price - gstAmount;
     } else {
       taxableAmount = price;
       gstAmount = price * (gstPct / 100);

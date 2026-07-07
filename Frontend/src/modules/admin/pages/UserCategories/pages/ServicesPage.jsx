@@ -1117,8 +1117,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     let adminGstAmount = 0;
 
     if (gstInc) {
-      adminTaxableBase = adminGrossMargin / (1 + (gstPct / 100));
-      adminGstAmount = adminGrossMargin - adminTaxableBase;
+      adminGstAmount = adminGrossMargin * (gstPct / 100);
+      adminTaxableBase = adminGrossMargin - adminGstAmount;
     } else {
       adminTaxableBase = adminGrossMargin;
       adminGstAmount = adminGrossMargin * (gstPct / 100);
@@ -2329,7 +2329,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                 totalCustomerPay = platformFeeInclusive + vendorShareInclusive;
                               }
 
-                              const displayTaxable = gstInc ? cp / (1 + gstPct / 100) : cp;
+                              const displayTaxable = gstInc ? cp - (cp * (gstPct / 100)) : cp;
                               const displayPlatComm = displayTaxable * (pCommPct / 100);
                               const profL1 = displayPlatComm + (displayTaxable * (l1Pct / 100));
                               const profL2 = displayPlatComm + (displayTaxable * (l2Pct / 100));
