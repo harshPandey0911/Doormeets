@@ -255,7 +255,7 @@ const RoomConfiguration = ({ onSuccess }) => {
   }, [pageConfig?.featureCards]);
 
   return (
-    <div className="bg-[#FAFAFA] dark:bg-gray-950 text-[#111827] dark:text-gray-100 min-h-screen font-sans antialiased overflow-x-hidden">
+    <div className="bg-[#FAFAFA] dark:bg-gray-950 text-[#111827] dark:text-gray-100 min-h-screen font-sans antialiased">
       
       {/* Dynamic requested status toast */}
       <AnimatePresence>
@@ -284,7 +284,7 @@ const RoomConfiguration = ({ onSuccess }) => {
       </AnimatePresence>
 
       {/* Hero Section Container */}
-      <div className="relative bg-gradient-to-b from-[#FFF5F2]/60 via-white to-[#FAFAFA] dark:from-gray-950 dark:via-gray-950 dark:to-gray-950 pt-6 pb-12 md:pb-16 px-4 md:px-8">
+      <div className="relative overflow-x-hidden bg-gradient-to-b from-[#FFF5F2]/60 via-white to-[#FAFAFA] dark:from-gray-950 dark:via-gray-950 dark:to-gray-950 pt-6 pb-12 md:pb-16 px-4 md:px-8">
         
         {/* Glow Blob Background Graphics */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#E85D3F]/5 rounded-full blur-3xl -z-10 pointer-events-none" />
@@ -361,7 +361,7 @@ const RoomConfiguration = ({ onSuccess }) => {
             {/* Visual Frame */}
             <div className="relative rounded-[28px] overflow-hidden border-[6px] border-white dark:border-gray-900 shadow-2xl w-full h-[460px] transform rotate-1">
               <img 
-                src="https://images.unsplash.com/photo-1562184560-a11b7cf7c166?auto=format&fit=crop&q=80&w=800" 
+                src="/assets/painting-hero.png" 
                 alt="Modern premium interior paint style"
                 className="w-full h-full object-cover"
                 loading="eager"
@@ -429,10 +429,10 @@ const RoomConfiguration = ({ onSuccess }) => {
             return (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.5, delay: idx * 0.15 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
                 className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-[20px] p-8 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-start text-left space-y-4 w-full"
               >
                 <div className="w-12 h-12 rounded-[16px] bg-[#FFF5F2] dark:bg-[#E85D3F]/10 text-[#E85D3F] flex items-center justify-center shrink-0 shadow-sm">
@@ -469,10 +469,10 @@ const RoomConfiguration = ({ onSuccess }) => {
           {layouts.map((layout) => (
             <motion.div
               key={layout.id}
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-              transition={{ duration: 0.5 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 0.4 }}
               className="group relative flex flex-col bg-white dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-150/60 dark:border-gray-800/80 shadow-[0_8px_30px_rgba(232,93,63,0.01)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-all duration-300"
             >
               {/* Layout Photo Image frame */}
@@ -570,9 +570,9 @@ const RoomConfiguration = ({ onSuccess }) => {
       {/* Bottom Contact / Premium Call to Action */}
       <section className="max-w-[1280px] mx-auto px-4 md:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
+          viewport={{ once: true, amount: 0.2 }}
           className="relative bg-gradient-to-r from-gray-900 via-gray-950 to-gray-900 text-white rounded-[28px] p-8 md:p-12 lg:p-16 overflow-hidden shadow-2xl border border-gray-800 flex flex-col lg:flex-row items-center justify-between gap-8"
         >
           {/* Subtle soft orange backdrop glow */}
