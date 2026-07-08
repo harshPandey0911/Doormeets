@@ -193,7 +193,7 @@ const getChildRoute = (parentRoute, childName) => {
       "Paint Brands": "/admin/painting/brands",
       "Paint Products": "/admin/painting/products",
       "Property Templates": "/admin/painting/layouts",
-      "Labour Rates": "/admin/painting/rates",
+      "Pricing Config": "/admin/painting/pricing",
       "Settings Dashboard": "/admin/painting/settings",
       "Page Builder": "/admin/painting/page-builder",
       "Painting Quotations": "/admin/painting/quotations",

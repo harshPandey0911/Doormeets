@@ -76,6 +76,12 @@ const notificationSchema = new mongoose.Schema({
       'retraining_assigned',  // Admin forced vendor retraining
       'account_frozen',       // Admin froze vendor account
       'account_unfrozen',     // Admin unfroze vendor account
+      // ─── Painting Consultation Tracking ───
+      'painting_vendor_assigned',     // User notified: vendor accepted their request
+      'painting_vendor_en_route',     // User notified: vendor is on the way
+      'painting_inspection_started',  // User notified: inspection began
+      'painting_inspection_complete', // User notified: inspection done, quote incoming
+      'painting_slot_confirmed',      // User notified: scheduled slot confirmed by vendor
       'general'
     ],
     index: true
@@ -98,7 +104,7 @@ const notificationSchema = new mongoose.Schema({
   },
   relatedType: {
     type: String,
-    enum: ['booking', 'payment', 'user', 'vendor', 'worker', 'service', 'scrap', 'withdrawal', 'training'],
+    enum: ['booking', 'payment', 'user', 'vendor', 'worker', 'service', 'scrap', 'withdrawal', 'training', 'painting_consultation'],
     default: null
   },
   // Notification Status

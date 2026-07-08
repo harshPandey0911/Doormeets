@@ -9,10 +9,12 @@ import AdditionalServices from './AdditionalServices';
 import BrandAndUpgrades from './BrandAndUpgrades';
 import QuotationSummary from './QuotationSummary';
 import FinalizeBooking from './FinalizeBooking';
+import BookingTypeSelector from './BookingTypeSelector';
 import { requestConsultation } from '../../services/paintingConsultationService';
 import { toast } from 'react-hot-toast';
 
 const STEPS = [
+  { label: 'Booking Type', icon: '⚡' },
   { label: 'Room Details', icon: '🏠' },
   { label: 'Wall Measurements', icon: '📐' },
   { label: 'Select Paint', icon: '🎨' },
@@ -24,6 +26,8 @@ const STEPS = [
 ];
 
 const defaultWizardData = {
+  bookingType: 'INSTANT',
+  scheduledSlot: { date: null, timeSlot: '' },
   projectType: 'INTERIOR',
   customAreaName: '',
   surfaceCondition: 'GOOD',
@@ -160,8 +164,15 @@ const PaintingWizard = ({ onSuccess, propertyType }) => {
 
       {/* Step Content */}
       <div className="pb-28">
-        {currentStep === 0 && <Step1RoomDetails {...stepProps} />}
-        {currentStep === 1 && (
+        {currentStep === 0 && (
+          <BookingTypeSelector
+            wizardData={wizardData}
+            updateWizardData={updateWizardData}
+            onNext={goNext}
+          />
+        )}
+        {currentStep === 1 && <Step1RoomDetails {...stepProps} />}
+        {currentStep === 2 && (
           <RoomWallMeasurements
             room={wizardData.rooms[0] || {}}
             onUpdateRoom={handleRoomWallUpdate}
@@ -169,9 +180,9 @@ const PaintingWizard = ({ onSuccess, propertyType }) => {
             onSave={goNext}
           />
         )}
-        {currentStep === 2 && <Step2SelectPaint {...stepProps} />}
-        {currentStep === 3 && <Step3Utilities {...stepProps} />}
-        {currentStep === 4 && (
+        {currentStep === 3 && <Step2SelectPaint {...stepProps} />}
+        {currentStep === 4 && <Step3Utilities {...stepProps} />}
+        {currentStep === 5 && (
           <AdditionalServices
             wizardData={wizardData}
             updateWizardData={updateWizardData}
@@ -179,7 +190,7 @@ const PaintingWizard = ({ onSuccess, propertyType }) => {
             onContinue={goNext}
           />
         )}
-        {currentStep === 5 && (
+        {currentStep === 6 && (
           <BrandAndUpgrades
             wizardData={wizardData}
             updateWizardData={updateWizardData}
@@ -187,14 +198,14 @@ const PaintingWizard = ({ onSuccess, propertyType }) => {
             onContinue={goNext}
           />
         )}
-        {currentStep === 6 && (
+        {currentStep === 7 && (
           <QuotationSummary
             wizardData={wizardData}
             onBack={goBack}
             onContinue={goNext}
           />
         )}
-        {currentStep === 7 && (
+        {currentStep === 8 && (
           <FinalizeBooking
             wizardData={wizardData}
             updateWizardData={updateWizardData}

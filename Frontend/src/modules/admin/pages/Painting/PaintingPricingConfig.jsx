@@ -49,8 +49,7 @@ const PaintingPricingConfig = () => {
   const [propertyLayouts, setPropertyLayouts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [wallBaseRate, setWallBaseRate] = useState(10);
-  const [newBrand, setNewBrand] = useState({ name: '', standardRate: 10, premiumRate: 15, luxuryRate: 22 });
-
+  
   useEffect(() => {
     fetchRates();
   }, []);
@@ -133,26 +132,6 @@ const PaintingPricingConfig = () => {
     }));
   };
 
-  const updateBrandRate = (idx, field, value) => {
-    const updated = [...brands];
-    updated[idx] = {
-      ...updated[idx],
-      [field]: field === 'name' ? value : Number(value) || 0
-    };
-    setBrands(updated);
-  };
-
-  const handleAddBrand = () => {
-    if (!newBrand.name.trim()) return toast.error('Enter brand name');
-    setBrands([...brands, { ...newBrand }]);
-    setNewBrand({ name: '', standardRate: 10, premiumRate: 15, luxuryRate: 22 });
-    toast.success('Brand added!');
-  };
-
-  const handleRemoveBrand = (idx) => {
-    setBrands(brands.filter((_, i) => i !== idx));
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -212,114 +191,7 @@ const PaintingPricingConfig = () => {
         </div>
       </div>
 
-      {/* Brands Setup */}
-      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-          <div>
-            <h3 className="font-bold text-gray-800 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                <path d="M12 6v12M6 12h12"/>
-              </svg>
-              Brands & Tier Multipliers
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">Set rates per sqft for Economy, Premium, and Luxury brand packages.</p>
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          {brands.map((b, idx) => (
-            <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-              <input
-                type="text"
-                className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-bold text-gray-800 outline-none w-full md:w-48 focus:border-blue-500"
-                value={b.name}
-                onChange={e => updateBrandRate(idx, 'name', e.target.value)}
-              />
-              <div className="flex gap-3 items-center flex-wrap">
-                <div>
-                  <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Std (₹/sqft)</span>
-                  <input
-                    type="number"
-                    className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800 focus:border-blue-500"
-                    value={b.standardRate}
-                    onChange={e => updateBrandRate(idx, 'standardRate', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Prem (₹/sqft)</span>
-                  <input
-                    type="number"
-                    className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800 focus:border-blue-500"
-                    value={b.premiumRate}
-                    onChange={e => updateBrandRate(idx, 'premiumRate', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Lux (₹/sqft)</span>
-                  <input
-                    type="number"
-                    className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800 focus:border-blue-500"
-                    value={b.luxuryRate}
-                    onChange={e => updateBrandRate(idx, 'luxuryRate', e.target.value)}
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => handleRemoveBrand(idx)}
-                className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold transition-all"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
 
-          {/* Add New Brand */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-dashed border-gray-200 bg-white">
-            <input
-              type="text"
-              placeholder="New Brand (e.g. Nerolac)"
-              className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-bold text-gray-800 outline-none w-full md:w-48 focus:border-blue-500"
-              value={newBrand.name}
-              onChange={e => setNewBrand({ ...newBrand, name: e.target.value })}
-            />
-            <div className="flex gap-3 items-center flex-wrap">
-              <div>
-                <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Std (₹)</span>
-                <input
-                  type="number"
-                  className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800"
-                  value={newBrand.standardRate}
-                  onChange={e => setNewBrand({ ...newBrand, standardRate: Number(e.target.value) || 0 })}
-                />
-              </div>
-              <div>
-                <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Prem (₹)</span>
-                <input
-                  type="number"
-                  className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800"
-                  value={newBrand.premiumRate}
-                  onChange={e => setNewBrand({ ...newBrand, premiumRate: Number(e.target.value) || 0 })}
-                />
-              </div>
-              <div>
-                <span className="block text-[9px] font-extrabold text-gray-400 uppercase">Lux (₹)</span>
-                <input
-                  type="number"
-                  className="p-2 border border-gray-200 rounded-lg text-sm bg-white w-20 text-center font-bold text-gray-800"
-                  value={newBrand.luxuryRate}
-                  onChange={e => setNewBrand({ ...newBrand, luxuryRate: Number(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleAddBrand}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all"
-            >
-              + Add Brand
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Section 1: Utility Rates */}
       <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">

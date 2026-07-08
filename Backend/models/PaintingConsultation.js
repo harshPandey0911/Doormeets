@@ -140,12 +140,45 @@ const wizardDataSchema = new mongoose.Schema({
   grandTotal: { type: Number, default: 0 }
 }, { _id: false });
 
+// ─────────────── Tracking Sub-Document ───────────────
+const trackingSchema = new mongoose.Schema({
+  // Arrival OTP (sent to user's phone, vendor asks user for it to prove physical presence)
+  arrivalOtp: { type: String, default: null },
+  arrivalOtpExpiresAt: { type: Date, default: null },
+  arrivalOtpVerified: { type: Boolean, default: false },
+  arrivalOtpVerifiedAt: { type: Date, default: null },
+
+  // Arrival Evidence
+  arrivalPhotoUrls: [{ type: String }],
+  arrivalGeoLat: { type: Number, default: null },
+  arrivalGeoLng: { type: Number, default: null },
+
+  // Completion OTP (sent to user after inspection, vendor enters to confirm work done)
+  completionOtp: { type: String, default: null },
+  completionOtpExpiresAt: { type: Date, default: null },
+  completionOtpVerified: { type: Boolean, default: false },
+  completionOtpVerifiedAt: { type: Date, default: null },
+
+  // Inspection Photos (uploaded by vendor after inspection walk-through)
+  inspectionPhotoUrls: [{ type: String }],
+
+  // Key timestamps for the full flow
+  vendorAcceptedAt: { type: Date, default: null },
+  vendorEnRouteAt: { type: Date, default: null },
+  inspectionStartedAt: { type: Date, default: null },
+  inspectionCompletedAt: { type: Date, default: null }
+}, { _id: false });
+
 const paintingConsultationSchema = new mongoose.Schema({
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
   },
+
+  // Denormalized for quick OTP SMS sending without extra DB lookups
+  userPhone: { type: String, default: '' },
+
   propertyType: { 
     type: String, 
     required: true 
@@ -158,21 +191,39 @@ const paintingConsultationSchema = new mongoose.Schema({
     pincode: String,
     fullAddress: String
   },
+
+  // ─── Booking Type ────────────────────────────────────
+  bookingType: {
+    type: String,
+    enum: ['INSTANT', 'SCHEDULED'],
+    default: 'INSTANT'
+    // INSTANT  → vendor assigned ASAP (within 2-4 hrs)
+    // SCHEDULED → user picked a date + time slot
+  },
+  scheduledSlot: {
+    date: { type: Date, default: null },         // e.g. 2026-07-10
+    timeSlot: { type: String, default: '' }      // e.g. "10:00 AM - 12:00 PM"
+  },
+
   // Rich wizard data collected during 5-step user flow
   wizardData: wizardDataSchema,
+
   status: { 
     type: String, 
     enum: [
-      'PENDING',               // Broadcast to vendors
-      'ACCEPTED_BY_VENDOR',    // A vendor has picked it up
-      'QUOTE_GENERATED',       // Vendor visited and submitted a quote
-      'QUOTE_ACCEPTED',        // User accepted the quote
-      'QUOTE_DECLINED',        // User declined the quote
-      'DECLINED_BY_VENDOR',    // Vendor cancelled their acceptance
-      'COMPLETED'              // Job finished
+      'PENDING',                // Broadcast to vendors
+      'ACCEPTED_BY_VENDOR',     // A vendor has picked it up
+      'VENDOR_EN_ROUTE',        // Vendor marked on their way to location
+      'INSPECTION_IN_PROGRESS', // Arrival OTP verified — inspection underway
+      'QUOTE_GENERATED',        // Vendor submitted a quote → pending admin review
+      'QUOTE_ACCEPTED',         // User accepted the quote
+      'QUOTE_DECLINED',         // User declined the quote
+      'DECLINED_BY_VENDOR',     // Vendor cancelled their acceptance
+      'COMPLETED'               // Job finished
     ], 
     default: 'PENDING' 
   },
+
   vendorId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Vendor', 
@@ -186,7 +237,11 @@ const paintingConsultationSchema = new mongoose.Schema({
   notifiedVendors: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor'
-  }]
+  }],
+
+  // ─── Tracking Sub-Document ───────────────────────────
+  tracking: { type: trackingSchema, default: () => ({}) }
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('PaintingConsultation', paintingConsultationSchema);
