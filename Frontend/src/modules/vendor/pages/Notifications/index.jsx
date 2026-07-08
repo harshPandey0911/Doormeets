@@ -115,6 +115,73 @@ const Notifications = () => {
     }
   };
 
+  const handleNotificationClick = async (notif) => {
+    // 1. Mark as read if unread
+    if (!notif.read) {
+      await handleMarkAsRead(notif.id);
+    }
+
+    // 2. Navigate based on type / relatedType / action
+    const type = (notif.type || '').toLowerCase();
+    const relatedType = (notif.relatedType || '').toLowerCase();
+    const title = (notif.title || '').toLowerCase();
+    const message = (notif.message || '').toLowerCase();
+    const action = notif.action;
+
+    // Direct action/link overrides
+    if (notif.data?.link) {
+      navigate(notif.data.link);
+      return;
+    }
+
+    // Painting routes
+    const isPainting = 
+      notif.data?.isPainting === true || 
+      notif.data?.consultationId ||
+      title.includes('painting') || 
+      message.includes('painting') || 
+      type.includes('painting');
+
+    if (isPainting) {
+      const consultationId = notif.data?.consultationId || notif.relatedId || notif.bookingId;
+      if (consultationId) {
+        navigate(`/vendor/painting-consultations?consultationId=${consultationId}`);
+      } else {
+        navigate('/vendor/painting-consultations');
+      }
+      return;
+    }
+
+    // Booking / Job routes
+    const isBooking = 
+      relatedType === 'booking' || 
+      ['booking', 'job', 'work', 'visit', 'journey'].some(t => type.includes(t)) ||
+      title.includes('booking') ||
+      message.includes('booking');
+
+    if (isBooking) {
+      const targetId = notif.relatedId || notif.data?.bookingId || notif.bookingId;
+      if (targetId) {
+        navigate(`/vendor/booking/${targetId}`);
+      } else {
+        navigate('/vendor/bookings');
+      }
+      return;
+    }
+
+    // Wallet / payout / payment routes
+    const isWallet = 
+      relatedType === 'payment' || 
+      ['payment', 'refund', 'wallet', 'payout'].some(t => type.includes(t)) ||
+      type === 'payout_requested' || 
+      action === 'view_wallet';
+
+    if (isWallet) {
+      navigate('/vendor/wallet');
+      return;
+    }
+  };
+
   const filteredNotifications = notifications.filter(notif => {
     if (filter === 'all') return true;
 
@@ -226,7 +293,8 @@ const Notifications = () => {
             {filteredNotifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`bg-white rounded-xl p-4 shadow-md transition-all relative group ${!notif.read ? 'border-l-4' : ''
+                onClick={() => handleNotificationClick(notif)}
+                className={`bg-white rounded-xl p-4 shadow-md transition-all relative group cursor-pointer hover:bg-gray-50 active:scale-[0.995] duration-200 ${!notif.read ? 'border-l-4' : ''
                   }`}
                 style={{
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -248,11 +316,12 @@ const Notifications = () => {
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">{notif.time || (notif.createdAt && new Date(notif.createdAt).toLocaleString())}</p>
-
+ 
                     {/* Action button based on type/related entity */}
                     {(notif.action || notif.relatedType === 'booking' || notif.type === 'payout_requested') && (
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (notif.relatedType === 'booking' && notif.relatedId) {
                             if (notif.data?.isPainting || notif.title?.toLowerCase().includes('painting')) {
                               const consultationId = notif.data?.consultationId || notif.relatedId;
@@ -279,7 +348,7 @@ const Notifications = () => {
                     )}
                   </div>
                 </div>
-
+ 
                 {/* Actions: Mark Read & Delete - Positioned absolute top-right */}
                 <div className="absolute top-3 right-3 flex gap-2">
                   {!notif.read && (

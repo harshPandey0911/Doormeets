@@ -254,7 +254,7 @@ const BookingDetails = () => {
       case 'journey_started':
         return <FiLoader className="w-5 h-5 text-blue-500 animate-spin" />;
       case 'visited':
-        return <FiMapPin className="w-5 h-5 text-[#9E2E2A]" />;
+        return <FiMapPin className="w-5 h-5 text-[#E05333]" />;
       case 'completed':
         return <FiCheckCircle className="w-5 h-5 text-white" />;
       case 'cancelled':
@@ -281,7 +281,7 @@ const BookingDetails = () => {
       case 'journey_started':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'visited':
-        return 'bg-orange-50 text-[#9E2E2A] border-orange-200';
+        return 'bg-orange-50 text-[#E05333] border-orange-200';
       case 'completed':
         return 'bg-brand text-white border-transparent';
       case 'cancelled':
@@ -665,7 +665,7 @@ const BookingDetails = () => {
                 {/* Step 1: Booked */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['pending', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
+                    ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-divider text-secondary-text'
                     }`}>
                     <FiCheckCircle className="w-4 h-4" />
                   </div>
@@ -675,7 +675,7 @@ const BookingDetails = () => {
                 {/* Step 2: Assigned */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
+                    ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-divider text-secondary-text'
                     }`}>
                     2
                   </div>
@@ -685,7 +685,7 @@ const BookingDetails = () => {
                 {/* Step 3: In Progress */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
+                    ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-divider text-secondary-text'
                     }`}>
                     3
                   </div>
@@ -695,7 +695,7 @@ const BookingDetails = () => {
                 {/* Step 4: Done */}
                 <div className="flex flex-col items-center gap-2 w-1/4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
+                    ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-divider text-secondary-text'
                     }`}>
                     4
                   </div>
@@ -704,7 +704,7 @@ const BookingDetails = () => {
               </div>
               {/* Connect lines */}
               <div className="absolute top-18 left-[15%] right-[15%] h-0.5 bg-divider z-0">
-                <div className="h-full bg-[#B33A35] transition-all duration-1000" style={{
+                <div className="h-full bg-brand transition-all duration-1000" style={{
                   width:
                     ['work_done', 'completed'].includes(booking.status?.toLowerCase()) ? '100%' :
                       ['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? '66%' :
@@ -1522,7 +1522,7 @@ const BookingDetails = () => {
                 <button
                   onClick={() => setShowPaymentModal(true)}
                   disabled={paying}
-                  className="w-full py-3 bg-[#B33A35] text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
+                  className="w-full py-3 bg-brand text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-[#E05333] transition-all active:scale-[0.98]"
                 >
                   {paying ? 'Processing...' : '⚡ Pay Booking Bill'}
                 </button>

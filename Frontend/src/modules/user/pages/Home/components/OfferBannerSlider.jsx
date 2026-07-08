@@ -33,13 +33,13 @@ const OfferBannerSlider = ({ banners }) => {
   };
 
   return (
-    <div className="px-5 mb-4 w-full">
+    <div className="px-5 mb-5 w-full">
       <Swiper
         modules={[Autoplay, Pagination]}
-        spaceBetween={12}
+        spaceBetween={16}
         slidesPerView={1}
         autoplay={{
-          delay: 3000,
+          delay: 3500,
           disableOnInteraction: false,
         }}
         pagination={{
@@ -52,12 +52,12 @@ const OfferBannerSlider = ({ banners }) => {
             spaceBetween: 0,
           }
         }}
-        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[16/9] md:aspect-[3.2/1] lg:aspect-[3.6/1]"
+        className="rounded-[28px] overflow-hidden shadow-md lg:rounded-[36px] w-full aspect-[16/9] md:aspect-[3.2/1] lg:aspect-[3.6/1] border border-border/40"
       >
-        {banners.map((banner) => (
+        {banners.map((banner, index) => (
           <SwiperSlide 
-            key={banner._id}
-            className="relative w-full h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
+            key={banner.id || banner._id || index}
+            className="relative w-full h-full cursor-pointer overflow-hidden group"
             onClick={() => handleBannerClick(banner)}
           >
             {banner.mediaType === 'video' ? (
@@ -69,7 +69,7 @@ const OfferBannerSlider = ({ banners }) => {
                   muted 
                   loop 
                   playsInline 
-                  className="hidden md:block w-full h-full object-cover"
+                  className="hidden md:block w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
                 />
                 {/* Mobile Video */}
                 <video 
@@ -78,7 +78,7 @@ const OfferBannerSlider = ({ banners }) => {
                   muted 
                   loop 
                   playsInline 
-                  className="block md:hidden w-full h-full object-cover"
+                  className="block md:hidden w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
                 />
               </>
             ) : (
@@ -87,14 +87,14 @@ const OfferBannerSlider = ({ banners }) => {
                 <img 
                   src={banner.imageUrl} 
                   alt={banner.title} 
-                  className="hidden md:block w-full h-full object-cover"
+                  className="hidden md:block w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
                   loading="lazy"
                 />
                 {/* Mobile Image */}
                 <img 
                   src={banner.mobileImageUrl || banner.imageUrl} 
                   alt={banner.title} 
-                  className="block md:hidden w-full h-full object-cover"
+                  className="block md:hidden w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
                   loading="lazy"
                 />
               </>
@@ -105,10 +105,10 @@ const OfferBannerSlider = ({ banners }) => {
       
       <style>{`
         .swiper-pagination-bullet-active {
-          background: #2874f0 !important;
+          background: #FF6B4A !important;
         }
         .swiper-pagination {
-          bottom: 10px !important;
+          bottom: 15px !important;
         }
       `}</style>
     </div>

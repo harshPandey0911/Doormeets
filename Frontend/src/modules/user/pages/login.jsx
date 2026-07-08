@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiPhone, FiArrowRight, FiCheckCircle, FiChevronLeft } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -181,7 +182,7 @@ const Login = () => {
   return (
     <div className="min-h-[100dvh] bg-[#F4F5F8] md:bg-gray-100 flex flex-col justify-start md:justify-center md:py-12 md:px-6 lg:px-8 relative overflow-x-hidden font-['Montserrat']">
       <div className="w-full max-w-md mx-auto bg-white md:rounded-3xl md:shadow-2xl md:border md:border-gray-100 overflow-hidden flex flex-col min-h-[100dvh] md:min-h-0 relative animate-fade-in">
-        
+
         {/* Top Section: Header Banner with Illustration */}
         <div className="w-full bg-[#F4F5F8] py-7 px-6 relative flex items-center justify-center select-none border-b border-gray-100">
           {/* Close X Button */}
@@ -221,7 +222,7 @@ const Login = () => {
                     <label htmlFor="phone" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
                       Mobile Number
                     </label>
-                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-brand focus-within:ring-1 focus-within:ring-brand transition-all">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <span className="text-gray-500 font-medium text-sm border-r border-gray-200 pr-3">+91</span>
                       </div>
@@ -245,7 +246,7 @@ const Login = () => {
                   <button
                     type="submit"
                     disabled={isLoading || phoneNumber.length < 10}
-                    className="w-full py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
+                    className="w-full py-3.5 bg-brand hover:bg-[#E05333] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-brand/20 cursor-pointer active:scale-[0.98]"
                   >
                     {isLoading ? (
                       <LogoLoader fullScreen={false} inline={true} size="w-5 h-5" />
@@ -278,7 +279,7 @@ const Login = () => {
                           onFocus={() => setFocusedIndex(index)}
                           onBlur={() => setFocusedIndex(null)}
                           placeholder={focusedIndex === index ? "_" : ""}
-                          className="w-11 h-12 text-center text-xl font-semibold bg-[#FFF5F5] border border-[#FCD7D9] rounded-xl focus:bg-white focus:border-[#B33A35] focus:ring-1 focus:ring-[#B33A35] outline-none transition-all text-[#B33A35]"
+                          className="w-11 h-12 text-center text-xl font-semibold bg-brand/5 border border-brand/20 rounded-xl focus:bg-white focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all text-brand"
                         />
                       ))}
                     </div>
@@ -294,7 +295,7 @@ const Login = () => {
                         setStep('phone');
                         setResendTimer(0);
                       }}
-                      className="flex items-center text-gray-500 hover:text-[#B33A35] transition-colors gap-0.5 cursor-pointer"
+                      className="flex items-center text-gray-500 hover:text-brand transition-colors gap-0.5 cursor-pointer"
                     >
                       <FiChevronLeft /> Change Number
                     </button>
@@ -318,7 +319,7 @@ const Login = () => {
                         }
                       }}
                       disabled={isLoading || resendTimer > 0}
-                      className="text-[#B33A35] hover:text-[#9E2E2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className="text-brand hover:text-[#E05333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {resendTimer > 0
                         ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
@@ -329,7 +330,7 @@ const Login = () => {
                   <button
                     type="submit"
                     disabled={isLoading || otp.join('').length !== 6}
-                    className="w-full py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
+                    className="w-full py-3.5 bg-brand hover:bg-[#E05333] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-brand/20 cursor-pointer active:scale-[0.98]"
                   >
                     {isLoading ? (
                       <LogoLoader fullScreen={false} inline={true} size="w-5 h-5" />
@@ -350,7 +351,7 @@ const Login = () => {
             {step === 'phone' && (
               <p className="text-center text-sm text-gray-500 font-medium">
                 New to Doormeets?{' '}
-                <Link to="/user/signup" className="text-[#B33A35] hover:text-[#9E2E2A] font-semibold transition-colors">
+                <Link to="/user/signup" className="text-brand hover:text-[#E05333] font-semibold transition-colors">
                   Create an account
                 </Link>
               </p>

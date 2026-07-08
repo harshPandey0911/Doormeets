@@ -38,33 +38,43 @@ const AboutDoormeets = () => {
     WebkitTextFillColor: 'transparent',
   };
 
-  const features = [
-    {
-      icon: FiUsers,
-      title: 'Expert Providers',
-      description: 'Verified professionals for all your needs'
-    },
-    {
-      icon: FiShield,
-      title: 'Safe & Secure',
-      description: 'Your safety is our top priority'
-    },
-    {
-      icon: FiClock,
-      title: 'On-Time Service',
-      description: 'Punctual delivery at your convenience'
-    },
-    {
-      icon: FiAward,
-      title: 'Quality Assured',
-      description: 'Service with 100% satisfaction guarantee'
+  const aboutData = (() => {
+    try {
+      const saved = localStorage.getItem('web_about_data');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error(e);
+      return null;
     }
-  ];
+  })() || {
+    mainText: 'Doormeets is India\'s leading on-demand home service marketplace, connecting thousands of customers with certified, high-quality professionals directly at home. We ensure quality, safety, and transparent pricing in every booking.',
+    yearsOfOperation: '5+',
+    completedJobs: '25,000+',
+    happyCustomers: '12,000+',
+    verifiedWorkers: '300+',
+    coreValues: [
+      { id: 1, title: 'Uncompromising Quality', desc: 'Every service is vetted and backed by our quality guarantee.' },
+      { id: 2, title: 'Safe & Verified', desc: 'Background checked & police-verified professionals only.' },
+      { id: 3, title: 'Transparent Pricing', desc: 'No hidden charges. Know what you pay before booking.' }
+    ]
+  };
+
+  const getIconForIndex = (index) => {
+    const icons = [FiAward, FiShield, FiClock, FiUsers, FiSmile];
+    return icons[index % icons.length] || FiAward;
+  };
+
+  const features = (aboutData.coreValues || []).map((val, idx) => ({
+    icon: getIconForIndex(idx),
+    title: val.title,
+    description: val.desc
+  }));
 
   const stats = [
-    { number: '10K+', label: 'Happy Customers' },
-    { number: '500+', label: 'Service Partners' },
-    { number: '4.8', label: 'App Rating' },
+    { number: aboutData.happyCustomers || '12,000+', label: 'Happy Customers' },
+    { number: aboutData.verifiedWorkers || '300+', label: 'Service Partners' },
+    { number: aboutData.completedJobs || '25,000+', label: 'Completed Jobs' },
+    { number: aboutData.yearsOfOperation || '5+', label: 'Years Active' },
   ];
 
   return (
@@ -145,7 +155,7 @@ const AboutDoormeets = () => {
             </div>
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Our Mission</h3>
             <p className="text-sm text-gray-600 leading-relaxed relative z-10 font-medium">
-              Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
+              {aboutData.mainText || 'Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.'}
             </p>
           </div>
         </motion.div>

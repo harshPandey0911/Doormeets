@@ -1217,6 +1217,35 @@ const getPublicHomeData = async (req, res) => {
     let formattedContent = null;
     if (homeContent) {
       const contentObj = homeContent.toObject();
+
+      // Load default/global home content for fallbacks if city-specific fields are empty
+      let defaultObj = null;
+      if (cityId) {
+        const defaultDoc = await HomeContent.findOne({ cityId: null }).lean();
+        if (defaultDoc) {
+          defaultObj = defaultDoc;
+        }
+      }
+
+      const getMergedArray = (key) => {
+        const arr = contentObj[key];
+        if (Array.isArray(arr) && arr.length > 0) return arr;
+        if (defaultObj && Array.isArray(defaultObj[key]) && defaultObj[key].length > 0) return defaultObj[key];
+        return [];
+      };
+
+      const getMergedBoolean = (key, arrayKey) => {
+        if (arrayKey) {
+          const arr = contentObj[arrayKey];
+          const hasCitySpecificData = Array.isArray(arr) && arr.length > 0;
+          if (!hasCitySpecificData && defaultObj && defaultObj[key] !== undefined) {
+            return defaultObj[key];
+          }
+        }
+        if (contentObj[key] !== undefined) return contentObj[key];
+        if (defaultObj && defaultObj[key] !== undefined) return defaultObj[key];
+        return true;
+      };
       
       // Find all active categories
       const activeCats = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id');
@@ -1274,45 +1303,62 @@ const getPublicHomeData = async (req, res) => {
       };
 
       formattedContent = {
-        banners: (contentObj.banners || []).map(item => ({
+        banners: (getMergedArray('banners')).map(item => ({
+          id: item._id?.toString() || item.id,
           imageUrl: item.imageUrl,
+          title: item.title || item.text || '',
+          link: item.link || '',
           targetCategoryId: item.targetCategoryId?.toString() || null,
-          slug: item.slug,
-          order: item.order
+          slug: item.slug || '',
+          order: item.order || 0
         })),
-        promos: (contentObj.promos || []).map(item => ({
+        promos: (getMergedArray('promos')).map(item => ({
+          id: item._id?.toString() || item.id,
           title: item.title,
-          subtitle: item.subtitle,
-          imageUrl: item.imageUrl,
+          subtitle: item.subtitle || item.description || '',
+          buttonText: item.buttonText || '',
+          gradientClass: item.gradientClass || item.className || 'from-blue-600 to-blue-800',
+          imageUrl: item.imageUrl || item.image || '',
           targetCategoryId: item.targetCategoryId?.toString() || null,
-          order: item.order
+          slug: item.slug || '',
+          scrollToSection: item.scrollToSection || '',
+          order: item.order || 0
         })),
-        curated: (contentObj.curated || []).map(item => ({
+        curated: (getMergedArray('curated')).map(item => ({
+          id: item._id?.toString() || item.id,
           title: item.title,
-          gifUrl: item.gifUrl,
-          order: item.order
-        })),
-        noteworthy: (contentObj.noteworthy || []).map(item => ({
-          title: item.title,
-          imageUrl: item.imageUrl,
+          gifUrl: item.gifUrl || '',
+          slug: item.slug || '',
           targetCategoryId: item.targetCategoryId?.toString() || null,
-          order: item.order
+          order: item.order || 0
         })),
-        booked: (contentObj.booked || []).map(item => {
+        noteworthy: (getMergedArray('noteworthy')).map(item => ({
+          id: item._id?.toString() || item.id,
+          title: item.title,
+          imageUrl: item.imageUrl || '',
+          slug: item.slug || '',
+          targetCategoryId: item.targetCategoryId?.toString() || null,
+          order: item.order || 0
+        })),
+        booked: (getMergedArray('booked')).map(item => {
           // Dynamically update booked items price
           const bestService = findBestItem(item.title, allActiveServices);
           return {
+            id: item._id?.toString() || item.id,
             title: item.title,
-            rating: item.rating,
+            rating: item.rating || "4.8",
+            reviews: item.reviews || "10k+",
             price: bestService ? bestService.basePrice : item.price,
+            originalPrice: item.originalPrice || null,
+            discount: item.discount || null,
             imageUrl: item.imageUrl,
             targetCategoryId: item.targetCategoryId?.toString() || null,
             targetServiceId: bestService ? bestService._id.toString() : (item.targetServiceId?.toString() || null),
             slug: bestService ? bestService.slug : (item.slug || ''),
-            order: item.order
+            order: item.order || 0
           };
         }),
-        categorySections: (contentObj.categorySections || []).map(section => ({
+        categorySections: (getMergedArray('categorySections')).map(section => ({
           title: section.title,
           seeAllTargetCategoryId: section.seeAllTargetCategoryId?.toString() || null,
           cards: (section.cards || []).map(card => {
@@ -1328,6 +1374,7 @@ const getPublicHomeData = async (req, res) => {
             }
 
             return {
+              id: card._id?.toString() || card.id || null,
               title: displayTitle,
               imageUrl: card.imageUrl,
               price: best ? (best.basePrice || best.price) : card.price,
@@ -1339,16 +1386,16 @@ const getPublicHomeData = async (req, res) => {
           }),
           order: section.order
         })),
-        isBannersVisible: contentObj.isBannersVisible ?? true,
-        isPromosVisible: contentObj.isPromosVisible ?? true,
-        isCuratedVisible: contentObj.isCuratedVisible ?? true,
-        isNoteworthyVisible: contentObj.isNoteworthyVisible ?? true,
-        isBookedVisible: contentObj.isBookedVisible ?? true,
-        isCategorySectionsVisible: contentObj.isCategorySectionsVisible ?? true,
-        isCategoriesVisible: contentObj.isCategoriesVisible ?? true,
-        isFeaturedSectionsVisible: contentObj.isFeaturedSectionsVisible ?? true,
+        isBannersVisible: getMergedBoolean('isBannersVisible', 'banners'),
+        isPromosVisible: getMergedBoolean('isPromosVisible', 'promos'),
+        isCuratedVisible: getMergedBoolean('isCuratedVisible', 'curated'),
+        isNoteworthyVisible: getMergedBoolean('isNoteworthyVisible', 'noteworthy'),
+        isBookedVisible: getMergedBoolean('isBookedVisible', 'booked'),
+        isCategorySectionsVisible: getMergedBoolean('isCategorySectionsVisible', 'categorySections'),
+        isCategoriesVisible: getMergedBoolean('isCategoriesVisible'),
+        isFeaturedSectionsVisible: getMergedBoolean('isFeaturedSectionsVisible', 'featuredSections'),
         featuredSections: (await Promise.all(
-          (contentObj.featuredSections || [])
+          (getMergedArray('featuredSections'))
             .filter(section => section.isVisible)
             .sort((a, b) => a.order - b.order)
             .map(async (section) => {

@@ -250,7 +250,7 @@ const HelpSupport = () => {
         {/* Submit a Request Button */}
         <button
           onClick={() => setShowContactForm(true)}
-          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-950/20 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full bg-gradient-to-r from-brand to-[#E05333] text-white rounded-xl p-4 font-bold shadow-lg shadow-brand/10 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2 cursor-pointer"
         >
           <FiSend className="w-5 h-5" />
           Submit a Request
@@ -288,7 +288,7 @@ const HelpSupport = () => {
                       {category.questions.map((item, idx) => (
                         <div key={idx} className="text-left">
                           <div className="flex items-start gap-2 mb-2">
-                            <FiHelpCircle className="w-4 h-4 text-[#B33A35] mt-0.5 shrink-0" />
+                            <FiHelpCircle className="w-4 h-4 text-brand mt-0.5 shrink-0" />
                             <p className="font-medium text-dark-text text-sm">{item.q}</p>
                           </div>
                           <p className="text-sm text-secondary-text ml-6">{item.a}</p>
@@ -330,7 +330,7 @@ const HelpSupport = () => {
                       </span>
                     </div>
                     <div className="flex items-start gap-2 mb-2">
-                      <FiHelpCircle className="w-4 h-4 text-[#B33A35] mt-0.5 shrink-0" />
+                      <FiHelpCircle className="w-4 h-4 text-brand mt-0.5 shrink-0" />
                       <p className="font-medium text-dark-text text-sm">{item.q}</p>
                     </div>
                     <p className="text-sm text-secondary-text ml-6">{item.a}</p>
@@ -405,7 +405,7 @@ const HelpSupport = () => {
  
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-950/20 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-gradient-to-r from-brand to-[#E05333] text-white rounded-xl p-4 font-bold shadow-lg shadow-brand/10 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <FiSend className="w-5 h-5" />
                 Submit Request

@@ -90,8 +90,8 @@ const PromoCarousel = memo(({ promos, onPromoClick }) => {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex gap-2 overflow-x-auto px-4 pb-2 scrollbar-hide snap-x snap-mandatory"
-        style={{ scrollBehavior: 'smooth' }}
+        className="flex gap-4 overflow-x-auto px-5 pb-3 no-scrollbar snap-x snap-mandatory"
+        style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {promotionalCards.map((promo, index) => (
           <div key={promo.id || promo._id || index} data-promo-card className="flex-shrink-0 snap-center">
@@ -107,14 +107,13 @@ const PromoCarousel = memo(({ promos, onPromoClick }) => {
         ))}
       </div>
       {/* Carousel indicator dots */}
-      <div className="flex justify-center gap-1.5 mt-3 mb-4">
+      <div className="flex justify-center gap-1.5 mt-2 mb-4">
         {promotionalCards.map((_, index) => (
           <div
             key={index}
-            className={`rounded-full transition-all ${index === currentIndex ? 'w-6 h-1.5' : 'w-1.5 h-1.5'}`}
+            className={`rounded-full transition-all duration-300 ${index === currentIndex ? 'w-5 h-1.5' : 'w-1.5 h-1.5'}`}
             style={{
-              backgroundColor: index === currentIndex ? themeColors.brand.yellow : `${themeColors.brand.yellow}66`,
-              boxShadow: index === currentIndex ? `0 2px 6px ${themeColors.brand.yellow}80` : '0 1px 2px rgba(0, 0, 0, 0.2)'
+              backgroundColor: index === currentIndex ? themeColors.brand.teal : 'var(--border)',
             }}
           />
         ))}

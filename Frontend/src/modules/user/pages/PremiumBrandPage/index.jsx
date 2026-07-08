@@ -285,7 +285,7 @@ const PremiumBrandPage = () => {
                     <PriceTag price={service.price} originalPrice={service.originalPrice} className="mt-2" />
                   </div>
                 </div>
-                <div className="mt-3 inline-flex rounded-2xl bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-500/10">View details</div>
+                <div className="mt-3 inline-flex rounded-2xl bg-gradient-to-r from-[#FF6B4A] to-[#E05333] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-500/10">View details</div>
               </button>
             ))}
           </div>

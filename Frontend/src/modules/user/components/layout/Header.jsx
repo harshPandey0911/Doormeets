@@ -49,19 +49,17 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
 
   return (
     <header className="w-full bg-transparent px-5 pt-6 pb-2">
-      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto flex items-start justify-between">
+      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto flex items-center justify-between gap-4">
 
         {/* Left Side: Location Selector & Bold Heading */}
         <div className="flex flex-col min-w-0">
           <div
             onClick={onLocationClick}
-            className="flex items-center gap-1 cursor-pointer select-none text-[13px] transition-colors capitalize font-medium"
-            style={{ color: 'var(--text-secondary)' }}
+            className="flex items-center gap-1 cursor-pointer select-none text-[12px] transition-colors capitalize font-bold text-muted-text hover:text-brand"
           >
             <span>{displayLocation}</span>
             <svg
-              style={{ color: 'var(--text-muted)' }}
-              className="w-3.5 h-3.5"
+              className="w-3 h-3 text-muted-text/80"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -71,23 +69,22 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             </svg>
           </div>
           <h1
-            className="text-[21px] font-semibold leading-[1.25] tracking-tight mt-1.5 max-w-[280px] md:max-w-none md:whitespace-nowrap"
-            style={{ color: 'var(--text-primary)' }}
+            className="text-[20px] font-extrabold leading-snug tracking-tight mt-1 text-dark-text max-w-[280px] md:max-w-none md:whitespace-nowrap"
           >
             What you are looking for today
           </h1>
         </div>
 
         {/* Middle Search Bar on Desktop */}
-        <div className="hidden md:block flex-1 max-w-2xl mx-8 self-center">
+        <div className="hidden md:block flex-1 max-w-xl mx-4">
           <SearchBar onInputClick={onSearchClick} />
         </div>
 
         {/* Right Side: Desktop Nav Menu + Theme Toggle + Notification Bell */}
-        <div className="flex items-center gap-3.5 shrink-0 pt-1">
+        <div className="flex items-center gap-3.5 shrink-0">
 
           {/* Desktop Horizontal Menu Bar - hidden on mobile */}
-          <nav className="hidden lg:flex items-center gap-1 mr-2">
+          <nav className="hidden lg:flex items-center gap-1.5 mr-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = locationPath.pathname === item.path ||
@@ -96,19 +93,16 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
                 <button
                   key={item.id}
                   onClick={() => navigate(item.path)}
-                  className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 active:scale-95"
-                  style={isActive ? {
-                    backgroundColor: 'var(--primary)',
-                    color: '#ffffff',
-                  } : {
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-secondary)',
-                  }}
+                  className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black transition-all duration-300 active:scale-95 cursor-pointer border ${
+                    isActive 
+                      ? 'bg-brand text-white border-brand/10 shadow-sm shadow-brand/10' 
+                      : 'bg-transparent text-secondary-text border-transparent hover:bg-divider/60 hover:text-dark-text'
+                  }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   <span>{item.label}</span>
                   {item.isCart && cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 border-white">
+                    <span className="absolute -top-1 -right-1 bg-brand text-white text-[8px] font-black rounded-full min-w-[15px] h-[15px] flex items-center justify-center border-2 border-white dark:border-black shadow-sm">
                       {cartCount > 9 ? '9+' : cartCount}
                     </span>
                   )}
@@ -121,18 +115,12 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
           <button
             onClick={toggleTheme}
             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 border"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-secondary)',
-              boxShadow: 'var(--shadow)',
-            }}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 bg-slate-100/80 dark:bg-zinc-800 hover:bg-slate-200/80 dark:hover:bg-zinc-700/80 text-secondary-text hover:text-dark-text cursor-pointer"
           >
             {isDark ? (
               /* Sun icon — shown in dark mode */
               <svg
-                className="w-4 h-4 text-yellow-400"
+                className="w-4 h-4 text-amber-500 fill-amber-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -148,7 +136,6 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
               /* Moon icon — shown in light mode */
               <svg
                 className="w-4 h-4"
-                style={{ color: 'var(--text-secondary)' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

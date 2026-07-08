@@ -493,11 +493,38 @@ const WebsiteManagement = () => {
 
               {/* Core Values Cards */}
               <div>
-                <label className="text-xs font-black text-gray-400 uppercase tracking-wider block mb-2">Core Value Cards</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-wider block">Core Value Cards</label>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const newId = Date.now();
+                      const updatedList = [
+                        ...aboutData.coreValues,
+                        { id: newId, title: 'New Core Value', desc: 'Describe this value and its importance to the company.' }
+                      ];
+                      setAboutData({ ...aboutData, coreValues: updatedList });
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 rounded-lg text-xs font-black transition-all active:scale-95"
+                  >
+                    <FiPlus className="w-3.5 h-3.5" /> Add Core Value
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {aboutData.coreValues.map((val, idx) => (
-                    <div key={val.id} className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between">
-                      <div>
+                    <div key={val.id} className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between relative group">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const updatedList = aboutData.coreValues.filter(v => v.id !== val.id);
+                          setAboutData({ ...aboutData, coreValues: updatedList });
+                        }}
+                        className="absolute top-3 right-3 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Card"
+                      >
+                        <FiTrash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="pr-5">
                         <input 
                           type="text" 
                           value={val.title}

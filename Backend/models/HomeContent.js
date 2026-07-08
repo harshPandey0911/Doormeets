@@ -109,6 +109,15 @@ const homeContentSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
+    targetCategoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      default: null
+    },
+    slug: {
+      type: String,
+      default: ''
+    },
     order: {
       type: Number,
       default: 0

@@ -24,40 +24,50 @@ const AboutDoormeets = () => {
   }, []);
 
   // Gradient Definition for re-use in inline styles
-  const doormeetsGradient = 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)';
+  const doormeetsGradient = 'linear-gradient(135deg, #FF6B4A 0%, #E05333 100%)';
   const doormeetsTextGradient = {
     background: doormeetsGradient,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   };
 
-  const features = [
-    {
-      icon: FiUsers,
-      title: 'Expert Providers',
-      description: 'Verified professionals for all your needs'
-    },
-    {
-      icon: FiShield,
-      title: 'Safe & Secure',
-      description: 'Your safety is our top priority'
-    },
-    {
-      icon: FiClock,
-      title: 'On-Time Service',
-      description: 'Punctual delivery at your convenience'
-    },
-    {
-      icon: FiAward,
-      title: 'Quality Assured',
-      description: 'Service with 100% satisfaction guarantee'
+  const aboutData = (() => {
+    try {
+      const saved = localStorage.getItem('web_about_data');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error(e);
+      return null;
     }
-  ];
+  })() || {
+    mainText: 'Doormeets is India\'s leading on-demand home service marketplace, connecting thousands of customers with certified, high-quality professionals directly at home. We ensure quality, safety, and transparent pricing in every booking.',
+    yearsOfOperation: '5+',
+    completedJobs: '25,000+',
+    happyCustomers: '12,000+',
+    verifiedWorkers: '300+',
+    coreValues: [
+      { id: 1, title: 'Uncompromising Quality', desc: 'Every service is vetted and backed by our quality guarantee.' },
+      { id: 2, title: 'Safe & Verified', desc: 'Background checked & police-verified professionals only.' },
+      { id: 3, title: 'Transparent Pricing', desc: 'No hidden charges. Know what you pay before booking.' }
+    ]
+  };
+
+  const getIconForIndex = (index) => {
+    const icons = [FiAward, FiShield, FiClock, FiUsers, FiSmile];
+    return icons[index % icons.length] || FiAward;
+  };
+
+  const features = (aboutData.coreValues || []).map((val, idx) => ({
+    icon: getIconForIndex(idx),
+    title: val.title,
+    description: val.desc
+  }));
 
   const stats = [
-    { number: '10K+', label: 'Happy Customers' },
-    { number: '500+', label: 'Service Partners' },
-    { number: '4.8', label: 'App Rating' },
+    { number: aboutData.happyCustomers || '12,000+', label: 'Happy Customers' },
+    { number: aboutData.verifiedWorkers || '300+', label: 'Service Partners' },
+    { number: aboutData.completedJobs || '25,000+', label: 'Completed Jobs' },
+    { number: aboutData.yearsOfOperation || '5+', label: 'Years Active' },
   ];
 
   return (
@@ -65,9 +75,9 @@ const AboutDoormeets = () => {
       {/* SVG Gradient Definition */}
       <svg width="0" height="0" className="absolute">
         <linearGradient id="doormeets-about-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#B33A35" />
-          <stop offset="50%" stopColor="#9E2E2A" />
-          <stop offset="100%" stopColor="#D56C67" />
+          <stop offset="0%" stopColor="#FF6B4A" />
+          <stop offset="50%" stopColor="#E05333" />
+          <stop offset="100%" stopColor="#FFA08A" />
         </linearGradient>
       </svg>
  
@@ -92,7 +102,7 @@ const AboutDoormeets = () => {
             <div
               className="absolute inset-[-3px] rounded-full opacity-70"
               style={{
-                background: 'conic-gradient(from 0deg, #B33A35, #9E2E2A, #D56C67, #B33A35)',
+                background: 'conic-gradient(from 0deg, #FF6B4A, #E05333, #FFA08A, #FF6B4A)',
                 animation: 'spin 4s linear infinite',
               }}
             />
@@ -114,7 +124,7 @@ const AboutDoormeets = () => {
         <div className="animate-item flex justify-between bg-card-bg rounded-2xl p-6 shadow-sm border border-border-color divide-x divide-border-color">
           {stats.map((stat, idx) => (
             <div key={idx} className="flex-1 text-center px-2">
-              <div className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-[#B33A35] to-[#9E2E2A]">
+              <div className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B4A] to-[#E05333]">
                 {stat.number}
               </div>
               <div className="text-[10px] uppercase tracking-wider text-secondary-text font-medium mt-1">
@@ -126,13 +136,13 @@ const AboutDoormeets = () => {
 
         {/* Mission Statement */}
         <div className="animate-item">
-          <div className="bg-gradient-to-br from-[#B33A35]/5 to-[#9E2E2A]/5 rounded-2xl p-6 border border-[#B33A35]/10 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#FF6B4A]/5 to-[#E05333]/5 rounded-2xl p-6 border border-[#FF6B4A]/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5">
               <FiGlobe className="w-24 h-24 text-dark-text" />
             </div>
             <h3 className="text-lg font-semibold text-dark-text mb-3">Our Mission</h3>
             <p className="text-sm text-secondary-text leading-relaxed relative z-10 font-medium">
-              Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
+              {aboutData.mainText || 'Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.'}
             </p>
           </div>
         </div>
@@ -168,7 +178,7 @@ const AboutDoormeets = () => {
             ].map((step, i) => (
               <div key={i} className="flex items-center p-4 border-b last:border-0 border-border-color relative">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-4 shadow-sm text-white font-semibold text-lg relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#B33A35] to-[#9E2E2A]" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B4A] to-[#E05333]" />
                   <span className="relative z-10">{i + 1}</span>
                 </div>
                 <div>

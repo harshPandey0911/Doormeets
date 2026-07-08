@@ -527,35 +527,36 @@ const PaintingLayoutDetails = () => {
       </div>
 
       <div className="max-w-[1280px] mx-auto px-4 pt-12 md:pt-16 sm:px-6">
+
+        {/* Property Overview — full-width, always at the top */}
+        <section className="space-y-5 mb-12">
+          <div className="space-y-1">
+            <div className="text-[10px] font-black text-[#E85D3F] uppercase tracking-widest">Scope details</div>
+            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+              {pageConfig?.overviewTitle || 'Property Overview'}
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {(layout.details || []).map((detail, idx) => (
+              <div
+                key={idx}
+                className="p-5 bg-white dark:bg-gray-900 border border-gray-150/60 dark:border-gray-800 rounded-2xl flex flex-col justify-between items-start gap-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#FFF5F2] dark:bg-[#E85D3F]/10 text-[#E85D3F] flex items-center justify-center shrink-0 shadow-sm">
+                  {getRoomIcon(detail)}
+                </div>
+                <div className="text-xs md:text-sm font-bold text-gray-900 dark:text-gray-100 leading-snug">
+                  {detail}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           
           {/* Main Left Columns */}
-          <div className="lg:col-span-2 space-y-16">
-            
-            {/* Property Overview */}
-            <section className="space-y-5">
-              <div className="space-y-1">
-                <div className="text-[10px] font-black text-[#E85D3F] uppercase tracking-widest">Scope details</div>
-                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                  {pageConfig?.overviewTitle || 'Property Overview'}
-                </h2>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {(layout.details || []).map((detail, idx) => (
-                  <div 
-                    key={idx} 
-                    className="p-5 bg-white dark:bg-gray-900 border border-gray-150/60 dark:border-gray-800 rounded-2xl flex flex-col justify-between items-start gap-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-[#FFF5F2] dark:bg-[#E85D3F]/10 text-[#E85D3F] flex items-center justify-center shrink-0 shadow-sm">
-                      {getRoomIcon(detail)}
-                    </div>
-                    <div className="text-xs md:text-sm font-bold text-gray-900 dark:text-gray-100 leading-snug">
-                      {detail}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+          <div className="lg:col-span-2 space-y-16 order-2 lg:order-1">
 
             {/* Why Choose Us */}
             <section className="space-y-5">
@@ -661,7 +662,7 @@ const PaintingLayoutDetails = () => {
           </div>
 
           {/* Right Column (Sticky Sidebar Summary) */}
-          <div className="space-y-8 lg:sticky lg:top-24">
+          <div className="space-y-8 lg:sticky lg:top-24 order-1 lg:order-2">
             
             {/* Pricing Summary Card */}
             <div className="p-6 md:p-8 bg-white dark:bg-gray-900 border border-gray-150/60 dark:border-gray-800 rounded-3xl space-y-6 shadow-sm">

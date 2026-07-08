@@ -11,16 +11,16 @@ const slides = [
     image: welcomePage2,
     title: "Multiple services in one app",
     description: "Get it all done in one place! Our home service app offers multiple services for your convenience, from plumbing to cleaning, all under one roof.",
-    bgColor: "#FED6DF", // Soft pink matching welcomePage2 image background
-    textColor: "#B33A35" // Accent red for skip button
+    bgColor: "#FFF3F0", // Soft red-orange matching welcomePage2 image background
+    textColor: "#FF6B4A" // Accent red-orange for skip button
   },
   {
     id: 2,
     image: welcomePage,
     title: "Professional & Trusted Experts",
     description: "Certified professionals at your service. Your safety and satisfaction are our top priorities for every single job.",
-    bgColor: "#FCD7D9", // Soft theme-matching background
-    textColor: "#B33A35"
+    bgColor: "#FFEBE5", // Soft theme-matching background
+    textColor: "#FF6B4A"
   }
 ];
 
@@ -205,7 +205,7 @@ const Welcome = () => {
         }
 
         .dot-active {
-          background-color: #B33A35;
+          background-color: #FF6B4A;
           width: 10px;
           height: 10px;
         }
@@ -215,7 +215,7 @@ const Welcome = () => {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          border: 2px solid #B33A35;
+          border: 2px solid #FF6B4A;
           box-sizing: border-box;
         }
 
@@ -223,7 +223,7 @@ const Welcome = () => {
           width: 56px;
           height: 48px;
           border-radius: 14px;
-          background-color: #B33A35;
+          background-color: #FF6B4A;
           border: none;
           display: flex;
           align-items: center;
@@ -232,12 +232,12 @@ const Welcome = () => {
           color: #FFFFFF;
           font-size: 18px;
           transition: transform 0.2s, background-color 0.2s;
-          box-shadow: 0 4px 14px rgba(179, 58, 53, 0.3);
+          box-shadow: 0 4px 14px rgba(255, 107, 74, 0.3);
         }
 
         .next-btn:active {
           transform: scale(0.95);
-          background-color: #9E2E2A;
+          background-color: #E05333;
         }
 
         @supports (padding-bottom: env(safe-area-inset-bottom)) {

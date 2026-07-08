@@ -95,6 +95,89 @@ const Notifications = () => {
     }
   };
 
+  const handleNotificationClick = async (notif) => {
+    // 1. Mark as read if unread
+    if (!notif.read) {
+      await handleMarkAsRead(notif.id);
+    }
+
+    // 2. Navigate based on type / relatedType / action
+    const type = (notif.type || '').toLowerCase();
+    const relatedType = (notif.relatedType || '').toLowerCase();
+    const title = (notif.title || '').toLowerCase();
+    const message = (notif.message || '').toLowerCase();
+    const action = notif.action;
+
+    // Direct Link / action overrides
+    if (notif.data?.link) {
+      navigate(notif.data.link);
+      return;
+    }
+    
+    if (action === 'view_booking' && notif.bookingId) {
+      navigate(`/user/booking/${notif.bookingId}`);
+      return;
+    }
+    if (action === 'view_wallet') {
+      navigate('/user/wallet');
+      return;
+    }
+
+    // Painting notifications
+    const isPainting = 
+      notif.data?.isPainting === true || 
+      notif.data?.consultationId ||
+      title.includes('painting') || 
+      message.includes('painting') || 
+      type.includes('painting');
+
+    if (isPainting) {
+      navigate('/user/painting');
+      return;
+    }
+
+    // Booking notifications
+    const isBooking = 
+      relatedType === 'booking' || 
+      ['booking', 'job', 'work', 'visit', 'journey'].some(t => type.includes(t)) ||
+      title.includes('booking') ||
+      message.includes('booking');
+
+    if (isBooking) {
+      const targetId = notif.relatedId || notif.data?.bookingId || notif.bookingId;
+      if (targetId) {
+        navigate(`/user/booking/${targetId}`);
+      } else {
+        navigate('/user/my-bookings');
+      }
+      return;
+    }
+
+    // Wallet / Payment notifications
+    const isWallet = 
+      relatedType === 'payment' || 
+      ['payment', 'refund', 'wallet'].some(t => type.includes(t));
+
+    if (isWallet) {
+      navigate('/user/wallet');
+      return;
+    }
+
+    // Rewards / Promos
+    const isRewards = 
+      type.includes('points') || 
+      type.includes('reward') || 
+      type.includes('promo') || 
+      title.includes('points') || 
+      title.includes('reward') || 
+      title.includes('promo');
+
+    if (isRewards) {
+      navigate('/user/rewards');
+      return;
+    }
+  };
+
   const filteredNotifications = notifications.filter(notif => {
     if (filter === 'all') return true;
 
@@ -234,7 +317,8 @@ const Notifications = () => {
             {filteredNotifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`bg-card-bg rounded-xl p-4 shadow-sm border border-border-color transition-all relative group ${!notif.read ? 'border-l-4' : ''
+                onClick={() => handleNotificationClick(notif)}
+                className={`bg-card-bg rounded-xl p-4 shadow-sm border border-border-color transition-all relative group cursor-pointer hover:bg-light-bg/50 dark:hover:bg-light-bg/10 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-800 active:scale-[0.995] duration-200 ${!notif.read ? 'border-l-4' : ''
                   }`}
                 style={{
                   borderLeftColor: !notif.read ? getNotificationColor(notif.type) : 'transparent',
@@ -257,7 +341,8 @@ const Notifications = () => {
                     <p className="text-xs text-muted-text mt-2 font-medium">{notif.time}</p>
                     {notif.action && (
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (notif.action === 'view_booking') {
                             navigate(`/user/booking/${notif.bookingId}`);
                           } else if (notif.action === 'view_wallet') {
@@ -277,7 +362,10 @@ const Notifications = () => {
                 <div className="absolute top-3 right-3 flex gap-2">
                   {!notif.read && (
                     <button
-                      onClick={() => handleMarkAsRead(notif.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAsRead(notif.id);
+                      }}
                       className="p-1.5 rounded-full bg-light-bg hover:bg-card-bg text-green-600 transition-colors shadow-sm border border-border-color"
                       title="Mark as read"
                     >

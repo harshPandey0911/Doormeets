@@ -473,7 +473,8 @@ const RoomConfiguration = ({ onSuccess }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.4 }}
-              className="group relative flex flex-col bg-white dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-150/60 dark:border-gray-800/80 shadow-[0_8px_30px_rgba(232,93,63,0.01)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-all duration-300"
+              onClick={() => navigate(`/user/painting/${layout.id}`, { state: { layout } })}
+              className="group relative flex flex-col bg-white dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-150/60 dark:border-gray-800/80 shadow-[0_8px_30px_rgba(232,93,63,0.01)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-2 transition-all duration-300 cursor-pointer"
             >
               {/* Layout Photo Image frame */}
               <div className="relative h-60 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
@@ -538,7 +539,7 @@ const RoomConfiguration = ({ onSuccess }) => {
                 {/* CTAs strip */}
                 <div className="pt-4 border-t border-gray-100 dark:border-gray-800/80 flex items-center gap-3">
                   <button 
-                    onClick={() => navigate(`/user/painting/${layout.id}`, { state: { layout } })}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/user/painting/${layout.id}`, { state: { layout } }); }}
                     className="flex-1 bg-[#E85D3F] hover:bg-[#d04a2d] text-white text-xs md:text-sm font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-md shadow-[#E85D3F]/15 hover:shadow-lg text-center cursor-pointer"
                     style={{ minHeight: '44px' }}
                   >

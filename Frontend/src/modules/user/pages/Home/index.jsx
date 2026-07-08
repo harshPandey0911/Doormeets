@@ -35,6 +35,8 @@ import PromoTicker from './components/PromoTicker';
 import promoService from '../../../../services/promoService';
 import QuoteApproval from '../PaintingConsultation/QuoteApproval';
 import { getMyConsultations } from '../../services/paintingConsultationService';
+import TrustSection from './components/TrustSection';
+import CtaBanner from './components/CtaBanner';
 
 
 
@@ -328,6 +330,7 @@ const Home = () => {
           }
 
           if (response.homeContent) {
+            console.log("response.homeContent:", response.homeContent);
             setHomeContent(response.homeContent);
           }
         }
@@ -614,7 +617,7 @@ const Home = () => {
         {/* Elegant Dot Grid Pattern */}
         <div className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#B33A35'} 0.8px, transparent 0.8px)`,
+            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#FF6B4A'} 0.8px, transparent 0.8px)`,
             backgroundSize: '32px 32px'
           }}
         />
@@ -638,7 +641,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
+        <main className="pt-[140px] md:pt-[100px] space-y-12 pb-24 max-w-screen-xl mx-auto w-full">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -665,7 +668,7 @@ const Home = () => {
           ) : (
             <>
               {/* Sliding Offer Banners */}
-              {!isSearchOpen && (
+              {!isSearchOpen && homeContent?.isBannersVisible !== false && (
                 <OfferBannerSlider 
                   banners={homeContent?.banners && homeContent.banners.length > 0 
                     ? homeContent.banners.map(b => ({
@@ -720,7 +723,7 @@ const Home = () => {
               {homeContent?.isPromosVisible !== false && (
                 <motion.section variants={itemVariants} className="relative z-0">
                   <PromoCarousel
-                    promos={(homeContent?.promos || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(promo => ({
+                    promos={[...(homeContent?.promos || [])].sort((a, b) => (a.order || 0) - (b.order || 0)).map(promo => ({
                       id: promo.id || promo._id,
                       title: promo.title || '',
                       subtitle: promo.subtitle || promo.description || '',
@@ -747,7 +750,7 @@ const Home = () => {
                     style={{ backgroundColor: 'var(--background)' }}
                   >
                     <ServiceCategories
-                      categories={categories.filter(c => c.isGroupCategory && c.categoryType === 'service' && c.status !== 'coming_soon')}
+                      categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
                       onCategoryClick={handleCategoryClick}
                       title="Categories"
                       subtitle="Premium Home Services"
@@ -755,14 +758,14 @@ const Home = () => {
                   </motion.section>
  
                   {/* Products & Materials Section */}
-                  {categories.some(c => c.isGroupCategory && c.categoryType === 'product') && (
+                  {categories.some(c => c.categoryType === 'product') && (
                     <motion.section 
                       variants={itemVariants} 
                       className="relative overflow-hidden py-2"
                       style={{ backgroundColor: 'var(--background)' }}
                     >
                       <ServiceCategories
-                        categories={categories.filter(c => c.isGroupCategory && c.categoryType === 'product' && c.status !== 'coming_soon')}
+                        categories={categories.filter(c => c.categoryType === 'product' && c.status !== 'coming_soon')}
                         onCategoryClick={handleCategoryClick}
                         title="Products & Materials"
                         subtitle="Quality building materials"
@@ -814,17 +817,11 @@ const Home = () => {
                 const activeCat = upcomingCategories[currentStackIndex] || upcomingCategories[0];
                 return (
                   <motion.section variants={itemVariants} className="px-5 space-y-4 max-w-lg md:max-w-2xl lg:max-w-screen-xl mx-auto w-full">
-                    <div className="flex items-center justify-between">
-                      <h2
-                        className="text-[17px] font-semibold tracking-tight"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-[17px] font-extrabold tracking-tight text-dark-text">
                         Upcoming Services
                       </h2>
-                      <span
-                        className="text-xs font-bold px-2.5 py-1 rounded-full animate-pulse"
-                        style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
-                      >
+                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-brand/10 text-brand animate-pulse">
                         {upcomingCategories.length} Coming Soon
                       </span>
                     </div>
@@ -836,12 +833,12 @@ const Home = () => {
                       <div className="relative z-10">
                         {/* Third Layer Card (Deepest) */}
                         {upcomingCategories.length > 2 && (
-                          <div className="absolute left-5 right-5 bottom-0 h-full bg-[#B33A35]/25 rounded-[24px] shadow-sm transform translate-y-3 z-0 pointer-events-none border border-white/5" />
+                          <div className="absolute left-5 right-5 bottom-0 h-full bg-brand/20 rounded-[28px] shadow-sm transform translate-y-3.5 z-0 pointer-events-none border border-white/5" />
                         )}
                         
                         {/* Second Layer Card (Middle) */}
                         {upcomingCategories.length > 1 && (
-                          <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-[#B33A35]/50 rounded-[24px] shadow-md transform translate-y-1.5 z-10 pointer-events-none border border-white/10" />
+                          <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-brand/40 rounded-[28px] shadow-md transform translate-y-2 z-10 pointer-events-none border border-white/10" />
                         )}
 
                         {/* Main Card (Top) */}
@@ -854,19 +851,19 @@ const Home = () => {
                               handleCategoryClick(activeCat);
                             }
                           }}
-                          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] rounded-[24px] p-5 relative overflow-hidden shadow-[0_12px_28px_rgba(255,159,69,0.22)] border border-white/20 active:scale-[0.98] hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
+                          className="w-full bg-gradient-to-r from-brand to-brand-light rounded-[28px] p-5.5 relative overflow-hidden shadow-lg shadow-brand/15 border border-white/15 active:scale-98 hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
                         >
                           {/* Smooth glassmorphism-inspired highlights */}
-                          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-white/30 to-transparent pointer-events-none" />
-                          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-[0.5px] pointer-events-none" />
+                          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-white/20 to-transparent pointer-events-none" />
+                          <div className="absolute inset-0 bg-white/[0.01] backdrop-blur-[0.5px] pointer-events-none" />
 
                           {/* Diagonal glow shine */}
-                          <div className="absolute -inset-y-12 -left-16 w-32 bg-white/10 blur-xl transform rotate-12 pointer-events-none" />
+                          <div className="absolute -inset-y-12 -left-16 w-32 bg-white/5 blur-xl transform rotate-12 pointer-events-none" />
 
                           <div className="relative z-10 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-4">
                               {/* White Circle Container for Icon */}
-                              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.06)] overflow-hidden shrink-0 border border-white/50">
+                              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.06)] overflow-hidden shrink-0 border border-white/80">
                                 {activeCat.icon ? (
                                   <img 
                                     src={activeCat.icon} 
@@ -875,7 +872,7 @@ const Home = () => {
                                   />
                                 ) : (
                                   <div className="w-9 h-9 flex items-center justify-center bg-orange-50 rounded-full">
-                                    <svg className="w-5 h-5 text-[#B33A35]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                    <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
                                   </div>
@@ -886,7 +883,7 @@ const Home = () => {
                                 <h3 className="text-lg font-extrabold text-white tracking-tight leading-tight">
                                   {activeCat.title}
                                 </h3>
-                                <p className="text-orange-50 text-[11px] font-semibold opacity-90 leading-tight">
+                                <p className="text-orange-50/90 text-xs font-semibold leading-tight">
                                   Launching soon in {currentCity?.name || 'Indore'}
                                 </p>
                               </div>
@@ -896,13 +893,13 @@ const Home = () => {
                             <button
                               type="button"
                               onClick={async (e) => {
-                                e.stopPropagation();
-                                handleCategoryClick(activeCat);
+                                  e.stopPropagation();
+                                  handleCategoryClick(activeCat);
                               }}
                               className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
                                 activeCat.isInterested
                                   ? 'bg-white text-green-500 shadow-md'
-                                  : 'bg-white/25 hover:bg-white/35 text-white active:scale-95'
+                                  : 'bg-white/20 hover:bg-white/30 text-white active:scale-95'
                               }`}
                             >
                               {activeCat.isInterested ? (
@@ -918,7 +915,7 @@ const Home = () => {
                           </div>
 
                           {/* Lighter sub-bar inside the card */}
-                          <div className="bg-black/10 rounded-[18px] p-3.5 mt-4 flex items-center justify-between text-white text-[11px] font-bold tracking-tight">
+                          <div className="bg-black/10 rounded-[20px] p-3.5 mt-4.5 flex items-center justify-between text-white text-[11px] font-bold tracking-tight">
                             <div className="flex items-center gap-1.5 opacity-95">
                               <svg className="w-3.5 h-3.5 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -937,7 +934,7 @@ const Home = () => {
 
                       {/* Small Indicator Dots for Stack */}
                       {upcomingCategories.length > 1 && (
-                        <div className="flex justify-center gap-1.5 mt-4 relative z-20">
+                        <div className="flex justify-center gap-1.5 mt-4.5 relative z-20">
                           {upcomingCategories.map((_, dotIdx) => (
                             <button
                               key={dotIdx}
@@ -946,7 +943,7 @@ const Home = () => {
                                 setCurrentStackIndex(dotIdx);
                               }}
                               className={`h-1.5 rounded-full transition-all duration-300 ${
-                                currentStackIndex === dotIdx ? 'w-5 bg-[#B33A35]' : 'w-1.5 bg-gray-300'
+                                currentStackIndex === dotIdx ? 'w-5 bg-brand' : 'w-1.5 bg-border'
                               }`}
                             />
                           ))}
@@ -960,17 +957,13 @@ const Home = () => {
               {/* Order Again Section */}
               {!pastServicesLoading && pastServices.length > 0 && (
                 <motion.section variants={itemVariants} className="px-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2
-                      className="text-[17px] font-semibold tracking-tight"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-[17px] font-extrabold tracking-tight text-dark-text">
                       Order again
                     </h2>
                     <button
                       onClick={() => navigate('/user/bookings')}
-                      className="text-xs font-bold transition-colors"
-                      style={{ color: 'var(--text-muted)' }}
+                      className="text-xs font-black text-brand transition-colors hover:text-brand-light cursor-pointer"
                     >
                       see all
                     </button>
@@ -986,41 +979,30 @@ const Home = () => {
                         <div
                           key={service.id || index}
                           onClick={() => handleAddClick(service)}
-                          className="flex-shrink-0 rounded-3xl p-5 lg:p-6 flex items-center justify-between w-[285px] lg:w-[340px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
-                          style={{
-                            backgroundColor: 'var(--surface)',
-                            border: '1px solid var(--border)',
-                            boxShadow: 'var(--shadow)',
-                          }}
+                          className="flex-shrink-0 rounded-[28px] p-5 flex items-center justify-between w-[285px] lg:w-[340px] bg-surface border border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_45px_rgba(255,107,74,0.06)] hover:border-brand/15 active:scale-98 transition-all duration-300 cursor-pointer relative overflow-hidden group"
                         >
                           {/* Inner Content (Left Side) */}
-                          <div className="flex-1 min-w-0 pr-3 space-y-1">
+                          <div className="flex-1 min-w-0 pr-3 space-y-1.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <h3
-                                className="text-xs lg:text-sm font-extrabold truncate leading-tight"
-                                style={{ color: 'var(--text-primary)' }}
-                              >
+                              <h3 className="text-xs lg:text-sm font-bold text-dark-text truncate leading-tight group-hover:text-brand transition-colors">
                                 {service.title}
                               </h3>
-                              <span
-                                className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5"
-                                style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
-                              >
+                              <span className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-md bg-brand/5 text-brand flex items-center gap-0.5 border border-brand/10">
                                 ★ {service.rating}
                               </span>
                             </div>
 
-                            <p className="text-[10px] lg:text-xs font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
+                            <p className="text-[10px] lg:text-[11px] font-semibold text-muted-text truncate">
                               by {service.vendorName}
                             </p>
 
                             <div className="flex items-baseline gap-1.5 pt-1">
-                              <span className="text-sm lg:text-base font-extrabold" style={{ color: 'var(--primary)' }}>
+                              <span className="text-sm lg:text-base font-extrabold text-brand">
                                 ₹{(service.price || 0).toLocaleString('en-IN')}
                               </span>
                               {service.originalPrice && service.originalPrice > service.price && (
                                 <>
-                                  <span className="text-[10px] line-through" style={{ color: 'var(--text-muted)' }}>
+                                  <span className="text-[10px] line-through text-muted-text font-medium">
                                     ₹{service.originalPrice.toLocaleString('en-IN')}
                                   </span>
                                   <span className="text-[9px] font-extrabold text-green-500">
@@ -1032,10 +1014,7 @@ const Home = () => {
                           </div>
 
                           {/* Service Icon/Visual (Right Side) */}
-                          <div
-                            className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
-                            style={{ backgroundColor: 'rgba(179,58,53,0.08)', border: '1px solid rgba(179,58,53,0.12)' }}
-                          >
+                          <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden bg-brand/5 border border-brand/10 group-hover:scale-103 transition-transform duration-500">
                             {service.image ? (
                               <img
                                 src={service.image}
@@ -1044,7 +1023,7 @@ const Home = () => {
                                 loading="lazy"
                               />
                             ) : (
-                              <svg className="w-8 h-8 lg:w-10 lg:h-10" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                              <svg className="w-7 h-7 lg:w-9 lg:h-9 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
                             )}
@@ -1073,7 +1052,7 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <CuratedServices
-                      services={(homeContent?.curated || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
+                      services={[...(homeContent?.curated || [])].sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
                         gif: toAssetUrl(item.gifUrl),
@@ -1091,7 +1070,7 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <NewAndNoteworthy
-                      services={(homeContent?.noteworthy || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
+                      services={[...(homeContent?.noteworthy || [])].sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
                         image: toAssetUrl(item.imageUrl),
@@ -1109,7 +1088,7 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <MostBookedServices
-                      services={(homeContent?.booked || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
+                      services={[...(homeContent?.booked || [])].sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
                         rating: item.rating,
@@ -1131,7 +1110,7 @@ const Home = () => {
 
 
               {/* Dynamic Sections */}
-              {homeContent?.isCategorySectionsVisible !== false && (homeContent?.categorySections || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map((section, sIdx) => (
+              {homeContent?.isCategorySectionsVisible !== false && [...(homeContent?.categorySections || [])].sort((a, b) => (a.order || 0) - (b.order || 0)).map((section, sIdx) => (
                 <motion.div key={section._id || sIdx} variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <ServiceSectionWithRating
@@ -1164,6 +1143,16 @@ const Home = () => {
                   </Suspense>
                 </motion.div>
               ))}
+
+              {/* Trust Section */}
+              <motion.div variants={itemVariants}>
+                <TrustSection />
+              </motion.div>
+
+              {/* CTA Banner Section */}
+              <motion.div variants={itemVariants}>
+                <CtaBanner />
+              </motion.div>
 
             </>
           )}
@@ -1254,9 +1243,9 @@ const Home = () => {
               className={`w-full py-3.5 px-6 rounded-2xl font-bold shadow-md transition-all ${
                 comingSoonCategory.isInterested 
                   ? 'bg-green-500 text-white cursor-default shadow-none'
-                  : 'bg-[#B33A35] text-white hover:bg-[#9E2E2A] hover:shadow-lg'
+                  : 'bg-brand text-white hover:bg-[#E05333] hover:shadow-lg'
               }`}
-              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#B33A35' }}
+              style={{ backgroundColor: comingSoonCategory.isInterested ? '#22c55e' : '#FF6B4A' }}
             >
               {comingSoonCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
             </button>

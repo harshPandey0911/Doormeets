@@ -182,6 +182,7 @@ const UserRoutes = () => {
                 <Route path="/account" element={<ProtectedRoute userType="user"><Account /></ProtectedRoute>} />
                 <Route path="/cart" element={<ProtectedRoute userType="user"><Cart /></ProtectedRoute>} />
                 <Route path="/checkout" element={<ProtectedRoute userType="user"><Checkout /></ProtectedRoute>} />
+                <Route path="/bookings" element={<Navigate to="/user/my-bookings" replace />} />
                 <Route path="/my-bookings" element={<ProtectedRoute userType="user"><MyBookings /></ProtectedRoute>} />
                 <Route path="/booking/:id" element={<ProtectedRoute userType="user"><BookingDetails /></ProtectedRoute>} />
                 <Route path="/booking/:id/track" element={<ProtectedRoute userType="user"><BookingTrack /></ProtectedRoute>} />
@@ -192,6 +193,7 @@ const UserRoutes = () => {
                 <Route path="/wallet" element={<ProtectedRoute userType="user"><Wallet /></ProtectedRoute>} />
                 <Route path="/my-plan" element={<ProtectedRoute userType="user"><MyPlan /></ProtectedRoute>} />
                 <Route path="/my-plan/:id" element={<ProtectedRoute userType="user"><PlanDetails /></ProtectedRoute>} />
+                <Route path="/categories" element={<ProtectedRoute userType="user"><CategoriesPage /></ProtectedRoute>} />
                 <Route path="/category/:slug" element={<ProtectedRoute userType="user"><CategoryPage /></ProtectedRoute>} />
                 <Route path="/brand/:slug" element={<ProtectedRoute userType="user"><BrandPage /></ProtectedRoute>} />
                 <Route path="/service/:slug" element={<ProtectedRoute userType="user"><ServiceDetailPage /></ProtectedRoute>} />

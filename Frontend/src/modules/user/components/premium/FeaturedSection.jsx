@@ -22,15 +22,15 @@ const FeaturedSection = ({ section }) => {
   return (
     <section className="px-5 w-full pt-1">
       {/* Section Header */}
-      <div className="mb-4 flex items-end justify-between">
+      <div className="mb-5 flex items-end justify-between">
         <div>
-          <h2 className="text-[17px] font-semibold" style={{ color: 'var(--text-primary)' }}>{sectionTitle}</h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Top rated service partners</p>
+          <h2 className="text-[17px] font-extrabold tracking-tight text-dark-text">{sectionTitle}</h2>
+          <p className="text-xs font-semibold text-muted-text mt-0.5">Top rated service partners</p>
         </div>
       </div>
 
       {/* Brand — horizontal scrolling chips */}
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-4 overflow-x-auto pb-3 -mx-5 px-5 no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {items.map((item, index) => (
           <motion.div
             key={item.refId || index}
@@ -42,24 +42,23 @@ const FeaturedSection = ({ section }) => {
             <button
               type="button"
               onClick={() => handleClick(item)}
-              className="rounded-3xl border p-3 text-left shadow-sm transition-transform hover:-translate-y-1 active:scale-95"
-              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+              className="rounded-3xl border border-transparent p-4 text-left shadow-[0_8px_30px_rgba(0,0,0,0.02)] bg-surface transition-all duration-300 hover:-translate-y-1.5 hover:border-brand/15 hover:shadow-[0_20px_45px_rgba(255,107,74,0.06)] active:scale-95 cursor-pointer w-32"
             >
-              <div className="mb-2 flex h-16 w-24 items-center justify-center rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--background)' }}>
+              <div className="mb-3.5 flex h-16 w-full items-center justify-center rounded-2xl bg-card-bg overflow-hidden border border-border/40">
                 {item.iconUrl ? (
                   <img
                     src={toAssetUrl(item.iconUrl)}
                     alt={item.title}
-                    className="h-10 w-10 object-contain"
+                    className="h-10 w-10 object-contain transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <span className="text-xl font-black text-purple-700 dark:text-purple-400">
+                  <span className="text-xl font-black text-brand">
                     {item.title?.[0] || '?'}
                   </span>
                 )}
               </div>
-              <div className="text-sm font-bold truncate max-w-[90px]" style={{ color: 'var(--text-primary)' }}>{item.title}</div>
-              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Top rated</div>
+              <div className="text-sm font-extrabold truncate text-dark-text leading-tight">{item.title}</div>
+              <div className="text-[10px] font-bold text-muted-text mt-0.5">Top rated</div>
             </button>
           </motion.div>
         ))}

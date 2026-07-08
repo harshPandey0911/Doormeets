@@ -110,7 +110,7 @@ const BottomNav = React.memo(() => {
           background: 'var(--background)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.15)',
+          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.06)',
           borderTop: '1px solid var(--border)',
         }}
       >
@@ -124,13 +124,12 @@ const BottomNav = React.memo(() => {
                 key={item.id}
                 onClick={() => handleTabClick(item.path)}
                 whileTap={{ scale: 0.95 }}
-                className={`flex items-center justify-center transition-all duration-300 relative cursor-pointer ${
-                  isActive
-                    ? 'bg-[#B33A35] text-white px-3.5 py-2 rounded-full flex-1 max-w-[135px]'
+                className={`flex items-center justify-center transition-all duration-300 relative cursor-pointer ${isActive
+                    ? 'bg-brand text-white px-3.5 py-2 rounded-full flex-1 max-w-[135px] shadow-lg shadow-brand/25'
                     : 'w-10 h-10 rounded-full flex-shrink-0'
-                }`}
+                  }`}
                 style={isActive ? {} : {
-                  backgroundColor: 'rgba(179,58,53,0.12)',
+                  backgroundColor: 'rgba(255,107,74,0.08)',
                   color: 'var(--primary)',
                 }}
               >
@@ -139,9 +138,8 @@ const BottomNav = React.memo(() => {
                     <IconComponent className="w-5 h-5" />
                     {item.isCart && cartCount > 0 && (
                       <span
-                        className={`absolute -top-2 -right-3 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 ${
-                          isActive ? 'border-[#B33A35]' : 'border-white'
-                        }`}
+                        className={`absolute -top-2 -right-3 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 ${isActive ? 'border-[#FF6B4A]' : 'border-white'
+                          }`}
                       >
                         {cartCount > 9 ? '9+' : cartCount}
                       </span>

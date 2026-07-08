@@ -57,7 +57,15 @@ const MyBookings = () => {
         setLoading(true);
         const params = {};
         if (filter !== 'all') {
-          params.status = filter;
+          if (filter === 'in-progress') {
+            params.status = 'in_progress,journey_started,visited';
+          } else if (filter === 'confirmed') {
+            params.status = 'confirmed,accepted';
+          } else if (filter === 'cancelled') {
+            params.status = 'cancelled,rejected';
+          } else {
+            params.status = filter;
+          }
         }
         
         // Fetch Service Bookings
@@ -118,8 +126,8 @@ const MyBookings = () => {
       case 'in-progress':
       case 'journey_started':
       case 'visited':
-        return '!border-l-[#9E2E2A]';
-      case 'completed': return '!border-l-[#B33A35]';
+        return '!border-l-[#E05333]';
+      case 'completed': return '!border-l-[#FF6B4A]';
       case 'cancelled':
       case 'rejected': return '!border-l-rose-500';
       case 'awaiting_payment': return '!border-l-amber-500';
@@ -130,23 +138,23 @@ const MyBookings = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending_admin':
-        return 'bg-blue-500 text-white border-transparent ring-blue-500';
+        return 'bg-blue-50 text-blue-700 border-blue-100 ring-blue-100';
       case 'confirmed':
-        return 'bg-emerald-500 text-white border-transparent ring-emerald-500';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-100 ring-emerald-100';
       case 'in_progress':
       case 'in-progress':
       case 'journey_started':
       case 'visited':
-        return 'bg-[#9E2E2A] text-white border-transparent ring-[#9E2E2A]';
+        return 'bg-amber-50 text-amber-700 border-amber-100 ring-amber-100';
       case 'completed':
-        return 'bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white border-transparent ring-[#B33A35]';
+        return 'bg-green-50 text-green-700 border-green-100 ring-green-100';
       case 'cancelled':
       case 'rejected':
-        return 'bg-rose-500 text-white border-transparent ring-rose-500';
+        return 'bg-rose-50 text-rose-700 border-rose-100 ring-rose-100';
       case 'awaiting_payment':
-        return 'bg-amber-500 text-white border-transparent ring-amber-500';
+        return 'bg-amber-50 text-amber-700 border-amber-100 ring-amber-100';
       default:
-        return 'bg-gray-500 text-white border-transparent ring-gray-500';
+        return 'bg-gray-50 text-gray-700 border-gray-100 ring-gray-100';
     }
   };
 
@@ -205,7 +213,7 @@ const MyBookings = () => {
         {/* Elegant Dot Grid Pattern */}
         <div className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#B33A35'} 0.8px, transparent 0.8px)`,
+            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#FF6B4A'} 0.8px, transparent 0.8px)`,
             backgroundSize: '32px 32px'
           }}
         />
@@ -217,13 +225,7 @@ const MyBookings = () => {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  if (window.history.length > 2) {
-                    navigate(-1);
-                  } else {
-                    navigate('/user/home');
-                  }
-                }}
+                onClick={() => navigate('/user/home')}
                 className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color cursor-pointer text-dark-text"
               >
                 <FiArrowLeft className="w-5 h-5" />
@@ -250,8 +252,8 @@ const MyBookings = () => {
                 key={tab.id}
                 onClick={() => setFilter(tab.id)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
-                  ? 'border-transparent text-white shadow-lg shadow-blue-500/25 active:scale-95'
-                  : 'bg-card-bg border-border-color text-secondary-text hover:bg-gray-800/20 hover:border-border-color'
+                  ? 'border-transparent text-white shadow-lg shadow-brand/20 active:scale-95'
+                  : 'bg-card-bg border-border-color text-secondary-text hover:bg-divider/60 hover:text-dark-text'
                   }`}
                 style={filter === tab.id ? { backgroundColor: themeColors.button } : {}}
               >
@@ -340,7 +342,7 @@ const MyBookings = () => {
                       }
                     }}
                     onClick={() => handleBookingClick(booking)}
-                    className="group flex gap-3.5 bg-card-bg rounded-[20px] p-4 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
+                    className="group flex gap-3.5 bg-card-bg rounded-[24px] p-4 border border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:border-brand/20 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
                   >
                     {/* Booking Image */}
                     <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-border-color bg-card-bg flex items-center justify-center">

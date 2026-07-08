@@ -28,7 +28,7 @@ const PromoTicker = ({ promos = [] }) => {
     <div className="relative w-full overflow-hidden bg-white border-y border-white/50 py-2.5 select-none z-10 -mt-5 mb-4">
       <div className="flex whitespace-nowrap">
         {/* First marquee list */}
-        <div className="animate-marquee flex gap-10 pr-10 text-[#B33A35] text-xs font-bold tracking-wide uppercase shrink-0">
+        <div className="animate-marquee flex gap-10 pr-10 text-brand text-xs font-bold tracking-wide uppercase shrink-0">
           {tickerItems.map((item, idx) => (
             <span key={idx} className="inline-flex items-center gap-2">
               <span className="text-sm">🎟️</span> {item}
@@ -36,7 +36,7 @@ const PromoTicker = ({ promos = [] }) => {
           ))}
         </div>
         {/* Duplicated list to make loop seamless */}
-        <div className="animate-marquee flex gap-10 pr-10 text-[#B33A35] text-xs font-bold tracking-wide uppercase shrink-0" aria-hidden="true">
+        <div className="animate-marquee flex gap-10 pr-10 text-brand text-xs font-bold tracking-wide uppercase shrink-0" aria-hidden="true">
           {tickerItems.map((item, idx) => (
             <span key={`dup-${idx}`} className="inline-flex items-center gap-2">
               <span className="text-sm">🎟️</span> {item}

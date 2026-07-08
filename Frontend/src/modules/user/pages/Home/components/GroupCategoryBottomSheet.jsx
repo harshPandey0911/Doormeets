@@ -33,10 +33,21 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.height = '100%';
+      document.documentElement.style.height = '100%';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.height = '';
+      document.documentElement.style.height = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.height = '';
+      document.documentElement.style.height = '';
+    };
   }, [isOpen]);
 
   if (!category) return null;
@@ -73,19 +84,19 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl transition-transform duration-500 ease-out"
-        style={{
-          zIndex: 99999,
-          backgroundColor: 'var(--background, #ffffff)',
-          transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
-          maxHeight: '85vh',
-          minHeight: '50vh',
-          overflowY: 'auto',
-          paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 16px))',
-        }}
+        className={`fixed z-[99999] overflow-y-auto bg-white transition-all duration-500 ease-out shadow-2xl
+          /* Mobile layout */
+          bottom-0 left-0 right-0 rounded-t-[32px] w-full min-h-[50vh] max-h-[85vh] pb-[calc(24px+env(safe-area-inset-bottom,16px))]
+          /* Desktop/Tablet layout */
+          md:bottom-auto md:top-1/2 md:left-1/2 md:rounded-[32px] md:w-[480px] md:min-h-0 md:pb-6
+          ${isOpen 
+            ? 'opacity-100 translate-y-0 md:-translate-x-1/2 md:-translate-y-1/2 md:scale-100' 
+            : 'opacity-0 translate-y-full md:-translate-x-1/2 md:-translate-y-[45%] md:scale-95 pointer-events-none'
+          }
+        `}
       >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-4 pb-2">
+        {/* Handle bar - mobile only */}
+        <div className="flex justify-center pt-4 pb-2 md:hidden">
           <div
             className="w-10 h-1 rounded-full"
             style={{ backgroundColor: 'var(--border, #E5E7EB)' }}
@@ -93,7 +104,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pb-4 pt-1">
+        <div className="flex items-center justify-between px-5 pb-4 pt-1 md:pt-5">
           <div className="flex items-center gap-3">
             {category.icon && (
               <div
@@ -152,7 +163,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
               <p className="text-sm font-medium text-gray-500">No services configured yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3.5">
               {mappedCategories.map((mc, idx) => {
                 const color = tileColors[idx % tileColors.length];
                 return (
@@ -162,7 +173,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
                       onClose();
                       onCategoryClick?.(mc);
                     }}
-                    className="relative flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-200 border text-center aspect-square shadow-sm overflow-hidden"
+                    className="group relative flex flex-col items-center justify-center rounded-[20px] cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-300 border text-center aspect-square shadow-[0_8px_20px_rgba(0,0,0,0.03)] overflow-hidden"
                     style={{
                       backgroundColor: mc.icon ? 'transparent' : color.bg,
                       borderColor: mc.icon ? 'transparent' : color.border,
@@ -170,29 +181,28 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
                   >
                     {mc.icon ? (
                       <>
-                        <div className="absolute inset-0 w-full h-full">
+                        <div className="absolute inset-0 w-full h-full overflow-hidden">
                           <DynamicIcon
                             icon={toAssetUrl(mc.icon)}
                             alt={mc.title}
-                            className="w-full h-full object-cover transition-transform duration-300"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                         </div>
-                        <span className="absolute bottom-2 left-0 right-0 px-2 text-[11px] font-bold tracking-tight text-white z-10 leading-tight">
+                        <span className="absolute bottom-3 left-0 right-0 px-2 text-[12px] font-extrabold tracking-tight text-white z-10 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
                           {mc.title}
                         </span>
                       </>
                     ) : (
                       <>
                         <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center mb-2 text-lg font-bold"
+                          className="w-9 h-9 rounded-full flex items-center justify-center mb-2 text-sm font-bold shadow-sm"
                           style={{ backgroundColor: color.border, color: color.text }}
                         >
                           {mc.title?.[0]?.toUpperCase() || '?'}
                         </div>
                         <span
-                          className="text-[11px] font-semibold leading-tight w-full truncate"
-                          style={{ color: '#1F2937' }}
+                          className="text-xs font-bold leading-tight w-full truncate px-1 text-slate-800"
                         >
                           {mc.title}
                         </span>

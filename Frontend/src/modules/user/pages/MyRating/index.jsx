@@ -61,7 +61,7 @@ const MyRating = () => {
       <main className="max-w-5xl mx-auto px-4 py-6">
         {isLoading && pagination.page === 1 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <FiLoader className="w-10 h-10 text-[#B33A35] animate-spin mb-4" />
+             <FiLoader className="w-10 h-10 text-brand animate-spin mb-4" />
             <p className="text-gray-500 font-medium">Fetching your reviews...</p>
           </div>
         ) : ratings.length > 0 ? (
@@ -96,12 +96,12 @@ const MyRating = () => {
                     </div>
                   </div>
                   <div className="bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
-                    <span className="text-[10px] font-bold text-[#B33A35] uppercase">{rating.serviceName || rating.serviceId?.title}</span>
+                    <span className="text-[10px] font-bold text-brand uppercase">{rating.serviceName || rating.serviceId?.title}</span>
                   </div>
                 </div>
 
                 {rating.review && (
-                  <p className="text-secondary-text text-sm leading-relaxed font-medium pl-2 border-l-4 border-[#B33A35]/20">
+                  <p className="text-secondary-text text-sm leading-relaxed font-medium pl-2 border-l-4 border-brand/20">
                     "{rating.review}"
                   </p>
                 )}
@@ -121,7 +121,7 @@ const MyRating = () => {
                   </div>
                   <button
                     onClick={() => navigate(`/user/booking/${rating._id}`)}
-                    className="text-[11px] font-bold text-[#B33A35] hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-brand hover:underline cursor-pointer"
                   >
                     View Details
                   </button>
@@ -150,7 +150,7 @@ const MyRating = () => {
             </p>
             <button
               onClick={() => navigate('/user/bookings')}
-              className="mt-6 px-8 py-3 bg-[#B33A35] text-white rounded-2xl font-bold text-sm shadow-lg shadow-orange-950/20 active:scale-95 transition-all cursor-pointer"
+              className="mt-6 px-8 py-3 bg-brand text-white rounded-2xl font-bold text-sm shadow-lg shadow-brand/10 active:scale-95 transition-all cursor-pointer"
             >
               Go to My Bookings
             </button>

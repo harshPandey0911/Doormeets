@@ -148,7 +148,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
   const [editingPromoId, setEditingPromoId] = useState(null);
 
   const [isCuratedModalOpen, setIsCuratedModalOpen] = useState(false);
-  const [curatedForm, setCuratedForm] = useState({ title: "", gifUrl: "", youtubeUrl: "" });
+  const [curatedForm, setCuratedForm] = useState({ title: "", gifUrl: "", youtubeUrl: "", targetCategoryId: "", slug: "" });
   const [editingCuratedId, setEditingCuratedId] = useState(null);
 
   const [isNoteworthyModalOpen, setIsNoteworthyModalOpen] = useState(false);
@@ -536,7 +536,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
   // Curated handlers
   const resetCuratedForm = () => {
     setEditingCuratedId(null);
-    setCuratedForm({ title: "", gifUrl: "", youtubeUrl: "" });
+    setCuratedForm({ title: "", gifUrl: "", youtubeUrl: "", targetCategoryId: "", slug: "" });
     setIsCuratedModalOpen(false);
   };
 
@@ -682,7 +682,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             <ToggleSwitch
               label="Show Banners"
               checked={home?.isBannersVisible !== false}
-              onChange={() => patchHome({ isBannersVisible: !home?.isBannersVisible })}
+              onChange={(val) => patchHome({ isBannersVisible: val })}
             />
             <button
               type="button"
@@ -777,7 +777,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         </div>
       </CardShell>
 
-      {false && (
+      {true && (
       <CardShell icon={FiGrid}>
         <div className="space-y-5">
           {/* Promo Carousel (PromoCarousel) */}
@@ -791,7 +791,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               <ToggleSwitch
                 label="Show Promos"
                 checked={home?.isPromosVisible !== false}
-                onChange={() => patchHome({ isPromosVisible: !home?.isPromosVisible })}
+                onChange={(val) => patchHome({ isPromosVisible: val })}
               />
               <button
                 type="button"
@@ -899,7 +899,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             <ToggleSwitch
               label="Show Curated"
               checked={home?.isCuratedVisible !== false}
-              onChange={() => patchHome({ isCuratedVisible: !home?.isCuratedVisible })}
+              onChange={(val) => patchHome({ isCuratedVisible: val })}
             />
             <button
               type="button"
@@ -1010,7 +1010,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             <ToggleSwitch
               label="Show Noteworthy"
               checked={home?.isNoteworthyVisible !== false}
-              onChange={() => patchHome({ isNoteworthyVisible: !home?.isNoteworthyVisible })}
+              onChange={(val) => patchHome({ isNoteworthyVisible: val })}
             />
             <button
               type="button"
@@ -1114,7 +1114,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               <ToggleSwitch
                 label="Show Most Booked"
                 checked={home?.isBookedVisible !== false}
-                onChange={() => patchHome({ isBookedVisible: !home?.isBookedVisible })}
+                onChange={(val) => patchHome({ isBookedVisible: val })}
               />
               <button
                 type="button"
@@ -1239,7 +1239,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               <ToggleSwitch
                 label="Show Sections"
                 checked={home?.isCategorySectionsVisible !== false}
-                onChange={() => patchHome({ isCategorySectionsVisible: !home?.isCategorySectionsVisible })}
+                onChange={(val) => patchHome({ isCategorySectionsVisible: val })}
               />
               <button
                 type="button"
@@ -1363,7 +1363,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           <ToggleSwitch
             label="Show Home Categories"
             checked={home?.isCategoriesVisible !== false}
-            onChange={() => patchHome({ isCategoriesVisible: !home?.isCategoriesVisible })}
+            onChange={(val) => patchHome({ isCategoriesVisible: val })}
           />
         </div>
         {categories.length === 0 ? (
@@ -1845,6 +1845,14 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               placeholder="https://youtube.com/..."
             />
           </div>
+          <RedirectionSelector
+            categories={categories}
+            allServices={allServices}
+            targetCategoryId={curatedForm.targetCategoryId}
+            slug={curatedForm.slug}
+            onChange={(patch) => setCuratedForm((p) => ({ ...p, ...patch }))}
+            label="Redirect to..."
+          />
 
           <div className="flex gap-3 pt-4">
             <button

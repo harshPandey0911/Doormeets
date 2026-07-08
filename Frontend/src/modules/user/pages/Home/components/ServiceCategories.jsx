@@ -52,67 +52,51 @@ const ServiceCategories = React.memo(({
   return (
     <div className="px-5 w-full">
       {/* Title Header with "See all" */}
-      <div className="flex items-center justify-between mb-4">
-        <h2
-          className="text-[17px] font-semibold tracking-tight"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {title}
-        </h2>
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-[17px] font-extrabold tracking-tight text-dark-text">{title}</h2>
+          {subtitle && (
+            <p className="text-xs font-semibold text-muted-text mt-0.5">{subtitle}</p>
+          )}
+        </div>
         <button
           onClick={() => navigate('/user/categories')}
-          className="text-xs font-bold transition-colors"
-          style={{ color: 'var(--primary)' }}
+          className="text-xs font-black text-brand transition-colors hover:text-brand-light cursor-pointer"
         >
           See all
         </button>
       </div>
 
       {/* Grid Layout of Rounded rectangular cards */}
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3 lg:gap-5">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-4">
         {displayCategories.map((category, index) => {
           return (
             <div
               key={category.id || index}
               onClick={() => onCategoryClick?.(category)}
-              className="relative flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.01] transition-all duration-200 border text-center aspect-square shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden"
-              style={{
-                backgroundColor: category.colorScheme.bg,
-                borderColor: category.colorScheme.border,
-                boxShadow: `0 8px 20px -4px ${category.colorScheme.text}33`
-              }}
+              className="group flex flex-col items-center cursor-pointer transition-all duration-300"
             >
-              {category.icon ? (
-                <>
-                  <div className="absolute inset-0 w-full h-full">
-                    <DynamicIcon
-                      icon={category.icon}
-                      alt={category.title}
-                      className="w-full h-full object-cover transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                  </div>
-                  <span 
-                    className="absolute bottom-2 lg:bottom-3.5 left-0 right-0 px-2 text-[11px] lg:text-[14px] font-bold tracking-tight truncate text-white z-10"
-                  >
-                    {category.title}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <div className="w-10 h-10 flex items-center justify-center mb-2">
-                    <svg className="w-6 h-6" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
+              {/* Image Card Container */}
+              <div className="w-full aspect-square rounded-[24px] overflow-hidden bg-white border border-border shadow-[0_8px_30px_rgba(0,0,0,0.02)] group-hover:shadow-[0_20px_40px_rgba(255,107,74,0.08)] group-hover:border-brand/20 group-hover:-translate-y-1 active:scale-98 transition-all duration-300 flex items-center justify-center mb-2.5">
+                {category.icon ? (
+                  <DynamicIcon
+                    icon={category.icon}
+                    alt={category.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-brand/5 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </div>
-                  <span 
-                    className="text-[11px] lg:text-[14px] font-semibold tracking-tight truncate w-full"
-                    style={{ color: '#1F2937' }}
-                  >
-                    {category.title}
-                  </span>
-                </>
-              )}
+                )}
+              </div>
+
+              {/* Text Label Outside */}
+              <span className="text-[12px] font-black tracking-tight text-slate-800 group-hover:text-brand transition-colors text-center truncate w-full px-1">
+                {category.title}
+              </span>
             </div>
           );
         })}

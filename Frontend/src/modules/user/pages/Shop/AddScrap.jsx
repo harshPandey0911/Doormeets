@@ -203,7 +203,7 @@ const AddScrap = () => {
         {/* Elegant Dot Grid Pattern */}
         <div className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#B33A35'} 0.8px, transparent 0.8px)`,
+            backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#FF6B4A'} 0.8px, transparent 0.8px)`,
             backgroundSize: '32px 32px'
           }}
         />
