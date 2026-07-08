@@ -59,13 +59,6 @@ const ServiceCategories = React.memo(({
         >
           {title}
         </h2>
-        <button
-          onClick={() => navigate('/user/categories')}
-          className="text-xs font-bold transition-colors"
-          style={{ color: 'var(--primary)' }}
-        >
-          See all
-        </button>
       </div>
 
       {/* Grid Layout of Rounded rectangular cards */}

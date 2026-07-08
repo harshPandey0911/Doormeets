@@ -1327,6 +1327,18 @@ const BookingDetails = () => {
                           ₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
+                      {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
+                        <div className="mt-2 space-y-1.5 border-t border-dashed border-border-color pt-2 text-xs font-semibold">
+                          <div className="flex justify-between items-center text-green-600">
+                            <span>Paid COD Advance</span>
+                            <span>-₹{booking.codAdvanceAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[#B33A35] font-bold text-sm">
+                            <span>Amount Left (Pay at Home)</span>
+                            <span>₹{Math.max(0, finalTotal - booking.codAdvanceAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     // OLD SIMPLE BREAKDOWN (Fallback)
@@ -1386,6 +1398,18 @@ const BookingDetails = () => {
                           ).toLocaleString('en-IN')}
                         </span>
                       </div>
+                      {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
+                        <div className="mt-2 space-y-1.5 border-t border-dashed border-border-color pt-2 text-xs font-semibold">
+                          <div className="flex justify-between items-center text-green-600">
+                            <span>Paid COD Advance</span>
+                            <span>-₹{booking.codAdvanceAmount.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[#B33A35] font-bold text-sm">
+                            <span>Amount Left (Pay at Home)</span>
+                            <span>₹{Math.max(0, (booking.finalAmount || booking.totalAmount || 0) - booking.codAdvanceAmount).toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -1524,7 +1548,7 @@ const BookingDetails = () => {
                   disabled={paying}
                   className="w-full py-3 bg-[#B33A35] text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
                 >
-                  {paying ? 'Processing...' : '⚡ Pay Booking Bill'}
+                  {paying ? 'Processing...' : (booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0) ? `⚡ Pay COD Advance (₹${booking.codAdvanceAmount})` : '⚡ Pay Booking Bill'}
                 </button>
               )}
 

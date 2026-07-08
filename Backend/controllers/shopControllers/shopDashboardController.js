@@ -21,7 +21,7 @@ const getDashboardDetails = async (req, res) => {
 
     // Fetch referred vendors
     const vendors = await Vendor.find({ referredByShopOwner: shopOwner._id })
-      .select('name phone approvalStatus policeVerification training createdAt')
+      .select('name phone approvalStatus policeVerification training createdAt referralCode')
       .sort({ createdAt: -1 });
 
     // Calculate referral stats

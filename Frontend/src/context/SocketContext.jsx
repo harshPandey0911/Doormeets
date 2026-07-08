@@ -284,6 +284,7 @@ export const SocketProvider = ({ children }) => {
           },
           status: 'requested',
           bookingStatus: data.status,
+          assignedByAdmin: data.assignedByAdmin || false,
           createdAt: data.createdAt || new Date().toISOString(),
           expiresAt: data.expiresAt
         };

@@ -53,7 +53,7 @@ const PackageBased = () => {
   // Form states
   const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '' });
   const [subCatForm, setSubCatForm] = useState({ categoryId: '', title: '', description: '', iconUrl: '', imageUrl: '', videoUrl: '', status: 'active' });
-  const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0, allowUserEdit: true });
+  const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0, allowUserEdit: true, codEnabled: true, codAdvanceAmount: 0 });
 
   // Media upload progress states
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -361,7 +361,9 @@ const PackageBased = () => {
         gstPercentage: combo.gstPercentage ?? 18,
         gstIncluded: combo.gstIncluded !== false,
         vendorPayout: combo.vendorPayout || 0,
-        allowUserEdit: combo.allowUserEdit !== false
+        allowUserEdit: combo.allowUserEdit !== false,
+        codEnabled: combo.codEnabled !== false,
+        codAdvanceAmount: combo.codAdvanceAmount || 0
       });
     } else {
       setComboForm({
@@ -379,7 +381,9 @@ const PackageBased = () => {
         gstPercentage: 18,
         gstIncluded: true,
         vendorPayout: 0,
-        allowUserEdit: true
+        allowUserEdit: true,
+        codEnabled: true,
+        codAdvanceAmount: 0
       });
     }
     setEditingCombo(combo ? combo : 'new');
@@ -405,7 +409,9 @@ const PackageBased = () => {
       gstPercentage: Number(comboForm.gstPercentage || 18),
       gstIncluded: comboForm.gstIncluded !== false,
       vendorPayout: Number(comboForm.vendorPayout || 0),
-      allowUserEdit: comboForm.allowUserEdit !== false
+      allowUserEdit: comboForm.allowUserEdit !== false,
+      codEnabled: comboForm.codEnabled !== false,
+      codAdvanceAmount: Number(comboForm.codAdvanceAmount) || 0
     };
 
     if (comboForm._id) {
@@ -763,7 +769,7 @@ const PackageBased = () => {
                                   <span className="text-xs font-extrabold text-emerald-600">₹{pkg.price}</span>
                                   {pkg.originalPrice && <span className="text-xs line-through text-gray-400 ml-1.5 font-semibold">₹{pkg.originalPrice}</span>}
                                   <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">
-                                    {pkg.gstIncluded !== false ? 'GST Inc.' : 'GST Exc.'} ({pkg.gstPercentage || 18}%) | Payout: ₹{pkg.vendorPayout || 0}
+                                    {pkg.gstIncluded !== false ? 'GST Inc.' : 'GST Exc.'} ({pkg.gstPercentage || 18}%) | Payout: ₹{pkg.vendorPayout || 0} | COD: {pkg.codEnabled !== false ? `₹${pkg.codAdvanceAmount || 0} Adv` : 'Disabled'}
                                   </span>
                                 </div>
                                 <div className="flex gap-1.5">
@@ -1292,6 +1298,34 @@ const PackageBased = () => {
                   <label htmlFor="allowUserEdit" className="text-xs font-bold text-gray-700 select-none cursor-pointer">
                     Allow user to edit package options on detail page
                   </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 border-t pt-3 mt-2">
+                  <div className="flex items-center gap-2 py-2">
+                    <input
+                      type="checkbox"
+                      id="codEnabled"
+                      checked={comboForm.codEnabled}
+                      onChange={e => setComboForm(p => ({ ...p, codEnabled: e.target.checked }))}
+                      className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                    />
+                    <label htmlFor="codEnabled" className="text-xs font-bold text-gray-750 select-none cursor-pointer">
+                      COD (Pay at Home) Enabled
+                    </label>
+                  </div>
+                  {comboForm.codEnabled && (
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 mb-0.5 uppercase">COD Advance Amount (₹)</label>
+                      <input
+                        type="number"
+                        value={comboForm.codAdvanceAmount}
+                        onChange={e => setComboForm({ ...comboForm, codAdvanceAmount: e.target.value })}
+                        placeholder="e.g. 0 for no advance"
+                        className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                        min="0"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Split Calculation Details Box */}

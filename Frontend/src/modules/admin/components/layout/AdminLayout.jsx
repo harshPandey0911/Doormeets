@@ -152,15 +152,42 @@ const AdminLayout = () => {
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-sm text-red-600 dark:text-red-400">Cancellation Request Received</h4>
             <p className="text-xs text-gray-700 dark:text-gray-300 mt-1">{data.message}</p>
-            <button
-              onClick={() => {
-                toast.dismiss(t.id);
-                navigate(`/admin/bookings/${data.bookingId}`);
-              }}
-              className="mt-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
-            >
-              Review Booking
-            </button>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  navigate(`/admin/bookings/${data.bookingId}`);
+                }}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[10px] font-bold transition-colors shadow-sm"
+              >
+                Review Booking
+              </button>
+              <button
+                onClick={async () => {
+                  const confirmed = window.confirm('Are you sure you want to approve this cancellation request?');
+                  if (!confirmed) return;
+                  toast.loading('Processing cancellation...', { id: 'admin-action' });
+                  try {
+                    const { adminBookingService } = await import('../../../../services/adminBookingService');
+                    const res = await adminBookingService.approveCancelBooking(data.bookingId);
+                    toast.dismiss('admin-action');
+                    if (res.success) {
+                      toast.success('Booking cancelled successfully');
+                      toast.dismiss(t.id);
+                      window.dispatchEvent(new CustomEvent('adminBookingUpdated'));
+                    } else {
+                      toast.error(res.message || 'Failed to approve cancellation');
+                    }
+                  } catch (err) {
+                    toast.dismiss('admin-action');
+                    toast.error(err.message || 'Failed to process request');
+                  }
+                }}
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
+              >
+                Approve Cancel
+              </button>
+            </div>
           </div>
           <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
         </div>

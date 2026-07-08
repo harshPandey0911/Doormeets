@@ -1,8 +1,8 @@
 /**
  * Application Constants
  */
-
 // User Roles
+
 const USER_ROLES = {
   USER: 'USER',
   VENDOR: 'VENDOR',
@@ -10,7 +10,6 @@ const USER_ROLES = {
   ADMIN: 'ADMIN',
   SHOP_OWNER: 'SHOP_OWNER'
 };
-
 // Admin Roles (sub-roles within admin)
 const ADMIN_ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
@@ -128,7 +127,8 @@ const PAYMENT_STATUS = {
   REFUNDED: 'refunded',
   COLLECTED_BY_VENDOR: 'collected_by_vendor',
   PLAN_COVERED: 'plan_covered', // For plan_benefit bookings until bill is finalized
-  COMPLETED: 'completed'
+  COMPLETED: 'completed',
+  PARTIALLY_PAID: 'partially_paid'
 };
 
 // Service Status

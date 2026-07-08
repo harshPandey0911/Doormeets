@@ -51,10 +51,14 @@ const createPaymentOrder = async (req, res) => {
     // Calculate final order amount (fully pre-paid online vs COD partial advance payment)
     let orderAmount = booking.finalAmount;
     if (booking.paymentMethod === 'pay_at_home') {
-      const globalSettings = await Settings.findOne({ type: 'global' }).lean();
-      const codPct = globalSettings?.codAdvancePercentage !== undefined ? globalSettings.codAdvancePercentage : 10;
-      if (codPct > 0 && codPct < 100) {
-        orderAmount = parseFloat((booking.finalAmount * (codPct / 100)).toFixed(2));
+      if (booking.codAdvanceAmount > 0) {
+        orderAmount = booking.codAdvanceAmount;
+      } else {
+        const globalSettings = await Settings.findOne({ type: 'global' }).lean();
+        const codPct = globalSettings?.codAdvancePercentage !== undefined ? globalSettings.codAdvancePercentage : 10;
+        if (codPct > 0 && codPct < 100) {
+          orderAmount = parseFloat((booking.finalAmount * (codPct / 100)).toFixed(2));
+        }
       }
     }
 
@@ -196,14 +200,20 @@ const verifyPaymentWebhook = async (req, res) => {
     const VendorBill = require('../../models/VendorBill');
 
     // User payment transaction
+    const paidAmount = booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 
+      ? booking.codAdvanceAmount 
+      : booking.finalAmount;
+
     await Transaction.create({
       userId: booking.userId,
       bookingId: booking._id,
-      amount: booking.finalAmount,
+      amount: paidAmount,
       type: 'payment',
       paymentMethod: 'razorpay',
       status: 'completed',
-      description: `Online payment for booking ${booking.bookingNumber}`,
+      description: booking.paymentMethod === 'pay_at_home' 
+        ? `COD advance payment for booking ${booking.bookingNumber}` 
+        : `Online payment for booking ${booking.bookingNumber}`,
       referenceId: razorpay_payment_id
     });
 

@@ -358,58 +358,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                   </section>
                 )}
 
-                {/* Trending Services */}
-                {trendingServices.length > 0 && (
-                  <section>
-                    <h3
-                      className="text-sm font-bold flex items-center gap-2 mb-3"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      <FiTrendingUp style={{ color: '#60A5FA' }} />
-                      Trending Services
-                    </h3>
-                    <div
-                      className="rounded-2xl overflow-hidden border"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      {trendingServices.map((service, idx) => (
-                        <button
-                          key={service.id}
-                          onClick={() => handleResultClick(service)}
-                          className="w-full flex items-center justify-between p-4 transition-colors text-left group"
-                          style={{
-                            borderTop: idx > 0 ? '1px solid var(--divider)' : 'none'
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--divider)'}
-                          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          <div className="flex items-center gap-3">
-                            {service.imageUrl && (
-                              <img
-                                src={toAssetUrl(service.imageUrl)}
-                                alt=""
-                                className="w-8 h-8 rounded-lg object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                              />
-                            )}
-                            <span
-                              className="font-medium transition-colors"
-                              style={{ color: 'var(--text-primary)' }}
-                            >
-                              {service.title}
-                            </span>
-                          </div>
-                          <FiChevronRight
-                            className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
-                            style={{ color: 'var(--text-muted)' }}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                )}
+
               </div>
             )}
           </div>

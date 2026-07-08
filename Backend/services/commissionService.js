@@ -74,7 +74,7 @@ async function processBookingCompletion(bookingId) {
     let customItemsPayoutSum = 0;
     let hasCustomItems = false;
 
-    if (packageVendorPayout === 0 && (!pricing || !pricing.vendorPayoutBase) && booking.dynamicFields && booking.dynamicFields.length > 0) {
+    if (packageVendorPayout === 0 && (!pricing || (pricing.vendorPayoutBase === undefined || pricing.vendorPayoutBase === null)) && booking.dynamicFields && booking.dynamicFields.length > 0) {
       try {
         const Service = require('../models/Service');
         const serviceDoc = await Service.findById(booking.serviceId);
@@ -96,10 +96,10 @@ async function processBookingCompletion(bookingId) {
       }
     }
 
-    if (packageVendorPayout > 0 || (hasCustomItems && customItemsPayoutSum > 0) || (pricing && pricing.vendorPayoutBase > 0)) {
+    if (packageVendorPayout > 0 || (hasCustomItems && customItemsPayoutSum > 0) || pricing) {
       let totalVendorPayoutBase = packageVendorPayout > 0 
         ? packageVendorPayout 
-        : (hasCustomItems && customItemsPayoutSum > 0 ? customItemsPayoutSum : pricing.vendorPayoutBase);
+        : (hasCustomItems && customItemsPayoutSum > 0 ? customItemsPayoutSum : (pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0));
 
       // Check if there is a generated VendorBill for this booking to aggregate addon prices
       try {

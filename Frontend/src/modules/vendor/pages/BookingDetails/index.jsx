@@ -872,6 +872,24 @@ export default function BookingDetails() {
           </div>
         )}
 
+        {/* COD Split Payment Banner */}
+        {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && booking.status?.toLowerCase() !== 'cancelled' && (
+          <div className="bg-yellow-50 border border-yellow-250 text-yellow-800 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <FiAlertCircle className="w-4 h-4 shrink-0 text-yellow-600" />
+              <span>
+                {booking.paymentStatus === 'partially_paid' 
+                  ? `COD ADVANCE PAID: Customer has paid advance ₹${booking.codAdvanceAmount} online.` 
+                  : `COD ADVANCE PENDING: Customer needs to pay advance ₹${booking.codAdvanceAmount} online.`
+                }
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-500 font-medium ml-6">
+              Remaining Amount: ₹{Math.max(0, booking.finalAmount - booking.codAdvanceAmount).toFixed(2)} (NOT PAID YET).
+            </p>
+          </div>
+        )}
+
         {/* Bidding Section */}
         {booking.status?.toLowerCase() === 'bidding' && !booking.vendorId && (
           <>
@@ -1629,19 +1647,36 @@ export default function BookingDetails() {
                 /* Normal Cash Collection UI */
                 <div className="bg-orange-50/50 rounded-2xl p-4 mb-6 border border-orange-100/50">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Amount to Collect</span>
+                    <span className="text-sm text-gray-600">
+                      {booking.paymentMethod === 'pay_at_home' && booking.paymentStatus === 'partially_paid' 
+                        ? 'Remaining Amount to Collect' 
+                        : 'Amount to Collect'
+                      }
+                    </span>
                     <span className="text-2xl font-black text-orange-600">
-                      ₹{(booking.finalAmount || parseFloat(booking.price) || 0).toLocaleString()}
+                      ₹{(() => {
+                        const total = booking.finalAmount || parseFloat(booking.price) || 0;
+                        if (booking.paymentMethod === 'pay_at_home' && booking.paymentStatus === 'partially_paid') {
+                          return Math.max(0, total - (booking.codAdvanceAmount || 0)).toLocaleString();
+                        }
+                        return total.toLocaleString();
+                      })()}
                     </span>
                   </div>
+                  {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
+                    <div className="flex justify-between items-center mt-2 text-xs text-green-600 font-semibold border-t border-dashed border-orange-200/50 pt-2">
+                      <span>Paid COD Advance</span>
+                      <span>₹{booking.codAdvanceAmount.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="mt-3 flex items-start gap-2 text-[11px] text-orange-700/80 leading-relaxed">
                     <FiClock className="w-3 h-3 mt-0.5" />
-                    <span>Customer chose {
-                      booking.paymentMethod === 'cash collected' ? 'Cash Collected' :
-                        booking.paymentMethod === 'Qr online' ? 'QR Online' :
-                          booking.paymentMethod === 'online' ? 'Online Paid' :
-                            booking.paymentMethod?.replace('_', ' ') || 'Cash'
-                    } payment. Please verify collection to proceed.</span>
+                    <span>
+                      {booking.paymentMethod === 'pay_at_home' && booking.paymentStatus === 'partially_paid'
+                        ? `COD Advance (₹${booking.codAdvanceAmount}) is paid. Remaining payment is not paid yet.`
+                        : `Customer chose ${booking.paymentMethod?.replace('_', ' ') || 'Cash'} payment. Please verify collection to proceed.`
+                      }
+                    </span>
                   </div>
                 </div>
               )}

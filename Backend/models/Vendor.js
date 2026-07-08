@@ -118,6 +118,10 @@ const vendorSchema = new mongoose.Schema({
     default: false
   },
   aadhar: {
+    name: {
+      type: String,
+      trim: true
+    },
     number: {
       type: String,
       trim: true
@@ -437,9 +441,19 @@ const vendorSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   referredByShopOwner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ShopOwner',
+    default: null
+  },
+  referredByVendor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor',
     default: null
   }
 }, {

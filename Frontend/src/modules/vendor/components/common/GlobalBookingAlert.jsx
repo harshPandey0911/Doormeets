@@ -44,7 +44,8 @@ export default function GlobalBookingAlert() {
                   ...b,
                   id: b._id || b.id,
                   serviceType: b.serviceName || b.serviceId?.title,
-                  customerName: b.userId?.name || 'Customer'
+                  customerName: b.userId?.name || 'Customer',
+                  assignedByAdmin: b.assignedByAdmin || false
                 }));
 
               const existingIds = new Set(pendingJobs.map(j => String(j.id || j._id)));

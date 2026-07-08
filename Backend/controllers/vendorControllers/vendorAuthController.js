@@ -170,7 +170,8 @@ const verifyLogin = async (req, res) => {
           service: vendor.service,
           approvalStatus: vendor.approvalStatus,
           isSubscriptionActive: vendor.isSubscriptionActive,
-          subscription: vendor.subscription
+          subscription: vendor.subscription,
+          referralCode: vendor.referralCode
         },
         ...tokens
       });
@@ -288,6 +289,31 @@ const register = async (req, res) => {
     const pvDueDate = new Date();
     pvDueDate.setDate(pvDueDate.getDate() + policeVerificationDays);
 
+    // Generate unique referral code
+    let referralCode;
+    let codeExists = true;
+    while (codeExists) {
+      const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
+      referralCode = `VN-${rand}`;
+      const found = await Vendor.findOne({ referralCode });
+      if (!found) codeExists = false;
+    }
+
+    // Process input referral code
+    let referredByShopOwner = null;
+    let referredByVendor = null;
+    if (req.body.referralCode) {
+      const inputRefCode = req.body.referralCode.trim().toUpperCase();
+      if (inputRefCode.startsWith('SH-')) {
+        const ShopOwner = require('../../models/ShopOwner');
+        const shop = await ShopOwner.findOne({ referralCode: inputRefCode });
+        if (shop) referredByShopOwner = shop._id;
+      } else if (inputRefCode.startsWith('VN-')) {
+        const referrerVendor = await Vendor.findOne({ referralCode: inputRefCode });
+        if (referrerVendor) referredByVendor = referrerVendor._id;
+      }
+    }
+
     // Create Vendor Record
     const vendor = await Vendor.create({
       name,
@@ -300,7 +326,10 @@ const register = async (req, res) => {
       policeVerification: {
         status: 'pending',
         dueDate: pvDueDate
-      }
+      },
+      referralCode,
+      referredByShopOwner,
+      referredByVendor
     });
 
     // Notify Admins (Non-blocking)
@@ -346,7 +375,8 @@ const register = async (req, res) => {
         phone: vendor.phone,
         approvalStatus: vendor.approvalStatus,
         isSubscriptionActive: vendor.isSubscriptionActive,
-        subscription: vendor.subscription
+        subscription: vendor.subscription,
+        referralCode: vendor.referralCode
       },
       ...tokens
     });
@@ -449,7 +479,8 @@ const login = async (req, res) => {
         service: vendor.service,
         approvalStatus: vendor.approvalStatus,
         isSubscriptionActive: vendor.isSubscriptionActive,
-        subscription: vendor.subscription
+        subscription: vendor.subscription,
+        referralCode: vendor.referralCode
       },
       ...tokens
     });

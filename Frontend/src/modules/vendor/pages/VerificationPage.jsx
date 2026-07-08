@@ -27,6 +27,7 @@ const VerificationPage = () => {
   const [graceDays, setGraceDays] = useState(7);
 
   // Step 1: Basic Documents state (Aadhaar & PAN)
+  const [aadharName, setAadharName] = useState('');
   const [aadharNumber, setAadharNumber] = useState('');
   const [aadharFront, setAadharFront] = useState('');
   const [aadharBack, setAadharBack] = useState('');
@@ -156,6 +157,7 @@ const VerificationPage = () => {
 
         // Prepopulate basic documents if they exist
         if (vendorData.aadhar) {
+          setAadharName(vendorData.aadhar.name || '');
           setAadharNumber(vendorData.aadhar.number || '');
           setAadharFront(vendorData.aadhar.document || '');
           setAadharBack(vendorData.aadhar.backDocument || '');
@@ -286,6 +288,10 @@ const VerificationPage = () => {
   const handleSubmitBasicDocs = async (e) => {
     e.preventDefault();
 
+    if (!aadharName || !aadharName.trim()) {
+      toast.error('Please enter the name as on your Aadhaar card');
+      return;
+    }
     if (!aadharNumber || aadharNumber.length !== 12) {
       toast.error('Please enter a valid 12-digit Aadhaar number');
       return;
@@ -306,6 +312,7 @@ const VerificationPage = () => {
     setSubmittingDocs(true);
     try {
       const res = await api.put('/vendors/profile', {
+        aadharName,
         aadharNumber,
         aadharDocument: aadharFront,
         aadharBackDocument: aadharBack,
@@ -479,17 +486,30 @@ const VerificationPage = () => {
                   <span className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black">1</span>
                   Aadhaar Card Details
                 </h3>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Card Number</label>
-                  <input
-                    type="tel"
-                    required
-                    maxLength={12}
-                    value={aadharNumber}
-                    onChange={(e) => setAadharNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                    placeholder="12-digit Aadhaar Number"
-                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Name as on Aadhaar Card</label>
+                    <input
+                      type="text"
+                      required
+                      value={aadharName}
+                      onChange={(e) => setAadharName(e.target.value)}
+                      placeholder="Name as printed on Aadhaar"
+                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Card Number</label>
+                    <input
+                      type="tel"
+                      required
+                      maxLength={12}
+                      value={aadharNumber}
+                      onChange={(e) => setAadharNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                      placeholder="12-digit Aadhaar Number"
+                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

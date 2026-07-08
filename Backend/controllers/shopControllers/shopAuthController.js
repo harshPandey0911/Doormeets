@@ -135,8 +135,64 @@ const getProfile = async (req, res) => {
   }
 };
 
+const forgotPasswordSendOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    const cleanPhone = phone ? phone.replace(/\D/g, '').slice(-10) : '';
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Invalid phone number.' });
+    }
+
+    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone });
+    if (!shopOwner) {
+      return res.status(404).json({ success: false, message: 'No registered account found with this phone number.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully. (Use default OTP 123456)'
+    });
+  } catch (error) {
+    console.error('Forgot password send OTP error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send OTP.' });
+  }
+};
+
+const forgotPasswordReset = async (req, res) => {
+  try {
+    const { phone, otp, newPassword } = req.body;
+    const cleanPhone = phone ? phone.replace(/\D/g, '').slice(-10) : '';
+    
+    if (otp !== '123456') {
+      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+
+    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone });
+    if (!shopOwner) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+
+    shopOwner.password = newPassword;
+    await shopOwner.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful.'
+    });
+  } catch (error) {
+    console.error('Forgot password reset error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reset password.' });
+  }
+};
+
 module.exports = {
   register,
   login,
-  getProfile
+  getProfile,
+  forgotPasswordSendOtp,
+  forgotPasswordReset
 };

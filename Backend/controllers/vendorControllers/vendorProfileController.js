@@ -229,7 +229,7 @@ const updateProfile = async (req, res) => {
       vendor.skills = Array.isArray(skills) ? skills : [];
     }
     // If aadharDocument/aadharBackDocument exists and is not empty, update it
-    if (aadharDocument || aadharBackDocument || aadharNumber) {
+    if (aadharDocument || aadharBackDocument || aadharNumber || req.body.aadharName) {
       let aadharUrl = aadharDocument || vendor.aadhar?.document;
       if (aadharUrl && aadharUrl.startsWith('data:')) {
         const uploadRes = await cloudinaryService.uploadFile(aadharUrl, { folder: 'vendors/documents' });
@@ -244,10 +244,12 @@ const updateProfile = async (req, res) => {
 
       if (vendor.aadhar) {
         if (aadharNumber) vendor.aadhar.number = aadharNumber;
+        if (req.body.aadharName !== undefined) vendor.aadhar.name = req.body.aadharName;
         if (aadharDocument) vendor.aadhar.document = aadharUrl;
         if (aadharBackDocument) vendor.aadhar.backDocument = aadharBackUrl;
       } else {
         vendor.aadhar = {
+          name: req.body.aadharName || '',
           number: aadharNumber || '',
           document: aadharUrl || '',
           backDocument: aadharBackUrl || ''

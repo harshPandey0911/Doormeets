@@ -424,8 +424,8 @@ const acceptBooking = async (req, res) => {
       calculatedVendorShare = packageVendorPayout;
     } else if (hasCustomItems && customItemsPayoutSum > 0) {
       calculatedVendorShare = customItemsPayoutSum;
-    } else if (pricing && pricing.vendorPayoutBase > 0) {
-      calculatedVendorShare = pricing.vendorPayoutBase;
+    } else if (pricing) {
+      calculatedVendorShare = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
     } else {
       const Settings = require('../../models/Settings');
       const settings = await Settings.findOne({ type: 'global' });

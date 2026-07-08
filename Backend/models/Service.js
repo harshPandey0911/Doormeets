@@ -62,6 +62,8 @@ const packageSchema = new mongoose.Schema({
   gstIncluded: { type: Boolean, default: true },
   vendorPayout: { type: Number, default: 0 },
   platformCommission: { type: Number, default: 20 },
+  codEnabled: { type: Boolean, default: true },
+  codAdvanceAmount: { type: Number, default: 0 },
   // Subscription fields (for subscription_base reuse)
   visitsCredits: { type: Number, default: null },
   bookingDiscount: { type: Number, default: null },

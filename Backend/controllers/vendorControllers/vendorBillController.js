@@ -231,8 +231,8 @@ const createOrUpdateBill = async (req, res) => {
     let vendorServiceEarning = 0;
     if (packageVendorPayout > 0) {
       vendorServiceEarning = packageVendorPayout;
-    } else if (pricing && pricing.vendorPayoutBase > 0) {
-      vendorServiceEarning = pricing.vendorPayoutBase;
+    } else if (pricing) {
+      vendorServiceEarning = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
     } else {
       vendorServiceEarning = parseFloat((originalServiceBaseForBill * (serviceSplitPct / 100)).toFixed(2));
     }

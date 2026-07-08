@@ -469,6 +469,10 @@ const bookingSchema = new mongoose.Schema({
   walletAmountRefunded: {
     type: Boolean,
     default: false
+  },
+  codAdvanceAmount: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

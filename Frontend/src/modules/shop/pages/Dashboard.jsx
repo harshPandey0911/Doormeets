@@ -240,7 +240,14 @@ const Dashboard = () => {
               {data?.vendors && data.vendors.length > 0 ? (
                 data.vendors.map((vendor) => (
                   <tr key={vendor._id} className="hover:bg-gray-50/30 transition-colors">
-                    <td className="px-6 py-4 font-bold text-gray-800">{vendor.name}</td>
+                    <td className="px-6 py-4 font-bold text-gray-800">
+                      <div>{vendor.name}</div>
+                      {vendor.referralCode && (
+                        <div className="inline-block text-[10px] text-blue-600 font-extrabold bg-blue-50/50 border border-blue-100 px-1.5 py-0.5 rounded mt-1">
+                          Code: {vendor.referralCode}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-gray-500 font-medium">{vendor.phone}</td>
                     <td className="px-6 py-4 text-gray-400 font-medium">
                       {new Date(vendor.createdAt).toLocaleDateString(undefined, {

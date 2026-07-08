@@ -45,6 +45,16 @@ const addVendor = async (req, res) => {
     const pvDueDate = new Date();
     pvDueDate.setDate(pvDueDate.getDate() + policeVerificationDays);
 
+    // Generate unique referral code
+    let referralCode;
+    let codeExists = true;
+    while (codeExists) {
+      const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
+      referralCode = `VN-${rand}`;
+      const found = await Vendor.findOne({ referralCode });
+      if (!found) codeExists = false;
+    }
+
     const vendor = await Vendor.create({
       name,
       phone: cleanPhone,
@@ -55,7 +65,8 @@ const addVendor = async (req, res) => {
       policeVerification: {
         status: 'pending',
         dueDate: pvDueDate
-      }
+      },
+      referralCode
     });
 
     res.status(201).json({

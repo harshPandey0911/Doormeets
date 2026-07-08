@@ -452,8 +452,25 @@ const createBooking = async (req, res) => {
     const isBiddingRequired = !!(finalCategory?.isBiddingEnabled || finalAmount === 0 || service.type === 'product');
     const biddingDeadline = isBiddingRequired ? new Date(Date.now() + 5 * 60 * 1000) : null;
 
+    let computedCodAdvanceAmount = 0;
+    if (paymentMethod === 'pay_at_home' && service) {
+      const actualServiceType = service.serviceType || service.type;
+      if (actualServiceType === 'package_base' && service.packages && service.packages.length > 0) {
+        const pkgTitle = formattedBookedItems[0]?.card?.title || service.title;
+        const matchedPkg = service.packages.find(p => p.title === pkgTitle);
+        if (matchedPkg && matchedPkg.codEnabled !== false) {
+          computedCodAdvanceAmount = matchedPkg.codAdvanceAmount || 0;
+        }
+      } else {
+        if (service.codEnabled !== false) {
+          computedCodAdvanceAmount = service.codAdvanceAmount || 0;
+        }
+      }
+    }
+
     const booking = await Booking.create({
       bookingNumber,
+      codAdvanceAmount: computedCodAdvanceAmount,
       userId,
       vendorId: null, // Will be assigned when vendor accepts
       serviceId,
