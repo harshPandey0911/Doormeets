@@ -44,7 +44,7 @@ exports.updateSettings = async (req, res, next) => {
       cloudinaryApiKey,
       cloudinaryApiSecret,
       // Billing Settings
-      companyName, companyGSTIN, companyPAN, companyAddress, companyCity, companyState, companyPincode, companyPhone, companyEmail, invoicePrefix, sacCode,
+      companyName, companyGSTIN, companyPAN, companyAddress, companyCity, companyState, companyPincode, companyPhone, companyEmail, companyCIN, companyWebsite, invoicePrefix, sacCode,
       // Support Settings
       supportEmail, supportPhone, supportWhatsapp,
       // Booking Timing
@@ -110,6 +110,8 @@ exports.updateSettings = async (req, res, next) => {
         companyPincode,
         companyPhone,
         companyEmail,
+        companyCIN,
+        companyWebsite,
         isOnlinePaymentEnabled: isOnlinePaymentEnabled !== undefined ? isOnlinePaymentEnabled : true,
         welcomeVideoUrl,
         commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 10,
@@ -159,6 +161,8 @@ exports.updateSettings = async (req, res, next) => {
       if (companyPincode !== undefined) settings.companyPincode = companyPincode;
       if (companyPhone !== undefined) settings.companyPhone = companyPhone;
       if (companyEmail !== undefined) settings.companyEmail = companyEmail;
+      if (companyCIN !== undefined) settings.companyCIN = companyCIN;
+      if (companyWebsite !== undefined) settings.companyWebsite = companyWebsite;
       if (invoicePrefix !== undefined) settings.invoicePrefix = invoicePrefix;
       if (sacCode !== undefined) settings.sacCode = sacCode;
 
@@ -266,7 +270,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig');
 
     // Default if not found (fallback values)
     if (!settings) {

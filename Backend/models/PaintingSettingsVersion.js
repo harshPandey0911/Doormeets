@@ -73,6 +73,8 @@ const paintingSettingsVersionSchema = new mongoose.Schema({
     minMaterialCharge: { type: Number, default: 1000 },
     emergencyBookingPremiumPercent: { type: Number, default: 20 },
     expressBookingPremiumPercent: { type: Number, default: 15 },
+    consultationFee: { type: Number, default: 0 },
+    consultationDuration: { type: String, default: '45 - 60 Minutes physical survey' },
 
     // Vendor Rules
     mandatoryPhotos: { type: Boolean, default: false },

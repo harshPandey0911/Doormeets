@@ -221,6 +221,31 @@ const cancelBooking = async (req, res) => {
         console.error('[AdminCancel] Error refunding wallet amount:', walletErr);
       }
     }
+    // Refund upfront payment to user's wallet if payment was successful
+    if (booking.paymentStatus === 'success' && booking.finalAmount > 0) {
+      try {
+        const User = require('../../models/User');
+        const Transaction = require('../../models/Transaction');
+        
+        await User.findByIdAndUpdate(booking.userId, { $inc: { 'wallet.balance': booking.finalAmount } });
+        
+        await Transaction.create({
+          userId: booking.userId,
+          type: 'refund',
+          amount: booking.finalAmount,
+          status: 'completed',
+          paymentMethod: 'wallet',
+          description: `Refund of ₹${booking.finalAmount} online payment for booking #${booking.bookingNumber} (admin cancellation)`,
+          bookingId: booking._id,
+          balanceAfter: (await User.findById(booking.userId)).wallet?.balance || 0
+        });
+        
+        booking.paymentStatus = 'refunded';
+        console.log(`[AdminCancel] Refunded upfront payment of ₹${booking.finalAmount} to user ${booking.userId} wallet.`);
+      } catch (refundErr) {
+        console.error('[AdminCancel] Error refunding upfront payment to wallet:', refundErr);
+      }
+    }
 
     await booking.save();
 
@@ -268,7 +293,7 @@ const cancelBooking = async (req, res) => {
     console.error('Cancel booking error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to cancel booking. Please try again.'
+      message: error.message || 'Failed to cancel booking. Please try again.'
     });
   }
 };

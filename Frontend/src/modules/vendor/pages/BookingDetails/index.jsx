@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
+import api from '../../../../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle, FiPlus, FiTrash2, FiFileText } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
@@ -28,6 +29,77 @@ import { toast } from 'react-hot-toast';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 import { useLocationTracking } from '../../../../hooks/useLocationTracking';
 
+const getStateCode = (stateName) => {
+  if (!stateName) return '00';
+  const codes = {
+    'chhattisgarh': '22',
+    'madhya pradesh': '23',
+    'haryana': '06',
+    'delhi': '07',
+    'maharashtra': '27',
+    'uttar pradesh': '09',
+    'karnataka': '29',
+    'tamil nadu': '33',
+    'west bengal': '19',
+    'gujarat': '24',
+    'rajasthan': '08'
+  };
+  return codes[stateName.toLowerCase().trim()] || '00';
+};
+
+const numberToWords = (num) => {
+  if (num === null || num === undefined || isNaN(num)) return '';
+  const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+  const convertLessThanOneThousand = (n) => {
+    if (n === 0) return '';
+    let temp = '';
+    if (n >= 100) {
+      temp += ones[Math.floor(n / 100)] + ' hundred ';
+      n %= 100;
+    }
+    if (n >= 20) {
+      temp += tens[Math.floor(n / 10)] + ' ';
+      n %= 10;
+    }
+    if (n > 0) {
+      temp += ones[n] + ' ';
+    }
+    return temp.trim();
+  };
+
+  const convert = (n) => {
+    if (n === 0) return 'zero';
+    let words = '';
+    if (Math.floor(n / 10000000) > 0) {
+      words += convertLessThanOneThousand(Math.floor(n / 10000000)) + ' crore ';
+      n %= 10000000;
+    }
+    if (Math.floor(n / 100000) > 0) {
+      words += convertLessThanOneThousand(Math.floor(n / 100000)) + ' lakh ';
+      n %= 100000;
+    }
+    if (Math.floor(n / 1000) > 0) {
+      words += convertLessThanOneThousand(Math.floor(n / 1000)) + ' thousand ';
+      n %= 1000;
+    }
+    words += convertLessThanOneThousand(n);
+    return words.trim();
+  };
+
+  const rounded = parseFloat(num).toFixed(2);
+  const parts = rounded.split('.');
+  const integerPart = parseInt(parts[0]) || 0;
+  const decimalPart = parseInt(parts[1]) || 0;
+
+  let result = convert(integerPart);
+  if (decimalPart > 0) {
+    result += ' point ' + convert(decimalPart);
+  }
+  return result + ' only';
+};
+
 export default function BookingDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -49,6 +121,23 @@ export default function BookingDetails() {
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [existingBill, setExistingBill] = useState(null);
   const [addonLoading, setAddonLoading] = useState(false);
+
+  const [companyDetails, setCompanyDetails] = useState({
+    companyName: 'Doormeeets',
+    companyGSTIN: '',
+    companyPAN: '',
+    companyAddress: '',
+    companyCity: '',
+    companyState: '',
+    companyPincode: '',
+    companyPhone: '',
+    companyEmail: '',
+    companyCIN: '',
+    companyWebsite: '',
+    vendorCgstPercentage: 2.5,
+    vendorSgstPercentage: 2.5,
+    sacCode: '998599'
+  });
 
   useEffect(() => {
     if (isAddonModalOpen) {
@@ -193,6 +282,259 @@ export default function BookingDetails() {
   });
 
   const [canCancel, setCanCancel] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/public/config');
+        if (response.data?.success && response.data?.settings) {
+          setCompanyDetails({
+            companyName: response.data.settings.companyName || 'Doormeeets',
+            companyGSTIN: response.data.settings.companyGSTIN || '',
+            companyPAN: response.data.settings.companyPAN || '',
+            companyAddress: response.data.settings.companyAddress || '',
+            companyCity: response.data.settings.companyCity || '',
+            companyState: response.data.settings.companyState || '',
+            companyPincode: response.data.settings.companyPincode || '',
+            companyPhone: response.data.settings.companyPhone || '',
+            companyEmail: response.data.settings.companyEmail || '',
+            companyCIN: response.data.settings.companyCIN || '',
+            companyWebsite: response.data.settings.companyWebsite || '',
+            vendorCgstPercentage: response.data.settings.vendorCgstPercentage || 2.5,
+            vendorSgstPercentage: response.data.settings.vendorSgstPercentage || 2.5,
+            sacCode: response.data.settings.sacCode || '998599'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch public settings for vendor:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleDownloadInvoice = async () => {
+    if (!booking) return;
+
+    const html2pdf = (await import('html2pdf.js')).default;
+    // Use grandTotal from existingBill if available, else booking.finalAmount / booking.totalAmount
+    const grandTotalVal = existingBill?.grandTotal || booking.finalAmount || booking.totalAmount || 0;
+    
+    const cgstRate = companyDetails.vendorCgstPercentage || 2.5;
+    const sgstRate = companyDetails.vendorSgstPercentage || 2.5;
+    const totalGstRate = cgstRate + sgstRate;
+
+    const taxableValue = parseFloat((grandTotalVal / (1 + (totalGstRate / 100))).toFixed(2));
+    const cgstAmount = parseFloat((taxableValue * (cgstRate / 100)).toFixed(2));
+    const sgstAmount = parseFloat((taxableValue * (sgstRate / 100)).toFixed(2));
+
+    const formattedDate = new Date(booking.createdAt).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    const custName = booking.userId?.name || 'Rohit Bisen';
+    const invoiceNum = `PIM${booking.bookingNumber}`;
+    
+    const addr1 = booking.address?.addressLine1 || '';
+    const addr2 = booking.address?.addressLine2 || '';
+    const cityVal = booking.address?.city || '';
+    const stateVal = booking.address?.state || '';
+    const pinVal = booking.address?.pincode || '';
+    const landVal = booking.address?.landmark || '';
+
+    const custStateCode = getStateCode(stateVal);
+
+    // Vendor details
+    const vendorNameVal = booking.vendorId?.businessName || booking.vendorId?.name || 'Som Prakash Sahu';
+    const vendorGSTINVal = booking.vendorId?.gstin || 'N/A';
+    const vendorAddressVal = booking.vendorId?.address || 'Indore, Madhya Pradesh';
+    const vendorStateVal = booking.vendorId?.state || stateVal;
+    const vendorStateCode = getStateCode(vendorStateVal);
+
+    const invoiceHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.4; max-width: 800px; margin: 0 auto; background: #fff; box-sizing: border-box;">
+        <!-- Header -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <tr>
+            <td style="vertical-align: top;">
+              <!-- Typographic Logo -->
+              <div style="font-weight: bold; font-size: 22px; color: #000; letter-spacing: -0.5px; text-transform: lowercase; display: inline-flex; align-items: center;">
+                <span style="background: #000; color: #fff; padding: 2px 6px; margin-right: 4px; border-radius: 4px; font-size: 15px; font-weight: 800; text-transform: uppercase;">dm</span>${companyDetails.companyName.toLowerCase().replace('doormeeets', 'doormeets')}
+              </div>
+              <div style="font-size: 11px; color: #555; margin-top: 10px; line-height: 1.5;">
+                <strong>${companyDetails.companyName}</strong><br/>
+                ${companyDetails.companyAddress || 'Raipur, Chhattisgarh'}<br/>
+                ${companyDetails.companyCity ? `${companyDetails.companyCity}, ` : ''}${companyDetails.companyState} - ${companyDetails.companyPincode}<br/>
+                Email: ${companyDetails.companyEmail}<br/>
+                Telephone: ${companyDetails.companyPhone}<br/>
+                ${companyDetails.companyGSTIN ? `GSTIN: ${companyDetails.companyGSTIN}<br/>` : ''}
+                ${companyDetails.companyCIN ? `CIN: ${companyDetails.companyCIN}<br/>` : ''}
+                ${companyDetails.companyWebsite || `www.${companyDetails.companyName.toLowerCase().replace('doormeeets', 'doormeets')}.com`}
+              </div>
+            </td>
+            <td style="text-align: right; vertical-align: top; width: 400px;">
+              <h1 style="font-size: 18px; font-weight: 800; color: #000; margin: 0; text-transform: uppercase; line-height: 1.3;">
+                TAX INVOICE/ORIGINAL TAX INVOICE<br/>
+                <span style="font-size: 14px; font-weight: 600; color: #555;">(UC PARTNER INVOICE)</span>
+              </h1>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Customer & Service Provider Details -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-size: 12px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 20px 0;">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding: 15px 20px 15px 0; border-right: 1px solid #f0f0f0;">
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Customer Name</span>
+                <span style="font-size: 13px; font-weight: bold; color: #111;">${custName}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Invoice no.</span>
+                <span style="font-size: 13px; font-weight: bold; color: #111;">${invoiceNum}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Delivery Address</span>
+                <span style="font-size: 12px; color: #444; line-height: 1.4; display: block;">
+                  ${addr1}<br/>
+                  ${addr2 ? addr2 + '<br/>' : ''}
+                  ${cityVal}, ${stateVal} - ${pinVal}<br/>
+                  ${landVal ? 'Landmark: ' + landVal : ''}
+                </span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Invoice Date</span>
+                <span style="font-size: 12px; color: #111;">${formattedDate}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">State Name & Code</span>
+                <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
+              </div>
+
+              <div>
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Place of Supply</span>
+                <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
+              </div>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding: 15px 0 15px 20px;">
+              <div style="color: #000; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px;">DELIVERY SERVICE PROVIDER</div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Business GSTIN</span>
+                <span style="font-size: 13px; font-weight: bold; color: #111;">${vendorGSTINVal}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Business Name</span>
+                <span style="font-size: 12px; color: #111;">${vendorNameVal}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Address</span>
+                <span style="font-size: 12px; color: #444; line-height: 1.4; display: block;">
+                  ${vendorAddressVal}
+                </span>
+              </div>
+
+              <div>
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">State Name & Code</span>
+                <span style="font-size: 12px; color: #111;">${vendorStateVal} ${vendorStateCode}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 12px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #333; border-top: 2px solid #333;">
+              <th style="text-align: left; padding: 10px 5px; font-weight: 800; text-transform: uppercase;">Items</th>
+              <th style="text-align: right; padding: 10px 5px; font-weight: 800; text-transform: uppercase; width: 300px;">Taxable Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 20px 5px; vertical-align: top;">
+                <span style="font-size: 14px; font-weight: bold; color: #111; display: block; margin-bottom: 4px;">
+                  Service Charges - ${booking.serviceName}
+                </span>
+                <span style="color: #666;">SAC: ${companyDetails.sacCode}</span>
+              </td>
+              <td style="text-align: right; padding: 20px 5px; vertical-align: top;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 3px 0;">Gross Amount</td>
+                    <td style="text-align: right; font-weight: bold; color: #111;">Rs. ${grandTotalVal.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 10px 0 3px 0; font-weight: bold; border-top: 1px dashed #eee;">Taxable Value</td>
+                    <td style="text-align: right; font-weight: bold; color: #111; padding: 10px 0 3px 0; border-top: 1px dashed #eee;">Rs. ${taxableValue.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="text-align: right; font-size: 10px; color: #777; font-style: italic; padding-bottom: 12px;">
+                      (${numberToWords(taxableValue)})
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 3px 0; border-top: 1px dashed #eee; padding-top: 10px;">CGST @${cgstRate}%</td>
+                    <td style="text-align: right; font-weight: bold; color: #111; padding: 3px 0; border-top: 1px dashed #eee; padding-top: 10px;">Rs. ${cgstAmount.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="text-align: right; font-size: 10px; color: #777; font-style: italic; padding-bottom: 8px;">
+                      (${numberToWords(cgstAmount)})
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 3px 0; border-top: 1px dashed #eee; padding-top: 10px;">SGST @${sgstRate}%</td>
+                    <td style="text-align: right; font-weight: bold; color: #111; padding: 3px 0; border-top: 1px dashed #eee; padding-top: 10px;">Rs. ${sgstAmount.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="text-align: right; font-size: 10px; color: #777; font-style: italic; padding-bottom: 8px;">
+                      (${numberToWords(sgstAmount)})
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr style="border-top: 2px solid #333; border-bottom: 2px solid #333; font-size: 14px; font-weight: 900;">
+              <td style="padding: 15px 5px; text-transform: uppercase;">TOTAL AMOUNT</td>
+              <td style="text-align: right; padding: 15px 5px; color: #000; font-size: 16px;">Rs. ${grandTotalVal.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Signature Section -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 40px; font-size: 10px; color: #666; line-height: 1.5;">
+          <tr>
+            <td style="vertical-align: bottom; font-style: italic; width: 60%;">
+              Under reverse charge applicability:<br/>
+              1. This invoice is issued on behalf of the Service Provider. UC acts in the capacity of an Electronic Commerce operator as per Section 9(5) of the CGST Act, 2017.<br/>
+              2. This invoice has been signed by UC only for limited purposes of complying as an Electronic Commerce Operator.
+            </td>
+            <td style="text-align: right; vertical-align: top; width: 40%;">
+              <div style="border-bottom: 1px solid #ccc; height: 45px; margin-bottom: 8px;"></div>
+              Signature of supplier/authorized representative
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    const opt = {
+      margin: 10,
+      filename: `UC-PartnerInvoice-${booking.bookingNumber}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().from(invoiceHtml).set(opt).save();
+  };
 
   useEffect(() => {
     if (!booking?.acceptedAt) {
@@ -765,7 +1107,39 @@ export default function BookingDetails() {
 
 
 
-  const handleCompleteWork = async (photos) => {
+  const verifyAndCompleteJob = async (photos) => {
+    const isPaid = booking?.paymentStatus === 'success' || booking?.paymentStatus === 'paid' || booking?.paymentStatus === 'completed' || booking?.cashCollected;
+    const pendingAddonAmount = booking && booking.finalAmount > booking.totalAmount ? (booking.finalAmount - booking.totalAmount) : 0;
+    const hasUnpaidAddon = isPaid && pendingAddonAmount > 0;
+
+    if (hasUnpaidAddon) {
+      setIsWorkDoneModalOpen(false);
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Collect Cash?',
+        message: `Addon payment of ₹${pendingAddonAmount.toFixed(2)} is pending. Have you collected this cash from the customer?`,
+        type: 'warning',
+        onConfirm: async () => {
+          setConfirmDialog(prev => { return { ...prev, isOpen: false }; });
+          setActionLoading(true);
+          try {
+            // 1. Collect addon cash
+            await api.post(`/bookings/${id}/self/addon-payment/collect-cash`);
+            
+            // 2. Complete job
+            await completeSelfJob(id, { workPhotos: photos || [] });
+            toast.success('Cash collected and work marked done successfully!');
+            window.location.reload();
+          } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to complete job');
+          } finally {
+            setActionLoading(false);
+          }
+        }
+      });
+      return;
+    }
+
     try {
       setActionLoading(true);
       await completeSelfJob(id, { workPhotos: photos || [] });
@@ -778,6 +1152,8 @@ export default function BookingDetails() {
       setActionLoading(false);
     }
   };
+
+  const handleCompleteWork = verifyAndCompleteJob;
 
   const handleApproveWork = () => {
     setConfirmDialog({
@@ -850,6 +1226,7 @@ export default function BookingDetails() {
   // Final Total from bill or booking
   const finalTotal = bill?.grandTotal || (booking?.finalAmount || 0);
   const hasBill = !!bill;
+  const isAddonPending = booking && (booking.paymentStatus === 'success' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed') && (booking.finalAmount > booking.totalAmount);
 
   return (
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
@@ -1395,6 +1772,18 @@ export default function BookingDetails() {
           ) : null}
         </div>
 
+        {['completed', 'work_done'].includes(booking.status?.toLowerCase()) && !isAddonPending && (
+          <div className="mb-6">
+            <button
+              onClick={handleDownloadInvoice}
+              className="w-full py-4 rounded-2xl font-bold text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+            >
+              <FiFileText className="w-5 h-5" />
+              Download Partner Invoice (PDF)
+            </button>
+          </div>
+        )}
+
         {/* Work Photos (after completion) */}
         {booking.workPhotos && booking.workPhotos.length > 0 && booking.assignedTo?.name !== 'You (Self)' && (
           <div className="bg-white rounded-xl p-4 mb-4 shadow-md border-t-4 border-green-500">
@@ -1911,26 +2300,45 @@ export default function BookingDetails() {
               )}
 
               {(booking.status === 'visited' || booking.status === 'in_progress') && (
-                <div className="flex gap-3">
+                booking.isConsultation ? (
                   <button
-                    onClick={() => setIsAddonModalOpen(true)}
-                    className="flex-1 py-4 rounded-xl font-bold bg-white text-blue-600 border-2 border-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
-                  >
-                    <FiPlus className="w-5 h-5" />
-                    Add-on
-                  </button>
-                  <button
-                    onClick={() => setIsWorkDoneModalOpen(true)}
-                    className="flex-[2] py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
+                    onClick={() => {
+                      if (booking.consultationId) {
+                        navigate(`/vendor/painting-consultations?consultationId=${booking.consultationId}`);
+                      } else {
+                        navigate('/vendor/painting-consultations');
+                      }
+                    }}
+                    className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:brightness-105"
                     style={{
-                      background: 'linear-gradient(135deg, #10B981, #059669)',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                      boxShadow: '0 4px 12px rgba(249, 115, 22, 0.4)',
                     }}
                   >
-                    <FiCheckCircle className="w-5 h-5" />
-                    Work Done
+                    <FiFileText className="w-5 h-5" />
+                    Create/Generate Quotation
                   </button>
-                </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setIsAddonModalOpen(true)}
+                      className="flex-1 py-4 rounded-xl font-bold bg-white text-blue-600 border-2 border-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+                    >
+                      <FiPlus className="w-5 h-5" />
+                      Add-on
+                    </button>
+                    <button
+                      onClick={() => setIsWorkDoneModalOpen(true)}
+                      className="flex-[2] py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
+                      style={{
+                        background: 'linear-gradient(135deg, #10B981, #059669)',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                      }}
+                    >
+                      <FiCheckCircle className="w-5 h-5" />
+                      Work Done
+                    </button>
+                  </div>
+                )
               )}
             </div>
           )}
@@ -2009,18 +2417,7 @@ export default function BookingDetails() {
         onClose={() => setIsWorkDoneModalOpen(false)}
         job={booking}
         onComplete={async (photos) => {
-          try {
-            setActionLoading(true);
-            // Use vendor-specific service call (completeSelfJob)
-            await completeSelfJob(id, { workPhotos: photos });
-            toast.success('Work marked done');
-            setIsWorkDoneModalOpen(false);
-            window.location.reload();
-          } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to complete job');
-          } finally {
-            setActionLoading(false);
-          }
+          await verifyAndCompleteJob(photos);
         }}
         loading={actionLoading}
       />

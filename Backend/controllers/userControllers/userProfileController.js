@@ -186,7 +186,7 @@ const getCheckoutData = async (req, res) => {
     // Fetch all 3 in parallel
     const [user, cart, settings] = await Promise.all([
       User.findById(userId).select('addresses phone name loyaltyPoints wallet'),
-      Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl slug').populate('items.categoryId', 'title slug'),
+      Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl slug codAdvanceAmount packages').populate('items.categoryId', 'title slug'),
       Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage loyaltyPointsRedemptionRate isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime paintingRates')
     ]);
 

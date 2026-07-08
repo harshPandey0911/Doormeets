@@ -122,9 +122,9 @@ class FlutterBridge {
             reject(err);
           },
           {
-            enableHighAccuracy: false, // Turned false to reduce timeout chances on weaker network/GPS
-            timeout: 15000, // Increased timeout to 15 seconds
-            maximumAge: 10000 // Allow up to 10 seconds old cached locations to further prevent timeouts
+            enableHighAccuracy: false,
+            timeout: 30000,
+            maximumAge: 300000
           }
         );
       });

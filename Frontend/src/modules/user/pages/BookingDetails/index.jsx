@@ -25,7 +25,8 @@ import {
   FiChevronRight,
   FiSearch,
   FiHome,
-  FiAlertCircle
+  FiAlertCircle,
+  FiFileText
 } from 'react-icons/fi';
 import { bookingService } from '../../../../services/bookingService';
 import { paymentService } from '../../../../services/paymentService';
@@ -45,6 +46,76 @@ const toAssetUrl = (url) => {
   return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
 };
 
+const getStateCode = (stateName) => {
+  if (!stateName) return '00';
+  const codes = {
+    'chhattisgarh': '22',
+    'madhya pradesh': '23',
+    'haryana': '06',
+    'delhi': '07',
+    'maharashtra': '27',
+    'uttar pradesh': '09',
+    'karnataka': '29',
+    'tamil nadu': '33',
+    'west bengal': '19',
+    'gujarat': '24',
+    'rajasthan': '08'
+  };
+  return codes[stateName.toLowerCase().trim()] || '00';
+};
+
+const numberToWords = (num) => {
+  if (num === null || num === undefined || isNaN(num)) return '';
+  const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+  const convertLessThanOneThousand = (n) => {
+    if (n === 0) return '';
+    let temp = '';
+    if (n >= 100) {
+      temp += ones[Math.floor(n / 100)] + ' hundred ';
+      n %= 100;
+    }
+    if (n >= 20) {
+      temp += tens[Math.floor(n / 10)] + ' ';
+      n %= 10;
+    }
+    if (n > 0) {
+      temp += ones[n] + ' ';
+    }
+    return temp.trim();
+  };
+
+  const convert = (n) => {
+    if (n === 0) return 'zero';
+    let words = '';
+    if (Math.floor(n / 10000000) > 0) {
+      words += convertLessThanOneThousand(Math.floor(n / 10000000)) + ' crore ';
+      n %= 10000000;
+    }
+    if (Math.floor(n / 100000) > 0) {
+      words += convertLessThanOneThousand(Math.floor(n / 100000)) + ' lakh ';
+      n %= 100000;
+    }
+    if (Math.floor(n / 1000) > 0) {
+      words += convertLessThanOneThousand(Math.floor(n / 1000)) + ' thousand ';
+      n %= 1000;
+    }
+    words += convertLessThanOneThousand(n);
+    return words.trim();
+  };
+
+  const rounded = parseFloat(num).toFixed(2);
+  const parts = rounded.split('.');
+  const integerPart = parseInt(parts[0]) || 0;
+  const decimalPart = parseInt(parts[1]) || 0;
+
+  let result = convert(integerPart);
+  if (decimalPart > 0) {
+    result += ' point ' + convert(decimalPart);
+  }
+  return result + ' only';
+};
 
 const BookingDetails = () => {
   const navigate = useNavigate();
@@ -66,7 +137,239 @@ const BookingDetails = () => {
     phone: ''
   });
 
+  const [companyDetails, setCompanyDetails] = useState({
+    companyName: 'Doormeeets',
+    companyGSTIN: '',
+    companyPAN: '',
+    companyAddress: '',
+    companyCity: '',
+    companyState: '',
+    companyPincode: '',
+    companyPhone: '',
+    companyEmail: '',
+    companyCIN: '',
+    companyWebsite: '',
+    vendorCgstPercentage: 2.5,
+    vendorSgstPercentage: 2.5,
+    sacCode: '998599'
+  });
+
   const [cancellationTimeLeft, setCancellationTimeLeft] = useState(true);
+
+  const handleDownloadInvoice = async () => {
+    if (!booking) return;
+
+    const html2pdf = (await import('html2pdf.js')).default;
+    const grandTotalVal = parseFloat(finalTotal) || 0;
+    const taxRate = companyDetails.serviceGstPercentage || 18;
+    const isGstIncluded = true;
+
+    let discountVal = parseFloat(booking.discount || 0);
+    let taxableValue = 0;
+    let igstAmount = 0;
+
+    if (isGstIncluded) {
+      taxableValue = parseFloat((grandTotalVal / (1 + (taxRate / 100))).toFixed(2));
+      igstAmount = parseFloat((grandTotalVal - taxableValue).toFixed(2));
+    } else {
+      taxableValue = grandTotalVal - discountVal;
+      igstAmount = parseFloat((taxableValue * (taxRate / 100)).toFixed(2));
+    }
+
+    const formattedDate = new Date(booking.createdAt).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    const custName = booking.userId?.name || 'Rohit Bisen';
+    const invoiceNum = `${companyDetails.companyGSTIN ? 'UCIC' : 'INV'}${booking.bookingNumber}`;
+    
+    const addr1 = booking.address?.addressLine1 || '';
+    const addr2 = booking.address?.addressLine2 || '';
+    const cityVal = booking.address?.city || '';
+    const stateVal = booking.address?.state || '';
+    const pinVal = booking.address?.pincode || '';
+    const landVal = booking.address?.landmark || '';
+
+    const custStateCode = getStateCode(stateVal);
+    const compStateCode = getStateCode(companyDetails.companyState);
+
+    const invoiceHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.4; max-width: 800px; margin: 0 auto; background: #fff; box-sizing: border-box;">
+        <!-- Header -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <tr>
+            <td style="vertical-align: top;">
+              <!-- Typographic Logo -->
+              <div style="font-weight: bold; font-size: 22px; color: #000; letter-spacing: -0.5px; text-transform: lowercase; display: inline-flex; align-items: center;">
+                <span style="background: #000; color: #fff; padding: 2px 6px; margin-right: 4px; border-radius: 4px; font-size: 15px; font-weight: 800; text-transform: uppercase;">dm</span>${companyDetails.companyName.toLowerCase().replace('doormeeets', 'doormeets')}
+              </div>
+              <div style="font-size: 11px; color: #555; margin-top: 10px; line-height: 1.5;">
+                <strong>${companyDetails.companyName}</strong><br/>
+                ${companyDetails.companyAddress}<br/>
+                ${companyDetails.companyCity}, ${companyDetails.companyState} - ${companyDetails.companyPincode}<br/>
+                Email: ${companyDetails.companyEmail}<br/>
+                Telephone: ${companyDetails.companyPhone}<br/>
+                ${companyDetails.companyCIN ? `CIN: ${companyDetails.companyCIN}<br/>` : ''}
+                ${companyDetails.companyWebsite || `www.${companyDetails.companyName.toLowerCase().replace('doormeeets', 'doormeets')}.com`}
+              </div>
+            </td>
+            <td style="text-align: right; vertical-align: top;">
+              <h1 style="font-size: 24px; font-weight: 900; color: #000; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">TAX INVOICE</h1>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Customer & Service Provider Details -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-size: 12px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 20px 0;">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding: 15px 20px 15px 0; border-right: 1px solid #f0f0f0;">
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Customer Name</span>
+                <span style="font-size: 13px; font-weight: bold; color: #111;">${custName}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Invoice no.</span>
+                <span style="font-size: 13px; font-weight: bold; color: #111;">${invoiceNum}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Delivery Address</span>
+                <span style="font-size: 12px; color: #444; line-height: 1.4; display: block;">
+                  ${addr1}<br/>
+                  ${addr2 ? addr2 + '<br/>' : ''}
+                  ${cityVal}, ${stateVal} - ${pinVal}<br/>
+                  ${landVal ? 'Landmark: ' + landVal : ''}
+                </span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Invoice Date</span>
+                <span style="font-size: 12px; color: #111;">${formattedDate}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">State Name & Code</span>
+                <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
+              </div>
+
+              <div>
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Place of Supply</span>
+                <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
+              </div>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding: 15px 0 15px 20px;">
+              <div style="color: #000; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px;">DELIVERY SERVICE PROVIDER</div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Business GSTIN</span>
+                <span style="font-size: 13px; font-weight: bold; color: #111;">${companyDetails.companyGSTIN || 'N/A'}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Business Name</span>
+                <span style="font-size: 12px; color: #111;">${companyDetails.companyName}</span>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Address</span>
+                <span style="font-size: 12px; color: #444; line-height: 1.4; display: block;">
+                  ${companyDetails.companyAddress}<br/>
+                  ${companyDetails.companyCity}, ${companyDetails.companyState} - ${companyDetails.companyPincode}
+                </span>
+              </div>
+
+              <div>
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">State Name & Code</span>
+                <span style="font-size: 12px; color: #111;">${companyDetails.companyState} ${compStateCode}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 12px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #333; border-top: 2px solid #333;">
+              <th style="text-align: left; padding: 10px 5px; font-weight: 800; text-transform: uppercase;">Items</th>
+              <th style="text-align: right; padding: 10px 5px; font-weight: 800; text-transform: uppercase; width: 300px;">Taxable Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 20px 5px; vertical-align: top;">
+                <span style="font-size: 14px; font-weight: bold; color: #111; display: block; margin-bottom: 4px;">
+                  Convenience and Platform Fee - ${booking.serviceName}
+                </span>
+                <span style="color: #666;">SAC: ${companyDetails.sacCode}</span>
+              </td>
+              <td style="text-align: right; padding: 20px 5px; vertical-align: top;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 3px 0;">Gross Amount</td>
+                    <td style="text-align: right; font-weight: bold; color: #111;">Rs. ${grandTotalVal.toFixed(2)}</td>
+                  </tr>
+                  ${discountVal > 0 ? `
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 3px 0;">Discount</td>
+                    <td style="text-align: right; color: #e53e3e; font-weight: bold;">- Rs. ${discountVal.toFixed(2)}</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 10px 0 3px 0; font-weight: bold; border-top: 1px dashed #eee;">Taxable Value</td>
+                    <td style="text-align: right; font-weight: bold; color: #111; padding: 10px 0 3px 0; border-top: 1px dashed #eee;">Rs. ${taxableValue.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="text-align: right; font-size: 10px; color: #777; font-style: italic; padding-bottom: 12px;">
+                      (${numberToWords(taxableValue)})
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: left; color: #666; padding: 3px 0; border-top: 1px dashed #eee; padding-top: 10px;">IGST @${taxRate}%</td>
+                    <td style="text-align: right; font-weight: bold; color: #111; padding: 3px 0; border-top: 1px dashed #eee; padding-top: 10px;">Rs. ${igstAmount.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="text-align: right; font-size: 10px; color: #777; font-style: italic; padding-bottom: 8px;">
+                      (${numberToWords(igstAmount)})
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr style="border-top: 2px solid #333; border-bottom: 2px solid #333; font-size: 14px; font-weight: 900;">
+              <td style="padding: 15px 5px; text-transform: uppercase;">TOTAL AMOUNT</td>
+              <td style="text-align: right; padding: 15px 5px; color: #000; font-size: 16px;">Rs. ${grandTotalVal.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Signature Section -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 60px; font-size: 11px; color: #666;">
+          <tr>
+            <td style="vertical-align: bottom; font-style: italic;">
+              Reverse Charge mechanism not applicable
+            </td>
+            <td style="text-align: right; vertical-align: top; width: 250px;">
+              <div style="border-bottom: 1px solid #ccc; height: 45px; margin-bottom: 8px;"></div>
+              Signature of supplier/authorized representative
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    const opt = {
+      margin: 10,
+      filename: `TaxInvoice-${booking.bookingNumber}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().from(invoiceHtml).set(opt).save();
+  };
 
   // Cancellation window real-time timer check
   useEffect(() => {
@@ -99,6 +402,22 @@ const BookingDetails = () => {
           setSupportInfo({
             email: supportEmail || 'help@doormeets.com',
             phone: supportPhone || '+919999999999'
+          });
+          setCompanyDetails({
+            companyName: response.data.settings.companyName || 'Doormeeets',
+            companyGSTIN: response.data.settings.companyGSTIN || '',
+            companyPAN: response.data.settings.companyPAN || '',
+            companyAddress: response.data.settings.companyAddress || '',
+            companyCity: response.data.settings.companyCity || '',
+            companyState: response.data.settings.companyState || '',
+            companyPincode: response.data.settings.companyPincode || '',
+            companyPhone: response.data.settings.companyPhone || '',
+            companyEmail: response.data.settings.companyEmail || '',
+            companyCIN: response.data.settings.companyCIN || '',
+            companyWebsite: response.data.settings.companyWebsite || '',
+            vendorCgstPercentage: response.data.settings.vendorCgstPercentage || 2.5,
+            vendorSgstPercentage: response.data.settings.vendorSgstPercentage || 2.5,
+            sacCode: response.data.settings.sacCode || '998599'
           });
         }
       } catch (error) {
@@ -272,30 +591,30 @@ const BookingDetails = () => {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusStyle = (status) => {
     switch (status?.toLowerCase()) {
       case 'confirmed':
       case 'accepted':
-        return 'bg-green-50 text-green-700 border-green-200';
+        return { backgroundColor: '#F0FDF4', color: '#16A34A', borderColor: '#BBF7D0' };
       case 'in_progress':
       case 'journey_started':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return { backgroundColor: '#EFF6FF', color: '#2563EB', borderColor: '#BFDBFE' };
       case 'visited':
-        return 'bg-orange-50 text-[#9E2E2A] border-orange-200';
+        return { backgroundColor: '#FFF7ED', color: '#C2410C', borderColor: '#FFEDD5' };
       case 'completed':
-        return 'bg-brand text-white border-transparent';
+        return { backgroundColor: '#B33A35', color: '#FFFFFF', borderColor: 'transparent' };
       case 'cancelled':
-        return 'bg-red-500/10 text-red-500 border-red-500/20';
+        return { backgroundColor: '#FEF2F2', color: '#EF4444', borderColor: '#FEE2E2' };
       case 'awaiting_payment':
       case 'work_done':
-        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+        return { backgroundColor: '#FEF3C7', color: '#D97706', borderColor: '#FDE68A' };
       case 'requested':
       case 'searching':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+        return { backgroundColor: '#FFFBEB', color: '#D97706', borderColor: '#FDE68A' };
       case 'bidding':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return { backgroundColor: '#FAF5FF', color: '#9333EA', borderColor: '#E9D5FF' };
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return { backgroundColor: '#F9FAFB', color: '#4B5563', borderColor: '#E5E7EB' };
     }
   };
 
@@ -353,7 +672,7 @@ const BookingDetails = () => {
     if (paying) return;
 
     // If a Razorpay order already exists for this booking and hasn't been used, skip creating a new one
-    if (booking.razorpayOrderId) {
+    if (booking.razorpayOrderId && !isAddonPending) {
       // Open Razorpay with existing order
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -610,6 +929,7 @@ const BookingDetails = () => {
   // Final Total
   const hasBill = !!bill;
   const finalTotal = bill?.grandTotal || (booking.finalAmount || booking.totalAmount || 0);
+  const isAddonPending = (booking.paymentStatus === 'success' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed') && (booking.finalAmount > booking.totalAmount);
 
   // --------------------------------------
 
@@ -716,7 +1036,10 @@ const BookingDetails = () => {
 
           {/* Status Badge */}
           <div className="flex items-center justify-center">
-            <div className={`px-4 py-2 rounded-full flex items-center gap-2 shadow-sm border ${getStatusColor(booking.status)}`}>
+            <div 
+              style={getStatusStyle(booking.status)}
+              className="px-4 py-2 rounded-full flex items-center gap-2 shadow-sm border"
+            >
               {getStatusIcon(booking.status)}
               <span className="text-xs font-black uppercase tracking-wider">{getStatusLabel(booking.status)}</span>
             </div>
@@ -1229,11 +1552,11 @@ const BookingDetails = () => {
                             <span>Original Booking : {originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
                             {isPlanBenefit ? (
                               <div className="flex items-center gap-2">
-                                <span className="line-through text-secondary-text opacity-50 text-xs">₹{originalBase.toLocaleString('en-IN')}</span>
+                                <span className="line-through text-secondary-text opacity-50 text-xs">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
                               </div>
                             ) : (
-                              <span className="font-medium text-dark-text">₹{originalBase.toLocaleString('en-IN')}</span>
+                              <span className="font-medium text-dark-text">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             )}
                           </div>
 
@@ -1241,7 +1564,7 @@ const BookingDetails = () => {
                           {services.map((s, i) => (
                             <div key={i} className="flex justify-between items-center text-secondary-text">
                               <span>{s.name} <span className="text-secondary-text opacity-50 text-xs">x{s.quantity}</span></span>
-                              <span className="font-mono text-xs text-dark-text">₹{((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1)).toFixed(2)}</span>
+                              <span className="font-mono text-xs text-dark-text">₹{(parseFloat(s.total) || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
                             </div>
                           ))}
 
@@ -1426,23 +1749,36 @@ const BookingDetails = () => {
                       booking.paymentStatus?.replace(/_/g, ' ') || 'Pending'}
                 </span>
               </div>
+              {['completed', 'work_done'].includes(booking.status?.toLowerCase()) && !isAddonPending && (
+                <div className="bg-card-bg px-5 pb-5 pt-3 flex justify-center">
+                  <button
+                    onClick={handleDownloadInvoice}
+                    className="w-full py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
+                  >
+                    <FiFileText className="w-5 h-5" />
+                    Download Tax Invoice (PDF)
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
           {/* Action Card for Awaiting Payment */}
-          {booking.status === 'awaiting_payment' && (
+          {(booking.status === 'awaiting_payment' || isAddonPending) && (
             <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color p-6 space-y-4">
               <div className="text-center mb-4">
                 <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-brand/20">
                   <FiDollarSign className="w-8 h-8 text-brand" />
                 </div>
                 <h3 className="text-lg font-bold text-dark-text">
-                  {['online', 'razorpay'].includes(booking.paymentMethod) ? 'Payment Required to Confirm' : 'Payment Required'}
+                  {isAddonPending ? 'Addon Payment Pending' : (['online', 'razorpay'].includes(booking.paymentMethod) ? 'Payment Required to Confirm' : 'Payment Required')}
                 </h3>
                 <p className="text-sm text-secondary-text">
-                  {['online', 'razorpay'].includes(booking.paymentMethod) 
-                    ? 'The professional has accepted your booking request. Please complete the online payment to confirm the slot and start the service.' 
-                    : 'The professional has completed the work. Please choose a payment method to verify and close your booking.'}
+                  {isAddonPending 
+                    ? `An addon of ₹${(booking.finalAmount - booking.totalAmount).toFixed(2)} has been added to your service. Please pay online below, or hand over the cash directly to the professional.`
+                    : (['online', 'razorpay'].includes(booking.paymentMethod) 
+                      ? 'The professional has accepted your booking request. Please complete the online payment to confirm the slot and start the service.' 
+                      : 'The professional has completed the work. Please choose a payment method to verify and close your booking.')}
                 </p>
               </div>
 
@@ -1452,10 +1788,10 @@ const BookingDetails = () => {
                   className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform bg-brand hover:bg-brand-light"
                 >
                   <FiDollarSign className="w-5 h-5" />
-                  Pay Online (Razorpay/UPI)
+                  {isAddonPending ? `Pay Addon ₹${(booking.finalAmount - booking.totalAmount).toFixed(2)} Online` : 'Pay Online (Razorpay/UPI)'}
                 </button>
 
-                {!['online', 'razorpay'].includes(booking.paymentMethod) && (
+                {!isAddonPending && !['online', 'razorpay'].includes(booking.paymentMethod) && (
                   <button
                     onClick={handlePayAtHome}
                     className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"

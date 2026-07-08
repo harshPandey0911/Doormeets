@@ -28,6 +28,8 @@ const DEFAULT_SETTINGS_SNAPSHOT = {
   minMaterialCharge: 1000,
   emergencyBookingPremiumPercent: 20,
   expressBookingPremiumPercent: 15,
+  consultationFee: 0,
+  consultationDuration: '45 - 60 Minutes physical survey',
   mandatoryPhotos: false,
   mandatoryMeasurements: false,
   mandatoryBeforeImages: false,
@@ -207,6 +209,41 @@ exports.updateDraftSnapshot = async (req, res) => {
     profile.activeVersionId = version._id;
     await profile.save();
 
+    // Sync to global Settings and catalog service if this profile is default
+    if ((profile.isDefault || profile.profileCode === 'DEFAULT_SYSTEM_PROFILE') && snapshot) {
+      try {
+        const Settings = require('../../models/Settings');
+        const Service = require('../../models/Service');
+        
+        let globalSettings = await Settings.findOne({ type: 'global' });
+        if (!globalSettings) {
+          globalSettings = await Settings.create({ type: 'global' });
+        }
+        
+        if (!globalSettings.paintingRates) {
+          globalSettings.paintingRates = {};
+        }
+        
+        if (snapshot.consultationFee !== undefined) {
+          globalSettings.paintingRates.consultationFee = Number(snapshot.consultationFee);
+          
+          // Sync catalog service price
+          await Service.findByIdAndUpdate('6a4de25bc57dcb06a9118efc', {
+            basePrice: Number(snapshot.consultationFee)
+          });
+        }
+        
+        if (snapshot.consultationDuration !== undefined) {
+          globalSettings.paintingRates.consultationDuration = snapshot.consultationDuration;
+        }
+        
+        await globalSettings.save();
+        console.log(`[DraftSync] Synced consultation settings to global config: Fee=${snapshot.consultationFee}, Duration=${snapshot.consultationDuration}`);
+      } catch (syncErr) {
+        console.error('[DraftSync] Error syncing settings to global config:', syncErr);
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: 'Draft settings updated successfully',
@@ -273,8 +310,36 @@ exports.transitionWorkflow = async (req, res) => {
       profile.activeVersionId = version._id;
 
       // 3. If marked as default profile, reset others
-      if (profile.isDefault) {
+      if (profile.isDefault || profile.profileCode === 'DEFAULT_SYSTEM_PROFILE') {
         await PaintingSettings.updateMany({ _id: { $ne: id } }, { isDefault: false });
+
+        // Sync to global Settings model and catalog Service price
+        try {
+          const Settings = require('../../models/Settings');
+          const Service = require('../../models/Service');
+          
+          let globalSettings = await Settings.findOne({ type: 'global' });
+          if (!globalSettings) {
+            globalSettings = await Settings.create({ type: 'global' });
+          }
+          
+          if (!globalSettings.paintingRates) {
+            globalSettings.paintingRates = {};
+          }
+          
+          globalSettings.paintingRates.consultationFee = version.snapshot.consultationFee !== undefined ? version.snapshot.consultationFee : 0;
+          globalSettings.paintingRates.consultationDuration = version.snapshot.consultationDuration || '45 - 60 Minutes physical survey';
+          await globalSettings.save();
+          
+          // Also update the Service catalog price
+          await Service.findByIdAndUpdate('6a4de25bc57dcb06a9118efc', {
+            basePrice: version.snapshot.consultationFee !== undefined ? version.snapshot.consultationFee : 0
+          });
+          
+          console.log(`[PublishSettings] Synced consultation settings to global config and service: Fee=${version.snapshot.consultationFee}, Duration=${version.snapshot.consultationDuration}`);
+        } catch (syncErr) {
+          console.error('[PublishSettings] Error syncing settings to global config:', syncErr);
+        }
       }
     } else {
       return res.status(400).json({ success: false, message: 'Invalid workflow action' });

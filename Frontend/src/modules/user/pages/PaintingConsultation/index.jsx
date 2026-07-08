@@ -152,20 +152,6 @@ const PaintingConsultation = () => {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] pt-16 pb-24">
-      {/* Active Tracking Section */}
-      {activeConsultations.length > 0 && (
-        <div className="px-4 mb-4 max-w-5xl mx-auto">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
-            Active Requests
-          </h2>
-          <div className="space-y-3">
-            {activeConsultations.map(c => (
-              <TrackingCard key={c._id} consultation={c} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Quote Approvals */}
       {pendingQuotes.length > 0 && (

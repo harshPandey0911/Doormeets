@@ -23,6 +23,8 @@ import {
   LuFileText
 } from 'react-icons/lu';
 import { requestConsultation, getPaintingPublicSettings } from '../../services/paintingConsultationService';
+import { cartService } from '../../../../services/cartService';
+import { publicCatalogService } from '../../../../services/catalogService';
 
 const ENRICHED_LAYOUTS_DATA = {
   '1BHK': {
@@ -226,6 +228,8 @@ const PaintingLayoutDetails = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [layout, setLayout] = useState(location.state?.layout || null);
   const [pageConfig, setPageConfig] = useState(null);
+  const [consultationFee, setConsultationFee] = useState(0);
+  const [consultationDuration, setConsultationDuration] = useState('45 - 60 Minutes physical survey');
 
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState(1); // 1: Areas selection, 2: Review Screen
@@ -267,6 +271,15 @@ const PaintingLayoutDetails = () => {
         // Save page configuration
         if (res.settings?.paintingPageConfig) {
           setPageConfig(res.settings.paintingPageConfig);
+        }
+        
+        if (res.settings?.paintingRates) {
+          if (res.settings.paintingRates.consultationFee !== undefined) {
+            setConsultationFee(res.settings.paintingRates.consultationFee);
+          }
+          if (res.settings.paintingRates.consultationDuration) {
+            setConsultationDuration(res.settings.paintingRates.consultationDuration);
+          }
         }
         
         // Find property layout details
@@ -358,28 +371,52 @@ const PaintingLayoutDetails = () => {
         selections.push(`Other: ${otherText.trim()}`);
       }
 
-      const payload = {
-        propertyType: layout.id,
-        address: {
-          street: '123 Test St',
-          city: 'Indore',
-          state: 'MP',
-          pincode: '452001',
-          fullAddress: '123 Test St, Indore, MP 452001'
+      // 1. Clear cart
+      await cartService.clearCart();
+
+      // 2. Add consultation item to cart
+      const cartItemData = {
+        serviceId: '6a4de25bc57dcb06a9118efc',
+        categoryId: '6a293e391e686a11ee740000',
+        title: `Painting Site Survey - ${layout.name}`,
+        description: 'Free on-site painting inspection and laser measurement survey.',
+        icon: layout.imageUrl || '',
+        category: 'Painting',
+        categoryTitle: 'Painting',
+        price: 0,
+        originalPrice: 0,
+        unitPrice: 0,
+        serviceCount: 1,
+        rating: '4.9',
+        reviews: '120 reviews',
+        isPriceDisclosed: true,
+        isConsultation: true,
+        serviceType: 'package_base',
+        card: {
+          title: `Painting Site Survey - ${layout.name}`,
+          subtitle: 'Free on-site painting inspection',
+          price: 0,
+          originalPrice: 0,
+          duration: '45-60 Mins',
+          description: 'Free on-site painting inspection and laser measurement survey.',
+          imageUrl: layout.imageUrl || '',
+          features: ['Laser Area Measurement', 'Moisture Test', 'Free Quote']
         },
-        wizardData: {
-          projectType,
-          customAreaName: selections.join(', ') || 'Custom Painting Consultation'
-        }
+        dynamicFields: [
+          { name: 'propertyType', label: 'Property Type', value: layout.id },
+          { name: 'projectType', label: 'Project Type', value: projectType },
+          { name: 'scope', label: 'Scope', value: selections.join(', ') || 'Custom Painting Consultation' }
+        ]
       };
 
-      await requestConsultation(payload);
-      toast.success(`${layout.name} Consultation Requested!`);
+      await cartService.addToCart(cartItemData);
+      
+      toast.success(`${layout.name} added to checkout!`);
       setIsTypeModalOpen(false);
-      navigate('/user/painting', { state: { requested: true } });
+      navigate('/user/checkout');
     } catch (error) {
       console.error(error);
-      toast.error('Failed to request consultation');
+      toast.error('Failed to prepare checkout');
     } finally {
       setLoading(false);
     }
@@ -670,7 +707,7 @@ const PaintingLayoutDetails = () => {
                 <div className="space-y-1 border-b border-gray-100 dark:border-gray-800 pb-4">
                   <div className="text-xs text-gray-400 dark:text-gray-500 font-semibold">Survey Inspection Fee:</div>
                   <div className="text-3xl font-black text-emerald-500 flex items-center gap-2">
-                    FREE
+                    {consultationFee > 0 ? `₹${consultationFee}` : 'FREE'}
                     <span className="text-[11px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-black px-2 py-0.5 rounded-md uppercase tracking-wider">Site Inspection</span>
                   </div>
                 </div>
@@ -686,7 +723,7 @@ const PaintingLayoutDetails = () => {
                 <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-gray-600 dark:text-gray-300">
                   <div className="space-y-1">
                     <span className="text-gray-400 dark:text-gray-500 text-[10px] uppercase font-bold tracking-wider block">Duration:</span>
-                    <span>45-60 Mins</span>
+                    <span>{consultationDuration}</span>
                   </div>
                   <div className="space-y-1">
                     <span className="text-gray-400 dark:text-gray-500 text-[10px] uppercase font-bold tracking-wider block">Response:</span>
@@ -927,12 +964,16 @@ const PaintingLayoutDetails = () => {
 
                     <div className="space-y-1">
                       <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Consultation Fee:</span>
-                      <span className="text-sm font-black text-emerald-500">FREE</span>
+                      {consultationFee > 0 ? (
+                        <span className="text-sm font-black text-emerald-500">₹{consultationFee}</span>
+                      ) : (
+                        <span className="text-sm font-black text-emerald-500">FREE</span>
+                      )}
                     </div>
 
                     <div className="space-y-1">
                       <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Duration Estimate:</span>
-                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300">45 - 60 Minutes physical survey</span>
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{consultationDuration}</span>
                     </div>
                   </div>
 

@@ -185,7 +185,8 @@ const createOrUpdateBill = async (req, res) => {
 
     const totalGST = parseFloat((originalGST + vendorServiceGST + partsGST).toFixed(2));
     const finalTransportCharges = Number(transportCharges) || 0;
-    const grandTotal = parseFloat((totalServiceBaseForBill + totalPartsBase + totalGST + visitingCharges + finalTransportCharges).toFixed(2));
+    const instantMarkup = booking.bookingType === 'instant' ? (parseFloat(booking.instantMarkupCharged) || 0) : 0;
+    const grandTotal = parseFloat((totalServiceBaseForBill + totalPartsBase + totalGST + visitingCharges + finalTransportCharges + instantMarkup).toFixed(2));
 
     // ═══════════════════════════════════════
     // 5. REVENUE SPLIT (% applied on BASE only)

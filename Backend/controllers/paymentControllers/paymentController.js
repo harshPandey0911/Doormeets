@@ -40,17 +40,20 @@ const createPaymentOrder = async (req, res) => {
       await booking.save();
     }
 
-    // Check if payment already done
-    if (booking.paymentStatus === PAYMENT_STATUS.SUCCESS || booking.paymentStatus === 'completed') {
+    // Check if payment already done (except when finalAmount > totalAmount, which means addon payment is pending)
+    const isAddonPending = (booking.paymentStatus === PAYMENT_STATUS.SUCCESS || booking.paymentStatus === 'completed' || booking.paymentStatus === 'paid') && booking.finalAmount > booking.totalAmount;
+    if ((booking.paymentStatus === PAYMENT_STATUS.SUCCESS || booking.paymentStatus === 'completed') && !isAddonPending) {
       return res.status(400).json({
         success: false,
         message: 'Payment already completed for this booking'
       });
     }
 
-    // Calculate final order amount (fully pre-paid online vs COD partial advance payment)
+    // Calculate final order amount (fully pre-paid online vs COD partial advance payment vs addon payment)
     let orderAmount = booking.finalAmount;
-    if (booking.paymentMethod === 'pay_at_home') {
+    if (isAddonPending) {
+      orderAmount = parseFloat((booking.finalAmount - booking.totalAmount).toFixed(2));
+    } else if (booking.paymentMethod === 'pay_at_home') {
       if (booking.codAdvanceAmount > 0) {
         orderAmount = booking.codAdvanceAmount;
       } else {
@@ -167,7 +170,9 @@ const verifyPaymentWebhook = async (req, res) => {
         await Vendor.updateWorkStatus(booking.vendorId);
       }
     }
-
+    if (booking.finalAmount > booking.totalAmount) {
+      booking.totalAmount = booking.finalAmount;
+    }
     await booking.save();
 
     // Notify vendor via socket when online payment is confirmed (was awaiting_payment)
@@ -428,13 +433,16 @@ const processWalletPayment = async (req, res) => {
        booking.completedAt = new Date();
        
        // Free up vendor availability if they were the assigned vendor
-       if (booking.vendorId) {
+        if (booking.vendorId) {
          const Vendor = require('../../models/Vendor');
          await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
          await Vendor.updateWorkStatus(booking.vendorId);
        }
      }
 
+    if (booking.finalAmount > booking.totalAmount) {
+      booking.totalAmount = booking.finalAmount;
+    }
     await booking.save();
 
     // Trigger Commission & Collection System

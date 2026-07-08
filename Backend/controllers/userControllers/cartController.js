@@ -8,7 +8,7 @@ const getCart = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    let cart = await Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl basePrice discountPrice');
+    let cart = await Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl basePrice discountPrice codAdvanceAmount packages');
 
     if (!cart) {
       // Create empty cart if doesn't exist

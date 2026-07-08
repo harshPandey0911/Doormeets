@@ -81,7 +81,7 @@ const createBooking = async (req, res) => {
 
     // 1. Parallel Fetching: Service and User
     const [service, user] = await Promise.all([
-      Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds type').lean(),
+      Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds type isConsultation').lean(),
       User.findById(userId).select('name phone wallet plans loyaltyPoints')
     ]);
 
@@ -468,6 +468,10 @@ const createBooking = async (req, res) => {
       }
     }
 
+    if (paymentMethod === 'pay_at_home' && computedCodAdvanceAmount > 0 && walletAmountUsed > 0) {
+      computedCodAdvanceAmount = Math.max(0, computedCodAdvanceAmount - walletAmountUsed);
+    }
+
     const booking = await Booking.create({
       bookingNumber,
       codAdvanceAmount: computedCodAdvanceAmount,
@@ -482,7 +486,7 @@ const createBooking = async (req, res) => {
       brandName: reqBrandName || brandName,
       brandIcon: reqBrandIcon || brandIcon,
       bookingType: bookingType || 'scheduled',
-      isConsultation: isConsultation || false,
+      isConsultation: isConsultation || service.isConsultation || false,
       instantMarkupCharged,
 
       description: service.description,
@@ -591,16 +595,52 @@ const createBooking = async (req, res) => {
 
     if (nearbyVendors.length === 0) {
       responsePayload.noVendorsFound = true;
+      
+      // Save notification in database for all admins
+      try {
+        const User = require('../../models/User');
+        const { createNotification } = require('../notificationControllers/notificationController');
+        const admins = await User.find({ role: 'ADMIN' });
+        
+        const notificationData = {
+          userId: null,
+          vendorId: null,
+          workerId: null,
+          type: 'admin_booking_requested',
+          title: 'Manual Assignment Needed',
+          message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`,
+          priority: 'high',
+          pushData: {
+            type: 'admin_booking_requested',
+            bookingId: booking._id.toString(),
+            link: `/admin/bookings/${booking._id}`
+          }
+        };
+        
+        await Promise.all(
+          admins.map(admin =>
+            createNotification({ ...notificationData, adminId: admin._id })
+          )
+        );
+      } catch (dbNotifErr) {
+        console.error('[CreateBooking] Failed to save admin notification:', dbNotifErr);
+      }
+
       // Emit socket notification to admins immediately!
-      const io = req.app.get('io');
-      if (io) {
-        console.log(`[CreateBooking] No vendors found. Emitting admin_booking_requested to all_admins for booking ${booking.bookingNumber}`);
-        io.to('all_admins').emit('admin_booking_requested', {
-          bookingId: booking._id.toString(),
-          bookingNumber: booking.bookingNumber,
-          status: 'pending_admin',
-          message: 'Booking request sent to admin for manual assignment.'
-        });
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        if (io) {
+          console.log(`[CreateBooking] No vendors found. Emitting admin_booking_requested to all_admins for booking ${booking.bookingNumber}`);
+          io.to('all_admins').emit('admin_booking_requested', {
+            bookingId: booking._id.toString(),
+            bookingNumber: booking.bookingNumber,
+            status: 'pending_admin',
+            message: 'Booking request sent to admin for manual assignment.'
+          });
+        }
+      } catch (sockErr) {
+        console.error('[CreateBooking] Socket emission failed:', sockErr);
       }
     }
 
@@ -739,6 +779,36 @@ const createBooking = async (req, res) => {
           console.warn(`[CreateBooking] NO VENDORS FOUND nearby! Push notifications will not be sent.`);
           bookingForBackground.status = 'pending_admin';
           await bookingForBackground.save();
+
+          // Save notification in database for all admins
+          try {
+            const User = require('../../models/User');
+            const { createNotification } = require('../notificationControllers/notificationController');
+            const admins = await User.find({ role: 'ADMIN' });
+            
+            const notificationData = {
+              userId: null,
+              vendorId: null,
+              workerId: null,
+              type: 'admin_booking_requested',
+              title: 'Manual Assignment Needed',
+              message: `Booking #${bookingForBackground.bookingNumber} has no available vendors. Manual assignment needed.`,
+              priority: 'high',
+              pushData: {
+                type: 'admin_booking_requested',
+                bookingId: bookingForBackground._id.toString(),
+                link: `/admin/bookings/${bookingForBackground._id}`
+              }
+            };
+            
+            await Promise.all(
+              admins.map(admin =>
+                createNotification({ ...notificationData, adminId: admin._id })
+              )
+            );
+          } catch (dbNotifErr) {
+            console.error('[CreateBooking] Failed to save background admin notification:', dbNotifErr);
+          }
 
           // Emit to all admins
           const { getIO } = require('../../sockets');

@@ -88,6 +88,7 @@ const Checkout = () => {
   const [instantBookingWaitTime, setInstantBookingWaitTime] = useState(45);
   const [showArrivalTime, setShowArrivalTime] = useState(true);
   const [instantBookingWindowHours, setInstantBookingWindowHours] = useState(4);
+  const [codAdvancePercentage, setCodAdvancePercentage] = useState(0);
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -247,6 +248,7 @@ const Checkout = () => {
             setInstantBookingWaitTime(response.settings?.instantBookingWaitTime ?? 45);
             setShowArrivalTime(response.settings?.showArrivalTime ?? true);
             setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
+            setCodAdvancePercentage(response.settings?.codAdvancePercentage || 0);
 
             if (response.user?.addresses?.length > 0) {
               const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
@@ -282,6 +284,7 @@ const Checkout = () => {
             setInstantBookingWaitTime(response.settings?.instantBookingWaitTime ?? 45);
             setShowArrivalTime(response.settings?.showArrivalTime ?? true);
             setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
+            setCodAdvancePercentage(response.settings?.codAdvancePercentage || 0);
 
             // Set Addresses
             if (response.user?.addresses?.length > 0) {
@@ -301,6 +304,7 @@ const Checkout = () => {
 
             // Set Cart Items
             let items = response.cartItems || [];
+            console.log('[DEBUG] getCheckoutData items:', JSON.stringify(items, null, 2));
             if (category) {
               const normalizedCategory = category.toLowerCase().trim();
               items = items.filter(item => {
@@ -525,6 +529,7 @@ const Checkout = () => {
         scheduledDate: finalDate, // Date object
         scheduledTime: bookingType === 'instant' ? "ASAP" : (getTimeSlots().find(slot => slot.value === finalTime)?.display || finalTime),
         timeSlot: finalTimeSlot,
+        isConsultation: firstItem.isConsultation || false,
         amount: amountToPay,
 
         // Pass Full Breakdown to Backend
@@ -1346,7 +1351,61 @@ const Checkout = () => {
   const walletDiscount = Math.max(0, Math.min(parsedWalletInput, maxWalletRedeemable));
   
   const totalAmount = Math.max(0, netAfterLoyalty - walletDiscount);
-  const amountToPay = totalAmount;
+
+  // Calculate total COD advance amount from cart items if set
+  const customCodAdvanceSum = cartItems.reduce((sum, item) => {
+    let itemCodAdvance = item.codAdvanceAmount || 0;
+    
+    if (!itemCodAdvance && item.serviceId) {
+      if (item.serviceId.codAdvanceAmount) {
+        itemCodAdvance = item.serviceId.codAdvanceAmount;
+      } else if (Array.isArray(item.serviceId.packages)) {
+        // Find selected package title from dynamicFields (for combo packages)
+        const selectedPkgField = item.dynamicFields?.find(f => f.name === 'Selected Package' || f.label === 'Selected Package');
+        const targetPkgTitle = selectedPkgField ? selectedPkgField.value : item.title;
+        
+        // Find matching package by title
+        const matchedPkg = item.serviceId.packages.find(pkg => pkg.title === targetPkgTitle);
+        if (matchedPkg && matchedPkg.codAdvanceAmount) {
+          itemCodAdvance = matchedPkg.codAdvanceAmount;
+        }
+      }
+    }
+    
+    // Also support checking packageId/comboId directly just in case
+    if (!itemCodAdvance) {
+      itemCodAdvance = item.packageId?.codAdvanceAmount || item.comboId?.codAdvanceAmount || 0;
+    }
+    
+    const countVal = item.count || item.serviceCount || 1;
+    return sum + (itemCodAdvance * countVal);
+  }, 0);
+
+  const baseTotalAmount = netAfterLoyalty;
+  const baseAdvanceAmount = customCodAdvanceSum > 0 ? customCodAdvanceSum : Math.round(baseTotalAmount * (codAdvancePercentage / 100));
+  const baseRemainingAmount = Math.max(0, baseTotalAmount - baseAdvanceAmount);
+
+  const finalCodAdvanceAmount = Math.max(0, baseAdvanceAmount - walletDiscount);
+  const unusedWalletDiscount = Math.max(0, walletDiscount - baseAdvanceAmount);
+  const finalCodRemainingAmount = Math.max(0, baseRemainingAmount - unusedWalletDiscount);
+
+  // If payment method is COD, the amount they pay online upfront is the advance amount
+  const amountToPay = paymentMethod === 'pay_at_home' ? finalCodAdvanceAmount : totalAmount;
+
+  console.log('[DEBUG] customCodAdvanceSum calculation:', {
+    cartItems: cartItems.map(item => ({
+      title: item.title,
+      serviceIdExists: !!item.serviceId,
+      serviceIdIsObject: typeof item.serviceId === 'object',
+      serviceIdTitle: item.serviceId?.title,
+      packagesLength: item.serviceId?.packages?.length,
+      codAdvanceAmount: item.codAdvanceAmount,
+      serviceIdCodAdvance: item.serviceId?.codAdvanceAmount
+    })),
+    customCodAdvanceSum,
+    codAdvancePercentage,
+    finalCodAdvanceAmount
+  });
 
   // Helper for Free Plan Full Breakdown Display
   const displayTax = 0;
@@ -2106,11 +2165,24 @@ const Checkout = () => {
             </div>
           </div>
           {paymentMethod === 'pay_at_home' && (
-            <div className="mt-3 flex items-start gap-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-2.5">
-              <span className="text-gray-500 text-sm">ℹ️</span>
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                You will pay in cash or UPI directly to the professional after the service is completed.
-              </p>
+            <div className="mt-3 bg-red-50/50 dark:bg-zinc-900/50 border border-red-100 dark:border-zinc-800 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <span className="text-red-500 text-xs">ℹ️</span>
+                <div className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 space-y-1">
+                  <p className="leading-relaxed">
+                    {finalCodAdvanceAmount > 0 ? (
+                      <span>
+                        As per booking rules, an advance payment of <strong className="text-red-600 font-extrabold">₹{finalCodAdvanceAmount}</strong> is required online to place this booking.
+                      </span>
+                    ) : (
+                      <span>No advance payment is required for Pay At Home (COD).</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-gray-450 dark:text-gray-500 font-bold">
+                    Remaining amount payable after service: <span className="text-gray-900 dark:text-gray-150">₹{finalCodRemainingAmount}</span>
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -2298,6 +2370,19 @@ const Checkout = () => {
                   )}
                 </div>
               </div>
+
+              {paymentMethod === 'pay_at_home' && totalAmount > 0 && finalCodAdvanceAmount > 0 && (
+                <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-zinc-800 space-y-1.5 text-xs text-right">
+                  <div className="flex justify-between text-gray-500 dark:text-gray-450">
+                    <span>Pay Online (Advance):</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-150">₹{finalCodAdvanceAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-550 dark:text-gray-450 font-bold">
+                    <span>Pay at Home (COD):</span>
+                    <span className="text-red-600">₹{finalCodRemainingAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

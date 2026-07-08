@@ -51,6 +51,8 @@ const AdminSettings = () => {
     companyPincode: '',
     companyPhone: '',
     companyEmail: '',
+    companyCIN: '',
+    companyWebsite: '',
     invoicePrefix: 'INV',
     sacCode: '998599'
   });
@@ -163,6 +165,8 @@ const AdminSettings = () => {
             companyPincode: res.settings.companyPincode || '',
             companyPhone: res.settings.companyPhone || '',
             companyEmail: res.settings.companyEmail || '',
+            companyCIN: res.settings.companyCIN || '',
+            companyWebsite: res.settings.companyWebsite || '',
             invoicePrefix: res.settings.invoicePrefix || 'INV',
             sacCode: res.settings.sacCode || '998599'
           });
@@ -758,6 +762,19 @@ const AdminSettings = () => {
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">Company Phone</label>
                         <input type="text" name="companyPhone" value={billingSettings.companyPhone} onChange={handleBillingChange}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Company CIN</label>
+                        <input type="text" name="companyCIN" value={billingSettings.companyCIN} onChange={handleBillingChange}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500 uppercase" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Company Website</label>
+                        <input type="text" name="companyWebsite" value={billingSettings.companyWebsite} onChange={handleBillingChange}
                           className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500" />
                       </div>
                     </div>

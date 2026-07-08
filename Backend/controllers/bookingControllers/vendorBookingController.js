@@ -30,15 +30,8 @@ const getVendorBookings = async (req, res) => {
       query = { workerId: new mongoose.Types.ObjectId(vendorId) };
     } else {
       query = {
-        $or: [
-          { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
-          {
-            vendorId: null,
-            status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.BIDDING] },
-            serviceCategory: { $in: vendorCategories },
-            'potentialVendors.vendorId': vId // Only show jobs where THIS vendor is within range
-          }
-        ]
+        vendorId: vId,
+        status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT }
       };
     }
 
@@ -456,6 +449,47 @@ const acceptBooking = async (req, res) => {
     booking.vendorShare = calculatedVendorShare;
 
     await booking.save();
+
+    if (booking.isConsultation) {
+      try {
+        const PaintingConsultation = require('../../models/PaintingConsultation');
+        let consultation = await PaintingConsultation.findOne({ bookingId: booking._id });
+        if (!consultation) {
+          const User = require('../../models/User');
+          const user = await User.findById(booking.userId);
+          
+          const propertyType = booking.bookedItems[0]?.dynamicFields?.find(f => f.name === 'propertyType')?.value || '1BHK';
+          const projectType = booking.bookedItems[0]?.dynamicFields?.find(f => f.name === 'projectType')?.value || 'INTERIOR';
+          const scope = booking.bookedItems[0]?.dynamicFields?.find(f => f.name === 'scope')?.value || 'Custom Painting Consultation';
+          
+          consultation = await PaintingConsultation.create({
+            userId: booking.userId,
+            userPhone: user ? user.phone : (booking.contactDetails?.phone || ''),
+            bookingId: booking._id,
+            vendorId: vendorId,
+            status: 'ACCEPTED_BY_VENDOR',
+            propertyType,
+            wizardData: {
+              projectType,
+              customAreaName: scope
+            },
+            address: {
+              street: booking.address.addressLine1 || '',
+              city: booking.address.city || '',
+              state: booking.address.state || '',
+              pincode: booking.address.pincode || '',
+              fullAddress: `${booking.address.addressLine1 || ''}, ${booking.address.city || ''}, ${booking.address.state || ''} ${booking.address.pincode || ''}`.trim()
+            }
+          });
+          
+          booking.consultationId = consultation._id;
+          await booking.save();
+        }
+      } catch (err) {
+        console.error('[AcceptBooking] Failed to create PaintingConsultation sync:', err);
+      }
+    }
+
     const updatedBooking = booking;
 
     // Booking successfully accepted by THIS vendor
@@ -679,29 +713,64 @@ const rejectBooking = async (req, res) => {
         }
       });
 
-      // --- ADD SOCKET NOTIFICATION FOR REAL-TIME UI UPDATE ---
-      const io = req.app.get('io');
-      if (io) {
-        const userIdStr = booking.userId.toString();
-        const bookingIdStr = booking._id.toString();
-
-        console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Routing to pending_admin. Notifying user_${userIdStr}, all_admins`);
-
-        const payload = {
-          bookingId: bookingIdStr,
-          bookingNumber: booking.bookingNumber,
-          status: 'pending_admin',
-          message: 'Booking request sent to admin for manual assignment.'
+      // Save notification in database for all admins
+      try {
+        const User = require('../../models/User');
+        const { createNotification } = require('../notificationControllers/notificationController');
+        const admins = await User.find({ role: 'ADMIN' });
+        
+        const notificationData = {
+          userId: null,
+          vendorId: null,
+          workerId: null,
+          type: 'admin_booking_requested',
+          title: 'Manual Assignment Needed',
+          message: `Booking #${booking.bookingNumber} has no vendors left. Manual assignment needed.`,
+          priority: 'high',
+          pushData: {
+            type: 'admin_booking_requested',
+            bookingId: booking._id.toString(),
+            link: `/admin/bookings/${booking._id}`
+          }
         };
+        
+        await Promise.all(
+          admins.map(admin =>
+            createNotification({ ...notificationData, adminId: admin._id })
+          )
+        );
+      } catch (dbNotifErr) {
+        console.error('[RejectBooking] Failed to save admin notification:', dbNotifErr);
+      }
 
-        // Emit to user room
-        io.to(`user_${userIdStr}`).emit('booking_updated', payload);
+      // --- ADD SOCKET NOTIFICATION FOR REAL-TIME UI UPDATE ---
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        if (io) {
+          const userIdStr = booking.userId.toString();
+          const bookingIdStr = booking._id.toString();
 
-        // Emit to admins room
-        io.to('all_admins').emit('admin_booking_requested', payload);
+          console.log(`[RejectBooking] No vendors left for booking ${booking.bookingNumber}. Routing to pending_admin. Notifying user_${userIdStr}, all_admins`);
 
-        // Also emit to specific booking room (as fallback)
-        io.to(`booking_${bookingIdStr}`).emit('booking_updated', payload);
+          const payload = {
+            bookingId: bookingIdStr,
+            bookingNumber: booking.bookingNumber,
+            status: 'pending_admin',
+            message: 'Booking request sent to admin for manual assignment.'
+          };
+
+          // Emit to user room
+          io.to(`user_${userIdStr}`).emit('booking_updated', payload);
+
+          // Emit to admins room
+          io.to('all_admins').emit('admin_booking_requested', payload);
+
+          // Also emit to specific booking room (as fallback)
+          io.to(`booking_${bookingIdStr}`).emit('booking_updated', payload);
+        }
+      } catch (sockErr) {
+        console.error('[RejectBooking] Socket emission failed:', sockErr);
       }
     }
     // Otherwise, booking stays SEARCHING for other vendors
@@ -1304,6 +1373,18 @@ const startSelfJob = async (req, res) => {
 
     await booking.save();
 
+    if (booking.isConsultation) {
+      try {
+        const PaintingConsultation = require('../../models/PaintingConsultation');
+        await PaintingConsultation.findOneAndUpdate(
+          { bookingId: booking._id },
+          { status: 'VENDOR_EN_ROUTE' }
+        );
+      } catch (err) {
+        console.error('[StartJourney] Failed to update PaintingConsultation status:', err);
+      }
+    }
+
     if (isWorkerRole) {
       const Worker = require('../../models/Worker');
       await Worker.findByIdAndUpdate(vendorId, {
@@ -1453,6 +1534,18 @@ const verifySelfVisit = async (req, res) => {
     }
 
     await booking.save();
+
+    if (booking.isConsultation) {
+      try {
+        const PaintingConsultation = require('../../models/PaintingConsultation');
+        await PaintingConsultation.findOneAndUpdate(
+          { bookingId: booking._id },
+          { status: 'INSPECTION_IN_PROGRESS' }
+        );
+      } catch (err) {
+        console.error('[VerifySelfVisit] Failed to update PaintingConsultation status:', err);
+      }
+    }
 
     // Notify user
     const { createNotification } = require('../notificationControllers/notificationController');
@@ -2002,6 +2095,75 @@ const collectSelfCash = async (req, res) => {
   }
 };
 
+const collectAddonCash = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+
+    let query = { _id: id };
+    const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
+    if (isWorkerRole) {
+      query.workerId = vendorId;
+    } else {
+      query.vendorId = vendorId;
+    }
+
+    const booking = await Booking.findOne(query);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    if (booking.finalAmount <= booking.totalAmount) {
+      return res.status(400).json({ success: false, message: 'No pending addon payment found' });
+    }
+
+    const addonAmount = booking.finalAmount - booking.totalAmount;
+
+    // Sync totalAmount
+    booking.totalAmount = booking.finalAmount;
+    booking.cashCollected = true;
+    booking.cashCollectedAt = new Date();
+    booking.cashCollectedBy = isWorkerRole ? 'worker' : 'vendor';
+    booking.cashCollectorId = vendorId;
+
+    const Vendor = require('../../models/Vendor');
+    const actualVendorId = isWorkerRole ? booking.vendorId : vendorId;
+    
+    // Add addon cash to vendor wallet dues (since they physically collected this cash)
+    if (actualVendorId) {
+      await Vendor.findByIdAndUpdate(actualVendorId, {
+        $inc: { 
+          'wallet.dues': addonAmount,
+          'wallet.totalCashCollected': addonAmount
+        }
+      });
+      await Vendor.updateWorkStatus(actualVendorId);
+    }
+
+    // Record Transaction for the addon cash collection
+    const Transaction = require('../../models/Transaction');
+    await Transaction.create({
+      vendorId: actualVendorId,
+      userId: booking.userId,
+      bookingId: booking._id,
+      amount: addonAmount,
+      type: 'cash_collected',
+      paymentMethod: 'cash collected',
+      description: `Cash ₹${addonAmount} collected for pending addon of booking ${booking.bookingNumber}`,
+      status: 'completed',
+      metadata: {
+        type: 'addon_cash',
+        addonAmount
+      }
+    });
+
+    await booking.save();
+
+    return res.status(200).json({ success: true, message: 'Addon cash collection recorded successfully', data: booking });
+  } catch (error) {
+    console.error('Collect addon cash error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to record addon cash collection' });
+  }
+};
+
 /**
  * Pay Worker (Manual Settlement)
  */
@@ -2399,7 +2561,8 @@ const requestCancelBooking = async (req, res) => {
       }
 
       const admins = await Admin.find(adminQuery);
-      const io = req.app.get('io');
+      const { getIO } = require('../../sockets');
+      const io = getIO();
       const msg = `Vendor has requested cancellation for Booking #${booking.bookingNumber}. Reason: ${reason}`;
 
       for (const admin of admins) {
@@ -2439,7 +2602,7 @@ const requestCancelBooking = async (req, res) => {
     });
   } catch (error) {
     console.error('Vendor request cancel booking error:', error);
-    res.status(500).json({ success: false, message: 'Failed to submit cancellation request' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to submit cancellation request' });
   }
 };
 
@@ -2456,6 +2619,7 @@ module.exports = {
   verifySelfVisit,
   completeSelfJob,
   collectSelfCash,
+  collectAddonCash,
   payWorker,
   getVendorRatings,
   getPendingBookings,

@@ -257,31 +257,7 @@ const RoomConfiguration = ({ onSuccess }) => {
   return (
     <div className="bg-[#FAFAFA] dark:bg-gray-950 text-[#111827] dark:text-gray-100 min-h-screen font-sans antialiased">
       
-      {/* Dynamic requested status toast */}
-      <AnimatePresence>
-        {requested && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-20 left-4 right-4 z-50 max-w-xl mx-auto"
-          >
-            <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border border-emerald-500/20 p-4 rounded-2xl shadow-xl flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
-                <FiCheckCircle className="w-5 h-5 shrink-0" />
-                <span className="text-xs md:text-sm font-semibold">Consultation requested successfully! Our design experts are reviewing your request.</span>
-              </div>
-              <button 
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 p-1.5 rounded-full outline-none focus:outline-none focus:ring-0 focus-visible:outline-none border-none cursor-pointer flex items-center justify-center shrink-0" 
-                onClick={() => setRequested(false)}
-                aria-label="Close notification"
-              >
-                <LuX className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Dynamic requested status toast removed */}
 
       {/* Hero Section Container */}
       <div className="relative overflow-x-hidden bg-gradient-to-b from-[#FFF5F2]/60 via-white to-[#FAFAFA] dark:from-gray-950 dark:via-gray-950 dark:to-gray-950 pt-6 pb-12 md:pb-16 px-4 md:px-8">

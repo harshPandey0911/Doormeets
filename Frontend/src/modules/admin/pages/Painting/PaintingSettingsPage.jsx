@@ -51,6 +51,8 @@ const PaintingSettingsPage = () => {
     minMaterialCharge: 1000,
     emergencyBookingPremiumPercent: 20,
     expressBookingPremiumPercent: 15,
+    consultationFee: 0,
+    consultationDuration: '45 - 60 Minutes physical survey',
     mandatoryPhotos: false,
     mandatoryMeasurements: false,
     mandatoryBeforeImages: false,
@@ -632,26 +634,57 @@ const PaintingSettingsPage = () => {
             )}
 
             {activeTab === 'booking' && (
-              <div className="space-y-4">
-                <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-100 pb-2">Booking Area constraints</h4>
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-bold text-gray-400 uppercase text-[9px]">Min Booking Area (sqft)</label>
-                    <input
-                      type="number"
-                      value={snapshot.minArea}
-                      onChange={e => setSnapshot({ ...snapshot, minArea: Number(e.target.value) })}
-                      className="border border-gray-250 rounded-xl p-3 text-gray-700 outline-none font-bold text-center"
-                    />
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-100 pb-2">Booking Area constraints</h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-gray-400 uppercase text-[9px]">Min Booking Area (sqft)</label>
+                      <input
+                        type="number"
+                        value={snapshot.minArea}
+                        onChange={e => setSnapshot({ ...snapshot, minArea: Number(e.target.value) })}
+                        className="border border-gray-250 rounded-xl p-3 text-gray-700 outline-none font-bold text-center"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-gray-400 uppercase text-[9px]">Max Booking Area (sqft)</label>
+                      <input
+                        type="number"
+                        value={snapshot.maxArea}
+                        onChange={e => setSnapshot({ ...snapshot, maxArea: Number(e.target.value) })}
+                        className="border border-gray-250 rounded-xl p-3 text-gray-700 outline-none font-bold text-center"
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-bold text-gray-400 uppercase text-[9px]">Max Booking Area (sqft)</label>
-                    <input
-                      type="number"
-                      value={snapshot.maxArea}
-                      onChange={e => setSnapshot({ ...snapshot, maxArea: Number(e.target.value) })}
-                      className="border border-gray-250 rounded-xl p-3 text-gray-700 outline-none font-bold text-center"
-                    />
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-100 pb-2">Consultation Fee & Duration Settings</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-gray-400 uppercase text-[9px]">Consultation Fee (₹)</label>
+                      <input
+                        type="number"
+                        value={snapshot.consultationFee !== undefined ? snapshot.consultationFee : 0}
+                        onChange={e => setSnapshot({ ...snapshot, consultationFee: Number(e.target.value) })}
+                        className="border border-gray-250 rounded-xl p-3 text-gray-700 outline-none font-bold text-center"
+                        placeholder="e.g. 0 for Free"
+                      />
+                      <p className="text-[10px] text-gray-400 font-bold mt-1">Configure the amount charged to users upfront for booking a painting site consultation. Set to 0 for Free.</p>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-gray-400 uppercase text-[9px]">Estimate Duration / Time</label>
+                      <input
+                        type="text"
+                        value={snapshot.consultationDuration || ''}
+                        onChange={e => setSnapshot({ ...snapshot, consultationDuration: e.target.value })}
+                        className="border border-gray-250 rounded-xl p-3 text-gray-700 outline-none font-bold"
+                        placeholder="e.g. 45 - 60 Minutes physical survey"
+                      />
+                      <p className="text-[10px] text-gray-400 font-bold mt-1">Estimated duration shown to users for the site inspection (e.g. '45 - 60 Minutes physical survey').</p>
+                    </div>
                   </div>
                 </div>
               </div>

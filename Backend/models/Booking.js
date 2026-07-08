@@ -110,6 +110,11 @@ const bookingSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  consultationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PaintingConsultation',
+    default: null
+  },
   // Booked Items (Brand > Card snapshot)
   bookedItems: [{
     brandName: { type: String, default: '' },

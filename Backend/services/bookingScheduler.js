@@ -147,6 +147,35 @@ class BookingScheduler {
               if (updateResult.modifiedCount > 0) {
                 console.log(`[BookingScheduler] ${booking.bookingNumber}: Search timed out. Routed to admin.`);
 
+                // Save notification in database for all admins
+                try {
+                  const User = require('../models/User');
+                  const admins = await User.find({ role: 'ADMIN' });
+                  
+                  const notificationData = {
+                    userId: null,
+                    vendorId: null,
+                    workerId: null,
+                    type: 'admin_booking_requested',
+                    title: 'Manual Assignment Needed',
+                    message: `Booking #${booking.bookingNumber} search timed out. Manual assignment needed.`,
+                    priority: 'high',
+                    pushData: {
+                      type: 'admin_booking_requested',
+                      bookingId: booking._id.toString(),
+                      link: `/admin/bookings/${booking._id}`
+                    }
+                  };
+                  
+                  await Promise.all(
+                    admins.map(admin =>
+                      createNotification({ ...notificationData, adminId: admin._id })
+                    )
+                  );
+                } catch (dbNotifErr) {
+                  console.error('[BookingScheduler] Failed to save admin timeout notification:', dbNotifErr);
+                }
+
                 // Notify User and Admin
                 if (this.io) {
                   this.io.to('all_admins').emit('admin_booking_requested', {
@@ -206,6 +235,35 @@ class BookingScheduler {
                     cancellationReason: 'All available waves exhausted. Awaiting admin review.'
                   }
                 });
+
+                 // Save notification in database for all admins
+                 try {
+                   const User = require('../models/User');
+                   const admins = await User.find({ role: 'ADMIN' });
+                   
+                   const notificationData = {
+                     userId: null,
+                     vendorId: null,
+                     workerId: null,
+                     type: 'admin_booking_requested',
+                     title: 'Manual Assignment Needed',
+                     message: `Booking #${booking.bookingNumber} search waves exhausted. Manual assignment needed.`,
+                     priority: 'high',
+                     pushData: {
+                       type: 'admin_booking_requested',
+                       bookingId: booking._id.toString(),
+                       link: `/admin/bookings/${booking._id}`
+                     }
+                   };
+                   
+                   await Promise.all(
+                     admins.map(admin =>
+                       createNotification({ ...notificationData, adminId: admin._id })
+                     )
+                   );
+                 } catch (dbNotifErr) {
+                   console.error('[BookingScheduler] Failed to save admin wave exhausted notification:', dbNotifErr);
+                 }
 
                  // Notify User and Admin
                  if (this.io) {

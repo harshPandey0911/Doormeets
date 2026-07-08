@@ -170,6 +170,14 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  companyCIN: {
+    type: String,
+    default: ''
+  },
+  companyWebsite: {
+    type: String,
+    default: ''
+  },
 
   // Invoice Settings
   invoicePrefix: {
@@ -321,6 +329,8 @@ const settingsSchema = new mongoose.Schema({
   },
   // Painting Consultation Rates Settings (Dynamic configs for quote calculations)
   paintingRates: {
+    consultationFee: { type: Number, default: 0 },
+    consultationDuration: { type: String, default: '45 - 60 Minutes physical survey' },
     utilities: {
       doors: {
         enamelRate: { type: Number, default: 120 },

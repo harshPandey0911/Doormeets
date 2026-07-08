@@ -17,6 +17,7 @@ const {
   verifySelfVisit,
   completeSelfJob,
   collectSelfCash,
+  collectAddonCash,
   payWorker,
   getVendorRatings,
   getPendingBookings,
@@ -66,6 +67,7 @@ router.post('/:id/self/reached', authenticate, isVendor, vendorReachedLocation);
 router.post('/:id/self/visit/verify', authenticate, isVendor, verifySelfVisit);
 router.post('/:id/self/complete', authenticate, isVendor, completeSelfJob);
 router.post('/:id/self/payment/collect', authenticate, isVendor, collectSelfCash);
+router.post('/:id/self/addon-payment/collect-cash', authenticate, isVendor, collectAddonCash);
 
 // Payment Route
 router.post('/:id/pay-worker', authenticate, isVendor, payWorker);

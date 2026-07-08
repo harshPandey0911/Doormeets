@@ -208,6 +208,12 @@ const paintingConsultationSchema = new mongoose.Schema({
   // Rich wizard data collected during 5-step user flow
   wizardData: wizardDataSchema,
 
+  bookingId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Booking', 
+    default: null 
+  },
+
   status: { 
     type: String, 
     enum: [
