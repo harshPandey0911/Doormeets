@@ -8,7 +8,6 @@ import {
 import PaintBrandsPage from './PaintBrandsPage';
 import PaintProductsPage from './PaintProductsPage';
 import PropertyLayoutsPage from './PropertyLayoutsPage';
-import PaintingRatesSettings from '../UserCategories/pages/PaintingRatesSettings';
 import PaintingPageWizard from './PaintingPageWizard';
 import PaintingQuotationsPage from './PaintingQuotationsPage';
 import ConsultationDashboard from './ConsultationDashboard';
@@ -32,11 +31,10 @@ const PaintingConfigPage = ({ defaultTab = 'brands' }) => {
     { id: 'brands', label: 'Paint Brands', icon: FiTag },
     { id: 'products', label: 'Paint Products', icon: FiSliders },
     { id: 'layouts', label: 'Property Templates', icon: FiLayout },
-    { id: 'rates', label: 'Labour Rates', icon: FiDollarSign },
+    { id: 'pricing', label: 'Pricing Config', icon: FiDollarSign },
     { id: 'settings', label: 'Settings Dashboard', icon: FiSettings },
     { id: 'page-builder', label: 'Page Builder', icon: FiMonitor },
     { id: 'quotations', label: 'Painting Quotations', icon: FiFileText },
-    { id: 'pricing', label: 'Pricing Config', icon: FiTrendingUp },
     { id: 'consultations', label: 'Live Consultations', icon: FiActivity }
   ];
 
@@ -87,7 +85,6 @@ const PaintingConfigPage = ({ defaultTab = 'brands' }) => {
         {activeTab === 'brands' && <PaintBrandsPage isNested={true} />}
         {activeTab === 'products' && <PaintProductsPage isNested={true} />}
         {activeTab === 'layouts' && <PropertyLayoutsPage />}
-        {activeTab === 'rates' && <PaintingRatesSettings />}
         {activeTab === 'settings' && <PaintingSettingsPage />}
         {activeTab === 'page-builder' && <PaintingPageWizard />}
         {activeTab === 'quotations' && <PaintingQuotationsPage />}

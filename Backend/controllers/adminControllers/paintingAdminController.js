@@ -221,15 +221,25 @@ exports.updateQuotation = async (req, res) => {
       });
     }
 
-    // Run dynamic calculations
+    // Run dynamic calculations using the quotation's specific settings snapshot and calculation version
     const calculations = await computeQuotationDetails(
       property || quotation.property,
       products || quotation.products,
       labour || quotation.labour,
       additionalCharges || quotation.additionalCharges,
       discount || quotation.discount,
-      gstPercentage
+      gstPercentage,
+      quotation.settingsSnapshot,
+      quotation.calculationVersion || '1.1.0'
     );
+
+    if (!calculations.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recalculation failed during validation checks',
+        errors: calculations.validationErrors
+      });
+    }
 
     const compiledQuotation = {
       property: property || quotation.property,
@@ -240,7 +250,14 @@ exports.updateQuotation = async (req, res) => {
       gst: calculations.gst,
       summary: calculations.summary,
       remarks: remarks || quotation.remarks,
-      attachments: attachments || quotation.attachments
+      attachments: attachments || quotation.attachments,
+      
+      // Update execution meta fields
+      calculationTimestamp: calculations.audit.calculationTimestamp,
+      engineVersion: calculations.audit.engineVersion,
+      calculationDurationMs: calculations.audit.durationMs,
+      validationResults: calculations.validationErrors,
+      validationWarnings: calculations.validationWarnings
     };
 
     // If dryRun, just return the preview

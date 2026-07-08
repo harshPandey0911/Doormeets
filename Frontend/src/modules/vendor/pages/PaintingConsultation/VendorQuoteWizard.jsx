@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { 
-  FiCheck, FiArrowRight, FiArrowLeft, FiPlus, FiTrash2, 
-  FiUploadCloud, FiInfo, FiDollarSign, FiPercent, FiEdit3, FiEye, FiFileText, FiAlertCircle 
+import {
+  FiCheck, FiArrowRight, FiArrowLeft, FiPlus, FiTrash2,
+  FiUploadCloud, FiInfo, FiDollarSign, FiPercent, FiEdit3, FiEye, FiFileText, FiAlertCircle
 } from 'react-icons/fi';
-import { 
-  getQuotationByConsultationId, 
-  saveQuotationDraft, 
-  updateQuotationDraft, 
-  submitQuotationToAdmin, 
-  getPaintingProducts, 
+import {
+  getQuotationByConsultationId,
+  saveQuotationDraft,
+  updateQuotationDraft,
+  submitQuotationToAdmin,
+  getPaintingProducts,
   getLabourRatesForVendor,
   getTemplatesForVendor,
   getSettingsForVendor
@@ -58,7 +58,7 @@ const calculateRoomAreas = (room) => {
   let mirrorDeduction = 0;
   let ventilatorDeduction = 0;
   let wallpaperDeduction = 0;
-  
+
   let textureArea = 0;
   let featureWallArea = 0;
   let doorPaintArea = 0;
@@ -77,15 +77,15 @@ const calculateRoomAreas = (room) => {
     const l = Number(room.length) || 0;
     const w = Number(room.width) || 0;
     const h = Number(room.height) || 0;
-    
+
     let paintHeight = h;
     if (room.roomCode === 'BATHROOM') {
       const tileH = Number(room.bathroomExtras?.tileHeight) || 0;
       paintHeight = Math.max(0, h - tileH);
     }
-    
+
     grossWallArea = 2 * (l + w) * paintHeight;
-    
+
     if (room.roomCode === 'KITCHEN') {
       const backsplashH = Number(room.kitchenExtras?.backsplashHeight) || 0;
       tileDeduction = 2 * (l + w) * backsplashH;
@@ -94,13 +94,13 @@ const calculateRoomAreas = (room) => {
     (room.walls || []).forEach(wall => {
       const wWidth = Number(wall.width) || 0;
       const wHeight = Number(wall.height) || 0;
-      
+
       let paintHeight = wHeight;
       if (room.roomCode === 'BATHROOM') {
         const tileH = Number(room.bathroomExtras?.tileHeight) || 0;
         paintHeight = Math.max(0, wHeight - tileH);
       }
-      
+
       const wallGross = wWidth * paintHeight;
       grossWallArea += wallGross;
 
@@ -192,14 +192,14 @@ const calculateRoomAreas = (room) => {
     });
   }
 
-  const netWallArea = room.paintWalls ? Math.max(0, 
-    grossWallArea 
-    - doorDeduction 
-    - windowDeduction 
-    - cabinetDeduction 
-    - tileDeduction 
-    - mirrorDeduction 
-    - ventilatorDeduction 
+  const netWallArea = room.paintWalls ? Math.max(0,
+    grossWallArea
+    - doorDeduction
+    - windowDeduction
+    - cabinetDeduction
+    - tileDeduction
+    - mirrorDeduction
+    - ventilatorDeduction
     - wallpaperDeduction
     + featureWallArea
     + textureArea
@@ -226,7 +226,7 @@ const calculateRoomAreas = (room) => {
     additionalPaintItems,
     netPaintableArea: netWallArea + ceilingArea + additionalPaintItems
   };
-};const mapQuoteRoomToState = (r) => {
+}; const mapQuoteRoomToState = (r) => {
   const wallsList = r.walls && r.walls.length > 0 ? r.walls.map(w => ({
     name: w.name,
     width: w.width || w.length || 0,
@@ -297,7 +297,7 @@ const calculateRoomAreas = (room) => {
       parapetWallArea: r.exteriorExtras?.parapetWallArea || r.calculationBreakdown?.parapetWallArea || 0
     }
   };
-};const getRoomProgress = (r) => {
+}; const getRoomProgress = (r) => {
   let progress = 0;
   if (r.measurementMode === 'MANUAL' && (Number(r.vendorOverride?.manualArea) > 0)) {
     progress += 40;
@@ -306,18 +306,18 @@ const calculateRoomAreas = (room) => {
   } else if (r.measurementMode === 'DIMENSIONS' && (Number(r.length) > 0 && Number(r.width) > 0 && Number(r.height) > 0)) {
     progress += 40;
   }
-  
+
   if (r.paintWalls || r.paintCeiling) {
     progress += 30;
   }
-  
+
   let detailed = false;
   if (r.paintItems && r.paintItems.length > 0) detailed = true;
   if (r.walls && r.walls.some(w => w.openings && w.openings.length > 0)) detailed = true;
   if (r.kitchenExtras && (Number(r.kitchenExtras.cabinetWidth) > 0 || Number(r.kitchenExtras.backsplashHeight) > 0)) detailed = true;
   if (r.bathroomExtras && Number(r.bathroomExtras.tileHeight) > 0) detailed = true;
   if (r.livingRoomExtras && (Number(r.livingRoomExtras.featureWallArea) > 0 || Number(r.livingRoomExtras.wallpaperArea) > 0)) detailed = true;
-  
+
   if (detailed) {
     progress += 30;
   } else {
@@ -366,17 +366,18 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
   const [rooms, setRooms] = useState([]);
   const [expandedRoomIdx, setExpandedRoomIdx] = useState(0);
   const [selectedBrand, setSelectedBrand] = useState('');
-  
-  // Selection keys map to productId and selectedPackSize
+  const [settingsSnapshot, setSettingsSnapshot] = useState(null);
+
+  // Selection keys map to productId, selectedPackSize, and coats
   const [selectedProducts, setSelectedProducts] = useState({
-    interiorPaint: { productId: '', selectedPackSize: null },
-    exteriorPaint: { productId: '', selectedPackSize: null },
-    ceilingPaint: { productId: '', selectedPackSize: null },
-    balconyPaint: { productId: '', selectedPackSize: null },
-    interiorPrimer: { productId: '', selectedPackSize: null },
-    exteriorPrimer: { productId: '', selectedPackSize: null },
-    interiorPutty: { productId: '', selectedPackSize: null },
-    exteriorPutty: { productId: '', selectedPackSize: null }
+    interiorPaint: { productId: '', selectedPackSize: null, coats: 2 },
+    exteriorPaint: { productId: '', selectedPackSize: null, coats: 2 },
+    ceilingPaint: { productId: '', selectedPackSize: null, coats: 2 },
+    balconyPaint: { productId: '', selectedPackSize: null, coats: 2 },
+    interiorPrimer: { productId: '', selectedPackSize: null, coats: 1 },
+    exteriorPrimer: { productId: '', selectedPackSize: null, coats: 1 },
+    interiorPutty: { productId: '', selectedPackSize: null, coats: 2 },
+    exteriorPutty: { productId: '', selectedPackSize: null, coats: 2 }
   });
 
   const [selectedLabour, setSelectedLabour] = useState({
@@ -452,16 +453,21 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
     const initializeData = async () => {
       try {
         setLoading(true);
-        // 1. Fetch products, labour rates, and templates
+        // 1. Fetch products, labour rates, templates, and settings snapshot
         const prodRes = await getPaintingProducts();
         const labRes = await getLabourRatesForVendor();
         const tmplRes = await getTemplatesForVendor();
+        const settingsRes = await getSettingsForVendor();
+
+        if (settingsRes?.success && settingsRes.data?.activeVersionId?.snapshot) {
+          setSettingsSnapshot(settingsRes.data.activeVersionId.snapshot);
+        }
 
         let fetchedProducts = [];
         if (prodRes?.success) {
           fetchedProducts = prodRes.data;
           setProductsList(prodRes.data);
-          
+
           // Extract unique brands
           const brandsMap = {};
           prodRes.data.forEach(p => {
@@ -519,14 +525,14 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
             // Map products back to keys
             const mappedProds = {
-              interiorPaint: { productId: '', selectedPackSize: null },
-              exteriorPaint: { productId: '', selectedPackSize: null },
-              ceilingPaint: { productId: '', selectedPackSize: null },
-              balconyPaint: { productId: '', selectedPackSize: null },
-              interiorPrimer: { productId: '', selectedPackSize: null },
-              exteriorPrimer: { productId: '', selectedPackSize: null },
-              interiorPutty: { productId: '', selectedPackSize: null },
-              exteriorPutty: { productId: '', selectedPackSize: null }
+              interiorPaint: { productId: '', selectedPackSize: null, coats: 2 },
+              exteriorPaint: { productId: '', selectedPackSize: null, coats: 2 },
+              ceilingPaint: { productId: '', selectedPackSize: null, coats: 2 },
+              balconyPaint: { productId: '', selectedPackSize: null, coats: 2 },
+              interiorPrimer: { productId: '', selectedPackSize: null, coats: 1 },
+              exteriorPrimer: { productId: '', selectedPackSize: null, coats: 1 },
+              interiorPutty: { productId: '', selectedPackSize: null, coats: 2 },
+              exteriorPutty: { productId: '', selectedPackSize: null, coats: 2 }
             };
 
             let brandSet = false;
@@ -537,27 +543,29 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
               }
 
               const pId = p.productId?._id || p.productId;
+              const savedCoats = p.coats !== undefined ? Number(p.coats) : (p.productType === 'Primer' ? 1 : 2);
+
               if (p.productType === 'Paint') {
                 if (p.appliedArea === q.property?.interiorArea && q.property?.interiorArea > 0 && !mappedProds.interiorPaint.productId) {
-                  mappedProds.interiorPaint = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.interiorPaint = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 } else if (p.appliedArea === q.property?.exteriorArea && q.property?.exteriorArea > 0 && !mappedProds.exteriorPaint.productId) {
-                  mappedProds.exteriorPaint = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.exteriorPaint = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 } else if (p.appliedArea === q.property?.ceilingArea && q.property?.ceilingArea > 0 && !mappedProds.ceilingPaint.productId) {
-                  mappedProds.ceilingPaint = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.ceilingPaint = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 } else if (p.appliedArea === q.property?.balconyArea && q.property?.balconyArea > 0 && !mappedProds.balconyPaint.productId) {
-                  mappedProds.balconyPaint = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.balconyPaint = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 }
               } else if (p.productType === 'Primer') {
                 if (p.appliedArea === (q.property?.interiorArea + q.property?.ceilingArea) && !mappedProds.interiorPrimer.productId) {
-                  mappedProds.interiorPrimer = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.interiorPrimer = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 } else if (p.appliedArea === (q.property?.exteriorArea + q.property?.balconyArea) && !mappedProds.exteriorPrimer.productId) {
-                  mappedProds.exteriorPrimer = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.exteriorPrimer = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 }
               } else if (p.productType === 'Putty') {
                 if (p.appliedArea === (q.property?.interiorArea + q.property?.ceilingArea) && !mappedProds.interiorPutty.productId) {
-                  mappedProds.interiorPutty = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.interiorPutty = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 } else if (p.appliedArea === (q.property?.exteriorArea + q.property?.balconyArea) && !mappedProds.exteriorPutty.productId) {
-                  mappedProds.exteriorPutty = { productId: pId, selectedPackSize: p.selectedPackSize };
+                  mappedProds.exteriorPutty = { productId: pId, selectedPackSize: p.selectedPackSize, coats: savedCoats };
                 }
               }
             });
@@ -605,7 +613,86 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
     initializeData();
   }, [consultation]);
 
-  // Compute live calculations
+  // Compute live calculations using the fetched settingsSnapshot
+  const getOptimalPacks = (requiredQty, availableSizes) => {
+    if (!availableSizes || !Array.isArray(availableSizes) || availableSizes.length === 0) {
+      return [{ size: 1, count: Math.ceil(requiredQty) }];
+    }
+
+    const sizes = availableSizes
+      .map(p => (typeof p === 'object' && p !== null) ? Number(p.size) : Number(p))
+      .filter(s => !isNaN(s) && s > 0)
+      .sort((a, b) => b - a);
+
+    if (sizes.length === 0) {
+      return [{ size: 1, count: Math.ceil(requiredQty) }];
+    }
+
+    if (requiredQty <= 0) return [];
+
+    let bestCombo = null;
+    let bestVolume = Infinity;
+    let bestPackCount = Infinity;
+
+    const isBetter = (volume, packCount) => {
+      if (volume < bestVolume - 0.0001) return true;
+      if (Math.abs(volume - bestVolume) < 0.0001) {
+        return packCount < bestPackCount;
+      }
+      return false;
+    };
+
+    const search = (index, currentVolume, currentPackCount, currentCombo) => {
+      if (currentVolume >= bestVolume + 0.0001 && currentVolume > requiredQty) {
+        return;
+      }
+
+      if (currentVolume >= requiredQty - 0.0001) {
+        if (isBetter(currentVolume, currentPackCount)) {
+          bestVolume = currentVolume;
+          bestPackCount = currentPackCount;
+          bestCombo = { ...currentCombo };
+        }
+        return;
+      }
+
+      if (index >= sizes.length) {
+        return;
+      }
+
+      const size = sizes[index];
+      const maxPacks = Math.ceil((requiredQty - currentVolume) / size);
+
+      for (let count = maxPacks; count >= 0; count--) {
+        const nextVolume = currentVolume + count * size;
+        const nextPackCount = currentPackCount + count;
+        
+        currentCombo[size] = count;
+        search(index + 1, nextVolume, nextPackCount, currentCombo);
+        if (count === 0) {
+          delete currentCombo[size];
+        }
+      }
+    };
+
+    search(0, 0, 0, {});
+
+    const result = [];
+    if (bestCombo) {
+      for (const sizeStr of Object.keys(bestCombo)) {
+        const size = parseFloat(sizeStr);
+        const count = bestCombo[sizeStr];
+        if (count > 0) {
+          result.push({ size, count });
+        }
+      }
+    }
+
+    result.sort((a, b) => b.size - a.size);
+    return result;
+  };
+
+  // Compute live calculations using the fetched settingsSnapshot
   const calculateCosts = () => {
     let materialCost = 0;
     let labourCost = 0;
@@ -616,15 +703,21 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
     // Helper for products mapping
     const productMappings = [
-      { key: 'interiorPaint', area: Number(property.interiorArea) || 0, label: 'Interior Paint' },
-      { key: 'exteriorPaint', area: Number(property.exteriorArea) || 0, label: 'Exterior Paint' },
-      { key: 'ceilingPaint', area: Number(property.ceilingArea) || 0, label: 'Ceiling Paint' },
-      { key: 'balconyPaint', area: Number(property.balconyArea) || 0, label: 'Balcony Paint' },
-      { key: 'interiorPrimer', area: (Number(property.interiorArea) || 0) + (Number(property.ceilingArea) || 0), label: 'Interior Primer' },
-      { key: 'exteriorPrimer', area: (Number(property.exteriorArea) || 0) + (Number(property.balconyArea) || 0), label: 'Exterior Primer' },
-      { key: 'interiorPutty', area: (Number(property.interiorArea) || 0) + (Number(property.ceilingArea) || 0), label: 'Interior Putty' },
-      { key: 'exteriorPutty', area: (Number(property.exteriorArea) || 0) + (Number(property.balconyArea) || 0), label: 'Exterior Putty' }
+      { key: 'interiorPaint', area: Number(property.interiorArea) || 0, label: 'Interior Paint', type: 'Paint' },
+      { key: 'exteriorPaint', area: Number(property.exteriorArea) || 0, label: 'Exterior Paint', type: 'Paint' },
+      { key: 'ceilingPaint', area: Number(property.ceilingArea) || 0, label: 'Ceiling Paint', type: 'Paint' },
+      { key: 'balconyPaint', area: Number(property.balconyArea) || 0, label: 'Balcony Paint', type: 'Paint' },
+      { key: 'interiorPrimer', area: (Number(property.interiorArea) || 0) + (Number(property.ceilingArea) || 0), label: 'Interior Primer', type: 'Primer' },
+      { key: 'exteriorPrimer', area: (Number(property.exteriorArea) || 0) + (Number(property.balconyArea) || 0), label: 'Exterior Primer', type: 'Primer' },
+      { key: 'interiorPutty', area: (Number(property.interiorArea) || 0) + (Number(property.ceilingArea) || 0), label: 'Interior Putty', type: 'Putty' },
+      { key: 'exteriorPutty', area: (Number(property.exteriorArea) || 0) + (Number(property.balconyArea) || 0), label: 'Exterior Putty', type: 'Putty' }
     ];
+
+    const paintBuf = settingsSnapshot?.paintBuffer !== undefined ? Number(settingsSnapshot.paintBuffer) : 10;
+    const primerBuf = settingsSnapshot?.primerBuffer !== undefined ? Number(settingsSnapshot.primerBuffer) : 10;
+    const puttyBuf = settingsSnapshot?.puttyBuffer !== undefined ? Number(settingsSnapshot.puttyBuffer) : 10;
+    const wastage = settingsSnapshot?.wastagePercent !== undefined ? Number(settingsSnapshot.wastagePercent) : 5;
+    const rounding = settingsSnapshot?.roundingMethod || 'ROUND_UP';
 
     productMappings.forEach(mapping => {
       const selection = selectedProducts[mapping.key];
@@ -633,10 +726,26 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
         if (prod) {
           const coverage = prod.coverage?.value || 1;
           const price = prod.price || 0;
-          const quantityRequired = parseFloat((mapping.area / coverage).toFixed(2));
-          const packSize = selection.selectedPackSize?.size || 1;
-          const quantityPurchased = Math.ceil(quantityRequired / packSize);
-          const subtotal = parseFloat((quantityRequired * price).toFixed(2));
+
+          let bufferPercent = 0;
+          if (mapping.type === 'Paint') bufferPercent = paintBuf;
+          else if (mapping.type === 'Primer') bufferPercent = primerBuf;
+          else if (mapping.type === 'Putty') bufferPercent = puttyBuf;
+
+          const finalAreaWithBuffer = mapping.area * (1 + bufferPercent / 100);
+
+          // Get manual coats from selection
+          const coatsCount = selection.coats !== undefined ? Number(selection.coats) : (mapping.type === 'Primer' ? 1 : 2);
+
+          const quantityRequired = parseFloat(((finalAreaWithBuffer * coatsCount) / coverage).toFixed(2));
+          
+          // Calculate optimal pack size combination to fulfill the required quantity
+          const packBreakdown = getOptimalPacks(quantityRequired, prod.availablePackSizes);
+          const totalVolumePurchased = packBreakdown.reduce((sum, p) => sum + (p.size * p.count), 0);
+          const quantityPurchased = packBreakdown.reduce((sum, p) => sum + p.count, 0);
+
+          // Subtotal is calculated dynamically based on total volume of purchased packs
+          const subtotal = parseFloat((totalVolumePurchased * price).toFixed(2));
 
           materialCost += subtotal;
           selectedProductDetails.push({
@@ -649,31 +758,66 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
             selectedPackSize: selection.selectedPackSize,
             quantityRequired,
             quantityPurchased,
+            packBreakdown,
             subtotal,
-            appliedArea: mapping.area
+            appliedArea: mapping.area,
+            coats: coatsCount
           });
         }
       }
     });
 
+    // Fetch dynamic coat multipliers from settings snapshot
+    const multipliers = settingsSnapshot?.laborCoatMultipliers || { '1': 0.6, '2': 1.0, '3': 1.3, '4': 1.6 };
+    const getMultiplier = (c) => {
+      const key = String(c);
+      return multipliers[key] !== undefined ? Number(multipliers[key]) : (c === 1 ? 0.6 : c === 2 ? 1.0 : c === 3 ? 1.3 : 1.6);
+    };
+
     // Labour mapping
     const labourMappings = [
-      { key: 'interiorLabour', area: (Number(property.interiorArea) || 0) + (Number(property.ceilingArea) || 0) + (Number(property.balconyArea) || 0), label: 'Interior Labour' },
-      { key: 'exteriorLabour', area: Number(property.exteriorArea) || 0, label: 'Exterior Labour' }
+      { key: 'interiorLabour', label: 'Interior Labour', application: 'INTERIOR' },
+      { key: 'exteriorLabour', label: 'Exterior Labour', application: 'EXTERIOR' }
     ];
 
     labourMappings.forEach(mapping => {
       const lId = selectedLabour[mapping.key];
-      if (lId && mapping.area > 0) {
+      const area = mapping.application === 'INTERIOR'
+        ? (Number(property.interiorArea) || 0) + (Number(property.ceilingArea) || 0) + (Number(property.balconyArea) || 0)
+        : (Number(property.exteriorArea) || 0);
+
+      if (lId && area > 0) {
         const rate = labourRatesList.find(r => r._id === lId);
         if (rate) {
-          const subtotal = parseFloat((mapping.area * rate.pricePerSqft).toFixed(2));
+          let subtotal = 0;
+          if (mapping.application === 'INTERIOR') {
+            const intArea = Number(property.interiorArea) || 0;
+            const ceilArea = Number(property.ceilingArea) || 0;
+            const balcArea = Number(property.balconyArea) || 0;
+
+            const intMult = getMultiplier(selectedProducts.interiorPaint.coats || 2);
+            const ceilMult = getMultiplier(selectedProducts.ceilingPaint.coats || 2);
+            const balcMult = getMultiplier(selectedProducts.balconyPaint.coats || 2);
+
+            subtotal = parseFloat((
+              (intArea * rate.pricePerSqft * intMult) +
+              (ceilArea * rate.pricePerSqft * ceilMult) +
+              (balcArea * rate.pricePerSqft * balcMult)
+            ).toFixed(2));
+          } else {
+            // EXTERIOR
+            const extArea = Number(property.exteriorArea) || 0;
+            const extMult = getMultiplier(selectedProducts.exteriorPaint.coats || 2);
+
+            subtotal = parseFloat((extArea * rate.pricePerSqft * extMult).toFixed(2));
+          }
+
           labourCost += subtotal;
           selectedLabourDetails.push({
             label: mapping.label,
             workType: rate.workType,
             pricePerSqFt: rate.pricePerSqft,
-            area: mapping.area,
+            area,
             subtotal
           });
         }
@@ -694,7 +838,8 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
     }
 
     const taxableAmount = Math.max(0, baseSum - discountVal);
-    const gstVal = parseFloat((taxableAmount * 0.18).toFixed(2));
+    const gstPct = settingsSnapshot?.gstPercentage !== undefined ? Number(settingsSnapshot.gstPercentage) : 18;
+    const gstVal = parseFloat((taxableAmount * (gstPct / 100)).toFixed(2));
     const grandTotal = parseFloat((taxableAmount + gstVal).toFixed(2));
 
     return {
@@ -741,7 +886,8 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
         productsPayload.push({
           productId: selection.productId,
           selectedPackSize: selection.selectedPackSize,
-          appliedArea: p.area
+          appliedArea: p.area,
+          coats: selection.coats !== undefined ? Number(selection.coats) : undefined
         });
       }
     });
@@ -930,7 +1076,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
-      
+
       {/* Header bar */}
       <div className="bg-white sticky top-0 z-40 border-b border-gray-150 px-4 py-4 shadow-sm">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
@@ -941,11 +1087,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
             <div>
               <h1 className="font-extrabold text-gray-800 text-lg flex items-center gap-2">
                 Quotation Builder
-                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                  currentStatus === 'DRAFT' ? 'bg-orange-100 text-orange-600' :
-                  currentStatus === 'SUBMITTED_TO_ADMIN' ? 'bg-blue-100 text-blue-600' :
-                  'bg-green-100 text-green-600'
-                }`}>
+                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${currentStatus === 'DRAFT' ? 'bg-orange-100 text-orange-600' :
+                    currentStatus === 'SUBMITTED_TO_ADMIN' ? 'bg-blue-100 text-blue-600' :
+                      'bg-green-100 text-green-600'
+                  }`}>
                   {currentStatus}
                 </span>
               </h1>
@@ -954,10 +1099,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {!isReadOnly && (
-              <button 
+              <button
                 onClick={() => handleSaveDraft(false)}
                 className="text-xs font-bold text-orange-500 hover:bg-orange-50 px-4 py-2 rounded-xl transition-all border border-orange-200"
               >
@@ -974,12 +1119,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
         <div className="flex items-center gap-1.5 max-w-4xl mx-auto mt-4 px-1">
           {STEPS.map((s, idx) => (
             <div key={idx} className="flex-1 min-w-0 flex flex-col items-center relative cursor-pointer text-center" onClick={() => setStep(idx)}>
-              <div className={`w-full h-1.5 rounded-full transition-all duration-300 ${
-                idx < step ? 'bg-orange-500' : idx === step ? 'bg-orange-400 scale-y-125 shadow-md shadow-orange-200' : 'bg-gray-200'
-              }`} />
-              <span className={`text-[9px] mt-2 font-bold uppercase tracking-wider transition-colors duration-250 text-center w-full block whitespace-normal ${
-                idx === step ? 'text-orange-500' : 'text-gray-400'
-              } hidden md:block`}>
+              <div className={`w-full h-1.5 rounded-full transition-all duration-300 ${idx < step ? 'bg-orange-500' : idx === step ? 'bg-orange-400 scale-y-125 shadow-md shadow-orange-200' : 'bg-gray-200'
+                }`} />
+              <span className={`text-[9px] mt-2 font-bold uppercase tracking-wider transition-colors duration-250 text-center w-full block whitespace-normal ${idx === step ? 'text-orange-500' : 'text-gray-400'
+                } hidden md:block`}>
                 {s.label}
               </span>
             </div>
@@ -989,7 +1132,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
       {/* Main wizard content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        
+
         {isReadOnly && (
           <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl flex gap-3 text-amber-800">
             <FiAlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -1011,7 +1154,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
         )}
 
         <div className="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-xl shadow-gray-100/50">
-          
+
           {/* Step 1: Property Summary */}
           {step === 0 && (
             <div className="space-y-6 animate-fade-in">
@@ -1022,7 +1165,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                   </h2>
                   <p className="text-xs text-gray-400 font-semibold mt-1">Review, add, and measure rooms to compute paintable areas automatically.</p>
                 </div>
-                
+
                 <div className="flex flex-col gap-1 w-44">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Property Layout</label>
                   <select
@@ -1068,22 +1211,22 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                   const bk = calculateRoomAreas(room);
                   const wArea = bk.netPaintableArea - (room.paintCeiling ? bk.ceilingArea : 0);
                   const flArea = bk.ceilingArea || (Number(room.length) * Number(room.width));
-                  
+
                   return (
                     <div key={idx} className="border-2 border-gray-150 rounded-2xl overflow-hidden bg-white shadow-sm transition-all hover:border-orange-300">
                       {/* Accordion Header */}
-                      <div 
+                      <div
                         onClick={() => setExpandedRoomIdx(isExpanded ? null : idx)}
                         className="p-4 bg-gray-50/70 hover:bg-gray-100/50 flex justify-between items-center cursor-pointer select-none"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 font-bold font-mono">#{idx+1}</span>
+                          <span className="text-xs text-gray-400 font-bold font-mono">#{idx + 1}</span>
                           <span className="font-extrabold text-sm text-gray-800">{room.name}</span>
                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-white border px-1.5 py-0.5 rounded">
                             {room.roomCode}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-4 text-xs font-semibold text-gray-500">
                           <span>Ceiling: <strong className="text-gray-700">{room.paintCeiling ? `${flArea} sqft` : 'N/A'}</strong></span>
                           <span>Walls: <strong className="text-gray-700">{room.paintWalls ? `${wArea} sqft` : 'N/A'}</strong></span>
@@ -1094,7 +1237,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                       {/* Accordion Body */}
                       {isExpanded && (
                         <div className="p-6 border-t border-gray-100 bg-white space-y-6 text-xs text-gray-700">
-                          
+
                           {/* Top Section: Progress & Mode Switcher */}
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/70 p-4 rounded-2xl border border-gray-150">
                             <div>
@@ -1103,7 +1246,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                               </h3>
                               <p className="text-[10px] text-gray-400 font-semibold mt-0.5">Configure room walls, custom deductions, and surface conditions.</p>
                             </div>
-                            
+
                             {/* Mode Picker */}
                             <div className="flex items-center bg-gray-200/50 p-1 rounded-xl gap-1">
                               {['DIMENSIONS', 'WALLS', 'MANUAL'].map(mode => (
@@ -1116,11 +1259,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     updated[idx].measurementMode = mode;
                                     setRooms(updated);
                                   }}
-                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider ${
-                                    room.measurementMode === mode 
-                                      ? 'bg-white text-orange-500 shadow-sm' 
+                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tracking-wider ${room.measurementMode === mode
+                                      ? 'bg-white text-orange-500 shadow-sm'
                                       : 'text-gray-500 hover:text-gray-800'
-                                  }`}
+                                    }`}
                                 >
                                   {mode === 'DIMENSIONS' ? 'Dimensions' : mode === 'WALLS' ? 'Walls' : 'Manual Net'}
                                 </button>
@@ -1139,10 +1281,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
                           {/* Main Work Area: Left (Form inputs) and Right (Live Summary + Floor plan) */}
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                            
+
                             {/* LEFT SIDE: Inputs Form */}
                             <div className="lg:col-span-2 space-y-6">
-                              
+
                               {/* Option A: Room Dimension Mode */}
                               {room.measurementMode === 'DIMENSIONS' && (
                                 <div className="bg-white border border-gray-150 rounded-2xl p-4 space-y-4">
@@ -1152,7 +1294,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                                     <div className="flex flex-col gap-1 font-bold">
                                       <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Length (ft)</label>
-                                      <input 
+                                      <input
                                         disabled={isReadOnly}
                                         type="number"
                                         value={room.length}
@@ -1166,7 +1308,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     </div>
                                     <div className="flex flex-col gap-1 font-bold">
                                       <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Width (ft)</label>
-                                      <input 
+                                      <input
                                         disabled={isReadOnly}
                                         type="number"
                                         value={room.width}
@@ -1180,7 +1322,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     </div>
                                     <div className="flex flex-col gap-1 font-bold">
                                       <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Height (ft)</label>
-                                      <input 
+                                      <input
                                         disabled={isReadOnly}
                                         type="number"
                                         value={room.height}
@@ -1261,7 +1403,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                                           <div className="flex flex-col gap-0.5 font-bold">
                                             <label className="text-[8px] text-gray-400 uppercase tracking-wider">Name</label>
-                                            <input 
+                                            <input
                                               disabled={isReadOnly}
                                               type="text"
                                               value={wall.name}
@@ -1275,7 +1417,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                           </div>
                                           <div className="flex flex-col gap-0.5 font-bold">
                                             <label className="text-[8px] text-gray-400 uppercase tracking-wider">Length (ft)</label>
-                                            <input 
+                                            <input
                                               disabled={isReadOnly}
                                               type="number"
                                               value={wall.width}
@@ -1289,7 +1431,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                           </div>
                                           <div className="flex flex-col gap-0.5 font-bold">
                                             <label className="text-[8px] text-gray-400 uppercase tracking-wider">Height (ft)</label>
-                                            <input 
+                                            <input
                                               disabled={isReadOnly}
                                               type="number"
                                               value={wall.height}
@@ -1382,7 +1524,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
                                                   {/* W × H inputs — kept as a single group */}
                                                   <div className="flex items-center gap-1 shrink-0">
-                                                    <input 
+                                                    <input
                                                       disabled={isReadOnly}
                                                       type="number"
                                                       value={op.width || ''}
@@ -1395,7 +1537,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                       className="border border-gray-300 rounded-lg p-1.5 text-center w-12 text-[10px] font-bold text-gray-800 bg-white"
                                                     />
                                                     <span className="text-[9px] font-black text-gray-400 shrink-0">×</span>
-                                                    <input 
+                                                    <input
                                                       disabled={isReadOnly}
                                                       type="number"
                                                       value={op.height || ''}
@@ -1411,7 +1553,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
                                                   {/* Paint? checkbox */}
                                                   <label className="flex items-center gap-1 select-none cursor-pointer shrink-0">
-                                                    <input 
+                                                    <input
                                                       disabled={isReadOnly}
                                                       type="checkbox"
                                                       checked={op.paint}
@@ -1426,7 +1568,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                   </label>
 
                                                   {/* Material */}
-                                                  <input 
+                                                  <input
                                                     disabled={isReadOnly}
                                                     type="text"
                                                     placeholder="Material"
@@ -1440,7 +1582,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                                   />
 
                                                   {/* Remarks */}
-                                                  <input 
+                                                  <input
                                                     disabled={isReadOnly}
                                                     type="text"
                                                     placeholder="Remarks"
@@ -1502,7 +1644,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="flex flex-col gap-1 font-bold">
                                       <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Manual Area (sqft)</label>
-                                      <input 
+                                      <input
                                         disabled={isReadOnly}
                                         type="number"
                                         value={room.vendorOverride?.manualArea || 0}
@@ -1518,7 +1660,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     </div>
                                     <div className="flex flex-col gap-1 font-bold">
                                       <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Reason for override</label>
-                                      <input 
+                                      <input
                                         disabled={isReadOnly}
                                         type="text"
                                         placeholder="e.g. Blueprints override"
@@ -1548,7 +1690,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Cabinet Width (ft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.kitchenExtras?.cabinetWidth || 0}
@@ -1563,7 +1705,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Cabinet Height (ft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.kitchenExtras?.cabinetHeight || 0}
@@ -1578,7 +1720,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Backsplash Tiling Height (ft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.kitchenExtras?.backsplashHeight || 0}
@@ -1599,7 +1741,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Tile Height (ft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.bathroomExtras?.tileHeight || 0}
@@ -1614,7 +1756,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Ventilator Width (ft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.bathroomExtras?.ventilatorWidth || 0}
@@ -1629,7 +1771,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Ventilator Height (ft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.bathroomExtras?.ventilatorHeight || 0}
@@ -1644,7 +1786,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Mirror Area (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.bathroomExtras?.mirrorArea || 0}
@@ -1665,7 +1807,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     <div className="grid grid-cols-1 sm:grid-cols-5 gap-3.5">
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Feature Wall (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.livingRoomExtras?.featureWallArea || 0}
@@ -1680,7 +1822,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Texture Wall (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.livingRoomExtras?.textureWallArea || 0}
@@ -1695,7 +1837,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">TV Panel Area (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.livingRoomExtras?.tvPanelArea || 0}
@@ -1710,7 +1852,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Wood Panel (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.livingRoomExtras?.woodPanelArea || 0}
@@ -1725,7 +1867,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Wallpaper Area (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.livingRoomExtras?.wallpaperArea || 0}
@@ -1746,7 +1888,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Railing Length (ft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.balconyExtras?.railingLength || 0}
@@ -1761,7 +1903,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                       </div>
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Grill Area (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.balconyExtras?.grillArea || 0}
@@ -1782,7 +1924,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                     <div className="grid grid-cols-1 gap-3.5">
                                       <div className="flex flex-col gap-1 font-bold">
                                         <label className="text-[8px] text-gray-400 uppercase tracking-wider">Parapet Wall Area (sqft)</label>
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           value={room.exteriorExtras?.parapetWallArea || 0}
@@ -1842,7 +1984,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                           ))}
                                         </select>
 
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           placeholder="Quantity"
@@ -1855,7 +1997,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                           className="border border-gray-150 rounded-lg p-1.5 text-center text-[10px] font-bold"
                                         />
 
-                                        <input 
+                                        <input
                                           disabled={isReadOnly}
                                           type="number"
                                           placeholder="Unit Area (sqft)"
@@ -1921,7 +2063,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
 
                             {/* RIGHT SIDE: Interactive Preview & Live calculations */}
                             <div className="space-y-6">
-                              
+
                               {/* 1. CSS Floor Plan Layout Preview */}
                               <div className="bg-gray-800 text-white rounded-2xl p-4 space-y-3 shadow-md border border-gray-700">
                                 <h4 className="font-black text-[10px] text-gray-400 uppercase tracking-widest flex justify-between items-center">
@@ -1930,7 +2072,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                                 </h4>
 
                                 <div className="border border-gray-700 bg-gray-900/60 rounded-xl p-6 flex items-center justify-center min-h-44 relative">
-                                  
+
                                   {/* Center layout box */}
                                   <div className="border-4 border-dashed border-orange-500/80 bg-orange-500/5 w-32 h-28 flex flex-col items-center justify-center rounded-lg shadow-inner relative transition-all duration-300">
                                     <span className="text-[9px] font-black uppercase text-orange-400/80 tracking-widest">
@@ -2069,7 +2211,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-2">
                             <div className="flex gap-4 select-none">
                               <label className="flex items-center gap-1.5 font-bold text-gray-650 cursor-pointer">
-                                <input 
+                                <input
                                   disabled={isReadOnly}
                                   type="checkbox"
                                   checked={room.paintCeiling}
@@ -2084,7 +2226,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                               </label>
 
                               <label className="flex items-center gap-1.5 font-bold text-gray-650 cursor-pointer">
-                                <input 
+                                <input
                                   disabled={isReadOnly}
                                   type="checkbox"
                                   checked={room.paintWalls}
@@ -2208,11 +2350,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                     <div
                       key={brand._id}
                       onClick={() => !isReadOnly && setSelectedBrand(brand._id)}
-                      className={`p-6 border-2 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                        selectedBrand === brand._id 
-                          ? 'border-orange-500 bg-orange-50/20 scale-[1.02]' 
+                      className={`p-6 border-2 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${selectedBrand === brand._id
+                          ? 'border-orange-500 bg-orange-50/20 scale-[1.02]'
                           : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       {brand.logo?.url ? (
                         <img src={brand.logo.url} alt={brand.name} className="h-10 object-contain" />
@@ -2254,7 +2395,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-bold text-gray-800">Interior Paint (Area: {property.interiorArea} sq.ft)</span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className={`grid grid-cols-1 ${selectedProducts.interiorPaint.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.interiorPaint.productId}
@@ -2264,7 +2405,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              interiorPaint: { productId: pId, selectedPackSize: defSize }
+                              interiorPaint: { ...selectedProducts.interiorPaint, productId: pId, selectedPackSize: defSize }
                             });
                           }}
                           className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
@@ -2276,22 +2417,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.interiorPaint.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.interiorPaint.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                interiorPaint: { ...selectedProducts.interiorPaint, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.interiorPaint.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.interiorPaint.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  interiorPaint: { ...selectedProducts.interiorPaint, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.interiorPaint.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.interiorPaint.coats || 2}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  interiorPaint: { ...selectedProducts.interiorPaint, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat</option>
+                              <option value="2">2 Coats (Default)</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2303,7 +2463,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-bold text-gray-800">Exterior Paint (Area: {property.exteriorArea} sq.ft)</span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className={`grid grid-cols-1 ${selectedProducts.exteriorPaint.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.exteriorPaint.productId}
@@ -2313,7 +2473,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              exteriorPaint: { productId: pId, selectedPackSize: defSize }
+                              exteriorPaint: { ...selectedProducts.exteriorPaint, productId: pId, selectedPackSize: defSize }
                             });
                           }}
                           className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
@@ -2325,22 +2485,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.exteriorPaint.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.exteriorPaint.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                exteriorPaint: { ...selectedProducts.exteriorPaint, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.exteriorPaint.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.exteriorPaint.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  exteriorPaint: { ...selectedProducts.exteriorPaint, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.exteriorPaint.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.exteriorPaint.coats || 2}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  exteriorPaint: { ...selectedProducts.exteriorPaint, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat</option>
+                              <option value="2">2 Coats (Default)</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2352,7 +2531,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-bold text-gray-800">Ceiling Paint (Area: {property.ceilingArea} sq.ft)</span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className={`grid grid-cols-1 ${selectedProducts.ceilingPaint.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.ceilingPaint.productId}
@@ -2362,10 +2541,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              ceilingPaint: { productId: pId, selectedPackSize: defSize }
+                              ceilingPaint: { ...selectedProducts.ceilingPaint, productId: pId, selectedPackSize: defSize }
                             });
                           }}
-                          className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                          className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
                         >
                           <option value="">-- Choose Ceiling Paint --</option>
                           {getFilteredProducts('Paint').filter(p => p.application === 'Interior' || p.application === 'Universal').map(p => (
@@ -2374,22 +2553,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.ceilingPaint.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.ceilingPaint.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                ceilingPaint: { ...selectedProducts.ceilingPaint, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.ceilingPaint.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.ceilingPaint.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  ceilingPaint: { ...selectedProducts.ceilingPaint, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.ceilingPaint.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.ceilingPaint.coats || 2}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  ceilingPaint: { ...selectedProducts.ceilingPaint, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat</option>
+                              <option value="2">2 Coats (Default)</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2401,7 +2599,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-bold text-gray-800">Balcony Paint (Area: {property.balconyArea} sq.ft)</span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className={`grid grid-cols-1 ${selectedProducts.balconyPaint.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.balconyPaint.productId}
@@ -2411,7 +2609,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              balconyPaint: { productId: pId, selectedPackSize: defSize }
+                              balconyPaint: { ...selectedProducts.balconyPaint, productId: pId, selectedPackSize: defSize }
                             });
                           }}
                           className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
@@ -2423,22 +2621,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.balconyPaint.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.balconyPaint.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                balconyPaint: { ...selectedProducts.balconyPaint, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.balconyPaint.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.balconyPaint.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  balconyPaint: { ...selectedProducts.balconyPaint, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.balconyPaint.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.balconyPaint.coats || 2}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  balconyPaint: { ...selectedProducts.balconyPaint, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat</option>
+                              <option value="2">2 Coats (Default)</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2470,7 +2687,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                   {(property.interiorArea > 0 || property.ceilingArea > 0) && (
                     <div className="p-5 border-2 border-gray-150 rounded-2xl space-y-3 bg-gray-50/50">
                       <span className="text-sm font-bold text-gray-850 block">Interior Primer (Applied Area: {property.interiorArea + property.ceilingArea} sq.ft)</span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className={`grid grid-cols-1 ${selectedProducts.interiorPrimer.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.interiorPrimer.productId}
@@ -2480,10 +2697,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              interiorPrimer: { productId: pId, selectedPackSize: defSize }
+                              interiorPrimer: { ...selectedProducts.interiorPrimer, productId: pId, selectedPackSize: defSize }
                             });
                           }}
-                          className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                          className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
                         >
                           <option value="">-- Choose Interior Primer --</option>
                           {getFilteredProducts('Primer').filter(p => p.application === 'Interior' || p.application === 'Universal').map(p => (
@@ -2492,22 +2709,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.interiorPrimer.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.interiorPrimer.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                interiorPrimer: { ...selectedProducts.interiorPrimer, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.interiorPrimer.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.interiorPrimer.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  interiorPrimer: { ...selectedProducts.interiorPrimer, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.interiorPrimer.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.interiorPrimer.coats !== undefined ? selectedProducts.interiorPrimer.coats : 1}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  interiorPrimer: { ...selectedProducts.interiorPrimer, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat (Default)</option>
+                              <option value="2">2 Coats</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2517,7 +2753,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                   {(property.exteriorArea > 0 || property.balconyArea > 0) && (
                     <div className="p-5 border-2 border-gray-150 rounded-2xl space-y-3 bg-gray-50/50">
                       <span className="text-sm font-bold text-gray-850 block">Exterior Primer (Applied Area: {property.exteriorArea + property.balconyArea} sq.ft)</span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className={`grid grid-cols-1 ${selectedProducts.exteriorPrimer.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.exteriorPrimer.productId}
@@ -2527,7 +2763,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              exteriorPrimer: { productId: pId, selectedPackSize: defSize }
+                              exteriorPrimer: { ...selectedProducts.exteriorPrimer, productId: pId, selectedPackSize: defSize }
                             });
                           }}
                           className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
@@ -2539,22 +2775,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.exteriorPrimer.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.exteriorPrimer.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                exteriorPrimer: { ...selectedProducts.exteriorPrimer, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.exteriorPrimer.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.exteriorPrimer.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  exteriorPrimer: { ...selectedProducts.exteriorPrimer, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.exteriorPrimer.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.exteriorPrimer.coats !== undefined ? selectedProducts.exteriorPrimer.coats : 1}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  exteriorPrimer: { ...selectedProducts.exteriorPrimer, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat (Default)</option>
+                              <option value="2">2 Coats</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2585,8 +2840,8 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                   {/* Interior Putty */}
                   {(property.interiorArea > 0 || property.ceilingArea > 0) && (
                     <div className="p-5 border-2 border-gray-150 rounded-2xl space-y-3 bg-gray-50/50">
-                      <span className="text-sm font-bold text-gray-850 block">Interior Putty (Applied Area: {property.interiorArea + property.ceilingArea} sq.ft)</span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <span className="text-sm font-bold text-gray-855 block">Interior Putty (Applied Area: {property.interiorArea + property.ceilingArea} sq.ft)</span>
+                      <div className={`grid grid-cols-1 ${selectedProducts.interiorPutty.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.interiorPutty.productId}
@@ -2596,7 +2851,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              interiorPutty: { productId: pId, selectedPackSize: defSize }
+                              interiorPutty: { ...selectedProducts.interiorPutty, productId: pId, selectedPackSize: defSize }
                             });
                           }}
                           className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
@@ -2608,22 +2863,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.interiorPutty.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.interiorPutty.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                interiorPutty: { ...selectedProducts.interiorPutty, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.interiorPutty.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.interiorPutty.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  interiorPutty: { ...selectedProducts.interiorPutty, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.interiorPutty.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.interiorPutty.coats || 2}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  interiorPutty: { ...selectedProducts.interiorPutty, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat</option>
+                              <option value="2">2 Coats (Default)</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2632,8 +2906,8 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                   {/* Exterior Putty */}
                   {(property.exteriorArea > 0 || property.balconyArea > 0) && (
                     <div className="p-5 border-2 border-gray-150 rounded-2xl space-y-3 bg-gray-50/50">
-                      <span className="text-sm font-bold text-gray-850 block">Exterior Putty (Applied Area: {property.exteriorArea + property.balconyArea} sq.ft)</span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <span className="text-sm font-bold text-gray-855 block">Exterior Putty (Applied Area: {property.exteriorArea + property.balconyArea} sq.ft)</span>
+                      <div className={`grid grid-cols-1 ${selectedProducts.exteriorPutty.productId ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-3`}>
                         <select
                           disabled={isReadOnly}
                           value={selectedProducts.exteriorPutty.productId}
@@ -2643,10 +2917,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                             const defSize = prod?.availablePackSizes?.[0] || null;
                             setSelectedProducts({
                               ...selectedProducts,
-                              exteriorPutty: { productId: pId, selectedPackSize: defSize }
+                              exteriorPutty: { ...selectedProducts.exteriorPutty, productId: pId, selectedPackSize: defSize }
                             });
                           }}
-                          className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                          className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
                         >
                           <option value="">-- Choose Exterior Putty --</option>
                           {getFilteredProducts('Putty').filter(p => p.application === 'Exterior' || p.application === 'Universal').map(p => (
@@ -2655,22 +2929,41 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         </select>
 
                         {selectedProducts.exteriorPutty.productId && (
-                          <select
-                            disabled={isReadOnly}
-                            value={JSON.stringify(selectedProducts.exteriorPutty.selectedPackSize)}
-                            onChange={e => {
-                              const size = JSON.parse(e.target.value);
-                              setSelectedProducts({
-                                ...selectedProducts,
-                                exteriorPutty: { ...selectedProducts.exteriorPutty, selectedPackSize: size }
-                              });
-                            }}
-                            className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
-                          >
-                            {productsList.find(p => p._id === selectedProducts.exteriorPutty.productId)?.availablePackSizes.map((s, idx) => (
-                              <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              disabled={isReadOnly}
+                              value={JSON.stringify(selectedProducts.exteriorPutty.selectedPackSize)}
+                              onChange={e => {
+                                const size = JSON.parse(e.target.value);
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  exteriorPutty: { ...selectedProducts.exteriorPutty, selectedPackSize: size }
+                                });
+                              }}
+                              className="border border-gray-250 rounded-xl px-3 py-2 bg-white text-gray-855 outline-none text-sm font-semibold"
+                            >
+                              {productsList.find(p => p._id === selectedProducts.exteriorPutty.productId)?.availablePackSizes.map((s, idx) => (
+                                <option key={idx} value={JSON.stringify(s)}>{s.size} {s.unit} Pack</option>
+                              ))}
+                            </select>
+
+                            <select
+                              disabled={isReadOnly}
+                              value={selectedProducts.exteriorPutty.coats || 2}
+                              onChange={e => {
+                                setSelectedProducts({
+                                  ...selectedProducts,
+                                  exteriorPutty: { ...selectedProducts.exteriorPutty, coats: Number(e.target.value) }
+                                });
+                              }}
+                              className="border border-gray-200 rounded-xl px-3 py-2 bg-white text-gray-850 outline-none text-sm font-semibold"
+                            >
+                              <option value="1">1 Coat</option>
+                              <option value="2">2 Coats (Default)</option>
+                              <option value="3">3 Coats</option>
+                              <option value="4">4 Coats</option>
+                            </select>
+                          </>
                         )}
                       </div>
                     </div>
@@ -2881,11 +3174,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                           type="button"
                           disabled={isReadOnly}
                           onClick={() => setDiscount({ ...discount, type: t, value: 0 })}
-                          className={`flex-1 py-3 text-center transition-all ${
-                            discount.type === t 
-                              ? 'bg-orange-500 text-white' 
+                          className={`flex-1 py-3 text-center transition-all ${discount.type === t
+                              ? 'bg-orange-500 text-white'
                               : 'bg-white text-gray-500 hover:bg-gray-50'
-                          }`}
+                            }`}
                         >
                           {t === 'NONE' ? 'None' : t === 'FLAT' ? 'Flat' : '%'}
                         </button>
@@ -2931,7 +3223,7 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
               {/* Detailed Breakdown */}
               <div className="space-y-4">
                 <span className="text-sm font-bold text-gray-850 block">Detailed Items Breakdown</span>
-                
+
                 {/* Products table */}
                 <div className="border border-gray-150 rounded-2xl overflow-hidden">
                   <div className="bg-gray-50 px-4 py-3 border-b border-gray-150 font-bold text-xs text-gray-500 uppercase tracking-wider">
@@ -2945,12 +3237,26 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                         <div key={idx} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-2">
                           <div>
                             <span className="font-extrabold text-gray-800 block">{p.label}</span>
-                            <span className="text-xs text-gray-400 font-semibold">{p.productName} ({p.productCode}) • Pack: {p.selectedPackSize?.size} {p.selectedPackSize?.unit}</span>
+                            <span className="text-xs text-gray-400 font-semibold">
+                              {p.productName} ({p.productCode})
+                              {p.packBreakdown && p.packBreakdown.length > 0 ? (
+                                ` • Packs: ${p.packBreakdown.map(pb => `${pb.count}x${pb.size}L`).join(' + ')}`
+                              ) : (
+                                ` • Pack: ${p.selectedPackSize?.size} ${p.selectedPackSize?.unit}`
+                              )}
+                            </span>
                           </div>
                           <div className="flex items-center gap-6 text-right">
                             <div className="text-xs font-semibold text-gray-400">
                               <div>Required: {p.quantityRequired} Unit</div>
-                              <div>Purchased: {p.quantityPurchased} Pack</div>
+                              <div>
+                                Purchased: {p.quantityPurchased} Pack
+                                {p.packBreakdown && p.packBreakdown.length > 0 && (
+                                  <span className="block text-[10px] text-gray-400 font-normal">
+                                    ({p.packBreakdown.map(pb => `${pb.count}x${pb.size}L`).join(', ')})
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <div className="font-bold text-gray-800">
                               ₹{p.subtotal.toLocaleString()}
@@ -3036,14 +3342,14 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
               {/* Attachments Section */}
               <div className="space-y-4">
                 <span className="text-sm font-bold text-gray-800 block">Property Attachments</span>
-                
+
                 {['inspectionPhotos', 'beforePhotos', 'referenceImages'].map(field => (
                   <div key={field} className="p-5 border border-gray-150 rounded-2xl space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-gray-500 uppercase">
                         {field === 'inspectionPhotos' ? 'Property Inspection Photos' :
-                         field === 'beforePhotos' ? 'Before Work Photos' :
-                         'Reference Design Images'}
+                          field === 'beforePhotos' ? 'Before Work Photos' :
+                            'Reference Design Images'}
                       </span>
                       {!isReadOnly && (
                         <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1">
@@ -3113,11 +3419,10 @@ const VendorQuoteWizard = ({ consultation, onBack, onComplete }) => {
                 type="button"
                 disabled={submitting || isReadOnly}
                 onClick={handleSubmitToAdmin}
-                className={`flex-1 font-bold py-3.5 rounded-2xl text-sm transition-all flex items-center justify-center gap-2 text-white shadow-xl ${
-                  submitting || isReadOnly
+                className={`flex-1 font-bold py-3.5 rounded-2xl text-sm transition-all flex items-center justify-center gap-2 text-white shadow-xl ${submitting || isReadOnly
                     ? 'bg-orange-300 cursor-not-allowed shadow-none'
                     : 'bg-orange-500 hover:bg-orange-600 shadow-orange-200 hover:scale-[1.01]'
-                }`}
+                  }`}
               >
                 {submitting ? (
                   <>

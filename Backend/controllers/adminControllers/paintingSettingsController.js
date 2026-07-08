@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS_SNAPSHOT = {
   roundingMethod: 'ROUND_UP',
   customBufferPercent: 0,
   activeLabourMethod: 'PER_SQFT',
+  laborCoatMultipliers: { '1': 0.6, '2': 1.0, '3': 1.3, '4': 1.6 },
   minArea: 50,
   maxArea: 50000,
   minLabourCharge: 1000,
@@ -51,7 +52,35 @@ const DEFAULT_SETTINGS_SNAPSHOT = {
 // GET /api/admin/painting/settings/profiles
 exports.getSettingsProfiles = async (req, res) => {
   try {
-    const profiles = await PaintingSettings.find().populate('activeVersionId');
+    let profiles = await PaintingSettings.find().populate('activeVersionId');
+    if (profiles.length === 0) {
+      // 1. Create a Default Profile
+      const defaultProfile = await PaintingSettings.create({
+        profileName: 'Default System Profile',
+        profileCode: 'DEFAULT_SYSTEM_PROFILE',
+        isDefault: true,
+        status: 'PUBLISHED',
+        currentVersion: 1,
+        publishedVersion: 1
+      });
+
+      // 2. Create and Publish the Initial Settings Version Snapshot
+      const versionDraft = await PaintingSettingsVersion.create({
+        settingsId: defaultProfile._id,
+        version: 1,
+        snapshot: DEFAULT_SETTINGS_SNAPSHOT,
+        status: 'PUBLISHED',
+        isPublished: true,
+        changeSummary: 'Auto-seeded default system profile',
+        createdBy: req.user?.id
+      });
+
+      defaultProfile.activeVersionId = versionDraft._id;
+      await defaultProfile.save();
+
+      profiles = [await PaintingSettings.findById(defaultProfile._id).populate('activeVersionId')];
+    }
+
     res.status(200).json({
       success: true,
       count: profiles.length,

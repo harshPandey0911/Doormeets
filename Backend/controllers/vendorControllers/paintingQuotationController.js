@@ -80,15 +80,29 @@ exports.createQuotation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Consultation not found or not accepted by this vendor.' });
     }
 
-    // Run dynamic calculations
+    // Fetch active settings snapshot prior to calculation
+    const activeSettings = await PaintingSettings.findOne({ isDefault: true }).populate('activeVersionId');
+    const settingsSnapshot = activeSettings?.activeVersionId?.snapshot || null;
+
+    // Run dynamic calculations using centralized engine
     const calculations = await computeQuotationDetails(
       property,
       products,
       labour,
       additionalCharges,
       discount,
-      gstPercentage
+      gstPercentage,
+      settingsSnapshot,
+      '1.1.0'
     );
+
+    if (!calculations.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quotation validation failed',
+        errors: calculations.validationErrors
+      });
+    }
 
     // Keep legacy fields populated for backup
     const legacyCalculation = {
@@ -101,9 +115,6 @@ exports.createQuotation = async (req, res) => {
       gst: calculations.summary.gst,
       grandTotal: calculations.summary.grandTotal
     };
-
-    // Fetch active settings snapshot
-    const activeSettings = await PaintingSettings.findOne({ isDefault: true }).populate('activeVersionId');
 
     const quotation = await PaintingQuotation.create({
       consultationId,
@@ -121,11 +132,16 @@ exports.createQuotation = async (req, res) => {
       remarks: remarks || {},
       attachments: attachments || {},
       
-      // Settings Snapshot
+      // Settings & Engine Audit Metadata
       settingsProfileId: activeSettings ? activeSettings._id : null,
       settingsVersion: activeSettings ? (activeSettings.publishedVersion || activeSettings.currentVersion) : 1,
-      settingsSnapshot: activeSettings && activeSettings.activeVersionId ? activeSettings.activeVersionId.snapshot : null,
-      calculationVersion: 1,
+      settingsSnapshot,
+      calculationVersion: '1.1.0',
+      calculationTimestamp: calculations.audit.calculationTimestamp,
+      engineVersion: calculations.audit.engineVersion,
+      calculationDurationMs: calculations.audit.durationMs,
+      validationResults: calculations.validationErrors,
+      validationWarnings: calculations.validationWarnings,
       
       // Legacy backups
       interiorArea: property?.interiorArea || 0,
@@ -177,15 +193,39 @@ exports.updateQuotation = async (req, res) => {
       });
     }
 
-    // Run calculations
+    // Fetch snapshot dynamically if not present
+    let settingsSnapshot = quotation.settingsSnapshot;
+    let settingsProfileId = quotation.settingsProfileId;
+    let settingsVersion = quotation.settingsVersion;
+
+    if (!settingsSnapshot) {
+      const activeSettings = await PaintingSettings.findOne({ isDefault: true }).populate('activeVersionId');
+      if (activeSettings) {
+        settingsProfileId = activeSettings._id;
+        settingsVersion = activeSettings.publishedVersion || activeSettings.currentVersion;
+        settingsSnapshot = activeSettings.activeVersionId?.snapshot || null;
+      }
+    }
+
+    // Run calculations using engine with snapshot
     const calculations = await computeQuotationDetails(
       property,
       products,
       labour,
       additionalCharges,
       discount,
-      gstPercentage
+      gstPercentage,
+      settingsSnapshot,
+      quotation.calculationVersion || '1.1.0'
     );
+
+    if (!calculations.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quotation validation failed',
+        errors: calculations.validationErrors
+      });
+    }
 
     const legacyCalculation = {
       paintCost: calculations.summary.materialCost,
@@ -212,15 +252,16 @@ exports.updateQuotation = async (req, res) => {
     quotation.remarks = remarks || {};
     quotation.attachments = attachments || {};
 
-    if (!quotation.settingsProfileId) {
-      const activeSettings = await PaintingSettings.findOne({ isDefault: true }).populate('activeVersionId');
-      if (activeSettings) {
-        quotation.settingsProfileId = activeSettings._id;
-        quotation.settingsVersion = activeSettings.publishedVersion || activeSettings.currentVersion;
-        quotation.settingsSnapshot = activeSettings.activeVersionId?.snapshot || null;
-        quotation.calculationVersion = 1;
-      }
-    }
+    quotation.settingsProfileId = settingsProfileId;
+    quotation.settingsVersion = settingsVersion;
+    quotation.settingsSnapshot = settingsSnapshot;
+
+    // Calculation version parameters
+    quotation.calculationTimestamp = calculations.audit.calculationTimestamp;
+    quotation.engineVersion = calculations.audit.engineVersion;
+    quotation.calculationDurationMs = calculations.audit.durationMs;
+    quotation.validationResults = calculations.validationErrors;
+    quotation.validationWarnings = calculations.validationWarnings;
 
     // Legacy updates
     quotation.interiorArea = property?.interiorArea || 0;

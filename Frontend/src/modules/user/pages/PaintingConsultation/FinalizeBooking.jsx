@@ -11,6 +11,8 @@ const FinalizeBooking = ({ wizardData, updateWizardData, onBack, onSuccess, prop
     discount = 0,
     estimatedTotal = 0,
     rooms = [],
+    bookingType = 'INSTANT',
+    scheduledSlot = { date: null, timeSlot: '' }
   } = wizardData;
 
   const totalArea = rooms.reduce((acc, r) => acc + (r.netArea || 0), 0);
@@ -29,10 +31,15 @@ const FinalizeBooking = ({ wizardData, updateWizardData, onBack, onSuccess, prop
           street: '', city: '', state: '', pincode: '',
           fullAddress: 'Address on file'
         },
+        bookingType: bookingType || 'INSTANT',
+        scheduledSlot: bookingType === 'SCHEDULED' ? scheduledSlot : undefined,
         wizardData: { ...wizardData, grandTotal, estimatedWorkDays }
       };
       await requestConsultation(payload);
-      toast.success('🎉 Booking request submitted! Vendors are being notified.');
+      const successMsg = bookingType === 'SCHEDULED'
+        ? `📅 Inspection scheduled for ${scheduledSlot?.timeSlot}! Vendors are being notified.`
+        : '🎉 Booking submitted! Vendors near you are being notified.';
+      toast.success(successMsg);
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
@@ -58,6 +65,27 @@ const FinalizeBooking = ({ wizardData, updateWizardData, onBack, onSuccess, prop
         <div>
           <h2 className="text-2xl font-black text-gray-900">Confirm Your Plan</h2>
           <p className="text-sm text-gray-500 mt-1">Review final details and schedule your painting project.</p>
+        </div>
+
+        {/* Booking Type Banner */}
+        <div className={`flex items-center gap-3 rounded-2xl p-4 border-2 ${
+          bookingType === 'SCHEDULED'
+            ? 'bg-indigo-50 border-indigo-200'
+            : 'bg-orange-50 border-orange-200'
+        }`}>
+          <span className="text-2xl">{bookingType === 'SCHEDULED' ? '📅' : '⚡'}</span>
+          <div>
+            <p className={`text-xs font-bold uppercase tracking-wider ${
+              bookingType === 'SCHEDULED' ? 'text-indigo-600' : 'text-orange-600'
+            }`}>
+              {bookingType === 'SCHEDULED' ? 'Scheduled Inspection' : 'Instant Booking'}
+            </p>
+            <p className="text-sm font-semibold text-gray-800">
+              {bookingType === 'SCHEDULED' && scheduledSlot?.timeSlot
+                ? `${new Date(scheduledSlot.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} · ${scheduledSlot.timeSlot}`
+                : 'A vendor will be assigned within 2–4 hours'}
+            </p>
+          </div>
         </div>
 
         {/* Estimated Work Days */}

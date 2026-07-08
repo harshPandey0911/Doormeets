@@ -137,8 +137,14 @@ const productSnapshotSchema = new mongoose.Schema({
   unitPrice: { type: Number, required: true },
   quantityRequired: { type: Number, required: true }, // dynamically calculated
   quantityPurchased: { type: Number, required: true }, // calculated pack count
+  packBreakdown: [{
+    size: { type: Number, required: true },
+    count: { type: Number, required: true }
+  }],
   subtotal: { type: Number, required: true },
-  appliedArea: { type: Number, required: true } // the specific paintable area applied to
+  appliedArea: { type: Number, required: true }, // the specific paintable area applied to
+  coats: { type: Number, default: 2 },
+  roundingMethodUsed: { type: String }
 }, { _id: false });
 
 const labourSnapshotSchema = new mongoose.Schema({
@@ -146,7 +152,9 @@ const labourSnapshotSchema = new mongoose.Schema({
   workType: { type: String, required: true },
   pricePerSqFt: { type: Number, required: true },
   area: { type: Number, required: true },
-  subtotal: { type: Number, required: true }
+  subtotal: { type: Number, required: true },
+  labourMethodUsed: { type: String },
+  premiumPercentageApplied: { type: Number, default: 0 }
 }, { _id: false });
 
 const additionalChargeSchema = new mongoose.Schema({
@@ -320,7 +328,12 @@ const paintingQuotationSchema = new mongoose.Schema({
   settingsProfileId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaintingSettings', default: null },
   settingsVersion: { type: Number, default: 1 },
   settingsSnapshot: { type: mongoose.Schema.Types.Mixed, default: null },
-  calculationVersion: { type: Number, default: 1 },
+  calculationVersion: { type: String, default: '1.1.0' },
+  calculationTimestamp: { type: Date },
+  engineVersion: { type: String, default: '1.1.0' },
+  calculationDurationMs: { type: Number },
+  validationResults: { type: mongoose.Schema.Types.Mixed, default: null },
+  validationWarnings: { type: mongoose.Schema.Types.Mixed, default: null },
   review: {
     status: { type: String, default: null },
     adminRemarks: { type: String, default: '' },

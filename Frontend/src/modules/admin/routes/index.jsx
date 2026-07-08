@@ -105,7 +105,7 @@ const AdminRoutes = () => {
           <Route path="painting/brands" element={<PaintingConfigPage defaultTab="brands" />} />
           <Route path="painting/products" element={<PaintingConfigPage defaultTab="products" />} />
           <Route path="painting/layouts" element={<PaintingConfigPage defaultTab="layouts" />} />
-          <Route path="painting/rates" element={<PaintingConfigPage defaultTab="rates" />} />
+          <Route path="painting/rates" element={<PaintingConfigPage defaultTab="pricing" />} />
           <Route path="painting/settings" element={<PaintingConfigPage defaultTab="settings" />} />
           <Route path="painting/page-builder" element={<PaintingConfigPage defaultTab="page-builder" />} />
           <Route path="painting/quotations" element={<PaintingConfigPage defaultTab="quotations" />} />

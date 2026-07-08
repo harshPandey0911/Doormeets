@@ -52,6 +52,11 @@ const paintingSettingsVersionSchema = new mongoose.Schema({
       enum: ['PER_SQFT', 'PER_ROOM', 'PER_DAY', 'PER_TEAM'],
       default: 'PER_SQFT'
     },
+    laborCoatMultipliers: {
+      type: Map,
+      of: Number,
+      default: { '1': 0.6, '2': 1.0, '3': 1.3, '4': 1.6 }
+    },
 
     // Coat Rules
     coatRules: [{

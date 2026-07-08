@@ -576,7 +576,8 @@ const QuotationReview = ({ quotationId, onBack }) => {
                     <th className="px-3 py-2.5">Brand</th>
                     <th className="px-3 py-2.5">Product</th>
                     <th className="px-3 py-2.5 w-24">Pack Size</th>
-                    <th className="px-3 py-2.5 w-24">Quantity (L/Kg)</th>
+                    <th className="px-3 py-2.5 w-24">Volume (L/Kg)</th>
+                    <th className="px-3 py-2.5 text-center w-24">Packs (Qty)</th>
                     <th className="px-3 py-2.5 text-right w-24">Unit Price</th>
                     <th className="px-3 py-2.5 text-right w-28">Subtotal</th>
                     {!isReadOnly && <th className="px-3 py-2.5 w-12 text-center"></th>}
@@ -665,6 +666,20 @@ const QuotationReview = ({ quotationId, onBack }) => {
                               onChange={(e) => handleProductChange(index, 'quantityRequired', e.target.value)}
                               className="w-full bg-transparent outline-none border border-gray-200 rounded-lg py-1 px-1.5 font-bold text-gray-800 text-center"
                             />
+                          )}
+                        </td>
+
+                        {/* Packs Purchased (calculated pack count) */}
+                        <td className="px-3 py-2.5 text-center font-bold text-gray-700">
+                          {item.packBreakdown && item.packBreakdown.length > 0 ? (
+                            <div className="text-xs space-y-0.5">
+                              <span className="block text-sm">{item.quantityPurchased} Packs</span>
+                              <span className="text-[10px] text-gray-400 font-normal">
+                                ({item.packBreakdown.map(pb => `${pb.count}x${pb.size}L`).join(', ')})
+                              </span>
+                            </div>
+                          ) : (
+                            item.quantityPurchased || Math.ceil(item.quantityRequired / (item.selectedPackSize?.size || 1))
                           )}
                         </td>
 
