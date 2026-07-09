@@ -87,14 +87,16 @@ const OfferBannerSlider = ({ banners }) => {
                 <img 
                   src={banner.imageUrl} 
                   alt={banner.title} 
-                  className="hidden md:block w-full h-full object-cover"
+                  className="hidden md:block w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
+                  style={{ imageRendering: '-webkit-optimize-contrast' }}
                   loading="lazy"
                 />
                 {/* Mobile Image */}
                 <img 
                   src={banner.mobileImageUrl || banner.imageUrl} 
                   alt={banner.title} 
-                  className="block md:hidden w-full h-full object-cover"
+                  className="block md:hidden w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
+                  style={{ imageRendering: '-webkit-optimize-contrast' }}
                   loading="lazy"
                 />
               </>

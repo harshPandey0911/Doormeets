@@ -371,57 +371,20 @@ const Home = () => {
     fetchBanners();
     fetchPromos();
   }, [currentCity]);
-
-  // Fetch user bookings for "Order Again" section
+  // Fetch user bookings for "Order Again" section (highly optimized)
   useEffect(() => {
     const fetchPastOrders = async () => {
       try {
         const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
         if (!token) return;
         setPastServicesLoading(true);
-        const res = await bookingService.getUserBookings({ limit: 20 });
+        const res = await bookingService.getPastServices();
         if (res.success && Array.isArray(res.data)) {
-          // Extract unique services from bookedItems or main service info
-          const servicesMap = new Map();
-          res.data.forEach(booking => {
-            if (Array.isArray(booking.bookedItems) && booking.bookedItems.length > 0) {
-              booking.bookedItems.forEach(item => {
-                const sId = item.serviceId || item._id || item.id;
-                if (sId && !servicesMap.has(sId)) {
-                  servicesMap.set(sId, {
-                    id: sId,
-                    serviceId: sId,
-                    categoryId: item.categoryId || booking.categoryId,
-                    title: item.card?.title || item.title || item.name,
-                    price: item.price || 0,
-                    originalPrice: item.originalPrice || null,
-                    discount: item.discount || null,
-                    image: toAssetUrl(item.icon || item.image || ''),
-                    vendorName: booking.vendorName || booking.vendorId?.name || 'Evenox Clean',
-                    rating: item.rating || "4.8",
-                    reviews: item.reviews || "10k+"
-                  });
-                }
-              });
-            } else if (booking.serviceId) {
-              const sId = booking.serviceId;
-              if (sId && !servicesMap.has(sId)) {
-                servicesMap.set(sId, {
-                  id: sId,
-                  serviceId: sId,
-                  categoryId: booking.categoryId,
-                  title: booking.serviceName || 'Service',
-                  price: booking.finalAmount || booking.totalAmount || 0,
-                  originalPrice: null,
-                  image: toAssetUrl(booking.serviceImage || ''),
-                  vendorName: booking.vendorName || booking.vendorId?.name || 'Evenox Clean',
-                  rating: "4.8",
-                  reviews: "10k+"
-                });
-              }
-            }
-          });
-          setPastServices(Array.from(servicesMap.values()));
+          const mapped = res.data.map(item => ({
+            ...item,
+            image: toAssetUrl(item.image)
+          }));
+          setPastServices(mapped);
         }
       } catch (err) {
         console.error("Failed to fetch past services for Order Again:", err);
@@ -638,7 +601,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
+        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-[1600px] mx-auto w-full px-4 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">

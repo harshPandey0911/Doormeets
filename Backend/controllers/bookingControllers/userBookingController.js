@@ -1817,6 +1817,71 @@ const requestCancelBooking = async (req, res) => {
   }
 };
 
+/**
+ * Get unique past services for Order Again section
+ */
+const getPastServices = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bookings = await Booking.find({ userId })
+      .select('bookedItems serviceId serviceName categoryId vendorName finalAmount serviceImages')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    const servicesMap = new Map();
+    bookings.forEach(booking => {
+      if (Array.isArray(booking.bookedItems) && booking.bookedItems.length > 0) {
+        booking.bookedItems.forEach(item => {
+          const sId = item.serviceId || item._id || item.id;
+          if (sId && !servicesMap.has(sId.toString())) {
+            servicesMap.set(sId.toString(), {
+              id: sId,
+              serviceId: sId,
+              categoryId: item.categoryId || booking.categoryId,
+              title: item.card?.title || item.title || item.name,
+              price: item.price || 0,
+              originalPrice: item.originalPrice || null,
+              discount: item.discount || null,
+              image: item.icon || item.image || '',
+              vendorName: booking.vendorName || 'Evenox Clean',
+              rating: item.rating || "4.8",
+              reviews: item.reviews || "10k+"
+            });
+          }
+        });
+      } else if (booking.serviceId) {
+        const sId = booking.serviceId;
+        if (sId && !servicesMap.has(sId.toString())) {
+          servicesMap.set(sId.toString(), {
+            id: sId,
+            serviceId: sId,
+            categoryId: booking.categoryId,
+            title: booking.serviceName || 'Service',
+            price: booking.finalAmount || 0,
+            originalPrice: null,
+            image: booking.serviceImages?.[0] || '',
+            vendorName: booking.vendorName || 'Evenox Clean',
+            rating: "4.8",
+            reviews: "10k+"
+          });
+        }
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: Array.from(servicesMap.values())
+    });
+  } catch (error) {
+    console.error('Get past services error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch past services.'
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
@@ -1826,6 +1891,8 @@ module.exports = {
   addReview,
   getUserRatings,
   approveInspectionEstimate,
-  requestCancelBooking
+  requestCancelBooking,
+  getPastServices
 };
+
 

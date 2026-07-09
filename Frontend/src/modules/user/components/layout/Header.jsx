@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiHome, FiCalendar, FiShoppingCart, FiUser } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiShoppingCart, FiUser, FiInfo, FiMessageSquare } from 'react-icons/fi';
 import { useCart } from '../../../../context/CartContext';
 import NotificationBell from '../common/NotificationBell';
 import api from '../../../../services/api';
@@ -16,6 +16,8 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
 
   const menuItems = [
     { id: 'home', label: 'Home', icon: FiHome, path: '/user/home' },
+    { id: 'about', label: 'About Us', icon: FiInfo, path: '/user/about' },
+    { id: 'contact', label: 'Contact Us', icon: FiMessageSquare, path: '/user/contact' },
     { id: 'bookings', label: 'Bookings', icon: FiCalendar, path: '/user/my-bookings' },
     { id: 'cart', label: 'Cart', icon: FiShoppingCart, path: '/user/cart', isCart: true },
     { id: 'account', label: 'Account', icon: FiUser, path: '/user/account' },
@@ -49,7 +51,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
 
   return (
     <header className="w-full bg-transparent px-5 pt-6 pb-2">
-      <div className="max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto flex items-start justify-between">
+      <div className="w-full max-w-[1600px] mx-auto flex items-start justify-between px-4 md:px-10">
 
         {/* Left Side: Location Selector & Bold Heading */}
         <div className="flex flex-col min-w-0">
@@ -96,13 +98,12 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
                 <button
                   key={item.id}
                   onClick={() => navigate(item.path)}
-                  className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 active:scale-95"
-                  style={isActive ? {
-                    backgroundColor: 'var(--primary)',
-                    color: '#ffffff',
-                  } : {
+                  className="relative flex items-center gap-1.5 px-3 py-2 text-sm font-bold transition-all duration-200 active:scale-95 border-b-2"
+                  style={{
                     backgroundColor: 'transparent',
-                    color: 'var(--text-secondary)',
+                    color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                    borderColor: isActive ? 'var(--primary)' : 'transparent',
+                    borderRadius: '0px'
                   }}
                 >
                   <Icon className="w-4 h-4" />
