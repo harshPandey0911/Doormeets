@@ -335,34 +335,31 @@ const PremiumCategoryPage = () => {
 
   return (
     <div className="min-h-screen pb-40 w-full bg-[var(--background)] text-[var(--text-primary)] transition-colors duration-300">
-      {/* Dynamic Header / Cover Banner */}
-      <div className="relative w-full h-[260px] md:h-[350px] overflow-hidden">
-        {/* Cover Image */}
-        <img
-          src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
-          alt={activeCategory?.title}
-          className="w-full h-full object-cover filter brightness-[0.85] dark:brightness-75 transition-all duration-300"
-        />
+      {/* MOBILE ONLY BANNER COVER & HEADER BLOCK */}
+      <div className="lg:hidden">
+        {/* Dynamic Header / Cover Banner */}
+        <div className="relative w-full h-[260px] md:h-[350px] overflow-hidden">
+          {/* Cover Image */}
+          <img
+            src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
+            alt={activeCategory?.title}
+            className="w-full h-full object-cover filter brightness-[0.85] dark:brightness-75 transition-all duration-300"
+          />
 
-        {/* Diagonal Gradient Cover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+          {/* Diagonal Gradient Cover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 
-        {/* Float Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 z-20 p-2.5 rounded-full bg-white/90 dark:bg-zinc-900/90 text-slate-900 dark:text-zinc-100 shadow-md hover:scale-105 active:scale-95 transition-all"
-        >
-          <FiArrowLeft className="w-5 h-5" />
-        </button>
+          {/* Float Back Button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-4 left-4 z-20 p-2.5 rounded-full bg-white/90 dark:bg-zinc-900/90 text-slate-900 dark:text-zinc-100 shadow-md hover:scale-105 active:scale-95 transition-all"
+          >
+            <FiArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
 
-
-      </div>
-
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 md:px-6 mt-6 relative z-10">
-        
-        {/* Category Description block in normal flow */}
-        <div className="mb-6">
+        {/* Mobile Page Header Details */}
+        <div className="px-4 mt-6">
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
             {activeCategory?.title}
           </h1>
@@ -378,8 +375,74 @@ const PremiumCategoryPage = () => {
             {activeCategory?.description || `Our ${activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages tailored for you.`}
           </p>
         </div>
+      </div>
 
-        {/* Subcategories Grid Cards */}
+      {/* DESKTOP HEADER + SELECT A SERVICE - UC style combined layout */}
+      <div className="hidden lg:block max-w-[1360px] mx-auto px-12 pt-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-4 flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+        >
+          <FiArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+        <div className="grid grid-cols-[1fr_1.8fr] gap-10 items-start mb-8">
+          {/* Left: Title + Rating + Description + Select a Service */}
+          <div className="flex flex-col">
+            <h1 className="text-[2.5rem] leading-tight font-extrabold text-gray-900 dark:text-white tracking-tight">
+              {activeCategory?.title}
+            </h1>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center">
+                <FiStar className="fill-white text-white w-3 h-3" />
+              </span>
+              <span className="text-sm font-bold text-gray-800 dark:text-zinc-200">4.80</span>
+              <span className="text-sm text-gray-400 dark:text-zinc-500 font-medium">(9.3 M bookings)</span>
+            </div>
+            <p className="mt-4 text-[13px] text-gray-500 dark:text-zinc-400 leading-relaxed font-medium">
+              {activeCategory?.description || `Our ${activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages.`}
+            </p>
+
+            {/* Select a Service Box */}
+            <div className="mt-6 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-900">
+              <p className="text-[11px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-5">Select a service</p>
+              <div className="grid grid-cols-3 gap-x-3 gap-y-5">
+                {subCategories.map((sub) => {
+                  const subImage = toAssetUrl(sub.iconUrl) || 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
+                  return (
+                    <button
+                      key={sub.id || sub._id}
+                      onClick={() => handleScrollToSub(sub.id || sub._id)}
+                      className="flex flex-col items-center group cursor-pointer focus:outline-none"
+                    >
+                      <div className="w-[64px] h-[64px] rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center p-2 transition-all group-hover:border-gray-400 dark:group-hover:border-zinc-500 group-hover:shadow-sm active:scale-95">
+                        <img src={subImage} alt={sub.title} className="w-full h-full object-contain" />
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-600 dark:text-zinc-400 mt-1.5 text-center leading-tight max-w-[72px] break-words">
+                        {sub.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Banner image stretching full height */}
+          <div className="w-full max-h-[420px] rounded-2xl overflow-hidden">
+            <img
+              src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
+              alt={activeCategory?.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* MAIN CONTAINER CONTENT BRANCH */}
+      {/* 1. MOBILE FLOW */}
+      <main className="lg:hidden max-w-7xl mx-auto px-4 md:px-6 mt-6 relative z-10">
+        {/* Mobile Subcategories Grid */}
         {subCategories.length > 0 && (
           <div className="mb-8">
             <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
@@ -397,16 +460,10 @@ const PremiumCategoryPage = () => {
                     }}
                   >
                     <div className="absolute inset-0 w-full h-full">
-                      <img
-                        src={subImage}
-                        alt={sub.title}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={subImage} alt={sub.title} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                     </div>
-                    <span 
-                      className="absolute bottom-2 left-0 right-0 px-2 text-[10px] md:text-xs font-black tracking-tight truncate text-white z-10"
-                    >
+                    <span className="absolute bottom-2 left-0 right-0 px-2 text-[10px] md:text-xs font-black tracking-tight truncate text-white z-10">
                       {sub.title}
                     </span>
                   </button>
@@ -416,32 +473,24 @@ const PremiumCategoryPage = () => {
           </div>
         )}
 
-        {/* Packages Section */}
+        {/* Mobile Packages Section */}
         {generatedPackages.length > 0 && (
           <div className="mb-8 p-5 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-3xl shadow-sm">
             <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
               <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
               <span>10% off *</span>
             </div>
-            
             <div className="flex justify-between items-start mt-3">
               <div>
-                <h3 className="text-[15px] font-bold text-slate-800 dark:text-pink-200">
-                  {generatedPackages[0].title}
-                </h3>
-                <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">
-                  {generatedPackages[0].description}
-                </p>
+                <h3 className="text-[15px] font-bold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
+                <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">{generatedPackages[0].description}</p>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="text-base font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
                   <span className="text-xs text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
                 </div>
               </div>
-              
               <button
-                onClick={() => {
-                  generatedPackages[0].services.forEach(s => handleAdd(s));
-                }}
+                onClick={() => generatedPackages[0].services.forEach(s => handleAdd(s))}
                 className="px-5 py-2.5 rounded-2xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
               >
                 Add Combo
@@ -450,27 +499,20 @@ const PremiumCategoryPage = () => {
           </div>
         )}
 
-        {/* Search inside Category */}
+        {/* Mobile Search inside Category */}
         <div className="mb-6">
           <SearchBar value={search} onChange={setSearch} placeholder={`Search inside ${activeCategory?.title || 'category'}`} />
         </div>
 
-        {/* Grouped Services List */}
+        {/* Mobile Grouped Services List */}
         {loading ? (
           <div className="space-y-6">
             {[1, 2].map((i) => (
               <div key={i} className="animate-pulse space-y-4">
-                <div 
-                  className="h-6 w-36 rounded-md" 
-                  style={{ backgroundColor: isDark ? '#232733' : '#E5E7EB' }}
-                />
+                <div className="h-6 w-36 rounded-md bg-gray-200 dark:bg-zinc-800" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[1, 2].map((j) => (
-                    <div 
-                      key={j} 
-                      className="h-32 rounded-3xl" 
-                      style={{ backgroundColor: isDark ? '#11141B' : '#F1F5F9' }}
-                    />
+                    <div key={j} className="h-32 rounded-3xl bg-gray-100 dark:bg-zinc-900" />
                   ))}
                 </div>
               </div>
@@ -481,13 +523,9 @@ const PremiumCategoryPage = () => {
             {subCategories.map((sub) => {
               const subServices = groupedServices[sub.id || sub._id] || [];
               if (subServices.length === 0) return null;
-
               return (
                 <div key={sub.id || sub._id} id={`subcat-sec-${sub.id || sub._id}`} className="space-y-4 scroll-mt-20">
-                  <h3 className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                    {sub.title}
-                  </h3>
-
+                  <h3 className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{sub.title}</h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {subServices.map((service) => (
                       <div key={service.id} className="relative group">
@@ -505,14 +543,9 @@ const PremiumCategoryPage = () => {
                 </div>
               );
             })}
-
-            {/* Other / Uncategorized services */}
             {groupedServices['other'] && groupedServices['other'].length > 0 && (
               <div id="subcat-sec-other" className="space-y-4 scroll-mt-20">
-                <h3 className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                  General Services
-                </h3>
-
+                <h3 className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>General Services</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {groupedServices['other'].map((service) => (
                     <ServiceCard
@@ -528,24 +561,145 @@ const PremiumCategoryPage = () => {
                 </div>
               </div>
             )}
-
-            {services.length === 0 && (
-              <div className="py-12 text-center rounded-[30px] border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                <p className="text-sm text-slate-400 dark:text-zinc-500">No services available in this category.</p>
-              </div>
-            )}
           </div>
         )}
       </main>
 
-      {/* Bottom Checkout / Cart Summary Bar */}
+      {/* 2. DESKTOP FLOW - Services content only (sidebar is now in header) */}
+      <main className="hidden lg:block max-w-[1360px] mx-auto px-12 relative z-10">
+
+        {/* Main Content Column - Services & search */}
+        <section className="min-w-0">
+          {/* Desktop Search inside Category */}
+          <div className="border-b border-gray-200 dark:border-zinc-800 pb-5 mb-6">
+            <SearchBar value={search} onChange={setSearch} placeholder={`Search inside ${activeCategory?.title || 'category'}`} />
+          </div>
+
+          {/* Desktop Packages Section */}
+          {generatedPackages.length > 0 && (
+            <div className="p-6 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-2xl mb-8">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
+                <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
+                <span>10% off *</span>
+              </div>
+              <div className="flex justify-between items-start mt-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">{generatedPackages[0].description}</p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-lg font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
+                    <span className="text-xs text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => generatedPackages[0].services.forEach(s => handleAdd(s))}
+                  className="px-6 py-3 rounded-xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
+                >
+                  Add Combo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Services Grouped - UC style: no card wrappers, clean dividers */}
+          {loading ? (
+            <div className="space-y-6">
+              {[1, 2].map((i) => (
+                <div key={i} className="animate-pulse space-y-4 py-6">
+                  <div className="h-6 w-36 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                  <div className="space-y-4">
+                    <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
+                    <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div>
+              {subCategories.map((sub) => {
+                const subServices = groupedServices[sub.id || sub._id] || [];
+                if (subServices.length === 0) return null;
+                return (
+                  <div key={sub.id || sub._id} id={`subcat-sec-${sub.id || sub._id}`} className="scroll-mt-24 pb-2">
+                    <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">{sub.title}</h3>
+                    <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+                      {subServices.map((service) => (
+                        <div key={service.id} className="py-4">
+                          <ServiceCard
+                            service={service}
+                            quantity={quantities[service.id] || 0}
+                            onAdd={handleAdd}
+                            onIncrease={handleIncrease}
+                            onDecrease={handleDecrease}
+                            onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {groupedServices['other'] && groupedServices['other'].length > 0 && (
+                <div id="subcat-sec-other" className="scroll-mt-24 pb-2">
+                  <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">General Services</h3>
+                  <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+                    {groupedServices['other'].map((service) => (
+                      <div key={service.id} className="py-4">
+                        <ServiceCard
+                          service={service}
+                          quantity={quantities[service.id] || 0}
+                          onAdd={handleAdd}
+                          onIncrease={handleIncrease}
+                          onDecrease={handleDecrease}
+                          onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* Bottom Checkout / Cart Summary Bar - Mobile */}
       {cartCount > 0 && (
-        <BottomCheckoutBar
-          total={cartTotal}
-          originalTotal={cartOriginalTotal}
-          buttonText="View Cart"
-          onClick={() => navigate('/user/cart')}
-        />
+        <div className="lg:hidden">
+          <BottomCheckoutBar
+            total={cartTotal}
+            originalTotal={cartOriginalTotal}
+            buttonText="View Cart"
+            onClick={() => navigate('/user/cart')}
+          />
+        </div>
+      )}
+
+      {/* Desktop Floating Cart Bar */}
+      {cartCount > 0 && (
+        <div className="hidden lg:block fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+          <div className="max-w-[1360px] mx-auto px-12 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <FiShoppingBag className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
+                <span className="text-sm font-bold text-gray-800 dark:text-zinc-200">{cartCount} {cartCount === 1 ? 'item' : 'items'}</span>
+              </div>
+              <div className="h-5 w-px bg-gray-200 dark:bg-zinc-700" />
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-extrabold text-gray-900 dark:text-white">₹{cartTotal}</span>
+                {cartOriginalTotal > cartTotal && (
+                  <span className="text-sm text-gray-400 line-through font-medium">₹{cartOriginalTotal}</span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/user/cart')}
+              className="px-8 py-3 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl text-sm transition-all active:scale-95 shadow-md cursor-pointer"
+            >
+              View Cart →
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Variant Selection Popup Bottom Sheet */}
