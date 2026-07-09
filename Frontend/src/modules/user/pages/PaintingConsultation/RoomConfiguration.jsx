@@ -127,7 +127,12 @@ const RoomConfiguration = ({ onSuccess }) => {
 
   // Scroll to top on mount to fix React Router scroll persistence issues
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    // Reset any layout locks that might be stuck
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    document.body.style.height = '';
+    document.documentElement.style.height = '';
   }, []);
 
   const enrichLayout = (layout) => {
