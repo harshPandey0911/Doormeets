@@ -228,6 +228,11 @@ const PremiumServiceDetailPage = () => {
     return `${hrs} Hr ${rem} Min`;
   };
   const [uploadingFiles, setUploadingFiles] = useState({});
+  const [lightboxImages, setLightboxImages] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const [includedModalItems, setIncludedModalItems] = useState([]);
+  const [includedModalTitle, setIncludedModalTitle] = useState('');
+  const [expandedFaqIndex, setExpandedFaqIndex] = useState(null);
 
   useEffect(() => {
     const fetchDynamicDetails = async () => {
@@ -641,6 +646,217 @@ const PremiumServiceDetailPage = () => {
       </div>
     );
   }
+  const renderBlockContent = (block) => {
+    if (!block) return null;
+    const data = block.data || {};
+    switch (block.blockType) {
+      case 'whats_included': {
+        const itemsList = data.items || [];
+        const visibleItems = itemsList.slice(0, 4);
+        const hasMore = itemsList.length > 4;
+        return (
+          <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full flex flex-col justify-start">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <FiCheckCircle className="text-green-500 w-5 h-5 shrink-0" />
+                <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || "What's Included"}</h4>
+              </div>
+              <div className="space-y-3">
+                {visibleItems.map((item, idx) => (
+                  <div key={idx} className="flex gap-3 items-start p-3.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800 transition-all hover:bg-slate-50">
+                    <FiCheckCircle className="text-emerald-500 w-4 h-4 shrink-0 mt-0.5" />
+                    <span className="text-xs font-semibold text-slate-650 dark:text-zinc-350 leading-relaxed">
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {hasMore && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIncludedModalItems(itemsList);
+                  setIncludedModalTitle(data.title || "What's Included");
+                }}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline mt-2 self-start cursor-pointer transition-all"
+              >
+                Show more (+{itemsList.length - 4})
+              </button>
+            )}
+          </div>
+        );
+      }
+      case 'process':
+      case 'how_it_works':
+        return (
+          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            <div className="flex items-center gap-2">
+              <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'How it works'}</h4>
+            </div>
+            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+              {(data.steps || []).map((step, idx) => {
+                const title = typeof step === 'object' ? step.title : step;
+                const desc = typeof step === 'object' ? step.desc : '';
+                return (
+                  <div key={idx} className="flex gap-3 items-start text-[10px]">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-zinc-800 text-brand text-[9px] font-black">{idx + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-800 dark:text-zinc-200">{title}</div>
+                      {desc && <p className="text-gray-400 mt-0.5 leading-normal">{desc}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      case 'warranty':
+        return (
+          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            <div className="flex items-center gap-2">
+              <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.duration || ''} Warranty</h4>
+            </div>
+            <p className="text-[10px] text-gray-400 leading-relaxed font-normal">
+              {data.description}
+            </p>
+          </div>
+        );
+      case 'please_note':
+        return (
+          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            <div className="flex items-center gap-2">
+              <FiInfo className="text-amber-500 w-4 h-4 shrink-0" />
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'Please Note'}</h4>
+            </div>
+            <ul className="list-inside list-disc space-y-1 text-[10px] leading-relaxed font-normal text-gray-400">
+              {(data.notes || []).map((note, idx) => (
+                <li key={idx}>{note}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      case 'reviews':
+        return (
+          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            <div className="flex items-center gap-2">
+              <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">User feedback</h4>
+            </div>
+            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+              {(data.reviews || []).map((rev, idx) => (
+                <div key={idx} className="border-b last:border-0 pb-2 last:pb-0 text-[10px]">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-slate-800 dark:text-zinc-200">{rev.userName || 'Anonymous'}</span>
+                    <span className="text-gray-400 text-[9px]">{rev.rating || 5}★</span>
+                  </div>
+                  <p className="text-gray-400 mt-1 leading-normal">{rev.comment}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'before_after':
+        return (
+          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            {data.title && <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title}</h4>}
+            <div className="grid grid-cols-2 gap-4">
+              {data.beforeImage && (
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                  <img src={toAssetUrl(data.beforeImage)} alt="Before" className="w-full h-full object-cover" />
+                  <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg backdrop-blur-xs">Before</span>
+                </div>
+              )}
+              {data.afterImage && (
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                  <img src={toAssetUrl(data.afterImage)} alt="After" className="w-full h-full object-cover" />
+                  <span className="absolute top-2 right-2 bg-green-600/90 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg shadow-sm">After</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case 'heading_text':
+        return (
+          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.heading}</h4>
+            <p className="text-[10px] text-gray-400 leading-relaxed font-normal whitespace-pre-line">{data.text}</p>
+          </div>
+        );
+      case 'image_gallery': {
+        const imagesList = data.images || [];
+        const total = imagesList.length;
+        const visibleImages = imagesList.slice(0, 6);
+        return (
+          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">Gallery</h4>
+            <div className="grid grid-cols-3 gap-2">
+              {visibleImages.map((img, imgIdx) => {
+                const isLast = imgIdx === 5 && total > 6;
+                return (
+                  <div
+                    key={imgIdx}
+                    onClick={() => {
+                      setLightboxImages(imagesList.map(toAssetUrl));
+                      setLightboxIndex(imgIdx);
+                    }}
+                    className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border cursor-pointer relative group"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
+                    <img src={toAssetUrl(img)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    {isLast && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-base font-black">
+                        +{total - 5}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+      case 'faq':
+        return (
+          <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+            <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">FAQ</h4>
+            <div className="space-y-3">
+              {(data.faqs || []).map((faq, idx) => {
+                const isOpen = expandedFaqIndex === idx;
+                return (
+                  <div
+                    key={idx}
+                    className="border-b last:border-b-0 border-gray-100 dark:border-zinc-800 pb-3 last:pb-0 transition-all duration-200"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setExpandedFaqIndex(isOpen ? null : idx)}
+                      className="w-full flex items-center justify-between gap-3 text-left py-2 focus:outline-none cursor-pointer group"
+                    >
+                      <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 transition-colors group-hover:text-[#B33A35]">
+                        {faq.question}
+                      </span>
+                      <span className="p-1 rounded-full bg-slate-50 dark:bg-zinc-800 shrink-0 text-slate-500 transition-transform duration-200">
+                        {isOpen ? <FiChevronUp className="w-3.5 h-3.5" /> : <FiChevronDown className="w-3.5 h-3.5" />}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="mt-2 text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-zinc-400 pl-1 transition-all">
+                        {faq.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="h-auto pb-12 lg:pb-16" style={{ backgroundColor: 'var(--background)' }}>
@@ -1392,301 +1608,6 @@ const PremiumServiceDetailPage = () => {
           </section>
         )}
 
-
-        {/* DYNAMIC PAGE BLOCKS */}
-        {pageBlocks.length > 0 ? (
-          <div className="mt-6 space-y-6">
-            {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, i) => {
-              const data = block.data || {};
-              switch (block.blockType) {
-                case 'before_after':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      {data.title && <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>}
-                      <div className="grid grid-cols-2 gap-4">
-                        {data.beforeImage && (
-                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
-                            <img src={toAssetUrl(data.beforeImage)} alt="Before" className="w-full h-full object-cover" />
-                            <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg backdrop-blur-xs">Before</span>
-                          </div>
-                        )}
-                        {data.afterImage && (
-                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
-                            <img src={toAssetUrl(data.afterImage)} alt="After" className="w-full h-full object-cover" />
-                            <span className="absolute top-2 right-2 bg-green-600/90 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg shadow-sm">After</span>
-                          </div>
-                        )}
-                      </div>
-                    </section>
-                  );
-
-                case 'heading_text':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{data.heading}</h2>
-                      <p className="mt-2 text-sm leading-6 whitespace-pre-line font-normal" style={{ color: 'var(--text-secondary)' }}>{data.text}</p>
-                    </section>
-                  );
-                case 'image_gallery':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Gallery</h2>
-                      <div className="grid grid-cols-3 gap-2">
-                        {(data.images || []).map((img, imgIdx) => (
-                          <div key={imgIdx} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
-                            <img src={toAssetUrl(img)} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                case 'banner_slider':
-                  return (
-                    <section key={i} className="mt-8 overflow-hidden rounded-3xl">
-                      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2">
-                        {(data.banners || []).map((banner, bIdx) => (
-                          <div key={bIdx} className="w-full aspect-[21/9] shrink-0 snap-start rounded-3xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
-                            <img src={toAssetUrl(banner)} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                case 'warranty':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">{data.duration} Warranty</p>
-                          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h3>
-                        </div>
-                      </div>
-                      <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{data.description}</p>
-                    </section>
-                  );
-                case 'whats_included':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
-                      <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {(data.items || []).map((item, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
-                            <FiCheckCircle /> {item}
-                          </span>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                case 'process':
-                case 'how_it_works':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
-                      <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
-                      <div className="mt-4 space-y-3">
-                        {(data.steps || []).map((step, idx) => {
-                          if (!step) return null;
-                          const title = typeof step === 'object' ? step.title : step;
-                          const desc = typeof step === 'object' ? step.desc : '';
-                          const imageUrl = typeof step === 'object' ? step.imageUrl : '';
-                          return (
-                            <div key={idx} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] items-center">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{idx + 1}</div>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-sm" style={{ color: '#111827' }}>{title}</div>
-                                {desc && <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{desc}</p>}
-                              </div>
-                              {data.hasImages && imageUrl && (
-                                <img src={toAssetUrl(imageUrl)} alt="" className="w-12 h-12 rounded-xl object-cover border border-gray-100 shrink-0" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  );
-                case 'please_note':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'rgba(217,119,6,0.05)', border: '1px solid rgba(217,119,6,0.2)' }}>
-                      <div className="flex items-center gap-2">
-                        <FiInfo className="text-amber-600 w-5 h-5" />
-                        <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title}</h2>
-                      </div>
-                      <ul className="mt-3 list-inside list-disc space-y-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>
-                        {(data.notes || []).map((note, idx) => (
-                          <li key={idx}>{note}</li>
-                        ))}
-                      </ul>
-                    </section>
-                  );
-                case 'faq':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>FAQ</h2>
-                      <div className="mt-4 space-y-3">
-                        {(data.faqs || []).map((faq, idx) => (
-                          <div key={idx} className="rounded-2xl border p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.005)]" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
-                            <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{faq.question}</h4>
-                            <p className="mt-1 text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{faq.answer}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                case 'reviews':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <h2 className="text-base font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Customer Reviews</h2>
-                      <div className="space-y-3">
-                        {[
-                          { name: 'Rohan Sharma', rating: 5, comment: 'Excellent service! Highly professional and very clean work.' },
-                          { name: 'Priya Patel', rating: 4, comment: 'Very polite and on time. Satisfied with the results.' }
-                        ].slice(0, data.showCount || 5).map((rev, rIdx) => (
-                          <div key={rIdx} className="p-3.5 rounded-2xl border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="font-semibold text-xs text-gray-800 dark:text-zinc-100">{rev.name}</span>
-                              <div className="flex items-center gap-0.5 text-xs text-amber-500">
-                                <FiStar className="fill-amber-500" />
-                                <span>{rev.rating}</span>
-                              </div>
-                            </div>
-                            <p className="text-xs leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>{rev.comment}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                case 'brands':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <h2 className="text-xs font-semibold uppercase tracking-[0.24em] text-brand mb-2">{data.title || 'Brands We Service'}</h2>
-                      <div className="flex flex-wrap gap-2.5">
-                        {(data.brandIds || []).map((brandId, bIdx) => (
-                          <span key={bIdx} className="px-3.5 py-1.5 rounded-full border bg-white dark:bg-zinc-900 text-xs font-bold text-gray-700 dark:text-zinc-300" style={{ borderColor: 'var(--border)' }}>
-                            {brandId}
-                          </span>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                case 'whats_not_included':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-500">Not Included</p>
-                      <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{data.title || "What's Not Included"}</h2>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {(data.items || []).map((item, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-red-500 border border-red-200">
-                            <FiX className="w-3.5 h-3.5" /> {item}
-                          </span>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                case 'rate_card':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <div>
-                        <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.linkLabel || 'Rate Card'}</h3>
-                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Check standard rates for our services.</p>
-                      </div>
-                      {data.linkUrl && (
-                        <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
-                          {data.linkLabel || 'View Rate Card'}
-                        </a>
-                      )}
-                    </section>
-                  );
-                case 'comparison':
-                  return (
-                    <section key={i} className="mt-8 py-4 px-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-                      <div>
-                        <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{data.title || 'Compare Plans'}</h3>
-                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Compare parameters to choose the best option.</p>
-                      </div>
-                      {data.linkUrl && (
-                        <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all">
-                          {data.linkLabel || 'View Comparison'}
-                        </a>
-                      )}
-                    </section>
-                  );
-                case 'offer_image':
-                  return (
-                    <section key={i} className="mt-8 rounded-3xl overflow-hidden bg-gray-50 border border-gray-150 relative">
-                      {data.linkUrl ? (
-                        <a href={data.linkUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
-                          <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
-                        </a>
-                      ) : (
-                        <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-auto object-cover" />
-                      )}
-                    </section>
-                  );
-                default:
-                  return null;
-              }
-            })}
-          </div>
-        ) : (
-          <>
-            <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Included</p>
-              <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>What you get</h2>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {features.length > 0 ? features.map((feature, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand border border-orange-200">
-                    <FiCheckCircle /> {feature}
-                  </span>
-                )) : <span className="text-xs text-gray-500">No included features listed.</span>}
-              </div>
-            </section>
-
-            <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Process</p>
-              <h2 className="mt-1 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>How it works</h2>
-              <div className="mt-4 space-y-3">
-                {steps.length > 0 ? steps.map((step, index) => {
-                  const stepTitle = typeof step === 'object' ? step.title : step;
-                  const stepDesc = typeof step === 'object' ? step.desc : 'Smooth and transparent service delivery.';
-                  return (
-                    <div key={index} className="flex gap-4 rounded-2xl border border-red-100/30 bg-white p-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-brand to-brand-dark text-xs font-semibold text-white">{index + 1}</div>
-                      <div>
-                        <div className="font-semibold text-sm" style={{ color: '#111827' }}>{stepTitle}</div>
-                        <p className="text-xs mt-0.5 leading-relaxed font-normal" style={{ color: '#4b5563' }}>{stepDesc}</p>
-                      </div>
-                    </div>
-                  );
-                }) : <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-xs text-gray-500">No steps listed for this service.</div>}
-              </div>
-            </section>
-
-            <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-orange-100/50 p-2.5 text-brand"><FiShield /></div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Professional badge</p>
-                  <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Verified Professional</h3>
-                </div>
-              </div>
-              <p className="mt-3 text-sm leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>Certified experts, clean work, and support-backed service experience.</p>
-            </section>
-          </>
-        )}
-
-
-        <section className="mt-3 py-2 px-1">
-          <p className="text-xs font-normal tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>Reviews</p>
-          <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>User feedback</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-3xl border border-dashed p-5 text-sm md:col-span-3 font-normal" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>No reviews available yet.</div>
-          </div>
-        </section>
-      </div>
-
       {/* Variant Selection Popup */}
       <AnimatePresence>
         {showVariantPopup && (
@@ -1829,6 +1750,8 @@ const PremiumServiceDetailPage = () => {
           </>
         )}
       </AnimatePresence>
+
+      </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
@@ -2104,97 +2027,21 @@ const PremiumServiceDetailPage = () => {
 
             {/* Right Column: Sidebar Panels */}
             <div className="col-span-4 space-y-4">
-              {/* What you get */}
-              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-                <div className="flex items-center gap-2">
-                  <FiCheckCircle className="text-green-500 w-4 h-4 shrink-0" />
-                  <h4 className="text-xs font-extrabold text-slate-800">What you get</h4>
+              {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, idx) => (
+                <div key={idx}>
+                  {renderBlockContent(block)}
                 </div>
-                <p className="text-[10px] text-gray-400 leading-normal">
-                  No included features listed. Fully customizable premium grooming tools.
-                </p>
-              </div>
-
-              {/* How it works */}
-              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-                <div className="flex items-center gap-2">
-                  <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
-                  <h4 className="text-xs font-extrabold text-slate-800">How it works</h4>
-                </div>
-                <p className="text-[10px] text-gray-400 leading-normal">
-                  No steps listed for this service. Clean experience with support-backed warranty.
-                </p>
-              </div>
-
-              {/* Verified Professional */}
-              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-                <div className="flex items-center gap-2">
-                  <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
-                  <h4 className="text-xs font-extrabold text-slate-800">Verified Professional</h4>
-                </div>
-                <p className="text-[10px] text-gray-400 leading-normal">
-                  Certified experts, clean work, and support-backed service experience.
-                </p>
-              </div>
-
-              {/* User feedback */}
-              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-                <div className="flex items-center gap-2">
-                  <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
-                  <h4 className="text-xs font-extrabold text-slate-800">User feedback</h4>
-                </div>
-                <p className="text-[10px] text-gray-400 leading-normal">
-                  No reviews available yet. Be the first to leave a feedback!
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         ) : (
-          /* Full Width Grid Layout when NO Packages */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 w-full">
-            {/* What you get */}
-            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-              <div className="flex items-center gap-2">
-                <FiCheckCircle className="text-green-500 w-4 h-4 shrink-0" />
-                <h4 className="text-xs font-extrabold text-slate-800">What you get</h4>
+          /* 2-Column Grid Layout when NO Packages */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 w-full">
+            {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, idx) => (
+              <div key={idx}>
+                {renderBlockContent(block)}
               </div>
-              <p className="text-[10px] text-gray-400 leading-normal">
-                No included features listed. Fully customizable premium grooming tools.
-              </p>
-            </div>
-
-            {/* How it works */}
-            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-              <div className="flex items-center gap-2">
-                <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
-                <h4 className="text-xs font-extrabold text-slate-800">How it works</h4>
-              </div>
-              <p className="text-[10px] text-gray-400 leading-normal">
-                No steps listed for this service. Clean experience with support-backed warranty.
-              </p>
-            </div>
-
-            {/* Verified Professional */}
-            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-              <div className="flex items-center gap-2">
-                <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
-                <h4 className="text-xs font-extrabold text-slate-800">Verified Professional</h4>
-              </div>
-              <p className="text-[10px] text-gray-400 leading-normal">
-                Certified experts, clean work, and support-backed service experience.
-              </p>
-            </div>
-
-            {/* User feedback */}
-            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-              <div className="flex items-center gap-2">
-                <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
-                <h4 className="text-xs font-extrabold text-slate-800">User feedback</h4>
-              </div>
-              <p className="text-[10px] text-gray-400 leading-normal">
-                No reviews available yet. Be the first to leave a feedback!
-              </p>
-            </div>
+            ))}
           </div>
         )}
 
@@ -2221,6 +2068,8 @@ const PremiumServiceDetailPage = () => {
           </div>
         )}
       </div>
+
+
 
       {/* Category Group details modal */}
       <AnimatePresence>
@@ -2461,6 +2310,82 @@ const PremiumServiceDetailPage = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* LIGHTBOX MODAL */}
+      {lightboxIndex >= 0 && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center select-none" onClick={() => setLightboxIndex(-1)}>
+          <button
+            onClick={() => setLightboxIndex(-1)}
+            className="absolute top-6 right-6 text-white text-3xl font-bold bg-white/10 hover:bg-white/20 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+          >
+            ×
+          </button>
+          <div className="relative max-w-4xl max-h-[85vh] px-4 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {lightboxIndex > 0 && (
+              <button
+                onClick={() => setLightboxIndex(prev => prev - 1)}
+                className="absolute left-4 z-10 text-white text-3xl font-black bg-black/40 hover:bg-black/60 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+              >
+                ‹
+              </button>
+            )}
+            <img src={lightboxImages[lightboxIndex]} alt="" className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform duration-200" />
+            {lightboxIndex < lightboxImages.length - 1 && (
+              <button
+                onClick={() => setLightboxIndex(prev => prev + 1)}
+                className="absolute right-4 z-10 text-white text-3xl font-black bg-black/40 hover:bg-black/60 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+              >
+                ›
+              </button>
+            )}
+          </div>
+          <div className="mt-4 text-white/60 text-xs font-semibold">
+            {lightboxIndex + 1} / {lightboxImages.length}
+          </div>
+        </div>
+      )}
+      {/* WHAT'S INCLUDED DETAIL MODAL */}
+      <AnimatePresence>
+        {includedModalItems.length > 0 && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIncludedModalItems([])}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-pointer"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="fixed inset-0 m-auto w-[90%] max-w-lg h-fit max-h-[80vh] bg-white dark:bg-zinc-900 rounded-3xl z-50 shadow-2xl p-6 flex flex-col gap-4 border dark:border-zinc-800"
+            >
+              <div className="flex justify-between items-center border-b pb-3 dark:border-zinc-800 shrink-0">
+                <h3 className="text-base font-black text-slate-800 dark:text-zinc-150">
+                  {includedModalTitle}
+                </h3>
+                <button
+                  onClick={() => setIncludedModalItems([])}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-850 rounded-full text-gray-500 transition-colors"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-3 overflow-y-auto pr-1 py-1 flex-1">
+                {includedModalItems.map((item, idx) => (
+                  <div key={idx} className="flex gap-3 items-start p-3.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                    <FiCheckCircle className="text-emerald-500 w-4 h-4 shrink-0 mt-0.5" />
+                    <span className="text-xs font-semibold text-slate-650 dark:text-zinc-350 leading-relaxed">
+                      {item}
+                    </span>
+                  </div>
+                ))}
               </div>
             </motion.div>
           </>
