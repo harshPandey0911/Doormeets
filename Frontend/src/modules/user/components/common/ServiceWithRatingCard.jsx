@@ -72,12 +72,11 @@ const ServiceWithRatingCard = memo(({
 
   const containerClasses = "min-w-[110px] w-[110px]";
 
-  if (slug) {
+  if (slug && !onClick) {
     return (
       <Link 
         to={`/user/service/${slug}`} 
         className={`${containerClasses} block cursor-pointer transition-all duration-300 hover:-translate-y-1 active:scale-95`}
-        onClick={onClick}
       >
         {cardContent}
       </Link>
