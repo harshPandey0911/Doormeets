@@ -1,0 +1,205 @@
+vite v7.2.6 building client environment for production...
+transforming...
+✓ 2020 modules transformed.
+rendering chunks...
+[plugin vite:reporter] 
+(!) /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/api.js is dynamically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/components/layout/AdminHeader.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/components/layout/AdminHeader.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/components/layout/AdminHeader.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/components/layout/AdminHeader.jsx but also statically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/context/CityContext.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/context/SocketContext.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Commission/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Notifications/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/PackageBased/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Painting/PaintingPageWizard.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Painting/PaintingPricingConfig.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Painting/PaintingSettingsPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Painting/PropertyLayoutsPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Payments/PaymentOverview.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Payments/PaymentReports.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/PromoManagement/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/SOSAlerts/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/ShopOwners/AllShopOwners.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/UserCategories/pages/PaintingRatesSettings.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/UserCategories/pages/PricingMatrixPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/UserCategories/pages/ServicesPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/UserCategories/pages/SubCategoriesPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/UserCategories/pages/TemplateCatalogManager.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/UserCategories/pages/VendorPartsPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/UserCategories/pages/VendorServicesPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Users/ReferralSettings.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/VendorWallets/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/Vendors/PoliceVerification.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/VendorsZone/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/VoucherManagement/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/cityService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/dashboardService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/paintingService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/planService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/reviewService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/settingsService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/supportService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/vendorRequestService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/vendorService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/services/vendorSubscriptionService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/components/common/NotificationBell.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/components/layout/Header.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/Account/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/BookingDetails/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/Checkout/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/HelpSupport/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/MyBookings/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/PremiumBrandPage/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/PremiumCategoryPage/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/PremiumServiceDetailPage/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/services/notificationService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/services/paintingConsultationService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/services/planService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/components/layout/Header.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingDetails/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Products/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Profile/WorkerWallet.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Profile/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/VerificationPage.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/signup.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/authService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/bookingService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/dashboardService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/earningsService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/notificationService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/paintingConsultationService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/subscriptionService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/supportService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/vendorCategoryRequestService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/vendorCategoryService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/vendorService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/walletService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/workerService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminBannerService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminBookingService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminDashboardService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminManagementService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminReportService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminSettlementService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminTrainingService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminTransactionService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminUserService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminVendorService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/adminWorkerService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/authService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/bookingService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/cartService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/catalogService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/configService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/paymentService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/promoService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/stockService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/trainingService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/userBannerService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/vendorBillService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/vendorService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/vendorWalletService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/voucherService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/walletService.js, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/utils/cloudinaryUpload.js, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/utils/notificationSound.js is dynamically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/App.jsx but also statically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/context/SocketContext.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/components/layout/AdminLayout.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/components/bookings/BookingAlertModal.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/components/common/GlobalBookingAlert.jsx, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/services/bookingService.js is dynamically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/components/common/GlobalBookingAlert.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/components/common/GlobalBookingAlert.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingAlert/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingDetails/index.jsx but also statically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/components/common/GlobalBookingAlert.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/components/common/VisitVerificationModal.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/ActiveJobs/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/AssignWorker/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BillingPage/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingAlert/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingAlerts/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingDetails/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingMap/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/BookingTimeline/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Dashboard/components/PendingBookings.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Dashboard/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/MyRatings/index.jsx, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/services/authService.js is dynamically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/hooks/useAdminRole.js but also statically imported by /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/components/layout/AdminHeader.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/admin/pages/login.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/Account/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/Checkout/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/ManageAddresses/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/MyPlan/PlanDetails.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/MyPlan/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/Rewards/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/Settings/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/UpdateProfile/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/login.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/user/pages/signup.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Profile/EditProfile.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Profile/ProfileDetails.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Profile/index.jsx, /Users/saumy/Documents/GitHub/DoorMeets2/Doormeets/Frontend/src/modules/vendor/pages/Settings/index.jsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                          2.61 kB │ gzip:   1.14 kB
+dist/assets/1711428209166-2d42c0-W932LbsI.jpg           13.46 kB
+dist/assets/1764052270908-bae94c-CWaRvNV8.jpg           14.61 kB
+dist/assets/1745822547742-760034-CevSTLFz.jpg           14.72 kB
+dist/assets/1678454437383-aa4984-D-lIVIgk.jpg           17.93 kB
+dist/assets/1678450687690-81f922-BEd0w-jE.jpg           22.31 kB
+dist/assets/1762785595543-540198-BzxRzNai.jpg           24.09 kB
+dist/assets/welcomePage2-CC07pB3p.png                  481.67 kB
+dist/assets/welcomePage-BAn0fAwo.png                   525.65 kB
+dist/assets/loginpage-COkLoIS7.png                     924.99 kB
+dist/assets/homepage-banner-DpKUnuqM.png               969.85 kB
+dist/assets/vendor-hPmRbJQE.css                         23.40 kB │ gzip:   8.09 kB
+dist/assets/index-CmJ6jcH9.css                         301.95 kB │ gzip:  37.15 kB
+dist/assets/loginpage-BQTr7P4M.js                        0.06 kB │ gzip:   0.08 kB
+dist/assets/useAppNotifications-BBaVrkfv.js              0.10 kB │ gzip:   0.11 kB
+dist/assets/planService-BodZdZe_.js                      0.14 kB │ gzip:   0.14 kB
+dist/assets/adminDashboardService-L9RRNBfs.js            0.27 kB │ gzip:   0.17 kB
+dist/assets/voucherService-DUDLbNQ5.js                   0.28 kB │ gzip:   0.24 kB
+dist/assets/paintingConsultationService-DQFlXBCd.js      0.30 kB │ gzip:   0.21 kB
+dist/assets/PriceTag-DUrtRnkW.js                         0.36 kB │ gzip:   0.26 kB
+dist/assets/cityService-CNY_siH4.js                      0.44 kB │ gzip:   0.24 kB
+dist/assets/adminBannerService-DLhcCRBb.js               0.44 kB │ gzip:   0.22 kB
+dist/assets/promoService-CyxM3ML4.js                     0.44 kB │ gzip:   0.28 kB
+dist/assets/vendorCategoryService-CjWOAZMD.js            0.48 kB │ gzip:   0.25 kB
+dist/assets/vendorRequestService-DUT_Q-tT.js             0.49 kB │ gzip:   0.30 kB
+dist/assets/trainingService-DoFZQ3It.js                  0.49 kB │ gzip:   0.27 kB
+dist/assets/supportService-R5hWVDMo.js                   0.50 kB │ gzip:   0.23 kB
+dist/assets/DynamicIcon-BK0RFhnO.js                      0.61 kB │ gzip:   0.41 kB
+dist/assets/workerService-BDmlmKdK.js                    0.63 kB │ gzip:   0.25 kB
+dist/assets/adminHelpers-CfXC4ia_.js                     0.65 kB │ gzip:   0.35 kB
+dist/assets/cloudinaryUpload-CFyihCTb.js                 0.67 kB │ gzip:   0.44 kB
+dist/assets/dashboardService-BzhsVlDe.js                 0.67 kB │ gzip:   0.31 kB
+dist/assets/SearchBar-DDk95Hpe.js                        0.71 kB │ gzip:   0.43 kB
+dist/assets/Banner-C0AZCZBD.js                           0.86 kB │ gzip:   0.54 kB
+dist/assets/TrustSection-xSNekjdl.js                     0.89 kB │ gzip:   0.55 kB
+dist/assets/adminReportService-DbVmLVqQ.js               0.92 kB │ gzip:   0.28 kB
+dist/assets/paymentService-i2-Ca00c.js                   0.97 kB │ gzip:   0.43 kB
+dist/assets/Modal-CPL0F6LF.js                            1.00 kB │ gzip:   0.58 kB
+dist/assets/settingsService-rgUXRwKt.js                  1.03 kB │ gzip:   0.36 kB
+dist/assets/CardShell-CYr4l2fv.js                        1.12 kB │ gzip:   0.57 kB
+dist/assets/cartUtils-XuaYq8Gu.js                        1.31 kB │ gzip:   0.58 kB
+dist/assets/adminBookingService-DKvtKH5c.js              1.32 kB │ gzip:   0.40 kB
+dist/assets/vendorWalletService-BlD1PwTU.js              1.35 kB │ gzip:   0.47 kB
+dist/assets/adminVendorService-DzbDpn91.js               1.39 kB │ gzip:   0.40 kB
+dist/assets/CTABanner-C0MM-kqp.js                        1.50 kB │ gzip:   0.76 kB
+dist/assets/Navbar-DzUE4Bny.js                           1.83 kB │ gzip:   0.77 kB
+dist/assets/csvExport-CqbvnSAh.js                        1.91 kB │ gzip:   0.93 kB
+dist/assets/ConfirmDialog-sASSMLZP.js                    2.04 kB │ gzip:   0.95 kB
+dist/assets/paintingConsultationService-AIrZF0Td.js      2.07 kB │ gzip:   0.68 kB
+dist/assets/ReferEarnSection-P3Imo3kt.js                 2.16 kB │ gzip:   0.75 kB
+dist/assets/paintingService-BGIDBKIF.js                  2.26 kB │ gzip:   0.60 kB
+dist/assets/ConfirmDialog-BK2fIcEO.js                    2.51 kB │ gzip:   1.11 kB
+dist/assets/authService-F5EpCHIe.js                      2.71 kB │ gzip:   0.89 kB
+dist/assets/LocationPicker-DDNsATxq.js                   2.78 kB │ gzip:   1.43 kB
+dist/assets/WorkerReport-dqYBttn2.js                     2.86 kB │ gzip:   1.11 kB
+dist/assets/OtpVerificationModal-FWelzNER.js             2.98 kB │ gzip:   1.32 kB
+dist/assets/NotificationBell-I1Lbq41p.js                 3.06 kB │ gzip:   1.33 kB
+dist/assets/index-CRjqW51j.js                            3.10 kB │ gzip:   1.21 kB
+dist/assets/NewAndNoteworthy-CEDsKOn2.js                 3.32 kB │ gzip:   1.33 kB
+dist/assets/index-C2ze2Rui.js                            3.67 kB │ gzip:   1.06 kB
+dist/assets/TicketDetails-cJkshT2b.js                    3.96 kB │ gzip:   1.70 kB
+dist/assets/BookingNotifications-OuyfEHCS.js             4.04 kB │ gzip:   1.39 kB
+dist/assets/index-BZTptMtn.js                            4.26 kB │ gzip:   1.80 kB
+dist/assets/SettlementHistory-1N0exEsF.js                4.47 kB │ gzip:   1.76 kB
+dist/assets/index-6uR3OZDD.js                            4.55 kB │ gzip:   1.32 kB
+dist/assets/Header-BKD2B_fS.js                           4.56 kB │ gzip:   1.92 kB
+dist/assets/ServiceCard-B7lsaEd8.js                      4.76 kB │ gzip:   1.72 kB
+dist/assets/CuratedServices-BX6J7m8e.js                  4.92 kB │ gzip:   2.22 kB
+dist/assets/index-3yxq770q.js                            5.10 kB │ gzip:   1.83 kB
+dist/assets/index-D_3KcxMB.js                            5.15 kB │ gzip:   1.79 kB
+dist/assets/MostBookedServices-70egO4SB.js               5.20 kB │ gzip:   1.99 kB
+dist/assets/PendingJobCard-DQwa2sOF.js                   5.32 kB │ gzip:   1.90 kB
+dist/assets/index--bdPzZQd.js                            5.37 kB │ gzip:   1.72 kB
+dist/assets/index-DuUgCN8a.js                            5.53 kB │ gzip:   2.13 kB
+dist/assets/Header-D8Zkqws2.js                           5.58 kB │ gzip:   2.21 kB
+dist/assets/index-B4O45M64.js                            5.61 kB │ gzip:   2.03 kB
+dist/assets/WorkCompletionModal-Cw05ENIZ.js              5.87 kB │ gzip:   2.19 kB
+dist/assets/AddressSelectionModal-fOUtXWuJ.js            5.95 kB │ gzip:   2.08 kB
+dist/assets/index-CE3MVVdz.js                            5.99 kB │ gzip:   1.95 kB
+dist/assets/index-Du9jw0Yq.js                            6.01 kB │ gzip:   1.67 kB
+dist/assets/index-CmZdQwPQ.js                            6.08 kB │ gzip:   1.99 kB
+dist/assets/index-DYkiR7hk.js                            6.21 kB │ gzip:   2.08 kB
+dist/assets/index-CLTHiZwW.js                            6.33 kB │ gzip:   2.08 kB
+dist/assets/index-D8YX6nFo.js                            6.43 kB │ gzip:   2.28 kB
+dist/assets/signup-B_Iqkpe3.js                           6.52 kB │ gzip:   2.11 kB
+dist/assets/index-DHqc4orJ.js                            6.54 kB │ gzip:   2.27 kB
+dist/assets/SubscriptionSelection-rbWHBulX.js            6.78 kB │ gzip:   2.49 kB
+dist/assets/index-D6W1dVTj.js                            6.90 kB │ gzip:   2.13 kB
+dist/assets/index-BHcWDjY9.js                            6.93 kB │ gzip:   1.79 kB
+dist/assets/Tracking-B3M1SF6V.js                         6.94 kB │ gzip:   2.26 kB
+dist/assets/catalogService-Cdysvjsr.js                   7.03 kB │ gzip:   1.52 kB
+dist/assets/index-hM7rycJN.js                            7.21 kB │ gzip:   2.40 kB
+dist/assets/index-Bfq-bzL9.js                            7.26 kB │ gzip:   1.98 kB
+dist/assets/index-CUyN-_g9.js                            7.52 kB │ gzip:   2.22 kB
+dist/assets/index-BPL2jE-r.js                            7.59 kB │ gzip:   2.44 kB
+dist/assets/index-C_nPqSsn.js                            7.67 kB │ gzip:   2.21 kB
+dist/assets/login-CZp6NRCP.js                            7.72 kB │ gzip:   2.85 kB
+dist/assets/WorkerWallet-rmSzCb0v.js                     7.72 kB │ gzip:   2.58 kB
+dist/assets/ProfileDetails-Bby_ilVq.js                   7.80 kB │ gzip:   1.95 kB
+dist/assets/TrainingResult-gj5HnfdC.js                   7.90 kB │ gzip:   2.58 kB
+dist/assets/index-D6TMkc5f.js                            8.06 kB │ gzip:   2.75 kB
+dist/assets/InstantBookingSettings-3Vl9cOwd.js           8.08 kB │ gzip:   1.93 kB
+dist/assets/index-hAoJnENB.js                            8.18 kB │ gzip:   2.76 kB
+dist/assets/index--NcgISUt.js                            8.22 kB │ gzip:   2.72 kB
+dist/assets/index-Ba56oGC1.js                            8.34 kB │ gzip:   2.22 kB
+dist/assets/index-BbcshkH2.js                            8.35 kB │ gzip:   2.26 kB
+dist/assets/index-CeQUASGz.js                            8.38 kB │ gzip:   2.46 kB
+dist/assets/index-VXJFlORJ.js                            8.61 kB │ gzip:   2.72 kB
+dist/assets/index-CaXi6H0a.js                            8.73 kB │ gzip:   2.67 kB
+dist/assets/WorkerPayments-CYO6U-IW.js                   8.77 kB │ gzip:   2.38 kB
+dist/assets/index-CQEKdl_6.js                            8.78 kB │ gzip:   2.82 kB
+dist/assets/index-CVaK6YHW.js                            8.85 kB │ gzip:   2.57 kB
+dist/assets/SettlementRequest-Dj7yyBmq.js                8.90 kB │ gzip:   3.19 kB
+dist/assets/index-DQgE6rI8.js                            9.09 kB │ gzip:   2.88 kB
+dist/assets/index-Ct_W0Lb9.js                            9.10 kB │ gzip:   3.10 kB
+dist/assets/login-BmOyFJVY.js                            9.42 kB │ gzip:   3.11 kB
+dist/assets/index-nriWgri7.js                            9.68 kB │ gzip:   3.11 kB
+dist/assets/index-DCqgVIkY.js                            9.78 kB │ gzip:   3.02 kB
+dist/assets/index-By-XbIl4.js                            9.88 kB │ gzip:   2.87 kB
+dist/assets/index-BIlOCQTa.js                            9.89 kB │ gzip:   2.84 kB
+dist/assets/index-pItYHdJo.js                            9.96 kB │ gzip:   2.97 kB
+dist/assets/CategoryDetail-H-ADn302.js                   9.99 kB │ gzip:   2.37 kB
+dist/assets/index-BVN0bBFJ.js                           10.48 kB │ gzip:   3.76 kB
+dist/assets/index-D_6--CWh.js                           10.49 kB │ gzip:   3.32 kB
+dist/assets/index-BFaL3kfD.js                           10.50 kB │ gzip:   2.89 kB
+dist/assets/index-Btr6g-FJ.js                           10.76 kB │ gzip:   3.18 kB
+dist/assets/index-DPTDJ8t6.js                           11.09 kB │ gzip:   3.59 kB
+dist/assets/PaymentVerificationModal-jV5eVQ3n.js        11.16 kB │ gzip:   3.03 kB
+dist/assets/index-CEoSoMRr.js                           11.17 kB │ gzip:   3.31 kB
+dist/assets/index-Cy8XJg2E.js                           11.26 kB │ gzip:   3.32 kB
+dist/assets/signup-UVHNS9L9.js                          11.99 kB │ gzip:   3.52 kB
+dist/assets/QuoteApproval-DEXBnpDt.js                   12.33 kB │ gzip:   3.32 kB
+dist/assets/MCQTest-CFfryM-J.js                         12.72 kB │ gzip:   3.33 kB
+dist/assets/index-BJ6BixWk.js                           12.88 kB │ gzip:   3.85 kB
+dist/assets/index-CdIWymEJ.js                           12.95 kB │ gzip:   3.18 kB
+dist/assets/VisitVerificationModal-D7CG6Xk2.js          13.68 kB │ gzip:   4.29 kB
+dist/assets/index-JAkUH6ls.js                           13.75 kB │ gzip:   3.55 kB
+dist/assets/index-Vc-iKivx.js                           14.24 kB │ gzip:   4.77 kB
+dist/assets/index-DVB5APQc.js                           14.30 kB │ gzip:   3.80 kB
+dist/assets/index-BxmfR4I3.js                           14.32 kB │ gzip:   4.29 kB
+dist/assets/index-X1oTjr3V.js                           14.82 kB │ gzip:   3.62 kB
+dist/assets/index-APr1k_Xd.js                           15.05 kB │ gzip:   4.55 kB
+dist/assets/SubscriptionManagement-CjcaXM7d.js          15.16 kB │ gzip:   3.82 kB
+dist/assets/index-CChK_MbT.js                           15.71 kB │ gzip:   4.10 kB
+dist/assets/index-DDVkSr4i.js                           16.43 kB │ gzip:   3.89 kB
+dist/assets/EditProfile-BlLghA9m.js                     16.84 kB │ gzip:   4.45 kB
+dist/assets/index-DRxMQDYV.js                           16.87 kB │ gzip:   4.34 kB
+dist/assets/PlanDetails-CcneqN_x.js                     16.97 kB │ gzip:   4.33 kB
+dist/assets/PaintBrandsPage-CEZkmYmP.js                 18.19 kB │ gzip:   4.82 kB
+dist/assets/index-CXewCC3t.js                           19.83 kB │ gzip:   5.08 kB
+dist/assets/index-B7D6MxVA.js                           20.23 kB │ gzip:   4.91 kB
+dist/assets/index-B3n1XAyd.js                           20.79 kB │ gzip:   6.30 kB
+dist/assets/BookingDetails-hD3LtP3j.js                  21.16 kB │ gzip:   4.97 kB
+dist/assets/index-DLan181a.js                           21.90 kB │ gzip:   4.42 kB
+dist/assets/index-i7KOcuFF.js                           23.12 kB │ gzip:   4.63 kB
+dist/assets/Plans-dm8hBfms.js                           24.48 kB │ gzip:   5.75 kB
+dist/assets/index-PlSQJTD5.js                           25.98 kB │ gzip:   6.07 kB
+dist/assets/index-CiGt5ZCX.js                           26.28 kB │ gzip:   7.01 kB
+dist/assets/index-CehHZ0tL.js                           26.38 kB │ gzip:   6.08 kB
+dist/assets/VerificationPage-DuHIAz2G.js                26.50 kB │ gzip:   6.44 kB
+dist/assets/index-DPOfl6d_.js                           26.78 kB │ gzip:   6.84 kB
+dist/assets/index-DBEu8cTP.js                           28.33 kB │ gzip:   6.04 kB
+dist/assets/index-JJalRsar.js                           32.56 kB │ gzip:   6.73 kB
+dist/assets/PaintingLayoutDetails-DSqkhkPP.js           36.80 kB │ gzip:   8.87 kB
+dist/assets/index-D5F0qNNu.js                           36.98 kB │ gzip:   8.01 kB
+dist/assets/index-Crgl7PJP.js                           37.31 kB │ gzip:   9.56 kB
+dist/assets/index-rYCA63y6.js                           38.40 kB │ gzip:   7.38 kB
+dist/assets/PaintProductsPage-0tGRVJpC.js               42.36 kB │ gzip:   8.09 kB
+dist/assets/index-NgyO335v.js                           43.66 kB │ gzip:   8.57 kB
+dist/assets/index-BMPviSRv.js                           50.05 kB │ gzip:  10.04 kB
+dist/assets/index-DC0hhJqB.js                           62.17 kB │ gzip:  13.97 kB
+dist/assets/index-BpnrG3Vy.js                           63.61 kB │ gzip:  13.15 kB
+dist/assets/index-yY_sYiRY.js                           72.18 kB │ gzip:  15.92 kB
+dist/assets/index-C06Dl8wh.js                           76.52 kB │ gzip:  11.10 kB
+dist/assets/index-BjyJGkho.js                           76.89 kB │ gzip:  19.24 kB
+dist/assets/index-Be7VcBeu.js                           77.96 kB │ gzip:  18.38 kB
+dist/assets/index-DKGWvTmZ.js                           94.93 kB │ gzip:  21.94 kB
+dist/assets/index-Bg77KUHb.js                          137.95 kB │ gzip:  25.83 kB
+dist/assets/PaintingConfigPage-BrZH3PFn.js             163.08 kB │ gzip:  30.35 kB
+dist/assets/index-3mJC8gOV.js                          216.29 kB │ gzip:  52.61 kB
+dist/assets/index-CECvLIpm.js                          332.44 kB │ gzip:  57.66 kB
+dist/assets/vendor-DVjQrYSg.js                       2,707.54 kB │ gzip: 754.31 kB
+
+(!) Some chunks are larger than 1500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 16.11s

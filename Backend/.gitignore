@@ -39,3 +39,4 @@ config/firebase-service-account.json
 !package.json
 !package-lock.json
 
+config/doormeets-firebase-adminsdk-fbsvc-b3f2d2deef.json

@@ -15,13 +15,11 @@ const AdminLayout = () => {
   const socket = useSocket();
   const navigate = useNavigate();
   const [currentSOS, setCurrentSOS] = useState(null);
-  const [panelMode, setPanelMode] = useState(() => {
-    return localStorage.getItem('adminPanelMode') || 'app';
-  });
+  const [panelMode, setPanelMode] = useState('app');
 
   const handleTogglePanelMode = (mode) => {
-    setPanelMode(mode);
-    localStorage.setItem('adminPanelMode', mode);
+    setPanelMode('app');
+    localStorage.setItem('adminPanelMode', 'app');
   };
 
   // Bottom nav height is 64px (h-16)

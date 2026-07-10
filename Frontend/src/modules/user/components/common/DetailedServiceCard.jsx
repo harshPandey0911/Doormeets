@@ -1,7 +1,6 @@
 import React, { memo, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { AiFillStar } from 'react-icons/ai';
-import { themeColors } from '../../../../theme';
 import { optimizeCloudinaryUrl } from '../../../../utils/cloudinaryOptimize';
 
 const DetailedServiceCard = memo(({ image, title, rating, reviews, price, originalPrice, discount, onClick, onAddClick, isPriceDisclosed = true }) => {
@@ -23,9 +22,8 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
 
       const handleMouseEnter = () => {
         gsap.to(card, {
-          y: -8,
-          scale: 1.02,
-          boxShadow: '0 12px 24px rgba(59, 130, 246, 0.15), 0 6px 12px rgba(59, 130, 246, 0.1)',
+          y: -4,
+          scale: 1.01,
           duration: 0.3,
           ease: 'power2.out',
         });
@@ -35,7 +33,6 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
         gsap.to(card, {
           y: 0,
           scale: 1,
-          boxShadow: themeColors.cardShadow,
           duration: 0.3,
           ease: 'power2.out',
         });
@@ -43,7 +40,7 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
 
       const handleClick = () => {
         gsap.to(card, {
-          scale: 0.95,
+          scale: 0.98,
           duration: 0.1,
           yoyo: true,
           repeat: 1,
@@ -66,19 +63,12 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
   return (
     <div
       ref={cardRef}
-      className="min-w-[200px] flex flex-col bg-white rounded-2xl overflow-hidden cursor-pointer group"
-      style={{
-        boxShadow: themeColors.cardShadow,
-        border: themeColors.cardBorder
-      }}
+      className="w-[140px] min-w-[140px] md:w-[200px] md:min-w-[200px] flex flex-col cursor-pointer group transition-all duration-300"
       onClick={onClick}
     >
-      <div className="relative">
+      <div className="w-full aspect-square rounded-[20px] bg-gray-50 overflow-hidden relative mb-2">
         {discount && isPriceDisclosed && (
-          <div
-            className="absolute top-3 left-3 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10"
-            style={{ backgroundColor: themeColors.button }}
-          >
+          <div className="absolute top-2 left-2 bg-green-600 text-white text-xs font-bold rounded-md px-2 py-0.5 z-10">
             {discount.toString().toUpperCase().includes('OFF') ? discount : `${discount}% OFF`}
           </div>
         )}
@@ -86,57 +76,48 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
           <img
             src={optimizeCloudinaryUrl(image, { width: 400, quality: 'auto' })}
             alt={title}
-            className="w-full h-36 object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="w-full h-36 flex items-center justify-center" style={{ backgroundColor: `${themeColors.brand.teal}10` }}>
-            <span style={{ color: themeColors.brand.teal }} className="font-medium">No Image</span>
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <span style={{ color: '#1A1A1A' }} className="text-xs font-medium">No Image</span>
           </div>
         )}
       </div>
-      <div className="p-3 flex flex-col flex-1">
-        <h3 className="text-[13px] font-semibold text-gray-900 leading-snug mb-1 line-clamp-2 min-h-[40px]">{title}</h3>
+      <div className="flex flex-col flex-1">
+        <h3 className="text-[15px] font-semibold text-[#1A1A1A] leading-snug line-clamp-2 min-h-[40px] mb-1">
+          {title}
+        </h3>
 
-        <div className="flex items-center gap-1 mb-2">
-          <AiFillStar className="w-3.5 h-3.5 text-yellow-400" />
-          <span className="text-xs text-gray-900 font-bold">{rating}</span>
-          {reviews && (
-            <span className="text-[10px] text-gray-500">({reviews})</span>
-          )}
-        </div>
+        {rating && (
+          <div className="flex items-center gap-1 mb-1 text-[13px] text-gray-600 font-medium">
+            <AiFillStar className="w-3.5 h-3.5 text-yellow-400" />
+            <span>{rating}</span>
+            {reviews && (
+              <span className="text-gray-400">({reviews})</span>
+            )}
+          </div>
+        )}
 
-        <div className="flex items-center gap-2 mt-auto">
+        {(title?.toLowerCase().includes('ac') || title?.toLowerCase().includes('instant')) && (
+          <div className="text-green-600 text-xs font-medium mb-1 flex items-center gap-1">
+            <span>⚡ Instant</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1.5 mt-auto">
           {isPriceDisclosed ? (
             <>
               {displayOriginalPrice && (
-                <span className="text-[10px] text-gray-400 line-through">₹{displayOriginalPrice}</span>
+                <span className="text-[12px] text-gray-400 line-through">₹{displayOriginalPrice}</span>
               )}
-              <span className="text-[14px] font-bold text-gray-900">₹{displayPrice}</span>
+              <span className="text-[15px] font-bold text-[#1A1A1A]">₹{displayPrice}</span>
             </>
           ) : (
             <span className="text-[11px] font-black text-gray-400 uppercase tracking-tighter bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">Not Disclosed</span>
           )}
-
-          <button
-            className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all duration-300"
-            style={{
-              backgroundColor: `${themeColors.brand.teal}08`,
-              color: themeColors.brand.teal,
-              borderColor: `${themeColors.brand.teal}20`
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = themeColors.brand.teal;
-              e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = `${themeColors.brand.teal}08`;
-              e.currentTarget.style.color = themeColors.brand.teal;
-            }}
-          >
-            Book
-          </button>
         </div>
       </div>
     </div >
@@ -146,4 +127,5 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
 DetailedServiceCard.displayName = 'DetailedServiceCard';
 
 export default DetailedServiceCard;
+
 

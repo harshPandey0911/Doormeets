@@ -1081,7 +1081,37 @@ const getPublicHomeContent = async (req, res) => {
       isCategorySectionsVisible: contentObj.isCategorySectionsVisible ?? true,
       isCategoriesVisible: contentObj.isCategoriesVisible ?? true,
       popularServices: contentObj.popularServices || [],
-      isPopularServicesVisible: contentObj.isPopularServicesVisible ?? true
+      isPopularServicesVisible: contentObj.isPopularServicesVisible ?? true,
+      trustItems: (contentObj.trustItems || []).map(item => ({
+        id: item._id ? item._id.toString() : item.id,
+        icon: item.icon,
+        title: item.title,
+        description: item.description,
+        color: item.color
+      })),
+      ctaBanner: contentObj.ctaBanner ? {
+        title: contentObj.ctaBanner.title,
+        subtitle: contentObj.ctaBanner.subtitle,
+        buttonText: contentObj.ctaBanner.buttonText,
+        targetCategoryId: contentObj.ctaBanner.targetCategoryId?.toString() || null,
+        slug: contentObj.ctaBanner.slug
+      } : null,
+      sectionHeaders: contentObj.sectionHeaders || {},
+      sectionOrder: contentObj.sectionOrder && contentObj.sectionOrder.length > 0 ? contentObj.sectionOrder : [
+        'banners',
+        'promos',
+        'trustItems',
+        'categories',
+        'popularServices',
+        'upcomingCategories',
+        'orderAgain',
+        'featuredSections',
+        'curated',
+        'noteworthy',
+        'booked',
+        'ctaBanner',
+        'categorySections'
+      ]
     };
 
     res.status(200).json({
@@ -1347,6 +1377,36 @@ const getPublicHomeData = async (req, res) => {
         isCategorySectionsVisible: contentObj.isCategorySectionsVisible ?? true,
         isCategoriesVisible: contentObj.isCategoriesVisible ?? true,
         isFeaturedSectionsVisible: contentObj.isFeaturedSectionsVisible ?? true,
+        trustItems: (contentObj.trustItems || []).map(item => ({
+          id: item._id ? item._id.toString() : item.id,
+          icon: item.icon,
+          title: item.title,
+          description: item.description,
+          color: item.color
+        })),
+        ctaBanner: contentObj.ctaBanner ? {
+          title: contentObj.ctaBanner.title,
+          subtitle: contentObj.ctaBanner.subtitle,
+          buttonText: contentObj.ctaBanner.buttonText,
+          targetCategoryId: contentObj.ctaBanner.targetCategoryId?.toString() || null,
+          slug: contentObj.ctaBanner.slug
+        } : null,
+        sectionHeaders: contentObj.sectionHeaders || {},
+        sectionOrder: contentObj.sectionOrder && contentObj.sectionOrder.length > 0 ? contentObj.sectionOrder : [
+          'banners',
+          'promos',
+          'trustItems',
+          'categories',
+          'popularServices',
+          'upcomingCategories',
+          'orderAgain',
+          'featuredSections',
+          'curated',
+          'noteworthy',
+          'booked',
+          'ctaBanner',
+          'categorySections'
+        ],
         featuredSections: (await Promise.all(
           (contentObj.featuredSections || [])
             .filter(section => section.isVisible)
