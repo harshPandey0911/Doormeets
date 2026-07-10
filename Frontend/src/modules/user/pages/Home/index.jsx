@@ -674,7 +674,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-[1600px] mx-auto w-full px-0 md:px-12">
+        <main className="pt-[88px] md:pt-[100px] space-y-5 md:space-y-8 pb-24 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -701,24 +701,10 @@ const Home = () => {
           ) : (
             <>
               {/* Search Bar Section */}
-              <div className="mt-5 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center gap-3">
-                <div className="flex-1">
+              <div className="mt-5 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
+                <div className="w-full">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>
-                <button 
-                  onClick={() => navigate('/user/categories')}
-                  className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-300"
-                  style={{
-                    backgroundColor: themeColors.brand.teal,
-                    borderColor: themeColors.brand.teal,
-                    color: '#FFFFFF',
-                    boxShadow: `0 4px 14px ${themeColors.brand.teal}33`
-                  }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-                  </svg>
-                </button>
               </div>
 
               {/* Test Push Notifications Widget */}

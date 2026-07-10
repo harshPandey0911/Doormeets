@@ -50,7 +50,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
       : 'Select Location';
 
   return (
-    <header className="w-full bg-transparent px-3 md:px-5 pt-6 pb-2">
+    <header className="w-full bg-transparent px-3 md:px-5 pt-3 pb-1 md:pt-6 md:pb-2">
       <div className="w-full max-w-[1600px] mx-auto flex items-start justify-between px-0 md:px-10">
 
         {/* Left Side: Location Selector & Bold Heading */}
@@ -73,7 +73,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             </svg>
           </div>
           <h1
-            className="text-[21px] font-semibold leading-[1.25] tracking-tight mt-1.5 max-w-[280px] md:max-w-none md:whitespace-nowrap"
+            className="text-[17px] md:text-[21px] font-semibold leading-[1.2] tracking-tight mt-0.5 md:mt-1.5 max-w-[220px] md:max-w-none md:whitespace-nowrap"
             style={{ color: 'var(--text-primary)' }}
           >
             What you are looking for today
@@ -122,7 +122,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
           <button
             onClick={toggleTheme}
             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 border"
+            className="w-9 h-9 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 border"
             style={{
               backgroundColor: 'var(--surface)',
               borderColor: 'var(--border)',
@@ -133,7 +133,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             {isDark ? (
               /* Sun icon — shown in dark mode */
               <svg
-                className="w-4 h-4 text-yellow-400"
+                className="w-4.5 h-4.5 md:w-[18px] md:h-[18px] text-yellow-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -148,7 +148,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             ) : (
               /* Moon icon — shown in light mode */
               <svg
-                className="w-4 h-4"
+                className="w-4.5 h-4.5 md:w-[18px] md:h-[18px]"
                 style={{ color: 'var(--text-secondary)' }}
                 fill="none"
                 stroke="currentColor"

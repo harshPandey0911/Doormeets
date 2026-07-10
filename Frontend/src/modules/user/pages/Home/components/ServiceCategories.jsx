@@ -109,19 +109,19 @@ const ServiceCategories = React.memo(({
               className="snap-start shrink-0 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group"
               style={{ width: '110px' }}
             >
-              {/* Image */}
-              <div className="w-full aspect-square rounded-2xl overflow-hidden relative bg-gray-100">
+              {/* Image card */}
+              <div
+                className="w-full aspect-square rounded-[20px] overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200"
+                style={{ backgroundColor: category.colorScheme.bg }}
+              >
                 {category.icon ? (
                   <DynamicIcon
                     icon={category.icon}
                     alt={category.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center"
-                    style={{ backgroundColor: category.colorScheme.bg }}
-                  >
+                  <div className="w-full h-full flex items-center justify-center">
                     <svg className="w-8 h-8" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
@@ -130,7 +130,7 @@ const ServiceCategories = React.memo(({
               </div>
               {/* Name below image */}
               <span
-                className="text-[12px] font-semibold text-center leading-snug line-clamp-2 w-full"
+                className="text-[11px] font-semibold text-center leading-snug line-clamp-2 w-full px-1"
                 style={{ color: 'var(--text-primary)' }}
               >
                 {category.title}

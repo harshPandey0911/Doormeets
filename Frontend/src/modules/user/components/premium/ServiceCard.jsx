@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FiPlus, FiMinus, FiStar, FiCalendar } from 'react-icons/fi';
+import { toAssetUrl } from './cartUtils';
 
 /* ── helper: compute visit dates from workflow steps ─────────── */
 const computeVisitDates = (workflow) => {
@@ -48,7 +49,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
       {/* Left side details */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <h3 className="text-sm sm:text-[15px] font-bold tracking-tight leading-snug line-clamp-1" style={{ color: 'var(--text-primary)' }}>
+          <h3 className="text-sm font-semibold tracking-tight leading-snug line-clamp-1" style={{ color: 'var(--text-primary)' }}>
             {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
           </h3>
 
@@ -107,8 +108,8 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
       {/* Right side image + absolute button */}
       <div className="relative w-24 h-24 shrink-0 rounded-xl overflow-visible">
         <div className="w-full h-full rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border" style={{ borderColor: 'var(--border)' }}>
-          {service.image ? (
-            <img src={service.image} alt={service.title} className="h-full w-full object-cover" />
+          {service.image || service.icon || service.iconUrl ? (
+            <img src={toAssetUrl(service.image || service.icon || service.iconUrl)} alt={service.title} className="h-full w-full object-cover" />
           ) : (
             <div className="w-full h-full bg-slate-200 dark:bg-zinc-700" />
           )}

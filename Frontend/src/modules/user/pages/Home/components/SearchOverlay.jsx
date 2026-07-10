@@ -272,7 +272,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4
-                              className="font-bold text-[15px] truncate transition-colors"
+                              className="font-normal text-[15px] truncate transition-colors"
                               style={{ color: 'var(--text-primary)' }}
                             >
                               {item.title}
@@ -329,7 +329,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                           <button
                             key={index}
                             onClick={() => handleTermClick(term)}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-normal hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             style={{
                               backgroundColor: 'var(--surface)',
                               border: '1px solid var(--border)',
@@ -373,7 +373,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h5 className="font-bold text-xs truncate" style={{ color: 'var(--text-primary)' }}>
+                              <h5 className="font-medium text-xs truncate" style={{ color: 'var(--text-primary)' }}>
                                 {service.title}
                               </h5>
                               <p className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--text-muted)' }}>
@@ -406,7 +406,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center border mb-2">
                               <img src={toAssetUrl(cat.icon)} alt="" className="w-8 h-8 object-contain" />
                             </div>
-                            <span className="text-[11px] font-bold truncate w-full" style={{ color: 'var(--text-primary)' }}>
+                            <span className="text-[11px] font-medium truncate w-full" style={{ color: 'var(--text-primary)' }}>
                               {cat.title}
                             </span>
                           </div>

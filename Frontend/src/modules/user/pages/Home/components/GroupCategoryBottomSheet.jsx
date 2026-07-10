@@ -85,7 +85,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
           backgroundColor: 'var(--background, #ffffff)',
           transform: isOpen ? 'scale(1)' : 'scale(0.92)',
           opacity: isOpen ? 1 : 0,
-          height: 'min(576px, 85vh)',
+          height: 'fit-content',
           maxHeight: '85vh',
           overflowY: 'auto',
           paddingBottom: '16px',

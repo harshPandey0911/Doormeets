@@ -42,13 +42,8 @@ const NotificationBell = ({ notificationCount = 0 }) => {
   return (
     <div
       ref={bellButtonRef}
-      className="relative rounded-full cursor-pointer group active:scale-95 transition-transform duration-300 z-50 shrink-0"
+      className="relative rounded-full cursor-pointer group active:scale-95 transition-transform duration-300 z-50 shrink-0 w-9 h-9 md:w-[42px] md:h-[42px] flex items-center justify-center"
       style={{
-        width: '42px',
-        height: '42px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         margin: '2px'
       }}
       onClick={(e) => {
@@ -103,7 +98,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
 
         <svg
           ref={bellRef}
-          className="w-5.5 h-5.5 transition-all duration-300"
+          className="w-[18px] h-[18px] md:w-5.5 md:h-5.5 transition-all duration-300"
           viewBox="0 0 24 24"
           fill="none"
           strokeWidth="2.5"

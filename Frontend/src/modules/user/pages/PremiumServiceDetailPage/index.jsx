@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload, FiPlus, FiMinus, FiX, FiFolder, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload, FiPlus, FiMinus, FiX, FiFolder, FiChevronDown, FiChevronUp, FiChevronLeft, FiChevronRight, FiCheck, FiAward, FiSmile, FiShoppingBag } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import Navbar from '../../components/premium/Navbar';
 import BottomCheckoutBar from '../../components/premium/BottomCheckoutBar';
@@ -643,10 +643,12 @@ const PremiumServiceDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen pb-28" style={{ backgroundColor: 'var(--background)' }}>
-      {/* Header Image Section with Full-Bleed style on mobile */}
-      <div
-        className="relative w-full h-[320px] md:h-[460px] overflow-hidden bg-gray-100 shadow-sm select-none"
+    <div className="h-auto pb-12 lg:pb-16" style={{ backgroundColor: 'var(--background)' }}>
+      {/* 1. MOBILE FLOW */}
+      <div className="lg:hidden">
+        {/* Header Image Section with Full-Bleed style on mobile */}
+        <div
+          className="relative w-full h-[180px] md:h-[320px] lg:h-[460px] overflow-hidden bg-gray-100 shadow-sm select-none"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -690,15 +692,15 @@ const PremiumServiceDetailPage = () => {
         {/* Back Button Overlay */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute left-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md text-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          className="absolute left-4 top-4 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 dark:bg-zinc-900/90 text-slate-900 dark:text-zinc-100 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
-          <FiArrowLeft className="w-5 h-5" />
+          <FiArrowLeft className="w-3.5 h-3.5" />
         </button>
 
         {/* Heart & Share Overlay */}
-        <div className="absolute right-5 top-5 flex gap-2 z-20">
-          <button className="rounded-full bg-black/20 p-2.5 backdrop-blur text-white hover:bg-black/30"><FiHeart /></button>
-          <button className="rounded-full bg-black/20 p-2.5 backdrop-blur text-white hover:bg-black/30"><FiShare2 /></button>
+        <div className="absolute right-4 top-4 flex gap-2 z-20">
+          <button className="rounded-full bg-black/20 p-1.5 backdrop-blur text-white hover:bg-black/30"><FiHeart className="w-3.5 h-3.5" /></button>
+          <button className="rounded-full bg-black/20 p-1.5 backdrop-blur text-white hover:bg-black/30"><FiShare2 className="w-3.5 h-3.5" /></button>
         </div>
 
         {/* Progress Bar / Dots (Dynamic: shows only if more than 1 image) */}
@@ -718,10 +720,10 @@ const PremiumServiceDetailPage = () => {
         )}
       </div>
 
-      <div className="mx-auto max-w-lg lg:max-w-2xl px-5 pt-6 pb-4">
+      <div className="mx-auto max-w-lg lg:max-w-2xl px-5 pt-4 md:pt-6 pb-4">
         {/* Title, Rating, and Description */}
         <div className="space-y-2">
-          <h1 className="text-[22px] font-semibold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-base font-semibold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
             {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
           </h1>
 
@@ -738,8 +740,8 @@ const PremiumServiceDetailPage = () => {
 
         {/* Service Groups Grid (e.g. Haircut, Massage, Shave etc.) */}
         {service?.serviceType === 'package_base' && service?.serviceGroups?.length > 0 && (
-          <div className="mt-8 space-y-4">
-            <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <div className="mt-5 md:mt-8 space-y-3 md:space-y-4">
+            <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               Service Categories
             </h2>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -777,10 +779,10 @@ const PremiumServiceDetailPage = () => {
 
         {/* Service Variants styled like the features grid */}
         {variants.length > 0 && (
-          <div className="mt-8 space-y-4">
+          <div className="mt-5 md:mt-8 space-y-3 md:space-y-4">
             <div className="flex items-center justify-between mb-1">
               <div>
-                <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                   {service?.serviceType === 'image_base' ? 'Service Addon Categories' : 'Service Variants'}
                 </h2>
               </div>
@@ -942,7 +944,7 @@ const PremiumServiceDetailPage = () => {
         {/* Pricing / Duration Base */}
 
         {service?.serviceType === 'minute_base' && (
-          <section className="mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+          <section className="mt-5 md:mt-8 py-4 px-4 rounded-3xl" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}>
             <h2 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               <FiClock className="text-brand" /> Select Massage Duration
             </h2>
@@ -981,9 +983,9 @@ const PremiumServiceDetailPage = () => {
 
         {/* Packages Section */}
         {service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
-          <section className="mt-8 space-y-4">
+          <section className="mt-5 md:mt-8 space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Packages</h2>
+              <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Packages</h2>
             </div>
             <div className="space-y-3">
               {service.packages.map((pkg, idx) => {
@@ -1084,7 +1086,7 @@ const PremiumServiceDetailPage = () => {
 
         {/* Package Customization Section */}
         {service?.serviceType === 'package_base' && selectedPackage && selectedPackage.allowUserEdit !== false && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
-          <section id="customize-package-section" className="mt-8 space-y-6 scroll-mt-24">
+          <section id="customize-package-section" className="mt-5 md:mt-8 space-y-4 md:space-y-6 scroll-mt-24">
             <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: 'var(--border)' }}>
               <div>
                 <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -1139,9 +1141,9 @@ const PremiumServiceDetailPage = () => {
 
         {/* Subscriptions Section */}
         {service?.serviceType === 'subscription_base' && service?.packages?.length > 0 && (
-          <section className="mt-8 space-y-4">
+          <section className="mt-5 md:mt-8 space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-[17px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Choose Subscription Plan</h2>
+              <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Choose Subscription Plan</h2>
             </div>
             <div className="space-y-4">
               {service.packages.map((pkg, idx) => (
@@ -1841,6 +1843,383 @@ const PremiumServiceDetailPage = () => {
             {service.serviceType === 'image_base' ? 'Add Selected to Cart' : (variants.length > 0 ? 'Select & Add' : 'Add to cart')}
           </button>
         </div>
+      </div>
+      </div>
+
+      <div className="hidden lg:block w-full max-w-[1280px] mx-auto px-6 pt-28 pb-6 font-sans">
+        {/* Top Navbar */}
+        <div className="mb-6">
+          <Navbar 
+            locationLabel={currentCity?.name || 'Select location'} 
+            cartCount={cartCount} 
+            onSearchClick={() => { }} 
+            onLocationClick={() => navigate('/user/home')} 
+          />
+        </div>
+
+        {/* Hero Section Grid */}
+        <div className="grid grid-cols-12 gap-8 items-start mb-8 mt-8">
+          {/* Left: Main Image/Video & Thumbnails */}
+          <div className="col-span-8 space-y-4">
+            <div className="relative w-full aspect-[1.8/1] rounded-3xl overflow-hidden bg-gray-100 shadow-sm border border-gray-100">
+              {serviceImages[activeImageIndex]?.type === 'video' ? (
+                <video
+                  ref={videoRef}
+                  src={serviceImages[activeImageIndex]?.url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <img
+                  src={serviceImages[activeImageIndex]?.url}
+                  alt={service.title}
+                  className="h-full w-full object-cover transition-all duration-300"
+                />
+              )}
+            </div>
+
+            {/* Thumbnail Carousel */}
+            {serviceImages.length > 1 && (
+              <div className="flex items-center gap-3 justify-center">
+                <button
+                  onClick={() => setActiveImageIndex(prev => (prev - 1 + serviceImages.length) % serviceImages.length)}
+                  className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"
+                >
+                  <FiChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+                  {serviceImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`w-16 h-12 rounded-xl overflow-hidden border-2 transition-all relative ${
+                        activeImageIndex === idx ? 'border-[#B33A35] scale-105' : 'border-gray-100 hover:border-gray-300'
+                      }`}
+                    >
+                      {img.type === 'video' ? (
+                        <div className="w-full h-full relative bg-black flex items-center justify-center">
+                          <video src={img.url} className="w-full h-full object-cover opacity-60" muted />
+                          <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] bg-black/30">
+                            ▶
+                          </span>
+                        </div>
+                      ) : (
+                        <img src={img.url} alt="" className="w-full h-full object-cover" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setActiveImageIndex(prev => (prev + 1) % serviceImages.length)}
+                  className="p-1.5 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"
+                >
+                  <FiChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Title, Badge, Star, Description & Features Grid */}
+          <div className="col-span-4 space-y-5 pt-2">
+            <div className="space-y-2">
+              <span className="inline-block px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-semibold">
+                {category?.title || 'Mens and kids salon'}
+              </span>
+              <h1 className="text-3xl font-black text-slate-900 leading-tight">
+                {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
+              </h1>
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
+                <FiStar className="fill-amber-400 text-amber-400 w-4 h-4" />
+                <span className="text-slate-900 font-extrabold">{service.rating || "4.5"}</span>
+                <span>({service.reviewCount ? `${service.reviewCount} reviews` : "1.2k reviews"})</span>
+              </div>
+              <p className="text-sm text-gray-500 leading-relaxed font-normal pt-2">
+                {service.description}
+              </p>
+            </div>
+
+            {/* Features Horizontal Grid */}
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                  <FiCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-800">Hygienic Tools</h4>
+                  <p className="text-[10px] text-gray-400 mt-0.5">100% sanitized</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-green-50 text-green-600 rounded-xl">
+                  <FiAward className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-800">Expert Stylists</h4>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Trained professionals</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                  <FiHeart className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-800">Kids Friendly</h4>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Special care for kids</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                  <FiSmile className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-800">Premium Products</h4>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Quality you can trust</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Service Categories Section */}
+        {service?.serviceType === 'package_base' && service?.serviceGroups?.length > 0 && (
+          <div className="grid grid-cols-12 gap-8 items-center py-6 border-y border-gray-100 mb-8">
+            <div className="col-span-3">
+              <h2 className="text-base font-extrabold text-slate-800">
+                Service Categories
+              </h2>
+            </div>
+            <div className="col-span-9 flex flex-wrap items-center gap-3 py-2">
+              {service.serviceGroups.map((group, idx) => {
+                const colors = cardColors[idx % cardColors.length];
+                return (
+                  <div
+                    key={group._id || idx}
+                    onClick={() => setActiveCategoryModal(group)}
+                    className="flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 hover:scale-[1.02] cursor-pointer select-none bg-white min-w-[220px]"
+                    style={{ borderColor: colors.border }}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm shrink-0" style={{ backgroundColor: colors.bg }}>
+                      <span className="text-sm font-black" style={{ color: colors.text }}>
+                        {group.title ? group.title[0].toUpperCase() : 'S'}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800">{group.title}</h4>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Custom selection available</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Two-Column Split Layout or Full Width Grid */}
+        {service?.serviceType === 'package_base' && service?.packages?.length > 0 ? (
+          <div className="grid grid-cols-12 gap-8 items-start mb-12">
+            {/* Left Column: Packages and Variants */}
+            <div className="col-span-8 space-y-8">
+              {/* Packages Section */}
+              <div className="space-y-4">
+                <h2 className="text-base font-extrabold text-slate-800">Packages</h2>
+                <div className="space-y-4">
+                  {service.packages.map((pkg, idx) => {
+                    const addedCount = getAddedPackageCount(pkg.title);
+                    const isPkgSelected = selectedPackage?.title === pkg.title;
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-6 rounded-[28px] border-2 flex items-center justify-between transition-all bg-white ${
+                          addedCount > 0
+                            ? 'border-emerald-500/30 shadow-[0_4px_20px_rgba(16,185,129,0.02)]'
+                            : isPkgSelected
+                            ? 'border-[#B33A35] shadow-[0_4px_20px_rgba(179,58,53,0.02)]'
+                            : 'border-gray-100'
+                        }`}
+                      >
+                        <div className="flex gap-4 items-start flex-1 pr-4">
+                          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 shrink-0">
+                            <img
+                              src={serviceImages[0]?.url || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=150'}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-extrabold text-sm text-slate-800">{pkg.title}</h3>
+                              {pkg.isPopular && (
+                                <span className="text-[9px] font-black uppercase bg-[#B33A35] text-white px-2 py-0.5 rounded-full">
+                                  Popular
+                                </span>
+                              )}
+                            </div>
+                            {pkg.description && (
+                              <p className="text-[11px] text-gray-500 leading-relaxed max-w-xl">
+                                {pkg.description}
+                              </p>
+                            )}
+                            {pkg.allowUserEdit !== false && pkg.includedItems?.length > 0 && (addedCount > 0 || isPkgSelected) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPackage(pkg);
+                                  setIsCustomizing(true);
+                                }}
+                                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline mt-2 block cursor-pointer"
+                              >
+                                Edit your package
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end shrink-0 gap-3">
+                          <div className="text-right">
+                            <div className="font-extrabold text-sm text-[#B33A35]">₹{pkg.price}</div>
+                            {pkg.originalPrice && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectPackage(pkg)}
+                            className={`px-5 py-2 rounded-full border text-xs font-black transition-all ${
+                              addedCount > 0
+                                ? 'bg-emerald-600 border-emerald-600 text-white'
+                                : 'border-[#B33A35] text-[#B33A35] hover:bg-red-50/50'
+                            }`}
+                          >
+                            {addedCount > 0 ? 'Added ✓' : 'Select'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Sidebar Panels */}
+            <div className="col-span-4 space-y-4">
+              {/* What you get */}
+              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+                <div className="flex items-center gap-2">
+                  <FiCheckCircle className="text-green-500 w-4 h-4 shrink-0" />
+                  <h4 className="text-xs font-extrabold text-slate-800">What you get</h4>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-normal">
+                  No included features listed. Fully customizable premium grooming tools.
+                </p>
+              </div>
+
+              {/* How it works */}
+              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+                <div className="flex items-center gap-2">
+                  <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
+                  <h4 className="text-xs font-extrabold text-slate-800">How it works</h4>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-normal">
+                  No steps listed for this service. Clean experience with support-backed warranty.
+                </p>
+              </div>
+
+              {/* Verified Professional */}
+              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+                <div className="flex items-center gap-2">
+                  <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
+                  <h4 className="text-xs font-extrabold text-slate-800">Verified Professional</h4>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-normal">
+                  Certified experts, clean work, and support-backed service experience.
+                </p>
+              </div>
+
+              {/* User feedback */}
+              <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+                <div className="flex items-center gap-2">
+                  <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
+                  <h4 className="text-xs font-extrabold text-slate-800">User feedback</h4>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-normal">
+                  No reviews available yet. Be the first to leave a feedback!
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Full Width Grid Layout when NO Packages */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 w-full">
+            {/* What you get */}
+            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+              <div className="flex items-center gap-2">
+                <FiCheckCircle className="text-green-500 w-4 h-4 shrink-0" />
+                <h4 className="text-xs font-extrabold text-slate-800">What you get</h4>
+              </div>
+              <p className="text-[10px] text-gray-400 leading-normal">
+                No included features listed. Fully customizable premium grooming tools.
+              </p>
+            </div>
+
+            {/* How it works */}
+            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+              <div className="flex items-center gap-2">
+                <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
+                <h4 className="text-xs font-extrabold text-slate-800">How it works</h4>
+              </div>
+              <p className="text-[10px] text-gray-400 leading-normal">
+                No steps listed for this service. Clean experience with support-backed warranty.
+              </p>
+            </div>
+
+            {/* Verified Professional */}
+            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+              <div className="flex items-center gap-2">
+                <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
+                <h4 className="text-xs font-extrabold text-slate-800">Verified Professional</h4>
+              </div>
+              <p className="text-[10px] text-gray-400 leading-normal">
+                Certified experts, clean work, and support-backed service experience.
+              </p>
+            </div>
+
+            {/* User feedback */}
+            <div className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+              <div className="flex items-center gap-2">
+                <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
+                <h4 className="text-xs font-extrabold text-slate-800">User feedback</h4>
+              </div>
+              <p className="text-[10px] text-gray-400 leading-normal">
+                No reviews available yet. Be the first to leave a feedback!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Bottom checkout bar */}
+        {cartCount > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] py-3">
+            <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase font-black tracking-wider">Total Price</p>
+                <div className="flex items-baseline gap-1.5 mt-0.5">
+                  <span className="text-lg font-black text-slate-900">₹{finalPrice}</span>
+                  {service.originalPrice && (
+                    <span className="text-xs text-gray-400 line-through">₹{service.originalPrice}</span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/user/cart')}
+                className="px-8 py-3 bg-[#B33A35] hover:bg-[#9E2E2A] text-white text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
+              >
+                <FiShoppingBag /> View Cart
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Category Group details modal */}

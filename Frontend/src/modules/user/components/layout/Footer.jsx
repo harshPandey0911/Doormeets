@@ -21,17 +21,21 @@ const Footer = () => {
 
   // Show on home, about, contact, categories, brand, and service pages
   const allowedPaths = ['/user', '/user/', '/user/home', '/user/home/', '/user/about', '/user/contact'];
-  const isAllowedPath = allowedPaths.includes(location.pathname) || 
-                        location.pathname.startsWith('/user/category/') || 
-                        location.pathname.startsWith('/user/brand/') || 
-                        location.pathname.startsWith('/user/service/');
-  
+  const isAllowedPath = allowedPaths.includes(location.pathname) ||
+    location.pathname.startsWith('/user/category/') ||
+    location.pathname.startsWith('/user/brand/') ||
+    location.pathname.startsWith('/user/service/');
+
   if (!isAllowedPath) {
     return null;
   }
 
   return (
-    <footer className="bg-[#fafafa] border-t border-gray-200 pt-16 pb-8 lg:pb-12 mt-20 relative overflow-hidden">
+    <footer className="bg-gray-50 border-t border-gray-100 pt-8 md:pt-16 pb-8 lg:pb-12 mt-6 md:mt-20 relative overflow-hidden group">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl -mr-32 -mt-32 transition-colors group-hover:bg-teal-500/10" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -ml-32 -mb-32 transition-colors group-hover:bg-orange-500/10" />
+
       <div className="max-w-screen-xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 mb-16">
           {/* Column 1: Brand Info */}
