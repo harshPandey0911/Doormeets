@@ -298,7 +298,56 @@ const homeContentSchema = new mongoose.Schema({
         default: 0
       }
     }]
-  }]
+  }],
+
+  // Trust Section Items
+  trustItems: [{
+    icon: { type: String, default: '✓' },
+    title: { type: String, default: '' },
+    description: { type: String, default: '' },
+    color: { type: String, default: '#2874F0' }
+  }],
+
+  // CTA Banner
+  ctaBanner: {
+    title: { type: String, default: '' },
+    subtitle: { type: String, default: '' },
+    buttonText: { type: String, default: 'Book Now' },
+    targetCategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
+    slug: { type: String, default: '' }
+  },
+
+  // Section Headers
+  sectionHeaders: {
+    promoTitle: { type: String, default: '' },
+    promoSubtitle: { type: String, default: '' },
+    curatedTitle: { type: String, default: '' },
+    curatedSubtitle: { type: String, default: '' },
+    noteworthyTitle: { type: String, default: '' },
+    bookedTitle: { type: String, default: '' },
+    sectionsTitle: { type: String, default: '' },
+    trustTitle: { type: String, default: '' }
+  },
+
+  // Section Order
+  sectionOrder: {
+    type: [String],
+    default: [
+      'banners',
+      'promos',
+      'trustItems',
+      'categories',
+      'popularServices',
+      'upcomingCategories',
+      'orderAgain',
+      'featuredSections',
+      'curated',
+      'noteworthy',
+      'booked',
+      'ctaBanner',
+      'categorySections'
+    ]
+  }
 }, {
   timestamps: true
 });

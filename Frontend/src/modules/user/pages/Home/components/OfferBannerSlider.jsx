@@ -54,9 +54,9 @@ const OfferBannerSlider = ({ banners }) => {
         }}
         className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[2.2/1] md:aspect-[3.2/1] lg:aspect-[3.6/1]"
       >
-        {banners.map((banner) => (
+        {banners.map((banner, index) => (
           <SwiperSlide 
-            key={banner._id}
+            key={banner._id || banner.id || index}
             className="relative w-full h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
             onClick={() => handleBannerClick(banner)}
           >

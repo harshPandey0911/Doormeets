@@ -59,6 +59,9 @@ const getHomeContent = async (req, res) => {
         booked: homeContent.booked || [],
         categorySections: homeContent.categorySections || [],
         featuredSections: populatedSections.sort((a, b) => a.order - b.order),
+        trustItems: homeContent.trustItems || [],
+        ctaBanner: homeContent.ctaBanner || {},
+        sectionHeaders: homeContent.sectionHeaders || {},
         isActive: homeContent.isActive,
         isBannersVisible: homeContent.isBannersVisible ?? true,
         isPromosVisible: homeContent.isPromosVisible ?? true,
@@ -71,7 +74,22 @@ const getHomeContent = async (req, res) => {
         popularServices: homeContent.popularServices || [],
         isPopularServicesVisible: homeContent.isPopularServicesVisible ?? true,
         createdAt: homeContent.createdAt,
-        updatedAt: homeContent.updatedAt
+        updatedAt: homeContent.updatedAt,
+        sectionOrder: homeContent.sectionOrder && homeContent.sectionOrder.length > 0 ? homeContent.sectionOrder : [
+          'banners',
+          'promos',
+          'trustItems',
+          'categories',
+          'popularServices',
+          'upcomingCategories',
+          'orderAgain',
+          'featuredSections',
+          'curated',
+          'noteworthy',
+          'booked',
+          'ctaBanner',
+          'categorySections'
+        ]
       }
     });
   } catch (error) {
@@ -115,7 +133,8 @@ const updateHomeContent = async (req, res) => {
           newItem.id.startsWith('hcur-') ||
           newItem.id.startsWith('hnot-') ||
           newItem.id.startsWith('hbkd-') ||
-          newItem.id.startsWith('hsec-')
+          newItem.id.startsWith('hsec-') ||
+          newItem.id.startsWith('htrust-')
         )) {
           delete newItem.id;
         }
@@ -151,6 +170,35 @@ const updateHomeContent = async (req, res) => {
       homeContent.categorySections = sanitizeItems(req.body.categorySections);
       homeContent.markModified('categorySections');
     }
+    if (req.body.trustItems !== undefined) {
+      homeContent.trustItems = sanitizeItems(req.body.trustItems);
+      homeContent.markModified('trustItems');
+    }
+    if (req.body.ctaBanner !== undefined) {
+      const cta = req.body.ctaBanner || {};
+      homeContent.ctaBanner = {
+        title: cta.title || '',
+        subtitle: cta.subtitle || '',
+        buttonText: cta.buttonText || 'Book Now',
+        targetCategoryId: cta.targetCategoryId === '' ? null : (cta.targetCategoryId || null),
+        slug: cta.slug || ''
+      };
+      homeContent.markModified('ctaBanner');
+    }
+    if (req.body.sectionHeaders !== undefined) {
+      const sh = req.body.sectionHeaders || {};
+      homeContent.sectionHeaders = {
+        promoTitle: sh.promoTitle || '',
+        promoSubtitle: sh.promoSubtitle || '',
+        curatedTitle: sh.curatedTitle || '',
+        curatedSubtitle: sh.curatedSubtitle || '',
+        noteworthyTitle: sh.noteworthyTitle || '',
+        bookedTitle: sh.bookedTitle || '',
+        sectionsTitle: sh.sectionsTitle || '',
+        trustTitle: sh.trustTitle || ''
+      };
+      homeContent.markModified('sectionHeaders');
+    }
 
     if (req.body.isActive !== undefined) homeContent.isActive = req.body.isActive;
     if (req.body.isBannersVisible !== undefined) homeContent.isBannersVisible = req.body.isBannersVisible;
@@ -178,6 +226,10 @@ const updateHomeContent = async (req, res) => {
       }));
       homeContent.markModified('featuredSections');
     }
+    if (req.body.sectionOrder !== undefined) {
+      homeContent.sectionOrder = req.body.sectionOrder;
+      homeContent.markModified('sectionOrder');
+    }
 
     await homeContent.save();
 
@@ -194,6 +246,9 @@ const updateHomeContent = async (req, res) => {
         booked: homeContent.booked,
         categorySections: homeContent.categorySections,
         featuredSections: homeContent.featuredSections,
+        trustItems: homeContent.trustItems,
+        ctaBanner: homeContent.ctaBanner,
+        sectionHeaders: homeContent.sectionHeaders,
         isActive: homeContent.isActive,
         isBannersVisible: homeContent.isBannersVisible,
         isPromosVisible: homeContent.isPromosVisible,
@@ -204,7 +259,22 @@ const updateHomeContent = async (req, res) => {
         isCategoriesVisible: homeContent.isCategoriesVisible,
         isFeaturedSectionsVisible: homeContent.isFeaturedSectionsVisible,
         popularServices: homeContent.popularServices || [],
-        isPopularServicesVisible: homeContent.isPopularServicesVisible
+        isPopularServicesVisible: homeContent.isPopularServicesVisible,
+        sectionOrder: homeContent.sectionOrder && homeContent.sectionOrder.length > 0 ? homeContent.sectionOrder : [
+          'banners',
+          'promos',
+          'trustItems',
+          'categories',
+          'popularServices',
+          'upcomingCategories',
+          'orderAgain',
+          'featuredSections',
+          'curated',
+          'noteworthy',
+          'booked',
+          'ctaBanner',
+          'categorySections'
+        ]
       }
     });
   } catch (error) {

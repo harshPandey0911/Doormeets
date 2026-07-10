@@ -178,6 +178,79 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
   });
   const [editingCardId, setEditingCardId] = useState(null);
 
+  const renderArrangementControls = (sectionKey) => {
+    const defaultOrder = [
+      'banners',
+      'promos',
+      'trustItems',
+      'categories',
+      'popularServices',
+      'upcomingCategories',
+      'orderAgain',
+      'featuredSections',
+      'curated',
+      'noteworthy',
+      'booked',
+      'ctaBanner',
+      'categorySections'
+    ];
+    const currentOrder = home?.sectionOrder && home.sectionOrder.length > 0 ? home.sectionOrder : defaultOrder;
+    const idx = currentOrder.indexOf(sectionKey);
+    if (idx === -1) return null;
+
+    return (
+      <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2 py-1 shrink-0 shadow-sm">
+        <span className="text-[11px] font-bold text-gray-500 whitespace-nowrap">
+          Order: {idx + 1}/{currentOrder.length}
+        </span>
+        <div className="flex items-center gap-0.5 border-l border-gray-200 pl-1.5">
+          <button
+            type="button"
+            disabled={idx === 0}
+            onClick={() => {
+              const newOrder = [...currentOrder];
+              const temp = newOrder[idx];
+              newOrder[idx] = newOrder[idx - 1];
+              newOrder[idx - 1] = temp;
+              patchHome({ sectionOrder: newOrder });
+            }}
+            className={`p-1 rounded-md transition-all ${
+              idx === 0
+                ? 'text-gray-300 cursor-not-allowed bg-gray-100/50'
+                : 'text-gray-600 hover:bg-gray-200 active:scale-95'
+            }`}
+            title="Move Up"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            disabled={idx === currentOrder.length - 1}
+            onClick={() => {
+              const newOrder = [...currentOrder];
+              const temp = newOrder[idx];
+              newOrder[idx] = newOrder[idx + 1];
+              newOrder[idx + 1] = temp;
+              patchHome({ sectionOrder: newOrder });
+            }}
+            className={`p-1 rounded-md transition-all ${
+              idx === currentOrder.length - 1
+                ? 'text-gray-300 cursor-not-allowed bg-gray-100/50'
+                : 'text-gray-600 hover:bg-gray-200 active:scale-95'
+            }`}
+            title="Move Down"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Uploading state for all modals
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -267,7 +340,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             isCategoriesVisible: hc.isCategoriesVisible ?? true,
             trustItems: addIds(hc.trustItems || []),
             ctaBanner: hc.ctaBanner || {},
-            sectionHeaders: hc.sectionHeaders || {}
+            sectionHeaders: hc.sectionHeaders || {},
+            sectionOrder: hc.sectionOrder || []
           };
 
           // Seed local form states from fetched data
@@ -498,7 +572,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         isCategoriesVisible: homeData.isCategoriesVisible,
         trustItems: homeData.trustItems || [],
         ctaBanner: homeData.ctaBanner || {},
-        sectionHeaders: homeData.sectionHeaders || {}
+        sectionHeaders: homeData.sectionHeaders || {},
+        sectionOrder: homeData.sectionOrder || []
       };
       await homeContentService.update(payload, { cityId: selectedCity });
       publicCatalogService.invalidateCache();
@@ -764,11 +839,12 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     <div className="space-y-4">
       <CardShell icon={FiGrid}>
         <div className="space-y-4">
-          <div>
-            <div className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-3">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
+            <div className="text-lg font-bold text-gray-900 flex items-center gap-3">
               <div className="w-1.5 h-6 bg-gradient-to-b from-primary-500 to-primary-600 rounded-full"></div>
               <span>Home Banners</span>
             </div>
+            {renderArrangementControls('banners')}
           </div>
           <div className="flex items-center justify-end mb-3 gap-4">
             <ToggleSwitch
@@ -873,10 +949,9 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         <div className="space-y-5">
           {/* Promo Carousel (PromoCarousel) */}
           <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3 pb-2 mb-3 border-b border-gray-200">
-              <div>
-                <div className="text-lg font-bold text-gray-900">Home Promo Carousel</div>
-              </div>
+            <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-200">
+              <div className="text-lg font-bold text-gray-900">Home Promo Carousel</div>
+              {renderArrangementControls('promos')}
             </div>
             <div className="flex items-center gap-4">
               <ToggleSwitch
@@ -985,6 +1060,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             <div>
               <div className="text-lg font-bold text-gray-900">Thoughtful Curations</div>
             </div>
+            {renderArrangementControls('curated')}
           </div>
           <div className="flex items-center gap-4">
             <ToggleSwitch
@@ -1096,6 +1172,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             <div>
               <div className="text-xl font-bold text-gray-900">New & Noteworthy</div>
             </div>
+            {renderArrangementControls('noteworthy')}
           </div>
           <div className="flex items-center gap-4">
             <ToggleSwitch
@@ -1200,6 +1277,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               <div>
                 <div className="text-xl font-bold text-gray-900">Most Booked Services</div>
               </div>
+              {renderArrangementControls('booked')}
             </div>
             <div className="flex items-center gap-4">
               <ToggleSwitch
@@ -1325,6 +1403,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                 <h3 className="text-xl font-bold text-gray-900">Category Sections</h3>
                 <p className="text-sm text-gray-500 mt-1">Horizontal scrollable sections like "Cleaning Essentials"</p>
               </div>
+              {renderArrangementControls('categorySections')}
             </div>
             <div className="flex items-center gap-4">
               <ToggleSwitch
@@ -1447,7 +1526,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           }
         </div>
       </CardShell>
-      <CardShell icon={FiGrid} title="Home Categories">
+      <CardShell icon={FiGrid} title="Home Categories" action={renderArrangementControls('categories')}>
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">{categories.length} categories</div>
           <ToggleSwitch
@@ -1600,7 +1679,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       </CardShell>
 
       {/* ── Trust Section ──────────────────────────────────────────────────── */}
-      <CardShell icon={FiGrid} title="Trust Section">
+      <CardShell icon={FiGrid} title="Trust Section" action={renderArrangementControls('trustItems')}>
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-500">Items shown in the "Why Choose Us" strip</div>
           <button
@@ -1670,7 +1749,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       </CardShell>
 
       {/* ── CTA Banner ─────────────────────────────────────────────────────── */}
-      <CardShell icon={FiGrid} title="CTA Banner">
+      <CardShell icon={FiGrid} title="CTA Banner" action={renderArrangementControls('ctaBanner')}>
         <div className="space-y-4">
           <p className="text-sm text-gray-500">The full-width call-to-action banner shown on the home page.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1722,6 +1801,41 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               {isSyncing ? 'Saving...' : 'Save CTA Banner'}
             </button>
           </div>
+        </div>
+      </CardShell>
+
+      {/* ── System Generated / Automatic Sections ─────────────────────────── */}
+      <CardShell icon={FiGrid} title="Popular Services List" action={renderArrangementControls('popularServices')}>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">Automatically showcases top demanded/booked services based on booking activity.</p>
+          <ToggleSwitch
+            label="Show Section"
+            checked={home?.isPopularServicesVisible !== false}
+            onChange={() => patchHome({ isPopularServicesVisible: !home?.isPopularServicesVisible })}
+          />
+        </div>
+      </CardShell>
+
+      <CardShell icon={FiGrid} title="Upcoming Services Stack" action={renderArrangementControls('upcomingCategories')}>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">Displays services flagged with "COMING SOON" status to generate pre-launch user interest.</p>
+        </div>
+      </CardShell>
+
+      <CardShell icon={FiGrid} title="Order Again (Past Bookings)" action={renderArrangementControls('orderAgain')}>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">Displays previous bookings to returning users to allow quick re-ordering.</p>
+        </div>
+      </CardShell>
+
+      <CardShell icon={FiGrid} title="Featured Brands / Sections" action={renderArrangementControls('featuredSections')}>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">Curated showcase area featuring premium partner brands or service packages.</p>
+          <ToggleSwitch
+            label="Show Section"
+            checked={home?.isFeaturedSectionsVisible !== false}
+            onChange={() => patchHome({ isFeaturedSectionsVisible: !home?.isFeaturedSectionsVisible })}
+          />
         </div>
       </CardShell>
 
