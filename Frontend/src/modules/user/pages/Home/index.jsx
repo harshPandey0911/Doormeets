@@ -461,6 +461,8 @@ const Home = () => {
 
   const handleServiceClick = (service) => {
     if (!service) return;
+    
+    // 1. Try resolving by targetCategoryId
     if (service.targetCategoryId) {
       const cat = categories.find(c => (c.id === service.targetCategoryId || c._id === service.targetCategoryId));
       if (cat) {
@@ -468,7 +470,20 @@ const Home = () => {
         return;
       }
     }
-    // Fallback if no targetCategoryId but has slug/title, we no longer navigate to slug
+
+    // 2. Try resolving by matching category slug (e.g. salon)
+    if (service.slug) {
+      const cat = categories.find(c => c.slug === service.slug || c.id === service.slug);
+      if (cat) {
+        handleCategoryClick(cat);
+        return;
+      }
+    }
+
+    // 3. Fallback to service details page
+    if (service.slug || service.id) {
+      navigate(`/user/service/${service.slug || service.id}`);
+    }
   };
 
   const handleAddClick = async (service) => {
@@ -507,7 +522,10 @@ const Home = () => {
           toast.error(response.message || 'Failed to add to cart');
         }
       } else {
-        if (service.targetCategoryId) {
+        const isCat = service.slug ? categories.find(c => c.slug === service.slug || c.id === service.slug) : null;
+        if (isCat) {
+          handleCategoryClick(isCat);
+        } else if (service.targetCategoryId) {
           const cat = categories.find(c => (c.id === service.targetCategoryId || c._id === service.targetCategoryId));
           if (cat) {
             handleCategoryClick(cat);
@@ -842,6 +860,7 @@ const Home = () => {
                               onCategoryClick={handleCategoryClick}
                               title="Categories"
                               subtitle="Premium Home Services"
+                              onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </motion.section>
           
@@ -857,6 +876,7 @@ const Home = () => {
                                 onCategoryClick={handleCategoryClick}
                                 title="Products & Materials"
                                 subtitle="Quality building materials"
+                                onSeeAllClick={() => navigate('/user/categories')}
                               />
                             </motion.section>
                           )}
@@ -1186,6 +1206,7 @@ const Home = () => {
                                 targetCategoryId: item.targetCategoryId
                               }))}
                               onServiceClick={handleServiceClick}
+                              onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </Suspense>
                         </motion.div>
@@ -1212,6 +1233,7 @@ const Home = () => {
                               }))}
                               onServiceClick={handleServiceClick}
                               onAddClick={handleAddClick}
+                              onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </Suspense>
                         </motion.div>

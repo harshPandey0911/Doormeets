@@ -20,20 +20,47 @@ const ADMIN_ROLES = {
 const PERMISSION_KEYS = [
   'view_dashboard',
   'view_vendors',
+  'view_vendors_all',
+  'view_vendors_zone',
+  'view_vendors_manual',
+  'view_vendors_bookings',
+  'view_vendors_analytics',
+  'view_vendors_police',
+  'view_vendors_incentives',
+  'view_vendors_wallets',
   'view_workers',
+  'view_workers_all',
+  'view_workers_jobs',
+  'view_workers_analytics',
+  'view_workers_payments',
   'view_users',
+  'view_users_all',
+  'view_users_bookings',
+  'view_users_analytics',
+  'view_users_referrals',
   'view_bookings',
+  'view_bookings_all',
+  'view_bookings_tracking',
+  'view_bookings_notifications',
+  'view_bookings_instant',
   'view_analytics',
   'view_payments',
+  'view_payments_overview',
+  'view_payments_users',
+  'view_payments_workers',
+  'view_payments_vendors',
+  'view_payments_revenue',
+  'view_payments_reports',
   'view_reports',
+  'view_reports_revenue',
+  'view_reports_bookings',
+  'view_reports_payments',
   'manage_homepage',      // can edit homepage content for their city
-  'manage_pricing',       // can override local pricing for their city
   'manage_banners',       // can manage offer banners for their city
   'manage_support',       // can respond to support tickets
   'manage_training',      // can manage training content
   'manage_notifications', // can send push notifications
   'propose_categories',   // can propose new categories (needs super admin approval)
-  'propose_brands',       // can propose new brands (needs super admin approval)
   'view_reviews',
   'view_settlements',
   'view_commissions',
@@ -43,7 +70,6 @@ const PERMISSION_KEYS = [
   'view_vendor_requests',
   'view_vendor_services',
   'view_vendor_parts',
-  'manage_stock',
   'view_scrap_items',
   'manage_promos',
 ];

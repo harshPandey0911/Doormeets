@@ -47,17 +47,15 @@ const OfferBannerSlider = ({ banners }) => {
           dynamicBullets: true,
         }}
         breakpoints={{
-          1024: {
-            slidesPerView: 1,
-            spaceBetween: 0,
-          }
+          768: { slidesPerView: 1, spaceBetween: 0 },
+          1024: { slidesPerView: 1, spaceBetween: 0 }
         }}
-        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[2.2/1] md:aspect-[3.2/1] lg:aspect-[3.6/1]"
+        className="rounded-[20px] lg:rounded-[28px] overflow-hidden shadow-sm w-full offer-banner-swiper"
       >
         {banners.map((banner, index) => (
           <SwiperSlide 
             key={banner._id || banner.id || index}
-            className="relative w-full h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
+            className="relative h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
             onClick={() => handleBannerClick(banner)}
           >
             {banner.mediaType === 'video' ? (
@@ -106,10 +104,23 @@ const OfferBannerSlider = ({ banners }) => {
       </Swiper>
       
       <style>{`
-        .swiper-pagination-bullet-active {
+        .offer-banner-swiper {
+          aspect-ratio: 2.5 / 1;
+        }
+        @media (min-width: 768px) {
+          .offer-banner-swiper {
+            aspect-ratio: 3.5 / 1;
+          }
+        }
+        @media (min-width: 1024px) {
+          .offer-banner-swiper {
+            aspect-ratio: 4.2 / 1;
+          }
+        }
+        .offer-banner-swiper .swiper-pagination-bullet-active {
           background: #2874f0 !important;
         }
-        .swiper-pagination {
+        .offer-banner-swiper .swiper-pagination {
           bottom: 10px !important;
         }
       `}</style>

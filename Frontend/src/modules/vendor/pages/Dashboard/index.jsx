@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiBriefcase, FiUsers, FiBell, FiArrowRight, FiUser, FiClock, FiMapPin, FiCheckCircle, FiTrendingUp, FiChevronRight, FiBox } from 'react-icons/fi';
+import { FiBriefcase, FiUsers, FiBell, FiArrowRight, FiUser, FiClock, FiMapPin, FiCheckCircle, FiTrendingUp, FiChevronRight, FiBox, FiPlayCircle, FiX } from 'react-icons/fi';
 import { FaWallet } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
@@ -55,6 +55,8 @@ const Dashboard = memo(() => {
   });
   const [recentJobs, setRecentJobs] = useState([]);
   const [pendingBookings, setPendingBookings] = useState([]);
+  const [banners, setBanners] = useState([]);
+  const [selectedVideo, setSelectedVideo] = useState(null); // For video preview modal
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [globalConfig, setGlobalConfig] = useState({ maxSearchTime: 5, waveDuration: 60 });
@@ -252,8 +254,15 @@ const Dashboard = memo(() => {
       if (showSpinner) setLoading(true);
       setError(null);
 
-      const response = await vendorDashboardService.getDashboardStats();
-      processApiResponse(response);
+      const [statsRes, bannersRes] = await Promise.all([
+        vendorDashboardService.getDashboardStats(),
+        vendorDashboardService.getDashboardBanners().catch(() => ({ success: false, data: [] }))
+      ]);
+
+      processApiResponse(statsRes);
+      if (bannersRes.success) {
+        setBanners(bannersRes.data || []);
+      }
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       setError(String(err.message || 'Failed to load dashboard data'));
@@ -384,6 +393,25 @@ const Dashboard = memo(() => {
     } catch (error) {
       console.error('Error rejecting:', error);
       toast.error('Failed to reject booking');
+    }
+  };
+
+  const handleBannerClick = (item) => {
+    if (item.mediaType === 'video') {
+      setSelectedVideo(item);
+      return;
+    }
+    
+    if (item.linkType === 'category' && item.targetCategoryId) {
+      navigate(`/vendor/categories/${item.targetCategoryId}`);
+    } else if (item.linkType === 'subcategory' && item.targetSubCategoryId) {
+      navigate(`/vendor/categories/${item.targetSubCategoryId}`);
+    } else if (item.linkType === 'url' && item.linkUrl) {
+      if (item.linkUrl.startsWith('http')) {
+        window.open(item.linkUrl, '_blank');
+      } else {
+        navigate(item.linkUrl);
+      }
     }
   };
 
@@ -756,6 +784,57 @@ const Dashboard = memo(() => {
           </div>
         </div>
 
+        {/* Banners Media Carousel */}
+        {banners.length > 0 && (
+          <div className="px-4 pt-4">
+            <div className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2">
+              {banners.map((b) => (
+                <div
+                  key={b._id}
+                  onClick={() => handleBannerClick(b)}
+                  className="w-full flex-shrink-0 h-48 md:h-64 rounded-2xl overflow-hidden shadow-md snap-start cursor-pointer border border-white/10 hover:shadow-lg transition-shadow relative"
+                  style={{ backgroundColor: b.bgColor || '#1e293b' }}
+                >
+                  {b.mediaType === 'video' ? (
+                    <div className="w-full h-full relative bg-black">
+                      {b.thumbnailUrl ? (
+                        <img src={b.thumbnailUrl} alt={b.title} className="w-full h-full object-cover opacity-80" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                          <FiPlayCircle className="w-12 h-12 text-white/80" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4">
+                        <div className="flex items-center gap-2 text-white">
+                          <div className="p-2 rounded-full bg-red-600/90 text-white shrink-0">
+                            <FiPlayCircle className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm leading-tight text-white">{b.title}</p>
+                            <p className="text-[10px] text-gray-300 leading-tight mt-0.5">{b.subtitle || 'Play video guide'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full relative">
+                      {b.imageUrl ? (
+                        <img src={b.imageUrl} alt={b.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/50 text-xs">Banner Image</div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+                        <p className="font-bold text-sm text-white leading-tight">{b.title}</p>
+                        <p className="text-[10px] text-gray-300 leading-tight mt-0.5">{b.subtitle}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards - Optimized Component */}
         <StatsCards stats={stats} />
 
@@ -1003,6 +1082,47 @@ const Dashboard = memo(() => {
         </div>
       </main>
 
+      {/* Video Player Modal */}
+      <AnimatePresence>
+        {selectedVideo && (
+          <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gray-900 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative flex flex-col border border-white/10"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-white/5 bg-gray-950">
+                <span className="text-sm font-bold text-white truncate pr-4">{selectedVideo.title}</span>
+                <button
+                  onClick={() => setSelectedVideo(null)}
+                  className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white transition-colors"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="aspect-video w-full bg-black relative flex items-center justify-center">
+                {selectedVideo.videoSource === 'youtube' ? (
+                  <iframe
+                    className="w-full h-full"
+                    src={`https://www.youtube.com/embed/${selectedVideo.videoUrl.replace('https://www.youtube.com/watch?v=', '').replace('https://youtu.be/', '')}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={selectedVideo.title}
+                  />
+                ) : (
+                  <video src={selectedVideo.videoUrl} className="w-full h-full" controls autoPlay />
+                )}
+              </div>
+              {selectedVideo.subtitle && (
+                <div className="p-4 bg-gray-950 text-xs text-gray-300 leading-normal border-t border-white/5">
+                  {selectedVideo.subtitle}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });

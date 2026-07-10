@@ -92,6 +92,13 @@ const BookingDetails = () => {
     );
   });
 
+  const bookingCity = booking?.address?.city || '';
+  const nearbyVendors = filteredVendors.filter(v => {
+    const vCity = (v.address?.city || '').trim().toLowerCase();
+    const bCity = bookingCity.trim().toLowerCase();
+    return vCity && bCity && vCity === bCity;
+  });
+
   const fetchBookingDetails = async () => {
     try {
       setLoading(true);
@@ -552,9 +559,14 @@ const BookingDetails = () => {
       {/* Assign Vendor Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-xl max-w-4xl w-full p-6 space-y-4 flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center border-b border-gray-150 pb-3">
-              <h3 className="text-base font-bold text-gray-800">Assign Vendor Manually</h3>
+              <div>
+                <h3 className="text-base font-bold text-gray-800">Assign Vendor Manually</h3>
+                {bookingCity && (
+                  <p className="text-xs text-gray-500 mt-0.5">Booking Location: <span className="font-bold text-blue-600">📍 {bookingCity}</span></p>
+                )}
+              </div>
               <button
                 onClick={() => setShowAssignModal(false)}
                 className="text-gray-400 hover:text-gray-600 text-lg font-bold"
@@ -570,47 +582,109 @@ const BookingDetails = () => {
                 value={vendorSearch}
                 onChange={(e) => setVendorSearch(e.target.value)}
                 placeholder="Search vendor by name, business or phone..."
-                className="w-full border border-gray-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                className="w-full border border-gray-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
               />
             </div>
 
-            {/* Vendor List */}
-            <div className="flex-1 overflow-y-auto min-h-[250px] max-h-[400px] divide-y divide-gray-100 pr-1">
-              {vendorsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            {/* Split layout columns */}
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px] overflow-hidden">
+              
+              {/* Column 1: Nearby Vendors */}
+              <div className="flex flex-col h-full border border-gray-100 rounded-xl p-3 bg-gray-50/50">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2">
+                  <span className="font-bold text-xs text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                    📍 Nearby Vendors ({bookingCity || 'Same City'})
+                  </span>
+                  <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {nearbyVendors.length}
+                  </span>
                 </div>
-              ) : filteredVendors.length === 0 ? (
-                <p className="text-xs text-gray-500 text-center py-8 italic">No matching vendors found.</p>
-              ) : (
-                filteredVendors.map((vendor) => (
-                  <div key={vendor._id} className="py-3 flex justify-between items-center text-xs">
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-gray-800">{vendor.name || 'Vendor'}</span>
-                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold ${vendor.isActive !== false ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {vendor.isActive !== false ? 'Active' : 'Inactive'}
-                        </span>
-                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold capitalize ${vendor.approvalStatus === 'approved' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-yellow-50 text-yellow-700 border border-yellow-100'
-                          }`}>
-                          {vendor.approvalStatus || 'pending'}
-                        </span>
-                      </div>
-                      {vendor.businessName && (
-                        <p className="text-blue-600 font-medium text-[11px] mt-0.5">{vendor.businessName}</p>
-                      )}
-                      <p className="text-gray-500 mt-0.5">{vendor.phone}</p>
+                <div className="flex-1 overflow-y-auto divide-y divide-gray-100 pr-1 max-h-[350px]">
+                  {vendorsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                     </div>
-                    <button
-                      onClick={() => handleAssignVendor(vendor._id)}
-                      disabled={assigning}
-                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition-colors disabled:opacity-50"
-                    >
-                      {assigning ? 'Assigning...' : 'Assign'}
-                    </button>
-                  </div>
-                ))
-              )}
+                  ) : nearbyVendors.length === 0 ? (
+                    <p className="text-xs text-gray-500 text-center py-12 italic">No vendors found in {bookingCity || 'same city'}.</p>
+                  ) : (
+                    nearbyVendors.map((vendor) => (
+                      <div key={vendor._id} className="py-2.5 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="font-bold text-gray-800">{vendor.name || 'Vendor'}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold capitalize ${vendor.approvalStatus === 'approved' ? 'bg-blue-50 text-blue-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                              {vendor.approvalStatus || 'pending'}
+                            </span>
+                          </div>
+                          {vendor.businessName && (
+                            <p className="text-blue-600 font-medium text-[10px] mt-0.5">{vendor.businessName}</p>
+                          )}
+                          <p className="text-gray-500 text-[10px]">{vendor.phone}</p>
+                          {vendor.address?.city && (
+                            <p className="text-gray-400 text-[9px] mt-0.5">📍 {vendor.address.city}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleAssignVendor(vendor._id)}
+                          disabled={assigning}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition-colors disabled:opacity-50 text-[10px]"
+                        >
+                          {assigning ? '...' : 'Assign'}
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Column 2: All Vendors */}
+              <div className="flex flex-col h-full border border-gray-100 rounded-xl p-3 bg-gray-50/50">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2">
+                  <span className="font-bold text-xs text-gray-700 uppercase tracking-wider">
+                    🌐 All Registered Vendors
+                  </span>
+                  <span className="bg-gray-200 text-gray-700 text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {filteredVendors.length}
+                  </span>
+                </div>
+                <div className="flex-1 overflow-y-auto divide-y divide-gray-100 pr-1 max-h-[350px]">
+                  {vendorsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : filteredVendors.length === 0 ? (
+                    <p className="text-xs text-gray-500 text-center py-12 italic">No vendors found.</p>
+                  ) : (
+                    filteredVendors.map((vendor) => (
+                      <div key={vendor._id} className="py-2.5 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="font-bold text-gray-800">{vendor.name || 'Vendor'}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold capitalize ${vendor.approvalStatus === 'approved' ? 'bg-blue-50 text-blue-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                              {vendor.approvalStatus || 'pending'}
+                            </span>
+                          </div>
+                          {vendor.businessName && (
+                            <p className="text-blue-600 font-medium text-[10px] mt-0.5">{vendor.businessName}</p>
+                          )}
+                          <p className="text-gray-500 text-[10px]">{vendor.phone}</p>
+                          {vendor.address?.city && (
+                            <p className="text-gray-400 text-[9px] mt-0.5">📍 {vendor.address.city}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleAssignVendor(vendor._id)}
+                          disabled={assigning}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition-colors disabled:opacity-50 text-[10px]"
+                        >
+                          {assigning ? '...' : 'Assign'}
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
             </div>
 
             {/* Footer */}

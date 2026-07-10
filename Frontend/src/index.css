@@ -109,6 +109,26 @@
   --font-weight-black:    900;
 }
 
+/* ============================================
+   GLOBAL FONT SIZE SCALING
+   Scales all rem-based text proportionally down
+   ============================================ */
+html {
+  font-size: 15px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 13.5px;
+  }
+}
+
 /* Slide up animation for modal */
 @keyframes slide-up {
   from {

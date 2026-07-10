@@ -339,6 +339,25 @@ const createOrUpdateBill = async (req, res) => {
     booking.vendorBillId = bill._id;
     await booking.save();
 
+    // Emit real-time update to the user
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          finalAmount: booking.finalAmount,
+          totalAmount: booking.totalAmount,
+          bill: bill,
+          message: 'Professional has added addon services to your booking.'
+        });
+      }
+    } catch (sockErr) {
+      console.error('Failed to emit socket update for addon bill:', sockErr);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Bill generated successfully',

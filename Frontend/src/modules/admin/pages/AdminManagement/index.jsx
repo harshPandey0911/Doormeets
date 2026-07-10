@@ -9,34 +9,96 @@ import * as vendorService from '../../services/vendorService';
 import { categoryService } from '../../../../services/catalogService';
 
 const PERMISSION_KEYS = [
-  { key: 'view_dashboard', label: 'View Dashboard' },
-  { key: 'view_vendors', label: 'View Vendors' },
-  { key: 'view_workers', label: 'View Workers' },
-  { key: 'view_users', label: 'View Users' },
-  { key: 'view_bookings', label: 'View Bookings' },
-  { key: 'view_analytics', label: 'View Analytics' },
-  { key: 'view_payments', label: 'View Payments' },
-  { key: 'view_reports', label: 'View Reports' },
-  { key: 'manage_homepage', label: 'Manage Homepage Content' },
-  { key: 'manage_pricing', label: 'Manage Local Pricing' },
-  { key: 'manage_banners', label: 'Manage Offer Banners' },
-  { key: 'manage_support', label: 'Manage Support Tickets' },
-  { key: 'manage_training', label: 'Manage Training' },
-  { key: 'manage_notifications', label: 'Send Notifications' },
-  { key: 'propose_categories', label: 'Propose New Categories (needs approval)' },
-  { key: 'propose_brands', label: 'Propose New Brands (needs approval)' },
-  { key: 'view_reviews', label: 'View Reviews' },
-  { key: 'view_settlements', label: 'View Settlements' },
-  { key: 'view_commissions', label: 'View Commissions' },
-  { key: 'manage_plans', label: 'Manage Plans' },
-  { key: 'view_subscriptions', label: 'View Vendor Subscriptions' },
-  { key: 'view_police_verification', label: 'View Police Verification' },
-  { key: 'view_vendor_requests', label: 'View Vendor Requests' },
-  { key: 'view_vendor_services', label: 'View Vendor Services' },
-  { key: 'view_vendor_parts', label: 'View Vendor Parts' },
-  { key: 'manage_stock', label: 'Manage Stock' },
-  { key: 'view_scrap_items', label: 'View Scrap Items' },
-  { key: 'manage_promos', label: 'Manage Promo Codes' },
+  { key: 'view_dashboard', label: 'View Dashboard', desc: 'Allows access to the main dashboard to view statistics and booking counts.' },
+  { 
+    key: 'view_vendors', 
+    label: 'View Vendors', 
+    desc: 'Allows viewing and managing the vendor list, their wallets, and analytics.',
+    children: [
+      { key: 'view_vendors_all', label: 'All Vendors List' },
+      { key: 'view_vendors_zone', label: 'Vendor\'s Zone / Map View' },
+      { key: 'view_vendors_manual', label: 'Manual Vendor Assignment' },
+      { key: 'view_vendors_bookings', label: 'Vendor Bookings Ledger' },
+      { key: 'view_vendors_analytics', label: 'Vendor Performance Analytics' },
+      { key: 'view_vendors_police', label: 'Police Verification Status' },
+      { key: 'view_vendors_incentives', label: 'Vendor Incentives Scheme' },
+      { key: 'view_vendors_wallets', label: 'Vendor Wallets & Adjustments' }
+    ]
+  },
+  { 
+    key: 'view_workers', 
+    label: 'View Workers', 
+    desc: 'Allows viewing workers, managing their jobs, and processing worker payments.',
+    children: [
+      { key: 'view_workers_all', label: 'All Workers List' },
+      { key: 'view_workers_jobs', label: 'Worker Jobs History' },
+      { key: 'view_workers_analytics', label: 'Worker Performance Analytics' },
+      { key: 'view_workers_payments', label: 'Worker Payments & Ledgers' }
+    ]
+  },
+  { 
+    key: 'view_users', 
+    label: 'View Users', 
+    desc: 'Allows viewing customers, their booking history, and referral settings.',
+    children: [
+      { key: 'view_users_all', label: 'All Registered Customers' },
+      { key: 'view_users_bookings', label: 'Customer Bookings History' },
+      { key: 'view_users_analytics', label: 'Customer Analytics' },
+      { key: 'view_users_referrals', label: 'Customer Referral Settings' }
+    ]
+  },
+  { 
+    key: 'view_bookings', 
+    label: 'View Bookings', 
+    desc: 'Allows viewing, tracking, and manually assigning vendors to bookings.',
+    children: [
+      { key: 'view_bookings_all', label: 'All Bookings Console' },
+      { key: 'view_bookings_tracking', label: 'Real-time Booking Tracking' },
+      { key: 'view_bookings_notifications', label: 'Booking Push Notifications' },
+      { key: 'view_bookings_instant', label: 'Instant Booking Settings' }
+    ]
+  },
+  { key: 'view_analytics', label: 'View Analytics', desc: 'Allows viewing growth analytics, charts, and system reports.' },
+  { 
+    key: 'view_payments', 
+    label: 'View Payments', 
+    desc: 'Allows viewing payment transactions for users, workers, and vendors.',
+    children: [
+      { key: 'view_payments_overview', label: 'Payment Overview Stats' },
+      { key: 'view_payments_users', label: 'Customer Payment Logs' },
+      { key: 'view_payments_workers', label: 'Worker Payout Records' },
+      { key: 'view_payments_vendors', label: 'Vendor Payout Records' },
+      { key: 'view_payments_revenue', label: 'Admin Net Revenue Reports' },
+      { key: 'view_payments_reports', label: 'Standard Payment Statements' }
+    ]
+  },
+  { 
+    key: 'view_reports', 
+    label: 'View Reports', 
+    desc: 'Allows downloading revenue, booking, and payment reports.',
+    children: [
+      { key: 'view_reports_revenue', label: 'Download Revenue Reports' },
+      { key: 'view_reports_bookings', label: 'Download Booking Reports' },
+      { key: 'view_reports_payments', label: 'Download Payment Reports' }
+    ]
+  },
+  { key: 'manage_homepage', label: 'Manage Homepage Content & Settings', desc: 'Allows managing homepage categories, banner assets, settings, and showcase.' },
+  { key: 'manage_banners', label: 'Manage Offer Banners', desc: 'Allows creating and scheduling promotional offer banners.' },
+  { key: 'manage_support', label: 'Manage Support Tickets & SOS Alerts', desc: 'Allows handling customer support tickets and live emergency SOS alerts.' },
+  { key: 'manage_training', label: 'Manage Training Modules', desc: 'Allows managing training modules and videos for vendors/workers.' },
+  { key: 'manage_notifications', label: 'Send Notifications', desc: 'Allows sending push notifications and custom marketing messages.' },
+  { key: 'propose_categories', label: 'Propose Catalog (Categories/Templates)', desc: 'Allows proposing catalog changes, category templates, and booking flows.' },
+  { key: 'view_reviews', label: 'View Reviews', desc: 'Allows moderating customer feedback, comments, and ratings.' },
+  { key: 'view_settlements', label: 'View Settlements', desc: 'Allows managing vendor wallets, withdrawals, and payout history.' },
+  { key: 'view_commissions', label: 'View Commissions', desc: 'Allows viewing platform commission setups.' },
+  { key: 'manage_plans', label: 'Manage Plans', desc: 'Allows managing active subscription plans for vendors.' },
+  { key: 'view_subscriptions', label: 'View Vendor Subscriptions', desc: 'Allows monitoring vendor active subscription status.' },
+  { key: 'view_police_verification', label: 'View Police Verification', desc: 'Allows reviewing police verification documents for vendors.' },
+  { key: 'view_vendor_requests', label: 'View Vendor Requests', desc: 'Allows processing pending vendor onboarding approval requests.' },
+  { key: 'view_vendor_services', label: 'View Add-on Library', desc: 'Allows managing extra service add-ons and parts catalogs.' },
+  { key: 'view_vendor_parts', label: 'View Vendor Parts', desc: 'Allows viewing and managing parts library.' },
+  { key: 'view_scrap_items', label: 'View Scrap Items', desc: 'Allows viewing and managing user scrap disposal inquiries.' },
+  { key: 'manage_promos', label: 'Manage Promo Codes', desc: 'Allows creating and managing promo codes and gift vouchers.' },
 ];
 
 const REQUEST_TYPE_LABELS = {
@@ -254,12 +316,48 @@ const AdminManagement = () => {
   };
 
   const togglePermission = (key) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(key)
-        ? prev.permissions.filter(k => k !== key)
-        : [...prev.permissions, key]
-    }));
+    setFormData(prev => {
+      const hasKey = prev.permissions.includes(key);
+      const configItem = PERMISSION_KEYS.find(p => p.key === key);
+      
+      let newPerms = [...prev.permissions];
+      
+      if (configItem && configItem.children) {
+        const childKeys = configItem.children.map(c => c.key);
+        if (hasKey) {
+          // Uncheck parent and all children
+          newPerms = newPerms.filter(k => k !== key && !childKeys.includes(k));
+        } else {
+          // Check parent and all children
+          newPerms = [...newPerms, key, ...childKeys];
+        }
+      } else {
+        // Child key or standard key
+        if (hasKey) {
+          newPerms = newPerms.filter(k => k !== key);
+          // Optional: if parent exists, check if all other children are also unchecked to deselect parent
+          const parentItem = PERMISSION_KEYS.find(p => p.children && p.children.some(c => c.key === key));
+          if (parentItem) {
+            const siblings = parentItem.children.map(c => c.key);
+            const activeSiblings = newPerms.filter(k => siblings.includes(k));
+            if (activeSiblings.length === 0) {
+              newPerms = newPerms.filter(k => k !== parentItem.key);
+            }
+          }
+        } else {
+          newPerms = [...newPerms, key];
+          // If checking a child, ensure its parent is also checked
+          const parentItem = PERMISSION_KEYS.find(p => p.children && p.children.some(c => c.key === key));
+          if (parentItem && !newPerms.includes(parentItem.key)) {
+            newPerms.push(parentItem.key);
+          }
+        }
+      }
+      return {
+        ...prev,
+        permissions: newPerms
+      };
+    });
   };
 
   const toggleCity = (cityId) => {
@@ -641,22 +739,56 @@ const AdminManagement = () => {
 
                 {/* Permission Keys - Only for CITY_ADMIN */}
                 {formData.role !== 'SUPER_ADMIN' && formData.role !== 'super_admin' && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-2">Module Permissions</label>
-                  <div className="grid grid-cols-2 gap-2 p-3 border border-gray-100 rounded-xl bg-gray-50">
-                    {PERMISSION_KEYS.map(({ key, label }) => (
-                      <label key={key} className="flex items-start gap-2 cursor-pointer hover:bg-white p-1.5 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={formData.permissions.includes(key)}
-                          onChange={() => togglePermission(key)}
-                          className="w-3.5 h-3.5 mt-0.5 text-blue-600 rounded"
-                        />
-                        <span className="text-xs text-gray-700 leading-tight">{label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                 <div>
+                   <label className="block text-xs font-semibold text-gray-700 mb-2">Module Permissions</label>
+                   <div className="grid grid-cols-1 gap-3 p-3 border border-gray-100 rounded-xl bg-gray-50 max-h-96 overflow-y-auto">
+                     {PERMISSION_KEYS.map((perm) => {
+                       const isParentChecked = formData.permissions.includes(perm.key);
+                       const hasChildren = perm.children && perm.children.length > 0;
+                       
+                       return (
+                         <div key={perm.key} className="border border-gray-200/50 rounded-xl bg-white p-3 space-y-2">
+                           <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                             <input
+                               type="checkbox"
+                               checked={isParentChecked}
+                               onChange={() => togglePermission(perm.key)}
+                               className="w-4 h-4 mt-0.5 text-blue-600 rounded focus:ring-blue-500/20"
+                             />
+                             <div className="flex flex-col min-w-0 ml-1">
+                               <span className="text-xs font-bold text-gray-800 leading-tight">{perm.label}</span>
+                               {perm.desc && <span className="text-[10px] text-gray-400 mt-0.5 leading-normal">{perm.desc}</span>}
+                             </div>
+                           </label>
+
+                           {/* Granular Sub-permissions */}
+                           {hasChildren && isParentChecked && (
+                             <motion.div
+                               initial={{ opacity: 0, height: 0 }}
+                               animate={{ opacity: 1, height: 'auto' }}
+                               className="pl-6 border-l border-gray-200 grid grid-cols-2 gap-2 pt-2.5 bg-gray-50/50 p-2 rounded-lg"
+                             >
+                               {perm.children.map((child) => {
+                                 const isChildChecked = formData.permissions.includes(child.key);
+                                 return (
+                                   <label key={child.key} className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-white select-none border border-transparent hover:border-gray-200 transition-colors">
+                                     <input
+                                       type="checkbox"
+                                       checked={isChildChecked}
+                                       onChange={() => togglePermission(child.key)}
+                                       className="w-3.5 h-3.5 text-blue-600 rounded"
+                                     />
+                                     <span className="text-[11px] font-semibold text-gray-600">{child.label}</span>
+                                   </label>
+                                 );
+                               })}
+                             </motion.div>
+                           )}
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
                 )}
 
                 {/* Actions */}

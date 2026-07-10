@@ -175,9 +175,74 @@ const adjustShopOwnerWallet = async (req, res) => {
   }
 };
 
+/**
+ * Create a new Shop Owner manually by Admin
+ */
+const createShopOwner = async (req, res) => {
+  try {
+    const { name, phone, email, businessName, password } = req.body;
+
+    const cleanPhone = phone ? phone.replace(/\D/g, '').slice(-10) : '';
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Invalid phone number.' });
+    }
+
+    if (!name || name.length < 2) {
+      return res.status(400).json({ success: false, message: 'Name is required.' });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+
+    const existing = await ShopOwner.findOne({ phone: cleanPhone });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Phone number already registered.' });
+    }
+
+    // Generate unique referral code
+    let referralCode;
+    let codeExists = true;
+    while (codeExists) {
+      const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
+      referralCode = `SH-${rand}`;
+      const found = await ShopOwner.findOne({ referralCode });
+      if (!found) codeExists = false;
+    }
+
+    const shopOwner = await ShopOwner.create({
+      name,
+      phone: cleanPhone,
+      email,
+      businessName,
+      password,
+      referralCode,
+      isActive: true
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Shop Owner created successfully.',
+      data: {
+        id: shopOwner._id,
+        name: shopOwner.name,
+        phone: shopOwner.phone,
+        email: shopOwner.email,
+        businessName: shopOwner.businessName,
+        referralCode: shopOwner.referralCode,
+        wallet: shopOwner.wallet
+      }
+    });
+  } catch (error) {
+    console.error('Create Shop Owner error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create Shop Owner. Please try again.' });
+  }
+};
+
 module.exports = {
   getAllShopOwners,
   getShopOwnerDetails,
   updateShopOwnerStatus,
-  adjustShopOwnerWallet
+  adjustShopOwnerWallet,
+  createShopOwner
 };

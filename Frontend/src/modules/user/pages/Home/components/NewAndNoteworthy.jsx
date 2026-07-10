@@ -1,10 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import SimpleServiceCard from '../../../components/common/SimpleServiceCard';
 
-const NewAndNoteworthy = React.memo(({ services, onServiceClick, title, subtitle }) => {
+const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, title, subtitle }) => {
   const containerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showRightArrow, setShowRightArrow] = useState(services && services.length > 5);
 
   const serviceList = services || [];
 
@@ -18,9 +18,24 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, title, subtitle
 
   useEffect(() => {
     handleScroll();
-    // Re-check scroll bounds when window resizes
+    
+    const timer1 = setTimeout(handleScroll, 100);
+    const timer2 = setTimeout(handleScroll, 600);
+
     window.addEventListener('resize', handleScroll);
-    return () => window.removeEventListener('resize', handleScroll);
+    
+    let observer;
+    if (containerRef.current) {
+      observer = new MutationObserver(handleScroll);
+      observer.observe(containerRef.current, { childList: true, subtree: true });
+    }
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      window.removeEventListener('resize', handleScroll);
+      if (observer) observer.disconnect();
+    };
   }, [serviceList]);
 
   if (serviceList.length === 0) {
@@ -29,22 +44,27 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, title, subtitle
 
   return (
     <div className="my-10 px-3 md:px-5 w-full">
-      {/* Clean section header */}
-      <div className="mb-6">
-        <h2 className="text-[28px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
+      {/* Header */}
+      <div className="mb-5 flex items-center gap-3">
+        <h2 className="text-[22px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
           {title || "New and noteworthy"}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          {subtitle || "Explore our latest launches and trends"}
-        </p>
+        {onSeeAllClick && (
+          <button
+            onClick={onSeeAllClick}
+            className="text-[13px] font-semibold text-[#B33A35] hover:underline shrink-0"
+          >
+            See all
+          </button>
+        )}
       </div>
 
       {/* Carousel Wrapper */}
-      <div className="relative group/carousel">
+      <div className="relative" style={{ overflow: 'visible' }}>
         {showLeftArrow && (
           <button
-            onClick={() => containerRef.current.scrollBy({ left: -240, behavior: 'smooth' })}
-            className="absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 hover:bg-gray-50 hover:shadow-lg transition-all text-gray-700 active:scale-90"
+            onClick={() => containerRef.current.scrollBy({ left: -300, behavior: 'smooth' })}
+            className="absolute -left-4 top-1/3 -translate-y-1/2 z-20 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all text-gray-700 active:scale-90"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -54,8 +74,8 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, title, subtitle
         
         {showRightArrow && (
           <button
-            onClick={() => containerRef.current.scrollBy({ left: 240, behavior: 'smooth' })}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 hover:bg-gray-50 hover:shadow-lg transition-all text-gray-700 active:scale-90"
+            onClick={() => containerRef.current.scrollBy({ left: 300, behavior: 'smooth' })}
+            className="absolute -right-4 top-1/3 -translate-y-1/2 z-20 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all text-gray-700 active:scale-90"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -66,7 +86,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, title, subtitle
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-3 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
           {serviceList.map((service, index) => (
             <div key={service.id || index} className="snap-start shrink-0">

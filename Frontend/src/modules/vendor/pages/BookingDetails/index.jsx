@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import api from '../../../../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
+import html2pdf from 'html2pdf.js';
 import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle, FiPlus, FiTrash2, FiFileText } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
@@ -315,7 +316,6 @@ export default function BookingDetails() {
   const handleDownloadInvoice = async () => {
     if (!booking) return;
 
-    const html2pdf = (await import('html2pdf.js')).default;
     // Use grandTotal from existingBill if available, else booking.finalAmount / booking.totalAmount
     const grandTotalVal = existingBill?.grandTotal || booking.finalAmount || booking.totalAmount || 0;
     
