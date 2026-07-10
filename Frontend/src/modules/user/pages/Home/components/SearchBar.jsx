@@ -8,14 +8,14 @@ const SearchBar = ({ onInputClick }) => {
   const [currentServiceIndex, setCurrentServiceIndex] = useState(0);
 
   const serviceNames = [
-    'AC service and repair',
-    'Washing machine services',
-    'Cooler repair at Home',
-    'R.O. repair installation',
+    'Facial',
+    'AC service',
+    'Washing machine',
+    'Cooler repair',
+    'RO installation',
     'Microwave repair',
     'Geyser repair',
-    'Bathroom appliance installation',
-    'Fridge at Home'
+    'Bathroom appliance'
   ];
 
   useEffect(() => {
@@ -48,56 +48,23 @@ const SearchBar = ({ onInputClick }) => {
     <div className="flex items-center w-full min-w-0">
       <div className="flex-1 min-w-0 relative cursor-pointer" onClick={onInputClick}>
         <div className="relative w-full group">
-          {/* Glow effect on hover */}
-          <div
-            className="absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            style={{ background: `linear-gradient(90deg, ${themeColors.brand.teal}1A, ${themeColors.brand.orange}1A)` }}
-          />
-
-          {/* Gradient Definition */}
-          <svg width="0" height="0" className="absolute">
-            <linearGradient id="doormeets-search-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={themeColors.brand.teal} />
-              <stop offset="50%" stopColor={themeColors.brand.yellow} />
-              <stop offset="100%" stopColor={themeColors.brand.orange} />
-            </linearGradient>
-          </svg>
-
           {/* Search icon */}
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
             <FiSearch
-              className="w-5 h-5 transition-colors duration-300"
-              style={{ stroke: 'url(#doormeets-search-gradient)' }}
+              className="w-[20px] h-[20px] text-gray-500 transition-colors duration-300"
             />
           </div>
 
           {/* Simulated Input */}
           <div
-            className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-[15px] border transition-all duration-300 flex items-center h-[52px] overflow-hidden"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-primary)',
-              boxShadow: 'var(--shadow)',
-            }}
+            className="w-full pl-11 pr-4 py-3 rounded-xl border transition-all duration-300 flex items-center h-[46px] overflow-hidden bg-white border-gray-200 group-hover:border-gray-300"
           >
             {/* Placeholder text with typing animation */}
             <span
-              className="text-[15px] tracking-wide font-light flex items-center gap-1 whitespace-nowrap overflow-hidden w-full"
-              style={{ color: 'var(--text-muted)' }}
+              className="text-[14.5px] text-gray-400 tracking-wide font-normal flex items-center whitespace-nowrap overflow-hidden w-full"
             >
-              Search for <span
-                className="font-medium truncate max-w-[120px] xs:max-w-[180px] sm:max-w-[280px]"
-                style={{
-                  background: themeColors.gradient,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  color: 'transparent'
-                }}
-              >
-                {displayedText}
-              </span>
-              <span className="animate-pulse -ml-0.5" style={{ color: themeColors.brand.teal }}>|</span>
+              Search for&nbsp;<span className="text-gray-500 font-medium">'{displayedText}'</span>
+              <span className="animate-pulse ml-0.5 text-gray-400 font-light">|</span>
             </span>
           </div>
         </div>

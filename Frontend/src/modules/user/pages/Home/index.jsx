@@ -12,6 +12,11 @@ import { useCity } from '../../../../context/CityContext';
 import { toast } from 'react-hot-toast';
 import { registerFCMToken } from '../../../../services/pushNotificationService';
 import { motion } from 'framer-motion';
+import CategoryModal from './components/CategoryModal';
+import SearchOverlay from './components/SearchOverlay';
+import OfferBannerSlider from './components/OfferBannerSlider';
+import GroupCategoryBottomSheet from './components/GroupCategoryBottomSheet';
+import ServiceSectionWithRating from './components/ServiceSectionWithRating';
 
 // Lazy load heavy components for better initial load performance
 import PromoCarousel from './components/PromoCarousel';
@@ -19,13 +24,10 @@ import PromoCarousel from './components/PromoCarousel';
 const NewAndNoteworthy = lazy(() => import('./components/NewAndNoteworthy'));
 const MostBookedServices = lazy(() => import('./components/MostBookedServices'));
 const CuratedServices = lazy(() => import('./components/CuratedServices'));
-import ServiceSectionWithRating from './components/ServiceSectionWithRating';
 const Banner = lazy(() => import('./components/Banner'));
 const ReferEarnSection = lazy(() => import('./components/ReferEarnSection'));
-import CategoryModal from './components/CategoryModal';
-import SearchOverlay from './components/SearchOverlay';
-import OfferBannerSlider from './components/OfferBannerSlider';
-import GroupCategoryBottomSheet from './components/GroupCategoryBottomSheet';
+const CTABanner = lazy(() => import('./components/CTABanner'));
+const TrustSection = lazy(() => import('./components/TrustSection'));
 import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
@@ -371,57 +373,20 @@ const Home = () => {
     fetchBanners();
     fetchPromos();
   }, [currentCity]);
-
-  // Fetch user bookings for "Order Again" section
+  // Fetch user bookings for "Order Again" section (highly optimized)
   useEffect(() => {
     const fetchPastOrders = async () => {
       try {
         const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
         if (!token) return;
         setPastServicesLoading(true);
-        const res = await bookingService.getUserBookings({ limit: 20 });
+        const res = await bookingService.getPastServices();
         if (res.success && Array.isArray(res.data)) {
-          // Extract unique services from bookedItems or main service info
-          const servicesMap = new Map();
-          res.data.forEach(booking => {
-            if (Array.isArray(booking.bookedItems) && booking.bookedItems.length > 0) {
-              booking.bookedItems.forEach(item => {
-                const sId = item.serviceId || item._id || item.id;
-                if (sId && !servicesMap.has(sId)) {
-                  servicesMap.set(sId, {
-                    id: sId,
-                    serviceId: sId,
-                    categoryId: item.categoryId || booking.categoryId,
-                    title: item.card?.title || item.title || item.name,
-                    price: item.price || 0,
-                    originalPrice: item.originalPrice || null,
-                    discount: item.discount || null,
-                    image: toAssetUrl(item.icon || item.image || ''),
-                    vendorName: booking.vendorName || booking.vendorId?.name || 'Evenox Clean',
-                    rating: item.rating || "4.8",
-                    reviews: item.reviews || "10k+"
-                  });
-                }
-              });
-            } else if (booking.serviceId) {
-              const sId = booking.serviceId;
-              if (sId && !servicesMap.has(sId)) {
-                servicesMap.set(sId, {
-                  id: sId,
-                  serviceId: sId,
-                  categoryId: booking.categoryId,
-                  title: booking.serviceName || 'Service',
-                  price: booking.finalAmount || booking.totalAmount || 0,
-                  originalPrice: null,
-                  image: toAssetUrl(booking.serviceImage || ''),
-                  vendorName: booking.vendorName || booking.vendorId?.name || 'Evenox Clean',
-                  rating: "4.8",
-                  reviews: "10k+"
-                });
-              }
-            }
-          });
-          setPastServices(Array.from(servicesMap.values()));
+          const mapped = res.data.map(item => ({
+            ...item,
+            image: toAssetUrl(item.image)
+          }));
+          setPastServices(mapped);
         }
       } catch (err) {
         console.error("Failed to fetch past services for Order Again:", err);
@@ -708,7 +673,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-screen-xl mx-auto w-full">
+        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -749,7 +714,7 @@ const Home = () => {
               )}
  
               {/* Search Bar Section */}
-              <div className="mt-5 px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center gap-3">
+              <div className="mt-5 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center gap-3">
                 <div className="flex-1">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>
@@ -809,7 +774,7 @@ const Home = () => {
 
               {/* Painting Quote Approval Section */}
               {pendingQuotes.length > 0 && (
-                <motion.div variants={itemVariants} className="px-5 max-w-lg lg:max-w-2xl mx-auto w-full mt-4">
+                <motion.div variants={itemVariants} className="px-3 md:px-5 max-w-lg lg:max-w-2xl mx-auto w-full mt-4">
                   <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-ping" />
                     🎨 Painting Quotes Awaiting Your Approval
@@ -842,6 +807,15 @@ const Home = () => {
                     }))}
                     onPromoClick={handlePromoClick}
                   />
+                </motion.section>
+              )}
+
+              {/* Trust Section */}
+              {homeContent?.trustItems && homeContent.trustItems.length > 0 && (
+                <motion.section variants={itemVariants}>
+                  <Suspense fallback={<div className="h-10 bg-gray-50 animate-pulse rounded-xl mx-4 my-2" />}>
+                    <TrustSection items={homeContent.trustItems} />
+                  </Suspense>
                 </motion.section>
               )}
 
@@ -921,7 +895,7 @@ const Home = () => {
               {upcomingCategories.length > 0 && (() => {
                 const activeCat = upcomingCategories[currentStackIndex] || upcomingCategories[0];
                 return (
-                  <motion.section variants={itemVariants} className="px-5 space-y-4 max-w-lg md:max-w-2xl lg:max-w-screen-xl mx-auto w-full">
+                  <motion.section variants={itemVariants} className="px-3 md:px-5 space-y-4 max-w-lg md:max-w-2xl lg:max-w-screen-xl mx-auto w-full">
                     <div className="flex items-center justify-between">
                       <h2
                         className="text-[17px] font-semibold tracking-tight"
@@ -1067,7 +1041,7 @@ const Home = () => {
 
               {/* Order Again Section */}
               {!pastServicesLoading && pastServices.length > 0 && (
-                <motion.section variants={itemVariants} className="px-5 space-y-4">
+                <motion.section variants={itemVariants} className="px-3 md:px-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2
                       className="text-[17px] font-semibold tracking-tight"
@@ -1086,7 +1060,7 @@ const Home = () => {
 
                   {/* Horizontal Scroll list of past services */}
                   <div 
-                    className="flex gap-4 overflow-x-auto pb-3 -mx-5 px-5 no-scrollbar"
+                    className="flex gap-4 overflow-x-auto pb-3 -mx-3 px-3 md:-mx-5 md:px-5 no-scrollbar"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
                     {pastServices.map((service, index) => {
@@ -1181,6 +1155,8 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <CuratedServices
+                      title={homeContent?.sectionHeaders?.curatedTitle}
+                      subtitle={homeContent?.sectionHeaders?.curatedSubtitle}
                       services={(homeContent?.curated || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
@@ -1199,6 +1175,7 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <NewAndNoteworthy
+                      title={homeContent?.sectionHeaders?.noteworthyTitle}
                       services={(homeContent?.noteworthy || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
@@ -1217,6 +1194,7 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <MostBookedServices
+                      title={homeContent?.sectionHeaders?.bookedTitle}
                       services={(homeContent?.booked || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
@@ -1236,7 +1214,24 @@ const Home = () => {
                 </motion.div>
               )}
 
-
+              {/* CTA Banner */}
+              {homeContent?.ctaBanner && homeContent.ctaBanner.title && (
+                <motion.div variants={itemVariants}>
+                  <Suspense fallback={<div className="h-32 bg-gray-50 animate-pulse rounded-xl mx-4 my-2" />}>
+                    <CTABanner 
+                      ctaBanner={homeContent.ctaBanner} 
+                      onNavigate={(nav) => {
+                        if (nav.targetCategoryId) {
+                          const cat = categories.find(c => c.id === nav.targetCategoryId || c._id === nav.targetCategoryId);
+                          if (cat) handleCategoryClick(cat);
+                        } else if (nav.slug) {
+                          navigate(`/${nav.slug}`);
+                        }
+                      }} 
+                    />
+                  </Suspense>
+                </motion.div>
+              )}
 
               {/* Dynamic Sections */}
               {homeContent?.isCategorySectionsVisible !== false && (homeContent?.categorySections || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map((section, sIdx) => (

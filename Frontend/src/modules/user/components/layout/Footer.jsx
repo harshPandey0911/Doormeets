@@ -19,8 +19,14 @@ const Footer = () => {
     fetchSettings();
   }, []);
 
-  // Only show on home page as per user request
-  if (location.pathname !== '/user' && location.pathname !== '/user/') {
+  // Show on home, about, contact, categories, brand, and service pages
+  const allowedPaths = ['/user', '/user/', '/user/home', '/user/home/', '/user/about', '/user/contact'];
+  const isAllowedPath = allowedPaths.includes(location.pathname) || 
+                        location.pathname.startsWith('/user/category/') || 
+                        location.pathname.startsWith('/user/brand/') || 
+                        location.pathname.startsWith('/user/service/');
+  
+  if (!isAllowedPath) {
     return null;
   }
 
@@ -28,7 +34,7 @@ const Footer = () => {
     {
       title: 'Company',
       links: [
-        { label: 'About Us', path: '/user/about-Doormeets' },
+        { label: 'About Us', path: '/user/about' },
         { label: 'Help & Support', path: '/user/help-support' },
         { label: 'Cancellation Policy', path: '/user/cancellation-policy' },
         { label: 'Terms & Conditions', path: '#' },

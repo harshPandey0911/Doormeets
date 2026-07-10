@@ -5,7 +5,7 @@ import { Navigate, useLocation } from 'react-router-dom';
  * Protected Route Component
  * Checks if user is authenticated before allowing access
  */
-const ProtectedRoute = ({ children, userType = 'user', redirectTo = null }) => {
+const ProtectedRoute = ({ children, userType = 'user', redirectTo = null, allowDesktopGuest = false }) => {
   const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,13 +39,18 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null }) => {
         setIsAuthenticated(true);
         setIsLoading(false);
       } else {
-        setIsAuthenticated(false);
+        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+        if (userType === 'user' && allowDesktopGuest && isDesktop) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [userType]); // ✅ Only re-run if userType changes, NOT on every route change
+  }, [userType, allowDesktopGuest]); // ✅ Re-run if userType or allowDesktopGuest changes
 
   if (isLoading) {
     return (
@@ -60,8 +65,9 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null }) => {
 
   if (isAuthenticated === false) {
     // Determine redirect path
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
     const defaultRedirects = {
-      user: '/user',
+      user: isDesktop ? '/user/login' : '/user',
       vendor: '/vendor/login',
       worker: '/worker/login',
       admin: '/admin/login'

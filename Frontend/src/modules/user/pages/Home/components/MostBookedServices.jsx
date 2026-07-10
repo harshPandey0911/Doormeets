@@ -11,7 +11,7 @@ import spatulaWaxingImage from '../../../../../assets/images/pages/Home/MostBook
 import fanRepairImage from '../../../../../assets/images/pages/Home/MostBookedServices/fan-repairs.jpg';
 import switchBoardImage from '../../../../../assets/images/pages/Home/MostBookedServices/switch-board.jpg';
 
-const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick }) => {
+const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, title }) => {
 
 
   const serviceList = services || [];
@@ -64,7 +64,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick })
           from: { x: 50, opacity: 0, scale: 0.9 },
           to: { x: 0, opacity: 1, scale: 1 },
           duration: 0.5,
-          stagger: 0.08,
+          stagger: 0.1,
           ease: 'back.out(1.7)',
         },
         { rootMargin: '150px' }
@@ -98,7 +98,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick })
         <h2
           className="text-xl font-bold text-gray-900 tracking-tight"
         >
-          Most booked services
+          {title || "Most booked services"}
         </h2>
       </div>
 

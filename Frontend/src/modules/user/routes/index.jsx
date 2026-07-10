@@ -74,6 +74,8 @@ const PlanDetails = lazyLoad(() => import('../pages/MyPlan/PlanDetails'));
 const MyRating = lazyLoad(() => import('../pages/MyRating'));
 const AboutCleaningExpert = lazyLoad(() => import('../pages/AboutCleaningExpert'));
 const UpdateProfile = lazyLoad(() => import('../pages/UpdateProfile'));
+const About = lazyLoad(() => import('../pages/About'));
+const Contact = lazyLoad(() => import('../pages/Contact'));
 const Welcome = lazyLoad(() => import('../pages/Welcome'));
 const CategoryPage = lazyLoad(() => import('../pages/PremiumCategoryPage'));
 const CategoriesPage = lazyLoad(() => import('../pages/PremiumCategoriesPage'));
@@ -172,10 +174,12 @@ const UserRoutes = () => {
                 <Route path="/" element={<PublicRoute userType="user"><Welcome /></PublicRoute>} />
                 <Route path="/login" element={<PublicRoute userType="user"><Login /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute userType="user"><Signup /></PublicRoute>} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
 
                 {/* Protected routes */}
-                <Route path="/home" element={<ProtectedRoute userType="user"><Home /></ProtectedRoute>} />
-                <Route path="/home/:slug" element={<ProtectedRoute userType="user"><HomeSlugRedirect /></ProtectedRoute>} />
+                <Route path="/home" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><Home /></ProtectedRoute>} />
+                <Route path="/home/:slug" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><HomeSlugRedirect /></ProtectedRoute>} />
                 <Route path="/native" element={<ProtectedRoute userType="user"><Native /></ProtectedRoute>} />
 
                 <Route path="/rewards" element={<ProtectedRoute userType="user"><Rewards /></ProtectedRoute>} />
@@ -192,9 +196,9 @@ const UserRoutes = () => {
                 <Route path="/wallet" element={<ProtectedRoute userType="user"><Wallet /></ProtectedRoute>} />
                 <Route path="/my-plan" element={<ProtectedRoute userType="user"><MyPlan /></ProtectedRoute>} />
                 <Route path="/my-plan/:id" element={<ProtectedRoute userType="user"><PlanDetails /></ProtectedRoute>} />
-                <Route path="/category/:slug" element={<ProtectedRoute userType="user"><CategoryPage /></ProtectedRoute>} />
-                <Route path="/brand/:slug" element={<ProtectedRoute userType="user"><BrandPage /></ProtectedRoute>} />
-                <Route path="/service/:slug" element={<ProtectedRoute userType="user"><ServiceDetailPage /></ProtectedRoute>} />
+                <Route path="/category/:slug" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><CategoryPage /></ProtectedRoute>} />
+                <Route path="/brand/:slug" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><BrandPage /></ProtectedRoute>} />
+                <Route path="/service/:slug" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><ServiceDetailPage /></ProtectedRoute>} />
                 <Route path="/my-rating" element={<ProtectedRoute userType="user"><MyRating /></ProtectedRoute>} />
                 <Route path="/about-cleaning-expert" element={<ProtectedRoute userType="user"><AboutCleaningExpert /></ProtectedRoute>} />
                 <Route path="/update-profile" element={<ProtectedRoute userType="user"><UpdateProfile /></ProtectedRoute>} />
@@ -254,7 +258,13 @@ const UserRoutes = () => {
         {/* Components OUTSIDE Suspense */}
         {!isBookingDetailsPage && !isBookingConfirmationPage && !isPublicPage && <LiveBookingCard hasBottomNav={shouldShowBottomNav} />}
         {shouldShowBottomNav && <BottomNav />}
-        {(location.pathname === '/user/home' || location.pathname === '/user/home/') && <Footer />}
+        {(location.pathname === '/user/home' || 
+          location.pathname === '/user/home/' || 
+          location.pathname === '/user/about' || 
+          location.pathname === '/user/contact' || 
+          location.pathname.startsWith('/user/category/') || 
+          location.pathname.startsWith('/user/brand/') || 
+          location.pathname.startsWith('/user/service/')) && <Footer />}
       </ErrorBoundary>
     </ThemeProvider>
   );

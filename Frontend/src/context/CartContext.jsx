@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cartService } from '../services/cartService';
 
 /**
@@ -10,6 +11,7 @@ import { cartService } from '../services/cartService';
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [cartCount, setCartCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +60,12 @@ export const CartProvider = ({ children }) => {
 
   // Add item to cart - instant update + server sync
   const addToCart = useCallback(async (itemData) => {
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/user/login');
+      return { success: false, notAuthenticated: true };
+    }
+
     // Optimistic Update
     const tempId = `temp-${Date.now()}`;
     const tempItem = { ...itemData, _id: tempId, id: tempId };
@@ -87,6 +95,12 @@ export const CartProvider = ({ children }) => {
 
   // Update item quantity
   const updateItem = useCallback(async (itemId, serviceCount) => {
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/user/login');
+      return { success: false, notAuthenticated: true };
+    }
+
     // Optimistic update
     setCartItems(prev =>
       prev.map(item => {

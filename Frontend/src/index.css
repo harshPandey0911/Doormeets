@@ -335,7 +335,7 @@ body {
   background-color: var(--background) !important;
   background: var(--background) !important;
   background-attachment: fixed;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -344,7 +344,7 @@ body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
   color: var(--text-primary);
 }
@@ -363,7 +363,7 @@ h1, h2, h3, h4, h5, h6, p, span, button, input, textarea, label, a {
   background-color: var(--background) !important;
   background: var(--background) !important;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;

@@ -26,6 +26,13 @@ export const bookingService = {
     return response.data;
   },
 
+  // Get unique past services for Order Again section (highly optimized)
+  getPastServices: async () => {
+    const response = await api.get('/users/bookings/past-services');
+    return response.data;
+  },
+
+
   // Get booking details by ID
   getById: async (id) => {
     const response = await api.get(`/users/bookings/${id}`);

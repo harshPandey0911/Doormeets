@@ -28,14 +28,35 @@ const Welcome = () => {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+
+  // Handle responsive check
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Eagerly preload onboarding images to prevent lag
   React.useEffect(() => {
+    if (isDesktop) return;
     slides.forEach((slide) => {
       const img = new Image();
       img.src = slide.image;
     });
-  }, []);
+  }, [isDesktop]);
+
+  React.useEffect(() => {
+    if (isDesktop) {
+      navigate('/user/home', { replace: true });
+    }
+  }, [isDesktop, navigate]);
+
+  if (isDesktop) {
+    return null;
+  }
 
   const handleNext = () => {
     if (currentIndex < slides.length - 1) {
