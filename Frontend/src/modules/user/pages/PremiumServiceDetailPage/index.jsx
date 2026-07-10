@@ -1094,141 +1094,46 @@ const PremiumServiceDetailPage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setIsCustomizing(prev => !prev)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isCustomizing ? 'bg-violet-600' : 'bg-gray-200 dark:bg-zinc-700'
-                  }`}
+                onClick={() => setIsCustomizing(true)}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline cursor-pointer"
               >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isCustomizing ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                />
+                Customize options
               </button>
             </div>
-
-            {isCustomizing ? (
-              <div className="space-y-6">
-                {(() => {
-                  const renderedGroupIds = new Set();
-                  return selectedPackage.includedItems.map((incItem, incIdx) => {
-                    const groupId = incItem.serviceGroupId?.toString();
-                    if (!groupId || renderedGroupIds.has(groupId)) return null;
-                    renderedGroupIds.add(groupId);
-
+            
+            <div className="py-2 space-y-3">
+              <p className="text-xs text-gray-500">This combo package standardly includes the following items at a discounted rate:</p>
+              <div className="grid grid-cols-1 gap-2">
+                {selectedPackage.includedItems.map((incItem, i) => {
+                  const groupId = incItem.serviceGroupId?.toString();
+                  const selectedVal = customSelectedItems[groupId];
+                  const selectedIds = Array.isArray(selectedVal)
+                    ? selectedVal
+                    : (selectedVal ? [selectedVal.toString()] : []);
+                  
+                  let displayItemTitle = incItem.selectedItemTitle;
+                  if (selectedIds.includes('skip')) {
+                    displayItemTitle = 'Skipped ("I don\'t need this")';
+                  } else if (selectedIds.length > 0) {
                     const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
-                    if (!group) return null;
+                    const matched = group?.items?.find(item => item._id?.toString() === selectedIds[0]);
+                    if (matched) {
+                      displayItemTitle = matched.title;
+                    }
+                  }
 
-                    const selectedList = Array.isArray(customSelectedItems[groupId])
-                      ? customSelectedItems[groupId]
-                      : (customSelectedItems[groupId] ? [customSelectedItems[groupId].toString()] : []);
-
-                    return (
-                      <div key={incIdx} className="space-y-3">
-                        <h3 className="text-[15px] font-bold text-gray-800 dark:text-zinc-100" style={{ color: 'var(--text-primary)' }}>
-                          {group.title}
-                        </h3>
-
-                        <div className="space-y-3 pl-1">
-                          {group.items?.map((item) => {
-                            const isSelected = selectedList.includes(item._id?.toString());
-                            return (
-                              <div
-                                key={item._id}
-                                onClick={() => {
-                                  setCustomSelectedItems(prev => {
-                                    const currentList = Array.isArray(prev[groupId])
-                                      ? prev[groupId]
-                                      : (prev[groupId] ? [prev[groupId].toString()] : []);
-
-                                    const listWithoutSkip = currentList.filter(id => id !== 'skip');
-                                    let newList;
-                                    if (listWithoutSkip.includes(item._id?.toString())) {
-                                      newList = listWithoutSkip.filter(id => id !== item._id?.toString());
-                                    } else {
-                                      newList = [...listWithoutSkip, item._id?.toString()];
-                                    }
-                                    return {
-                                      ...prev,
-                                      [groupId]: newList
-                                    };
-                                  });
-                                }}
-                                className="flex items-center justify-between py-2 cursor-pointer group"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span
-                                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${isSelected
-                                        ? 'border-violet-600 bg-violet-600 dark:border-violet-500 dark:bg-violet-500'
-                                        : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
-                                      }`}
-                                  >
-                                    {isSelected && (
-                                      <span className="text-white text-xs font-bold">✓</span>
-                                    )}
-                                  </span>
-                                  <span className="text-[14px] font-medium text-gray-700 dark:text-zinc-300" style={{ color: 'var(--text-primary)' }}>
-                                    {item.title}
-                                  </span>
-                                </div>
-                                <span className="text-[14px] font-bold text-gray-800 dark:text-zinc-200">
-                                  ₹{item.price}
-                                </span>
-                              </div>
-                            );
-                          })}
-
-                          {group.allowSkip && (
-                            <div
-                              onClick={() => {
-                                setCustomSelectedItems(prev => {
-                                  const currentList = Array.isArray(prev[groupId])
-                                    ? prev[groupId]
-                                    : (prev[groupId] ? [prev[groupId].toString()] : []);
-
-                                  const isSkipSelected = currentList.includes('skip');
-                                  return {
-                                    ...prev,
-                                    [groupId]: isSkipSelected ? [] : ['skip']
-                                  };
-                                });
-                              }}
-                              className="flex items-center justify-between py-2 cursor-pointer group"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span
-                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${selectedList.includes('skip')
-                                      ? 'border-red-500 bg-red-500'
-                                      : 'border-gray-300 dark:border-zinc-700 group-hover:border-gray-400'
-                                    }`}
-                                >
-                                  {selectedList.includes('skip') && (
-                                    <span className="text-white text-xs font-bold">✓</span>
-                                  )}
-                                </span>
-                                <span className="text-[14px] font-medium text-red-500 dark:text-red-400">
-                                  I don't need {group.title.toLowerCase()}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                })()}
-              </div>
-            ) : (
-              <div className="py-2 space-y-3">
-                <p className="text-xs text-gray-500">This combo package standardly includes the following items at a discounted rate:</p>
-                <div className="grid grid-cols-1 gap-2">
-                  {selectedPackage.includedItems.map((incItem, i) => (
+                  return (
                     <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
                       <span className="text-emerald-500 font-bold">✓</span>
-                      <span>{incItem.serviceGroupTitle}: <span className="font-bold text-gray-800 dark:text-zinc-100">{incItem.selectedItemTitle}</span></span>
+                      <span>
+                        {incItem.serviceGroupTitle}:{' '}
+                        <span className="font-bold text-gray-800 dark:text-zinc-100">{displayItemTitle}</span>
+                      </span>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
           </section>
         )}
 
@@ -2012,6 +1917,170 @@ const PremiumServiceDetailPage = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {/* Package Customization Modal/Bottom Sheet */}
+        {isCustomizing && service?.serviceType === 'package_base' && selectedPackage && selectedPackage.allowUserEdit !== false && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="customise-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+              onClick={() => setIsCustomizing(false)}
+            />
+            {/* Bottom Sheet / Centered Card */}
+            <motion.div
+              key="customise-sheet"
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 lg:relative lg:inset-auto lg:z-50 lg:flex lg:items-center lg:justify-center"
+              style={{
+                position: 'fixed',
+                zIndex: 999
+              }}
+            >
+              {/* Desktop wrapper */}
+              <div className="lg:fixed lg:inset-0 lg:flex lg:items-center lg:justify-center lg:p-4">
+                <div 
+                  className="w-full bg-white dark:bg-zinc-900 shadow-2xl p-6 relative overflow-hidden rounded-t-[32px] lg:rounded-[32px] max-h-[90vh] lg:max-h-[85vh] lg:max-w-md flex flex-col"
+                  style={{ border: '1px solid var(--border)' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Drag Handle - Mobile Only */}
+                  <div className="w-12 h-1.5 bg-gray-200 dark:bg-zinc-700 rounded-full mx-auto mb-4 lg:hidden shrink-0" />
+
+                  {/* Header */}
+                  <div className="flex justify-between items-start border-b pb-4 dark:border-zinc-800 shrink-0">
+                    <div>
+                      <h3 className="text-base font-black text-slate-900 dark:text-white truncate max-w-[280px]">
+                        {selectedPackage.title}
+                      </h3>
+                      <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                        Customize individual options inside this combo package
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setIsCustomizing(false)}
+                      className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-400 dark:text-zinc-500 shrink-0"
+                    >
+                      <FiX className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Scrollable Content */}
+                  <div className="overflow-y-auto py-4 space-y-6 flex-1 pr-1">
+                    {(() => {
+                      const renderedGroupIds = new Set();
+                      return selectedPackage.includedItems.map((incItem, incIdx) => {
+                        const groupId = incItem.serviceGroupId?.toString();
+                        if (!groupId || renderedGroupIds.has(groupId)) return null;
+                        renderedGroupIds.add(groupId);
+
+                        const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
+                        if (!group) return null;
+
+                        const selectedList = Array.isArray(customSelectedItems[groupId])
+                          ? customSelectedItems[groupId]
+                          : (customSelectedItems[groupId] ? [customSelectedItems[groupId].toString()] : []);
+
+                        return (
+                          <div key={incIdx} className="space-y-3">
+                            <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                              {group.title}
+                            </h4>
+
+                            <div className="space-y-2.5">
+                              {group.items?.map((item) => {
+                                const isSelected = selectedList.includes(item._id?.toString());
+                                return (
+                                  <div
+                                    key={item._id}
+                                    onClick={() => {
+                                      setCustomSelectedItems(prev => ({
+                                        ...prev,
+                                        [groupId]: [item._id?.toString()]
+                                      }));
+                                    }}
+                                    className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800/40 cursor-pointer transition-all border border-transparent hover:border-gray-100"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      {/* Radio Icon */}
+                                      <span
+                                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                                          isSelected
+                                            ? 'border-violet-600 dark:border-violet-500'
+                                            : 'border-gray-300 dark:border-zinc-700'
+                                        }`}
+                                      >
+                                        {isSelected && (
+                                          <span className="w-2.5 h-2.5 rounded-full bg-violet-600 dark:bg-violet-500" />
+                                        )}
+                                      </span>
+                                      <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300">
+                                        {item.title}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs font-bold text-gray-800 dark:text-zinc-200">
+                                      ₹{item.price}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+
+                              {group.allowSkip && (
+                                <div
+                                  onClick={() => {
+                                    setCustomSelectedItems(prev => ({
+                                      ...prev,
+                                      [groupId]: ['skip']
+                                    }));
+                                  }}
+                                  className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-red-50/20 dark:hover:bg-red-950/10 cursor-pointer transition-all"
+                                >
+                                  {/* Radio Icon */}
+                                  <span
+                                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                                      selectedList.includes('skip')
+                                        ? 'border-red-500'
+                                        : 'border-gray-300 dark:border-zinc-700'
+                                    }`}
+                                  >
+                                    {selectedList.includes('skip') && (
+                                      <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                                    )}
+                                  </span>
+                                  <span className="text-xs font-bold text-red-500 dark:text-red-400">
+                                    I don't need {group.title.toLowerCase()}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* Done Button */}
+                  <div className="pt-4 border-t dark:border-zinc-800 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomizing(false)}
+                      className="w-full py-3.5 rounded-2xl font-bold text-white text-xs shadow-lg transition-transform hover:scale-[1.01]"
+                      style={{ backgroundColor: '#B33A35' }}
+                    >
+                      Done Customize
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

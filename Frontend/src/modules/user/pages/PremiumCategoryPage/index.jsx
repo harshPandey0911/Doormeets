@@ -83,6 +83,7 @@ const PremiumCategoryPage = () => {
 
   // Variants popup states
   const [showVariantPopup, setShowVariantPopup] = useState(false);
+  const [showComboEditModal, setShowComboEditModal] = useState(false);
   const [selectedServiceForPopup, setSelectedServiceForPopup] = useState(null);
   const [selectedVariants, setSelectedVariants] = useState([]);
   const [activeSubId, setActiveSubId] = useState(null);
@@ -774,6 +775,14 @@ const PremiumCategoryPage = () => {
                           </li>
                         ))}
                       </ul>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowComboEditModal(true)}
+                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline mt-2.5 inline-block cursor-pointer"
+                      >
+                        edit your package
+                      </button>
                     </div>
 
                     {/* Right Column: Rounded Cover Image with Absolute ADD Button */}
@@ -1023,32 +1032,7 @@ const PremiumCategoryPage = () => {
         </div>
       )}
 
-      {/* Desktop Floating Cart Bar */}
-      {cartCount > 0 && (
-        <div className="hidden lg:block fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-          <div className="max-w-[1360px] mx-auto px-12 py-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <FiShoppingBag className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
-                <span className="text-sm font-bold text-gray-800 dark:text-zinc-200">{cartCount} {cartCount === 1 ? 'item' : 'items'}</span>
-              </div>
-              <div className="h-5 w-px bg-gray-200 dark:bg-zinc-700" />
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold text-gray-900 dark:text-white">₹{cartTotal}</span>
-                {cartOriginalTotal > cartTotal && (
-                  <span className="text-sm text-gray-400 line-through font-medium">₹{cartOriginalTotal}</span>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('/user/cart')}
-              className="px-8 py-3 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl text-sm transition-all active:scale-95 shadow-md cursor-pointer"
-            >
-              View Cart →
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Variant Selection Popup Bottom Sheet */}
       <AnimatePresence>
@@ -1206,6 +1190,111 @@ const PremiumCategoryPage = () => {
                   Add to Cart — ₹{selectedServiceForPopup.price + selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0), 0)}
                 </button>
               </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {/* Customize Combo Package Modal */}
+        {showComboEditModal && generatedPackages.length > 0 && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="combo-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+              onClick={() => setShowComboEditModal(false)}
+            />
+            {/* Centered Modal */}
+            <motion.div
+              key="combo-sheet"
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowComboEditModal(false)}
+            >
+              <div 
+                className="w-full max-w-md rounded-[32px] p-6 shadow-2xl space-y-6 relative overflow-hidden"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex justify-between items-center pb-2">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">
+                      Customize Combo Package
+                    </h3>
+                    <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                      Select or deselect items to include in your combo bundle
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowComboEditModal(false)}
+                    className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-400 dark:text-zinc-500"
+                  >
+                    <FiX className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Services List inside Combo */}
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                  {generatedPackages[0].services.map((s) => {
+                    const isInCart = (quantities[s.id || s._id] || 0) > 0;
+                    const totalPrice = generatedPackages[0].originalPrice;
+                    const bundlePrice = generatedPackages[0].price;
+                    const multiplier = totalPrice > 0 ? (bundlePrice / totalPrice) : 0.85;
+
+                    return (
+                      <div 
+                        key={s.id || s._id} 
+                        className="flex justify-between items-center p-3 rounded-2xl border transition-all"
+                        style={{
+                          backgroundColor: isInCart ? 'rgba(16,185,129,0.02)' : 'transparent',
+                          borderColor: isInCart ? 'rgba(16,185,129,0.15)' : 'var(--border)'
+                        }}
+                      >
+                        <div className="min-w-0 flex-1 pr-3">
+                          <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{s.title}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{s.description}</p>
+                        </div>
+                        
+                        {/* Toggle button */}
+                        <button
+                          onClick={async () => {
+                            const item = cartItems.find((entry) => getCartItemServiceId(entry) === (s.id || s._id));
+                            if (item) {
+                              await removeItem(item._id || item.id);
+                              toast.success(`Removed ${s.title} from bundle`);
+                            } else {
+                              await handleAdd(s, multiplier);
+                            }
+                          }}
+                          className={`text-[10px] font-extrabold px-3 py-1.5 rounded-xl border transition-all ${
+                            isInCart
+                              ? 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700'
+                              : 'border-slate-200 text-slate-700 dark:text-zinc-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
+                          }`}
+                        >
+                          {isInCart ? 'Included ✓' : 'Add to bundle'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer buttons */}
+                <button
+                  type="button"
+                  onClick={() => setShowComboEditModal(false)}
+                  className="w-full py-3.5 rounded-2xl font-bold text-white text-xs shadow-lg transition-transform hover:scale-[1.01]"
+                  style={{ backgroundColor: '#B33A35' }}
+                >
+                  Done Customize
+                </button>
               </div>
             </motion.div>
           </>
