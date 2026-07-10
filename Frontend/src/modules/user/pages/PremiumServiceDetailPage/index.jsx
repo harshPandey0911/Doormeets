@@ -39,7 +39,7 @@ const PremiumServiceDetailPage = () => {
   const { slug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { addToCart, cartCount } = useCart();
+  const { addToCart, cartCount, cartItems = [] } = useCart();
 
   const [service, setService] = useState(location.state?.service || null);
   const brand = location.state?.brand || null;
@@ -398,6 +398,81 @@ const PremiumServiceDetailPage = () => {
       );
     } else {
       toast.error('Geolocation is not supported by your browser');
+    }
+  };
+
+  const getCartItemServiceId = (item) => {
+    if (!item) return null;
+    if (typeof item.serviceId === 'object' && item.serviceId) {
+      return item.serviceId._id || item.serviceId.id;
+    }
+    return item.serviceId || item.id || item._id;
+  };
+
+  const getAddedPackageCount = (pkgTitle) => {
+    if (!cartItems) return 0;
+    const matchedItem = cartItems.find(item => {
+      const sId = getCartItemServiceId(item);
+      if (sId !== (service?._id || service?.id)) return false;
+      const pkgField = item.dynamicFields?.find(f => f.name === 'Selected Package');
+      return pkgField?.value === pkgTitle;
+    });
+    return matchedItem ? (matchedItem.serviceCount || 1) : 0;
+  };
+
+  const handleSelectPackage = async (pkg) => {
+    if (!service) return;
+
+    // Check if it is already added - if so, we can just do nothing or toggle select
+    const addedCount = getAddedPackageCount(pkg.title);
+    if (addedCount > 0) {
+      return; // Already added
+    }
+
+    const dynamicFieldsPayload = [];
+    dynamicFieldsPayload.push({
+      name: 'Selected Package',
+      label: 'Selected Package',
+      value: pkg.title
+    });
+
+    if (pkg.includedItems && service.serviceGroups) {
+      pkg.includedItems.forEach(incItem => {
+        const groupId = incItem.serviceGroupId?.toString();
+        const group = service.serviceGroups.find(g => g._id?.toString() === groupId);
+        if (group) {
+          if (incItem.selectedItemId) {
+            const selectedItem = group.items?.find(i => i._id?.toString() === incItem.selectedItemId.toString());
+            if (selectedItem) {
+              dynamicFieldsPayload.push({
+                name: `Group: ${group.title}`,
+                label: group.title,
+                value: `${selectedItem.title} (₹${selectedItem.price})`
+              });
+            }
+          }
+        }
+      });
+    }
+
+    const cartData = buildCartItemData({ service, category, brand });
+    cartData.card.title = `${service.title} - ${pkg.title}`;
+    if (pkg.duration) cartData.card.duration = pkg.duration;
+    
+    // Set package price
+    cartData.price = pkg.price;
+    cartData.unitPrice = pkg.price;
+    const baseOriginalPrice = Number(pkg.originalPrice || pkg.price || 0);
+    cartData.originalPrice = baseOriginalPrice;
+    if (cartData.card) {
+      cartData.card.price = pkg.price;
+      cartData.card.originalPrice = baseOriginalPrice;
+    }
+    cartData.dynamicFields = dynamicFieldsPayload;
+
+    const response = await addToCart(cartData);
+    if (response?.success) {
+      toast.success(`${pkg.title} added to cart!`);
     }
   };
 
@@ -912,6 +987,7 @@ const PremiumServiceDetailPage = () => {
             </div>
             <div className="space-y-3">
               {service.packages.map((pkg, idx) => {
+                const addedCount = getAddedPackageCount(pkg.title);
                 const isPkgSelected = selectedPackage?.title === pkg.title;
                 return (
                   <div
@@ -924,10 +1000,17 @@ const PremiumServiceDetailPage = () => {
                         setIsCustomizing(false);
                       }
                     }}
-                    className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${isPkgSelected ? 'border-brand' : 'border-border-color hover:border-gray-300'
-                      }`}
+                    className={`p-4 rounded-[24px] border-2 cursor-pointer transition-all flex items-center justify-between ${
+                      addedCount > 0
+                        ? 'border-emerald-500/30'
+                        : isPkgSelected 
+                        ? 'border-brand' 
+                        : 'border-border-color hover:border-gray-300'
+                    }`}
                     style={
-                      isPkgSelected
+                      addedCount > 0
+                        ? { backgroundColor: 'rgba(16,185,129,0.04)' }
+                        : isPkgSelected
                         ? { backgroundColor: 'rgba(255,159,69,0.1)' }
                         : { backgroundColor: 'var(--card-bg)' }
                     }
@@ -938,7 +1021,25 @@ const PremiumServiceDetailPage = () => {
                         {pkg.isPopular && <span className="text-[9px] font-semibold uppercase bg-brand text-white px-2.5 py-0.5 rounded-full">Popular</span>}
                       </div>
                       {pkg.duration && <div className="text-[11px] font-semibold text-gray-400 mb-1.5 flex items-center gap-1"><FiClock /> {pkg.duration}</div>}
-                      {pkg.description && <p className="text-[11px] font-normal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
+                      {pkg.description && <p className="text-[11px] font-normal leading-relaxed animate-fade-in" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
+                      
+                      {pkg.allowUserEdit !== false && pkg.includedItems?.length > 0 && (addedCount > 0 || isPkgSelected) && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPackage(pkg);
+                            setIsCustomizing(true);
+                            const el = document.getElementById('customize-package-section');
+                            if (el) {
+                              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }}
+                          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline mt-2 inline-block cursor-pointer"
+                        >
+                          edit your packages
+                        </button>
+                      )}
                     </div>
 
                     <div className="flex flex-col items-end shrink-0 gap-2">
@@ -948,17 +1049,30 @@ const PremiumServiceDetailPage = () => {
                       </div>
                       <button
                         type="button"
-                        className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${isPkgSelected
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (addedCount > 0) {
+                            toast.success(`${pkg.title} is already in your cart!`);
+                          } else {
+                            handleSelectPackage(pkg);
+                          }
+                        }}
+                        className={`text-xs font-semibold px-4 py-1.5 rounded-full border transition-all ${
+                          addedCount > 0
+                            ? 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700'
+                            : isPkgSelected
                             ? 'text-white'
                             : 'hover:bg-brand/5'
-                          }`}
+                        }`}
                         style={
-                          isPkgSelected
+                          addedCount > 0
+                            ? {}
+                            : isPkgSelected
                             ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)' }
                             : { borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'transparent' }
                         }
                       >
-                        {isPkgSelected ? 'Selected' : 'Select'}
+                        {addedCount > 0 ? 'Added ✓' : 'Select'}
                       </button>
                     </div>
                   </div>
@@ -970,7 +1084,7 @@ const PremiumServiceDetailPage = () => {
 
         {/* Package Customization Section */}
         {service?.serviceType === 'package_base' && selectedPackage && selectedPackage.allowUserEdit !== false && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
-          <section className="mt-8 space-y-6">
+          <section id="customize-package-section" className="mt-8 space-y-6 scroll-mt-24">
             <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: 'var(--border)' }}>
               <div>
                 <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>

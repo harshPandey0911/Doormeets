@@ -601,7 +601,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-[1600px] mx-auto w-full px-4 md:px-12">
+        <main className="pt-[140px] md:pt-[100px] space-y-8 pb-24 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -642,7 +642,7 @@ const Home = () => {
               )}
  
               {/* Search Bar Section */}
-              <div className="mt-5 px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center gap-3">
+              <div className="mt-5 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center gap-3">
                 <div className="flex-1">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>
@@ -664,7 +664,7 @@ const Home = () => {
 
               {/* Painting Quote Approval Section */}
               {pendingQuotes.length > 0 && (
-                <motion.div variants={itemVariants} className="px-5 max-w-lg lg:max-w-2xl mx-auto w-full mt-4">
+                <motion.div variants={itemVariants} className="px-3 md:px-5 max-w-lg lg:max-w-2xl mx-auto w-full mt-4">
                   <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-ping" />
                     🎨 Painting Quotes Awaiting Your Approval
@@ -776,7 +776,7 @@ const Home = () => {
               {upcomingCategories.length > 0 && (() => {
                 const activeCat = upcomingCategories[currentStackIndex] || upcomingCategories[0];
                 return (
-                  <motion.section variants={itemVariants} className="px-5 space-y-4 max-w-lg md:max-w-2xl lg:max-w-screen-xl mx-auto w-full">
+                  <motion.section variants={itemVariants} className="px-3 md:px-5 space-y-4 max-w-lg md:max-w-2xl lg:max-w-screen-xl mx-auto w-full">
                     <div className="flex items-center justify-between">
                       <h2
                         className="text-[17px] font-semibold tracking-tight"
@@ -922,7 +922,7 @@ const Home = () => {
 
               {/* Order Again Section */}
               {!pastServicesLoading && pastServices.length > 0 && (
-                <motion.section variants={itemVariants} className="px-5 space-y-4">
+                <motion.section variants={itemVariants} className="px-3 md:px-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2
                       className="text-[17px] font-semibold tracking-tight"
@@ -941,7 +941,7 @@ const Home = () => {
 
                   {/* Horizontal Scroll list of past services */}
                   <div 
-                    className="flex gap-4 overflow-x-auto pb-3 -mx-5 px-5 no-scrollbar"
+                    className="flex gap-4 overflow-x-auto pb-3 -mx-3 px-3 md:-mx-5 md:px-5 no-scrollbar"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
                     {pastServices.map((service, index) => {

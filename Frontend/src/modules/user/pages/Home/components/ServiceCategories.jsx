@@ -50,7 +50,7 @@ const ServiceCategories = React.memo(({
   }); // Keep all categories without limiting to 9
 
   return (
-    <div className="px-5 w-full">
+    <div className="px-3 md:px-5 w-full">
       {/* Title Header with "See all" */}
       <div className="flex items-center justify-between mb-4">
         <h2

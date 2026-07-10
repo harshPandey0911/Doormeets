@@ -33,7 +33,7 @@ const OfferBannerSlider = ({ banners }) => {
   };
 
   return (
-    <div className="px-5 mb-4 w-full">
+    <div className="px-3 md:px-5 mb-4 w-full">
       <Swiper
         modules={[Autoplay, Pagination]}
         spaceBetween={12}
@@ -52,7 +52,7 @@ const OfferBannerSlider = ({ banners }) => {
             spaceBetween: 0,
           }
         }}
-        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[16/9] md:aspect-[3.2/1] lg:aspect-[3.6/1]"
+        className="rounded-[24px] overflow-hidden shadow-sm lg:rounded-[32px] w-full aspect-[2.2/1] md:aspect-[3.2/1] lg:aspect-[3.6/1]"
       >
         {banners.map((banner) => (
           <SwiperSlide 

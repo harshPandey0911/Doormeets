@@ -50,8 +50,8 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
       : 'Select Location';
 
   return (
-    <header className="w-full bg-transparent px-5 pt-6 pb-2">
-      <div className="w-full max-w-[1600px] mx-auto flex items-start justify-between px-4 md:px-10">
+    <header className="w-full bg-transparent px-3 md:px-5 pt-6 pb-2">
+      <div className="w-full max-w-[1600px] mx-auto flex items-start justify-between px-0 md:px-10">
 
         {/* Left Side: Location Selector & Bold Heading */}
         <div className="flex flex-col min-w-0">

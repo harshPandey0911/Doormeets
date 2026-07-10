@@ -114,7 +114,7 @@ const PremiumCategoryPage = () => {
   // Set default active subcategory
   useEffect(() => {
     if (subCategories.length > 0 && !activeSubId) {
-      setActiveSubId(subCategories[0].id || subCategories[0]._id);
+      setActiveSubId(String(subCategories[0].id || subCategories[0]._id));
     }
   }, [subCategories, activeSubId]);
 
@@ -126,7 +126,7 @@ const PremiumCategoryPage = () => {
 
       let currentActiveId = activeSubId;
       for (const sub of subCategories) {
-        const id = sub.id || sub._id;
+        const id = String(sub.id || sub._id);
         const el = document.getElementById(`subcat-sec-${id}`);
         if (el) {
           const top = el.offsetTop;
@@ -211,7 +211,14 @@ const PremiumCategoryPage = () => {
             originalPrice: service.basePrice || null,
             features: service.features || [],
             brandId: service.brandId,
-            subCategoryId: service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id)),
+            subCategoryId: (() => {
+              const val = service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id));
+              if (!val) return 'other';
+              if (typeof val === 'object') {
+                return String(val._id || val.id || val);
+              }
+              return String(val);
+            })(),
             vendorId: service.vendorId,
             variants: service.variants || [],
             serviceType: service.serviceType || 'package_base',
@@ -259,7 +266,7 @@ const PremiumCategoryPage = () => {
         if (!matches) return;
       }
 
-      const subId = service.subCategoryId || 'other';
+      const subId = service.subCategoryId ? String(service.subCategoryId) : 'other';
       if (!groups[subId]) groups[subId] = [];
       groups[subId].push(service);
     });
@@ -294,10 +301,15 @@ const PremiumCategoryPage = () => {
     if (element) {
       isScrollingRef.current = true;
       setActiveSubId(subId); // Ensure active category updates immediately
-      element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
+      
+      const yOffset = -110; // offset for the fixed navbar/header
+      const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+      
+      window.scrollTo({
+        top: y,
+        behavior: 'smooth'
       });
+
       // Clear flag after smooth scroll is complete
       setTimeout(() => {
         isScrollingRef.current = false;
@@ -348,7 +360,7 @@ const PremiumCategoryPage = () => {
     }
   };
 
-  const handleAdd = async (service) => {
+  const handleAdd = async (service, priceMultiplier = 1) => {
     try {
       const sId = service.id || service._id;
       const res = await api.get(`/public/services/${sId}/dynamic-details${cityId ? `?cityId=${cityId}` : ''}`);
@@ -366,7 +378,16 @@ const PremiumCategoryPage = () => {
       console.error("Error fetching service variants:", err);
     }
 
-    await addToCart(buildCartItemData({ service, category: activeCategory }));
+    const cartData = buildCartItemData({ service, category: activeCategory });
+    if (priceMultiplier !== 1) {
+      cartData.price = Math.round(cartData.price * priceMultiplier);
+      cartData.unitPrice = Math.round(cartData.unitPrice * priceMultiplier);
+      if (cartData.card) {
+        cartData.card.price = cartData.price;
+      }
+    }
+
+    await addToCart(cartData);
     toast.success(`${service.title} added to cart!`);
   };
 
@@ -383,6 +404,40 @@ const PremiumCategoryPage = () => {
       await removeItem(item._id || item.id);
     } else {
       await updateItem(item._id || item.id, (item.serviceCount || 1) - 1);
+    }
+  };
+
+  const comboCount = useMemo(() => {
+    if (!generatedPackages || generatedPackages.length === 0) return 0;
+    const counts = generatedPackages[0].services.map(s => quantities[s.id || s._id] || 0);
+    return Math.min(...counts);
+  }, [generatedPackages, quantities]);
+
+  const handleIncreaseCombo = async () => {
+    if (!generatedPackages || generatedPackages.length === 0) return;
+    const totalPrice = generatedPackages[0].originalPrice;
+    const bundlePrice = generatedPackages[0].price;
+    const multiplier = totalPrice > 0 ? (bundlePrice / totalPrice) : 0.85;
+    for (const s of generatedPackages[0].services) {
+      const item = cartItems.find((entry) => getCartItemServiceId(entry) === (s.id || s._id));
+      if (!item) {
+        await handleAdd(s, multiplier);
+      } else {
+        await updateItem(item._id || item.id, (item.serviceCount || 1) + 1);
+      }
+    }
+  };
+
+  const handleDecreaseCombo = async () => {
+    if (!generatedPackages || generatedPackages.length === 0) return;
+    for (const s of generatedPackages[0].services) {
+      const item = cartItems.find((entry) => getCartItemServiceId(entry) === (s.id || s._id));
+      if (!item) continue;
+      if ((item.serviceCount || 1) <= 1) {
+        await removeItem(item._id || item.id);
+      } else {
+        await updateItem(item._id || item.id, (item.serviceCount || 1) - 1);
+      }
     }
   };
 
@@ -608,37 +663,43 @@ const PremiumCategoryPage = () => {
           {/* Sticky Select a Service Box (Sticks right below fixed navbar) */}
           <div 
             ref={boxRef}
-            className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-900"
+            className="border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
             style={{ position: 'sticky', top: '88px', zIndex: 20 }}
           >
-            <p className="text-[11px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-5">Select a service</p>
-            <div className="grid grid-cols-3 gap-x-3 gap-y-5">
+            <div className="flex items-center gap-3 mb-6">
+              <h3 className="text-sm font-semibold text-slate-500 dark:text-zinc-400 whitespace-nowrap">Select a service</h3>
+              <div className="h-[1px] bg-gray-200 dark:bg-zinc-800 flex-1"></div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-x-3 gap-y-6">
               {subCategories.map((sub) => {
+                const subId = String(sub.id || sub._id || '');
                 const subImage = toAssetUrl(sub.iconUrl) || 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
-                const isActive = activeSubId === (sub.id || sub._id);
+                const isActive = String(activeSubId) === subId;
                 return (
                   <button
-                    key={sub.id || sub._id}
+                    key={subId}
                     onClick={() => {
-                      setActiveSubId(sub.id || sub._id);
-                      handleScrollToSub(sub.id || sub._id);
+                      setActiveSubId(subId);
+                      handleScrollToSub(subId);
                     }}
                     className="flex flex-col items-center group cursor-pointer focus:outline-none"
                   >
-                    <div className={`w-[64px] h-[64px] rounded-xl border bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center p-2 transition-all ${
+                    <div className={`w-[72px] h-[72px] rounded-[18px] overflow-hidden flex items-center justify-center transition-all duration-200 ${
                       isActive 
-                        ? 'border-slate-900 dark:border-white shadow-md scale-105 border-2' 
-                        : 'border-gray-200 dark:border-zinc-700 group-hover:border-gray-400 dark:group-hover:border-zinc-500 group-hover:shadow-sm active:scale-95'
+                        ? 'ring-2 ring-slate-300 dark:ring-zinc-700 scale-105 shadow-md' 
+                        : 'border border-gray-100 dark:border-zinc-800 group-hover:shadow-sm active:scale-95'
                     }`}>
-                      <img src={subImage} alt={sub.title} className="w-full h-full object-contain" />
+                      <img src={subImage} alt={sub.title} className="w-full h-full object-cover" />
                     </div>
-                    <span className={`text-[10px] mt-1.5 text-center leading-tight max-w-[72px] break-words transition-colors ${
+                    <span className={`text-[11.5px] mt-2.5 text-center leading-tight max-w-[85px] break-words transition-colors ${
                       isActive 
-                        ? 'font-black text-slate-900 dark:text-white' 
-                        : 'font-bold text-gray-600 dark:text-zinc-400'
+                        ? 'font-bold text-slate-900 dark:text-white' 
+                        : 'font-medium text-gray-700 dark:text-zinc-400'
                     }`}>
                       {sub.title}
                     </span>
+                    <span className="w-10 h-[2.5px] bg-slate-900 dark:bg-white rounded-full mt-1.5 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                   </button>
                 );
               })}
@@ -672,26 +733,96 @@ const PremiumCategoryPage = () => {
 
               {/* Desktop Packages Section */}
               {generatedPackages.length > 0 && (
-                <div className="p-6 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-2xl">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
-                    <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
-                    <span>10% off *</span>
-                  </div>
-                  <div className="flex justify-between items-start mt-3">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
-                      <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">{generatedPackages[0].description}</p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="text-lg font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
-                        <span className="text-xs text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
+                <div className="pb-8 border-b border-gray-200 dark:border-zinc-800">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Combos</h2>
+                  <div className="flex justify-between items-start py-2">
+                    {/* Left Column: Info, Price, Tag, Bullet points */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug">
+                        {generatedPackages[0].title}
+                      </h3>
+                      
+                      {/* Rating under title */}
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400 mt-1.5">
+                        <span className="text-yellow-500">★</span>
+                        <span className="font-bold text-gray-800 dark:text-zinc-200">{generatedPackages[0].rating || '4.80'}</span>
+                        <span>({generatedPackages[0].reviews || '1.2k'} reviews)</span>
+                      </div>
+
+                      {/* Pricing with tag */}
+                      <div className="flex items-center gap-2.5 mt-3">
+                        <span className="text-base font-extrabold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
+                        <span className="text-sm text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• {generatedPackages[0].discount || '15% off'}</span>
+                      </div>
+
+                      {/* Green Tag Banner */}
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-100/50 dark:border-emerald-900/30">
+                        <span>🏷️</span>
+                        <span>Special Bundle Deal</span>
+                      </div>
+
+                      {/* Dotted Divider line */}
+                      <div className="w-full border-t border-dashed border-gray-200 dark:border-zinc-800 my-4" />
+
+                      {/* Bullet points description */}
+                      <ul className="space-y-1.5">
+                        {generatedPackages[0].services.map((s, idx) => (
+                          <li key={idx} className="text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-2">
+                            <span className="w-1 h-1 bg-gray-400 dark:bg-zinc-600 rounded-full flex-shrink-0"></span>
+                            <span>{s.title}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Right Column: Rounded Cover Image with Absolute ADD Button */}
+                    <div className="relative w-[120px] h-[120px] ml-6 flex-shrink-0 overflow-visible">
+                      <div className="w-full h-full rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+                        <img 
+                          src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300&auto=format&fit=crop&q=80'} 
+                          alt={generatedPackages[0].title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Absolute Add Button centered at the bottom overlap */}
+                      <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 w-[84px] h-[34px] z-10">
+                        {comboCount > 0 ? (
+                          <div className="w-full h-full bg-violet-50 dark:bg-zinc-800 border border-violet-200 dark:border-zinc-700 rounded-xl text-[#B33A35] font-bold text-xs shadow-md flex items-center justify-between px-2">
+                            <button
+                              onClick={handleDecreaseCombo}
+                              className="w-6 h-6 hover:bg-violet-100 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-base"
+                            >
+                              -
+                            </button>
+                            <span className="text-slate-800 dark:text-white font-extrabold">{comboCount}</span>
+                            <button
+                              onClick={handleIncreaseCombo}
+                              className="w-6 h-6 hover:bg-violet-100 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-base"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              const totalPrice = generatedPackages[0].originalPrice;
+                              const bundlePrice = generatedPackages[0].price;
+                              const multiplier = totalPrice > 0 ? (bundlePrice / totalPrice) : 0.85;
+                              for (const s of generatedPackages[0].services) {
+                                await handleAdd(s, multiplier);
+                              }
+                            }}
+                            className="w-full h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl text-slate-800 dark:text-white font-bold text-xs shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
+                            style={{ color: '#B33A35' }}
+                          >
+                            <span>Add</span>
+                            <span className="text-xs font-semibold">+</span>
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => generatedPackages[0].services.forEach(s => handleAdd(s))}
-                      className="px-6 py-3 rounded-xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
-                    >
-                      Add Combo
-                    </button>
                   </div>
                 </div>
               )}
@@ -712,10 +843,11 @@ const PremiumCategoryPage = () => {
               ) : (
                 <div>
                   {subCategories.map((sub) => {
-                    const subServices = groupedServices[sub.id || sub._id] || [];
+                    const subId = String(sub.id || sub._id || '');
+                    const subServices = groupedServices[subId] || [];
                     if (subServices.length === 0) return null;
                     return (
-                      <div key={sub.id || sub._id} id={`subcat-sec-${sub.id || sub._id}`} className="scroll-mt-24 pb-2">
+                      <div key={subId} id={`subcat-sec-${subId}`} className="scroll-mt-24 pb-2">
                         <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">{sub.title}</h3>
                         <div className="divide-y divide-gray-100 dark:divide-zinc-800">
                           {subServices.map((service) => (
@@ -763,6 +895,17 @@ const PremiumCategoryPage = () => {
               className="col-span-4 space-y-6"
               style={{ position: 'sticky', top: '88px', alignSelf: 'start', height: 'fit-content' }}
             >
+              {/* Buy More Save More Card */}
+              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <span className="text-xl font-bold">%</span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-white">Buy more save more</h4>
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">15% off 2nd item onwards</p>
+                </div>
+              </div>
+
               {/* Safety Promise Card */}
               <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4">
                 <h4 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider border-b pb-2 dark:border-zinc-800">Doormeets Promise</h4>
@@ -783,25 +926,78 @@ const PremiumCategoryPage = () => {
               </div>
 
               {/* Sticky Cart Summary */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm text-center space-y-4">
+              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4">
                 {cartCount > 0 ? (
-                  <div className="space-y-4">
-                    <div className="text-left">
-                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cart Summary</h4>
-                      <div className="mt-2 flex justify-between items-baseline">
-                        <span className="text-xl font-black text-[#B33A35]">₹{cartTotal}</span>
-                        <span className="text-xs text-gray-400 font-bold">{cartCount} Items</span>
-                      </div>
+                  <div className="space-y-4 text-left">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2 dark:border-zinc-800">Cart</h4>
+                    
+                    {/* Cart Items List */}
+                    <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                      {cartItems.map((item, index) => {
+                        const sId = getCartItemServiceId(item);
+                        return (
+                          <div key={item._id || index} className="flex justify-between items-center gap-2 py-1">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{item.title}</p>
+                            </div>
+                            
+                            {/* Quantity pill selector */}
+                            <div className="flex items-center gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-2.5 py-0.5 shrink-0">
+                              <button 
+                                onClick={() => handleDecrease({ id: sId })} 
+                                className="text-[#B33A35] font-extrabold text-xs hover:scale-110 active:scale-95"
+                              >
+                                -
+                              </button>
+                              <span className="text-slate-800 dark:text-white font-extrabold text-[11px] min-w-[10px] text-center">
+                                {item.serviceCount || 1}
+                              </span>
+                              <button 
+                                onClick={() => handleIncrease({ id: sId })} 
+                                className="text-[#B33A35] font-extrabold text-xs hover:scale-110 active:scale-95"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {/* Price */}
+                            <div className="text-right shrink-0 min-w-[60px]">
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">₹{item.price * (item.serviceCount || 1)}</p>
+                              {item.originalPrice && item.originalPrice > item.price && (
+                                <p className="text-[10px] text-gray-400 line-through">₹{item.originalPrice * (item.serviceCount || 1)}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
+
+                    {/* Green Savings Banner */}
+                    {cartOriginalTotal > cartTotal && (
+                      <div className="bg-[#0f766e] text-white text-[11px] font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 shadow-sm">
+                        <span>🏷️</span>
+                        <span>Congratulations! ₹{cartOriginalTotal - cartTotal} saved so far!</span>
+                      </div>
+                    )}
+
+                    {/* Unified checkout button */}
                     <button
                       onClick={() => navigate('/user/cart')}
-                      className="w-full py-3 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer text-xs"
+                      className="w-full py-3 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer text-xs flex items-center justify-between px-4"
                     >
-                      View Cart
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-sm font-extrabold">₹{cartTotal}</span>
+                        {cartOriginalTotal > cartTotal && (
+                          <span className="text-[10px] text-red-200 line-through">₹{cartOriginalTotal}</span>
+                        )}
+                      </div>
+                      <div className="h-3.5 w-px bg-white/20 mx-2" />
+                      <span className="font-extrabold uppercase tracking-wider text-[11px]">View Cart</span>
                     </button>
+
                   </div>
                 ) : (
-                  <div className="py-6 space-y-3">
+                  <div className="py-6 space-y-3 text-center">
                     <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-800 flex items-center justify-center mx-auto text-gray-400">
                       🛒
                     </div>

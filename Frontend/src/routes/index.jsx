@@ -8,14 +8,13 @@ import WorkerRoutes from '../modules/vendor/routes/WorkerRoutes';
 import AdminRoutes from '../modules/admin/routes';
 import ShopRoutes from '../modules/shop/routes';
 
-import LandingPage from '../modules/landing/pages/LandingPage';
 
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Landing Page */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/Home" element={<Navigate to="/" replace />} />
+      {/* Landing Page redirect to user */}
+      <Route path="/" element={<Navigate to="/user" replace />} />
+      <Route path="/Home" element={<Navigate to="/user" replace />} />
 
       {/* User Routes */}
       <Route path="/user/*" element={<UserRoutes />} />
