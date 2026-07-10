@@ -345,6 +345,15 @@ const PackageBased = () => {
   // Combo Packages (Package Groups)
   const handleOpenCombo = (combo = null) => {
     if (combo) {
+      // Find all subcategories where this combo is currently associated
+      const associatedSubCatIds = [];
+      services.forEach(srv => {
+        if (srv.packages?.some(p => String(p._id) === String(combo._id))) {
+          const subId = srv.subCategoryId?._id || srv.subCategoryId;
+          if (subId) associatedSubCatIds.push(String(subId));
+        }
+      });
+
       setComboForm({
         _id: combo._id,
         title: combo.title,
@@ -363,7 +372,8 @@ const PackageBased = () => {
         vendorPayout: combo.vendorPayout || 0,
         allowUserEdit: combo.allowUserEdit !== false,
         codEnabled: combo.codEnabled !== false,
-        codAdvanceAmount: combo.codAdvanceAmount || 0
+        codAdvanceAmount: combo.codAdvanceAmount || 0,
+        targetSubCategoryIds: associatedSubCatIds.length > 0 ? associatedSubCatIds : [String(selectedSubCategoryId)]
       });
     } else {
       setComboForm({
@@ -383,7 +393,8 @@ const PackageBased = () => {
         vendorPayout: 0,
         allowUserEdit: true,
         codEnabled: true,
-        codAdvanceAmount: 0
+        codAdvanceAmount: 0,
+        targetSubCategoryIds: selectedSubCategoryId ? [String(selectedSubCategoryId)] : []
       });
     }
     setEditingCombo(combo ? combo : 'new');
@@ -399,13 +410,27 @@ const PackageBased = () => {
       toast.error('Price is required');
       return;
     }
+    if (!comboForm.targetSubCategoryIds || comboForm.targetSubCategoryIds.length === 0) {
+      toast.error('At least one subcategory must be selected');
+      return;
+    }
 
-    const updatedPackages = [...(activeService.packages || [])];
+    // Generate a unique 24-character hexadecimal BSON ObjectId for new combos
+    const comboId = comboForm._id || [...Array(24)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+
     const newPkg = {
-      ...comboForm,
+      _id: comboId,
+      title: comboForm.title,
+      description: comboForm.description,
       price: Number(comboForm.price),
       originalPrice: comboForm.originalPrice ? Number(comboForm.originalPrice) : null,
       discountPercentage: Number(comboForm.discountPercentage) || 0,
+      duration: comboForm.duration || '',
+      rating: Number(comboForm.rating) || 4.5,
+      reviewCount: comboForm.reviewCount || '1.0k',
+      isPopular: comboForm.isPopular || false,
+      isActive: comboForm.isActive !== false,
+      includedItems: comboForm.includedItems || [],
       gstPercentage: Number(comboForm.gstPercentage || 18),
       gstIncluded: comboForm.gstIncluded !== false,
       vendorPayout: Number(comboForm.vendorPayout || 0),
@@ -414,21 +439,44 @@ const PackageBased = () => {
       codAdvanceAmount: Number(comboForm.codAdvanceAmount) || 0
     };
 
-    if (comboForm._id) {
-      const idx = updatedPackages.findIndex(p => p._id === comboForm._id);
-      if (idx !== -1) updatedPackages[idx] = newPkg;
-    } else {
-      updatedPackages.push(newPkg);
-    }
-
     try {
-      const res = await api.put(`/admin/services/${activeService._id}`, { packages: updatedPackages });
-      if (res.data.success) {
-        toast.success('Combo Package saved!');
-        setEditingCombo(null);
-        fetchData();
+      const promises = [];
+
+      // Save to all selected subcategories' services
+      for (const subId of comboForm.targetSubCategoryIds) {
+        const srv = services.find(s => String(s.subCategoryId?._id || s.subCategoryId) === String(subId));
+        if (srv) {
+          const updatedPackages = [...(srv.packages || [])];
+          const idx = updatedPackages.findIndex(p => String(p._id) === String(comboId));
+          if (idx !== -1) {
+            updatedPackages[idx] = newPkg;
+          } else {
+            updatedPackages.push(newPkg);
+          }
+          promises.push(api.put(`/admin/services/${srv._id}`, { packages: updatedPackages }));
+        }
       }
+
+      // Remove from any deselected subcategories' services (if editing an existing combo)
+      if (comboForm._id) {
+        const deselectedServices = services.filter(srv => {
+          const subId = srv.subCategoryId?._id || srv.subCategoryId;
+          return !comboForm.targetSubCategoryIds.includes(String(subId)) && 
+                 srv.packages?.some(p => String(p._id) === String(comboForm._id));
+        });
+
+        for (const srv of deselectedServices) {
+          const updatedPackages = srv.packages.filter(p => String(p._id) !== String(comboForm._id));
+          promises.push(api.put(`/admin/services/${srv._id}`, { packages: updatedPackages }));
+        }
+      }
+
+      await Promise.all(promises);
+      toast.success('Combo Package saved successfully across selected subcategories!');
+      setEditingCombo(null);
+      fetchData();
     } catch (err) {
+      console.error(err);
       toast.error('Failed to save combo package');
     }
   };
@@ -1145,71 +1193,110 @@ const PackageBased = () => {
               <button onClick={() => setEditingCombo(null)} className="p-1.5 hover:bg-gray-200 rounded-lg"><FiX className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handleSaveCombo} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-gray-600 uppercase">1. Included Packages / Options</label>
-                {activeService.serviceGroups?.map(group => (
-                  <div key={group._id} className="border rounded-xl p-3 space-y-2 bg-gray-50/20">
-                    <span className="text-xs font-bold text-gray-800 block border-b pb-1">{group.title}</span>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
-                      {group.items?.map(item => {
-                        const isItemIncluded = comboForm.includedItems.some(
-                          inc => String(inc.selectedItemId) === String(item._id)
-                        );
+              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
+                <label className="text-xs font-bold text-gray-600 uppercase block mb-1">1. Included Packages / Options</label>
+                {services.map(srv => {
+                  if (!srv.serviceGroups || srv.serviceGroups.length === 0) return null;
+                  return (
+                    <div key={srv._id} className="space-y-2 border-l-2 border-emerald-500 pl-3 py-1 bg-gray-50/30 p-2 rounded-xl border border-gray-100">
+                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">{srv.title}</span>
+                      {srv.serviceGroups.map(group => (
+                        <div key={group._id} className="border rounded-xl p-3 space-y-2 bg-white">
+                          <span className="text-xs font-bold text-gray-800 block border-b pb-1">{group.title}</span>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                            {group.items?.map(item => {
+                              const isItemIncluded = comboForm.includedItems.some(
+                                inc => String(inc.selectedItemId) === String(item._id)
+                              );
 
-                        const toggleItem = () => {
-                          let updatedIncluded;
-                          if (isItemIncluded) {
-                            updatedIncluded = comboForm.includedItems.filter(i => String(i.selectedItemId) !== String(item._id));
-                          } else {
-                            updatedIncluded = [...comboForm.includedItems, {
-                              serviceGroupId: group._id,
-                              serviceGroupTitle: group.title,
-                              selectedItemId: item._id,
-                              selectedItemTitle: item.title,
-                              selectedItemDescription: item.description || item.title || ''
-                            }];
-                          }
+                              const toggleItem = () => {
+                                let updatedIncluded;
+                                if (isItemIncluded) {
+                                  updatedIncluded = comboForm.includedItems.filter(i => String(i.selectedItemId) !== String(item._id));
+                                } else {
+                                  updatedIncluded = [...comboForm.includedItems, {
+                                    serviceGroupId: group._id,
+                                    serviceGroupTitle: group.title,
+                                    selectedItemId: item._id,
+                                    selectedItemTitle: item.title,
+                                    selectedItemDescription: item.description || item.title || ''
+                                  }];
+                                }
 
-                          // Calculate sum of all included items' prices
-                          let sumPrice = 0;
-                          updatedIncluded.forEach(inc => {
-                            const grp = activeService.serviceGroups?.find(g => String(g._id) === String(inc.serviceGroupId));
-                            const itm = grp?.items?.find(i => String(i._id) === String(inc.selectedItemId));
-                            if (itm) {
-                              sumPrice += Number(itm.price || 0);
-                            }
-                          });
+                                // Calculate sum of all included items' prices
+                                let sumPrice = 0;
+                                updatedIncluded.forEach(inc => {
+                                  let foundItm = null;
+                                  for (const s of services) {
+                                    const g = s.serviceGroups?.find(x => String(x._id) === String(inc.serviceGroupId));
+                                    foundItm = g?.items?.find(i => String(i._id) === String(inc.selectedItemId));
+                                    if (foundItm) break;
+                                  }
+                                  if (foundItm) {
+                                    sumPrice += Number(foundItm.price || 0);
+                                  }
+                                });
 
-                          setComboForm(p => ({
-                            ...p,
-                            includedItems: updatedIncluded,
-                            price: sumPrice,
-                            originalPrice: sumPrice
-                          }));
-                        };
+                                setComboForm(p => ({
+                                  ...p,
+                                  includedItems: updatedIncluded,
+                                  price: sumPrice,
+                                  originalPrice: sumPrice
+                                }));
+                              };
 
-                        return (
-                          <label key={item._id} className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={isItemIncluded}
-                              onChange={toggleItem}
-                              className="w-4 h-4 accent-emerald-600 cursor-pointer"
-                            />
-                            <span className="text-xs text-gray-700 font-semibold">{item.title} (₹{item.price})</span>
-                          </label>
-                        );
-                      })}
-                      {(!group.items || group.items.length === 0) && (
-                        <span className="text-[10px] text-gray-400">No options configured in this group.</span>
-                      )}
+                              return (
+                                <label key={item._id} className="flex items-center gap-2 cursor-pointer select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={isItemIncluded}
+                                    onChange={toggleItem}
+                                    className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                                  />
+                                  <span className="text-xs text-gray-700 font-semibold">{item.title} (₹{item.price})</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="space-y-3 border-t pt-3">
-                <label className="text-xs font-bold text-gray-600 uppercase">2. Combo Package Details</label>
+                <label className="text-xs font-bold text-gray-600 uppercase">2. Associated Subcategories</label>
+                <p className="text-[10px] text-gray-400">Select all subcategories where this Combo Package should be displayed:</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-150 max-h-[150px] overflow-y-auto">
+                  {subCategories.map(sub => {
+                    const isChecked = comboForm.targetSubCategoryIds?.includes(String(sub._id));
+                    const toggleSub = () => {
+                      let list = [...(comboForm.targetSubCategoryIds || [])];
+                      if (isChecked) {
+                        list = list.filter(id => id !== String(sub._id));
+                      } else {
+                        list.push(String(sub._id));
+                      }
+                      setComboForm(p => ({ ...p, targetSubCategoryIds: list }));
+                    };
+                    return (
+                      <label key={sub._id} className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={toggleSub}
+                          className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                        />
+                        <span className="text-xs text-gray-700 font-semibold">{sub.title}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-3 border-t pt-3">
+                <label className="text-xs font-bold text-gray-600 uppercase">3. Combo Package Details</label>
                 <input
                   type="text"
                   required

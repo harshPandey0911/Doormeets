@@ -276,8 +276,27 @@ function setupForegroundNotificationHandler(handler) {
     // Use notification fields first, then data fields as fallback (for data-only messages)
     const title = notification.title || data.title || 'New Notification';
     const body = notification.body || data.body || '';
-    const icon = notification.icon || data.icon || '/HomeBuddy-header-logo.png';
+    const icon = notification.icon || data.icon || '/vite.svg';
     const type = data.type || data.notificationType || 'default';
+
+    // Show system push notification even in foreground for visibility
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body: body,
+          icon: icon,
+        });
+      } catch (err) {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.showNotification(title, {
+              body: body,
+              icon: icon,
+            });
+          });
+        }
+      }
+    }
 
     // Call custom handler (e.g. for toast)
     if (handler) {
