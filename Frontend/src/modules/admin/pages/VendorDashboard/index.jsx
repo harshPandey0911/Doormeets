@@ -10,7 +10,15 @@ import Modal from '../../components/Modal';
 import CardShell from '../UserCategories/components/CardShell';
 import ToggleSwitch from '../UserCategories/components/ToggleSwitch';
 
+const LINK_TYPES = [
+  { key: 'none', label: 'No Action' },
+  { key: 'url', label: 'External URL / Web Link' },
+  { key: 'category', label: 'Link to Category' },
+  { key: 'subcategory', label: 'Link to Subcategory' },
+];
+
 const VendorDashboardManager = () => {
+
   const [banners, setBanners] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
