@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiClock, FiMapPin, FiCheckCircle, FiXCircle, FiLoader, FiCalendar, FiChevronRight, FiStar } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
@@ -47,6 +47,7 @@ const getBookingImage = (booking) => {
 
 const MyBookings = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, confirmed, in-progress, completed, cancelled
@@ -218,7 +219,7 @@ const MyBookings = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
-                  if (window.history.length > 2) {
+                  if (location.key !== 'default') {
                     navigate(-1);
                   } else {
                     navigate('/user/home');

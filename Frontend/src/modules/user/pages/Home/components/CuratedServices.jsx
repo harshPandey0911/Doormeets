@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { createOptimizedScrollAnimation, createOptimizedStaggerAnimation } from '../../../../../utils/optimizedScrollTrigger';
 import ServiceCard from '../../../components/common/ServiceCard';
 
-const CuratedServices = React.memo(({ services, onServiceClick }) => {
+const CuratedServices = React.memo(({ services, onServiceClick, title, subtitle }) => {
   const sectionRef = useRef(null);
   const titleRef = useRef(null);
   const cardsRef = useRef(null);
@@ -28,7 +28,6 @@ const CuratedServices = React.memo(({ services, onServiceClick }) => {
       return;
     }
 
-    // Defer animation initialization until browser is idle
     const initAnimations = () => {
       const cards = Array.from(cardsRef.current?.children || []);
       if (cards.length === 0) return;
@@ -88,12 +87,13 @@ const CuratedServices = React.memo(({ services, onServiceClick }) => {
       {/* Title Section */}
       <div ref={titleRef} className="px-4 mb-5" style={{ opacity: 1 }}>
         <h2
-          className="text-xl font-bold mb-1 text-gray-900 tracking-tight"
+          className="text-xl font-bold tracking-tight"
+          style={{ color: 'var(--text-primary)' }}
         >
-          Thoughtful curations
+          {title || "Thoughtful Curations"}
         </h2>
-        <p className="text-sm font-medium text-gray-500">
-          of our finest experiences
+        <p className="text-sm font-medium mt-1" style={{ color: 'var(--text-muted)' }}>
+          {subtitle || "Of our finest experiences"}
         </p>
       </div>
 
