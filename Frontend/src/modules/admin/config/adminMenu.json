@@ -46,6 +46,19 @@
     ]
   },
   {
+    "title": "Vendor Dashboard",
+    "route": "/admin/vendor-dashboard",
+    "section": "VENDOR MANAGEMENT",
+    "allowedRoles": [
+      "super_admin",
+      "admin",
+      "city_admin"
+    ],
+    "children": [
+      "Dashboard Management"
+    ]
+  },
+  {
     "title": "Vendor Subscriptions",
     "route": "/admin/vendor-subscriptions",
     "section": "VENDOR MANAGEMENT",
@@ -120,7 +133,8 @@
       "All Bookings",
       "Booking Tracking",
       "Booking Notifications",
-      "Instant Booking"
+      "Instant Booking",
+      "Reassignments"
     ]
   },
   {

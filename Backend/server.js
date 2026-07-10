@@ -222,6 +222,7 @@ app.use('/api/admin', require('./routes/admin-routes/cityManagement.routes.js'))
 app.use('/api/admin', require('./routes/admin-routes/dashboard.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/vendorManagement.routes'));
+app.use('/api/admin/vendor-dashboard', require('./routes/admin-routes/vendorDashboard.routes'));
 app.use('/api/admin/shop-owners', require('./routes/admin-routes/shopManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/workerManagement.routes'));
 app.use('/api/admin', require('./routes/admin-routes/categoryManagement.routes'));

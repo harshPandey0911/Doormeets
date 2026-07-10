@@ -146,11 +146,24 @@ const verifyPaymentWebhook = async (req, res) => {
     }
 
     // Update booking payment status
-    if (booking.paymentMethod === 'pay_at_home') {
-      booking.paymentStatus = 'partially_paid';
+    const isAddonPayment = booking.finalAmount > booking.totalAmount;
+    const addonAmount = isAddonPayment ? parseFloat((booking.finalAmount - booking.totalAmount).toFixed(2)) : 0;
+
+    if (isAddonPayment) {
+      if (booking.paymentMethod === 'pay_at_home') {
+        booking.codAdvanceAmount = (booking.codAdvanceAmount || 0) + addonAmount;
+        booking.paymentStatus = 'partially_paid';
+      } else {
+        booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
+        booking.paymentMethod = 'online';
+      }
     } else {
-      booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
-      booking.paymentMethod = 'online';
+      if (booking.paymentMethod === 'pay_at_home') {
+        booking.paymentStatus = 'partially_paid';
+      } else {
+        booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
+        booking.paymentMethod = 'online';
+      }
     }
     booking.razorpayPaymentId = razorpay_payment_id;
     booking.paymentId = razorpay_payment_id;
@@ -175,24 +188,45 @@ const verifyPaymentWebhook = async (req, res) => {
     }
     await booking.save();
 
-    // Notify vendor via socket when online payment is confirmed (was awaiting_payment)
-    if (wasAwaitingPayment && booking.vendorId) {
+    // Notify vendor & user via socket when online payment is confirmed (including addon payment)
+    try {
       const { getIO } = require('../../sockets');
       const io = getIO();
       if (io) {
-        io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_updated', {
-          bookingId: booking._id.toString(),
-          status: booking.status,
-          paymentStatus: booking.paymentStatus,
-          message: `Payment of ₹${booking.finalAmount} received for booking ${booking.bookingNumber}. You can now start the service.`
-        });
-        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
-          bookingId: booking._id.toString(),
-          status: booking.status,
-          paymentStatus: booking.paymentStatus,
-          message: 'Payment successful! Your booking is now confirmed.'
-        });
+        if (isAddonPayment && booking.vendorId) {
+          io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            status: booking.status,
+            paymentStatus: booking.paymentStatus,
+            finalAmount: booking.finalAmount,
+            totalAmount: booking.totalAmount,
+            message: `Addon payment of ₹${addonAmount} received online for booking ${booking.bookingNumber}.`
+          });
+          io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            status: booking.status,
+            paymentStatus: booking.paymentStatus,
+            finalAmount: booking.finalAmount,
+            totalAmount: booking.totalAmount,
+            message: `Addon payment of ₹${addonAmount} successful!`
+          });
+        } else if (wasAwaitingPayment && booking.vendorId) {
+          io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            status: booking.status,
+            paymentStatus: booking.paymentStatus,
+            message: `Payment of ₹${booking.finalAmount} received for booking ${booking.bookingNumber}. You can now start the service.`
+          });
+          io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            status: booking.status,
+            paymentStatus: booking.paymentStatus,
+            message: 'Payment successful! Your booking is now confirmed.'
+          });
+        }
       }
+    } catch (sockErr) {
+      console.error('Socket notification error in verifyPaymentWebhook:', sockErr);
     }
 
     // Trigger Commission & Collection System
@@ -205,9 +239,13 @@ const verifyPaymentWebhook = async (req, res) => {
     const VendorBill = require('../../models/VendorBill');
 
     // User payment transaction
-    const paidAmount = booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 
+    let paidAmount = booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 
       ? booking.codAdvanceAmount 
       : booking.finalAmount;
+
+    if (isAddonPayment) {
+      paidAmount = addonAmount;
+    }
 
     await Transaction.create({
       userId: booking.userId,
@@ -216,9 +254,11 @@ const verifyPaymentWebhook = async (req, res) => {
       type: 'payment',
       paymentMethod: 'razorpay',
       status: 'completed',
-      description: booking.paymentMethod === 'pay_at_home' 
-        ? `COD advance payment for booking ${booking.bookingNumber}` 
-        : `Online payment for booking ${booking.bookingNumber}`,
+      description: isAddonPayment
+        ? `Online addon payment for booking ${booking.bookingNumber}`
+        : (booking.paymentMethod === 'pay_at_home' 
+            ? `COD advance payment for booking ${booking.bookingNumber}` 
+            : `Online payment for booking ${booking.bookingNumber}`),
       referenceId: razorpay_payment_id
     });
 

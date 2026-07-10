@@ -4,7 +4,8 @@ const {
   getAllShopOwners,
   getShopOwnerDetails,
   updateShopOwnerStatus,
-  adjustShopOwnerWallet
+  adjustShopOwnerWallet,
+  createShopOwner
 } = require('../../controllers/adminControllers/adminShopController');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isAdmin } = require('../../middleware/roleMiddleware');
@@ -13,6 +14,7 @@ const { isAdmin } = require('../../middleware/roleMiddleware');
 router.use(authenticate, isAdmin);
 
 router.get('/', getAllShopOwners);
+router.post('/', createShopOwner);
 router.get('/:id', getShopOwnerDetails);
 router.put('/:id/status', updateShopOwnerStatus);
 router.post('/:id/wallet-adjust', adjustShopOwnerWallet);

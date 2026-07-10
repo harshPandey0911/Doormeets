@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiUser, FiPhone, FiCheck, FiX, FiDollarSign, FiLayers, FiActivity } from 'react-icons/fi';
+import { FiSearch, FiUser, FiPhone, FiCheck, FiX, FiDollarSign, FiLayers, FiActivity, FiPlus, FiBriefcase, FiLock, FiMail } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import api from '../../../../services/api';
 
@@ -15,6 +15,7 @@ const AllShopOwners = () => {
   const [selectedShop, setSelectedShop] = useState(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   
   const [adjustAmount, setAdjustAmount] = useState('');
   const [adjustType, setAdjustType] = useState('credit');
@@ -23,6 +24,15 @@ const AllShopOwners = () => {
 
   const [detailsData, setDetailsData] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const [addingShopOwner, setAddingShopOwner] = useState(false);
+  const [newShopOwner, setNewShopOwner] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    businessName: '',
+    password: ''
+  });
 
   const fetchShopOwners = async () => {
     try {
@@ -129,6 +139,44 @@ const AllShopOwners = () => {
     }
   };
 
+  const handleAddShopOwnerSubmit = async (e) => {
+    e.preventDefault();
+    if (!newShopOwner.name || newShopOwner.name.length < 2) {
+      toast.error('Please enter a valid name (min 2 chars)');
+      return;
+    }
+    if (!newShopOwner.phone || newShopOwner.phone.length !== 10) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+    if (!newShopOwner.password || newShopOwner.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      setAddingShopOwner(true);
+      const response = await api.post('/admin/shop-owners', newShopOwner);
+      if (response.data.success) {
+        toast.success(response.data.message || 'Shop Owner created successfully!');
+        setShowAddModal(false);
+        setNewShopOwner({
+          name: '',
+          phone: '',
+          email: '',
+          businessName: '',
+          password: ''
+        });
+        fetchShopOwners();
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to create Shop Owner');
+    } finally {
+      setAddingShopOwner(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls Bar */}
@@ -144,15 +192,25 @@ const AllShopOwners = () => {
           />
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-semibold focus:outline-none cursor-pointer text-xs"
-        >
-          <option value="all">All Merchants</option>
-          <option value="active">Active Only</option>
-          <option value="inactive">Inactive Only</option>
-        </select>
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-semibold focus:outline-none cursor-pointer text-xs"
+          >
+            <option value="all">All Merchants</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg flex items-center gap-1.5 transition text-xs shadow-sm hover:shadow cursor-pointer"
+          >
+            <FiPlus className="w-4 h-4" />
+            <span>Add Shop Owner</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Table */}
@@ -450,6 +508,128 @@ const AllShopOwners = () => {
                   </div>
                 </div>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Shop Owner Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-5 shadow-2xl border border-gray-100 max-w-md w-full"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-800 text-sm">Add New Shop Owner</h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-1 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-full transition cursor-pointer"
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddShopOwnerSubmit} className="space-y-3.5">
+                <div>
+                  <label htmlFor="shopName" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Full Name</label>
+                  <div className="relative group">
+                    <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                    <input
+                      id="shopName"
+                      type="text"
+                      required
+                      placeholder="Shop Owner full name"
+                      value={newShopOwner.name}
+                      onChange={(e) => setNewShopOwner({ ...newShopOwner, name: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-gray-700 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="shopPhone" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Phone Number</label>
+                  <div className="relative group">
+                    <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                    <input
+                      id="shopPhone"
+                      type="tel"
+                      required
+                      maxLength="10"
+                      placeholder="10-digit mobile number"
+                      value={newShopOwner.phone}
+                      onChange={(e) => setNewShopOwner({ ...newShopOwner, phone: e.target.value.replace(/\D/g, '') })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-gray-700 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="shopEmail" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Email Address (Optional)</label>
+                  <div className="relative group">
+                    <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                    <input
+                      id="shopEmail"
+                      type="email"
+                      placeholder="email@example.com"
+                      value={newShopOwner.email}
+                      onChange={(e) => setNewShopOwner({ ...newShopOwner, email: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-gray-700 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="shopBusiness" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Shop / Business Name (Optional)</label>
+                  <div className="relative group">
+                    <FiBriefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                    <input
+                      id="shopBusiness"
+                      type="text"
+                      placeholder="e.g. Ramu Electricals"
+                      value={newShopOwner.businessName}
+                      onChange={(e) => setNewShopOwner({ ...newShopOwner, businessName: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-gray-700 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="shopPass" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Login Password</label>
+                  <div className="relative group">
+                    <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                    <input
+                      id="shopPass"
+                      type="password"
+                      required
+                      placeholder="Min 6 characters"
+                      value={newShopOwner.password}
+                      onChange={(e) => setNewShopOwner({ ...newShopOwner, password: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-gray-700 transition"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 border border-gray-200 text-gray-600 font-semibold rounded-lg hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addingShopOwner}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {addingShopOwner ? 'Adding...' : 'Add Shop Owner'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

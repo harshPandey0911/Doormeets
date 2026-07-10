@@ -8,22 +8,22 @@
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-// Firebase configuration - Production values
-const firebaseConfig = {
-  apiKey: "AIzaSyAOFGeDqHWHvjCcNRP7mlEdbWBYTIVNt7M",
-  authDomain: "doormeets.firebaseapp.com",
-  projectId: "doormeets",
-  storageBucket: "doormeets.firebasestorage.app",
-  messagingSenderId: "610708062060",
-  appId: "1:610708062060:web:ac384245c497ce60933d49",
-  measurementId: "G-65RXS36956"
-};
+// Import Firebase configuration from untracked file to prevent credentials leak in Git
+try {
+  importScripts('/firebase-config.js');
+} catch (err) {
+  console.warn('Could not load /firebase-config.js. Push notifications will not work without configuration.', err);
+}
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+const firebaseConfig = self.firebaseConfig || {};
+
+// Initialize Firebase only if config is loaded
+if (firebaseConfig.apiKey) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 // Get messaging instance
-const messaging = firebase.messaging();
+const messaging = firebase.apps.length > 0 ? firebase.messaging() : null;
 
 // Notification sounds based on type
 const NOTIFICATION_SOUNDS = {
@@ -36,165 +36,167 @@ const NOTIFICATION_SOUNDS = {
 };
 
 // Handle background messages
-messaging.onBackgroundMessage((payload) => {
-  console.log('[SW] 🔔 Background message received:', payload);
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[SW] 🔔 Background message received:', payload);
 
-  const data = payload.data || {};
-  const notification = payload.notification || {};
-  const notificationType = data.type || 'default';
+    const data = payload.data || {};
+    const notification = payload.notification || {};
+    const notificationType = data.type || 'default';
 
-  // Determine notification style based on type
-  // Prioritize data properties for data-only notifications
-  let notificationTitle = data.title || notification.title;
-  let notificationBody = data.body || notification.body;
+    // Determine notification style based on type
+    // Prioritize data properties for data-only notifications
+    let notificationTitle = data.title || notification.title;
+    let notificationBody = data.body || notification.body;
 
-  // If absolutely no content, do not show notification (prevent empty bubbles)
-  if (!notificationTitle && !notificationBody) {
-    console.log('[SW] 🚫 Skipping empty notification');
-    return;
-  }
+    // If absolutely no content, do not show notification (prevent empty bubbles)
+    if (!notificationTitle && !notificationBody) {
+      console.log('[SW] 🚫 Skipping empty notification');
+      return;
+    }
 
-  // Default fallbacks if one is missing
-  notificationTitle = notificationTitle || 'App Notification';
-  notificationBody = notificationBody || 'You have a new update.';
+    // Default fallbacks if one is missing
+    notificationTitle = notificationTitle || 'App Notification';
+    notificationBody = notificationBody || 'You have a new update.';
 
-  let icon = data.icon || notification.icon || '/vite.svg';
-  let badge = '/vite.svg';
-  let tag = data.bookingId || `notification-${Date.now()}`;
-  let requireInteraction = false;
-  let vibrate = [200, 100, 200];
-  let actions = [];
+    let icon = data.icon || notification.icon || '/vite.svg';
+    let badge = '/vite.svg';
+    let tag = data.bookingId || `notification-${Date.now()}`;
+    let requireInteraction = false;
+    let vibrate = [200, 100, 200];
+    let actions = [];
 
-  // Enhanced styling for different notification types
-  switch (notificationType) {
-    case 'booking_requested':
-      notificationTitle = notificationTitle || '📅 Booking Created!';
-      notificationBody = notificationBody || 'Your service request has been received.';
-      vibrate = [200, 100];
-      actions = [
-        { action: 'view', title: '👁️ View Status' }
-      ];
-      break;
+    // Enhanced styling for different notification types
+    switch (notificationType) {
+      case 'booking_requested':
+        notificationTitle = notificationTitle || '📅 Booking Created!';
+        notificationBody = notificationBody || 'Your service request has been received.';
+        vibrate = [200, 100];
+        actions = [
+          { action: 'view', title: '👁️ View Status' }
+        ];
+        break;
 
-    case 'new_booking':
-      // High priority booking alert - like Ola/Uber
-      notificationTitle = data.title || notification.title || '🔔 New Booking Request!';
-      notificationBody = data.body || notification.body || 'You have a new service request.';
-      requireInteraction = true; // Keep notification visible until user interacts
-      vibrate = [500, 200, 500, 200, 500]; // Strong vibration pattern
-      actions = [
-        { action: 'accept', title: '✓ Accept', icon: '/icons/accept.png' },
-        { action: 'reject', title: '✗ Decline', icon: '/icons/reject.png' }
-      ];
-      break;
+      case 'new_booking':
+        // High priority booking alert - like Ola/Uber
+        notificationTitle = data.title || notification.title || '🔔 New Booking Request!';
+        notificationBody = data.body || notification.body || 'You have a new service request.';
+        requireInteraction = true; // Keep notification visible until user interacts
+        vibrate = [500, 200, 500, 200, 500]; // Strong vibration pattern
+        actions = [
+          { action: 'accept', title: '✓ Accept', icon: '/icons/accept.png' },
+          { action: 'reject', title: '✗ Decline', icon: '/icons/reject.png' }
+        ];
+        break;
 
-    case 'job_assigned':
-      // Worker job assignment - urgent
-      notificationTitle = data.title || notification.title || '🔔 New Job Assigned!';
-      notificationBody = data.body || notification.body || 'You have been assigned a new job.';
-      requireInteraction = true;
-      vibrate = [500, 200, 500, 200, 500];
-      actions = [
-        { action: 'accept', title: '✓ Accept Job', icon: '/icons/accept.png' },
-        { action: 'view', title: '👁️ View Details' }
-      ];
-      break;
+      case 'job_assigned':
+        // Worker job assignment - urgent
+        notificationTitle = data.title || notification.title || '🔔 New Job Assigned!';
+        notificationBody = data.body || notification.body || 'You have been assigned a new job.';
+        requireInteraction = true;
+        vibrate = [500, 200, 500, 200, 500];
+        actions = [
+          { action: 'accept', title: '✓ Accept Job', icon: '/icons/accept.png' },
+          { action: 'view', title: '👁️ View Details' }
+        ];
+        break;
 
-    case 'booking_accepted':
-      notificationTitle = data.title || notification.title || '✅ Booking Confirmed!';
-      notificationBody = data.body || notification.body || 'Your booking has been accepted.';
-      vibrate = [200, 100, 200];
-      actions = [
-        { action: 'view', title: '👁️ View Booking' }
-      ];
-      break;
+      case 'booking_accepted':
+        notificationTitle = data.title || notification.title || '✅ Booking Confirmed!';
+        notificationBody = data.body || notification.body || 'Your booking has been accepted.';
+        vibrate = [200, 100, 200];
+        actions = [
+          { action: 'view', title: '👁️ View Booking' }
+        ];
+        break;
 
-    case 'worker_assigned':
-      notificationTitle = data.title || notification.title || '👷 Worker Assigned';
-      notificationBody = data.body || notification.body || 'A professional has been assigned to your booking.';
-      vibrate = [200, 100, 200];
-      actions = [
-        { action: 'track', title: '📍 Track Worker' }
-      ];
-      break;
+      case 'worker_assigned':
+        notificationTitle = data.title || notification.title || '👷 Worker Assigned';
+        notificationBody = data.body || notification.body || 'A professional has been assigned to your booking.';
+        vibrate = [200, 100, 200];
+        actions = [
+          { action: 'track', title: '📍 Track Worker' }
+        ];
+        break;
 
-    case 'journey_started':
-    case 'worker_started':
-      notificationTitle = data.title || notification.title || '📍 Professional is on the way!';
-      notificationBody = data.body || notification.body || 'Your service provider has started their journey.';
-      requireInteraction = true;
-      vibrate = [500, 200, 500];
-      actions = [
-        { action: 'track', title: '📍 Track Arrival', icon: '/icons/track.png' }
-      ];
-      break;
+      case 'journey_started':
+      case 'worker_started':
+        notificationTitle = data.title || notification.title || '📍 Professional is on the way!';
+        notificationBody = data.body || notification.body || 'Your service provider has started their journey.';
+        requireInteraction = true;
+        vibrate = [500, 200, 500];
+        actions = [
+          { action: 'track', title: '📍 Track Arrival', icon: '/icons/track.png' }
+        ];
+        break;
 
-    case 'work_done':
-    case 'worker_completed':
-      notificationTitle = data.title || notification.title || '✅ Work Finished!';
-      notificationBody = data.body || notification.body || 'Professional has finished the work and is preparing the bill.';
-      requireInteraction = true;
-      vibrate = [200, 100, 200, 100, 200];
-      actions = [
-        { action: 'view', title: '👁️ View Summary' }
-      ];
-      break;
+      case 'work_done':
+      case 'worker_completed':
+        notificationTitle = data.title || notification.title || '✅ Work Finished!';
+        notificationBody = data.body || notification.body || 'Professional has finished the work and is preparing the bill.';
+        requireInteraction = true;
+        vibrate = [200, 100, 200, 100, 200];
+        actions = [
+          { action: 'view', title: '👁️ View Summary' }
+        ];
+        break;
 
-    case 'booking_completed':
-      notificationTitle = data.title || notification.title || '🎉 Booking Completed!';
-      notificationBody = data.body || notification.body || 'Service has been completed successfully.';
-      vibrate = [200, 100, 200, 100, 200];
-      actions = [
-        { action: 'rate', title: '⭐ Rate Now' }
-      ];
-      break;
-  }
+      case 'booking_completed':
+        notificationTitle = data.title || notification.title || '🎉 Booking Completed!';
+        notificationBody = data.body || notification.body || 'Service has been completed successfully.';
+        vibrate = [200, 100, 200, 100, 200];
+        actions = [
+          { action: 'rate', title: '⭐ Rate Now' }
+        ];
+        break;
+    }
 
-  const notificationOptions = {
-    body: notificationBody,
-    icon: icon,
-    badge: badge,
-    tag: tag,
-    sound: NOTIFICATION_SOUNDS[notificationType] || NOTIFICATION_SOUNDS.default,
-    data: {
-      ...data,
-      notificationType: notificationType,
-      url: data.link || '/',
+    const notificationOptions = {
+      body: notificationBody,
+      icon: icon,
+      badge: badge,
+      tag: tag,
+      sound: NOTIFICATION_SOUNDS[notificationType] || NOTIFICATION_SOUNDS.default,
+      data: {
+        ...data,
+        notificationType: notificationType,
+        url: data.link || '/',
+        timestamp: Date.now()
+      },
+      // Vibration pattern for mobile devices
+      vibrate: vibrate,
+      // Keep notification until user interacts (for important ones)
+      requireInteraction: requireInteraction,
+      // Action buttons
+      actions: actions,
+      // Sound will be played by the system for high priority
+      silent: false,
+      // Renotify even if same tag exists
+      renotify: true,
+      // Timestamp
       timestamp: Date.now()
-    },
-    // Vibration pattern for mobile devices
-    vibrate: vibrate,
-    // Keep notification until user interacts (for important ones)
-    requireInteraction: requireInteraction,
-    // Action buttons
-    actions: actions,
-    // Sound will be played by the system for high priority
-    silent: false,
-    // Renotify even if same tag exists
-    renotify: true,
-    // Timestamp
-    timestamp: Date.now()
-  };
+    };
 
-  // Show the notification ONLY if app is not in foreground (to avoid duplicate with in-app socket toast)
-  return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-    .then(function (clientList) {
-      const isVisible = clientList.some(function (client) {
-        return client.visibilityState === 'visible';
+    // Show the notification ONLY if app is not in foreground (to avoid duplicate with in-app socket toast)
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(function (clientList) {
+        const isVisible = clientList.some(function (client) {
+          return client.visibilityState === 'visible';
+        });
+
+        if (isVisible && notificationType !== 'test') {
+          console.log('[SW] 🚫 App is visible, skipping system notification to avoid duplicate');
+          return;
+        }
+
+        return self.registration.showNotification(notificationTitle, notificationOptions);
+      })
+      .catch(function (err) {
+        console.error('[SW] ⚠️ Error checking clients, falling back to notification:', err);
+        return self.registration.showNotification(notificationTitle, notificationOptions);
       });
-
-      if (isVisible && notificationType !== 'test') {
-        console.log('[SW] 🚫 App is visible, skipping system notification to avoid duplicate');
-        return;
-      }
-
-      return self.registration.showNotification(notificationTitle, notificationOptions);
-    })
-    .catch(function (err) {
-      console.error('[SW] ⚠️ Error checking clients, falling back to notification:', err);
-      return self.registration.showNotification(notificationTitle, notificationOptions);
-    });
-});
+  });
+}
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {

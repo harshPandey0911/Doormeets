@@ -23,6 +23,7 @@ const BookingDetails = lazy(() => import('../pages/Bookings/BookingDetails'));
 const BookingTracking = lazy(() => import('../pages/Bookings/Tracking'));
 const BookingNotifications = lazy(() => import('../pages/Bookings/BookingNotifications'));
 const InstantBookingSettings = lazy(() => import('../pages/Bookings/InstantBookingSettings'));
+const BookingReassignments = lazy(() => import('../pages/Bookings/Reassignments'));
 const Payments = lazy(() => import('../pages/Payments'));
 const Reports = lazy(() => import('../pages/Reports'));
 const Notifications = lazy(() => import('../pages/Notifications'));
@@ -46,6 +47,7 @@ const PaintingConfigPage = lazy(() => import('../pages/Painting/PaintingConfigPa
 const VendorWallets = lazy(() => import('../pages/VendorWallets'));
 const ShopOwners = lazy(() => import('../pages/ShopOwners/index'));
 const WebsiteManagement = lazy(() => import('../pages/WebsiteManagement'));
+const VendorDashboardManager = lazy(() => import('../pages/VendorDashboard'));
 
 
 
@@ -81,10 +83,11 @@ const AdminRoutes = () => {
           <Route path="vendors-zone" element={<VendorsZone />} />
           <Route path="vendor-subscriptions/*" element={<VendorSubscriptionManagement />} />
           <Route path="bookings" element={<Bookings />} />
-          <Route path="bookings/:id" element={<BookingDetails />} />
+          <Route path="bookings/reassignments" element={<BookingReassignments />} />
           <Route path="bookings/tracking" element={<BookingTracking />} />
           <Route path="bookings/notifications" element={<BookingNotifications />} />
           <Route path="bookings/instant" element={<InstantBookingSettings />} />
+          <Route path="bookings/:id" element={<BookingDetails />} />
           <Route path="user-categories/*" element={<UserCategories />} />
           <Route path="payments/*" element={<Payments />} />
           <Route path="reports/*" element={<Reports />} />
@@ -115,6 +118,7 @@ const AdminRoutes = () => {
 
           <Route path="commission" element={<Commission />} />
           <Route path="vendor-wallets" element={<VendorWallets />} />
+          <Route path="vendor-dashboard" element={<VendorDashboardManager />} />
            <Route path="website/*" element={<WebsiteManagement />} />
           <Route path="admin-management/*" element={
             <SuperAdminRoute><AdminManagement /></SuperAdminRoute>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import html2pdf from 'html2pdf.js';
 import useAppNotifications from '../../../../hooks/useAppNotifications';
 import { themeColors } from '../../../../theme';
 import { MdQrCode } from 'react-icons/md';
@@ -159,8 +160,7 @@ const BookingDetails = () => {
   const handleDownloadInvoice = async () => {
     if (!booking) return;
 
-    const html2pdf = (await import('html2pdf.js')).default;
-    const grandTotalVal = parseFloat(finalTotal) || 0;
+    const grandTotalVal = parseFloat(booking.bill?.grandTotal || booking.finalAmount || booking.totalAmount || 0);
     const taxRate = companyDetails.serviceGstPercentage || 18;
     const isGstIncluded = true;
 
@@ -1856,8 +1856,8 @@ const BookingDetails = () => {
                 {booking.vendorId && (
                   <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
                     {cancellationTimeLeft
-                      ? '⚠️ Cancellation only allowed within 2 minutes of acceptance'
-                      : '🚫 Cancellation window expired (exceeded 2 mins)'}
+                      ? '⚠️ Cancellation only allowed within 3 minutes of acceptance'
+                      : '🚫 Cancellation window expired (exceeded 3 mins)'}
                   </p>
                 )}
               </div>
@@ -1889,7 +1889,7 @@ const BookingDetails = () => {
               )}
 
               {/* Cancellation Option */}
-              {['pending', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
+              {['pending', 'pending_admin', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
                 <button
                   onClick={handleCancelBooking}
                   className="w-full py-3 border border-red-500/30 text-red-500 hover:bg-red-500/5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"

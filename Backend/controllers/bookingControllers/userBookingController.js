@@ -1130,12 +1130,20 @@ const cancelBooking = async (req, res) => {
     }
 
     // Cancellation window check: strictly 3 minutes from booking creation
-    const timeSinceBookingMs = Date.now() - new Date(booking.createdAt).getTime();
-    if (timeSinceBookingMs > 3 * 60 * 1000) { // 3 minutes in ms
-      return res.status(400).json({
-        success: false,
-        message: 'You can only cancel a booking within 3 minutes of creating it.'
-      });
+    // EXCEPTION: If no vendor has been assigned yet (pending_admin, searching, etc.),
+    // user can always cancel freely — no vendor has committed to the job.
+    const freeToCancel = ['pending_admin', 'searching', 'bidding', 'no_vendors', 'requested'].includes(
+      booking.status?.toLowerCase()
+    ) && !booking.vendorId;
+
+    if (!freeToCancel) {
+      const timeSinceBookingMs = Date.now() - new Date(booking.createdAt).getTime();
+      if (timeSinceBookingMs > 3 * 60 * 1000) { // 3 minutes in ms
+        return res.status(400).json({
+          success: false,
+          message: 'You can only cancel a booking within 3 minutes of creating it.'
+        });
+      }
     }
 
     // --- REFUND & CANCELLATION FEE LOGIC ---

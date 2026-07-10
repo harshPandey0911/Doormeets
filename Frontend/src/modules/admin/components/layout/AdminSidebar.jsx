@@ -36,6 +36,7 @@ import {
   FiHelpCircle,
   FiMail,
   FiBookOpen,
+  FiMonitor,
 } from "react-icons/fi";
 import adminMenu from "../../config/adminMenu.json";
 import dashboardService from "../../services/dashboardService";
@@ -73,6 +74,7 @@ const iconMap = {
   "Stock Management": FiBox,
   "Vendor Subscriptions": FiDollarSign,
   "Vendor Requests": FiInbox,
+  "Vendor Dashboard": FiMonitor,
   "Package based": FiPackage,
   "Painting": FiGrid,
   "Instant Booking": FiZap,
@@ -108,6 +110,9 @@ const getChildRoute = (parentRoute, childName) => {
       "Incentives": "/admin/vendors/incentives",
       "Vendor Wallets": "/admin/vendor-wallets",
     },
+    "/admin/vendor-dashboard": {
+      "Dashboard Management": "/admin/vendor-dashboard",
+    },
     "/admin/labours": {
       "All Labours": "/admin/labours/all",
       "Labour Jobs": "/admin/labours/jobs",
@@ -124,6 +129,7 @@ const getChildRoute = (parentRoute, childName) => {
       "Booking Tracking": "/admin/bookings/tracking",
       "Booking Notifications": "/admin/bookings/notifications",
       "Instant Booking": "/admin/bookings/instant",
+      "Reassignments": "/admin/bookings/reassignments",
     },
     "/admin/user-categories": {
       "Home": "/admin/user-categories/home",
@@ -237,7 +243,45 @@ const permissionMap = {
   "Stock Management": "manage_stock",
   "Scrap Items": "view_scrap_items",
   "Notifications": "manage_notifications",
-  "Police Verification": "view_police_verification",
+};
+
+const childPermissionMap = {
+  // Users
+  "All Users": "view_users_all",
+  "User Bookings": "view_users_bookings",
+  "User Analytics": "view_users_analytics",
+  "Referral Settings": "view_users_referrals",
+  // Vendors
+  "All Vendors": "view_vendors_all",
+  "Vendor's Zone": "view_vendors_zone",
+  "Manual Assignment": "view_vendors_manual",
+  "Vendor Bookings": "view_vendors_bookings",
+  "Vendor Analytics": "view_vendors_analytics",
+  "Police Verification": "view_vendors_police",
+  "Incentives": "view_vendors_incentives",
+  "Vendor Wallets": "view_vendors_wallets",
+  // Workers
+  "All Workers": "view_workers_all",
+  "Worker Jobs": "view_workers_jobs",
+  "Worker Analytics": "view_workers_analytics",
+  "Worker Payments": "view_workers_payments",
+  // Bookings
+  "All Bookings": "view_bookings_all",
+  "Booking Tracking": "view_bookings_tracking",
+  "Booking Notifications": "view_bookings_notifications",
+  "Instant Booking": "view_bookings_instant",
+  "Reassignments": "view_bookings_reassignments",
+  // Payments
+  "Payment Overview": "view_payments_overview",
+  "User Payments": "view_payments_users",
+  "Worker Payments": "view_payments_workers",
+  "Vendor Payments": "view_payments_vendors",
+  "Admin Revenue": "view_payments_revenue",
+  "Payment Reports": "view_payments_reports",
+  // Reports
+  "Revenue Report": "view_reports_revenue",
+  "Booking Report": "view_reports_bookings",
+  "Payment Report": "view_reports_payments",
 };
 
 const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMode }) => {
@@ -557,6 +601,11 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMod
               className="overflow-hidden">
               <div className="ml-4 mt-1 pl-4 border-l-2 border-slate-600 space-y-1">
                 {item.children.map((child, index) => {
+                  const childPerm = childPermissionMap[child];
+                  if (childPerm && isCityAdmin && !hasPermission(childPerm)) {
+                    return null;
+                  }
+
                   const childRoute = getChildRoute(item.route, child);
                   const isChildActive =
                     location.pathname === childRoute ||

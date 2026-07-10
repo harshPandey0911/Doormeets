@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FiSearch, FiUser, FiPhone, FiMail, FiCheckCircle, FiSlash, FiCheck, FiTrash2, FiBriefcase, FiXCircle, FiTrendingUp } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiSearch, FiUser, FiPhone, FiMail, FiCheckCircle, FiSlash, FiCheck, FiTrash2, FiBriefcase, FiXCircle, FiTrendingUp, FiPlus, FiX } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import adminWorkerService from '../../../../services/adminWorkerService';
+import api from '../../../../services/api';
 
 const AllWorkers = () => {
   const [workers, setWorkers] = useState([]);
@@ -13,6 +14,15 @@ const AllWorkers = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalWorkers, setTotalWorkers] = useState(0);
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingWorker, setAddingWorker] = useState(false);
+  const [newWorker, setNewWorker] = useState({
+    name: '',
+    phone: '',
+    serviceCategories: []
+  });
+  const [categories, setCategories] = useState([]);
 
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -52,6 +62,73 @@ const AllWorkers = () => {
   useEffect(() => {
     fetchWorkers();
   }, [page, debouncedSearch, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get('/public/categories');
+        if (response.data?.success) {
+          setCategories(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleAddWorkerSubmit = async (e) => {
+    e.preventDefault();
+    if (!newWorker.name || newWorker.name.length < 2) {
+      toast.error('Please enter a valid name (min 2 chars)');
+      return;
+    }
+    if (!newWorker.phone || newWorker.phone.length !== 10) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+    if (newWorker.serviceCategories.length === 0) {
+      toast.error('Please select at least one skill/category');
+      return;
+    }
+
+    try {
+      setAddingWorker(true);
+      const response = await adminWorkerService.createWorker(newWorker);
+      if (response.success) {
+        toast.success(response.message || 'Worker created successfully!');
+        setShowAddModal(false);
+        setNewWorker({
+          name: '',
+          phone: '',
+          serviceCategories: []
+        });
+        fetchWorkers();
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to create worker');
+    } finally {
+      setAddingWorker(false);
+    }
+  };
+
+  const handleCategoryToggle = (catId) => {
+    setNewWorker(prev => {
+      const idx = prev.serviceCategories.indexOf(catId);
+      if (idx > -1) {
+        return {
+          ...prev,
+          serviceCategories: prev.serviceCategories.filter(id => id !== catId)
+        };
+      } else {
+        return {
+          ...prev,
+          serviceCategories: [...prev.serviceCategories, catId]
+        };
+      }
+    });
+  };
 
   const handleStatusToggle = async (workerId, currentStatus) => {
     if (!window.confirm(`Are you sure you want to ${currentStatus ? 'block' : 'activate'} this worker?`)) {
@@ -185,6 +262,14 @@ const AllWorkers = () => {
           <div className="px-3 py-2 bg-green-50 rounded-lg border border-green-100">
             <span className="text-xs font-bold text-green-700">{totalWorkers} Workers</span>
           </div>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-3 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg flex items-center gap-1.5 transition text-xs shadow-sm hover:shadow cursor-pointer"
+          >
+            <FiPlus className="w-4 h-4" />
+            <span>Add Worker</span>
+          </button>
         </div>
       </div>
 
@@ -359,6 +444,106 @@ const AllWorkers = () => {
           </div>
         )}
       </div>
+
+      {/* Add Worker Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-5 shadow-2xl border border-gray-100 max-w-md w-full"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-800 text-sm">Add New Worker</h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-1 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-full transition cursor-pointer"
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddWorkerSubmit} className="space-y-3.5">
+                <div>
+                  <label htmlFor="workerName" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Full Name</label>
+                  <div className="relative group">
+                    <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                    <input
+                      id="workerName"
+                      type="text"
+                      required
+                      placeholder="Worker full name"
+                      value={newWorker.name}
+                      onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-gray-700 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="workerPhone" className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Phone Number</label>
+                  <div className="relative group">
+                    <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                    <input
+                      id="workerPhone"
+                      type="tel"
+                      required
+                      maxLength="10"
+                      placeholder="10-digit mobile number"
+                      value={newWorker.phone}
+                      onChange={(e) => setNewWorker({ ...newWorker, phone: e.target.value.replace(/\D/g, '') })}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-gray-700 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Skills / Categories</label>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-100 rounded-xl p-2 bg-gray-50">
+                    {categories.map((cat) => {
+                      const isSelected = newWorker.serviceCategories.includes(cat._id);
+                      return (
+                        <button
+                          key={cat._id}
+                          type="button"
+                          onClick={() => handleCategoryToggle(cat._id)}
+                          className={`p-2 rounded-lg text-left text-xs font-semibold border transition flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-green-50 text-green-600 border-green-200'
+                              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <span>{cat.title}</span>
+                          {isSelected && <FiCheck className="w-3.5 h-3.5 text-green-600" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 border border-gray-200 text-gray-600 font-semibold rounded-lg hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addingWorker}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {addingWorker ? 'Adding...' : 'Add Worker'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

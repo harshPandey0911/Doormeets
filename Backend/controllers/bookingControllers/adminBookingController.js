@@ -25,14 +25,23 @@ const getAllBookings = async (req, res) => {
     const query = {};
 
     if (manual === 'true') {
-      // Find bookings in pending_admin status or requested with assignedByAdmin true
+      // Active queue only: pending_admin or sent-to-vendor (requested + assignedByAdmin)
       query.$or = [
         { status: 'pending_admin' },
         { status: 'requested', assignedByAdmin: true }
       ];
+    } else if (manual === 'all') {
+      // All bookings that ever went through admin assignment flow
+      query.$or = [
+        { status: 'pending_admin' },
+        { status: 'no_vendors' },       // pending_admin cancelled by admin
+        { assignedByAdmin: true }       // manually assigned by admin (any status)
+      ];
+
     } else if (status) {
       query.status = { $regex: new RegExp(`^${status}$`, 'i') };
     }
+
     if (paymentStatus) query.paymentStatus = paymentStatus;
     if (userId) query.userId = userId;
     if (vendorId) query.vendorId = vendorId;
