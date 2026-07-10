@@ -28,22 +28,19 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, t
 
   return (
     <div className="my-10 px-3 md:px-5 w-full">
-      {/* Clean section header */}
-      <div className="mb-6">
-        <h2 className="text-[28px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
+      {/* Header */}
+      <div className="mb-5">
+        <h2 className="text-[22px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
           {title || "Most booked services"}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          {subtitle || "Customer favorites in your area"}
-        </p>
       </div>
 
       {/* Carousel Wrapper */}
-      <div className="relative group/carousel">
+      <div className="relative">
         {showLeftArrow && (
           <button
-            onClick={() => containerRef.current.scrollBy({ left: -240, behavior: 'smooth' })}
-            className="absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 hover:bg-gray-50 hover:shadow-lg transition-all text-gray-700 active:scale-90"
+            onClick={() => containerRef.current.scrollBy({ left: -300, behavior: 'smooth' })}
+            className="absolute -left-4 top-1/3 -translate-y-1/2 z-20 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all text-gray-700 active:scale-90"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -53,8 +50,8 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, t
         
         {showRightArrow && (
           <button
-            onClick={() => containerRef.current.scrollBy({ left: 240, behavior: 'smooth' })}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 hover:bg-gray-50 hover:shadow-lg transition-all text-gray-700 active:scale-90"
+            onClick={() => containerRef.current.scrollBy({ left: 300, behavior: 'smooth' })}
+            className="absolute -right-4 top-1/3 -translate-y-1/2 z-20 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all text-gray-700 active:scale-90"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
