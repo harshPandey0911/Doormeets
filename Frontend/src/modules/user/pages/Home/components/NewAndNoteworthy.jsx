@@ -6,7 +6,7 @@ import bathroomCleaningImage from '../../../../../assets/images/pages/Home/NewAn
 import hairStudioImage from '../../../../../assets/images/pages/Home/NewAndNoteworthy/hair-studio.png';
 import acRepairImage from '../../../../../assets/images/pages/Home/NewAndNoteworthy/ac-repair.png';
 
-const NewAndNoteworthy = React.memo(({ services, onServiceClick }) => {
+const NewAndNoteworthy = React.memo(({ services, onServiceClick, title }) => {
   const sectionRef = useRef(null);
   const titleRef = useRef(null);
   const cardsRef = useRef(null);
@@ -59,7 +59,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick }) => {
           from: { x: 50, opacity: 0, scale: 0.9 },
           to: { x: 0, opacity: 1, scale: 1 },
           duration: 0.5,
-          stagger: 0.08,
+          stagger: 0.1,
           ease: 'back.out(1.7)',
         },
         { rootMargin: '150px' }
@@ -93,7 +93,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick }) => {
         <h2
           className="text-xl font-bold text-gray-900 tracking-tight"
         >
-          New and noteworthy
+          {title || "New and noteworthy"}
         </h2>
       </div>
 

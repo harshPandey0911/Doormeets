@@ -12,6 +12,11 @@ import { useCity } from '../../../../context/CityContext';
 import { toast } from 'react-hot-toast';
 import { registerFCMToken } from '../../../../services/pushNotificationService';
 import { motion } from 'framer-motion';
+import CategoryModal from './components/CategoryModal';
+import SearchOverlay from './components/SearchOverlay';
+import OfferBannerSlider from './components/OfferBannerSlider';
+import GroupCategoryBottomSheet from './components/GroupCategoryBottomSheet';
+import ServiceSectionWithRating from './components/ServiceSectionWithRating';
 
 // Lazy load heavy components for better initial load performance
 import PromoCarousel from './components/PromoCarousel';
@@ -19,13 +24,10 @@ import PromoCarousel from './components/PromoCarousel';
 const NewAndNoteworthy = lazy(() => import('./components/NewAndNoteworthy'));
 const MostBookedServices = lazy(() => import('./components/MostBookedServices'));
 const CuratedServices = lazy(() => import('./components/CuratedServices'));
-import ServiceSectionWithRating from './components/ServiceSectionWithRating';
 const Banner = lazy(() => import('./components/Banner'));
 const ReferEarnSection = lazy(() => import('./components/ReferEarnSection'));
-import CategoryModal from './components/CategoryModal';
-import SearchOverlay from './components/SearchOverlay';
-import OfferBannerSlider from './components/OfferBannerSlider';
-import GroupCategoryBottomSheet from './components/GroupCategoryBottomSheet';
+const CTABanner = lazy(() => import('./components/CTABanner'));
+const TrustSection = lazy(() => import('./components/TrustSection'));
 import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
@@ -700,6 +702,15 @@ const Home = () => {
                 </motion.section>
               )}
 
+              {/* Trust Section */}
+              {homeContent?.trustItems && homeContent.trustItems.length > 0 && (
+                <motion.section variants={itemVariants}>
+                  <Suspense fallback={<div className="h-10 bg-gray-50 animate-pulse rounded-xl mx-4 my-2" />}>
+                    <TrustSection items={homeContent.trustItems} />
+                  </Suspense>
+                </motion.section>
+              )}
+
               {/* Categories Section */}
               {homeContent?.isCategoriesVisible !== false && (
                 <>
@@ -1036,6 +1047,8 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <CuratedServices
+                      title={homeContent?.sectionHeaders?.curatedTitle}
+                      subtitle={homeContent?.sectionHeaders?.curatedSubtitle}
                       services={(homeContent?.curated || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
@@ -1054,6 +1067,7 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <NewAndNoteworthy
+                      title={homeContent?.sectionHeaders?.noteworthyTitle}
                       services={(homeContent?.noteworthy || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
@@ -1072,6 +1086,7 @@ const Home = () => {
                 <motion.div variants={itemVariants}>
                   <Suspense fallback={<div className="h-40 bg-gray-50 animate-pulse rounded-xl mx-4" />}>
                     <MostBookedServices
+                      title={homeContent?.sectionHeaders?.bookedTitle}
                       services={(homeContent?.booked || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(item => ({
                         id: item.id || item._id,
                         title: item.title,
@@ -1091,7 +1106,24 @@ const Home = () => {
                 </motion.div>
               )}
 
-
+              {/* CTA Banner */}
+              {homeContent?.ctaBanner && homeContent.ctaBanner.title && (
+                <motion.div variants={itemVariants}>
+                  <Suspense fallback={<div className="h-32 bg-gray-50 animate-pulse rounded-xl mx-4 my-2" />}>
+                    <CTABanner 
+                      ctaBanner={homeContent.ctaBanner} 
+                      onNavigate={(nav) => {
+                        if (nav.targetCategoryId) {
+                          const cat = categories.find(c => c.id === nav.targetCategoryId || c._id === nav.targetCategoryId);
+                          if (cat) handleCategoryClick(cat);
+                        } else if (nav.slug) {
+                          navigate(`/${nav.slug}`);
+                        }
+                      }} 
+                    />
+                  </Suspense>
+                </motion.div>
+              )}
 
               {/* Dynamic Sections */}
               {homeContent?.isCategorySectionsVisible !== false && (homeContent?.categorySections || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map((section, sIdx) => (

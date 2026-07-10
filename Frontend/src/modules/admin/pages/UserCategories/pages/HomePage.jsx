@@ -183,6 +183,17 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Trust Section
+  const [isTrustModalOpen, setIsTrustModalOpen] = useState(false);
+  const [trustForm, setTrustForm] = useState({ icon: '✓', title: '', description: '', color: '#2874F0' });
+  const [editingTrustId, setEditingTrustId] = useState(null);
+
+  // CTA Banner
+  const [ctaBannerForm, setCtaBannerForm] = useState({ title: '', subtitle: '', buttonText: 'Book Now', targetCategoryId: '', slug: '' });
+
+  // Section Headers
+  const [sectionHeaders, setSectionHeaders] = useState({ promoTitle: '', promoSubtitle: '', curatedTitle: '', curatedSubtitle: '', noteworthyTitle: '', bookedTitle: '', sectionsTitle: '', trustTitle: '' });
+
   const categories = useMemo(() => {
     const list = ensureIds(catalog).categories || [];
     return [...list].sort((a, b) => {
@@ -253,8 +264,19 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             isNoteworthyVisible: hc.isNoteworthyVisible ?? true,
             isBookedVisible: hc.isBookedVisible ?? true,
             isCategorySectionsVisible: hc.isCategorySectionsVisible ?? true,
-            isCategoriesVisible: hc.isCategoriesVisible ?? true
+            isCategoriesVisible: hc.isCategoriesVisible ?? true,
+            trustItems: addIds(hc.trustItems || []),
+            ctaBanner: hc.ctaBanner || {},
+            sectionHeaders: hc.sectionHeaders || {}
           };
+
+          // Seed local form states from fetched data
+          if (hc.ctaBanner) {
+            setCtaBannerForm(prev => ({ ...prev, ...hc.ctaBanner }));
+          }
+          if (hc.sectionHeaders) {
+            setSectionHeaders(prev => ({ ...prev, ...hc.sectionHeaders }));
+          }
         }
 
         if (catRes.success && catRes.categories) {
@@ -312,6 +334,73 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       console.error('Update status error:', error);
       toast.error(error.message || 'Failed to update status');
     }
+  };
+
+  const handleShowOnHomeToggle = async (categoryId, currentValue) => {
+    const newValue = !currentValue;
+    // Optimistic update
+    const next = ensureIds(catalog);
+    next.categories = next.categories.map(c =>
+      c.id === categoryId ? { ...c, showOnHome: newValue } : c
+    );
+    setCatalog(next);
+    saveCatalog(next);
+
+    try {
+      const response = await categoryService.update(categoryId, { showOnHome: newValue });
+      if (response.success) {
+        publicCatalogService.invalidateCache();
+        toast.success(newValue ? 'Category shown on home' : 'Category hidden from home');
+      } else {
+        throw new Error(response.message || 'Failed to update');
+      }
+    } catch (error) {
+      // Revert on failure
+      const revert = ensureIds(catalog);
+      revert.categories = revert.categories.map(c =>
+        c.id === categoryId ? { ...c, showOnHome: currentValue } : c
+      );
+      setCatalog(revert);
+      saveCatalog(revert);
+      toast.error('Failed to update visibility');
+    }
+  };
+
+
+  // ── Trust Section handlers ───────────────────────────────────────────────
+  const resetTrustForm = () => {
+    setEditingTrustId(null);
+    setTrustForm({ icon: '✓', title: '', description: '', color: '#2874F0' });
+    setIsTrustModalOpen(false);
+  };
+
+  const saveTrust = async () => {
+    if (!trustForm.title.trim()) { toast.error('Title is required'); return; }
+    try {
+      const items = home?.trustItems || [];
+      if (editingTrustId) {
+        await patchHome({ trustItems: items.map(t => t.id === editingTrustId ? { ...t, ...trustForm } : t) });
+      } else {
+        await patchHome({ trustItems: [...items, { id: `htrust-${Date.now()}`, ...trustForm }] });
+      }
+      resetTrustForm();
+    } catch (error) {}
+  };
+
+  // ── CTA Banner save ──────────────────────────────────────────────────────
+  const saveCtaBanner = async () => {
+    try {
+      await patchHome({ ctaBanner: ctaBannerForm });
+      toast.success('CTA Banner saved!');
+    } catch (error) {}
+  };
+
+  // ── Section Headers save ─────────────────────────────────────────────────
+  const saveSectionHeaders = async () => {
+    try {
+      await patchHome({ sectionHeaders });
+      toast.success('Section headers saved!');
+    } catch (error) {}
   };
 
   const getCategoryTitle = (id) => {
@@ -406,7 +495,10 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         isNoteworthyVisible: homeData.isNoteworthyVisible,
         isBookedVisible: homeData.isBookedVisible,
         isCategorySectionsVisible: homeData.isCategorySectionsVisible,
-        isCategoriesVisible: homeData.isCategoriesVisible
+        isCategoriesVisible: homeData.isCategoriesVisible,
+        trustItems: homeData.trustItems || [],
+        ctaBanner: homeData.ctaBanner || {},
+        sectionHeaders: homeData.sectionHeaders || {}
       };
       await homeContentService.update(payload, { cityId: selectedCity });
       publicCatalogService.invalidateCache();
@@ -777,7 +869,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         </div>
       </CardShell>
 
-      {false && (
       <CardShell icon={FiGrid}>
         <div className="space-y-5">
           {/* Promo Carousel (PromoCarousel) */}
@@ -1104,7 +1195,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           }
 
           {/* Most Booked */}
-          < div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm" >
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3 pb-3 mb-4 border-b border-gray-200">
               <div>
                 <div className="text-xl font-bold text-gray-900">Most Booked Services</div>
@@ -1356,7 +1447,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           }
         </div>
       </CardShell>
-      )}
       <CardShell icon={FiGrid} title="Home Categories">
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">{categories.length} categories</div>
@@ -1379,13 +1469,14 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Slug</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Badge</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-32">Status</th>
+                  <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-28">Show on Home</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-40">Order</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-24">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {categories.map((c, idx) => (
-                  <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={c.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${c.showOnHome === false ? 'opacity-50 bg-gray-50' : ''}`}>
                     <td className="py-4 px-4 text-sm font-semibold text-gray-600">{idx + 1}</td>
                     <td className="py-4 px-4">
                       {c.homeIconUrl ? (
@@ -1428,6 +1519,25 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                           {c.interestedCount || 0} Interested
                         </div>
                       )}
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleShowOnHomeToggle(c.id, c.showOnHome !== false)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                          c.showOnHome !== false ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                        title={c.showOnHome !== false ? 'Visible on home — click to hide' : 'Hidden from home — click to show'}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                            c.showOnHome !== false ? 'translate-x-[18px]' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
+                      <div className="text-[10px] text-gray-400 mt-0.5">
+                        {c.showOnHome !== false ? 'Visible' : 'Hidden'}
+                      </div>
                     </td>
                     <td className="py-2 px-4">
                       <div className="flex items-center justify-center gap-2">
@@ -1488,6 +1598,262 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           </div>
         )}
       </CardShell>
+
+      {/* ── Trust Section ──────────────────────────────────────────────────── */}
+      <CardShell icon={FiGrid} title="Trust Section">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-500">Items shown in the "Why Choose Us" strip</div>
+          <button
+            type="button"
+            onClick={() => { resetTrustForm(); setIsTrustModalOpen(true); }}
+            className="px-4 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg"
+            style={{ background: 'linear-gradient(to right, #2874F0, #1e5fd4)' }}
+          >
+            <FiPlus className="w-4 h-4" />
+            <span>Add Item</span>
+          </button>
+        </div>
+        {(home?.trustItems || []).length === 0 ? (
+          <div className="text-center py-8 text-gray-400">No trust items yet. Add one to show on the home page.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-12">#</th>
+                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-16">Icon</th>
+                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Title</th>
+                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Description</th>
+                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-20">Color</th>
+                  <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-24">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(home.trustItems || []).map((t, idx) => (
+                  <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 text-sm font-semibold text-gray-600">{idx + 1}</td>
+                    <td className="py-3 px-4 text-2xl">{t.icon || '✓'}</td>
+                    <td className="py-3 px-4 font-semibold text-gray-900">{t.title || '—'}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600 max-w-xs truncate">{t.description || '—'}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full border border-gray-200" style={{ backgroundColor: t.color || '#2874F0' }} />
+                        <span className="text-xs text-gray-500">{t.color || '—'}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => { setEditingTrustId(t.id); setTrustForm({ icon: t.icon || '✓', title: t.title || '', description: t.description || '', color: t.color || '#2874F0' }); setIsTrustModalOpen(true); }}
+                          className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                          title="Edit"
+                        >
+                          <FiEdit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => patchHome({ trustItems: (home.trustItems || []).filter(x => x.id !== t.id) })}
+                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                          title="Delete"
+                        >
+                          <FiTrash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardShell>
+
+      {/* ── CTA Banner ─────────────────────────────────────────────────────── */}
+      <CardShell icon={FiGrid} title="CTA Banner">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">The full-width call-to-action banner shown on the home page.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Title</label>
+              <input
+                value={ctaBannerForm.title}
+                onChange={e => setCtaBannerForm(p => ({ ...p, title: e.target.value }))}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                placeholder="Book Your First Service Today"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Subtitle</label>
+              <input
+                value={ctaBannerForm.subtitle}
+                onChange={e => setCtaBannerForm(p => ({ ...p, subtitle: e.target.value }))}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                placeholder="Professional services at your doorstep"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">Button Text</label>
+            <input
+              value={ctaBannerForm.buttonText}
+              onChange={e => setCtaBannerForm(p => ({ ...p, buttonText: e.target.value }))}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+              placeholder="Book Now"
+            />
+          </div>
+          <RedirectionSelector
+            categories={categories}
+            allServices={allServices}
+            targetCategoryId={ctaBannerForm.targetCategoryId}
+            slug={ctaBannerForm.slug}
+            onChange={patch => setCtaBannerForm(p => ({ ...p, ...patch }))}
+            label="Button Redirect"
+          />
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={saveCtaBanner}
+              disabled={isSyncing}
+              className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50"
+              style={{ background: isSyncing ? '#cbd5e1' : 'linear-gradient(to right, #2874F0, #1e5fd4)' }}
+            >
+              {isSyncing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <FiSave className="w-4 h-4" />}
+              {isSyncing ? 'Saving...' : 'Save CTA Banner'}
+            </button>
+          </div>
+        </div>
+      </CardShell>
+
+      {/* ── Section Header Manager ─────────────────────────────────────────── */}
+      <CardShell icon={FiGrid} title="Section Headers">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Customise the title and subtitle displayed above each home page section.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { key: 'promoTitle', sub: 'promoSubtitle', label: 'Promo Carousel' },
+              { key: 'curatedTitle', sub: 'curatedSubtitle', label: 'Thoughtful Curations' },
+              { key: 'noteworthyTitle', sub: null, label: 'New & Noteworthy' },
+              { key: 'bookedTitle', sub: null, label: 'Most Booked' },
+              { key: 'sectionsTitle', sub: null, label: 'Category Sections' },
+              { key: 'trustTitle', sub: null, label: 'Trust Section' },
+            ].map(({ key, sub, label }) => (
+              <div key={key} className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">{label}</p>
+                <input
+                  value={sectionHeaders[key] || ''}
+                  onChange={e => setSectionHeaders(p => ({ ...p, [key]: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={`${label} title`}
+                />
+                {sub && (
+                  <input
+                    value={sectionHeaders[sub] || ''}
+                    onChange={e => setSectionHeaders(p => ({ ...p, [sub]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500"
+                    placeholder={`${label} subtitle`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={saveSectionHeaders}
+              disabled={isSyncing}
+              className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50"
+              style={{ background: isSyncing ? '#cbd5e1' : 'linear-gradient(to right, #2874F0, #1e5fd4)' }}
+            >
+              {isSyncing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <FiSave className="w-4 h-4" />}
+              {isSyncing ? 'Saving...' : 'Save Headers'}
+            </button>
+          </div>
+        </div>
+      </CardShell>
+
+      {/* ── Trust Section Modal ────────────────────────────────────────────── */}
+      <Modal
+        isOpen={isTrustModalOpen}
+        onClose={resetTrustForm}
+        title={editingTrustId ? 'Edit Trust Item' : 'Add Trust Item'}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Icon (emoji)</label>
+            <input
+              value={trustForm.icon}
+              onChange={e => setTrustForm(p => ({ ...p, icon: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-2xl"
+              placeholder="✓"
+              maxLength={4}
+            />
+          </div>
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Title *</label>
+            <input
+              value={trustForm.title}
+              onChange={e => setTrustForm(p => ({ ...p, title: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              placeholder="Verified Professionals"
+            />
+          </div>
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Description</label>
+            <textarea
+              value={trustForm.description}
+              onChange={e => setTrustForm(p => ({ ...p, description: e.target.value }))}
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white resize-none"
+              placeholder="All our professionals are background-checked and trained."
+            />
+          </div>
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Accent Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={trustForm.color}
+                onChange={e => setTrustForm(p => ({ ...p, color: e.target.value }))}
+                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer p-1"
+              />
+              <input
+                value={trustForm.color}
+                onChange={e => setTrustForm(p => ({ ...p, color: e.target.value }))}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white font-mono text-sm"
+                placeholder="#2874F0"
+              />
+              <div className="flex gap-2">
+                {['#2874F0', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'].map(c => (
+                  <button key={c} type="button" onClick={() => setTrustForm(p => ({ ...p, color: c }))}
+                    className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                    style={{ backgroundColor: c, borderColor: trustForm.color === c ? '#1f2937' : 'transparent' }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={saveTrust}
+              disabled={isSyncing}
+              className={`flex-1 py-3.5 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={{ backgroundColor: isSyncing ? '#cbd5e1' : '#2874F0' }}
+            >
+              {isSyncing ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" /> : <FiSave className="w-5 h-5" />}
+              {isSyncing ? 'Saving...' : (editingTrustId ? 'Update Item' : 'Add Item')}
+            </button>
+            <button
+              onClick={resetTrustForm}
+              disabled={isSyncing}
+              className="px-6 py-3.5 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-all border border-gray-200 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       <Modal
         isOpen={isBannerModalOpen}
         onClose={resetBannerForm}
@@ -1845,6 +2211,15 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               placeholder="https://youtube.com/..."
             />
           </div>
+
+          <RedirectionSelector
+            categories={categories}
+            allServices={allServices}
+            targetCategoryId={curatedForm.targetCategoryId}
+            slug={curatedForm.slug}
+            onChange={(patch) => setCuratedForm((p) => ({ ...p, ...patch }))}
+            label="Redirect to..."
+          />
 
           <div className="flex gap-3 pt-4">
             <button
