@@ -37,6 +37,7 @@ const VendorSubscriptionManagement = lazy(() => import('../pages/VendorSubscript
 const Training = lazy(() => import('../pages/Training'));
 const VendorRequests = lazy(() => import('../pages/VendorRequests'));
 const AdminManagement = lazy(() => import('../pages/AdminManagement'));
+const ApprovalDashboard = lazy(() => import('../pages/ApprovalDashboard'));
 const Commission = lazy(() => import('../pages/Commission'));
 const PromoManagement = lazy(() => import('../pages/PromoManagement'));
 const VoucherManagement = lazy(() => import('../pages/VoucherManagement'));
@@ -122,6 +123,9 @@ const AdminRoutes = () => {
            <Route path="website/*" element={<WebsiteManagement />} />
           <Route path="admin-management/*" element={
             <SuperAdminRoute><AdminManagement /></SuperAdminRoute>
+          } />
+          <Route path="approvals" element={
+            <SuperAdminRoute><ApprovalDashboard /></SuperAdminRoute>
           } />
         </Route>
       </Routes>

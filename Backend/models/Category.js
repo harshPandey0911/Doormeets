@@ -162,7 +162,12 @@ const categorySchema = new mongoose.Schema({
   mappedCategories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category'
-  }]
+  }],
+  sacCode: {
+    type: String,
+    trim: true,
+    default: null
+  }
 }, {
   timestamps: true
 });

@@ -478,6 +478,15 @@ const bookingSchema = new mongoose.Schema({
   codAdvanceAmount: {
     type: Number,
     default: 0
+  },
+
+  // ==========================================
+  // BILLING — USER GST
+  // ==========================================
+  userGstNumber: {
+    type: String,
+    default: null,
+    trim: true
   }
 }, {
   timestamps: true
