@@ -395,7 +395,7 @@ const getServicePerformance = async (req, res) => {
  */
 const getActiveBanners = async (req, res) => {
   try {
-    const doc = await VendorDashboardContent.findOne({ isActive: true });
+    const doc = await VendorDashboardContent.findOne();
     if (!doc) {
       return res.status(200).json({ success: true, data: [] });
     }
