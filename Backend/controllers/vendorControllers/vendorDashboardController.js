@@ -1,5 +1,6 @@
 const Booking = require('../../models/Booking');
 const VendorBill = require('../../models/VendorBill');
+const VendorDashboardContent = require('../../models/VendorDashboardContent');
 const Worker = null; // Worker model removed
 const Service = require('../../models/UserService');
 const Settings = require('../../models/Settings');
@@ -389,10 +390,30 @@ const getServicePerformance = async (req, res) => {
   }
 };
 
+/**
+ * Get active dashboard banners/media for vendor app
+ */
+const getActiveBanners = async (req, res) => {
+  try {
+    const doc = await VendorDashboardContent.findOne({ isActive: true });
+    if (!doc) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+    // Filter active banners
+    const active = (doc.banners || []).filter(b => b.isActive !== false);
+    res.status(200).json({ success: true, data: active });
+  } catch (error) {
+    console.error('Get active banners error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch dashboard banners' });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getRevenueAnalytics,
   getWorkerPerformance,
-  getServicePerformance
+  getServicePerformance,
+  getActiveBanners
 };
+
 
