@@ -792,7 +792,7 @@ const Dashboard = memo(() => {
                 <div
                   key={b._id}
                   onClick={() => handleBannerClick(b)}
-                  className="flex-shrink-0 w-80 h-40 rounded-2xl overflow-hidden shadow-md snap-start cursor-pointer border border-white/10 hover:shadow-lg transition-shadow relative"
+                  className="w-full flex-shrink-0 h-48 md:h-64 rounded-2xl overflow-hidden shadow-md snap-start cursor-pointer border border-white/10 hover:shadow-lg transition-shadow relative"
                   style={{ backgroundColor: b.bgColor || '#1e293b' }}
                 >
                   {b.mediaType === 'video' ? (
