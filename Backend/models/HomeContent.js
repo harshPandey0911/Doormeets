@@ -262,6 +262,8 @@ const homeContentSchema = new mongoose.Schema({
   isCategorySectionsVisible: { type: Boolean, default: true },
   isCategoriesVisible: { type: Boolean, default: true },
   isFeaturedSectionsVisible: { type: Boolean, default: true },
+  isUpcomingCategoriesVisible: { type: Boolean, default: true },
+  isOrderAgainVisible: { type: Boolean, default: true },
   popularServices: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service',
@@ -317,6 +319,17 @@ const homeContentSchema = new mongoose.Schema({
     slug: { type: String, default: '' }
   },
 
+  // How It Works
+  howItWorks: {
+    title: { type: String, default: 'How it works' },
+    steps: [{
+      title: { type: String, default: '' },
+      description: { type: String, default: '' },
+      icon: { type: String, default: '' }
+    }]
+  },
+  isHowItWorksVisible: { type: Boolean, default: true },
+
   // Section Headers
   sectionHeaders: {
     promoTitle: { type: String, default: '' },
@@ -345,6 +358,7 @@ const homeContentSchema = new mongoose.Schema({
       'noteworthy',
       'booked',
       'ctaBanner',
+      'howItWorks',
       'categorySections'
     ]
   }

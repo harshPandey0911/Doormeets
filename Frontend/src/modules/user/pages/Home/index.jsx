@@ -28,6 +28,7 @@ const Banner = lazy(() => import('./components/Banner'));
 const ReferEarnSection = lazy(() => import('./components/ReferEarnSection'));
 const CTABanner = lazy(() => import('./components/CTABanner'));
 const TrustSection = lazy(() => import('./components/TrustSection'));
+const HowItWorksSection = lazy(() => import('./components/HowItWorksSection'));
 import userBannerService from '../../../../services/userBannerService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
@@ -649,7 +650,7 @@ const Home = () => {
   }
 
   return (
-  <div className="min-h-screen pb-20 relative" style={{ backgroundColor: 'var(--background)' }}>
+  <div className="w-full relative" style={{ backgroundColor: 'var(--background)' }}>
       {/* Group Category Bottom Sheet */}
       <GroupCategoryBottomSheet
         isOpen={groupCategorySheet.open}
@@ -692,7 +693,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[88px] md:pt-[100px] space-y-5 md:space-y-8 pb-24 max-w-[1600px] mx-auto w-full px-0 md:px-12">
+        <main className="pt-[88px] md:pt-[100px] space-y-5 md:space-y-8 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -780,22 +781,29 @@ const Home = () => {
                 </motion.div>
               )}
 
-              {/* Dynamic Section Ordering */}
-              {(homeContent?.sectionOrder && homeContent.sectionOrder.length > 0 ? homeContent.sectionOrder : [
-                'banners',
-                'promos',
-                'trustItems',
-                'categories',
-                'popularServices',
-                'upcomingCategories',
-                'orderAgain',
-                'featuredSections',
-                'curated',
-                'noteworthy',
-                'booked',
-                'ctaBanner',
-                'categorySections'
-              ]).map((sectionKey) => {
+              {(() => {
+                let order = homeContent?.sectionOrder && homeContent.sectionOrder.length > 0 ? [...homeContent.sectionOrder] : [
+                  'banners',
+                  'promos',
+                  'trustItems',
+                  'categories',
+                  'popularServices',
+                  'upcomingCategories',
+                  'orderAgain',
+                  'featuredSections',
+                  'curated',
+                  'noteworthy',
+                  'booked',
+                  'ctaBanner',
+                  'categorySections'
+                ];
+                if (!order.includes('howItWorks')) {
+                  const idx = order.indexOf('categorySections');
+                  if (idx !== -1) order.splice(idx, 0, 'howItWorks');
+                  else order.push('howItWorks');
+                }
+                return order;
+              })().map((sectionKey) => {
                 switch (sectionKey) {
                   case 'banners':
                     return (
@@ -922,6 +930,7 @@ const Home = () => {
                     );
                   case 'upcomingCategories':
                     return (
+                      homeContent?.isUpcomingCategoriesVisible !== false &&
                       upcomingCategories.length > 0 && (() => {
                         const activeCat = upcomingCategories[currentStackIndex] || upcomingCategories[0];
                         return (
@@ -1062,6 +1071,7 @@ const Home = () => {
                     );
                   case 'orderAgain':
                     return (
+                      homeContent?.isOrderAgainVisible !== false &&
                       !pastServicesLoading && pastServices.length > 0 && (
                         <motion.section key="orderAgain" variants={itemVariants} className="px-3 md:px-5 space-y-4">
                           <div className="flex items-center justify-between">
@@ -1254,6 +1264,20 @@ const Home = () => {
                                   navigate(`/${nav.slug}`);
                                 }
                               }} 
+                            />
+                          </Suspense>
+                        </motion.div>
+                      )
+                    );
+                  case 'howItWorks':
+                    return (
+                      homeContent?.isHowItWorksVisible !== false &&
+                      homeContent?.howItWorks?.steps?.length > 0 && (
+                        <motion.div key="howItWorks" variants={itemVariants}>
+                          <Suspense fallback={<div className="h-24 bg-gray-50 animate-pulse rounded-xl mx-4 my-2" />}>
+                            <HowItWorksSection
+                              title={homeContent.howItWorks.title}
+                              steps={homeContent.howItWorks.steps}
                             />
                           </Suspense>
                         </motion.div>
