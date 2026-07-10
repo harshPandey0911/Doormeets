@@ -71,7 +71,7 @@ const ServiceCategories = React.memo(({
       </div>
 
       {/* Horizontal scroll carousel with arrow buttons */}
-      <div className="relative">
+      <div className="relative" style={{ overflow: 'visible' }}>
         {/* Left Arrow */}
         {showLeftArrow && (
           <button
@@ -100,7 +100,7 @@ const ServiceCategories = React.memo(({
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-3 overflow-x-auto pb-2 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
           {displayCategories.map((category, index) => (
             <div

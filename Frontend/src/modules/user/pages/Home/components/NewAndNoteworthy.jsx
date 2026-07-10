@@ -37,7 +37,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, title, subtitle
       </div>
 
       {/* Carousel Wrapper */}
-      <div className="relative">
+      <div className="relative" style={{ overflow: 'visible' }}>
         {showLeftArrow && (
           <button
             onClick={() => containerRef.current.scrollBy({ left: -300, behavior: 'smooth' })}
@@ -63,7 +63,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, title, subtitle
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-3 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
           {serviceList.map((service, index) => (
             <div key={service.id || index} className="snap-start shrink-0">

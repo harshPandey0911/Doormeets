@@ -36,7 +36,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, t
       </div>
 
       {/* Carousel Wrapper */}
-      <div className="relative">
+      <div className="relative" style={{ overflow: 'visible' }}>
         {showLeftArrow && (
           <button
             onClick={() => containerRef.current.scrollBy({ left: -300, behavior: 'smooth' })}
@@ -62,7 +62,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, t
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-4 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
           {serviceList.map((service, index) => (
             <div key={service.id || index} className="snap-start shrink-0">
