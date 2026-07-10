@@ -10,13 +10,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compa
 
 // Firebase configuration - Production values
 const firebaseConfig = {
-  apiKey: 'AIzaSyB0p9BwQh6P4U6RpNI783Mf2yLV96ZFemo',
-  authDomain: 'Doormeets-notifications.firebaseapp.com',
-  projectId: 'Doormeets-notifications',
-  storageBucket: 'Doormeets-notifications.firebasestorage.app',
-  messagingSenderId: '330091938710',
-  appId: '1:330091938710:web:b58aa8c0830445b1fa53b7',
-  measurementId: 'G-E493PBZLED'
+  apiKey: "AIzaSyAOFGeDqHWHvjCcNRP7mlEdbWBYTIVNt7M",
+  authDomain: "doormeets.firebaseapp.com",
+  projectId: "doormeets",
+  storageBucket: "doormeets.firebasestorage.app",
+  messagingSenderId: "610708062060",
+  appId: "1:610708062060:web:ac384245c497ce60933d49",
+  measurementId: "G-65RXS36956"
 };
 
 // Initialize Firebase
@@ -183,7 +183,7 @@ messaging.onBackgroundMessage((payload) => {
         return client.visibilityState === 'visible';
       });
 
-      if (isVisible) {
+      if (isVisible && notificationType !== 'test') {
         console.log('[SW] 🚫 App is visible, skipping system notification to avoid duplicate');
         return;
       }

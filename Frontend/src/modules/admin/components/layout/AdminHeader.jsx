@@ -177,35 +177,6 @@ const AdminHeader = ({ onMenuClick, isCollapsed, panelMode, onTogglePanelMode })
           </div>
         </div>
 
-        {/* Middle: Console Switch Toggle */}
-        <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
-          <button
-            onClick={() => {
-              onTogglePanelMode('app');
-              navigate('/admin/dashboard');
-            }}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
-              panelMode === 'app'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            App Console
-          </button>
-          <button
-            onClick={() => {
-              onTogglePanelMode('website');
-              navigate('/admin/website/hero');
-            }}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
-              panelMode === 'website'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            Website Console
-          </button>
-        </div>
 
         {/* Right: Notifications & Logout */}
         <div className="flex items-center gap-4">

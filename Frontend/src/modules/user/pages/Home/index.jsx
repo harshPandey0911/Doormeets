@@ -531,6 +531,76 @@ const Home = () => {
     setIsAddressModalOpen(true);
   };
 
+  const triggerLocalNotification = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          registration.showNotification("🔔 Test Push Notification", {
+            body: "This is a local test notification demonstrating that your browser channel works!",
+            icon: "/vite.svg",
+            vibrate: [200, 100, 200],
+            data: {
+              link: '/'
+            }
+          });
+          return;
+        }
+      }
+      
+      new Notification("🔔 Test Push Notification", {
+        body: "This is a local test notification demonstrating that your browser channel works!",
+        icon: "/vite.svg"
+      });
+    } catch (err) {
+      console.error('Local notification failed:', err);
+    }
+  };
+
+  const handleTestPushNotification = async () => {
+    try {
+      toast.loading('Initializing notification service...', { id: 'push-test' });
+      
+      const token = await registerFCMToken('user', true);
+      if (!token) {
+        toast.error('Failed to get notification token. Please allow notifications.', { id: 'push-test' });
+        return;
+      }
+      
+      toast.loading('Sending test push from server...', { id: 'push-test' });
+      
+      const authToken = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      if (!authToken) {
+        toast.error('Please login first to test server push notifications. Triggering local fallback...', { id: 'push-test', duration: 4000 });
+        triggerLocalNotification();
+        return;
+      }
+      
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${baseUrl}/users/fcm-tokens/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        toast.success('Test push sent! Check your notification tray.', { id: 'push-test' });
+      } else {
+        console.warn('Backend push notification failed or credentials not configured. Triggering local fallback...', result);
+        toast.success('Triggering local fallback push...', { id: 'push-test' });
+        triggerLocalNotification();
+      }
+    } catch (error) {
+      console.error('Error testing push notification:', error);
+      toast.success('Triggering local fallback push...', { id: 'push-test' });
+      triggerLocalNotification();
+    }
+  };
+
   // Animation Variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -650,6 +720,44 @@ const Home = () => {
                   </svg>
                 </button>
               </div>
+
+              {/* Test Push Notifications Widget */}
+              <motion.div 
+                variants={itemVariants} 
+                className="mx-5 mt-4 p-5 rounded-3xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-lg md:max-w-2xl lg:max-w-4xl sm:mx-auto relative overflow-hidden backdrop-blur-md"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  borderColor: 'var(--border)',
+                  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.08)'
+                }}
+              >
+                <div className="absolute -right-8 -bottom-8 w-24 h-24 rounded-full opacity-10 blur-xl" style={{ backgroundColor: themeColors.brand.teal }} />
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border" style={{ backgroundColor: 'rgba(0, 166, 166, 0.1)', borderColor: 'rgba(0, 166, 166, 0.2)' }}>
+                    <span className="text-2xl">🔔</span>
+                  </div>
+                  <div>
+                    <h4 className="text-base font-extrabold text-[var(--text-primary)]" style={{ color: 'var(--text-primary)' }}>Test Push Notifications</h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-md">
+                      Click to register your device and trigger a test push notification. Works in background too!
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleTestPushNotification}
+                  className="w-full sm:w-auto px-5 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: themeColors.brand.teal,
+                    color: '#FFFFFF',
+                    boxShadow: `0 4px 14px ${themeColors.brand.teal}33`
+                  }}
+                >
+                  <span>Send Test Push</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </motion.div>
 
               {/* Painting Quote Approval Section */}
               {pendingQuotes.length > 0 && (
