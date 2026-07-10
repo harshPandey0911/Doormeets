@@ -465,7 +465,7 @@ const PremiumCategoryPage = () => {
       {/* MOBILE ONLY BANNER COVER & HEADER BLOCK */}
       <div className="lg:hidden">
         {/* Dynamic Header / Cover Banner */}
-        <div className="relative w-full h-[260px] md:h-[350px] overflow-hidden">
+        <div className="relative w-full h-[180px] md:h-[260px] overflow-hidden">
           {/* Cover Image */}
           <img
             src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
@@ -479,15 +479,15 @@ const PremiumCategoryPage = () => {
           {/* Float Back Button */}
           <button
             onClick={() => navigate(-1)}
-            className="absolute top-4 left-4 z-20 p-2.5 rounded-full bg-white/90 dark:bg-zinc-900/90 text-slate-900 dark:text-zinc-100 shadow-md hover:scale-105 active:scale-95 transition-all"
+            className="absolute top-4 left-4 z-20 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 dark:bg-zinc-900/90 text-slate-900 dark:text-zinc-100 shadow-md hover:scale-105 active:scale-95 transition-all"
           >
-            <FiArrowLeft className="w-5 h-5" />
+            <FiArrowLeft className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* Mobile Page Header Details */}
         <div className="px-4 mt-6">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
             {activeCategory?.title}
           </h1>
 
@@ -549,7 +549,7 @@ const PremiumCategoryPage = () => {
             </div>
             <div className="flex justify-between items-start mt-3">
               <div>
-                <h3 className="text-[15px] font-bold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
                 <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">{generatedPackages[0].description}</p>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="text-base font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
@@ -592,7 +592,7 @@ const PremiumCategoryPage = () => {
               if (subServices.length === 0) return null;
               return (
                 <div key={sub.id || sub._id} id={`subcat-sec-${sub.id || sub._id}`} className="space-y-4 scroll-mt-20">
-                  <h3 className="text-base md:text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{sub.title}</h3>
+                  <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{sub.title}</h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {subServices.map((service) => (
                       <div key={service.id} className="relative group">

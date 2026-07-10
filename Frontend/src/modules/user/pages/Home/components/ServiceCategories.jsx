@@ -68,44 +68,36 @@ const ServiceCategories = React.memo(({
             <div
               key={category.id || index}
               onClick={() => onCategoryClick?.(category)}
-              className="relative flex flex-col items-center justify-center p-3 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.01] transition-all duration-200 border text-center aspect-square shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden"
-              style={{
-                backgroundColor: category.colorScheme.bg,
-                borderColor: category.colorScheme.border,
-                boxShadow: `0 8px 20px -4px ${category.colorScheme.text}33`
-              }}
+              className="flex flex-col items-center group cursor-pointer"
             >
-              {category.icon ? (
-                <>
-                  <div className="absolute inset-0 w-full h-full">
-                    <DynamicIcon
-                      icon={category.icon}
-                      alt={category.title}
-                      className="w-full h-full object-cover transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                  </div>
-                  <span 
-                    className="absolute bottom-2 lg:bottom-3.5 left-0 right-0 px-2 text-[11px] lg:text-[14px] font-bold tracking-tight truncate text-white z-10"
-                  >
-                    {category.title}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <div className="w-10 h-10 flex items-center justify-center mb-2">
+              {/* Image card wrapper */}
+              <div
+                className="w-full aspect-square rounded-[20px] transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.01)] overflow-hidden relative active:scale-95 group-hover:scale-[1.01]"
+                style={{
+                  backgroundColor: category.colorScheme.bg,
+                }}
+              >
+                {category.icon ? (
+                  <DynamicIcon
+                    icon={category.icon}
+                    alt={category.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
                     <svg className="w-6 h-6" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </div>
-                  <span 
-                    className="text-[11px] lg:text-[14px] font-semibold tracking-tight truncate w-full"
-                    style={{ color: '#1F2937' }}
-                  >
-                    {category.title}
-                  </span>
-                </>
-              )}
+                )}
+              </div>
+
+              {/* Title under the image card */}
+              <span 
+                className="mt-2 text-[10.5px] lg:text-xs font-normal tracking-tight text-center text-slate-700 dark:text-zinc-300 w-full line-clamp-2 leading-tight px-1 break-words"
+              >
+                {category.title}
+              </span>
             </div>
           );
         })}
