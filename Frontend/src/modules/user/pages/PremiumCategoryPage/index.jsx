@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,6 +85,67 @@ const PremiumCategoryPage = () => {
   const [showVariantPopup, setShowVariantPopup] = useState(false);
   const [selectedServiceForPopup, setSelectedServiceForPopup] = useState(null);
   const [selectedVariants, setSelectedVariants] = useState([]);
+  const [activeSubId, setActiveSubId] = useState(null);
+  const [titleHeight, setTitleHeight] = useState(150);
+  const [boxHeight, setBoxHeight] = useState(200);
+
+  // Measure title section height dynamically
+  const titleRef = useCallback((node) => {
+    if (node !== null) {
+      const resizeObserver = new ResizeObserver(() => {
+        setTitleHeight(node.offsetHeight || node.getBoundingClientRect().height || 150);
+      });
+      resizeObserver.observe(node);
+    }
+  }, []);
+
+  // Measure select service box height dynamically
+  const boxRef = useCallback((node) => {
+    if (node !== null) {
+      const resizeObserver = new ResizeObserver(() => {
+        setBoxHeight(node.offsetHeight || node.getBoundingClientRect().height || 200);
+      });
+      resizeObserver.observe(node);
+    }
+  }, []);
+
+  const isScrollingRef = useRef(false);
+
+  // Set default active subcategory
+  useEffect(() => {
+    if (subCategories.length > 0 && !activeSubId) {
+      setActiveSubId(subCategories[0].id || subCategories[0]._id);
+    }
+  }, [subCategories, activeSubId]);
+
+  // Scroll spy effect
+  useEffect(() => {
+    const handleScrollSpy = () => {
+      if (isScrollingRef.current) return;
+      const scrollPosition = window.scrollY + 180; // offset for sticky header/navbar
+
+      let currentActiveId = activeSubId;
+      for (const sub of subCategories) {
+        const id = sub.id || sub._id;
+        const el = document.getElementById(`subcat-sec-${id}`);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            currentActiveId = id;
+            break;
+          }
+        }
+      }
+
+      if (currentActiveId && currentActiveId !== activeSubId) {
+        setActiveSubId(currentActiveId);
+      }
+    };
+
+    window.addEventListener('scroll', handleScrollSpy, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollSpy);
+  }, [subCategories, activeSubId]);
 
   const cityId = currentCity?._id || currentCity?.id;
   const activeCategoryId = activeCategory?.id || activeCategory?._id;
@@ -231,16 +292,16 @@ const PremiumCategoryPage = () => {
   const handleScrollToSub = (subId) => {
     const element = document.getElementById(`subcat-sec-${subId}`);
     if (element) {
-      const offset = 80;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
+      isScrollingRef.current = true;
+      setActiveSubId(subId); // Ensure active category updates immediately
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
       });
+      // Clear flag after smooth scroll is complete
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 800);
     }
   };
 
@@ -335,6 +396,16 @@ const PremiumCategoryPage = () => {
 
   return (
     <div className="min-h-screen pb-40 w-full bg-[var(--background)] text-[var(--text-primary)] transition-colors duration-300">
+      {/* Desktop Top Navbar */}
+      <div className="hidden lg:block">
+        <Navbar 
+          locationLabel={currentCity?.name || 'Select location'} 
+          cartCount={cartCount} 
+          onSearchClick={() => { }} 
+          onLocationClick={() => navigate('/user/account')} 
+        />
+      </div>
+
       {/* MOBILE ONLY BANNER COVER & HEADER BLOCK */}
       <div className="lg:hidden">
         {/* Dynamic Header / Cover Banner */}
@@ -377,67 +448,7 @@ const PremiumCategoryPage = () => {
         </div>
       </div>
 
-      {/* DESKTOP HEADER + SELECT A SERVICE - UC style combined layout */}
-      <div className="hidden lg:block max-w-[1360px] mx-auto px-12 pt-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-4 flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-        >
-          <FiArrowLeft className="w-4 h-4" />
-          <span>Back</span>
-        </button>
-        <div className="grid grid-cols-[1fr_1.8fr] gap-10 items-start mb-8">
-          {/* Left: Title + Rating + Description + Select a Service */}
-          <div className="flex flex-col">
-            <h1 className="text-[2.5rem] leading-tight font-extrabold text-gray-900 dark:text-white tracking-tight">
-              {activeCategory?.title}
-            </h1>
-            <div className="flex items-center gap-2 mt-3">
-              <span className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center">
-                <FiStar className="fill-white text-white w-3 h-3" />
-              </span>
-              <span className="text-sm font-bold text-gray-800 dark:text-zinc-200">4.80</span>
-              <span className="text-sm text-gray-400 dark:text-zinc-500 font-medium">(9.3 M bookings)</span>
-            </div>
-            <p className="mt-4 text-[13px] text-gray-500 dark:text-zinc-400 leading-relaxed font-medium">
-              {activeCategory?.description || `Our ${activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages.`}
-            </p>
 
-            {/* Select a Service Box */}
-            <div className="mt-6 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-900">
-              <p className="text-[11px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-5">Select a service</p>
-              <div className="grid grid-cols-3 gap-x-3 gap-y-5">
-                {subCategories.map((sub) => {
-                  const subImage = toAssetUrl(sub.iconUrl) || 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
-                  return (
-                    <button
-                      key={sub.id || sub._id}
-                      onClick={() => handleScrollToSub(sub.id || sub._id)}
-                      className="flex flex-col items-center group cursor-pointer focus:outline-none"
-                    >
-                      <div className="w-[64px] h-[64px] rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center p-2 transition-all group-hover:border-gray-400 dark:group-hover:border-zinc-500 group-hover:shadow-sm active:scale-95">
-                        <img src={subImage} alt={sub.title} className="w-full h-full object-contain" />
-                      </div>
-                      <span className="text-[10px] font-bold text-gray-600 dark:text-zinc-400 mt-1.5 text-center leading-tight max-w-[72px] break-words">
-                        {sub.title}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Banner image stretching full height */}
-          <div className="w-full max-h-[420px] rounded-2xl overflow-hidden">
-            <img
-              src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
-              alt={activeCategory?.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      </div>
 
       {/* MAIN CONTAINER CONTENT BRANCH */}
       {/* 1. MOBILE FLOW */}
@@ -565,102 +576,243 @@ const PremiumCategoryPage = () => {
         )}
       </main>
 
-      {/* 2. DESKTOP FLOW - Services content only (sidebar is now in header) */}
-      <main className="hidden lg:block max-w-[1360px] mx-auto px-12 relative z-10">
-
-        {/* Main Content Column - Services & search */}
-        <section className="min-w-0">
-          {/* Desktop Search inside Category */}
-          <div className="border-b border-gray-200 dark:border-zinc-800 pb-5 mb-6">
-            <SearchBar value={search} onChange={setSearch} placeholder={`Search inside ${activeCategory?.title || 'category'}`} />
+      {/* 2. DESKTOP FLOW - Split screen layout */}
+      <main className="hidden lg:grid grid-cols-12 gap-8 max-w-[1360px] mx-auto px-12 items-start relative z-10 pt-28">
+        
+        {/* Left Column (col-span-4) - Stretched to hold sticky child */}
+        <aside className="col-span-4 flex flex-col gap-6 self-stretch">
+          {/* Static Title & Description Section */}
+          <div ref={titleRef}>
+            <button
+              onClick={() => navigate(-1)}
+              className="mb-4 flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <FiArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight">
+              {activeCategory?.title}
+            </h1>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center">
+                <FiStar className="fill-white text-white w-3 h-3" />
+              </span>
+              <span className="text-sm font-bold text-gray-800 dark:text-zinc-200">4.80</span>
+              <span className="text-sm text-gray-400 dark:text-zinc-500 font-medium">(9.3 M bookings)</span>
+            </div>
+            <p className="mt-4 text-[13px] text-gray-500 dark:text-zinc-400 leading-relaxed font-medium">
+              {activeCategory?.description || `Our ${activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages.`}
+            </p>
           </div>
 
-          {/* Desktop Packages Section */}
-          {generatedPackages.length > 0 && (
-            <div className="p-6 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-2xl mb-8">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
-                <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
-                <span>10% off *</span>
-              </div>
-              <div className="flex justify-between items-start mt-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
-                  <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">{generatedPackages[0].description}</p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="text-lg font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
-                    <span className="text-xs text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => generatedPackages[0].services.forEach(s => handleAdd(s))}
-                  className="px-6 py-3 rounded-xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
-                >
-                  Add Combo
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Services Grouped - UC style: no card wrappers, clean dividers */}
-          {loading ? (
-            <div className="space-y-6">
-              {[1, 2].map((i) => (
-                <div key={i} className="animate-pulse space-y-4 py-6">
-                  <div className="h-6 w-36 rounded-md bg-gray-200 dark:bg-zinc-800" />
-                  <div className="space-y-4">
-                    <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
-                    <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div>
+          {/* Sticky Select a Service Box (Sticks right below fixed navbar) */}
+          <div 
+            ref={boxRef}
+            className="border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-900"
+            style={{ position: 'sticky', top: '88px', zIndex: 20 }}
+          >
+            <p className="text-[11px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-5">Select a service</p>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-5">
               {subCategories.map((sub) => {
-                const subServices = groupedServices[sub.id || sub._id] || [];
-                if (subServices.length === 0) return null;
+                const subImage = toAssetUrl(sub.iconUrl) || 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
+                const isActive = activeSubId === (sub.id || sub._id);
                 return (
-                  <div key={sub.id || sub._id} id={`subcat-sec-${sub.id || sub._id}`} className="scroll-mt-24 pb-2">
-                    <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">{sub.title}</h3>
-                    <div className="divide-y divide-gray-100 dark:divide-zinc-800">
-                      {subServices.map((service) => (
-                        <div key={service.id} className="py-4">
-                          <ServiceCard
-                            service={service}
-                            quantity={quantities[service.id] || 0}
-                            onAdd={handleAdd}
-                            onIncrease={handleIncrease}
-                            onDecrease={handleDecrease}
-                            onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
-                          />
-                        </div>
-                      ))}
+                  <button
+                    key={sub.id || sub._id}
+                    onClick={() => {
+                      setActiveSubId(sub.id || sub._id);
+                      handleScrollToSub(sub.id || sub._id);
+                    }}
+                    className="flex flex-col items-center group cursor-pointer focus:outline-none"
+                  >
+                    <div className={`w-[64px] h-[64px] rounded-xl border bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center p-2 transition-all ${
+                      isActive 
+                        ? 'border-slate-900 dark:border-white shadow-md scale-105 border-2' 
+                        : 'border-gray-200 dark:border-zinc-700 group-hover:border-gray-400 dark:group-hover:border-zinc-500 group-hover:shadow-sm active:scale-95'
+                    }`}>
+                      <img src={subImage} alt={sub.title} className="w-full h-full object-contain" />
                     </div>
-                  </div>
+                    <span className={`text-[10px] mt-1.5 text-center leading-tight max-w-[72px] break-words transition-colors ${
+                      isActive 
+                        ? 'font-black text-slate-900 dark:text-white' 
+                        : 'font-bold text-gray-600 dark:text-zinc-400'
+                    }`}>
+                      {sub.title}
+                    </span>
+                  </button>
                 );
               })}
-              {groupedServices['other'] && groupedServices['other'].length > 0 && (
-                <div id="subcat-sec-other" className="scroll-mt-24 pb-2">
-                  <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">General Services</h3>
-                  <div className="divide-y divide-gray-100 dark:divide-zinc-800">
-                    {groupedServices['other'].map((service) => (
-                      <div key={service.id} className="py-4">
-                        <ServiceCard
-                          service={service}
-                          quantity={quantities[service.id] || 0}
-                          onAdd={handleAdd}
-                          onIncrease={handleIncrease}
-                          onDecrease={handleDecrease}
-                          onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
-                        />
+            </div>
+          </div>
+        </aside>
+
+        {/* Right Column (col-span-8) - Top Banner and Bottom Split for Services & Cart */}
+        <div className="col-span-8 flex flex-col gap-6 self-stretch">
+          {/* Banner/Hero Image */}
+          <div 
+            className="w-full rounded-2xl overflow-hidden shadow-sm"
+            style={{ height: `${titleHeight + boxHeight + 24}px` }}
+          >
+            <img
+              src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'}
+              alt={activeCategory?.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* Under-banner 2-column content */}
+          <div className="grid grid-cols-12 gap-6 items-start flex-1">
+            
+            {/* Services List (col-span-8) */}
+            <section className="col-span-8 min-w-0 flex flex-col gap-6">
+              {/* Desktop Search inside Category */}
+              <div className="border-b border-gray-200 dark:border-zinc-800 pb-5">
+                <SearchBar value={search} onChange={setSearch} placeholder={`Search inside ${activeCategory?.title || 'category'}`} />
+              </div>
+
+              {/* Desktop Packages Section */}
+              {generatedPackages.length > 0 && (
+                <div className="p-6 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-2xl">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
+                    <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
+                    <span>10% off *</span>
+                  </div>
+                  <div className="flex justify-between items-start mt-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
+                      <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">{generatedPackages[0].description}</p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="text-lg font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
+                        <span className="text-xs text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
                       </div>
-                    ))}
+                    </div>
+                    <button
+                      onClick={() => generatedPackages[0].services.forEach(s => handleAdd(s))}
+                      className="px-6 py-3 rounded-xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
+                    >
+                      Add Combo
+                    </button>
                   </div>
                 </div>
               )}
-            </div>
-          )}
-        </section>
+
+              {/* Services Grouped */}
+              {loading ? (
+                <div className="space-y-6">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="animate-pulse space-y-4 py-6">
+                      <div className="h-6 w-36 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                      <div className="space-y-4">
+                        <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
+                        <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  {subCategories.map((sub) => {
+                    const subServices = groupedServices[sub.id || sub._id] || [];
+                    if (subServices.length === 0) return null;
+                    return (
+                      <div key={sub.id || sub._id} id={`subcat-sec-${sub.id || sub._id}`} className="scroll-mt-24 pb-2">
+                        <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">{sub.title}</h3>
+                        <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+                          {subServices.map((service) => (
+                            <div key={service.id} className="py-4">
+                              <ServiceCard
+                                service={service}
+                                quantity={quantities[service.id] || 0}
+                                onAdd={handleAdd}
+                                onIncrease={handleIncrease}
+                                onDecrease={handleDecrease}
+                                onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {groupedServices['other'] && groupedServices['other'].length > 0 && (
+                    <div id="subcat-sec-other" className="scroll-mt-24 pb-2">
+                      <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">General Services</h3>
+                      <div className="divide-y divide-gray-100 dark:divide-zinc-800">
+                        {groupedServices['other'].map((service) => (
+                          <div key={service.id} className="py-4">
+                            <ServiceCard
+                              key={service.id}
+                              service={service}
+                              quantity={quantities[service.id] || 0}
+                              onAdd={handleAdd}
+                              onIncrease={handleIncrease}
+                              onDecrease={handleDecrease}
+                              onOpen={() => navigate(`/user/service/${service.id}`, { state: { service, category: activeCategory } })}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* Sticky Promise & Cart (col-span-4) */}
+            <aside 
+              className="col-span-4 space-y-6"
+              style={{ position: 'sticky', top: '88px', alignSelf: 'start', height: 'fit-content' }}
+            >
+              {/* Safety Promise Card */}
+              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4">
+                <h4 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider border-b pb-2 dark:border-zinc-800">Doormeets Promise</h4>
+                <ul className="space-y-3 text-xs text-gray-600 dark:text-zinc-400 font-bold">
+                  <li className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">✓</span>
+                    <span>Verified Professionals</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">✓</span>
+                    <span>Safe & Certified Chemicals</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">✓</span>
+                    <span>Superior Quality Guarantee</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Sticky Cart Summary */}
+              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm text-center space-y-4">
+                {cartCount > 0 ? (
+                  <div className="space-y-4">
+                    <div className="text-left">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cart Summary</h4>
+                      <div className="mt-2 flex justify-between items-baseline">
+                        <span className="text-xl font-black text-[#B33A35]">₹{cartTotal}</span>
+                        <span className="text-xs text-gray-400 font-bold">{cartCount} Items</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate('/user/cart')}
+                      className="w-full py-3 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer text-xs"
+                    >
+                      View Cart
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-6 space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-zinc-800 flex items-center justify-center mx-auto text-gray-400">
+                      🛒
+                    </div>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 font-bold">No items in your cart</p>
+                  </div>
+                )}
+              </div>
+            </aside>
+            
+          </div>
+        </div>
       </main>
 
       {/* Bottom Checkout / Cart Summary Bar - Mobile */}
