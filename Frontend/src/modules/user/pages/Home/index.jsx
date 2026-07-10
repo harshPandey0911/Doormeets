@@ -842,6 +842,7 @@ const Home = () => {
                               onCategoryClick={handleCategoryClick}
                               title="Categories"
                               subtitle="Premium Home Services"
+                              onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </motion.section>
           
@@ -857,6 +858,7 @@ const Home = () => {
                                 onCategoryClick={handleCategoryClick}
                                 title="Products & Materials"
                                 subtitle="Quality building materials"
+                                onSeeAllClick={() => navigate('/user/categories')}
                               />
                             </motion.section>
                           )}
@@ -1186,6 +1188,7 @@ const Home = () => {
                                 targetCategoryId: item.targetCategoryId
                               }))}
                               onServiceClick={handleServiceClick}
+                              onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </Suspense>
                         </motion.div>
@@ -1212,6 +1215,7 @@ const Home = () => {
                               }))}
                               onServiceClick={handleServiceClick}
                               onAddClick={handleAddClick}
+                              onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </Suspense>
                         </motion.div>

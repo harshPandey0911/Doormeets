@@ -1,10 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import DetailedServiceCard from '../../../components/common/DetailedServiceCard';
 
-const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, title, subtitle }) => {
+const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, onSeeAllClick, title, subtitle }) => {
   const containerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showRightArrow, setShowRightArrow] = useState(services && services.length > 5);
 
   const serviceList = services || [];
 
@@ -18,8 +18,24 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, t
 
   useEffect(() => {
     handleScroll();
+    
+    const timer1 = setTimeout(handleScroll, 100);
+    const timer2 = setTimeout(handleScroll, 600);
+
     window.addEventListener('resize', handleScroll);
-    return () => window.removeEventListener('resize', handleScroll);
+    
+    let observer;
+    if (containerRef.current) {
+      observer = new MutationObserver(handleScroll);
+      observer.observe(containerRef.current, { childList: true, subtree: true });
+    }
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      window.removeEventListener('resize', handleScroll);
+      if (observer) observer.disconnect();
+    };
   }, [serviceList]);
 
   if (serviceList.length === 0) {
@@ -29,10 +45,18 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, t
   return (
     <div className="my-10 px-3 md:px-5 w-full">
       {/* Header */}
-      <div className="mb-5">
+      <div className="mb-5 flex items-center gap-3">
         <h2 className="text-[22px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
           {title || "Most booked services"}
         </h2>
+        {onSeeAllClick && (
+          <button
+            onClick={onSeeAllClick}
+            className="text-[13px] font-semibold text-[#B33A35] hover:underline shrink-0"
+          >
+            See all
+          </button>
+        )}
       </div>
 
       {/* Carousel Wrapper */}

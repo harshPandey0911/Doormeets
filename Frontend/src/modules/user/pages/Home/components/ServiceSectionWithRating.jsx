@@ -4,7 +4,7 @@ import ServiceWithRatingCard from '../../../components/common/ServiceWithRatingC
 const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeAllClick, onServiceClick, onAddClick, compact = false }) => {
   const containerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showRightArrow, setShowRightArrow] = useState(services && services.length > 5);
 
   const serviceList = services || [];
 
@@ -18,8 +18,24 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
 
   useEffect(() => {
     handleScroll();
+    
+    const timer1 = setTimeout(handleScroll, 100);
+    const timer2 = setTimeout(handleScroll, 600);
+
     window.addEventListener('resize', handleScroll);
-    return () => window.removeEventListener('resize', handleScroll);
+    
+    let observer;
+    if (containerRef.current) {
+      observer = new MutationObserver(handleScroll);
+      observer.observe(containerRef.current, { childList: true, subtree: true });
+    }
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      window.removeEventListener('resize', handleScroll);
+      if (observer) observer.disconnect();
+    };
   }, [serviceList]);
 
   return (

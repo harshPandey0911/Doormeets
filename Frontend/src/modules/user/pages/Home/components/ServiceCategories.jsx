@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DynamicIcon from '../../../../../components/DynamicIcon';
 
 const ServiceCategories = React.memo(({ 
@@ -6,9 +7,10 @@ const ServiceCategories = React.memo(({
   onCategoryClick, 
   title = "Categories",
 }) => {
+  const navigate = useNavigate();
   const containerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showRightArrow, setShowRightArrow] = useState(categories && categories.length > 5);
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
@@ -54,20 +56,41 @@ const ServiceCategories = React.memo(({
 
   useEffect(() => {
     handleScroll();
+    
+    const timer1 = setTimeout(handleScroll, 100);
+    const timer2 = setTimeout(handleScroll, 600);
+
     window.addEventListener('resize', handleScroll);
-    return () => window.removeEventListener('resize', handleScroll);
+    
+    let observer;
+    if (containerRef.current) {
+      observer = new MutationObserver(handleScroll);
+      observer.observe(containerRef.current, { childList: true, subtree: true });
+    }
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      window.removeEventListener('resize', handleScroll);
+      if (observer) observer.disconnect();
+    };
   }, [categories]);
 
   return (
     <div className="px-3 md:px-5 w-full">
-      {/* Title */}
-      <div className="flex items-center mb-4">
+      {/* Title + Inline See All Button */}
+      <div className="flex items-center gap-3 mb-4">
         <h2
-          className="text-[17px] font-semibold tracking-tight"
-          style={{ color: 'var(--text-primary)' }}
+          className="text-[17px] font-bold tracking-tight text-gray-900 dark:text-gray-100"
         >
           {title}
         </h2>
+        <button
+          onClick={() => navigate('/user/categories')}
+          className="text-[13px] font-semibold text-[#B33A35] hover:underline shrink-0"
+        >
+          See all
+        </button>
       </div>
 
       {/* Horizontal scroll carousel with arrow buttons */}
