@@ -498,9 +498,7 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMod
         };
       });
     }
-    if (location.pathname === route) {
-      window.location.reload();
-    } else {
+    if (location.pathname !== route) {
       navigate(route);
     }
     if (window.innerWidth < 1024) {
