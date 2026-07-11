@@ -273,7 +273,7 @@ const SearchDropdown = ({ placeholder, onSearch, onSelect, results, loading, sel
           >
             {results.map((item) => (
               <button
-                key={item._id}
+                key={item.id || item._id}
                 onClick={() => { onSelect(item); setOpen(false); setQuery(''); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 text-left transition-colors"
               >
@@ -592,8 +592,11 @@ const Notifications = () => {
     try {
       setWorkerSearchLoading(true);
       const res = await api.get('/admin/notifications/search-workers', { params: { q } });
+      console.log('Worker search response:', res.data);
       if (res.data.success) setWorkerResults(res.data.data || []);
-    } catch (e) { /* ignore */ } finally {
+    } catch (e) {
+      console.error('Worker search error:', e);
+    } finally {
       setWorkerSearchLoading(false);
     }
   }, []);
@@ -635,7 +638,7 @@ const Notifications = () => {
           res = await api.post('/admin/notifications/send-to-all-workers', payload);
           break;
         case 'specific_worker':
-          res = await api.post('/admin/notifications/send-to-worker', { ...payload, workerId: selectedWorker._id });
+          res = await api.post('/admin/notifications/send-to-worker', { ...payload, workerId: selectedWorker._id || selectedWorker.id });
           break;
         default:
           break;
