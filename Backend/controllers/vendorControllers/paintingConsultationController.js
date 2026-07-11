@@ -1,6 +1,6 @@
 const PaintingConsultation = require('../../models/PaintingConsultation');
 const PaintingQuotation = require('../../models/PaintingQuotation');
-const Notification = require('../../models/Notification');
+const { createNotification } = require('../notificationControllers/notificationController');
 const { sendSMS } = require('../../services/smsService');
 const { sendPushNotification } = require('../../services/firebaseAdmin');
 const Vendor = require('../../models/Vendor');
@@ -10,9 +10,9 @@ const User = require('../../models/User');
 const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 // ─── Helper: Save in-app notification + optional push ────────────────────────
-const saveAndPushNotification = async ({ userId, vendorId, type, title, message, relatedId, fcmTokens }) => {
+const saveAndPushNotification = async ({ userId, vendorId, type, title, message, relatedId }) => {
   try {
-    await Notification.create({
+    await createNotification({
       userId: userId || null,
       vendorId: vendorId || null,
       type,
@@ -22,9 +22,6 @@ const saveAndPushNotification = async ({ userId, vendorId, type, title, message,
       relatedType: 'painting_consultation',
       data: { consultationId: relatedId }
     });
-    if (fcmTokens && fcmTokens.length > 0) {
-      await sendPushNotification(fcmTokens, { title, body: message });
-    }
   } catch (err) {
     console.error('[PaintingNotification] Failed to save/push:', err.message);
   }

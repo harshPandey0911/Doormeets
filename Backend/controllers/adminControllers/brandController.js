@@ -190,6 +190,15 @@ const createBrand = async (req, res) => {
       });
     }
 
+    // Intercept if City Admin
+    const { handleCityAdminApproval } = require('../../utils/approvalInterceptor');
+    const isIntercepted = await handleCityAdminApproval(req, res, {
+      requestType: 'brand',
+      proposedData: req.body,
+      cityId: req.body.cityIds && req.body.cityIds[0]
+    });
+    if (isIntercepted) return;
+
     const {
       title,
       slug,
@@ -384,6 +393,15 @@ const updateBrand = async (req, res) => {
         errors: errors.array()
       });
     }
+
+    // Intercept if City Admin
+    const { handleCityAdminApproval } = require('../../utils/approvalInterceptor');
+    const isIntercepted = await handleCityAdminApproval(req, res, {
+      requestType: 'brand',
+      proposedData: { brandId: req.params.id, ...req.body },
+      cityId: req.body.cityIds && req.body.cityIds[0]
+    });
+    if (isIntercepted) return;
 
     const { id } = req.params;
     const {

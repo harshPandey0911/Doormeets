@@ -31,6 +31,7 @@ const categorySchema = z.object({
   enableMultiVisit: z.boolean().default(false),
   enablePricingMatrix: z.boolean().default(true),
   minWalletBalance: z.number().optional().default(0),
+  sacCode: z.string().optional().nullable(),
 });
 
 const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filterTemplateId, filterTemplateCode }) => {
@@ -63,6 +64,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     isGroupCategory: false, // Group category toggle
     mappedCategories: [],   // IDs of mapped child categories
     minWalletBalance: 0,
+    sacCode: "",
   });
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
@@ -133,6 +135,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             isGroupCategory: cat.isGroupCategory || false,
             mappedCategories: (cat.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
             minWalletBalance: cat.minWalletBalance || 0,
+            sacCode: cat.sacCode || "",
           }));
 
           // Update catalog with fetched categories
@@ -180,6 +183,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         isGroupCategory: false,
         mappedCategories: [],
         minWalletBalance: 0,
+        sacCode: "",
       });
       return;
     }
@@ -212,6 +216,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       isGroupCategory: safe.isGroupCategory || false,
       mappedCategories: (safe.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
       minWalletBalance: safe.minWalletBalance || 0,
+      sacCode: safe.sacCode || "",
     });
   }, [editing]);  const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -244,6 +249,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       isGroupCategory: false,
       mappedCategories: [],
       minWalletBalance: 0,
+      sacCode: "",
     });
     setIsModalOpen(false);
   };
@@ -301,6 +307,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       enableMultiVisit: Boolean(form.enableMultiVisit),
       enablePricingMatrix: Boolean(form.enablePricingMatrix),
       minWalletBalance: Number(form.minWalletBalance) || 0,
+      sacCode: form.sacCode || null,
     });
 
     if (!validationResult.success) {
@@ -309,7 +316,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       return;
     }
 
-    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, templateId, enableBrands, brandRequired, enableConsultantBooking, enableWarranty, enableMultiVisit, enablePricingMatrix, showOnHome, categoryType, status, minWalletBalance } = validationResult.data;
+    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, templateId, enableBrands, brandRequired, enableConsultantBooking, enableWarranty, enableMultiVisit, enablePricingMatrix, showOnHome, categoryType, status, minWalletBalance, sacCode } = validationResult.data;
 
     try {
       setLoading(true);
@@ -360,6 +367,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         isGroupCategory: Boolean(form.isGroupCategory),
         mappedCategories: form.isGroupCategory ? (form.mappedCategories || []) : [],
         minWalletBalance: Number(minWalletBalance) || 0,
+        sacCode: sacCode || null,
       };
 
       if (editingId && !editingId.startsWith('ucat-')) {
@@ -401,6 +409,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
           cityIds: (cat.cityIds || existing?.cityIds || []).filter(Boolean).map(id => typeof id === 'object' ? (id._id || String(id)) : String(id)),
           isGroupCategory: cat.isGroupCategory !== undefined ? cat.isGroupCategory : (existing?.isGroupCategory || false),
           mappedCategories: (cat.mappedCategories || existing?.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
+          sacCode: cat.sacCode ?? existing?.sacCode ?? "",
         };
       };
 
@@ -1095,6 +1104,19 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-semibold"
             />
             <p className="text-xs text-gray-500 mt-1">Minimum wallet balance required for vendors to receive bookings in this category.</p>
+          </div>
+
+          {/* SAC Code input */}
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">SAC Code</label>
+            <input
+              type="text"
+              value={form.sacCode || ""}
+              onChange={(e) => setForm((p) => ({ ...p, sacCode: e.target.value }))}
+              placeholder="e.g. 998599"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-semibold"
+            />
+            <p className="text-xs text-gray-500 mt-1">SAC Code used for invoicing services in this category (falls back to global setting if blank).</p>
           </div>
 
           <div className="flex items-center gap-3 pt-2">

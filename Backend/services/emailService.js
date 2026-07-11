@@ -384,7 +384,19 @@ const sendBookingCompletionEmails = async (booking) => {
       const companyPhone = settings?.companyPhone || '';
       const companyEmail = settings?.companyEmail || '';
       const invoicePrefix = settings?.invoicePrefix || 'INV';
-      const sacCode = settings?.sacCode || '998599';
+      
+      let sacCode = settings?.sacCode || '998599';
+      if (booking.categoryId) {
+        try {
+          const Category = require('../models/Category');
+          const categoryObj = await Category.findById(booking.categoryId);
+          if (categoryObj && categoryObj.sacCode) {
+            sacCode = categoryObj.sacCode;
+          }
+        } catch (err) {
+          console.error('[Invoice Email] Error fetching category SAC code:', err);
+        }
+      }
 
       // Fetch VendorBill
       const bill = await VendorBill.findOne({ bookingId: booking._id });
@@ -438,10 +450,13 @@ const sendBookingCompletionEmails = async (booking) => {
         `;
       }
 
+      const userGstNumber = booking.userGstNumber || null;
+
       const taxDetailsHtml = `
         ${companyGSTIN ? `<div class="data-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span class="data-label" style="font-size: 12px; color: ${COLORS.lightText};">Company GSTIN</span><span class="data-value" style="font-size: 12px; font-weight: 700; color: ${COLORS.text};">${companyGSTIN}</span></div>` : ''}
         ${companyPAN ? `<div class="data-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span class="data-label" style="font-size: 12px; color: ${COLORS.lightText};">Company PAN</span><span class="data-value" style="font-size: 12px; font-weight: 700; color: ${COLORS.text};">${companyPAN}</span></div>` : ''}
         ${sacCode ? `<div class="data-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span class="data-label" style="font-size: 12px; color: ${COLORS.lightText};">SAC Code</span><span class="data-value" style="font-size: 12px; font-weight: 700; color: ${COLORS.text};">${sacCode}</span></div>` : ''}
+        ${userGstNumber ? `<div class="data-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span class="data-label" style="font-size: 12px; color: ${COLORS.lightText};">Customer GSTIN</span><span class="data-value" style="font-size: 12px; font-weight: 700; color: ${COLORS.text};">${userGstNumber}</span></div>` : ''}
       `;
 
       const invoiceNo = `${invoicePrefix}-${bookingId}`;

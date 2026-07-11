@@ -79,6 +79,7 @@ const iconMap = {
   "Painting": FiGrid,
   "Instant Booking": FiZap,
   "SOS Alerts": FiShield,
+  "Approval Dashboard": FiShield,
   // Website Panel icons
   "Hero Banner": FiImage,
   "About Page": FiInfo,
