@@ -176,7 +176,7 @@ if (messaging) {
         timestamp: Date.now()
       },
       // Show image if provided (admin broadcast rich notifications)
-      image: data.imageUrl || notification.image || data.image || null,
+      image: data.imageUrl || data.image || notification.image || null,
       // Vibration pattern for mobile devices
       vibrate: vibrate,
       // Keep notification until user interacts (for important ones)
@@ -198,7 +198,8 @@ if (messaging) {
           return client.visibilityState === 'visible';
         });
 
-        if (isVisible && notificationType !== 'test') {
+        // Always show admin broadcasts even if tab is visible/focused, so user gets live push validation
+        if (isVisible && notificationType !== 'test' && notificationType !== 'admin_broadcast' && !data.imageUrl && !data.image) {
           console.log('[SW] 🚫 App is visible, skipping system notification to avoid duplicate');
           return;
         }
@@ -276,18 +277,20 @@ self.addEventListener('notificationclick', (event) => {
   // Open or focus the app
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Check if app is already open
+      // For mobile devices, focus existing client if open and navigate, otherwise open new window
       for (const client of clientList) {
         if ('focus' in client) {
           client.focus();
-          // Navigate to the specific URL
-          if (urlToOpen) {
-            return client.navigate(urlToOpen);
+          if (urlToOpen && 'navigate' in client) {
+            try {
+              client.navigate(urlToOpen);
+              return;
+            } catch (e) {
+              console.error('[SW] Navigation failed, opening new window:', e);
+            }
           }
-          return;
         }
       }
-      // Open new window
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }

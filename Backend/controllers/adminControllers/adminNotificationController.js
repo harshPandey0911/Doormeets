@@ -38,13 +38,13 @@ const sendToUser = async (req, res) => {
     if (!userId || !title || !body) {
       return res.status(400).json({
         success: false,
-        message: 'userId, title aur body required hain'
+        message: 'userId, title, and body are required'
       });
     }
 
     const user = await User.findById(userId).select('name phone fcmTokens fcmTokenMobile');
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User nahi mila' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     // Save notification to DB
@@ -66,12 +66,12 @@ const sendToUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Notification "${title}" user ${user.name} ko bheji gayi`,
+      message: `Notification "${title}" sent to user ${user.name}`,
       notification
     });
   } catch (error) {
     console.error('[Admin Notif] sendToUser error:', error);
-    res.status(500).json({ success: false, message: 'Notification bhejne mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to send notification' });
   }
 };
 
@@ -83,7 +83,7 @@ const sendToAllUsers = async (req, res) => {
     if (!title || !body) {
       return res.status(400).json({
         success: false,
-        message: 'title aur body required hain'
+        message: 'title and body are required'
       });
     }
 
@@ -110,13 +110,13 @@ const sendToAllUsers = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Broadcast "${title}" ${result.totalUsers} users ko bheja gaya`,
+      message: `Broadcast "${title}" sent to ${result.totalUsers} users`,
       stats: result,
       notificationId: notification._id
     });
   } catch (error) {
     console.error('[Admin Notif] sendToAllUsers error:', error);
-    res.status(500).json({ success: false, message: 'Broadcast bhejne mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to send broadcast notification' });
   }
 };
 
@@ -128,13 +128,13 @@ const sendToVendor = async (req, res) => {
     if (!vendorId || !title || !body) {
       return res.status(400).json({
         success: false,
-        message: 'vendorId, title aur body required hain'
+        message: 'vendorId, title, and body are required'
       });
     }
 
     const vendor = await Vendor.findById(vendorId).select('name businessName fcmTokens fcmTokenMobile');
     if (!vendor) {
-      return res.status(404).json({ success: false, message: 'Vendor nahi mila' });
+      return res.status(404).json({ success: false, message: 'Vendor not found' });
     }
 
     const notification = await Notification.create({
@@ -155,12 +155,12 @@ const sendToVendor = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Notification "${title}" vendor ${vendorName} ko bheji gayi`,
+      message: `Notification "${title}" sent to vendor ${vendorName}`,
       notification
     });
   } catch (error) {
     console.error('[Admin Notif] sendToVendor error:', error);
-    res.status(500).json({ success: false, message: 'Notification bhejne mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to send notification' });
   }
 };
 
@@ -172,7 +172,7 @@ const sendToAllVendors = async (req, res) => {
     if (!title || !body) {
       return res.status(400).json({
         success: false,
-        message: 'title aur body required hain'
+        message: 'title and body are required'
       });
     }
 
@@ -197,13 +197,13 @@ const sendToAllVendors = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Broadcast "${title}" ${result.totalVendors} vendors ko bheja gaya`,
+      message: `Broadcast "${title}" sent to ${result.totalVendors} vendors`,
       stats: result,
       notificationId: notification._id
     });
   } catch (error) {
     console.error('[Admin Notif] sendToAllVendors error:', error);
-    res.status(500).json({ success: false, message: 'Broadcast bhejne mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to send broadcast notification' });
   }
 };
 
@@ -242,20 +242,19 @@ const getBroadcastHistory = async (req, res) => {
 const searchUsers = async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q || q.trim().length < 2) {
-      return res.status(400).json({ success: false, message: 'Kam se kam 2 characters likho' });
+    let queryObj = { isActive: true };
+
+    if (q && q.trim().length >= 1) {
+      queryObj.$or = [
+        { name: { $regex: q.trim(), $options: 'i' } },
+        { phone: { $regex: q.trim(), $options: 'i' } },
+        { email: { $regex: q.trim(), $options: 'i' } }
+      ];
     }
 
-    const users = await User.find({
-      isActive: true,
-      $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } }
-      ]
-    })
+    const users = await User.find(queryObj)
       .select('name phone email profilePhoto')
-      .limit(10)
+      .limit(30)
       .lean();
 
     res.status(200).json({ success: true, data: users });
@@ -269,26 +268,42 @@ const searchUsers = async (req, res) => {
 const searchVendors = async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q || q.trim().length < 2) {
-      return res.status(400).json({ success: false, message: 'Kam se kam 2 characters likho' });
+    let queryObj = { isActive: true };
+
+    if (q && q.trim().length >= 1) {
+      queryObj.$or = [
+        { businessName: { $regex: q.trim(), $options: 'i' } },
+        { name: { $regex: q.trim(), $options: 'i' } },
+        { phone: { $regex: q.trim(), $options: 'i' } }
+      ];
     }
 
-    const vendors = await Vendor.find({
-      isActive: true,
-      $or: [
-        { businessName: { $regex: q, $options: 'i' } },
-        { name: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } }
-      ]
-    })
+    const vendors = await Vendor.find(queryObj)
       .select('name businessName phone')
-      .limit(10)
+      .limit(30)
       .lean();
 
     res.status(200).json({ success: true, data: vendors });
   } catch (error) {
     console.error('[Admin Notif] searchVendors error:', error);
     res.status(500).json({ success: false, message: 'Vendor search mein error aaya' });
+  }
+};
+
+// ─── 8. Delete a Broadcast Notification ──────────────────────────────────────
+const deleteNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const notification = await Notification.findByIdAndDelete(id);
+
+    if (!notification) {
+      return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Notification deleted successfully' });
+  } catch (error) {
+    console.error('[Admin Notif] deleteNotification error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete notification' });
   }
 };
 
@@ -299,5 +314,6 @@ module.exports = {
   sendToAllVendors,
   getBroadcastHistory,
   searchUsers,
-  searchVendors
+  searchVendors,
+  deleteNotification
 };

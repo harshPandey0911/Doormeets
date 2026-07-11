@@ -36,23 +36,27 @@ const VendorLogin = () => {
   const phoneInputRef = useRef(null);
   const otpInputRefs = useRef([]);
 
-  // Auto-focus and session reset logic
+  // Auto-focus and session restore logic
   useEffect(() => {
-    // Clear any existing vendor session tokens to prevent redirect loops for pending/stuck accounts
-    sessionStorage.removeItem('vendorAccessToken');
-    sessionStorage.removeItem('vendorRefreshToken');
-    sessionStorage.removeItem('vendorData');
-    localStorage.removeItem('vendorAccessToken');
-    localStorage.removeItem('vendorRefreshToken');
-    localStorage.removeItem('vendorData');
-    localStorage.removeItem('role');
+    // If already logged in, redirect immediately to dashboard instead of asking for credentials again
+    const workerToken = localStorage.getItem('workerAccessToken');
+    const vendorToken = localStorage.getItem('vendorAccessToken');
+    
+    if (workerToken) {
+      navigate('/worker', { replace: true });
+      return;
+    }
+    if (vendorToken) {
+      navigate('/vendor', { replace: true });
+      return;
+    }
 
     if (step === 'phone' && phoneInputRef.current) {
       setTimeout(() => phoneInputRef.current.focus(), 100);
     } else if (step === 'otp' && otpInputRefs.current[0]) {
       setTimeout(() => otpInputRefs.current[0].focus(), 100);
     }
-  }, [step]);
+  }, [step, navigate]);
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();

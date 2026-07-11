@@ -241,6 +241,21 @@ const PremiumCategoryPage = () => {
     loadCategoryData();
   }, [activeCategoryId, cityId]);
 
+  // Auto scroll to subcategory target from notification redirection link query params
+  useEffect(() => {
+    if (!loading && subCategories.length > 0) {
+      const searchParams = new URLSearchParams(location.search);
+      const targetSubId = searchParams.get('sub');
+      if (targetSubId) {
+        // Wait slightly for DOM nodes to fully layout
+        const timer = setTimeout(() => {
+          handleScrollToSub(targetSubId);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loading, subCategories, location.search]);
+
   const getCartItemServiceId = (item) => {
     if (!item) return null;
     if (typeof item.serviceId === 'object' && item.serviceId) {

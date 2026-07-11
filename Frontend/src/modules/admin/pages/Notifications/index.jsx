@@ -536,6 +536,18 @@ const Notifications = () => {
     }
   };
 
+  const deleteHistoryNotification = async (id, e) => {
+    e.stopPropagation(); // Avoid triggering composer populate action
+    if (!window.confirm('Are you sure you want to delete this sent notification from history?')) return;
+    try {
+      await api.delete(`/admin/notifications/${id}`);
+      setHistory(prev => prev.filter(n => n._id !== id));
+      toast.success('Notification history item deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete history item');
+    }
+  };
+
   // ─── User/Vendor search ──
   const searchUsers = useCallback(async (q) => {
     try {
@@ -605,11 +617,11 @@ const Notifications = () => {
         localStorage.removeItem('admin_notif_selected_user');
         localStorage.removeItem('admin_notif_selected_vendor');
       } else {
-        toast.error(res.data.message || 'Kuch error aaya');
+    toast.error(res.data.message || 'Something went wrong');
       }
     } catch (error) {
       console.error('Send notification error:', error);
-      toast.error(error.response?.data?.message || 'Notification bhejne mein error aaya');
+      toast.error(error.response?.data?.message || 'Failed to send notification');
     } finally {
       setSending(false);
     }
@@ -633,9 +645,8 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const TABS = [
-    { id: 'send', label: '📤 Send Notification', icon: FiSend },
-    { id: 'my', label: '🔔 My Notifications', icon: FiBell },
-    { id: 'history', label: '📋 History', icon: FiClock },
+    { id: 'send', label: 'Send Notification', icon: FiSend },
+    { id: 'history', label: 'History', icon: FiClock },
   ];
 
   return (
@@ -653,7 +664,7 @@ const Notifications = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">Notifications Center</h1>
-              <p className="text-sm text-gray-500 mt-0.5">Users aur Vendors ko push notifications bhejo</p>
+              <p className="text-sm text-gray-500 mt-0.5">Send push notifications to Users and Vendors</p>
             </div>
           </div>
         </div>
@@ -664,14 +675,15 @@ const Notifications = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 text-sm font-semibold transition-all relative ${activeTab === tab.id
+              className={`flex-1 py-3 text-sm font-semibold transition-all relative flex items-center justify-center gap-2 ${activeTab === tab.id
                 ? 'text-purple-700 bg-white'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               }`}
             >
-              {tab.label}
+              <tab.icon className="text-base" />
+              <span>{tab.label}</span>
               {tab.id === 'my' && unreadCount > 0 && (
-                <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-red-500 text-white rounded-full">
                   {unreadCount}
                 </span>
               )}
@@ -1139,7 +1151,7 @@ const Notifications = () => {
                           }
                           // Switch to Send Composer tab
                           setActiveTab('send');
-                          toast.success('Pehle ki details load ho gayi hain! 📝');
+                          toast.success('Notification details loaded into composer');
                         }}
                         className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
                         title="Click to Reuse Notification"
@@ -1158,21 +1170,31 @@ const Notifications = () => {
                                 {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colorMap[tl.color]}`}>
-                                📤 {tl.label}
-                              </span>
-                              {n.imageUrl && (
-                                <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                                  <FiImage className="text-[10px]" /> Image
+                            <div className="flex items-center justify-between gap-2 mt-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colorMap[tl.color]}`}>
+                                  {tl.label}
                                 </span>
-                              )}
-                              {n.actionUrl && (
-                                <span className="text-[10px] text-gray-500 flex items-center gap-1 truncate max-w-[120px]">
-                                  <FiLink className="text-[10px] flex-shrink-0" />
-                                  <span className="truncate">{n.actionUrl}</span>
-                                </span>
-                              )}
+                                {n.imageUrl && (
+                                  <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                                    <FiImage className="text-[10px]" /> Image
+                                  </span>
+                                )}
+                                {n.actionUrl && (
+                                  <span className="text-[10px] text-gray-500 flex items-center gap-1 truncate max-w-[120px]">
+                                    <FiLink className="text-[10px] flex-shrink-0" />
+                                    <span className="truncate">{n.actionUrl}</span>
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => deleteHistoryNotification(n._id, e)}
+                                className="p-1 hover:bg-red-50 text-red-500 rounded transition-colors flex items-center gap-1"
+                                title="Delete from History"
+                              >
+                                <FiTrash2 className="text-xs" />
+                                <span className="text-[10px] font-semibold">Delete</span>
+                              </button>
                             </div>
                           </div>
                           <FiChevronRight className="text-gray-300 flex-shrink-0 mt-1" />

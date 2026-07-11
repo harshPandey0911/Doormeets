@@ -9,7 +9,8 @@ const {
   sendToAllVendors,
   getBroadcastHistory,
   searchUsers,
-  searchVendors
+  searchVendors,
+  deleteNotification
 } = require('../../controllers/adminControllers/adminNotificationController');
 
 // All routes require admin auth
@@ -37,5 +38,8 @@ router.get('/search-users', searchUsers);
 
 // Search vendors for targeting
 router.get('/search-vendors', searchVendors);
+
+// Delete broadcast notification
+router.delete('/:id', deleteNotification);
 
 module.exports = router;

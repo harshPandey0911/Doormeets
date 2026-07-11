@@ -245,7 +245,7 @@ const VendorDashboardManager = () => {
                       )}
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-600 capitalize">
-                      {b.mediaType === 'video' ? '🎥 Video' : '🖼️ Image'}
+                      {b.mediaType === 'video' ? 'Video' : 'Image'}
                     </td>
                     <td className="py-4 px-4">
                       <div className="font-bold text-gray-900 text-sm">{b.title || "—"}</div>
@@ -254,11 +254,11 @@ const VendorDashboardManager = () => {
                     <td className="py-4 px-4 text-sm text-gray-600">
                       {b.linkType === 'category' ? (
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold border border-blue-100">
-                          📂 {categories.find(c => (c.id || c._id) === b.targetCategoryId)?.title || 'Category'}
+                          {categories.find(c => (c.id || c._id) === b.targetCategoryId)?.title || 'Category'}
                         </span>
                       ) : b.linkType === 'subcategory' ? (
                         <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold border border-purple-100">
-                          🏷️ {subCategories.find(s => (s.id || s._id) === b.targetSubCategoryId)?.title || 'Subcategory'}
+                          {subCategories.find(s => (s.id || s._id) === b.targetSubCategoryId)?.title || 'Subcategory'}
                         </span>
                       ) : b.linkType === 'url' ? (
                         <span className="text-xs font-semibold text-blue-500 truncate max-w-[120px] inline-block">{b.linkUrl}</span>
