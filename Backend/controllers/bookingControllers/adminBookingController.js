@@ -73,7 +73,8 @@ const getAllBookings = async (req, res) => {
       .populate('workerId', 'name phone')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     // Get total count
     const total = await Booking.countDocuments(query);
