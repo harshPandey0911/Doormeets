@@ -37,13 +37,15 @@ const lazyLoad = (importFunc) => {
   });
 };
 
-// Lazy load vendor pages for code splitting
-const Login = lazyLoad(() => import('../pages/login'));
-const Signup = lazyLoad(() => import('../pages/signup'));
+// Eager load Login, Signup, and Dashboard for instant entryway loading (Rule 2)
+import Login from '../pages/login';
+import Signup from '../pages/signup';
+import Dashboard from '../pages/Dashboard';
+
+// Lazy load remaining vendor pages
 const PendingApproval = lazyLoad(() => import('../pages/PendingApproval'));
 const SubscriptionSelection = lazyLoad(() => import('../pages/Subscription/SubscriptionSelection'));
 const VerificationPage = lazyLoad(() => import('../pages/VerificationPage'));
-const Dashboard = lazyLoad(() => import('../pages/Dashboard'));
 const BookingAlert = lazyLoad(() => import('../pages/BookingAlert'));
 const BookingAlerts = lazyLoad(() => import('../pages/BookingAlerts'));
 const BookingDetails = lazyLoad(() => import('../pages/BookingDetails'));

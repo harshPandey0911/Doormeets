@@ -2,8 +2,9 @@ import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LogoLoader from '../components/common/LogoLoader';
 
-// Lazy load module routes — each module only downloads when user navigates to it
-const UserRoutes = React.lazy(() => import('../modules/user/routes'));
+import UserRoutes from '../modules/user/routes';
+
+// Lazy load infrequently/rarely accessed management modules (Rule 2 & 3)
 const VendorRoutes = React.lazy(() => import('../modules/vendor/routes'));
 const WorkerRoutes = React.lazy(() => import('../modules/vendor/routes/WorkerRoutes'));
 const AdminRoutes = React.lazy(() => import('../modules/admin/routes'));

@@ -2,11 +2,11 @@ import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ShopLayout from '../components/ShopLayout';
 import LogoLoader from '../../../components/common/LogoLoader';
+import Dashboard from '../pages/Dashboard';
 
 // Lazy load shop pages for code splitting
 const Login = lazy(() => import('../pages/Login'));
 const Register = lazy(() => import('../pages/Register'));
-const Dashboard = lazy(() => import('../pages/Dashboard'));
 const AddVendor = lazy(() => import('../pages/AddVendor'));
 
 // Loading fallback

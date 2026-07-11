@@ -123,6 +123,17 @@ const BottomNav = React.memo(() => {
               <motion.button
                 key={item.id}
                 onClick={() => handleTabClick(item.path)}
+                onMouseEnter={() => {
+                  // Prefetch targets based on tab hovered (Rule 3)
+                  if (item.id === 'bookings') import('../../pages/MyBookings').catch(() => {});
+                  else if (item.id === 'cart') import('../../pages/PremiumCartPage').catch(() => {});
+                  else if (item.id === 'account') import('../../pages/Account').catch(() => {});
+                }}
+                onTouchStart={() => {
+                  if (item.id === 'bookings') import('../../pages/MyBookings').catch(() => {});
+                  else if (item.id === 'cart') import('../../pages/PremiumCartPage').catch(() => {});
+                  else if (item.id === 'account') import('../../pages/Account').catch(() => {});
+                }}
                 whileTap={{ scale: 0.95 }}
                 className={`flex items-center justify-center transition-all duration-300 relative cursor-pointer ${
                   isActive

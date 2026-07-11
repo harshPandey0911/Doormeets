@@ -33,7 +33,10 @@ const lazyLoad = (importFunc) => {
   });
 };
 
-const Dashboard = lazyLoad(() => import('../pages/Dashboard'));
+// Eager load Dashboard for instant entryway loading (Rule 2)
+import Dashboard from '../pages/Dashboard';
+
+// Lazy load remaining worker pages
 const BookingDetails = lazyLoad(() => import('../pages/BookingDetails'));
 const BookingTimeline = lazyLoad(() => import('../pages/BookingTimeline'));
 const ActiveJobs = lazyLoad(() => import('../pages/ActiveJobs'));
