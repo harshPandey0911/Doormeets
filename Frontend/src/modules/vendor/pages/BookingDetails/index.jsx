@@ -715,9 +715,24 @@ export default function BookingDetails() {
       socket.on('booking_updated', handleBookingUpdate);
       socket.on('payment_success', handleBookingUpdate);
 
+      // Listen for booking cancellation by user — redirect vendor immediately
+      const handleBookingCancelled = (data) => {
+        if (data.bookingId === id || data.bookingId === booking?._id || data.bookingId === booking?.id) {
+          toast.error(data.message || 'This booking has been cancelled by the customer.');
+          // Update local state to show cancelled status
+          setBooking(prev => prev ? { ...prev, status: 'cancelled' } : prev);
+          // Redirect to dashboard after short delay
+          setTimeout(() => {
+            navigate('/vendor/dashboard');
+          }, 2000);
+        }
+      };
+      socket.on('booking_cancelled', handleBookingCancelled);
+
       return () => {
         socket.off('booking_updated', handleBookingUpdate);
         socket.off('payment_success', handleBookingUpdate);
+        socket.off('booking_cancelled', handleBookingCancelled);
       };
     }
   }, [socket, id]);

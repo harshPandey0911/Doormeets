@@ -180,6 +180,13 @@ export const SocketProvider = ({ children }) => {
         if (profileId) {
           newSocket.emit(isWorker ? 'join_worker_room' : 'join_vendor_room', profileId);
         }
+      } else if (userType === 'admin') {
+        let adminData = {};
+        try { adminData = JSON.parse(localStorage.getItem('adminData') || '{}') || {}; } catch (e) { /* corrupted */ }
+        const adminId = adminData.id || adminData._id;
+        if (adminId) {
+          newSocket.emit('join_admin_room', adminId);
+        }
       }
     });
 
@@ -363,6 +370,31 @@ export const SocketProvider = ({ children }) => {
         window.dispatchEvent(new Event('vendorStatsUpdated'));
       });
 
+      // Listen for booking_cancelled global event
+      newSocket.on('booking_cancelled', (data) => {
+        const bookingId = String(data.bookingId || data.id);
+
+        // Remove from localStorage
+        const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
+        const updatedPending = pendingJobs.filter(job => String(job.id || job._id) !== bookingId);
+        localStorage.setItem('vendorPendingJobs', JSON.stringify(updatedPending));
+
+        // Update stats
+        const stats = JSON.parse(localStorage.getItem('vendorStats') || '{}');
+        if (stats.pendingAlerts > 0) {
+          stats.pendingAlerts = Math.max(0, (stats.pendingAlerts || 0) - 1);
+          localStorage.setItem('vendorStats', JSON.stringify(stats));
+        }
+
+        // Show toast warning
+        toast.error(data.message || 'Booking has been cancelled by the customer.', { icon: '🚫' });
+
+        // Dispatch specific remove event for instant UI update
+        window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id: bookingId } }));
+        window.dispatchEvent(new Event('vendorJobsUpdated'));
+        window.dispatchEvent(new Event('vendorStatsUpdated'));
+      });
+
       // Listen for user_waiting - when user clicks "Wait" on a quote
       newSocket.on('user_waiting', (data) => {
         // console.log('⏳ User is waiting for more quotes:', data);
@@ -431,6 +463,18 @@ export const SocketProvider = ({ children }) => {
         // Always show the global alert 
         const event = new CustomEvent('showWorkerJobAlert', { detail: newJob });
         window.dispatchEvent(event);
+      });
+
+      // Listen for booking_cancelled on worker side
+      newSocket.on('booking_cancelled', (data) => {
+        const bookingId = String(data.bookingId || data.id);
+        const pendingJobs = JSON.parse(localStorage.getItem('workerPendingJobs') || '[]');
+        const updatedPending = pendingJobs.filter(job => String(job.id || job._id) !== bookingId);
+        localStorage.setItem('workerPendingJobs', JSON.stringify(updatedPending));
+
+        toast.error(data.message || 'Job has been cancelled by the customer.', { icon: '🚫' });
+
+        window.dispatchEvent(new Event('workerJobsUpdated'));
       });
     }
 

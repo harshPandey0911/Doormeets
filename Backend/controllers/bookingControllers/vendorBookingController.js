@@ -319,10 +319,35 @@ const acceptBooking = async (req, res) => {
     });
 
     if (activeSelfJob) {
-      return res.status(400).json({
-        success: false,
-        message: 'You already have an active self-job. Complete it before accepting another.'
-      });
+      // Check if they have at least one online worker who is free
+      let hasFreeWorker = false;
+      try {
+        const Worker = require('../../models/Worker');
+        const onlineWorkers = await Worker.find({
+          vendorId: vendorId,
+          status: 'ONLINE'
+        }).select('_id');
+
+        if (onlineWorkers.length > 0) {
+          const workerIds = onlineWorkers.map(w => w._id);
+          const activeWorkerJobs = await Booking.find({
+            workerId: { $in: workerIds },
+            status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] }
+          }).select('workerId');
+
+          const busyWorkerIds = new Set(activeWorkerJobs.map(job => job.workerId?.toString()));
+          hasFreeWorker = onlineWorkers.some(w => !busyWorkerIds.has(w._id.toString()));
+        }
+      } catch (workerErr) {
+        console.error('[AcceptBooking] Failed to evaluate worker availability:', workerErr);
+      }
+
+      if (!hasFreeWorker) {
+        return res.status(400).json({
+          success: false,
+          message: 'You already have an active self-job and no free workers available. Complete it before accepting another.'
+        });
+      }
     }
 
     const booking = bookingCheck;

@@ -535,20 +535,57 @@ vendorSchema.statics.updateWorkStatus = async function (vendorId) {
     
     // 1. If currently working on site, busy
     if (['visited', 'in_progress', 'work_done', 'final_settlement'].includes(status)) {
-      isBusy = true;
-      break;
+      // Only treat as busy if this was a self job (vendor doing it themselves)
+      // If it was assigned to a worker, the vendor is not busy.
+      if (job.isSelfJob || !job.workerId) {
+        isBusy = true;
+        break;
+      }
     }
 
     // 2. If scheduled, only busy starting dynamic buffer hours before scheduled time
     if (['accepted', 'assigned', 'confirmed'].includes(status)) {
-      const scheduledStart = parseScheduledStartTime(job.scheduledDate, job.timeSlot?.start || job.scheduledTime);
-      const busyBufferMs = busyBufferHours * 60 * 60 * 1000;
-      const bufferBeforeStart = new Date(scheduledStart.getTime() - busyBufferMs);
-      
-      if (now >= bufferBeforeStart) {
-        isBusy = true;
-        break;
+      if (job.isSelfJob || !job.workerId) {
+        const scheduledStart = parseScheduledStartTime(job.scheduledDate, job.timeSlot?.start || job.scheduledTime);
+        const busyBufferMs = busyBufferHours * 60 * 60 * 1000;
+        const bufferBeforeStart = new Date(scheduledStart.getTime() - busyBufferMs);
+        
+        if (now >= bufferBeforeStart) {
+          isBusy = true;
+          break;
+        }
       }
+    }
+  }
+
+  // Check if vendor has online/free workers if vendor themselves is busy
+  if (isBusy) {
+    try {
+      const Worker = mongoose.model('Worker');
+      // Find all workers registered under this vendor who are online
+      const onlineWorkers = await Worker.find({
+        vendorId: vendorId,
+        status: 'ONLINE'
+      }).select('_id');
+
+      if (onlineWorkers.length > 0) {
+        // Check if any of these online workers do NOT have an active job
+        const workerIds = onlineWorkers.map(w => w._id);
+        const activeWorkerJobs = await Booking.find({
+          workerId: { $in: workerIds },
+          status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] }
+        }).select('workerId');
+
+        const busyWorkerIds = new Set(activeWorkerJobs.map(job => job.workerId?.toString()));
+        const freeWorkerExists = onlineWorkers.some(w => !busyWorkerIds.has(w._id.toString()));
+
+        if (freeWorkerExists) {
+          // If a free worker exists, the vendor is NOT busy overall!
+          isBusy = false;
+        }
+      }
+    } catch (workerErr) {
+      console.error('[Vendor.updateWorkStatus] Failed to evaluate worker availability:', workerErr);
     }
   }
 

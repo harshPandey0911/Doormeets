@@ -1,17 +1,13 @@
 /**
- * Booking Scheduler Service — Optimized
- * Handles Wave-Based Vendor Alerting
+ * Booking Scheduler Service — Single Wave (All Vendors at Once)
  *
- * Wave Logic:
- * - Wave 1: First 3 closest vendors (alerted immediately on booking creation)
- * - Wave 2: Next 3 vendors (after 15s if no accept)
- * - Wave 3: Next 4 vendors (after another 15s)
- * - Wave 4+: All remaining vendors
+ * Wave Logic (Simplified):
+ * - Wave 1: ALL vendors within radius are notified SIMULTANEOUSLY on booking creation
+ * - 60 seconds later: if no vendor accepts → route to admin
  *
  * OPTIMIZATIONS:
- * - All active bookings processed in PARALLEL (Promise.all, not serial for-loop)
+ * - All active bookings processed in PARALLEL (Promise.all)
  * - Circuit breaker: if no searching bookings exist, extend check interval to 30s
- * - Single Vendor.find per wave instead of per booking
  */
 
 const Booking = require('../models/Booking');
@@ -21,16 +17,13 @@ const { createNotification } = require('../controllers/notificationControllers/n
 
 const Settings = require('../models/Settings');
 
-// Wave configuration - More sequential (1 by 1 for first few vendors)
+// SINGLE WAVE CONFIG: All vendors get notified simultaneously.
+// After 1 wave duration (60s), if no accept → route to admin.
 let WAVE_CONFIG = {
-  1: { count: 1, duration: 60000 }, // Closest vendor (1 min)
-  2: { count: 1, duration: 60000 }, // 2nd closest (1 min)
-  3: { count: 1, duration: 60000 }, // 3rd closest (1 min)
-  4: { count: 2, duration: 60000 }, // Next 2 (1 min)
-  5: { count: Infinity, duration: 0 } // Everyone else
+  1: { count: Infinity, duration: 60000 }, // All vendors, 1 minute
 };
 
-let MAX_SEARCH_TIME_MS = 5 * 60 * 1000; // 5 mins fallback
+let MAX_SEARCH_TIME_MS = 1 * 60 * 1000; // 1 minute — after this, go to admin
 
 const ACTIVE_INTERVAL_MS = 5000;  // Poll every 5s when bookings exist
 const IDLE_INTERVAL_MS = 30000;   // Poll every 30s when no active bookings (circuit breaker)
@@ -86,15 +79,12 @@ class BookingScheduler {
       try {
         const globalSettings = await Settings.findOne({ type: 'global' }).lean();
         if (globalSettings) {
+          // Always use single-wave (all vendors at once) for 1 minute
           const waveDur = (globalSettings.waveDuration || 60) * 1000;
           WAVE_CONFIG = {
-            1: { count: 1, duration: waveDur },
-            2: { count: 1, duration: waveDur },
-            3: { count: 1, duration: waveDur },
-            4: { count: 2, duration: waveDur },
-            5: { count: Infinity, duration: 0 }
+            1: { count: Infinity, duration: waveDur }, // ALL vendors, single wave
           };
-          MAX_SEARCH_TIME_MS = (globalSettings.maxSearchTime || 10) * 60 * 1000;
+          MAX_SEARCH_TIME_MS = waveDur; // Search = 1 wave duration = 1 minute
         }
       } catch (sErr) {
         console.error('[BookingScheduler] Settings fetch error:', sErr);
@@ -121,7 +111,7 @@ class BookingScheduler {
         activeBookings.map(async (booking) => {
           try {
             const currentWave = booking.currentWave || 1;
-            const waveConfig = WAVE_CONFIG[currentWave] || WAVE_CONFIG[4];
+            const waveConfig = WAVE_CONFIG[currentWave] || WAVE_CONFIG[1]; // Only wave 1 exists now
             const startTime = new Date(booking.createdAt || booking.waveStartedAt).getTime();
             const totalElapsed = now - startTime;
 
@@ -201,130 +191,68 @@ class BookingScheduler {
               return;
             }
 
-            const waveElapsed = now - new Date(booking.waveStartedAt).getTime();
-            // Only process if this booking's wave timer has expired
-            if (waveConfig.duration === 0 || waveElapsed < waveConfig.duration) return;
+            // After single wave expires → route to admin immediately
+            // (No more waves, all vendors already notified)
+            const activeRequestsCount = await BookingRequest.countDocuments({
+              bookingId: booking._id,
+              status: { $in: ['PENDING', 'VIEWED'] }
+            });
 
-            const nextWave = currentWave + 1;
-
-            // Get all vendors for the NEXT wave
-            let vendorsToNotify = booking.potentialVendors.filter(v => v.wave === nextWave);
-
-            if (vendorsToNotify.length === 0 && nextWave <= 3) {
-              // If there are no vendors in this wave, advance silently to the next wave immediately
-              // We'll update DB and let the next polling cycle pick it up, or we can just update currentWave
-              console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: No vendors in Wave ${nextWave}, skipping...`);
-              await Booking.findByIdAndUpdate(booking._id, {
-                $set: { currentWave: nextWave, waveStartedAt: new Date(now - waveConfig.duration) } // Subtract duration so next cycle triggers immediately
-              });
-              return;
-            } else if (vendorsToNotify.length === 0) {
-              // Next wave > 3 and no more vendors
-              console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: Exhausted all waves.`);
-                
-              const activeRequestsCount = await BookingRequest.countDocuments({
-                bookingId: booking._id,
-                status: { $in: ['PENDING', 'VIEWED'] }
-              });
-
-              if (activeRequestsCount === 0) {
-                console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: No active requests and waves exhausted. Setting status to pending_admin.`);
-                await Booking.findByIdAndUpdate(booking._id, {
+            // Only escalate if no active pending requests
+            if (activeRequestsCount === 0) {
+              console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: Wave expired with no acceptance. Routing to admin.`);
+              const updateResult = await Booking.updateOne(
+                { _id: booking._id, status: BOOKING_STATUS.SEARCHING },
+                {
                   $set: {
                     status: 'pending_admin',
-                    cancellationReason: 'All available waves exhausted. Awaiting admin review.'
+                    cancellationReason: 'No vendor accepted within time limit. Awaiting admin review.'
                   }
-                });
+                }
+              );
 
-                 // Save notification in database for all admins
-                 try {
-                   const User = require('../models/User');
-                   const admins = await User.find({ role: 'ADMIN' });
-                   
-                   const notificationData = {
-                     userId: null,
-                     vendorId: null,
-                     workerId: null,
-                     type: 'admin_booking_requested',
-                     title: 'Manual Assignment Needed',
-                     message: `Booking #${booking.bookingNumber} search waves exhausted. Manual assignment needed.`,
-                     priority: 'high',
-                     pushData: {
-                       type: 'admin_booking_requested',
-                       bookingId: booking._id.toString(),
-                       link: `/admin/bookings/${booking._id}`
-                     }
-                   };
-                   
-                   await Promise.all(
-                     admins.map(admin =>
-                       createNotification({ ...notificationData, adminId: admin._id })
-                     )
-                   );
-                 } catch (dbNotifErr) {
-                   console.error('[BookingScheduler] Failed to save admin wave exhausted notification:', dbNotifErr);
-                 }
+              if (updateResult.modifiedCount > 0) {
+                // Save notification for all admins
+                try {
+                  const User = require('../models/User');
+                  const admins = await User.find({ role: 'ADMIN' });
+                  const notificationData = {
+                    userId: null, vendorId: null, workerId: null,
+                    type: 'admin_booking_requested',
+                    title: 'Manual Assignment Needed',
+                    message: `Booking #${booking.bookingNumber} search timed out. Manual assignment needed.`,
+                    priority: 'high',
+                    pushData: { type: 'admin_booking_requested', bookingId: booking._id.toString(), link: `/admin/bookings/${booking._id}` }
+                  };
+                  await Promise.all(admins.map(admin => createNotification({ ...notificationData, adminId: admin._id })));
+                } catch (dbNotifErr) {
+                  console.error('[BookingScheduler] Failed to save admin notification:', dbNotifErr);
+                }
 
-                 // Notify User and Admin
-                 if (this.io) {
-                   this.io.to('all_admins').emit('admin_booking_requested', {
-                     bookingId: booking._id.toString(),
-                     bookingNumber: booking.bookingNumber,
-                     status: 'pending_admin',
-                     message: 'Booking request sent to admin for manual assignment.'
-                   });
+                // Socket: notify admin + user
+                if (this.io) {
+                  this.io.to('all_admins').emit('admin_booking_requested', {
+                    bookingId: booking._id.toString(),
+                    bookingNumber: booking.bookingNumber,
+                    status: 'pending_admin',
+                    message: 'Booking request sent to admin for manual assignment.',
+                    playSound: true
+                  });
                   this.io.to(`user_${booking.userId}`).emit('booking_updated', {
                     bookingId: booking._id,
                     status: 'pending_admin',
                     message: 'Booking request sent to admin for manual assignment.'
                   });
+                  // Remove from all notified vendors
+                  if (booking.notifiedVendors?.length > 0) {
+                    booking.notifiedVendors.forEach(vId => {
+                      this.io.to(`vendor_${vId}`).emit('removeVendorBooking', { id: booking._id });
+                    });
+                  }
                 }
               }
-              return;
             }
-
-            // Filter to only online+available vendors (single batch find for this booking)
-            const vendorIds = vendorsToNotify.map(v => v.vendorId);
-            const onlineVendors = await Vendor.find(
-              { _id: { $in: vendorIds }, isOnline: true, availability: { $in: ['AVAILABLE', 'BUSY'] } },
-              '_id'
-            ).lean();
-
-            const onlineSet = new Set(onlineVendors.map(v => v._id.toString()));
-            vendorsToNotify = vendorsToNotify.filter(v => onlineSet.has(v.vendorId.toString()));
-
-            // Advance wave in DB — use findByIdAndUpdate for atomicity (avoids race with accept)
-            const notifyIds = vendorsToNotify.map(v => v.vendorId);
-            await Booking.findByIdAndUpdate(booking._id, {
-              $set: { currentWave: nextWave, waveStartedAt: new Date() },
-              $addToSet: { notifiedVendors: { $each: notifyIds } }
-            });
-
-            if (vendorsToNotify.length === 0) {
-              console.log(`[BookingScheduler] Booking ${booking.bookingNumber}: Wave ${nextWave} all offline, advancing quietly`);
-              return;
-            }
-
-            console.log(`[BookingScheduler] ${booking.bookingNumber}: Wave ${nextWave} → notifying ${vendorsToNotify.length} vendors`);
-
-            // Insert BookingRequest records + send notifications (both in parallel)
-            const bookingRequests = vendorsToNotify.map(v => ({
-              bookingId: booking._id,
-              vendorId: v.vendorId,
-              status: 'PENDING',
-              createdAt: booking.createdAt || new Date(),
-              distance: v.distance || null,
-              sentAt: new Date(),
-              expiresAt: new Date(Date.now() + 60 * 60 * 1000)
-            }));
-
-            await Promise.all([
-              BookingRequest.insertMany(bookingRequests, { ordered: false }).catch(err => {
-                if (err.code !== 11000) console.error('[BookingScheduler] BookingRequest insert error:', err);
-              }),
-              this.notifyVendors(booking, vendorsToNotify)
-            ]);
-
+            return;
           } catch (bookingErr) {
             console.error(`[BookingScheduler] Error processing booking ${booking._id}:`, bookingErr);
           }
@@ -368,9 +296,7 @@ class BookingScheduler {
               serviceCategory: populatedBooking.serviceCategory,
               brandName: populatedBooking.brandName,
               brandIcon: populatedBooking.brandIcon,
-              categoryIcon: populatedBooking.categoryIcon,
-              createdAt: populatedBooking.createdAt,
-              expiresAt: new Date(new Date(populatedBooking.createdAt).getTime() + MAX_SEARCH_TIME_MS).toISOString(),
+              expiresAt: new Date(Date.now() + (WAVE_CONFIG[booking.currentWave]?.duration || 60000)).toISOString(),
               status: populatedBooking.status,
               serviceType: populatedBooking.serviceType || 'service',
               playSound: true,

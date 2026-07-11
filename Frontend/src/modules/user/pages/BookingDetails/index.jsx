@@ -930,7 +930,9 @@ const BookingDetails = () => {
   // Final Total
   const hasBill = !!bill;
   const finalTotal = bill?.grandTotal || (booking.finalAmount || booking.totalAmount || 0);
-  const isAddonPending = (booking.paymentStatus === 'success' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed') && (booking.finalAmount > booking.totalAmount);
+  const isAddonPending = (booking.paymentStatus === 'success' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed') && 
+    (booking.finalAmount > booking.totalAmount) && 
+    (booking.extraCharges && booking.extraCharges.length > 0);
 
   // --------------------------------------
 
@@ -1724,7 +1726,7 @@ const BookingDetails = () => {
                         <span className="font-black text-dark-text text-xl">
                           ₹{(booking.paymentMethod === 'plan_benefit'
                             ? (booking.userPayableAmount || booking.extraChargesTotal || 0)
-                            : (booking.finalAmount || booking.totalAmount || 0)
+                            : (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0))
                           ).toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -1736,7 +1738,7 @@ const BookingDetails = () => {
                           </div>
                           <div className="flex justify-between items-center text-[#B33A35] font-bold text-sm">
                             <span>Amount Left (Pay at Home)</span>
-                            <span>₹{Math.max(0, (booking.finalAmount || booking.totalAmount || 0) - booking.codAdvanceAmount).toLocaleString('en-IN')}</span>
+                            <span>₹{Math.max(0, (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0)) - booking.codAdvanceAmount).toLocaleString('en-IN')}</span>
                           </div>
                         </div>
                       )}

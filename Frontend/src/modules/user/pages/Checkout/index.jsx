@@ -92,6 +92,7 @@ const Checkout = () => {
   const [showArrivalTime, setShowArrivalTime] = useState(true);
   const [instantBookingWindowHours, setInstantBookingWindowHours] = useState(4);
   const [codAdvancePercentage, setCodAdvancePercentage] = useState(0);
+  const [maxSearchTimeMinutes, setMaxSearchTimeMinutes] = useState(1); // From admin settings (1 min default)
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -252,6 +253,8 @@ const Checkout = () => {
             setShowArrivalTime(response.settings?.showArrivalTime ?? true);
             setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
             setCodAdvancePercentage(response.settings?.codAdvancePercentage || 0);
+            // waveDuration is in seconds (e.g. 60 = 1 min); convert to minutes for frontend countdown
+            setMaxSearchTimeMinutes(Math.max(1, Math.round((response.settings?.waveDuration || 60) / 60)));
 
             if (response.user?.addresses?.length > 0) {
               const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
@@ -288,6 +291,8 @@ const Checkout = () => {
             setShowArrivalTime(response.settings?.showArrivalTime ?? true);
             setInstantBookingWindowHours(response.settings?.instantBookingWindowHours ?? 4);
             setCodAdvancePercentage(response.settings?.codAdvancePercentage || 0);
+            // waveDuration is in seconds (e.g. 60 = 1 min); convert to minutes for frontend countdown
+            setMaxSearchTimeMinutes(Math.max(1, Math.round((response.settings?.waveDuration || 60) / 60)));
 
             // Set Addresses
             if (response.user?.addresses?.length > 0) {
@@ -923,6 +928,26 @@ const Checkout = () => {
       setCurrentStep('details');
       setSearchingVendors(false);
       setShowVendorModal(false);
+    }
+  };
+
+  // Cancel ongoing vendor search
+  const handleCancelSearch = async () => {
+    try {
+      if (bookingRequest?._id) {
+        await bookingService.cancel(bookingRequest._id, 'User cancelled search');
+      }
+    } catch (err) {
+      console.error('[Checkout] Cancel search error:', err);
+    } finally {
+      setSearchingVendors(false);
+      setCurrentStep('details');
+      setShowVendorModal(false);
+      setBookingRequest(null);
+      setAcceptedVendor(null);
+      setBids([]);
+      // Reload cart so user can re-book
+      await loadCart();
     }
   };
 
@@ -2641,7 +2666,9 @@ const Checkout = () => {
           setBids([]);
           handleSearchVendors();
         }}
+        onCancelSearch={handleCancelSearch}
         bookingDeadline={bookingRequest?.biddingDeadline}
+        maxSearchTimeMinutes={maxSearchTimeMinutes}
       />
 
       {/* Contact Details Edit Modal */}
