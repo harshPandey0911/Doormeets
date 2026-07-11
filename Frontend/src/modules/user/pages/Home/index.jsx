@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, lazy, Suspense, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
@@ -17,6 +17,7 @@ import SearchOverlay from './components/SearchOverlay';
 import OfferBannerSlider from './components/OfferBannerSlider';
 import GroupCategoryBottomSheet from './components/GroupCategoryBottomSheet';
 import ServiceSectionWithRating from './components/ServiceSectionWithRating';
+import ScrollArrowButton from '../../components/common/ScrollArrowButton';
 
 // Lazy load heavy components for better initial load performance
 import PromoCarousel from './components/PromoCarousel';
@@ -287,6 +288,35 @@ const Home = () => {
   const [currentStackIndex, setCurrentStackIndex] = useState(0);
   const [pastServices, setPastServices] = useState([]);
   const [pastServicesLoading, setPastServicesLoading] = useState(false);
+
+  const orderAgainRef = useRef(null);
+  const [showOrderAgainLeft, setShowOrderAgainLeft] = useState(false);
+  const [showOrderAgainRight, setShowOrderAgainRight] = useState(true);
+
+  const handleOrderAgainScroll = () => {
+    if (orderAgainRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = orderAgainRef.current;
+      setShowOrderAgainLeft(scrollLeft > 10);
+      setShowOrderAgainRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  };
+
+  const scrollOrderAgain = (direction) => {
+    if (orderAgainRef.current) {
+      const card = orderAgainRef.current.children[0];
+      if (card) {
+        const cardWidth = card.offsetWidth;
+        const gap = 16;
+        orderAgainRef.current.scrollBy({ left: direction * (cardWidth + gap), behavior: 'smooth' });
+      }
+    }
+  };
+
+  useEffect(() => {
+    handleOrderAgainScroll();
+    window.addEventListener('resize', handleOrderAgainScroll);
+    return () => window.removeEventListener('resize', handleOrderAgainScroll);
+  }, [pastServices]);
 
   const upcomingCategories = categories.filter(c => c.status === 'coming_soon');
 
@@ -1039,79 +1069,100 @@ const Home = () => {
                             </button>
                           </div>
         
-                          <div 
-                            className="flex gap-4 overflow-x-auto pb-3 -mx-3 px-3 md:-mx-5 md:px-5 no-scrollbar"
-                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                          >
-                            {pastServices.slice(0, 5).map((service, index) => {
-                              return (
-                                <div
-                                  key={service.id || index}
-                                  onClick={() => handleAddClick(service)}
-                                  className="flex-shrink-0 rounded-3xl p-5 lg:p-6 flex items-center justify-between w-[250px] lg:w-[310px] h-[120px] lg:h-[140px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
-                                  style={{
-                                    backgroundColor: 'var(--surface)',
-                                    border: '1px solid var(--border)',
-                                    boxShadow: 'var(--shadow)',
-                                  }}
-                                >
-                                  <div className="flex-1 min-w-0 pr-3 space-y-1">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <h3
-                                        className="text-xs lg:text-sm font-extrabold truncate leading-tight"
-                                        style={{ color: 'var(--text-primary)' }}
-                                      >
-                                        {service.title}
-                                      </h3>
-                                      <span
-                                        className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5"
-                                        style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
-                                      >
-                                        ★ {service.rating}
-                                      </span>
+                          {/* Carousel Wrapper */}
+                          <div className="relative group" style={{ overflow: 'visible' }}>
+                            {showOrderAgainLeft && (
+                              <ScrollArrowButton
+                                direction="left"
+                                onClick={() => scrollOrderAgain(-1)}
+                                className="left-0 md:-left-4 top-1/2 -translate-y-1/2"
+                              />
+                            )}
+                            
+                            {showOrderAgainRight && (
+                              <ScrollArrowButton
+                                direction="right"
+                                onClick={() => scrollOrderAgain(1)}
+                                className="right-0 md:-right-4 top-1/2 -translate-y-1/2"
+                              />
+                            )}
+
+                            <div 
+                              ref={orderAgainRef}
+                              onScroll={handleOrderAgainScroll}
+                              className="flex gap-4 overflow-x-auto pb-3 -mx-3 px-3 md:-mx-5 md:px-5 no-scrollbar scroll-smooth"
+                              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                            >
+                              {pastServices.slice(0, 5).map((service, index) => {
+                                return (
+                                  <div
+                                    key={service.id || index}
+                                    onClick={() => handleAddClick(service)}
+                                    className="flex-shrink-0 rounded-3xl p-5 lg:p-6 flex items-center justify-between w-[250px] lg:w-[310px] h-[120px] lg:h-[140px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
+                                    style={{
+                                      backgroundColor: 'var(--surface)',
+                                      border: '1px solid var(--border)',
+                                      boxShadow: 'var(--shadow)',
+                                    }}
+                                  >
+                                    <div className="flex-1 min-w-0 pr-3 space-y-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <h3
+                                          className="text-xs lg:text-sm font-extrabold truncate leading-tight"
+                                          style={{ color: 'var(--text-primary)' }}
+                                        >
+                                          {service.title}
+                                        </h3>
+                                        <span
+                                          className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5"
+                                          style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
+                                        >
+                                          ★ {service.rating}
+                                        </span>
+                                      </div>
+          
+                                      <p className="text-[10px] lg:text-xs font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
+                                        by {service.vendorName}
+                                      </p>
+          
+                                      <div className="flex items-baseline gap-1.5 pt-1">
+                                        <span className="text-sm lg:text-base font-extrabold" style={{ color: 'var(--primary)' }}>
+                                          ₹${(service.price || 0).toLocaleString('en-IN')}
+                                        </span>
+                                        {service.originalPrice && service.originalPrice > service.price && (
+                                          <>
+                                            <span className="text-[10px] line-through" style={{ color: 'var(--text-muted)' }}>
+                                              ₹{service.originalPrice.toLocaleString('en-IN')}
+                                            </span>
+                                            <span className="text-[9px] font-extrabold text-green-500">
+                                              {Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100)}% off
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
-        
-                                    <p className="text-[10px] lg:text-xs font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
-                                      by {service.vendorName}
-                                    </p>
-        
-                                    <div className="flex items-baseline gap-1.5 pt-1">
-                                      <span className="text-sm lg:text-base font-extrabold" style={{ color: 'var(--primary)' }}>
-                                        ₹${(service.price || 0).toLocaleString('en-IN')}
-                                      </span>
-                                      {service.originalPrice && service.originalPrice > service.price && (
-                                        <>
-                                          <span className="text-[10px] line-through" style={{ color: 'var(--text-muted)' }}>
-                                            ₹{service.originalPrice.toLocaleString('en-IN')}
-                                          </span>
-                                          <span className="text-[9px] font-extrabold text-green-500">
-                                            {Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100)}% off
-                                          </span>
-                                        </>
+          
+                                    <div
+                                      className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
+                                      style={{ backgroundColor: 'rgba(179,58,53,0.08)', border: '1px solid rgba(179,58,53,0.12)' }}
+                                    >
+                                      {service.image ? (
+                                        <img
+                                          src={service.image}
+                                          alt={service.title}
+                                          className="w-12 h-12 lg:w-14 lg:h-14 object-contain"
+                                          loading="lazy"
+                                        />
+                                      ) : (
+                                        <svg className="w-8 h-8 lg:w-10 lg:h-10" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
                                       )}
                                     </div>
                                   </div>
-        
-                                  <div
-                                    className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
-                                    style={{ backgroundColor: 'rgba(179,58,53,0.08)', border: '1px solid rgba(179,58,53,0.12)' }}
-                                  >
-                                    {service.image ? (
-                                      <img
-                                        src={service.image}
-                                        alt={service.title}
-                                        className="w-12 h-12 lg:w-14 lg:h-14 object-contain"
-                                        loading="lazy"
-                                      />
-                                    ) : (
-                                      <svg className="w-8 h-8 lg:w-10 lg:h-10" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
                         </motion.section>
                       )
@@ -1205,7 +1256,7 @@ const Home = () => {
                         <motion.div key="ctaBanner" variants={itemVariants}>
                           <Suspense fallback={<div className="h-32 bg-gray-50 animate-pulse rounded-xl mx-4 my-2" />}>
                             <CTABanner 
-                              ctaBanner={homeContent.ctaBanner} 
+                              ctaBanner={{ ...homeContent.ctaBanner, imageUrl: toAssetUrl(homeContent.ctaBanner.imageUrl) }} 
                               onNavigate={(nav) => {
                                 if (nav.targetCategoryId) {
                                   const cat = categories.find(c => c.id === nav.targetCategoryId || c._id === nav.targetCategoryId);

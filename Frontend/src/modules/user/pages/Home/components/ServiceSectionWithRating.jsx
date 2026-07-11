@@ -73,7 +73,7 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
           <ScrollArrowButton
             direction="left"
             onClick={() => scrollByOneCard(-1)}
-            className="left-0 md:-left-4 top-1/3 -translate-y-1/2"
+            className="left-0 md:-left-4 top-[35%] -translate-y-1/2"
           />
         )}
         
@@ -81,7 +81,7 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
           <ScrollArrowButton
             direction="right"
             onClick={() => scrollByOneCard(1)}
-            className="right-0 md:-right-4 top-1/3 -translate-y-1/2"
+            className="right-0 md:-right-4 top-[35%] -translate-y-1/2"
           />
         )}
 

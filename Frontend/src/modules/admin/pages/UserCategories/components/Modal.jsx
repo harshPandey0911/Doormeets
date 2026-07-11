@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useRef } from "react";
 import { createPortal } from "react-dom";
 import { FiX } from "react-icons/fi";
 
 const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
+  const mouseDownTarget = useRef(null);
+
   if (!isOpen) return null;
 
   const sizeClasses = {
@@ -12,11 +14,22 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
     xl: "max-w-6xl",
   };
 
+  const handleMouseDown = (e) => {
+    mouseDownTarget.current = e.target;
+  };
+
+  const handleMouseUp = (e) => {
+    if (e.target === e.currentTarget && mouseDownTarget.current === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return createPortal(
     <div
       style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
     >
       <div className={`bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden flex flex-col`}>
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
