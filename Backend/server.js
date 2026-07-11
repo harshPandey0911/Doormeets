@@ -33,6 +33,10 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
+// Compress all HTTP responses (gzip/brotli) — 60-80% smaller API payloads
+const compression = require('compression');
+app.use(compression());
+
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',

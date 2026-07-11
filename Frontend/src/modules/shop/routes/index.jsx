@@ -1,10 +1,18 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ShopLayout from '../components/ShopLayout';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import Dashboard from '../pages/Dashboard';
-import AddVendor from '../pages/AddVendor';
+import LogoLoader from '../../../components/common/LogoLoader';
+
+// Lazy load shop pages for code splitting
+const Login = lazy(() => import('../pages/Login'));
+const Register = lazy(() => import('../pages/Register'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const AddVendor = lazy(() => import('../pages/AddVendor'));
+
+// Loading fallback
+const LoadingFallback = () => (
+  <LogoLoader />
+);
 
 // Custom Protected Route for Shop Owner
 const ProtectedShopRoute = ({ children }) => {
@@ -26,30 +34,32 @@ const PublicShopRoute = ({ children }) => {
 
 const ShopRoutes = () => {
   return (
-    <Routes>
-      <Route path="/login" element={
-        <PublicShopRoute>
-          <Login />
-        </PublicShopRoute>
-      } />
-      <Route path="/register" element={
-        <PublicShopRoute>
-          <Register />
-        </PublicShopRoute>
-      } />
-      
-      <Route path="/" element={
-        <ProtectedShopRoute>
-          <ShopLayout />
-        </ProtectedShopRoute>
-      }>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="add-vendor" element={<AddVendor />} />
-      </Route>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        <Route path="/login" element={
+          <PublicShopRoute>
+            <Login />
+          </PublicShopRoute>
+        } />
+        <Route path="/register" element={
+          <PublicShopRoute>
+            <Register />
+          </PublicShopRoute>
+        } />
+        
+        <Route path="/" element={
+          <ProtectedShopRoute>
+            <ShopLayout />
+          </ProtectedShopRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="add-vendor" element={<AddVendor />} />
+        </Route>
 
-      <Route path="*" element={<Navigate to="dashboard" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="dashboard" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
