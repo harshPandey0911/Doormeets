@@ -279,24 +279,11 @@ function setupForegroundNotificationHandler(handler) {
     const icon = notification.icon || data.icon || '/vite.svg';
     const type = data.type || data.notificationType || 'default';
 
-    // Show system push notification even in foreground for visibility
-    if ('Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(title, {
-          body: body,
-          icon: icon,
-        });
-      } catch (err) {
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.ready.then((registration) => {
-            registration.showNotification(title, {
-              body: body,
-              icon: icon,
-            });
-          });
-        }
-      }
-    }
+    // Foreground handler updates local listeners
+    // Removed system Notification bubble dispatch from here to prevent duplicate bubbles
+    // when page/app is open in foreground.
+    
+    // Call custom handler (e.g. for toast)
 
     // Call custom handler (e.g. for toast)
     if (handler) {

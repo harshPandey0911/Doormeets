@@ -119,32 +119,33 @@ async function sendPushNotification(tokens, payload) {
       priority: payload.highPriority !== false ? 'high' : 'normal'
     };
 
-    // Standard notification block (Top-level)
-    message.notification = {
+    // Remove top-level message.notification block to make it a Data-Only message.
+    // This allows the Service Worker to receive the payload and display a single,
+    // custom-styled notification (with image & click handler) without the browser
+    // showing an automatic duplicate (without image/handlers).
+    
+    // Android specific (Sound, Priority, Channel, Icon, Image)
+    message.android.notification = {
       title: payload.title || 'App Notification',
       body: payload.body || 'New Update',
-    };
-    
-    // Android specific (Sound, Priority, Channel, Icon)
-    message.android.notification = {
-      title: message.notification.title,
-      body: message.notification.body,
       icon: 'stock_ticker_update',
-      color: '#f44336'
+      color: '#f44336',
+      ...(payload.imageUrl && { imageUrl: payload.imageUrl })
     };
 
     // iOS/APNs specific (Sound, Alert, Badge)
     message.apns.payload.aps.alert = {
-      title: message.notification.title,
-      body: message.notification.body,
+      title: payload.title || 'App Notification',
+      body: payload.body || 'New Update',
     };
 
-    // WebPush specific (Title, Body, Icon, Badge)
+    // WebPush specific (Title, Body, Icon, Badge, Image)
     message.webpush.notification = {
-      title: message.notification.title,
-      body: message.notification.body,
+      title: payload.title || 'App Notification',
+      body: payload.body || 'New Update',
       icon: payload.icon || '/vite.svg',
       badge: '/vite.svg',
+      ...(payload.imageUrl && { image: payload.imageUrl })
     };
 
     /*
@@ -155,10 +156,15 @@ async function sendPushNotification(tokens, payload) {
     */
 
     // Ensure critical fields are also in data for background handling
-    // Use payload source directly since message.notification is disabled
     message.data.title = payload.title || 'App Notification';
     message.data.body = payload.body || 'New Update';
     if (payload.icon) message.data.icon = payload.icon;
+    if (payload.imageUrl) message.data.imageUrl = payload.imageUrl;
+    if (payload.actionUrl) message.data.actionUrl = payload.actionUrl;
+    // link field for webpush click action
+    if (payload.actionUrl) {
+      message.webpush.fcmOptions = { link: payload.actionUrl };
+    }
 
     // Log intent
     console.log(`[FCM] Sending standard notification to ${uniqueTokens.length} tokens:`, payload.title);
@@ -404,10 +410,140 @@ async function sendNotificationToAdmin(adminId, payload, includeMobile = true) {
   }
 }
 
+/**
+ * Send broadcast push notification to ALL users
+ * Fetches all users with FCM tokens and sends in batches of 500
+ * @param {Object} payload - Notification payload (title, body, imageUrl, actionUrl, data)
+ * @returns {Promise<Object>} - { totalUsers, totalTokens, successCount, failureCount }
+ */
+async function sendBroadcastToAllUsers(payload) {
+  try {
+    const User = require('../models/User');
+    console.log('[FCM Broadcast] Fetching all users with FCM tokens...');
+
+    // Fetch only users with at least one FCM token
+    const users = await User.find({
+      isActive: true,
+      $or: [
+        { fcmTokens: { $exists: true, $not: { $size: 0 } } },
+        { fcmTokenMobile: { $exists: true, $not: { $size: 0 } } }
+      ]
+    }).select('fcmTokens fcmTokenMobile name');
+
+    if (!users || users.length === 0) {
+      console.log('[FCM Broadcast] No users with FCM tokens found');
+      return { totalUsers: 0, totalTokens: 0, successCount: 0, failureCount: 0 };
+    }
+
+    // Collect all unique tokens
+    const allTokens = [];
+    users.forEach(user => {
+      if (user.fcmTokens) allTokens.push(...user.fcmTokens);
+      if (user.fcmTokenMobile) allTokens.push(...user.fcmTokenMobile);
+    });
+
+    const uniqueTokens = [...new Set(allTokens.filter(t => t && t.trim()))]; 
+    console.log(`[FCM Broadcast] Found ${users.length} users, ${uniqueTokens.length} unique tokens`);
+
+    // Send in batches of 500 (FCM multicast limit)
+    const BATCH_SIZE = 500;
+    let totalSuccess = 0;
+    let totalFailure = 0;
+
+    for (let i = 0; i < uniqueTokens.length; i += BATCH_SIZE) {
+      const batch = uniqueTokens.slice(i, i + BATCH_SIZE);
+      console.log(`[FCM Broadcast] Sending batch ${Math.floor(i/BATCH_SIZE)+1} (${batch.length} tokens)...`);
+      try {
+        const result = await sendPushNotification(batch, payload);
+        totalSuccess += result.successCount || 0;
+        totalFailure += result.failureCount || 0;
+      } catch (batchError) {
+        console.error(`[FCM Broadcast] Batch ${Math.floor(i/BATCH_SIZE)+1} failed:`, batchError.message);
+        totalFailure += batch.length;
+      }
+    }
+
+    console.log(`[FCM Broadcast Users] ✅ Done — Success: ${totalSuccess}, Failed: ${totalFailure}`);
+    return {
+      totalUsers: users.length,
+      totalTokens: uniqueTokens.length,
+      successCount: totalSuccess,
+      failureCount: totalFailure
+    };
+  } catch (error) {
+    console.error('[FCM Broadcast] ❌ Error in sendBroadcastToAllUsers:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send broadcast push notification to ALL vendors
+ * Fetches all active vendors with FCM tokens and sends in batches of 500
+ * @param {Object} payload - Notification payload (title, body, imageUrl, actionUrl, data)
+ * @returns {Promise<Object>} - { totalVendors, totalTokens, successCount, failureCount }
+ */
+async function sendBroadcastToAllVendors(payload) {
+  try {
+    const Vendor = require('../models/Vendor');
+    console.log('[FCM Broadcast] Fetching all vendors with FCM tokens...');
+
+    const vendors = await Vendor.find({
+      isActive: true,
+      $or: [
+        { fcmTokens: { $exists: true, $not: { $size: 0 } } },
+        { fcmTokenMobile: { $exists: true, $not: { $size: 0 } } }
+      ]
+    }).select('fcmTokens fcmTokenMobile businessName name');
+
+    if (!vendors || vendors.length === 0) {
+      console.log('[FCM Broadcast] No vendors with FCM tokens found');
+      return { totalVendors: 0, totalTokens: 0, successCount: 0, failureCount: 0 };
+    }
+
+    const allTokens = [];
+    vendors.forEach(vendor => {
+      if (vendor.fcmTokens) allTokens.push(...vendor.fcmTokens);
+      if (vendor.fcmTokenMobile) allTokens.push(...vendor.fcmTokenMobile);
+    });
+
+    const uniqueTokens = [...new Set(allTokens.filter(t => t && t.trim()))];
+    console.log(`[FCM Broadcast] Found ${vendors.length} vendors, ${uniqueTokens.length} unique tokens`);
+
+    const BATCH_SIZE = 500;
+    let totalSuccess = 0;
+    let totalFailure = 0;
+
+    for (let i = 0; i < uniqueTokens.length; i += BATCH_SIZE) {
+      const batch = uniqueTokens.slice(i, i + BATCH_SIZE);
+      try {
+        const result = await sendPushNotification(batch, payload);
+        totalSuccess += result.successCount || 0;
+        totalFailure += result.failureCount || 0;
+      } catch (batchError) {
+        console.error(`[FCM Broadcast] Batch failed:`, batchError.message);
+        totalFailure += batch.length;
+      }
+    }
+
+    console.log(`[FCM Broadcast Vendors] ✅ Done — Success: ${totalSuccess}, Failed: ${totalFailure}`);
+    return {
+      totalVendors: vendors.length,
+      totalTokens: uniqueTokens.length,
+      successCount: totalSuccess,
+      failureCount: totalFailure
+    };
+  } catch (error) {
+    console.error('[FCM Broadcast] ❌ Error in sendBroadcastToAllVendors:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   sendPushNotification,
   sendNotificationToUser,
   sendNotificationToVendor,
   sendNotificationToWorker,
-  sendNotificationToAdmin
+  sendNotificationToAdmin,
+  sendBroadcastToAllUsers,
+  sendBroadcastToAllVendors
 };

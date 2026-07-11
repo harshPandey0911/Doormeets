@@ -261,6 +261,16 @@
     "children": []
   },
   {
+    "title": "Notifications",
+    "route": "/admin/notifications",
+    "section": "BUSINESS & PROMOTIONS",
+    "allowedRoles": [
+      "super_admin",
+      "admin"
+    ],
+    "children": []
+  },
+  {
     "title": "Commission",
     "route": "/admin/commission",
     "section": "BUSINESS & PROMOTIONS",

@@ -222,6 +222,8 @@ const PremiumCategoryPage = () => {
             })(),
             vendorId: service.vendorId,
             variants: service.variants || [],
+            packages: service.packages || [],
+            serviceGroups: service.serviceGroups || [],
             serviceType: service.serviceType || 'package_base',
             workflow: service.workflow || null
           }));
@@ -274,26 +276,38 @@ const PremiumCategoryPage = () => {
     return groups;
   }, [services, search]);
 
-  // Generate dynamic package bundles for preview
+  // Extract actual database packages (combos) from the loaded package-based services
   const generatedPackages = useMemo(() => {
-    if (services.length < 2) return [];
-    // Bundle top services into packages
-    const topServices = services.slice(0, 3);
-    const totalPrice = topServices.reduce((sum, s) => sum + s.price, 0);
-    const bundlePrice = Math.round(totalPrice * 0.85); // 15% off
-    return [
-      {
-        id: 'pkg-combo-1',
-        title: topServices.map(s => s.title.split(' ')[0]).join(' + ') + ' Bundle',
-        rating: 4.8,
-        reviews: '1.2k',
-        price: bundlePrice,
-        originalPrice: totalPrice,
-        discount: '10% off *',
-        services: topServices,
-        description: `Enjoy a complete premium combo containing ${topServices.map(s => s.title.toLowerCase()).join(', ')}.`
+    const list = [];
+    services.forEach(service => {
+      if (service.serviceType === 'package_base' && Array.isArray(service.packages)) {
+        service.packages.forEach(pkg => {
+          // Prevent duplicates by checking package _id
+          if (!list.some(p => p.id === pkg._id || p.title === pkg.title)) {
+            // Map backend package schema to match UI structure
+            list.push({
+              id: pkg._id || pkg.id,
+              title: pkg.title,
+              rating: pkg.rating || 4.8,
+              reviews: pkg.reviewCount || '1.0k',
+              price: pkg.price,
+              originalPrice: pkg.originalPrice || pkg.price,
+              discount: pkg.discountPercentage ? `${pkg.discountPercentage}% off *` : 'Special Combo *',
+              description: pkg.description || 'Enjoy a complete customized service combo.',
+              services: pkg.includedItems ? pkg.includedItems.map(item => ({
+                id: item.selectedItemId,
+                title: item.selectedItemTitle,
+                description: item.selectedItemDescription,
+                price: 0 // handled by parent package price
+              })) : [],
+              rawPackage: pkg, // keep references for cart actions
+              parentService: service
+            });
+          }
+        });
       }
-    ];
+    });
+    return list;
   }, [services]);
 
   // Scroll to subcategory helper
@@ -542,27 +556,143 @@ const PremiumCategoryPage = () => {
 
         {/* Mobile Packages Section */}
         {generatedPackages.length > 0 && (
-          <div className="mb-8 p-5 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-3xl shadow-sm">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
-              <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
-              <span>10% off *</span>
-            </div>
-            <div className="flex justify-between items-start mt-3">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-pink-200">{generatedPackages[0].title}</h3>
-                <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400 leading-normal max-w-lg">{generatedPackages[0].description}</p>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-base font-bold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
-                  <span className="text-xs text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
+          <div className="mb-8 space-y-4">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Combos</h2>
+            {generatedPackages.map((comboItem, comboIdx) => {
+              // Check if package is already inside cart by matching dynamic field selected package value
+              const matchedCartItem = cartItems.find(item => {
+                const sId = getCartItemServiceId(item);
+                if (sId !== (comboItem.parentService?.id || comboItem.parentService?._id)) return false;
+                const pkgField = item.dynamicFields?.find(f => f.name === 'Selected Package');
+                return pkgField?.value === comboItem.title;
+              });
+              const addedCount = matchedCartItem ? (matchedCartItem.serviceCount || 0) : 0;
+
+              const handleAddComboItem = async () => {
+                if (addedCount > 0) {
+                  toast.success(`${comboItem.title} is already in your cart!`);
+                  return;
+                }
+                
+                const dynamicFieldsPayload = [];
+                dynamicFieldsPayload.push({
+                  name: 'Selected Package',
+                  label: 'Selected Package',
+                  value: comboItem.title
+                });
+
+                if (comboItem.rawPackage?.includedItems && comboItem.parentService?.serviceGroups) {
+                  comboItem.rawPackage.includedItems.forEach(incItem => {
+                    const groupId = incItem.serviceGroupId?.toString();
+                    const group = comboItem.parentService.serviceGroups.find(g => g._id?.toString() === groupId);
+                    if (group) {
+                      if (incItem.selectedItemId) {
+                        const selectedItem = group.items?.find(i => i._id?.toString() === incItem.selectedItemId.toString());
+                        if (selectedItem) {
+                          dynamicFieldsPayload.push({
+                            name: `Group: ${group.title}`,
+                            label: group.title,
+                            value: `${selectedItem.title} (₹${selectedItem.price})`
+                          });
+                        }
+                      }
+                    }
+                  });
+                }
+
+                const cartData = buildCartItemData({ service: comboItem.parentService, category: activeCategory });
+                cartData.card.title = `${comboItem.parentService.title} - ${comboItem.title}`;
+                if (comboItem.rawPackage?.duration) cartData.card.duration = comboItem.rawPackage.duration;
+                
+                cartData.price = comboItem.price;
+                cartData.unitPrice = comboItem.price;
+                cartData.originalPrice = comboItem.originalPrice;
+                if (cartData.card) {
+                  cartData.card.price = comboItem.price;
+                  cartData.card.originalPrice = comboItem.originalPrice;
+                }
+                cartData.dynamicFields = dynamicFieldsPayload;
+
+                const response = await addToCart(cartData);
+                if (response?.success) {
+                  toast.success(`${comboItem.title} added to cart!`);
+                }
+              };
+
+              const handleIncreaseComboItem = async () => {
+                if (matchedCartItem) {
+                  await updateItem(matchedCartItem._id || matchedCartItem.id, (matchedCartItem.serviceCount || 1) + 1);
+                }
+              };
+
+              const handleDecreaseComboItem = async () => {
+                if (matchedCartItem) {
+                  if ((matchedCartItem.serviceCount || 1) <= 1) {
+                    await removeItem(matchedCartItem._id || matchedCartItem.id);
+                  } else {
+                    await updateItem(matchedCartItem._id || matchedCartItem.id, (matchedCartItem.serviceCount || 1) - 1);
+                  }
+                }
+              };
+
+              return (
+                <div key={comboItem.id || comboIdx} className="p-4 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-3xl shadow-sm">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
+                    <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
+                    <span>{comboItem.discount || 'Special Combo'}</span>
+                  </div>
+                  <div className="flex justify-between items-start mt-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-800 dark:text-pink-200">{comboItem.title}</h3>
+                      <p className="mt-1 text-xs text-slate-650 dark:text-zinc-400 leading-normal max-w-lg">{comboItem.description}</p>
+                      
+                      <ul className="space-y-1 mt-2.5">
+                        {comboItem.services.map((s, idx) => (
+                          <li key={idx} className="text-[10px] text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
+                            <span className="w-1 h-1 bg-gray-400 dark:bg-zinc-650 rounded-full"></span>
+                            <span>{s.title}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="text-base font-bold text-slate-900 dark:text-white">₹{comboItem.price}</span>
+                        {comboItem.originalPrice > comboItem.price && (
+                          <span className="text-xs text-slate-400 line-through">₹{comboItem.originalPrice}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 ml-4">
+                      {addedCount > 0 ? (
+                        <div className="w-[72px] h-[32px] bg-white dark:bg-zinc-800 border border-pink-200 rounded-xl text-[#B33A35] font-bold text-xs shadow-sm flex items-center justify-between px-1.5">
+                          <button
+                            onClick={handleDecreaseComboItem}
+                            className="w-5 h-5 hover:bg-pink-50 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-sm"
+                          >
+                            -
+                          </button>
+                          <span className="text-slate-800 dark:text-white font-extrabold">{addedCount}</span>
+                          <button
+                            onClick={handleIncreaseComboItem}
+                            className="w-5 h-5 hover:bg-pink-50 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-sm"
+                          >
+                            +
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleAddComboItem}
+                          className="px-4 py-2 rounded-2xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
+                        >
+                          Add Combo
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() => generatedPackages[0].services.forEach(s => handleAdd(s))}
-                className="px-5 py-2.5 rounded-2xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
-              >
-                Add Combo
-              </button>
-            </div>
+              );
+            })}
           </div>
         )}
 
@@ -734,105 +864,172 @@ const PremiumCategoryPage = () => {
 
               {/* Desktop Packages Section */}
               {generatedPackages.length > 0 && (
-                <div className="pb-8 border-b border-gray-200 dark:border-zinc-800">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Combos</h2>
-                  <div className="flex justify-between items-start py-2">
-                    {/* Left Column: Info, Price, Tag, Bullet points */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug">
-                        {generatedPackages[0].title}
-                      </h3>
+                <div className="pb-8 border-b border-gray-200 dark:border-zinc-800 space-y-8">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Combos</h2>
+                  {generatedPackages.map((comboItem, comboIdx) => {
+                    // Check if package is already inside cart by matching dynamic field selected package value
+                    const matchedCartItem = cartItems.find(item => {
+                      const sId = getCartItemServiceId(item);
+                      if (sId !== (comboItem.parentService?.id || comboItem.parentService?._id)) return false;
+                      const pkgField = item.dynamicFields?.find(f => f.name === 'Selected Package');
+                      return pkgField?.value === comboItem.title;
+                    });
+                    const addedCount = matchedCartItem ? (matchedCartItem.serviceCount || 0) : 0;
+
+                    const handleAddComboItem = async () => {
+                      if (addedCount > 0) {
+                        toast.success(`${comboItem.title} is already in your cart!`);
+                        return;
+                      }
                       
-                      {/* Rating under title */}
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400 mt-1.5">
-                        <span className="text-yellow-500">★</span>
-                        <span className="font-bold text-gray-800 dark:text-zinc-200">{generatedPackages[0].rating || '4.80'}</span>
-                        <span>({generatedPackages[0].reviews || '1.2k'} reviews)</span>
-                      </div>
+                      const dynamicFieldsPayload = [];
+                      dynamicFieldsPayload.push({
+                        name: 'Selected Package',
+                        label: 'Selected Package',
+                        value: comboItem.title
+                      });
 
-                      {/* Pricing with tag */}
-                      <div className="flex items-center gap-2.5 mt-3">
-                        <span className="text-base font-extrabold text-slate-900 dark:text-white">₹{generatedPackages[0].price}</span>
-                        <span className="text-sm text-slate-400 line-through">₹{generatedPackages[0].originalPrice}</span>
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• {generatedPackages[0].discount || '15% off'}</span>
-                      </div>
-
-                      {/* Green Tag Banner */}
-                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-100/50 dark:border-emerald-900/30">
-                        <span>🏷️</span>
-                        <span>Special Bundle Deal</span>
-                      </div>
-
-                      {/* Dotted Divider line */}
-                      <div className="w-full border-t border-dashed border-gray-200 dark:border-zinc-800 my-4" />
-
-                      {/* Bullet points description */}
-                      <ul className="space-y-1.5">
-                        {generatedPackages[0].services.map((s, idx) => (
-                          <li key={idx} className="text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-2">
-                            <span className="w-1 h-1 bg-gray-400 dark:bg-zinc-600 rounded-full flex-shrink-0"></span>
-                            <span>{s.title}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowComboEditModal(true)}
-                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline mt-2.5 inline-block cursor-pointer"
-                      >
-                        edit your package
-                      </button>
-                    </div>
-
-                    {/* Right Column: Rounded Cover Image with Absolute ADD Button */}
-                    <div className="relative w-[120px] h-[120px] ml-6 flex-shrink-0 overflow-visible">
-                      <div className="w-full h-full rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
-                        <img 
-                          src={activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300&auto=format&fit=crop&q=80'} 
-                          alt={generatedPackages[0].title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      
-                      {/* Absolute Add Button centered at the bottom overlap */}
-                      <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 w-[84px] h-[34px] z-10">
-                        {comboCount > 0 ? (
-                          <div className="w-full h-full bg-violet-50 dark:bg-zinc-800 border border-violet-200 dark:border-zinc-700 rounded-xl text-[#B33A35] font-bold text-xs shadow-md flex items-center justify-between px-2">
-                            <button
-                              onClick={handleDecreaseCombo}
-                              className="w-6 h-6 hover:bg-violet-100 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-base"
-                            >
-                              -
-                            </button>
-                            <span className="text-slate-800 dark:text-white font-extrabold">{comboCount}</span>
-                            <button
-                              onClick={handleIncreaseCombo}
-                              className="w-6 h-6 hover:bg-violet-100 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-base"
-                            >
-                              +
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={async () => {
-                              const totalPrice = generatedPackages[0].originalPrice;
-                              const bundlePrice = generatedPackages[0].price;
-                              const multiplier = totalPrice > 0 ? (bundlePrice / totalPrice) : 0.85;
-                              for (const s of generatedPackages[0].services) {
-                                await handleAdd(s, multiplier);
+                      if (comboItem.rawPackage?.includedItems && comboItem.parentService?.serviceGroups) {
+                        comboItem.rawPackage.includedItems.forEach(incItem => {
+                          const groupId = incItem.serviceGroupId?.toString();
+                          const group = comboItem.parentService.serviceGroups.find(g => g._id?.toString() === groupId);
+                          if (group) {
+                            if (incItem.selectedItemId) {
+                              const selectedItem = group.items?.find(i => i._id?.toString() === incItem.selectedItemId.toString());
+                              if (selectedItem) {
+                                dynamicFieldsPayload.push({
+                                  name: `Group: ${group.title}`,
+                                  label: group.title,
+                                  value: `${selectedItem.title} (₹${selectedItem.price})`
+                                });
                               }
-                            }}
-                            className="w-full h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl text-slate-800 dark:text-white font-bold text-xs shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
-                            style={{ color: '#B33A35' }}
-                          >
-                            <span>Add</span>
-                            <span className="text-xs font-semibold">+</span>
-                          </button>
-                        )}
+                            }
+                          }
+                        });
+                      }
+
+                      const cartData = buildCartItemData({ service: comboItem.parentService, category: activeCategory });
+                      cartData.card.title = `${comboItem.parentService.title} - ${comboItem.title}`;
+                      if (comboItem.rawPackage?.duration) cartData.card.duration = comboItem.rawPackage.duration;
+                      
+                      cartData.price = comboItem.price;
+                      cartData.unitPrice = comboItem.price;
+                      cartData.originalPrice = comboItem.originalPrice;
+                      if (cartData.card) {
+                        cartData.card.price = comboItem.price;
+                        cartData.card.originalPrice = comboItem.originalPrice;
+                      }
+                      cartData.dynamicFields = dynamicFieldsPayload;
+
+                      const response = await addToCart(cartData);
+                      if (response?.success) {
+                        toast.success(`${comboItem.title} added to cart!`);
+                      }
+                    };
+
+                    const handleIncreaseComboItem = async () => {
+                      if (matchedCartItem) {
+                        await updateItem(matchedCartItem._id || matchedCartItem.id, (matchedCartItem.serviceCount || 1) + 1);
+                      }
+                    };
+
+                    const handleDecreaseComboItem = async () => {
+                      if (matchedCartItem) {
+                        if ((matchedCartItem.serviceCount || 1) <= 1) {
+                          await removeItem(matchedCartItem._id || matchedCartItem.id);
+                        } else {
+                          await updateItem(matchedCartItem._id || matchedCartItem.id, (matchedCartItem.serviceCount || 1) - 1);
+                        }
+                      }
+                    };
+
+                    return (
+                      <div key={comboItem.id || comboIdx} className="flex justify-between items-start py-2 border-b last:border-b-0 pb-6">
+                        {/* Left Column: Info, Price, Tag, Bullet points */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug">
+                            {comboItem.title}
+                          </h3>
+                          
+                          {/* Rating under title */}
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400 mt-1.5">
+                            <span className="text-yellow-500">★</span>
+                            <span className="font-bold text-gray-800 dark:text-zinc-200">{comboItem.rating || '4.80'}</span>
+                            <span>({comboItem.reviews || '1.2k'} reviews)</span>
+                          </div>
+
+                          {/* Pricing with tag */}
+                          <div className="flex items-center gap-2.5 mt-3">
+                            <span className="text-base font-extrabold text-slate-900 dark:text-white">₹{comboItem.price}</span>
+                            {comboItem.originalPrice > comboItem.price && (
+                              <span className="text-sm text-slate-400 line-through">₹{comboItem.originalPrice}</span>
+                            )}
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• {comboItem.discount || 'Special Combo'}</span>
+                          </div>
+
+                          {/* Green Tag Banner */}
+                          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-100/50 dark:border-emerald-900/30">
+                            <span>🏷️</span>
+                            <span>Special Bundle Deal</span>
+                          </div>
+
+                          {/* Dotted Divider line */}
+                          <div className="w-full border-t border-dashed border-gray-200 dark:border-zinc-800 my-4" />
+
+                          {/* Bullet points description */}
+                          <ul className="space-y-1.5">
+                            {comboItem.services.map((s, idx) => (
+                              <li key={idx} className="text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-2">
+                                <span className="w-1 h-1 bg-gray-400 dark:bg-zinc-600 rounded-full flex-shrink-0"></span>
+                                <span>{s.title}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Right Column: Rounded Cover Image with Absolute ADD Button */}
+                        <div className="relative w-[120px] h-[120px] ml-6 flex-shrink-0 overflow-visible">
+                          <div className="w-full h-full rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+                            <img 
+                              src={comboItem.parentService?.image || activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300'} 
+                              alt={comboItem.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          
+                          {/* Absolute Add Button centered at the bottom overlap */}
+                          <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 w-[84px] h-[34px] z-10">
+                            {addedCount > 0 ? (
+                              <div className="w-full h-full bg-violet-50 dark:bg-zinc-800 border border-violet-200 dark:border-zinc-700 rounded-xl text-[#B33A35] font-bold text-xs shadow-md flex items-center justify-between px-2">
+                                <button
+                                  onClick={handleDecreaseComboItem}
+                                  className="w-6 h-6 hover:bg-violet-100 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-base"
+                                >
+                                  -
+                                </button>
+                                <span className="text-slate-800 dark:text-white font-extrabold">{addedCount}</span>
+                                <button
+                                  onClick={handleIncreaseComboItem}
+                                  className="w-6 h-6 hover:bg-violet-100 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-base"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={handleAddComboItem}
+                                className="w-full h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl text-slate-800 dark:text-white font-bold text-xs shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
+                                style={{ color: '#B33A35' }}
+                              >
+                                <span>Add</span>
+                                <span className="text-xs font-semibold">+</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
               )}
 

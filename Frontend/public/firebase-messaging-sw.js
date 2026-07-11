@@ -149,6 +149,17 @@ if (messaging) {
           { action: 'rate', title: '⭐ Rate Now' }
         ];
         break;
+
+      case 'admin_broadcast':
+        // Admin-sent marketing / informational notification (Zomato-style)
+        notificationTitle = data.title || notification.title || '📢 New Update!';
+        notificationBody = data.body || notification.body || 'You have a new message.';
+        vibrate = [300, 100, 300];
+        // If admin set an action URL, add a CTA button
+        if (data.actionUrl) {
+          actions = [{ action: 'open_url', title: '👉 Tap to View' }];
+        }
+        break;
     }
 
     const notificationOptions = {
@@ -160,9 +171,12 @@ if (messaging) {
       data: {
         ...data,
         notificationType: notificationType,
-        url: data.link || '/',
+        // Support both actionUrl (admin broadcast) and link/url (existing)
+        url: data.actionUrl || data.link || data.url || '/',
         timestamp: Date.now()
       },
+      // Show image if provided (admin broadcast rich notifications)
+      image: data.imageUrl || notification.image || data.image || null,
       // Vibration pattern for mobile devices
       vibrate: vibrate,
       // Keep notification until user interacts (for important ones)
@@ -244,9 +258,13 @@ self.addEventListener('notificationclick', (event) => {
       }
       break;
 
+    case 'open_url':
+      urlToOpen = data.actionUrl || data.link || data.url || '/';
+      break;
+
     default:
-      // Default click - open the link
-      urlToOpen = data.link || data.url || '/';
+      // Default click - open admin actionUrl if present, else link/url
+      urlToOpen = data.actionUrl || data.link || data.url || '/';
   }
 
   // Ensure URL is absolute
