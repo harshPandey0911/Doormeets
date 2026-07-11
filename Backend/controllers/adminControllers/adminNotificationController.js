@@ -401,7 +401,7 @@ const sendToAllWorkers = async (req, res) => {
 const searchWorkers = async (req, res) => {
   try {
     const { q } = req.query;
-    let queryObj = { status: 'active' };
+    let queryObj = {};
 
     if (q && q.trim().length >= 1) {
       queryObj.$or = [
