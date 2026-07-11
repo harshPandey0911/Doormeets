@@ -128,87 +128,7 @@ const LiveBookingCard = ({ hasBottomNav }) => {
   const Icon = statusInfo.icon;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key="live-booking-card"
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-        onClick={() => {
-          const status = activeBooking.status?.toUpperCase();
-          // If worker is on the way, go to tracking map
-          if (status === 'STARTED' || status === 'JOURNEY_STARTED') {
-            navigate(`/user/booking/${activeBooking._id || activeBooking.id}/track`);
-          } else if (status === 'SEARCHING' || status === 'REQUESTED') {
-            navigate(`/user/booking-confirmation/${activeBooking._id || activeBooking.id}`);
-          } else {
-            navigate(`/user/booking/${activeBooking._id || activeBooking.id}`);
-          }
-        }}
-        className={`fixed ${hasBottomNav ? 'bottom-24' : 'bottom-6'} left-4 right-4 z-50`}
-      >
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer active:scale-95 transition-transform group">
-
-          {/* Close Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsDismissed(true);
-            }}
-            className="absolute top-1 right-1 p-1 bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 z-20 pointer-events-auto"
-          >
-            <FiX className="w-3 h-3" />
-          </button>
-
-          {/* Progress Bar Background */}
-          <div className="absolute bottom-0 left-0 h-1 bg-gray-100 w-full">
-            <motion.div
-              className={`h-full ${statusInfo.color}`}
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            />
-          </div>
-
-          {/* Icon Box */}
-          <div className={`w-12 h-12 rounded-full ${statusInfo.color} flex items-center justify-center shrink-0 relative`}>
-            {statusInfo.pulse && (
-              <div className={`absolute inset-0 rounded-full ${statusInfo.color} animate-ping opacity-50`}></div>
-            )}
-            <Icon className="text-white w-6 h-6 relative z-10" />
-          </div>
-
-          {/* Text Info */}
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-gray-900 text-sm truncate">
-              {statusInfo.label}
-            </h4>
-            <p className="text-xs text-gray-500 truncate">
-              {statusInfo.sub} • {activeBooking.serviceName}
-            </p>
-          </div>
-
-          {/* Action Arrow or Pay Button */}
-          {activeBooking.status?.toUpperCase() === 'WORK_DONE' && !activeBooking.cashCollected ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/user/booking/${activeBooking._id || activeBooking.id}`);
-              }}
-              className="px-4 py-2 bg-teal-600 text-white text-xs font-black rounded-xl shadow-lg shadow-teal-100 active:scale-95 transition-all"
-            >
-              PAY NOW
-            </button>
-          ) : (
-            <div className="bg-gray-50 p-2 rounded-full">
-              <FiChevronRight className="text-gray-400 w-5 h-5" />
-            </div>
-          )}
-
-        </div>
-      </motion.div>
-
+    <>
       {/* Global Rating Modal */}
       <RatingModal
         key="rating-modal"
@@ -223,7 +143,7 @@ const LiveBookingCard = ({ hasBottomNav }) => {
         bookingName={activeBooking.serviceName || 'Service'}
         workerName={activeBooking.workerId?.name || 'Worker'}
       />
-    </AnimatePresence>
+    </>
   );
 };
 

@@ -63,7 +63,7 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
   return (
     <div
       ref={cardRef}
-      className="w-[110px] min-w-[110px] flex flex-col cursor-pointer group transition-all duration-300"
+      className="w-[110px] min-w-[110px] md:w-[calc((100%-4rem)/5)] md:min-w-[calc((100%-4rem)/5)] flex flex-col cursor-pointer group transition-all duration-300"
       onClick={onClick}
     >
       <div className="w-full aspect-square rounded-[20px] bg-gray-50 overflow-hidden relative mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
