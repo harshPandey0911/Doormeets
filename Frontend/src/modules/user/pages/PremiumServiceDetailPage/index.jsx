@@ -93,6 +93,19 @@ const PremiumServiceDetailPage = () => {
     return rawImages.map(img => ({ url: toAssetUrl(img), type: 'image' }));
   }, [service, pageBlocks]);
 
+  // Auto-scroll images every 3 seconds if not playing a video
+  useEffect(() => {
+    if (serviceImages.length <= 1) return;
+    const isVideo = serviceImages[activeImageIndex]?.type === 'video';
+    if (isVideo && isPlaying) return;
+
+    const timer = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % serviceImages.length);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [serviceImages, activeImageIndex, isPlaying]);
+
   const onTouchStart = (e) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
@@ -646,16 +659,17 @@ const PremiumServiceDetailPage = () => {
       </div>
     );
   }
-  const renderBlockContent = (block) => {
+  const renderBlockContent = (block, isMobile = false) => {
     if (!block) return null;
     const data = block.data || {};
     switch (block.blockType) {
       case 'whats_included': {
         const itemsList = data.items || [];
-        const visibleItems = itemsList.slice(0, 4);
-        const hasMore = itemsList.length > 4;
+        const limit = isMobile ? 2 : 4;
+        const visibleItems = itemsList.slice(0, limit);
+        const hasMore = itemsList.length > limit;
         return (
-          <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full flex flex-col justify-start">
+          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full flex flex-col justify-start w-full">
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <FiCheckCircle className="text-green-500 w-5 h-5 shrink-0" />
@@ -681,7 +695,7 @@ const PremiumServiceDetailPage = () => {
                 }}
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline mt-2 self-start cursor-pointer transition-all"
               >
-                Show more (+{itemsList.length - 4})
+                Show more (+{itemsList.length - limit})
               </button>
             )}
           </div>
@@ -690,18 +704,18 @@ const PremiumServiceDetailPage = () => {
       case 'process':
       case 'how_it_works':
         return (
-          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'How it works'}</h4>
             </div>
-            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 mt-3.5 pb-4">
               {(data.steps || []).map((step, idx) => {
                 const title = typeof step === 'object' ? step.title : step;
                 const desc = typeof step === 'object' ? step.desc : '';
                 return (
                   <div key={idx} className="flex gap-3 items-start text-[10px]">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-zinc-800 text-brand text-[9px] font-black">{idx + 1}</span>
+                    <span className="text-[#B33A35] text-xs font-black shrink-0 mt-0.5">{idx + 1}.</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-slate-800 dark:text-zinc-200">{title}</div>
                       {desc && <p className="text-gray-400 mt-0.5 leading-normal">{desc}</p>}
@@ -714,7 +728,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'warranty':
         return (
-          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.duration || ''} Warranty</h4>
@@ -726,7 +740,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'please_note':
         return (
-          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiInfo className="text-amber-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'Please Note'}</h4>
@@ -740,7 +754,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'reviews':
         return (
-          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">User feedback</h4>
@@ -760,7 +774,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'before_after':
         return (
-          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             {data.title && <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title}</h4>}
             <div className="grid grid-cols-2 gap-4">
               {data.beforeImage && (
@@ -780,7 +794,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'heading_text':
         return (
-          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.heading}</h4>
             <p className="text-[10px] text-gray-400 leading-relaxed font-normal whitespace-pre-line">{data.text}</p>
           </div>
@@ -790,7 +804,7 @@ const PremiumServiceDetailPage = () => {
         const total = imagesList.length;
         const visibleImages = imagesList.slice(0, 6);
         return (
-          <div className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">Gallery</h4>
             <div className="grid grid-cols-3 gap-2">
               {visibleImages.map((img, imgIdx) => {
@@ -820,7 +834,7 @@ const PremiumServiceDetailPage = () => {
       }
       case 'faq':
         return (
-          <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-3xl space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full">
+          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">FAQ</h4>
             <div className="space-y-3">
               {(data.faqs || []).map((faq, idx) => {
@@ -1065,7 +1079,7 @@ const PremiumServiceDetailPage = () => {
                                     key={variant._id || idx}
                                     type="button"
                                     onClick={() => toggleVariant(variant)}
-                                    className="flex flex-col items-center justify-between p-3 rounded-2xl border text-center w-full min-h-[110px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
+                                    className="flex flex-col items-center justify-between p-2.5 rounded-xl border text-center w-full min-h-[85px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
                                     style={{
                                       backgroundColor: colorScheme.bg,
                                       borderColor: isSelected ? 'var(--primary)' : colorScheme.border,
@@ -1119,16 +1133,16 @@ const PremiumServiceDetailPage = () => {
                         toggleVariant(variant);
                         setShowVariantPopup(false);
                       }}
-                      className="flex flex-col items-center justify-between p-3 rounded-2xl border text-center w-full min-h-[120px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
+                      className="flex flex-col items-center justify-between p-2 rounded-xl border text-center w-full min-h-[75px] shadow-[0_1px_4px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
                       style={{
                         backgroundColor: colorScheme.bg,
                         borderColor: isSelected ? 'var(--primary)' : colorScheme.border,
                         borderWidth: isSelected ? '2px' : '1px'
                       }}
                     >
-                      <div className="flex items-center justify-center mb-1">
+                      <div className="flex items-center justify-center mb-0.5">
                         <span
-                          className="flex items-center justify-center w-6 h-6 rounded-full border-2 text-xs font-black transition-all"
+                          className="flex items-center justify-center w-4.5 h-4.5 rounded-full border text-[9px] font-black transition-all"
                           style={isSelected
                             ? { borderColor: 'var(--primary)', backgroundColor: 'var(--primary)', color: '#fff' }
                             : { borderColor: colorScheme.text, color: colorScheme.text }
@@ -1137,14 +1151,14 @@ const PremiumServiceDetailPage = () => {
                           {isSelected ? '✓' : <FiPlus />}
                         </span>
                       </div>
-                      <span className="text-[11px] font-semibold tracking-tight leading-tight line-clamp-2 my-1 flex-1 flex items-center justify-center" style={{ color: colorScheme.text }}>
+                      <span className="text-[9px] font-bold tracking-tight leading-tight line-clamp-2 my-0.5 flex-1 flex items-center justify-center" style={{ color: colorScheme.text }}>
                         {variant.title}
                       </span>
                       <span
-                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-all shrink-0"
+                        className="text-[8px] font-black px-1.5 py-0.5 rounded-full transition-all shrink-0"
                         style={isSelected
                           ? { color: '#fff', backgroundColor: 'var(--primary)' }
-                          : { color: colorScheme.text, backgroundColor: 'rgba(255,255,255,0.6)' }
+                          : { color: colorScheme.text, backgroundColor: 'rgba(255,255,255,0.75)' }
                         }
                       >
                         {variant.extraPrice > 0 ? `+₹${variant.extraPrice}` : 'Free'}
@@ -1750,20 +1764,31 @@ const PremiumServiceDetailPage = () => {
           </>
         )}
       </AnimatePresence>
-
+          {/* Mobile Dynamic Blocks Renderer */}
+          {/* Mobile Dynamic Blocks Renderer */}
+          <div className="flex flex-col gap-2.5 w-full mt-10 pb-24">
+            {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, idx, arr) => (
+              <div key={idx} className="w-full">
+                {renderBlockContent(block, true)}
+                {idx < arr.length - 1 && (
+                  <div className="border-b border-gray-100 dark:border-zinc-850 mt-5 mb-2.5 w-full" />
+                )}
+              </div>
+            ))}
+          </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[28px] border px-4 py-3 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t px-4 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-2 backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div>
-            <div className="text-[11px] font-normal tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-[10px] font-normal tracking-[0.05em]" style={{ color: 'var(--text-muted)' }}>
               Price {service.serviceType === 'minute_base' && `(${selectedDuration} Mins)`}
               {selectedVariants.length > 0 && ` + ${selectedVariants.length} add-on${selectedVariants.length > 1 ? 's' : ''}`}
             </div>
-            <PriceTag price={finalPrice} originalPrice={service.originalPrice} className="mt-1" />
+            <PriceTag price={finalPrice} originalPrice={service.originalPrice} className="mt-0.5" />
           </div>
-          <button type="button" onClick={handleAdd} className="rounded-2xl bg-gradient-to-r from-brand to-brand-dark px-5 py-3 text-sm font-normal text-white shadow-lg transition-transform hover:scale-[1.02]">
-            {service.serviceType === 'image_base' ? 'Add Selected to Cart' : (variants.length > 0 ? 'Select & Add' : 'Add to cart')}
+          <button type="button" onClick={handleAdd} className="rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]">
+            {service.serviceType === 'image_base' ? 'Add Selected' : (variants.length > 0 ? 'Select & Add' : 'Add to cart')}
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiPlus, FiMinus, FiStar, FiCalendar } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiStar, FiCalendar, FiX } from 'react-icons/fi';
 import { toAssetUrl } from './cartUtils';
 
 /* ── helper: compute visit dates from workflow steps ─────────── */
@@ -36,6 +36,7 @@ const formatDate = (date) => {
 /* ─────────────────────────────────────────────────────────────── */
 
 const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onOpen }) => {
+  const [showVisitsModal, setShowVisitsModal] = useState(false);
   return (
     <motion.article
       whileHover={{ y: -2 }}
@@ -81,25 +82,60 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             const visits = computeVisitDates(service.workflow);
             if (!visits.length) return null;
             return (
-              <div className="mt-2 p-2.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 text-[10px] space-y-1.5">
-                <div className="font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1">
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowVisitsModal(true);
+                  }}
+                  className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold border border-indigo-100/50 dark:border-indigo-900/30 hover:bg-indigo-100/50 transition-all cursor-pointer"
+                >
                   <FiCalendar className="w-3 h-3" />
                   <span>{visits.length} Scheduled Visits</span>
-                </div>
-                <div className="space-y-1">
-                  {visits.map((v, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[10px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
-                      <span className="font-semibold text-slate-700 dark:text-zinc-300">
-                        Visit {v.sequence}:
-                      </span>
-                      <span className="text-slate-500 dark:text-zinc-400">
-                        {v.daysOffset === 0 ? 'Today' : `After ${v.daysOffset} days`} ({formatDate(v.date)})
-                      </span>
+                </button>
+
+                {showVisitsModal && (
+                  <div 
+                    className="fixed inset-0 bg-black/55 backdrop-blur-xs z-50 flex items-center justify-center p-4"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowVisitsModal(false);
+                    }}
+                  >
+                    <div 
+                      className="bg-white dark:bg-zinc-900 rounded-3xl p-5 w-full max-w-sm shadow-xl space-y-4 border dark:border-zinc-800"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-between items-center border-b pb-2 dark:border-zinc-800">
+                        <span className="font-bold text-xs text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                          <FiCalendar className="w-4 h-4 text-indigo-500" /> {visits.length} Scheduled Visits
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowVisitsModal(false)}
+                          className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full"
+                        >
+                          <FiX className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="space-y-3 py-1">
+                        {visits.map((v, i) => (
+                          <div key={i} className="flex gap-3 items-start p-2.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800 text-[10px]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                            <div className="flex-1">
+                              <div className="font-bold text-slate-800 dark:text-zinc-200">Visit {v.sequence}</div>
+                              <div className="text-gray-400 mt-0.5">
+                                {v.daysOffset === 0 ? 'Today' : `After ${v.daysOffset} days`} ({formatDate(v.date)})
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+              </>
             );
           })()}
         </div>
