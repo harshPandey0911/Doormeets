@@ -77,6 +77,15 @@ async function sendPushNotification(tokens, payload) {
       title: payload.title || (payload.body ? 'New Update' : 'App Notification'),
       body: payload.body || ''
     };
+    if (payload.imageUrl) {
+      stringData.imageUrl = String(payload.imageUrl);
+      stringData.image = String(payload.imageUrl);
+    }
+    if (payload.actionUrl) {
+      stringData.actionUrl = String(payload.actionUrl);
+      stringData.link = String(payload.actionUrl);
+      stringData.url = String(payload.actionUrl);
+    }
     if (payload.data) {
       Object.keys(payload.data).forEach(key => {
         stringData[key] = String(payload.data[key]);
@@ -86,31 +95,52 @@ async function sendPushNotification(tokens, payload) {
     const message = {
       data: stringData,
       tokens: uniqueTokens,
+      // Add top-level notification for default native mobile tray render (HTTP v1 format uses "image")
+      notification: {
+        title: payload.title || 'App Notification',
+        body: payload.body || 'New Update',
+        image: payload.imageUrl || undefined
+      },
       // Android specific configuration for high priority
       android: {
-        priority: 'high', // HIGH priority for immediate delivery
-        // notification block removed to ensure Data-Only message
+        priority: 'high',
+        notification: {
+          title: payload.title || 'App Notification',
+          body: payload.body || 'New Update',
+          sound: 'default',
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+          icon: 'stock_ticker_update',
+          color: '#f44336',
+          imageUrl: payload.imageUrl || undefined
+        }
       },
       // iOS/APNs specific configuration
       apns: {
         headers: {
-          'apns-priority': '10', // Highest priority for immediate delivery
+          'apns-priority': '10',
           'apns-push-type': 'alert'
         },
         payload: {
           aps: {
+            alert: {
+              title: payload.title || 'App Notification',
+              body: payload.body || 'New Update'
+            },
             sound: 'default',
             badge: 1,
-            'content-available': 1, // Wake up app in background
+            'content-available': 1,
             'mutable-content': 1
           }
+        },
+        fcmOptions: {
+          imageUrl: payload.imageUrl || undefined
         }
       },
       // Web push configuration
       webpush: {
         headers: {
           Urgency: 'high',
-          TTL: '86400' // 24 hours
+          TTL: '86400'
         },
         fcmOptions: {
           link: payload.data?.link || '/'
@@ -119,52 +149,37 @@ async function sendPushNotification(tokens, payload) {
       priority: payload.highPriority !== false ? 'high' : 'normal'
     };
 
-    // Remove top-level message.notification block to make it a Data-Only message.
-    // This allows the Service Worker to receive the payload and display a single,
-    // custom-styled notification (with image & click handler) without the browser
-    // showing an automatic duplicate (without image/handlers).
-    
-    // Android specific (Sound, Priority, Channel, Icon, Image)
-    message.android.notification = {
-      title: payload.title || 'App Notification',
-      body: payload.body || 'New Update',
-      icon: 'stock_ticker_update',
-      color: '#f44336',
-      ...(payload.imageUrl && { imageUrl: payload.imageUrl })
-    };
+    // Ensure critical fields are also in data for background handling and to prevent double notifications.
+    message.data.title = payload.title || 'App Notification';
+    message.data.body = payload.body || 'New Update';
+    if (payload.icon) message.data.icon = payload.icon;
+    if (payload.imageUrl) {
+      message.data.imageUrl = payload.imageUrl;
+      message.data.image = payload.imageUrl;
+    }
+    if (payload.actionUrl) {
+      message.data.actionUrl = payload.actionUrl;
+      message.data.link = payload.actionUrl;
+      message.data.url = payload.actionUrl;
+    }
 
-    // iOS/APNs specific (Sound, Alert, Badge)
-    message.apns.payload.aps.alert = {
-      title: payload.title || 'App Notification',
-      body: payload.body || 'New Update',
-    };
+    // Force top-level notification.image parameter to be set cleanly
+    if (!message.notification) {
+      message.notification = {};
+    }
+    message.notification.title = payload.title || 'App Notification';
+    message.notification.body = payload.body || 'New Update';
+    message.notification.image = payload.imageUrl || undefined;
 
-    // WebPush specific (Title, Body, Icon, Badge, Image)
+    // Explicitly add webpush notification structure if title/body/image are present
+    // Browsers natively require webpush.notification or service worker image options to show rich image payloads
     message.webpush.notification = {
       title: payload.title || 'App Notification',
       body: payload.body || 'New Update',
       icon: payload.icon || '/vite.svg',
       badge: '/vite.svg',
-      ...(payload.imageUrl && { image: payload.imageUrl })
+      image: payload.imageUrl || undefined
     };
-
-    /*
-    if (payload.icon) {
-      message.notification.image = payload.icon;
-      message.android.notification.image = payload.icon;
-    }
-    */
-
-    // Ensure critical fields are also in data for background handling
-    message.data.title = payload.title || 'App Notification';
-    message.data.body = payload.body || 'New Update';
-    if (payload.icon) message.data.icon = payload.icon;
-    if (payload.imageUrl) message.data.imageUrl = payload.imageUrl;
-    if (payload.actionUrl) message.data.actionUrl = payload.actionUrl;
-    // link field for webpush click action
-    if (payload.actionUrl) {
-      message.webpush.fcmOptions = { link: payload.actionUrl };
-    }
 
     // Log intent
     console.log(`[FCM] Sending standard notification to ${uniqueTokens.length} tokens:`, payload.title);
