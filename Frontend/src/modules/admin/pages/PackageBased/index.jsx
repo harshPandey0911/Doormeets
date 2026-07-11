@@ -43,6 +43,7 @@ const PackageBased = () => {
 
   // Selections
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState('');
+  const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState([]);
 
   // Modals & Editors state
   const [editingMainCat, setEditingMainCat] = useState(null); // null | 'new' | category object
@@ -393,8 +394,7 @@ const PackageBased = () => {
         vendorPayout: 0,
         allowUserEdit: true,
         codEnabled: true,
-        codAdvanceAmount: 0,
-        targetSubCategoryIds: selectedSubCategoryId ? [String(selectedSubCategoryId)] : []
+        targetSubCategoryIds: selectedSubCategoryIds.length > 0 ? selectedSubCategoryIds.map(String) : (selectedSubCategoryId ? [String(selectedSubCategoryId)] : [])
       });
     }
     setEditingCombo(combo ? combo : 'new');
@@ -676,18 +676,28 @@ const PackageBased = () => {
             {/* TAB 3: INDIVIDUAL PACKAGES / OPTIONS */}
             {activeTab === 'packages' && (
               <div className="space-y-5">
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 max-w-md">
-                  <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase">Select Category / Subcategory</label>
-                  <select
-                    value={selectedSubCategoryId}
-                    onChange={e => setSelectedSubCategoryId(e.target.value)}
-                    className="w-full p-2.5 bg-white border rounded-xl text-sm focus:outline-none"
-                  >
-                    <option value="">-- Choose Category --</option>
-                    {subCategories.map(sub => (
-                      <option key={sub._id} value={sub._id}>{sub.title}</option>
-                    ))}
-                  </select>
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider">Select Category / Subcategory</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                    {subCategories.map(sub => {
+                      const isSelected = String(selectedSubCategoryId) === String(sub._id);
+                      return (
+                        <button
+                          key={sub._id}
+                          type="button"
+                          onClick={() => setSelectedSubCategoryId(sub._id)}
+                          className={`p-3 rounded-2xl border text-center font-bold text-xs transition-all flex flex-col items-center justify-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
+                              : 'bg-white hover:bg-gray-50 border-gray-100 text-gray-700'
+                          }`}
+                        >
+                          <FiFolder className={`w-5 h-5 ${isSelected ? 'text-emerald-600' : 'text-gray-400'}`} />
+                          <span className="truncate w-full">{sub.title}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {selectedSubCategoryId ? (
@@ -763,7 +773,7 @@ const PackageBased = () => {
                     </div>
                   )
                 ) : (
-                  <div className="text-center py-12 text-gray-400 font-medium">
+                    <div className="text-center py-12 text-gray-400 font-medium">
                     Please select a Category/Subcategory from the dropdown above to manage options.
                   </div>
                 )}
@@ -773,117 +783,180 @@ const PackageBased = () => {
             {/* TAB 4: COMBO PACKAGES / PACKAGE GROUPS */}
             {activeTab === 'combos' && (
               <div className="space-y-5">
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 max-w-md">
-                  <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase">Select Category / Subcategory</label>
-                  <select
-                    value={selectedSubCategoryId}
-                    onChange={e => setSelectedSubCategoryId(e.target.value)}
-                    className="w-full p-2.5 bg-white border rounded-xl text-sm focus:outline-none"
-                  >
-                    <option value="">-- Choose Category --</option>
-                    {subCategories.map(sub => (
-                      <option key={sub._id} value={sub._id}>{sub.title}</option>
-                    ))}
-                  </select>
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider">Select Category / Subcategory (Choose where combos will apply)</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {subCategories.map(sub => {
+                      const isSelected = selectedSubCategoryIds.includes(String(sub._id));
+                      const toggleSub = () => {
+                        let list = [...selectedSubCategoryIds];
+                        if (isSelected) {
+                          list = list.filter(id => id !== String(sub._id));
+                        } else {
+                          list.push(String(sub._id));
+                        }
+                        setSelectedSubCategoryIds(list);
+                        // Backwards compatibility for single selector state
+                        if (list.length > 0) {
+                          setSelectedSubCategoryId(list[0]);
+                        } else {
+                          setSelectedSubCategoryId('');
+                        }
+                      };
+                      return (
+                        <label
+                          key={sub._id}
+                          className={`p-3 rounded-2xl border text-left font-bold text-xs transition-all flex items-center gap-3 cursor-pointer select-none ${
+                            isSelected
+                              ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
+                              : 'bg-white hover:bg-gray-50 border-gray-150 text-gray-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={toggleSub}
+                            className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                          />
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <FiFolder className={`w-4 h-4 shrink-0 ${isSelected ? 'text-emerald-600' : 'text-gray-400'}`} />
+                            <span className="truncate">{sub.title}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {selectedSubCategoryId ? (
-                  activeService ? (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center border-b pb-3">
-                        <div>
-                          <h3 className="text-sm font-bold text-gray-800">Combo Package Groups ({activeService.packages?.length || 0})</h3>
-                          <p className="text-[11px] text-gray-400 mt-0.5">Combine individual packages, apply discount prices, and manage them.</p>
-                        </div>
-                        <button
-                          onClick={() => handleOpenCombo()}
-                          className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700"
-                        >
-                          <FiPlus className="w-3.5 h-3.5" /> Create Combo Package
-                        </button>
-                      </div>
+                {selectedSubCategoryIds.length > 0 ? (
+                  (() => {
+                    // Combine all services matching the selected subcategories
+                    const selectedServices = services.filter(s =>
+                      selectedSubCategoryIds.includes(String(s.subCategoryId?._id || s.subCategoryId))
+                    );
+                    const allComboPackages = [];
+                    selectedServices.forEach(s => {
+                      if (s.packages) {
+                        s.packages.forEach(pkg => {
+                          if (!allComboPackages.some(p => String(p._id) === String(pkg._id))) {
+                            allComboPackages.push({ ...pkg, parentServiceTitle: s.title, parentServiceId: s._id });
+                          }
+                        });
+                      }
+                    });
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                        {activeService.packages?.map((pkg) => {
-                          const matrix = calcPriceMatrix(pkg);
-                          return (
-                            <div key={pkg._id} className="border rounded-2xl p-4 bg-white shadow-sm hover:shadow-md transition-all space-y-3">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1.5">
-                                    <h4 className="text-sm font-bold text-gray-800">{pkg.title}</h4>
-                                    {pkg.isPopular && <span className="text-[9px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full">⭐ Popular</span>}
-                                  </div>
-                                  <span className="text-xs font-extrabold text-emerald-600">₹{pkg.price}</span>
-                                  {pkg.originalPrice && <span className="text-xs line-through text-gray-400 ml-1.5 font-semibold">₹{pkg.originalPrice}</span>}
-                                  <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">
-                                    {pkg.gstIncluded !== false ? 'GST Inc.' : 'GST Exc.'} ({pkg.gstPercentage || 18}%) | Payout: ₹{pkg.vendorPayout || 0} | COD: {pkg.codEnabled !== false ? `₹${pkg.codAdvanceAmount || 0} Adv` : 'Disabled'}
-                                  </span>
-                                </div>
-                                <div className="flex gap-1.5">
-                                  <button onClick={() => handleOpenCombo(pkg)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"><FiEdit2 className="w-4 h-4" /></button>
-                                  <button onClick={() => handleDeleteCombo(pkg._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><FiTrash2 className="w-4 h-4" /></button>
-                                </div>
-                              </div>
-                              <p className="text-[10px] text-gray-500">{pkg.description || 'No description provided.'}</p>
-                              
-                              <div className="border-t pt-2 space-y-1.5">
-                                <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">Included Service Levels:</span>
-                                {pkg.includedItems?.map((inc, i) => (
-                                  <div key={i} className="flex justify-between text-xs text-gray-600 font-semibold bg-gray-50 p-2 rounded-lg border">
-                                    <span>{inc.serviceGroupTitle}</span>
-                                    <span className="text-[10px] text-emerald-600 font-extrabold">{inc.selectedItemTitle}</span>
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div className="flex items-center justify-between border-t pt-2 mt-1">
-                                <span className="text-[10px] font-bold text-gray-500 uppercase">Allow User to Edit Options:</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleUserEdit(pkg)}
-                                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                    pkg.allowUserEdit !== false ? 'bg-emerald-500' : 'bg-gray-200'
-                                  }`}
-                                >
-                                  <span
-                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                      pkg.allowUserEdit !== false ? 'translate-x-4' : 'translate-x-0'
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-
-                              <div className="border-t pt-2 flex justify-between text-[11px] font-bold text-gray-500 bg-gray-50/50 p-2 rounded-xl">
-                                <span>Base: ₹{matrix.basePrice.toFixed(0)}</span>
-                                <span>GST: ₹{matrix.gstAmount.toFixed(0)}</span>
-                                <span className={matrix.platformEarning >= 0 ? "text-emerald-600" : "text-red-500"}>Profit: ₹{matrix.platformEarning.toFixed(0)}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {(!activeService.packages || activeService.packages.length === 0) && (
-                          <div className="col-span-2 text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed text-gray-400">
-                            No combo packages created yet. Click "Create Combo Package" to bundle your service groups.
+                    return (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b pb-3">
+                          <div>
+                            <h3 className="text-sm font-bold text-gray-800">Combo Package Groups ({allComboPackages.length})</h3>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Combine individual packages, apply discount prices, and manage them.</p>
                           </div>
-                        )}
+                          <button
+                            onClick={() => handleOpenCombo()}
+                            className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700"
+                          >
+                            <FiPlus className="w-3.5 h-3.5" /> Create Combo Package
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                          {allComboPackages.map((pkg) => {
+                            const matrix = calcPriceMatrix(pkg);
+                            return (
+                              <div key={pkg._id} className="border rounded-2xl p-4 bg-white shadow-sm hover:shadow-md transition-all space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                      <h4 className="text-sm font-bold text-gray-800">{pkg.title}</h4>
+                                      {pkg.isPopular && <span className="text-[9px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full">⭐ Popular</span>}
+                                    </div>
+                                    <span className="text-xs font-extrabold text-emerald-600">₹{pkg.price}</span>
+                                    {pkg.originalPrice && <span className="text-xs line-through text-gray-400 ml-1.5 font-semibold">₹{pkg.originalPrice}</span>}
+                                    <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">
+                                      {pkg.gstIncluded !== false ? 'GST Inc.' : 'GST Exc.'} ({pkg.gstPercentage || 18}%) | Payout: ₹{pkg.vendorPayout || 0} | COD: {pkg.codEnabled !== false ? `₹${pkg.codAdvanceAmount || 0} Adv` : 'Disabled'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <button onClick={() => handleOpenCombo(pkg)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"><FiEdit2 className="w-4 h-4" /></button>
+                                    <button
+                                      onClick={async () => {
+                                        if (!window.confirm('Delete this combo package?')) return;
+                                        try {
+                                          // Delete from its specific parent service
+                                          const parentSrv = services.find(s => String(s._id) === String(pkg.parentServiceId));
+                                          if (parentSrv) {
+                                            const updated = parentSrv.packages.filter(p => String(p._id) !== String(pkg._id));
+                                            await api.put(`/admin/services/${parentSrv._id}`, { packages: updated });
+                                            toast.success('Deleted successfully');
+                                            fetchData();
+                                          }
+                                        } catch (err) {
+                                          toast.error('Failed to delete package');
+                                        }
+                                      }}
+                                      className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                    ><FiTrash2 className="w-4 h-4" /></button>
+                                  </div>
+                                </div>
+                                <p className="text-[10px] text-gray-500">{pkg.description || 'No description provided.'}</p>
+                                
+                                <div className="border-t pt-2 space-y-1.5">
+                                  <span className="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider block">Included Service Levels:</span>
+                                  {pkg.includedItems?.map((inc, i) => (
+                                    <div key={i} className="flex justify-between text-xs text-gray-600 font-semibold bg-gray-50 p-2 rounded-lg border">
+                                      <span>{inc.serviceGroupTitle}</span>
+                                      <span className="text-[10px] text-emerald-600 font-extrabold">{inc.selectedItemTitle}</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="flex items-center justify-between border-t pt-2 mt-1">
+                                  <span className="text-[10px] font-bold text-gray-500 uppercase">Allow User to Edit Options:</span>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const parentSrv = services.find(s => String(s._id) === String(pkg.parentServiceId));
+                                      if (parentSrv) {
+                                        const updatedPackages = parentSrv.packages.map(p => {
+                                          if (String(p._id) === String(pkg._id)) {
+                                            return { ...p, allowUserEdit: p.allowUserEdit === false };
+                                          }
+                                          return p;
+                                        });
+                                        try {
+                                          await api.put(`/admin/services/${parentSrv._id}`, { packages: updatedPackages });
+                                          toast.success(`Customization status updated`);
+                                          fetchData();
+                                        } catch (e) {
+                                          toast.error('Failed to update settings');
+                                        }
+                                      }
+                                    }}
+                                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                      pkg.allowUserEdit !== false ? 'bg-emerald-500' : 'bg-gray-200'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        pkg.allowUserEdit !== false ? 'translate-x-4' : 'translate-x-0'
+                                      }`}
+                                    />
+                                  </button>
+                                </div>
+
+                                <div className="border-t pt-2 flex justify-between text-[11px] font-bold text-gray-500 bg-gray-50/50 p-2 rounded-xl">
+                                  <span>Base: ₹{matrix.basePrice.toFixed(0)}</span>
+                                  <span>GST: ₹{matrix.gstAmount.toFixed(0)}</span>
+                                  <span className={matrix.platformEarning >= 0 ? "text-emerald-600" : "text-red-500"}>Profit: ₹{matrix.platformEarning.toFixed(0)}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 border-2 border-dashed rounded-3xl bg-gray-50/50 max-w-lg mx-auto">
-                      <FiPackage className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                      <h3 className="text-sm font-bold text-gray-600">No Services Initialized Yet</h3>
-                      <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto leading-normal">
-                        To bundle combo package groups, you must initialize the services database mapping first.
-                      </p>
-                      <button
-                        onClick={handleInitializeService}
-                        className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-emerald-700 transition-colors"
-                      >
-                        Initialize Packages Setup
-                      </button>
-                    </div>
-                  )
+                    );
+                  })()
                 ) : (
                   <div className="text-center py-12 text-gray-400 font-medium">
                     Please select a Category/Subcategory from the dropdown above to manage combo package groups.
@@ -1196,6 +1269,11 @@ const PackageBased = () => {
               <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
                 <label className="text-xs font-bold text-gray-600 uppercase block mb-1">1. Included Packages / Options</label>
                 {services.map(srv => {
+                  const srvSubId = String(srv.subCategoryId?._id || srv.subCategoryId);
+                  // Dynamic filter in real-time based on subcategories currently checked in the form below
+                  if (!comboForm.targetSubCategoryIds?.includes(srvSubId)) {
+                    return null;
+                  }
                   if (!srv.serviceGroups || srv.serviceGroups.length === 0) return null;
                   return (
                     <div key={srv._id} className="space-y-2 border-l-2 border-emerald-500 pl-3 py-1 bg-gray-50/30 p-2 rounded-xl border border-gray-100">
@@ -1273,12 +1351,45 @@ const PackageBased = () => {
                     const isChecked = comboForm.targetSubCategoryIds?.includes(String(sub._id));
                     const toggleSub = () => {
                       let list = [...(comboForm.targetSubCategoryIds || [])];
+                      let updatedIncluded = [...(comboForm.includedItems || [])];
+                      
                       if (isChecked) {
+                        // Deselecting: Remove subcategory ID from targets
                         list = list.filter(id => id !== String(sub._id));
+                        
+                        // Also remove any included items that belong to this deselected subcategory
+                        // Find service matching deselected subcategory ID
+                        const targetSrv = services.find(s => String(s.subCategoryId?._id || s.subCategoryId) === String(sub._id));
+                        if (targetSrv) {
+                          const groupIds = (targetSrv.serviceGroups || []).map(g => String(g._id));
+                          updatedIncluded = updatedIncluded.filter(inc => !groupIds.includes(String(inc.serviceGroupId)));
+                        }
                       } else {
+                        // Selecting: Add subcategory ID to targets
                         list.push(String(sub._id));
                       }
-                      setComboForm(p => ({ ...p, targetSubCategoryIds: list }));
+                      
+                      // Calculate new price sum
+                      let sumPrice = 0;
+                      updatedIncluded.forEach(inc => {
+                        let foundItm = null;
+                        for (const s of services) {
+                          const g = s.serviceGroups?.find(x => String(x._id) === String(inc.serviceGroupId));
+                          foundItm = g?.items?.find(i => String(i._id) === String(inc.selectedItemId));
+                          if (foundItm) break;
+                        }
+                        if (foundItm) {
+                          sumPrice += Number(foundItm.price || 0);
+                        }
+                      });
+
+                      setComboForm(p => ({
+                        ...p,
+                        targetSubCategoryIds: list,
+                        includedItems: updatedIncluded,
+                        price: sumPrice,
+                        originalPrice: sumPrice
+                      }));
                     };
                     return (
                       <label key={sub._id} className="flex items-center gap-2 cursor-pointer select-none">

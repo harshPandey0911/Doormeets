@@ -982,7 +982,9 @@ const getPublicServices = async (req, res) => {
           serviceType: svc.serviceType || 'package_base',
           minimumMinutes: svc.minimumMinutes || 30,
           pricePerMinute: svc.pricePerMinute || null,
-          isPriceDisclosed: svc.isPriceDisclosed ?? true
+          isPriceDisclosed: svc.isPriceDisclosed ?? true,
+          packages: svc.packages || [],
+          serviceGroups: svc.serviceGroups || []
         };
 
         // Attach workflow for multi_visit services

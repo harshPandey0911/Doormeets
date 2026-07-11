@@ -1212,13 +1212,13 @@ const PremiumServiceDetailPage = () => {
         )}
 
         {/* Packages Section */}
-        {service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
+        {false && service?.serviceType === 'package_base' && service?.packages?.length > 0 && (
           <section className="mt-5 md:mt-8 space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Packages</h2>
             </div>
             <div className="space-y-3">
-              {service.packages.map((pkg, idx) => {
+              {service.packages.filter(p => !p.title?.toLowerCase().includes('combo') && !p.title?.toLowerCase().includes('packege combo') && p.title !== 'Combos Packages').map((pkg, idx) => {
                 const addedCount = getAddedPackageCount(pkg.title);
                 const isPkgSelected = selectedPackage?.title === pkg.title;
                 return (
@@ -1966,7 +1966,7 @@ const PremiumServiceDetailPage = () => {
         )}
 
         {/* Two-Column Split Layout or Full Width Grid */}
-        {service?.serviceType === 'package_base' && service?.packages?.length > 0 ? (
+        {false && service?.serviceType === 'package_base' && service?.packages?.length > 0 ? (
           <div className="grid grid-cols-12 gap-8 items-start mb-12">
             {/* Left Column: Packages and Variants */}
             <div className="col-span-8 space-y-8">
@@ -1974,7 +1974,7 @@ const PremiumServiceDetailPage = () => {
               <div className="space-y-4">
                 <h2 className="text-base font-extrabold text-slate-800">Packages</h2>
                 <div className="space-y-4">
-                  {service.packages.map((pkg, idx) => {
+                  {service.packages.filter(p => !p.title?.toLowerCase().includes('combo') && !p.title?.toLowerCase().includes('packege combo') && p.title !== 'Combos Packages').map((pkg, idx) => {
                     const addedCount = getAddedPackageCount(pkg.title);
                     const isPkgSelected = selectedPackage?.title === pkg.title;
                     return (
