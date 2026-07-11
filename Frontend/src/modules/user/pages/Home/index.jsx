@@ -1049,124 +1049,7 @@ const Home = () => {
                       })()
                     );
                   case 'orderAgain':
-                    return (
-                      homeContent?.isOrderAgainVisible !== false &&
-                      !pastServicesLoading && pastServices.length > 0 && (
-                        <motion.section key="orderAgain" variants={itemVariants} className="px-3 md:px-5 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h2
-                              className="text-[19px] md:text-[22px] font-extrabold tracking-tight"
-                              style={{ color: 'var(--text-primary)' }}
-                            >
-                              Order again
-                            </h2>
-                            <button
-                              onClick={() => navigate('/user/bookings')}
-                              className="text-xs font-bold transition-colors"
-                              style={{ color: 'var(--text-muted)' }}
-                            >
-                              see all
-                            </button>
-                          </div>
-        
-                          {/* Carousel Wrapper */}
-                          <div className="relative group" style={{ overflow: 'visible' }}>
-                            {showOrderAgainLeft && (
-                              <ScrollArrowButton
-                                direction="left"
-                                onClick={() => scrollOrderAgain(-1)}
-                                className="left-0 md:-left-4 top-1/2 -translate-y-1/2"
-                              />
-                            )}
-                            
-                            {showOrderAgainRight && (
-                              <ScrollArrowButton
-                                direction="right"
-                                onClick={() => scrollOrderAgain(1)}
-                                className="right-0 md:-right-4 top-1/2 -translate-y-1/2"
-                              />
-                            )}
-
-                            <div 
-                              ref={orderAgainRef}
-                              onScroll={handleOrderAgainScroll}
-                              className="flex gap-4 overflow-x-auto pb-3 -mx-3 px-3 md:-mx-5 md:px-5 no-scrollbar scroll-smooth"
-                              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                            >
-                              {pastServices.slice(0, 5).map((service, index) => {
-                                return (
-                                  <div
-                                    key={service.id || index}
-                                    onClick={() => handleAddClick(service)}
-                                    className="flex-shrink-0 rounded-3xl p-5 lg:p-6 flex items-center justify-between w-[250px] lg:w-[310px] h-[120px] lg:h-[140px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
-                                    style={{
-                                      backgroundColor: 'var(--surface)',
-                                      border: '1px solid var(--border)',
-                                      boxShadow: 'var(--shadow)',
-                                    }}
-                                  >
-                                    <div className="flex-1 min-w-0 pr-3 space-y-1">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <h3
-                                          className="text-xs lg:text-sm font-extrabold truncate leading-tight"
-                                          style={{ color: 'var(--text-primary)' }}
-                                        >
-                                          {service.title}
-                                        </h3>
-                                        <span
-                                          className="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5"
-                                          style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
-                                        >
-                                          ★ {service.rating}
-                                        </span>
-                                      </div>
-          
-                                      <p className="text-[10px] lg:text-xs font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
-                                        by {service.vendorName}
-                                      </p>
-          
-                                      <div className="flex items-baseline gap-1.5 pt-1">
-                                        <span className="text-sm lg:text-base font-extrabold" style={{ color: 'var(--primary)' }}>
-                                          ₹${(service.price || 0).toLocaleString('en-IN')}
-                                        </span>
-                                        {service.originalPrice && service.originalPrice > service.price && (
-                                          <>
-                                            <span className="text-[10px] line-through" style={{ color: 'var(--text-muted)' }}>
-                                              ₹{service.originalPrice.toLocaleString('en-IN')}
-                                            </span>
-                                            <span className="text-[9px] font-extrabold text-green-500">
-                                              {Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100)}% off
-                                            </span>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-          
-                                    <div
-                                      className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden"
-                                      style={{ backgroundColor: 'rgba(179,58,53,0.08)', border: '1px solid rgba(179,58,53,0.12)' }}
-                                    >
-                                      {service.image ? (
-                                        <img
-                                          src={service.image}
-                                          alt={service.title}
-                                          className="w-12 h-12 lg:w-14 lg:h-14 object-contain"
-                                          loading="lazy"
-                                        />
-                                      ) : (
-                                        <svg className="w-8 h-8 lg:w-10 lg:h-10" style={{ color: 'var(--primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </motion.section>
-                      )
-                    );
+                    return null;
                   case 'featuredSections':
                     return (
                       homeContent?.isFeaturedSectionsVisible !== false &&
@@ -1244,7 +1127,6 @@ const Home = () => {
                               }))}
                               onServiceClick={handleServiceClick}
                               onAddClick={handleAddClick}
-                              onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </Suspense>
                         </motion.div>
@@ -1258,11 +1140,16 @@ const Home = () => {
                             <CTABanner 
                               ctaBanner={{ ...homeContent.ctaBanner, imageUrl: toAssetUrl(homeContent.ctaBanner.imageUrl) }} 
                               onNavigate={(nav) => {
-                                if (nav.targetCategoryId) {
+                                if (nav.slug) {
+                                  const cat = categories.find(c => c.slug === nav.slug || c.id === nav.slug);
+                                  if (cat) {
+                                    handleCategoryClick(cat);
+                                  } else {
+                                    navigate(`/user/service/${nav.slug}`);
+                                  }
+                                } else if (nav.targetCategoryId) {
                                   const cat = categories.find(c => c.id === nav.targetCategoryId || c._id === nav.targetCategoryId);
                                   if (cat) handleCategoryClick(cat);
-                                } else if (nav.slug) {
-                                  navigate(`/${nav.slug}`);
                                 }
                               }} 
                             />
@@ -1307,12 +1194,6 @@ const Home = () => {
                                   slug: card.slug
                                 };
                               }) || []}
-                              onSeeAllClick={() => {
-                                if (section.seeAllTargetCategoryId) {
-                                  const cat = categories.find(c => (c.id === section.seeAllTargetCategoryId || c._id === section.seeAllTargetCategoryId));
-                                  if (cat) handleCategoryClick(cat);
-                                }
-                              }}
                               onServiceClick={(service) => handleServiceClick(service)}
                               onAddClick={handleAddClick}
                             />

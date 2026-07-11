@@ -181,6 +181,7 @@ const updateHomeContent = async (req, res) => {
         title: cta.title || '',
         subtitle: cta.subtitle || '',
         buttonText: cta.buttonText || 'Book Now',
+        imageUrl: cta.imageUrl || '',
         targetCategoryId: cta.targetCategoryId === '' ? null : (cta.targetCategoryId || null),
         slug: cta.slug || ''
       };

@@ -9,6 +9,17 @@ import { LocationPermissionChecker } from './components/common';
 import BidAlertModal from './modules/user/components/booking/BidAlertModal';
 import { initializePushNotifications, setupForegroundNotificationHandler } from './services/pushNotificationService';
 
+// Component to handle scroll to top on route change
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 // Route helper to force light theme on vendor/worker panels
 const ThemeRouteManager = () => {
   const location = useLocation();
@@ -65,6 +76,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ThemeRouteManager />
       <SocketProvider>
         <CityProvider>
