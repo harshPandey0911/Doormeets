@@ -1,4 +1,4 @@
-import api, { apiCache } from './api';
+import api from './api';
 
 /**
  * Booking Service
@@ -10,10 +10,6 @@ export const bookingService = {
   create: async (bookingData) => {
     console.log('[BookingService] Creating booking with payload:', JSON.stringify(bookingData, null, 2));
     const response = await api.post('/users/bookings', bookingData);
-    
-    // Invalidate bookings cache on creation to show fresh data (Rule 5 & 6)
-    apiCache.invalidatePrefix('user:bookings');
-    
     return response.data;
   },
 
@@ -26,27 +22,13 @@ export const bookingService = {
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
 
-    const cacheKey = `user:bookings:${queryParams.toString()}`;
-    const cached = apiCache.get(cacheKey);
-    if (cached) return cached;
-
     const response = await api.get(`/users/bookings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
-    if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 15); // Cache bookings list for 15 seconds (Rule 5)
-    }
     return response.data;
   },
 
   // Get unique past services for Order Again section (highly optimized)
   getPastServices: async () => {
-    const cacheKey = 'user:bookings:past-services';
-    const cached = apiCache.get(cacheKey);
-    if (cached) return cached;
-
     const response = await api.get('/users/bookings/past-services');
-    if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 60); // Cache past services for 60 seconds
-    }
     return response.data;
   },
 
@@ -60,21 +42,18 @@ export const bookingService = {
   // Cancel booking
   cancel: async (id, cancellationReason) => {
     const response = await api.post(`/users/bookings/${id}/cancel`, { cancellationReason });
-    apiCache.invalidatePrefix('user:bookings');
     return response.data;
   },
 
   // Reschedule booking
   reschedule: async (id, rescheduleData) => {
     const response = await api.put(`/users/bookings/${id}/reschedule`, rescheduleData);
-    apiCache.invalidatePrefix('user:bookings');
     return response.data;
   },
 
   // Add review and rating
   addReview: async (id, reviewData) => {
     const response = await api.post(`/users/bookings/${id}/review`, reviewData);
-    apiCache.invalidatePrefix('user:bookings');
     return response.data;
   },
 

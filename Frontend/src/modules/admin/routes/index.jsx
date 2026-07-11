@@ -10,11 +10,9 @@ import LogoLoader from '../../../components/common/LogoLoader';
 // Login page (not lazy loaded for faster initial access)
 import Login from '../pages/login';
 
-// Eager load Dashboard for instant entryway loading (Rule 2)
-import Dashboard from '../pages/Dashboard';
-
 // Lazy load admin pages for code splitting
 const Workers = lazy(() => import('../pages/Workers'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Settings = lazy(() => import('../pages/Settings'));
 const UserCategories = lazy(() => import('../pages/UserCategories'));
 const Users = lazy(() => import('../pages/Users'));

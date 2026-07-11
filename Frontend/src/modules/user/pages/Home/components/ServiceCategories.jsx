@@ -137,12 +137,6 @@ const ServiceCategories = React.memo(({
               <div
                 key={category.id || index}
                 onClick={() => onCategoryClick?.(category)}
-                onMouseEnter={() => {
-                  // Intelligent route prefetching for CategoryPage component chunk (Rule 3)
-                  if (category.slug) {
-                    import('../../PremiumCategoryPage').catch(() => {});
-                  }
-                }}
                 className="snap-start shrink-0 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-[130px] md:w-[160px]"
               >
                 {/* Image card */}

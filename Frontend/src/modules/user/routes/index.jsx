@@ -54,13 +54,8 @@ const lazyLoad = (importFunc) => {
   });
 };
 
-// Eager load Home, Welcome, Login, and Signup for instant entryway loading (Rule 2)
-import Home from '../pages/Home';
-import Welcome from '../pages/Welcome';
-import Login from '../pages/login';
-import Signup from '../pages/signup';
-
-// Lazy load remaining infrequently used pages
+// Lazy load all user pages
+const Home = lazyLoad(() => import('../pages/Home'));
 const Rewards = lazyLoad(() => import('../pages/Rewards'));
 const Account = lazyLoad(() => import('../pages/Account'));
 const Native = lazyLoad(() => import('../pages/Native'));
@@ -81,10 +76,13 @@ const AboutCleaningExpert = lazyLoad(() => import('../pages/AboutCleaningExpert'
 const UpdateProfile = lazyLoad(() => import('../pages/UpdateProfile'));
 const About = lazyLoad(() => import('../pages/About'));
 const Contact = lazyLoad(() => import('../pages/Contact'));
+const Welcome = lazyLoad(() => import('../pages/Welcome'));
 const CategoryPage = lazyLoad(() => import('../pages/PremiumCategoryPage'));
 const CategoriesPage = lazyLoad(() => import('../pages/PremiumCategoriesPage'));
 const BrandPage = lazyLoad(() => import('../pages/PremiumBrandPage'));
 const ServiceDetailPage = lazyLoad(() => import('../pages/PremiumServiceDetailPage'));
+const Login = lazyLoad(() => import('../pages/login'));
+const Signup = lazyLoad(() => import('../pages/signup'));
 const Notifications = lazyLoad(() => import('../pages/Notifications'));
 const HelpSupport = lazyLoad(() => import('../pages/HelpSupport'));
 const CancellationPolicy = lazyLoad(() => import('../pages/CancellationPolicy'));

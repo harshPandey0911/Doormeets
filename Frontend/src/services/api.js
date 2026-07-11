@@ -35,57 +35,28 @@ const getTokenKeys = (url) => {
   return { access: 'accessToken', refresh: 'refreshToken', role: 'user' };
 };
 
-// Track if we're currently refreshing
-let isRefreshing = false;
-let failedQueue = [];
-
-// Request deduplication maps (Rule 5 & 6)
-const pendingRequests = new Map();
-
-// Helper to generate a unique query request key
-const getRequestKey = (config) => {
-  return `${config.method}:${config.url}:${JSON.stringify(config.params || {})}`;
-};
-
-// Request interceptor - Add auth token and deduplicate concurrent GET requests
+// Request interceptor - Add auth token
 api.interceptors.request.use(
   (config) => {
     const { access } = getTokenKeys(config.url);
     const token = sessionStorage.getItem(access) || localStorage.getItem(access);
 
+    // For debugging
+    // console.log(`Request to ${config.url}, using token key: ${access}, token exists: ${!!token}`);
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Deduplicate GET requests to prevent identical concurrent network fetches (Rule 5)
-    if (config.method === 'get') {
-      const requestKey = getRequestKey(config);
-      if (pendingRequests.has(requestKey)) {
-        // Return a custom adapter that resolves when the pending promise resolves
-        config.adapter = async () => {
-          const response = await pendingRequests.get(requestKey);
-          return {
-            ...response,
-            config
-          };
-        };
-      } else {
-        // Create a new deferred promise that gets resolved when response interceptor fires
-        let resolvePromise;
-        const promise = new Promise((resolve) => {
-          resolvePromise = resolve;
-        });
-        promise.resolveSelf = resolvePromise;
-        pendingRequests.set(requestKey, promise);
-      }
-    }
-
     return config;
   },
   (error) => {
     return Promise.reject(error);
   }
 );
+
+// Track if we're currently refreshing
+let isRefreshing = false;
+let failedQueue = [];
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
@@ -98,32 +69,13 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Response interceptor - Handle token refresh and deduplication resolution
+// Response interceptor - Handle token refresh
 api.interceptors.response.use(
   (response) => {
-    // Resolve duplicate concurrent GET requests if tracked (Rule 5)
-    if (response.config?.method === 'get') {
-      const requestKey = getRequestKey(response.config);
-      const pending = pendingRequests.get(requestKey);
-      if (pending && pending.resolveSelf) {
-        pending.resolveSelf(response);
-        pendingRequests.delete(requestKey);
-      }
-    }
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
-    
-    // Resolve error states for deduplicated GET keys
-    if (originalRequest?.method === 'get') {
-      const requestKey = getRequestKey(originalRequest);
-      const pending = pendingRequests.get(requestKey);
-      if (pending && pending.resolveSelf) {
-        pending.resolveSelf(Promise.reject(error));
-        pendingRequests.delete(requestKey);
-      }
-    }
 
     // If error is 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {

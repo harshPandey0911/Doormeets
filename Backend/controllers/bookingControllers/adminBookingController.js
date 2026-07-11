@@ -64,20 +64,25 @@ const getAllBookings = async (req, res) => {
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Get bookings
-    const bookings = await Booking.find(query)
-      .populate('userId', 'name phone email')
-      .populate('vendorId', 'name businessName phone')
-      .populate('serviceId', 'title iconUrl')
-      .populate('categoryId', 'title slug')
-      .populate('workerId', 'name phone')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
+    // Exclude heavy Base64 image fields that bloat document size (workPhotos/reachedPhotos
+    // can be 1MB+ each). The admin list view doesn't need photo data.
+    const heavyFieldsExclusion = '-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails';
 
-    // Get total count
-    const total = await Booking.countDocuments(query);
+    // Run bookings fetch and count in parallel for faster response
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .select(heavyFieldsExclusion)
+        .populate('userId', 'name phone email')
+        .populate('vendorId', 'name businessName phone')
+        .populate('serviceId', 'title iconUrl')
+        .populate('categoryId', 'title slug')
+        .populate('workerId', 'name phone')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Booking.countDocuments(query)
+    ]);
 
     res.status(200).json({
       success: true,

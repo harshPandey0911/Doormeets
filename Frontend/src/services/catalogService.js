@@ -439,7 +439,7 @@ export const publicCatalogService = {
 
     const response = await api.get(`/public/home-data${queryString}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 60); // Cache for 60 seconds to prevent unnecessary reloads (Rule 4 & 5)
+      apiCache.set(cacheKey, response.data, 0); // Disabling cache for instant real-time updates
     }
     return response.data;
   },

@@ -1,39 +1,36 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import LogoLoader from '../components/common/LogoLoader';
 
+// Import module routes
 import UserRoutes from '../modules/user/routes';
+import VendorRoutes from '../modules/vendor/routes';
+import WorkerRoutes from '../modules/vendor/routes/WorkerRoutes';
+import AdminRoutes from '../modules/admin/routes';
+import ShopRoutes from '../modules/shop/routes';
 
-// Lazy load infrequently/rarely accessed management modules (Rule 2 & 3)
-const VendorRoutes = React.lazy(() => import('../modules/vendor/routes'));
-const WorkerRoutes = React.lazy(() => import('../modules/vendor/routes/WorkerRoutes'));
-const AdminRoutes = React.lazy(() => import('../modules/admin/routes'));
-const ShopRoutes = React.lazy(() => import('../modules/shop/routes'));
 
 const AppRoutes = () => {
   return (
-    <Suspense fallback={<LogoLoader />}>
-      <Routes>
-        {/* Landing Page redirect to user */}
-        <Route path="/" element={<Navigate to="/user" replace />} />
-        <Route path="/Home" element={<Navigate to="/user" replace />} />
+    <Routes>
+      {/* Landing Page redirect to user */}
+      <Route path="/" element={<Navigate to="/user" replace />} />
+      <Route path="/Home" element={<Navigate to="/user" replace />} />
 
-        {/* User Routes */}
-        <Route path="/user/*" element={<UserRoutes />} />
+      {/* User Routes */}
+      <Route path="/user/*" element={<UserRoutes />} />
 
-        {/* Vendor Routes */}
-        <Route path="/vendor/*" element={<VendorRoutes />} />
+      {/* Vendor Routes */}
+      <Route path="/vendor/*" element={<VendorRoutes />} />
 
-        {/* Worker Routes */}
-        <Route path="/worker/*" element={<WorkerRoutes />} />
+      {/* Worker Routes */}
+      <Route path="/worker/*" element={<WorkerRoutes />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin/*" element={<AdminRoutes />} />
+      {/* Admin Routes */}
+      <Route path="/admin/*" element={<AdminRoutes />} />
 
-        {/* Shop Owner Routes */}
-        <Route path="/shop/*" element={<ShopRoutes />} />
-      </Routes>
-    </Suspense>
+      {/* Shop Owner Routes */}
+      <Route path="/shop/*" element={<ShopRoutes />} />
+    </Routes>
   );
 };
 
