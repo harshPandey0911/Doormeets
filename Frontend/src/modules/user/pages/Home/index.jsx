@@ -818,10 +818,11 @@ const Home = () => {
                             style={{ backgroundColor: 'var(--background)' }}
                           >
                             <ServiceCategories
-                              categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon')}
+                              categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)}
                               onCategoryClick={handleCategoryClick}
                               title="Categories"
                               subtitle="Premium Home Services"
+                              showSeeAll={false}
                               onSeeAllClick={() => navigate('/user/categories')}
                             />
                           </motion.section>

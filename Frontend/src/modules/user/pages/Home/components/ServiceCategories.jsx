@@ -6,6 +6,7 @@ const ServiceCategories = React.memo(({
   categories, 
   onCategoryClick, 
   title = "Categories",
+  showSeeAll = true,
 }) => {
   const navigate = useNavigate();
   const containerRef = useRef(null);
@@ -85,12 +86,14 @@ const ServiceCategories = React.memo(({
         >
           {title}
         </h2>
-        <button
-          onClick={() => navigate('/user/categories')}
-          className="text-[13px] font-semibold text-[#B33A35] hover:underline shrink-0"
-        >
-          See all
-        </button>
+        {showSeeAll && (
+          <button
+            onClick={() => navigate('/user/categories')}
+            className="text-[13px] font-semibold text-[#B33A35] hover:underline shrink-0"
+          >
+            See all
+          </button>
+        )}
       </div>
 
       {/* Horizontal scroll carousel with arrow buttons */}
