@@ -553,6 +553,69 @@ async function sendBroadcastToAllVendors(payload) {
   }
 }
 
+/**
+ * Send broadcast push notification to ALL workers
+ * Fetches all active workers with FCM tokens and sends in batches of 500
+ * @param {Object} payload - Notification payload (title, body, imageUrl, actionUrl, data)
+ * @returns {Promise<Object>} - { totalWorkers, totalTokens, successCount, failureCount }
+ */
+async function sendBroadcastToAllWorkers(payload) {
+  try {
+    const mongoose = require('mongoose');
+    const Worker = mongoose.model('Worker');
+    console.log('[FCM Broadcast] Fetching all workers with FCM tokens...');
+
+    const workers = await Worker.find({
+      status: 'active',
+      $or: [
+        { fcmTokens: { $exists: true, $not: { $size: 0 } } },
+        { fcmTokenMobile: { $exists: true, $not: { $size: 0 } } }
+      ]
+    }).select('fcmTokens fcmTokenMobile name');
+
+    if (!workers || workers.length === 0) {
+      console.log('[FCM Broadcast] No workers with FCM tokens found');
+      return { totalWorkers: 0, totalTokens: 0, successCount: 0, failureCount: 0 };
+    }
+
+    const allTokens = [];
+    workers.forEach(w => {
+      if (w.fcmTokens) allTokens.push(...w.fcmTokens);
+      if (w.fcmTokenMobile) allTokens.push(...w.fcmTokenMobile);
+    });
+
+    const uniqueTokens = [...new Set(allTokens.filter(t => t && t.trim()))];
+    console.log(`[FCM Broadcast] Found ${workers.length} workers, ${uniqueTokens.length} unique tokens`);
+
+    const BATCH_SIZE = 500;
+    let totalSuccess = 0;
+    let totalFailure = 0;
+
+    for (let i = 0; i < uniqueTokens.length; i += BATCH_SIZE) {
+      const batch = uniqueTokens.slice(i, i + BATCH_SIZE);
+      try {
+        const result = await sendPushNotification(batch, payload);
+        totalSuccess += result.successCount || 0;
+        totalFailure += result.failureCount || 0;
+      } catch (batchError) {
+        console.error(`[FCM Broadcast] Worker batch failed:`, batchError.message);
+        totalFailure += batch.length;
+      }
+    }
+
+    console.log(`[FCM Broadcast Workers] ✅ Done — Success: ${totalSuccess}, Failed: ${totalFailure}`);
+    return {
+      totalWorkers: workers.length,
+      totalTokens: uniqueTokens.length,
+      successCount: totalSuccess,
+      failureCount: totalFailure
+    };
+  } catch (error) {
+    console.error('[FCM Broadcast] ❌ Error in sendBroadcastToAllWorkers:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   sendPushNotification,
   sendNotificationToUser,
@@ -560,5 +623,6 @@ module.exports = {
   sendNotificationToWorker,
   sendNotificationToAdmin,
   sendBroadcastToAllUsers,
-  sendBroadcastToAllVendors
+  sendBroadcastToAllVendors,
+  sendBroadcastToAllWorkers
 };

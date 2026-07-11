@@ -203,6 +203,8 @@ const TARGET_OPTIONS = [
   { id: 'specific_user', label: 'Specific User', icon: FiUser, color: 'indigo', desc: 'Ek specific user ko' },
   { id: 'all_vendors', label: 'All Vendors', icon: FiUsers, color: 'purple', desc: 'Sabhi vendors/partners ko' },
   { id: 'specific_vendor', label: 'Specific Vendor', icon: FiUserCheck, color: 'violet', desc: 'Ek specific vendor ko' },
+  { id: 'all_workers', label: 'All Workers', icon: FiUsers, color: 'teal', desc: 'Sabhi active workers ko' },
+  { id: 'specific_worker', label: 'Specific Worker', icon: FiUser, color: 'emerald', desc: 'Ek specific worker ko' },
 ];
 
 // ─── Search Dropdown Component ────────────────────────────────────────────────
@@ -372,10 +374,19 @@ const Notifications = () => {
     } catch (e) { return null; }
   });
 
+  const [selectedWorker, setSelectedWorker] = useState(() => {
+    try {
+      const saved = localStorage.getItem('admin_notif_selected_worker');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) { return null; }
+  });
+
   const [userResults, setUserResults] = useState([]);
   const [vendorResults, setVendorResults] = useState([]);
+  const [workerResults, setWorkerResults] = useState([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
   const [vendorSearchLoading, setVendorSearchLoading] = useState(false);
+  const [workerSearchLoading, setWorkerSearchLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null);
 
@@ -461,6 +472,14 @@ const Notifications = () => {
       localStorage.removeItem('admin_notif_selected_vendor');
     }
   }, [selectedVendor]);
+
+  useEffect(() => {
+    if (selectedWorker) {
+      localStorage.setItem('admin_notif_selected_worker', JSON.stringify(selectedWorker));
+    } else {
+      localStorage.removeItem('admin_notif_selected_worker');
+    }
+  }, [selectedWorker]);
 
   // ── History State ──
   const [history, setHistory] = useState([]);
@@ -569,12 +588,23 @@ const Notifications = () => {
     }
   }, []);
 
+  const searchWorkers = useCallback(async (q) => {
+    try {
+      setWorkerSearchLoading(true);
+      const res = await api.get('/admin/notifications/search-workers', { params: { q } });
+      if (res.data.success) setWorkerResults(res.data.data || []);
+    } catch (e) { /* ignore */ } finally {
+      setWorkerSearchLoading(false);
+    }
+  }, []);
+
   // ─── Send notification ──
   const handleSend = async () => {
     if (!form.title.trim()) { toast.error('Title required hai'); return; }
     if (!form.body.trim()) { toast.error('Message required hai'); return; }
     if (target === 'specific_user' && !selectedUser) { toast.error('User select karo'); return; }
     if (target === 'specific_vendor' && !selectedVendor) { toast.error('Vendor select karo'); return; }
+    if (target === 'specific_worker' && !selectedWorker) { toast.error('Worker select karo'); return; }
 
     setSending(true);
     setSendResult(null);
@@ -601,6 +631,12 @@ const Notifications = () => {
         case 'specific_vendor':
           res = await api.post('/admin/notifications/send-to-vendor', { ...payload, vendorId: selectedVendor._id });
           break;
+        case 'all_workers':
+          res = await api.post('/admin/notifications/send-to-all-workers', payload);
+          break;
+        case 'specific_worker':
+          res = await api.post('/admin/notifications/send-to-worker', { ...payload, workerId: selectedWorker._id });
+          break;
         default:
           break;
       }
@@ -613,9 +649,11 @@ const Notifications = () => {
         setForm(clearedForm);
         setSelectedUser(null);
         setSelectedVendor(null);
+        setSelectedWorker(null);
         localStorage.removeItem('admin_notif_form');
         localStorage.removeItem('admin_notif_selected_user');
         localStorage.removeItem('admin_notif_selected_vendor');
+        localStorage.removeItem('admin_notif_selected_worker');
       } else {
     toast.error(res.data.message || 'Something went wrong');
       }
@@ -723,7 +761,7 @@ const Notifications = () => {
                   <FiUsers className="text-purple-500" />
                   Step 1: Target Chunho
                 </h2>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {TARGET_OPTIONS.map(opt => {
                     const Icon = opt.icon;
                     const colorMap = {
@@ -731,12 +769,19 @@ const Notifications = () => {
                       indigo: 'border-indigo-200 bg-indigo-50 text-indigo-700',
                       purple: 'border-purple-200 bg-purple-50 text-purple-700',
                       violet: 'border-violet-200 bg-violet-50 text-violet-700',
+                      teal: 'border-teal-200 bg-teal-50 text-teal-700',
+                      emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
                     };
                     const isSelected = target === opt.id;
                     return (
                       <button
                         key={opt.id}
-                        onClick={() => { setTarget(opt.id); setSelectedUser(null); setSelectedVendor(null); }}
+                        onClick={() => {
+                          setTarget(opt.id);
+                          setSelectedUser(null);
+                          setSelectedVendor(null);
+                          setSelectedWorker(null);
+                        }}
                         className={`p-3 rounded-xl border-2 text-left transition-all ${
                           isSelected
                             ? `${colorMap[opt.color]} border-current`
@@ -751,7 +796,7 @@ const Notifications = () => {
                   })}
                 </div>
 
-                {/* Specific User/Vendor Search */}
+                {/* Specific User/Vendor/Worker Search */}
                 <AnimatePresence>
                   {target === 'specific_user' && (
                     <motion.div
@@ -790,6 +835,26 @@ const Notifications = () => {
                         selected={selectedVendor}
                         onClear={() => setSelectedVendor(null)}
                         type="vendor"
+                      />
+                    </motion.div>
+                  )}
+                  {target === 'specific_worker' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3"
+                    >
+                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Worker Search karo</label>
+                      <SearchDropdown
+                        placeholder="Worker naam ya phone number..."
+                        onSearch={searchWorkers}
+                        onSelect={setSelectedWorker}
+                        results={workerResults}
+                        loading={workerSearchLoading}
+                        selected={selectedWorker}
+                        onClear={() => setSelectedWorker(null)}
+                        type="worker"
                       />
                     </motion.div>
                   )}
@@ -921,8 +986,10 @@ const Notifications = () => {
                     Notification Bhejo
                     {target === 'all_users' && ' → All Users'}
                     {target === 'all_vendors' && ' → All Vendors'}
+                    {target === 'all_workers' && ' → All Workers'}
                     {target === 'specific_user' && selectedUser && ` → ${selectedUser.name}`}
                     {target === 'specific_vendor' && selectedVendor && ` → ${selectedVendor.businessName || selectedVendor.name}`}
+                    {target === 'specific_worker' && selectedWorker && ` → ${selectedWorker.name}`}
                   </>
                 )}
               </button>
