@@ -64,6 +64,7 @@ const getAllCategories = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isGroupCategory: cat.isGroupCategory || false,
         mappedCategories: (cat.mappedCategories || []).map(id => (id && typeof id === 'object') ? id.toString() : String(id)),
+        sacCode: cat.sacCode || null,
         createdAt: cat.createdAt,
         updatedAt: cat.updatedAt
       }))
@@ -125,6 +126,7 @@ const getCategoryById = async (req, res) => {
         categoryType: category.categoryType,
         vendorId: category.vendorId,
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
+        sacCode: category.sacCode || null,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }
@@ -153,6 +155,15 @@ const createCategory = async (req, res) => {
         errors: errors.array()
       });
     }
+
+    // Intercept if City Admin
+    const { handleCityAdminApproval } = require('../../utils/approvalInterceptor');
+    const isIntercepted = await handleCityAdminApproval(req, res, {
+      requestType: 'category',
+      proposedData: req.body,
+      cityId: req.body.cityIds && req.body.cityIds[0]
+    });
+    if (isIntercepted) return;
 
     const {
       title,
@@ -183,7 +194,8 @@ const createCategory = async (req, res) => {
       categoryType,
       isGroupCategory,
       mappedCategories,
-      minWalletBalance
+      minWalletBalance,
+      sacCode
     } = req.body;
 
     console.log('Creating category with payload:', req.body);
@@ -253,6 +265,7 @@ const createCategory = async (req, res) => {
         existingCategory.enablePricingMatrix = enablePricingMatrix !== undefined ? Boolean(enablePricingMatrix) : true;
         existingCategory.createdBy = req.user.id;
         existingCategory.minWalletBalance = minWalletBalance !== undefined ? Number(minWalletBalance) : 0;
+        if (sacCode !== undefined) existingCategory.sacCode = sacCode || null;
         
         await existingCategory.save();
         
@@ -277,6 +290,7 @@ const createCategory = async (req, res) => {
             status: existingCategory.status,
             isPopular: existingCategory.isPopular,
             categoryType: existingCategory.categoryType,
+            sacCode: existingCategory.sacCode || null,
             createdAt: existingCategory.createdAt,
             updatedAt: existingCategory.updatedAt,
             minWalletBalance: existingCategory.minWalletBalance
@@ -321,7 +335,8 @@ const createCategory = async (req, res) => {
       createdBy: req.user.id,
       isGroupCategory: isGroupCategory !== undefined ? Boolean(isGroupCategory) : false,
       mappedCategories: Array.isArray(mappedCategories) ? mappedCategories : [],
-      minWalletBalance: minWalletBalance !== undefined ? Number(minWalletBalance) : 0
+      minWalletBalance: minWalletBalance !== undefined ? Number(minWalletBalance) : 0,
+      sacCode: sacCode || null
     });
 
     res.status(201).json({
@@ -356,6 +371,7 @@ const createCategory = async (req, res) => {
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         isGroupCategory: category.isGroupCategory || false,
         mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
+        sacCode: category.sacCode || null,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }
@@ -393,6 +409,15 @@ const updateCategory = async (req, res) => {
       });
     }
 
+    // Intercept if City Admin
+    const { handleCityAdminApproval } = require('../../utils/approvalInterceptor');
+    const isIntercepted = await handleCityAdminApproval(req, res, {
+      requestType: 'category',
+      proposedData: { categoryId: req.params.id, ...req.body },
+      cityId: req.body.cityIds && req.body.cityIds[0]
+    });
+    if (isIntercepted) return;
+
     const { id } = req.params;
     const {
       title,
@@ -423,7 +448,8 @@ const updateCategory = async (req, res) => {
       enablePricingMatrix,
       isGroupCategory,
       mappedCategories,
-      minWalletBalance
+      minWalletBalance,
+      sacCode
     } = req.body;
 
     const category = await Category.findById(id);
@@ -496,6 +522,7 @@ const updateCategory = async (req, res) => {
     if (enableMultiVisit !== undefined) category.enableMultiVisit = Boolean(enableMultiVisit);
     if (enablePricingMatrix !== undefined) category.enablePricingMatrix = Boolean(enablePricingMatrix);
     if (minWalletBalance !== undefined) category.minWalletBalance = Number(minWalletBalance) || 0;
+    if (sacCode !== undefined) category.sacCode = sacCode || null;
 
     if (updateCityIds !== undefined) {
       category.cityIds = updateCityIds;
@@ -543,6 +570,7 @@ const updateCategory = async (req, res) => {
         isGroupCategory: category.isGroupCategory || false,
         mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
         minWalletBalance: category.minWalletBalance || 0,
+        sacCode: category.sacCode || null,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
       }

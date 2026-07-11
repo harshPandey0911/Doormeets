@@ -54,7 +54,8 @@ const createBooking = async (req, res) => {
       dynamicFields,
       redeemLoyaltyPoints,
       applyWallet,
-      walletAmountRequested
+      walletAmountRequested,
+      userGstNumber
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -523,7 +524,8 @@ const createBooking = async (req, res) => {
       biddingDeadline: biddingDeadline,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes search limit (sequential takes time)
       dynamicFields: dynamicFields || [],
-      walletAmountApplied: walletAmountUsed
+      walletAmountApplied: walletAmountUsed,
+      userGstNumber: userGstNumber ? String(userGstNumber).trim().toUpperCase() : null
     });
 
     // Generate visits for this booking based on its workflow configuration

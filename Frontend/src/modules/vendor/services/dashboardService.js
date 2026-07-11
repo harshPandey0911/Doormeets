@@ -20,6 +20,20 @@ export const vendorDashboardService = {
   },
 
   /**
+   * Get active banners/media for dashboard
+   * @returns {Promise<Object>} Active banners
+   */
+  getDashboardBanners: async () => {
+    try {
+      const response = await api.get('/vendors/dashboard/banners');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard banners:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get revenue analytics
    * @param {string} period - 'daily', 'weekly', or 'monthly'
    * @returns {Promise<Object>} Revenue analytics data

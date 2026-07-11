@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiImage, FiPlayCircle, FiPlus, FiEdit2, FiTrash2,
-  FiLoader, FiRefreshCw, FiX, FiSave, FiYoutube, FiCheckCircle, FiMonitor, FiUpload
+  FiGrid, FiPlus, FiTrash2, FiSave, FiEdit2, FiImage, FiPlayCircle, FiLoader, FiCheckCircle
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import vendorDashboardService from '../../services/vendorDashboardService';
 import { categoryService, subCategoryService, brandService } from '../../../../services/catalogService';
+import Modal from '../../components/Modal';
+import CardShell from '../UserCategories/components/CardShell';
+import ToggleSwitch from '../UserCategories/components/ToggleSwitch';
 
 const LINK_TYPES = [
   { key: 'none', label: 'No Action' },
@@ -16,17 +18,20 @@ const LINK_TYPES = [
 ];
 
 const VendorDashboardManager = () => {
+
   const [banners, setBanners] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editItem, setEditItem] = useState(null);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Form state
+  // Form state matching catalog style exactly
   const [form, setForm] = useState({
     title: '',
     subtitle: '',
@@ -56,7 +61,7 @@ const VendorDashboardManager = () => {
       if (catRes.success) setCategories(catRes.categories || []);
       if (subRes.success) setSubCategories(subRes.data || subRes.subCategories || []);
     } catch {
-      toast.error('Failed to load dashboard media and categories');
+      toast.error('Failed to load dashboard banners');
     } finally {
       setLoading(false);
     }
@@ -66,8 +71,8 @@ const VendorDashboardManager = () => {
     loadData();
   }, [loadData]);
 
-  const openAdd = () => {
-    setEditItem(null);
+  const resetForm = () => {
+    setEditingId(null);
     setForm({
       title: '',
       subtitle: '',
@@ -83,35 +88,60 @@ const VendorDashboardManager = () => {
       isActive: true,
       order: 0
     });
-    setShowForm(true);
+    setIsModalOpen(false);
+  };
+
+  const openAdd = () => {
+    resetForm();
+    setIsModalOpen(true);
   };
 
   const openEdit = (item) => {
-    setEditItem(item);
+    setEditingId(item._id);
     setForm({
       ...item,
       targetCategoryId: item.targetCategoryId || '',
       targetSubCategoryId: item.targetSubCategoryId || ''
     });
-    setShowForm(true);
+    setIsModalOpen(true);
   };
 
-  const handleFileUpload = async (e, field) => {
-    const file = e.target.files[0];
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     try {
       setUploading(true);
-      const res = await brandService.uploadImage(file, 'vendor-dashboard');
-      if (res.success) {
-        setForm(f => ({ ...f, [field]: res.imageUrl }));
-        toast.success('Media uploaded successfully!');
+      setUploadProgress(10);
+      const isVideo = file.type.startsWith('video');
+      const response = await brandService.uploadImage(file, isVideo ? 'videos' : 'banners', (progress) => {
+        setUploadProgress(progress || 40);
+      });
+      if (response.success) {
+        if (isVideo) {
+          setForm(p => ({
+            ...p,
+            mediaType: 'video',
+            videoUrl: response.imageUrl,
+            videoSource: 'cloudinary',
+            imageUrl: ''
+          }));
+        } else {
+          setForm(p => ({
+            ...p,
+            mediaType: 'image',
+            imageUrl: response.imageUrl,
+            videoUrl: ''
+          }));
+        }
+        toast.success("File uploaded successfully!");
       } else {
-        toast.error('Upload failed');
+        toast.error("Upload failed");
       }
     } catch (err) {
-      toast.error('Error uploading file');
+      toast.error("Error uploading file");
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -125,420 +155,142 @@ const VendorDashboardManager = () => {
         linkUrl: form.linkType === 'url' ? form.linkUrl : ''
       };
 
-      const res = editItem 
-        ? await vendorDashboardService.updateBanner(editItem._id, payload) 
+      const res = editingId 
+        ? await vendorDashboardService.updateBanner(editingId, payload) 
         : await vendorDashboardService.addBanner(payload);
 
       if (res?.success) {
-        toast.success(editItem ? 'Media item updated' : 'Media item added');
-        setShowForm(false);
+        toast.success(editingId ? 'Banner updated' : 'Banner added');
+        resetForm();
         await loadData();
       } else {
         toast.error(res?.message || 'Save failed');
       }
     } catch (err) {
-      toast.error(err?.message || 'Error saving media settings');
+      toast.error('Error saving banner settings');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this media item?')) return;
+    if (!window.confirm('Delete this banner?')) return;
     try {
-      setDeletingId(id);
       const res = await vendorDashboardService.deleteBanner(id);
       if (res?.success) {
-        toast.success('Media item deleted');
+        toast.success('Banner deleted');
         await loadData();
       } else {
         toast.error('Delete failed');
       }
     } catch {
-      toast.error('Error deleting item');
-    } finally {
-      setDeletingId(null);
+      toast.error('Error deleting banner');
     }
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      {/* Header */}
-      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center border border-orange-100 shrink-0">
-            <FiMonitor className="w-5 h-5 text-orange-600" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-gray-800">Dashboard Management</h2>
-            <p className="text-[10px] text-gray-400 mt-0.5">Publish and manage media banners, video instructions, and category highlights for vendors</p>
-          </div>
-        </div>
-        <button
-          onClick={loadData}
-          className="p-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-          title="Refresh"
-        >
-          <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Table/List Header */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-          <div className="flex items-center gap-2">
-            <FiImage className="w-4 h-4 text-gray-500" />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Dashboard Banners &amp; Media</span>
-            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700">{banners.length}</span>
-          </div>
-          {!showForm && (
-            <button
-              onClick={openAdd}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[11px] font-bold rounded-lg transition-colors shadow-sm"
-            >
-              <FiPlus className="w-3.5 h-3.5" /> Add Banner / Video
-            </button>
-          )}
+    <div className="space-y-6">
+      {/* Home Banners Shell */}
+      <CardShell icon={FiGrid} title="Vendor Home Banners">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-500">Add, edit, or remove banner media shown on vendor app homepage</div>
+          <button
+            type="button"
+            onClick={openAdd}
+            className="px-4 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+            style={{ background: 'linear-gradient(to right, #2874F0, #1e5fd4)' }}
+          >
+            <FiPlus className="w-4 h-4" />
+            <span>Add Banner</span>
+          </button>
         </div>
 
-        {/* Add/Edit Form */}
-        <AnimatePresence>
-          {showForm && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-b border-gray-100 overflow-hidden bg-gray-50/30"
-            >
-              <div className="p-5 border-b border-gray-100 space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                  <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                    {editItem ? 'Edit Media Banner' : 'Create Media Banner'}
-                  </h3>
-                  <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
-                    <FiX className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Form fields */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Media Type Select */}
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Media Format</label>
-                    <select
-                      value={form.mediaType}
-                      onChange={e => setForm(f => ({ ...f, mediaType: e.target.value }))}
-                      className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white"
-                    >
-                      <option value="image">🖼️ Image Banner</option>
-                      <option value="video">🎥 Video Guide / Promo</option>
-                    </select>
-                  </div>
-
-                  <Field label="Banner Title" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder="Title shown on vendor app..." />
-                  <Field label="Subtitle / Description" value={form.subtitle} onChange={v => setForm(f => ({ ...f, subtitle: v }))} placeholder="Subtitle description text..." />
-
-                  {/* Conditionally render fields based on Media Format */}
-                  {form.mediaType === 'image' ? (
-                    <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Image Banner Fields */}
-                      <div className="col-span-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Banner Image</label>
-                        <div className="mt-1.5 flex items-center gap-3">
-                          <input
-                            type="text"
-                            value={form.imageUrl}
-                            onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
-                            placeholder="Paste banner image URL here..."
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white"
-                          />
-                          <label className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors text-xs shadow-sm whitespace-nowrap">
-                            <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'imageUrl')} />
-                            <FiUpload className="w-3.5 h-3.5" />
-                            {uploading ? 'Uploading...' : 'Upload Image'}
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Video Banner Fields */}
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Video Hosting</label>
-                        <select
-                          value={form.videoSource}
-                          onChange={e => setForm(f => ({ ...f, videoSource: e.target.value }))}
-                          className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white"
-                        >
-                          <option value="youtube">YouTube Embed Link</option>
-                          <option value="cloudinary">Cloudinary Upload</option>
-                          <option value="external">Direct Video Link URL</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                          {form.videoSource === 'youtube' ? 'YouTube Video ID / URL' : 'Direct Video URL'}
-                        </label>
-                        <div className="mt-1 flex gap-2">
-                          <input
-                            type="text"
-                            value={form.videoUrl}
-                            onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
-                            placeholder={form.videoSource === 'youtube' ? 'e.g. dQw4w9WgXcQ' : 'https://...'}
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white"
-                          />
-                          {form.videoSource !== 'youtube' && (
-                            <label className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors text-xs shadow-sm whitespace-nowrap">
-                              <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, 'videoUrl')} />
-                              <FiUpload className="w-3.5 h-3.5" />
-                              {uploading ? 'Uploading...' : 'Upload Video'}
-                            </label>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Video Thumbnail (Optional) */}
-                      <div className="col-span-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Video Thumbnail Image (Optional)</label>
-                        <div className="mt-1.5 flex items-center gap-3">
-                          <input
-                            type="text"
-                            value={form.thumbnailUrl}
-                            onChange={e => setForm(f => ({ ...f, thumbnailUrl: e.target.value }))}
-                            placeholder="Paste thumbnail image URL here..."
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white"
-                          />
-                          <label className="cursor-pointer flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors text-xs shadow-sm whitespace-nowrap">
-                            <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'thumbnailUrl')} />
-                            <FiUpload className="w-3.5 h-3.5" />
-                            {uploading ? 'Uploading...' : 'Upload Image'}
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Navigation Targets (Categories & Subcategories) */}
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">On Tap Navigation Target</label>
-                    <select
-                      value={form.linkType}
-                      onChange={e => setForm(f => ({ ...f, linkType: e.target.value }))}
-                      className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white"
-                    >
-                      {LINK_TYPES.map(t => (
-                        <option key={t.key} value={t.key}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Conditional inputs depending on LinkType */}
-                  {form.linkType === 'url' && (
-                    <Field label="Custom Action URL Path" value={form.linkUrl} onChange={v => setForm(f => ({ ...f, linkUrl: v }))} placeholder="https://... or app://screen" />
-                  )}
-
-                  {form.linkType === 'category' && (
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Select Category Link</label>
-                      <select
-                        value={form.targetCategoryId}
-                        onChange={e => setForm(f => ({ ...f, targetCategoryId: e.target.value }))}
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white cursor-pointer"
-                      >
-                        <option value="">-- Choose Category --</option>
-                        {categories.map(c => (
-                          <option key={c.id || c._id} value={c.id || c._id}>{c.title}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {form.linkType === 'subcategory' && (
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Select Subcategory Link</label>
-                      <select
-                        value={form.targetSubCategoryId}
-                        onChange={e => setForm(f => ({ ...f, targetSubCategoryId: e.target.value }))}
-                        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white cursor-pointer"
-                      >
-                        <option value="">-- Choose Subcategory --</option>
-                        {subCategories.map(s => (
-                          <option key={s._id || s.id} value={s._id || s.id}>{s.title}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Common Banner Fields */}
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Background</label>
-                      <input
-                        type="color"
-                        value={form.bgColor}
-                        onChange={e => setForm(f => ({ ...f, bgColor: e.target.value }))}
-                        className="mt-1 w-12 h-8 rounded border border-gray-200 cursor-pointer"
-                      />
-                    </div>
-                    <Field label="Order" value={form.order} onChange={v => setForm(f => ({ ...f, order: Number(v) }))} type="number" />
-                  </div>
-
-                  <ToggleField label="Visibility Status" value={form.isActive} onChange={v => setForm(f => ({ ...f, isActive: v }))} />
-                </div>
-
-                {/* Previews */}
-                {form.mediaType === 'image' && form.imageUrl && (
-                  <div className="mt-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Banner Image Preview</label>
-                    <div className="mt-1 rounded-xl overflow-hidden max-h-36 flex items-center justify-center border border-gray-100" style={{ backgroundColor: form.bgColor }}>
-                      <img src={form.imageUrl} alt="preview" className="h-full max-h-36 object-contain w-full" onError={e => { e.target.style.display = 'none'; }} />
-                    </div>
-                  </div>
-                )}
-
-                {form.mediaType === 'video' && form.videoSource === 'youtube' && form.videoUrl && (
-                  <div className="mt-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">YouTube Preview</label>
-                    <div className="mt-1 rounded-xl overflow-hidden aspect-video bg-black max-w-md">
-                      <iframe
-                        className="w-full h-full"
-                        src={`https://www.youtube.com/embed/${form.videoUrl.replace('https://www.youtube.com/watch?v=', '').replace('https://youtu.be/', '')}`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen title="preview"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Submit Action */}
-                <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                  <button
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-1.5 px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-60 shadow-sm"
-                  >
-                    {saving ? <FiLoader className="w-3.5 h-3.5 animate-spin" /> : <FiSave className="w-3.5 h-3.5" />}
-                    Save Media Changes
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Media List Table */}
         {loading ? (
-          <div className="p-12 text-center">
-            <FiLoader className="w-6 h-6 animate-spin text-orange-500 mx-auto" />
-            <p className="text-xs text-gray-400 mt-2">Fetching records...</p>
+          <div className="text-center py-12">
+            <FiLoader className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+            <p className="text-xs text-gray-400 mt-2">Loading banners...</p>
           </div>
         ) : banners.length === 0 ? (
-          <div className="p-12 text-center bg-gray-50/20">
-            <FiCheckCircle className="w-8 h-8 text-green-300 mx-auto mb-2" />
-            <p className="text-xs font-bold text-gray-600">No media banners created</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Click "Add Banner / Video" button above to publish one.</p>
+          <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+            <p className="text-gray-500">No home banners added yet.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
-                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Preview &amp; Info</th>
-                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Media Format</th>
-                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Link Destination</th>
-                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Display Order</th>
-                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+          <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-24">Media</th>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Format</th>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Title Text</th>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Redirect Target</th>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Order</th>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-32 text-center">Status</th>
+                  <th className="py-4 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-24 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {banners.map(item => (
-                  <tr key={item._id} className="hover:bg-gray-50 transition-colors">
-                    {/* Media Preview / Info */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {item.mediaType === 'image' ? (
-                          item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.title} className="w-12 h-8 rounded object-cover border border-gray-100 bg-gray-100" />
-                          ) : (
-                            <div className="w-12 h-8 rounded border border-dashed border-gray-200 flex items-center justify-center text-[8px] text-gray-400 bg-gray-50">No Img</div>
-                          )
-                        ) : (
-                          item.thumbnailUrl ? (
-                            <img src={item.thumbnailUrl} alt={item.title} className="w-12 h-8 rounded object-cover border border-gray-100 bg-gray-100" />
-                          ) : (
-                            <div className="w-12 h-8 rounded flex items-center justify-center bg-gray-900 border border-gray-800 text-[8px] text-red-500 font-bold uppercase shrink-0">Video</div>
-                          )
-                        )}
-                        <div>
-                          <p className="font-bold text-gray-900 text-xs">{item.title || 'Untitled Banner'}</p>
-                          <p className="text-[10px] text-gray-400 max-w-[200px] truncate">{item.subtitle || '—'}</p>
+              <tbody className="divide-y divide-gray-100">
+                {banners.map((b, idx) => (
+                  <tr key={b._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-4 px-4 text-sm font-semibold text-gray-600">{idx + 1}</td>
+                    <td className="py-4 px-4">
+                      {b.mediaType === 'video' ? (
+                        <div className="h-14 w-14 bg-gray-900 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden relative">
+                          <FiPlayCircle className="w-6 h-6 text-white absolute" />
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Media Type */}
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-semibold text-gray-600 capitalize">
-                        {item.mediaType === 'image' ? '🖼️ Image' : '🎥 Video'}
-                      </span>
-                    </td>
-
-                    {/* Target Link destination */}
-                    <td className="px-4 py-3">
-                      {item.linkType === 'none' && <span className="text-xs text-gray-400 italic">None</span>}
-                      {item.linkType === 'url' && <span className="text-xs font-semibold text-blue-600 truncate max-w-[120px] inline-block">{item.linkUrl || 'URL Link'}</span>}
-                      {item.linkType === 'category' && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[9px] font-bold">
-                          📂 {categories.find(c => (c.id || c._id) === item.targetCategoryId)?.title || 'Category Link'}
-                        </span>
-                      )}
-                      {item.linkType === 'subcategory' && (
-                        <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-100 rounded text-[9px] font-bold">
-                          🏷️ {subCategories.find(s => (s.id || s._id) === item.targetSubCategoryId)?.title || 'Subcategory Link'}
-                        </span>
+                      ) : b.imageUrl ? (
+                        <img src={b.imageUrl} alt="Banner" className="h-14 w-14 object-cover rounded-lg border border-gray-200" />
+                      ) : (
+                        <div className="h-14 w-14 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center text-xs text-gray-400">No img</div>
                       )}
                     </td>
-
-                    {/* Order */}
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-gray-600 font-semibold">{item.order ?? 0}</span>
+                    <td className="py-4 px-4 text-sm text-gray-600 capitalize">
+                      {b.mediaType === 'video' ? '🎥 Video' : '🖼️ Image'}
                     </td>
-
-                    {/* Status */}
-                    <td className="px-4 py-3">
+                    <td className="py-4 px-4">
+                      <div className="font-bold text-gray-900 text-sm">{b.title || "—"}</div>
+                      <div className="text-xs text-gray-400">{b.subtitle}</div>
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-600">
+                      {b.linkType === 'category' ? (
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold border border-blue-100">
+                          📂 {categories.find(c => (c.id || c._id) === b.targetCategoryId)?.title || 'Category'}
+                        </span>
+                      ) : b.linkType === 'subcategory' ? (
+                        <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold border border-purple-100">
+                          🏷️ {subCategories.find(s => (s.id || s._id) === b.targetSubCategoryId)?.title || 'Subcategory'}
+                        </span>
+                      ) : b.linkType === 'url' ? (
+                        <span className="text-xs font-semibold text-blue-500 truncate max-w-[120px] inline-block">{b.linkUrl}</span>
+                      ) : (
+                        <span className="text-gray-400 italic">None</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-sm font-semibold text-gray-600">{b.order ?? 0}</td>
+                    <td className="py-4 px-4 text-center">
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                        item.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        b.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500'
                       }`}>
-                        {item.isActive ? 'Active' : 'Hidden'}
+                        {b.isActive ? 'Visible' : 'Hidden'}
                       </span>
                     </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => openEdit(item)}
-                          className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          type="button"
+                          onClick={() => openEdit(b)}
+                          className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                           title="Edit"
                         >
-                          <FiEdit2 className="w-3.5 h-3.5" />
+                          <FiEdit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(item._id)}
-                          disabled={deletingId === item._id}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          type="button"
+                          onClick={() => handleDelete(b._id)}
+                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                           title="Delete"
                         >
-                          {deletingId === item._id ? <FiLoader className="w-3.5 h-3.5 animate-spin" /> : <FiTrash2 className="w-3.5 h-3.5" />}
+                          <FiTrash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -548,49 +300,193 @@ const VendorDashboardManager = () => {
             </table>
           </div>
         )}
-      </div>
-    </motion.div>
+      </CardShell>
+
+      {/* Modal Form styled exactly like User Catalog Add Banner Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={resetForm}
+        title={editingId ? "Edit Banner" : "Add Banner"}
+      >
+        <div className="space-y-4">
+          {/* File Picker */}
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Image / Video File</label>
+            <div className="space-y-3">
+              <input
+                type="file"
+                accept="image/*,video/*"
+                disabled={uploading}
+                onChange={handleFileUpload}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 disabled:opacity-50"
+              />
+              
+              {uploading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-blue-600 text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      Uploading...
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Show preview after upload */}
+              {!uploading && (form.imageUrl || form.videoUrl) && (
+                <div className="relative inline-block group border border-gray-200 rounded-lg p-1.5 shadow-sm bg-gray-50">
+                  {form.mediaType === 'video' ? (
+                    <video src={form.videoUrl} className="h-28 w-auto rounded object-cover" controls />
+                  ) : (
+                    <img src={form.imageUrl} alt="Preview" className="h-28 w-auto object-cover rounded" />
+                  )}
+                  <button
+                    onClick={() => setForm(p => ({ ...p, imageUrl: '', videoUrl: '' }))}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove media"
+                  >
+                    <FiTrash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Text input */}
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Text (optional)</label>
+            <input
+              value={form.title}
+              onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              placeholder="e.g. Winter offers"
+            />
+          </div>
+
+          {/* Subtitle / Description input */}
+          <div>
+            <label className="block text-base font-bold text-gray-900 mb-2">Subtitle / Info (optional)</label>
+            <input
+              value={form.subtitle}
+              onChange={e => setForm(p => ({ ...p, subtitle: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              placeholder="e.g. Up to 50% Off on subscriptions"
+            />
+          </div>
+
+          {/* Redirect Container */}
+          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-3">
+            <h4 className="text-xs font-bold text-gray-700 tracking-wide uppercase">Redirect to...</h4>
+            
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1.5">1. LINK ACTION TYPE</label>
+              <select
+                value={form.linkType}
+                onChange={e => setForm(p => ({ ...p, linkType: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {LINK_TYPES.map(t => (
+                  <option key={t.key} value={t.key}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {form.linkType === 'category' && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5">2. SELECT CATEGORY</label>
+                <select
+                  value={form.targetCategoryId}
+                  onChange={e => setForm(p => ({ ...p, targetCategoryId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="">-- Choose Category --</option>
+                  {categories.map(c => (
+                    <option key={c.id || c._id} value={c.id || c._id}>{c.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {form.linkType === 'subcategory' && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5">2. SELECT SUBCATEGORY</label>
+                <select
+                  value={form.targetSubCategoryId}
+                  onChange={e => setForm(p => ({ ...p, targetSubCategoryId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="">-- Choose Subcategory --</option>
+                  {subCategories.map(s => (
+                    <option key={s._id || s.id} value={s._id || s.id}>{s.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {form.linkType === 'url' && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1.5">2. CUSTOM REDIRECT LINK / URL</label>
+                <input
+                  value={form.linkUrl}
+                  onChange={e => setForm(p => ({ ...p, linkUrl: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://... or app://screen"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Display Order input */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-base font-bold text-gray-900 mb-2">Display Order</label>
+              <input
+                type="number"
+                value={form.order}
+                onChange={e => setForm(p => ({ ...p, order: Number(e.target.value) }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                placeholder="e.g. 0"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-base font-bold text-gray-900 mb-2">Active Status</label>
+              <div className="mt-1 flex items-center gap-2">
+                <ToggleSwitch
+                  checked={form.isActive}
+                  onChange={() => setForm(p => ({ ...p, isActive: !p.isActive }))}
+                />
+                <span className="text-xs text-gray-500 font-semibold">{form.isActive ? 'Visible' : 'Hidden'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons styled exactly like catalog modal */}
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleSave}
+              disabled={uploading || saving}
+              className={`flex-1 py-3.5 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
+                (uploading || saving) ? 'opacity-50 cursor-not-allowed bg-gray-400' : ''
+              }`}
+              style={{ backgroundColor: (uploading || saving) ? '#cbd5e1' : '#2874F0' }}
+            >
+              {(uploading || saving) ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : <FiSave className="w-5 h-5" />}
+              <span>{editingId ? "Update Banner" : "Add Banner"}</span>
+            </button>
+            <button
+              onClick={resetForm}
+              className="px-6 py-3.5 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-all border border-gray-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </div>
   );
 };
-
-// ─── Fields Components ────────────────────────────────────────────────────────
-const Field = ({ label, value, onChange, placeholder, type = 'text', multiline, className = '' }) => (
-  <div className={className}>
-    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</label>
-    {multiline ? (
-      <textarea
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={3}
-        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 resize-none bg-white"
-      />
-    ) : (
-      <input
-        type={type}
-        value={value ?? ''}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 bg-white"
-      />
-    )}
-  </div>
-);
-
-const ToggleField = ({ label, value, onChange }) => (
-  <div>
-    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">{label}</label>
-    <div className="mt-1.5 flex items-center gap-2">
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
-        className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${value ? 'bg-green-600' : 'bg-gray-200'}`}
-      >
-        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
-      </button>
-      <span className="text-[11px] text-gray-500 font-semibold">{value ? 'Visible (Active)' : 'Hidden (Draft)'}</span>
-    </div>
-  </div>
-);
 
 export default VendorDashboardManager;

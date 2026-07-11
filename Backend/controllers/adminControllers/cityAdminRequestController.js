@@ -134,26 +134,43 @@ const approveRequest = async (req, res) => {
       return res.status(400).json({ success: false, message: `Request is already ${request.status}.` });
     }
 
-    let createdDoc = null;
-    let modelName = null;
+    let messageText = 'Request approved successfully.';
 
-    let messageText = `Request approved. ${modelName || 'Document'} created successfully.`;
-
-    // Create the actual document based on request type
+    // Create or update the actual document based on request type
     if (request.requestType === 'category') {
-      createdDoc = await Category.create({
-        ...request.proposedData,
-        status: 'active',
-        createdBy: req.admin._id
-      });
-      modelName = 'Category';
+      if (request.proposedData && request.proposedData.categoryId) {
+        const categoryId = request.proposedData.categoryId;
+        const updateData = { ...request.proposedData };
+        delete updateData.categoryId;
+        createdDoc = await Category.findByIdAndUpdate(categoryId, updateData, { new: true });
+        modelName = 'Category';
+        messageText = 'Request approved. Category updated successfully.';
+      } else {
+        createdDoc = await Category.create({
+          ...request.proposedData,
+          status: 'active',
+          createdBy: req.admin._id
+        });
+        modelName = 'Category';
+        messageText = 'Request approved. Category created successfully.';
+      }
     } else if (request.requestType === 'brand') {
-      createdDoc = await Brand.create({
-        ...request.proposedData,
-        status: 'active',
-        createdBy: req.admin._id
-      });
-      modelName = 'Brand';
+      if (request.proposedData && request.proposedData.brandId) {
+        const brandId = request.proposedData.brandId;
+        const updateData = { ...request.proposedData };
+        delete updateData.brandId;
+        createdDoc = await Brand.findByIdAndUpdate(brandId, updateData, { new: true });
+        modelName = 'Brand';
+        messageText = 'Request approved. Brand updated successfully.';
+      } else {
+        createdDoc = await Brand.create({
+          ...request.proposedData,
+          status: 'active',
+          createdBy: req.admin._id
+        });
+        modelName = 'Brand';
+        messageText = 'Request approved. Brand created successfully.';
+      }
     } else if (request.requestType === 'delete_vendor') {
       const Vendor = require('../../models/Vendor');
       const vendorId = request.proposedData?.vendorId;
@@ -174,6 +191,22 @@ const approveRequest = async (req, res) => {
       request.createdDocumentModel = modelName;
     }
     await request.save();
+
+    // Send in-app notification to requesting City Admin
+    try {
+      const { createNotification } = require('../notificationControllers/notificationController');
+      await createNotification({
+        adminId: request.requestedBy,
+        type: 'proposal_status_updated',
+        title: 'Proposal Approved! 🎉',
+        message: `Your proposal for ${request.requestType} has been approved by the Super Admin.`,
+        relatedId: request._id,
+        relatedType: 'city_admin_request',
+        data: { requestId: request._id }
+      });
+    } catch (err) {
+      console.error('[CityAdminRequest] Failed to notify requester of approval:', err.message);
+    }
 
     res.status(200).json({
       success: true,
@@ -209,6 +242,22 @@ const rejectRequest = async (req, res) => {
     request.reviewedAt = new Date();
     request.rejectionReason = reason || 'No reason provided';
     await request.save();
+
+    // Send in-app notification to requesting City Admin
+    try {
+      const { createNotification } = require('../notificationControllers/notificationController');
+      await createNotification({
+        adminId: request.requestedBy,
+        type: 'proposal_status_updated',
+        title: 'Proposal Rejected ❌',
+        message: `Your proposal for ${request.requestType} was rejected. Reason: ${reason || 'No reason provided'}`,
+        relatedId: request._id,
+        relatedType: 'city_admin_request',
+        data: { requestId: request._id }
+      });
+    } catch (err) {
+      console.error('[CityAdminRequest] Failed to notify requester of rejection:', err.message);
+    }
 
     res.status(200).json({
       success: true,
