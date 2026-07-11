@@ -696,10 +696,7 @@ const PremiumCategoryPage = () => {
           </div>
         )}
 
-        {/* Mobile Search inside Category */}
-        <div className="mb-6">
-          <SearchBar value={search} onChange={setSearch} placeholder={`Search inside ${activeCategory?.title || 'category'}`} />
-        </div>
+
 
         {/* Mobile Grouped Services List */}
         {loading ? (
@@ -857,10 +854,7 @@ const PremiumCategoryPage = () => {
             
             {/* Services List (col-span-8) */}
             <section className="col-span-8 min-w-0 flex flex-col gap-6">
-              {/* Desktop Search inside Category */}
-              <div className="border-b border-gray-200 dark:border-zinc-800 pb-5">
-                <SearchBar value={search} onChange={setSearch} placeholder={`Search inside ${activeCategory?.title || 'category'}`} />
-              </div>
+
 
               {/* Desktop Packages Section */}
               {generatedPackages.length > 0 && (

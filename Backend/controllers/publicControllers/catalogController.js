@@ -1112,6 +1112,7 @@ const getPublicHomeContent = async (req, res) => {
         'noteworthy',
         'booked',
         'ctaBanner',
+              'howItWorks',
         'categorySections'
       ]
     };
@@ -1407,6 +1408,7 @@ const getPublicHomeData = async (req, res) => {
           'noteworthy',
           'booked',
           'ctaBanner',
+              'howItWorks',
           'categorySections'
         ],
         featuredSections: (await Promise.all(

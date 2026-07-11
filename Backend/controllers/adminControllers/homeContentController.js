@@ -88,6 +88,7 @@ const getHomeContent = async (req, res) => {
           'noteworthy',
           'booked',
           'ctaBanner',
+          'howItWorks',
           'categorySections'
         ]
       }
@@ -209,6 +210,13 @@ const updateHomeContent = async (req, res) => {
     if (req.body.isCategorySectionsVisible !== undefined) homeContent.isCategorySectionsVisible = req.body.isCategorySectionsVisible;
     if (req.body.isCategoriesVisible !== undefined) homeContent.isCategoriesVisible = req.body.isCategoriesVisible;
     if (req.body.isFeaturedSectionsVisible !== undefined) homeContent.isFeaturedSectionsVisible = req.body.isFeaturedSectionsVisible;
+    if (req.body.isUpcomingCategoriesVisible !== undefined) homeContent.isUpcomingCategoriesVisible = req.body.isUpcomingCategoriesVisible;
+    if (req.body.isOrderAgainVisible !== undefined) homeContent.isOrderAgainVisible = req.body.isOrderAgainVisible;
+    if (req.body.isHowItWorksVisible !== undefined) homeContent.isHowItWorksVisible = req.body.isHowItWorksVisible;
+    if (req.body.howItWorks !== undefined) {
+      homeContent.howItWorks = req.body.howItWorks;
+      homeContent.markModified('howItWorks');
+    }
     if (req.body.popularServices !== undefined) homeContent.popularServices = req.body.popularServices;
     if (req.body.isPopularServicesVisible !== undefined) homeContent.isPopularServicesVisible = req.body.isPopularServicesVisible;
 
@@ -273,6 +281,7 @@ const updateHomeContent = async (req, res) => {
           'noteworthy',
           'booked',
           'ctaBanner',
+          'howItWorks',
           'categorySections'
         ]
       }

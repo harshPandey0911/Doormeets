@@ -13,7 +13,7 @@ const ServiceWithRatingCard = memo(({
     : price || 'Contact for price';
 
   const cardContent = (
-    <div className="w-[110px] min-w-[110px] flex flex-col group transition-all duration-300">
+    <div className="w-[110px] min-w-[110px] md:w-[calc((100%-4rem)/5)] md:min-w-[calc((100%-4rem)/5)] flex flex-col group transition-all duration-300">
       {/* Image container */}
       <div className="w-full aspect-square rounded-[20px] bg-gray-50 overflow-hidden relative mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
         {discount && (

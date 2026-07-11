@@ -1,10 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
+import DetailedServiceCard from '../../../components/common/DetailedServiceCard';
+import ScrollArrowButton from '../../../components/common/ScrollArrowButton';
 import SimpleServiceCard from '../../../components/common/SimpleServiceCard';
 
 const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, title, subtitle }) => {
   const containerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(services && services.length > 5);
+  const [showRightArrow, setShowRightArrow] = useState(true);
 
   const serviceList = services || [];
 
@@ -12,7 +14,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
     if (containerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
       setShowLeftArrow(scrollLeft > 10);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 5);
     }
   };
 
@@ -42,12 +44,20 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
     return null;
   }
 
+  const scrollByOneCard = (direction) => {
+    if (containerRef.current && containerRef.current.children.length > 0) {
+      const cardWidth = containerRef.current.children[0].offsetWidth;
+      const gap = 16;
+      containerRef.current.scrollBy({ left: direction * (cardWidth + gap), behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="my-10 px-3 md:px-5 w-full">
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
         <h2 className="text-[22px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
-          {title || "New and noteworthy"}
+          {title || "New & Noteworthy"}
         </h2>
         {onSeeAllClick && (
           <button
@@ -60,27 +70,21 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
       </div>
 
       {/* Carousel Wrapper */}
-      <div className="relative" style={{ overflow: 'visible' }}>
+      <div className="relative group" style={{ overflow: 'visible' }}>
         {showLeftArrow && (
-          <button
-            onClick={() => containerRef.current.scrollBy({ left: -300, behavior: 'smooth' })}
-            className="absolute -left-4 top-1/3 -translate-y-1/2 z-20 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all text-gray-700 active:scale-90"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+          <ScrollArrowButton
+            direction="left"
+            onClick={() => scrollByOneCard(-1)}
+            className="left-0 md:-left-4 top-1/3 -translate-y-1/2"
+          />
         )}
         
         {showRightArrow && (
-          <button
-            onClick={() => containerRef.current.scrollBy({ left: 300, behavior: 'smooth' })}
-            className="absolute -right-4 top-1/3 -translate-y-1/2 z-20 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all text-gray-700 active:scale-90"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          <ScrollArrowButton
+            direction="right"
+            onClick={() => scrollByOneCard(1)}
+            className="right-0 md:-right-4 top-1/3 -translate-y-1/2"
+          />
         )}
 
         <div
