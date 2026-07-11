@@ -1321,6 +1321,9 @@ const getPublicHomeData = async (req, res) => {
         curated: (contentObj.curated || []).map(item => ({
           title: item.title,
           gifUrl: item.gifUrl,
+          targetCategoryId: item.targetCategoryId?.toString() || null,
+          targetServiceId: item.targetServiceId?.toString() || null,
+          slug: item.slug || '',
           order: item.order
         })),
         noteworthy: (contentObj.noteworthy || []).map(item => ({
@@ -1389,6 +1392,7 @@ const getPublicHomeData = async (req, res) => {
           title: contentObj.ctaBanner.title,
           subtitle: contentObj.ctaBanner.subtitle,
           buttonText: contentObj.ctaBanner.buttonText,
+          imageUrl: contentObj.ctaBanner.imageUrl || '',
           targetCategoryId: contentObj.ctaBanner.targetCategoryId?.toString() || null,
           slug: contentObj.ctaBanner.slug
         } : null,

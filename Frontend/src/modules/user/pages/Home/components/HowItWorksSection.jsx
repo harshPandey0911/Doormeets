@@ -7,7 +7,7 @@ const HowItWorksSection = ({ title = 'How it works', steps = [] }) => {
   return (
     <div className="w-full px-4 mt-6 mb-8">
       {title && (
-        <h2 className="text-[17px] font-semibold tracking-tight text-gray-900 mb-4 px-1">
+        <h2 className="text-[19px] md:text-[22px] font-extrabold tracking-tight text-[#1A1A1A] dark:text-white mb-4 px-1">
           {title}
         </h2>
       )}

@@ -109,6 +109,20 @@ const homeContentSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
+    targetCategoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      default: null
+    },
+    targetServiceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service',
+      default: null
+    },
+    slug: {
+      type: String,
+      default: ''
+    },
     order: {
       type: Number,
       default: 0
@@ -315,6 +329,7 @@ const homeContentSchema = new mongoose.Schema({
     title: { type: String, default: '' },
     subtitle: { type: String, default: '' },
     buttonText: { type: String, default: 'Book Now' },
+    imageUrl: { type: String, default: '' },
     targetCategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
     slug: { type: String, default: '' }
   },

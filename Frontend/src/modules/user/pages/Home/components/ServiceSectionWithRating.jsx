@@ -51,7 +51,7 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
     <div className="my-10 px-3 md:px-5 w-full">
       {/* Header row: title + "See all" inline on same line */}
       <div className="mb-5 flex items-center gap-3">
-        <h2 className="text-[22px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
+        <h2 className="text-[19px] md:text-[22px] font-extrabold text-[#1A1A1A] dark:text-white tracking-tight leading-tight">
           {title}
         </h2>
         {onSeeAllClick && (

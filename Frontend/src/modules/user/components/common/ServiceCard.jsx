@@ -96,7 +96,7 @@ const ServiceCard = memo(({ image, title, onClick, gif, youtubeUrl }) => {
   return (
     <div
       ref={cardRef}
-      className="relative min-w-[200px] md:min-w-[240px] h-[350px] md:h-[420px] rounded-2xl overflow-hidden cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]"
+      className="relative min-w-[150px] w-[150px] md:min-w-[190px] md:w-[190px] h-[220px] md:h-[280px] rounded-2xl overflow-hidden cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]"
       style={{
         boxShadow: themeColors.cardShadow,
         border: themeColors.cardBorder,
@@ -107,8 +107,8 @@ const ServiceCard = memo(({ image, title, onClick, gif, youtubeUrl }) => {
       onClick={onClick}
     >
       {renderMedia()}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-        <h3 className="text-white font-semibold text-base">{title}</h3>
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pb-5 flex justify-center items-end">
+        <h3 className="text-white font-bold text-[17px] md:text-lg text-center tracking-wide">{title}</h3>
       </div>
     </div>
   );

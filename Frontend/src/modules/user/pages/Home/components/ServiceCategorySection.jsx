@@ -7,7 +7,7 @@ const ServiceCategorySection = ({ title, services, onSeeAllClick, onServiceClick
     <div className="mb-6">
       <div className="px-4 mb-5 flex items-center justify-between">
         <h2 
-          className="text-xl font-bold text-black"
+          className="text-[19px] md:text-[22px] font-extrabold tracking-tight text-[#1A1A1A] dark:text-white"
         >
           {title}
         </h2>

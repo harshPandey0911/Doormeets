@@ -264,7 +264,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
   const [editingTrustId, setEditingTrustId] = useState(null);
 
   // CTA Banner
-  const [ctaBannerForm, setCtaBannerForm] = useState({ title: '', subtitle: '', buttonText: 'Book Now', targetCategoryId: '', slug: '' });
+  const [ctaBannerForm, setCtaBannerForm] = useState({ title: '', subtitle: '', buttonText: 'Book Now', imageUrl: '', targetCategoryId: '', slug: '' });
 
   // Section Headers
   const [sectionHeaders, setSectionHeaders] = useState({ promoTitle: '', promoSubtitle: '', curatedTitle: '', curatedSubtitle: '', noteworthyTitle: '', bookedTitle: '', sectionsTitle: '', trustTitle: '' });
@@ -1883,6 +1883,71 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             </div>
           </div>
           <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">Background Image</label>
+            <div className="space-y-3">
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setUploading(true);
+                    setUploadProgress(0);
+                    try {
+                      const response = await serviceService.uploadImage(file, 'cta', (progress) => {
+                        setUploadProgress(progress);
+                      });
+                      if (response.success) {
+                        setCtaBannerForm((p) => ({ ...p, imageUrl: response.imageUrl }));
+                        toast.success("Background image uploaded!");
+                      } else {
+                        toast.error(response.message || "Failed to upload background image");
+                      }
+                    } catch (error) {
+                      console.error('CTA Banner upload error:', error);
+                      const msg = error.response?.data?.message || error.message || "Failed to upload background image";
+                      toast.error(msg);
+                    } finally {
+                      setUploading(false);
+                      setUploadProgress(0);
+                    }
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              {uploading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-blue-600 text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      Uploading...
+                    </div>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-100 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              {ctaBannerForm.imageUrl && !uploading && (
+                <div className="relative inline-block group">
+                  <img src={ctaBannerForm.imageUrl} alt="CTA Preview" className="h-24 w-auto object-cover rounded-lg border border-gray-200 shadow-sm" />
+                  <button
+                    onClick={() => setCtaBannerForm(p => ({ ...p, imageUrl: "" }))}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove image"
+                  >
+                    <FiTrash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">Button Text</label>
             <input
               value={ctaBannerForm.buttonText}
@@ -2389,6 +2454,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                       if (response.success) {
                         setCuratedForm((p) => ({ ...p, gifUrl: response.imageUrl }));
                         toast.success("Media uploaded!");
+                      } else {
+                        toast.error(response.message || "Failed to upload media");
                       }
                     } catch (error) {
                       console.error('Curated upload error:', error);
@@ -2512,6 +2579,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                       if (response.success) {
                         setNoteworthyForm((p) => ({ ...p, imageUrl: response.imageUrl }));
                         toast.success("Image uploaded!");
+                      } else {
+                        toast.error(response.message || "Failed to upload image");
                       }
                     } catch (error) {
                       console.error('Noteworthy upload error:', error);
@@ -2624,6 +2693,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                       if (response.success) {
                         setBookedForm((p) => ({ ...p, imageUrl: response.imageUrl }));
                         toast.success("Image uploaded!");
+                      } else {
+                        toast.error(response.message || "Failed to upload image");
                       }
                     } catch (error) {
                       console.error('Booked upload error:', error);

@@ -4,50 +4,75 @@ import { motion } from 'framer-motion';
 const CTABanner = ({ ctaBanner, onNavigate }) => {
   if (!ctaBanner || !ctaBanner.title) return null;
 
+  const handleBannerClick = () => {
+    if (ctaBanner.targetCategoryId || ctaBanner.slug) {
+      onNavigate({
+        targetCategoryId: ctaBanner.targetCategoryId,
+        slug: ctaBanner.slug
+      });
+    }
+  };
+
+  const hasBgImage = !!ctaBanner.imageUrl;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      className="px-4 py-4"
+      className="px-4 py-4 w-full"
     >
       <div
-        className="w-full bg-gradient-to-br from-gray-900 to-black rounded-2xl p-6 relative overflow-hidden shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6"
-        onClick={() => {
-          if (ctaBanner.targetCategoryId || ctaBanner.slug) {
-            onNavigate({
-              targetCategoryId: ctaBanner.targetCategoryId,
-              slug: ctaBanner.slug
-            });
-          }
-        }}
+        onClick={handleBannerClick}
+        className="w-full min-h-[220px] md:min-h-[280px] rounded-[24px] relative overflow-hidden shadow-lg flex flex-col justify-end p-6 md:p-10 cursor-pointer group transition-all duration-300 hover:shadow-xl bg-black"
+        style={
+          hasBgImage
+            ? {
+                backgroundImage: `url(${ctaBanner.imageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }
+            : {}
+        }
       >
-        {/* Glow effects */}
-        <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/10 blur-2xl rounded-full" />
-        <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white/5 blur-xl rounded-full" />
+        {/* Black gradient overlay to ensure high readability of text on the left */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent z-10 transition-opacity duration-300 group-hover:opacity-95" />
 
-        <div className="relative z-10 flex-1 w-full text-left">
-          <div className="text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase mb-1.5 flex items-center gap-2">
-            <span className="w-4 h-[1px] bg-white/50 block"></span>
+        {/* Dynamic Glow effects for extra depth when no image is uploaded */}
+        {!hasBgImage && (
+          <>
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-600/20 blur-3xl rounded-full" />
+            <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-indigo-600/30 blur-2xl rounded-full" />
+          </>
+        )}
+
+        {/* Content Box */}
+        <div className="relative z-20 flex flex-col items-start text-left max-w-lg md:max-w-xl">
+          {/* Orange Badge */}
+          <div className="bg-[#E05206] text-white text-[10.5px] md:text-[11px] font-extrabold px-3 py-1.5 rounded-[6px] tracking-wide inline-block mb-4 shadow-sm uppercase">
             Limited Offer
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white leading-tight mb-1">
+
+          {/* Title */}
+          <h2 className="text-xl md:text-[32px] font-extrabold text-white leading-tight mb-2 tracking-tight">
             {ctaBanner.title}
           </h2>
+
+          {/* Subtitle */}
           {ctaBanner.subtitle && (
-            <p className="text-sm font-medium text-white/70">
+            <p className="text-[13px] md:text-base text-gray-200/90 font-medium mb-5">
               {ctaBanner.subtitle}
             </p>
           )}
-        </div>
 
-        {ctaBanner.buttonText && (
-          <div className="relative z-10 shrink-0 w-full sm:w-auto">
-            <button className="w-full sm:w-auto px-6 py-3 bg-white text-black text-sm font-bold rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all">
+          {/* Button */}
+          {ctaBanner.buttonText && (
+            <button className="px-6 py-2.5 md:px-7 md:py-3 bg-white text-black text-[13px] md:text-sm font-extrabold rounded-[12px] shadow-md hover:scale-[1.02] active:scale-95 transition-all">
               {ctaBanner.buttonText}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </motion.div>
   );

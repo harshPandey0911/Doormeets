@@ -463,6 +463,12 @@ const Home = () => {
   const handleServiceClick = (service) => {
     if (!service) return;
     
+    // 0. Try resolving by targetServiceId
+    if (service.targetServiceId) {
+      navigate(`/user/service/${service.targetServiceId}`);
+      return;
+    }
+    
     // 1. Try resolving by targetCategoryId
     if (service.targetCategoryId) {
       const cat = categories.find(c => (c.id === service.targetCategoryId || c._id === service.targetCategoryId));
@@ -784,27 +790,7 @@ const Home = () => {
                       )
                     );
                   case 'promos':
-                    return (
-                      homeContent?.isPromosVisible !== false && (
-                        <motion.section key="promos" variants={itemVariants} className="relative z-0">
-                          <PromoCarousel
-                            promos={(homeContent?.promos || []).sort((a, b) => (a.order || 0) - (b.order || 0)).map(promo => ({
-                              id: promo.id || promo._id,
-                              title: promo.title || '',
-                              subtitle: promo.subtitle || promo.description || '',
-                              buttonText: promo.buttonText || 'Book now',
-                              className: promo.gradientClass || 'from-[#00A6A6] to-[#008a8a]',
-                              image: toAssetUrl(promo.imageUrl),
-                              targetCategoryId: promo.targetCategoryId,
-                              slug: promo.slug,
-                              scrollToSection: promo.scrollToSection,
-                              route: '/'
-                            }))}
-                            onPromoClick={handlePromoClick}
-                          />
-                        </motion.section>
-                      )
-                    );
+                    return null;
                   case 'trustItems':
                     return (
                       homeContent?.trustItems && homeContent.trustItems.length > 0 && (
@@ -900,7 +886,7 @@ const Home = () => {
                           <motion.section key="upcomingCategories" variants={itemVariants} className="px-3 md:px-5 space-y-4 w-full">
                             <div className="flex items-center justify-between">
                               <h2
-                                className="text-[17px] font-semibold tracking-tight"
+                                className="text-[19px] md:text-[22px] font-extrabold tracking-tight"
                                 style={{ color: 'var(--text-primary)' }}
                               >
                                 Upcoming Services
@@ -1039,7 +1025,7 @@ const Home = () => {
                         <motion.section key="orderAgain" variants={itemVariants} className="px-3 md:px-5 space-y-4">
                           <div className="flex items-center justify-between">
                             <h2
-                              className="text-[17px] font-semibold tracking-tight"
+                              className="text-[19px] md:text-[22px] font-extrabold tracking-tight"
                               style={{ color: 'var(--text-primary)' }}
                             >
                               Order again
@@ -1057,12 +1043,12 @@ const Home = () => {
                             className="flex gap-4 overflow-x-auto pb-3 -mx-3 px-3 md:-mx-5 md:px-5 no-scrollbar"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                           >
-                            {pastServices.map((service, index) => {
+                            {pastServices.slice(0, 5).map((service, index) => {
                               return (
                                 <div
                                   key={service.id || index}
                                   onClick={() => handleAddClick(service)}
-                                  className="flex-shrink-0 rounded-3xl p-5 lg:p-6 flex items-center justify-between w-[285px] lg:w-[340px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
+                                  className="flex-shrink-0 rounded-3xl p-5 lg:p-6 flex items-center justify-between w-[250px] lg:w-[310px] h-[120px] lg:h-[140px] active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
                                   style={{
                                     backgroundColor: 'var(--surface)',
                                     border: '1px solid var(--border)',
@@ -1156,7 +1142,8 @@ const Home = () => {
                                 title: item.title,
                                 gif: toAssetUrl(item.gifUrl),
                                 slug: item.slug,
-                                targetCategoryId: item.targetCategoryId
+                                targetCategoryId: item.targetCategoryId,
+                                targetServiceId: item.targetServiceId
                               }))}
                               onServiceClick={handleServiceClick}
                             />

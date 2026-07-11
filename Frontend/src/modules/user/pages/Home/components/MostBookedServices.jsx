@@ -55,17 +55,9 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
     <div className="my-10 px-3 md:px-5 w-full">
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
-        <h2 className="text-[22px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
+        <h2 className="text-[19px] md:text-[22px] font-extrabold text-[#1A1A1A] dark:text-white tracking-tight leading-tight">
           {title || "Most booked services"}
         </h2>
-        {onSeeAllClick && (
-          <button
-            onClick={onSeeAllClick}
-            className="text-[13px] font-semibold text-[#B33A35] hover:underline shrink-0"
-          >
-            See all
-          </button>
-        )}
       </div>
 
       {/* Carousel Wrapper */}
@@ -74,7 +66,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
           <ScrollArrowButton
             direction="left"
             onClick={() => scrollByOneCard(-1)}
-            className="left-0 md:-left-4 top-1/3 -translate-y-1/2"
+            className="left-0 md:-left-4 top-[35%] -translate-y-1/2"
           />
         )}
         
@@ -82,7 +74,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
           <ScrollArrowButton
             direction="right"
             onClick={() => scrollByOneCard(1)}
-            className="right-0 md:-right-4 top-1/3 -translate-y-1/2"
+            className="right-0 md:-right-4 top-[35%] -translate-y-1/2"
           />
         )}
 
@@ -91,22 +83,80 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
           onScroll={handleScroll}
           className="flex gap-4 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
-          {serviceList.map((service, index) => (
-            <div key={service.id || index} className="snap-start shrink-0">
-              <DetailedServiceCard
-                title={service.title}
-                rating={service.rating}
-                reviews={service.reviews}
-                price={service.price}
-                originalPrice={service.originalPrice}
-                discount={service.discount}
-                isPriceDisclosed={service.isPriceDisclosed}
-                image={service.image}
+          {serviceList.map((service, index) => {
+            const hasInstantBadge = service.title?.toLowerCase().includes('ac') || 
+                                    service.title?.toLowerCase().includes('repair') || 
+                                    service.title?.toLowerCase().includes('waxing');
+            const displayPrice = service.price && !isNaN(service.price.toString().replace(/[,]/g, ''))
+              ? `₹${service.price}`
+              : service.price || 'Contact for price';
+            return (
+              <div 
+                key={service.id || index} 
                 onClick={() => onServiceClick?.(service)}
-                onAddClick={() => onAddClick?.(service)}
-              />
-            </div>
-          ))}
+                className="snap-start shrink-0 w-[150px] md:w-[220px] cursor-pointer flex flex-col group transition-all duration-300 active:scale-95 text-left"
+              >
+                {/* Image Box */}
+                <div className="w-full aspect-square rounded-[24px] bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 overflow-hidden relative shadow-[0_2px_12px_rgba(0,0,0,0.02)] group-hover:scale-[1.01] transition-transform duration-200">
+                  {service.discount && (
+                    <div className="absolute top-0 left-0 bg-[#0F8A5F] text-white text-[9px] md:text-[10px] font-bold px-2.5 py-1 rounded-br-[12px] z-10">
+                      {service.discount.toString().toUpperCase().includes('OFF') ? service.discount : `${service.discount}% OFF`}
+                    </div>
+                  )}
+                  {service.image ? (
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <img
+                        src="/cleaning-expert-logo.png"
+                        alt="Placeholder"
+                        className="w-10 h-10 object-contain opacity-40 grayscale"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Details */}
+                <h3 className="mt-3 text-[13px] md:text-[15.5px] font-bold text-[#1A1A1A] dark:text-white leading-snug line-clamp-1 px-1">
+                  {service.title}
+                </h3>
+
+                {/* Rating + Instant Badge */}
+                {service.rating && (
+                  <div className="flex items-center gap-1.5 mt-1 px-1 text-[11px] md:text-[12px] text-gray-500 font-medium">
+                    <span className="text-yellow-500">★</span>
+                    <span className="font-bold text-gray-700 dark:text-zinc-350">{service.rating}</span>
+                    {hasInstantBadge && (
+                      <>
+                        <span className="text-gray-300">•</span>
+                        <span className="text-gray-500 flex items-center gap-0.5">
+                          <span className="text-blue-500">⚡</span> Instant
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Price Row */}
+                <div className="flex items-baseline gap-2 mt-1.5 px-1">
+                  <span className="text-[13px] md:text-[15px] font-extrabold text-[#1A1A1A] dark:text-white">
+                    {displayPrice}
+                  </span>
+                  {service.originalPrice && (
+                    <span className="text-[11px] md:text-[13px] text-gray-400 line-through">
+                      ₹{service.originalPrice}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

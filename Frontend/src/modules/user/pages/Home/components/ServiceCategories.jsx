@@ -78,24 +78,34 @@ const ServiceCategories = React.memo(({
     };
   }, [categories]);
 
+  const scrollByOneCard = (direction) => {
+    if (containerRef.current && containerRef.current.children.length > 0) {
+      const cardWidth = containerRef.current.children[0].offsetWidth;
+      const gap = 12;
+      containerRef.current.scrollBy({ left: direction * (cardWidth + gap), behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="px-3 md:px-5 w-full">
       {/* Title + Inline See All Button */}
       <div className="flex items-center gap-3 mb-4">
         <h2
-          className="text-[17px] font-bold tracking-tight text-gray-900 dark:text-gray-100"
+          className="text-[19px] md:text-[22px] font-extrabold tracking-tight text-[#1A1A1A] dark:text-white"
         >
           {title}
         </h2>
-        <button
-          onClick={() => navigate('/user/categories')}
-          className="text-[13px] font-semibold text-[#B33A35] hover:opacity-80 transition-opacity flex items-center gap-0.5"
-        >
-          See all
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        {showSeeAll && (
+          <button
+            onClick={() => navigate('/user/categories')}
+            className="text-[13px] font-semibold text-[#B33A35] hover:opacity-80 transition-opacity flex items-center gap-0.5"
+          >
+            See all
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Horizontal scroll carousel with arrow buttons */}
@@ -127,7 +137,7 @@ const ServiceCategories = React.memo(({
               <div
                 key={category.id || index}
                 onClick={() => onCategoryClick?.(category)}
-                className="snap-start shrink-0 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-[110px] md:w-[calc((100%-3rem)/5)]"
+                className="snap-start shrink-0 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-[130px] md:w-[160px]"
               >
                 {/* Image card */}
                 <div

@@ -56,17 +56,9 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
     <div className="my-10 px-3 md:px-5 w-full">
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
-        <h2 className="text-[22px] font-extrabold text-[#1A1A1A] tracking-tight leading-tight">
+        <h2 className="text-[19px] md:text-[22px] font-extrabold text-[#1A1A1A] dark:text-white tracking-tight leading-tight">
           {title || "New & Noteworthy"}
         </h2>
-        {onSeeAllClick && (
-          <button
-            onClick={onSeeAllClick}
-            className="text-[13px] font-semibold text-[#B33A35] hover:underline shrink-0"
-          >
-            See all
-          </button>
-        )}
       </div>
 
       {/* Carousel Wrapper */}
@@ -75,7 +67,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
           <ScrollArrowButton
             direction="left"
             onClick={() => scrollByOneCard(-1)}
-            className="left-0 md:-left-4 top-1/3 -translate-y-1/2"
+            className="left-0 md:-left-4 top-[35%] -translate-y-1/2"
           />
         )}
         
@@ -83,24 +75,58 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
           <ScrollArrowButton
             direction="right"
             onClick={() => scrollByOneCard(1)}
-            className="right-0 md:-right-4 top-1/3 -translate-y-1/2"
+            className="right-0 md:-right-4 top-[35%] -translate-y-1/2"
           />
         )}
 
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-3 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-4 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
-          {serviceList.map((service, index) => (
-            <div key={service.id || index} className="snap-start shrink-0">
-              <SimpleServiceCard
-                title={service.title}
-                image={service.image}
+          {serviceList.map((service, index) => {
+            const hasLightningBadge = service.title?.toLowerCase().includes('ac') || 
+                                      service.title?.toLowerCase().includes('purifier') || 
+                                      service.title?.toLowerCase().includes('cleaning');
+            return (
+              <div 
+                key={service.id || index} 
                 onClick={() => onServiceClick?.(service)}
-              />
-            </div>
-          ))}
+                className="snap-start shrink-0 w-[150px] md:w-[220px] cursor-pointer flex flex-col group transition-all duration-300 active:scale-95 text-left"
+              >
+                {/* Image Box */}
+                <div className="w-full aspect-square rounded-[24px] bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 overflow-hidden relative shadow-[0_2px_12px_rgba(0,0,0,0.02)] group-hover:scale-[1.01] transition-transform duration-200">
+                  {service.image ? (
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <img
+                        src="/cleaning-expert-logo.png"
+                        alt="Placeholder"
+                        className="w-10 h-10 object-contain opacity-40 grayscale"
+                      />
+                    </div>
+                  )}
+                </div>
+                {/* Title */}
+                <h3 className="mt-3 text-[13px] md:text-[15.5px] font-bold text-[#1A1A1A] dark:text-white leading-snug line-clamp-2 px-1">
+                  {service.title}
+                </h3>
+                {/* Conditional Lightning Badge */}
+                {hasLightningBadge && (
+                  <span className="text-green-600 text-[11px] md:text-[12px] font-semibold mt-1 px-1 flex items-center gap-0.5">
+                    ⚡ In 47 mins
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
