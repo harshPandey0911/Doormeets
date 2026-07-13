@@ -650,29 +650,29 @@ const PremiumCategoryPage = () => {
               };
 
               return (
-                <div key={comboItem.id || comboIdx} className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[20px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-4">
+                <div key={comboItem.id || comboIdx} className="p-3.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[20px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5">
                   {/* Discount tag badge */}
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
                     <span>🏷️</span>
                     <span>{comboItem.discount || '10% off *'}</span>
                   </div>
 
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0 pr-4">
-                      <h3 className="text-base font-extrabold text-gray-900 dark:text-white leading-snug">{comboItem.title}</h3>
+                      <h3 className="text-[14.5px] font-extrabold text-gray-900 dark:text-white leading-snug">{comboItem.title}</h3>
                       
                       {/* Rating under title */}
-                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-zinc-400 mt-1">
+                      <div className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
                         <span className="text-yellow-500">★</span>
                         <span className="font-extrabold text-gray-800 dark:text-zinc-200">{comboItem.rating || '4.5'}</span>
                         <span>({comboItem.reviews || '1.2k'} reviews)</span>
                       </div>
 
                       {/* Pricing */}
-                      <div className="mt-2.5 flex items-center gap-2">
-                        <span className="text-base font-extrabold text-gray-900 dark:text-white">₹{comboItem.price}</span>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-[14px] font-extrabold text-gray-900 dark:text-white">₹{comboItem.price}</span>
                         {comboItem.originalPrice > comboItem.price && (
-                          <span className="text-xs text-slate-450 dark:text-zinc-500 line-through">₹{comboItem.originalPrice}</span>
+                          <span className="text-[10.5px] text-slate-450 dark:text-zinc-500 line-through">₹{comboItem.originalPrice}</span>
                         )}
                       </div>
                     </div>
@@ -680,7 +680,7 @@ const PremiumCategoryPage = () => {
                     {/* Add button / Quantity selector */}
                     <div className="shrink-0">
                       {addedCount > 0 ? (
-                        <div className="w-[84px] h-[32px] bg-violet-750 text-white rounded-lg text-xs shadow-md flex items-center justify-between px-2">
+                        <div className="w-[80px] h-[30px] bg-violet-750 text-white rounded-lg text-xs shadow-md flex items-center justify-between px-2">
                           <button
                             onClick={handleDecreaseComboItem}
                             className="w-5 h-5 hover:bg-violet-855 rounded-full flex items-center justify-center text-sm font-bold"
@@ -698,7 +698,7 @@ const PremiumCategoryPage = () => {
                       ) : (
                         <button
                           onClick={handleAddComboItem}
-                          className="px-4 py-1.5 rounded-lg border border-violet-200 dark:border-zinc-700 text-violet-700 dark:text-violet-400 font-extrabold text-xs hover:bg-violet-50 dark:hover:bg-zinc-800 transition-colors"
+                          className="px-3.5 py-1 rounded-lg border border-violet-200 dark:border-zinc-700 text-violet-700 dark:text-violet-400 font-extrabold text-[11px] hover:bg-violet-50 dark:hover:bg-zinc-800 transition-colors"
                         >
                           Add
                         </button>
@@ -707,23 +707,23 @@ const PremiumCategoryPage = () => {
                   </div>
 
                   {/* Divider line */}
-                  <div className="w-full border-t border-gray-100 dark:border-zinc-800/80 my-2" />
+                  <div className="w-full border-t border-gray-100 dark:border-zinc-800/80 my-1.5" />
 
                   {/* List of services */}
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     {comboItem.services.map((s, idx) => (
-                      <div key={idx} className="text-[11px] leading-relaxed">
-                        <span className="font-bold text-gray-700 dark:text-zinc-300">{s.title}: </span>
-                        <span className="text-gray-500 dark:text-zinc-400">{s.description || s.title}</span>
+                      <div key={idx} className="text-[9.5px] leading-snug">
+                        <span className="font-medium text-gray-800 dark:text-zinc-300">{s.title}: </span>
+                        <span className="text-gray-450 dark:text-zinc-500">{s.description || s.title}</span>
                       </div>
                     ))}
                   </div>
 
                   {/* Edit action */}
-                  <div className="pt-1.5">
+                  <div className="pt-1">
                     <button
                       onClick={() => setShowComboEditModal(true)}
-                      className="text-violet-700 dark:text-violet-400 font-extrabold text-xs hover:underline flex items-center gap-0.5"
+                      className="text-violet-700 dark:text-violet-400 font-extrabold text-[11px] hover:underline flex items-center gap-0.5"
                     >
                       Edit your package
                     </button>

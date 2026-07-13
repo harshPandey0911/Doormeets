@@ -162,42 +162,38 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
                       onClose();
                       onCategoryClick?.(mc);
                     }}
-                    className="relative flex flex-col items-center justify-center p-2.5 rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.02] transition-all duration-200 border text-center aspect-square shadow-sm overflow-hidden"
-                    style={{
-                      backgroundColor: mc.icon ? 'transparent' : color.bg,
-                      borderColor: mc.icon ? 'transparent' : color.border,
-                    }}
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-full"
                   >
-                    {mc.icon ? (
-                      <>
-                        <div className="absolute inset-0 w-full h-full">
-                          <DynamicIcon
-                            icon={toAssetUrl(mc.icon)}
-                            alt={mc.title}
-                            className="w-full h-full object-cover transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                        </div>
-                        <span className="absolute bottom-2 left-0 right-0 px-2 text-[11px] font-bold tracking-tight text-white z-10 leading-tight">
-                          {mc.title}
-                        </span>
-                      </>
-                    ) : (
-                      <>
+                    {/* Card Image/Icon container */}
+                    <div 
+                      className="w-full aspect-square rounded-2xl overflow-hidden relative shadow-sm border border-gray-100 dark:border-zinc-800/80 group-hover:scale-[1.02] transition-transform duration-200 flex items-center justify-center"
+                      style={{
+                        backgroundColor: mc.icon ? 'transparent' : color.bg,
+                        borderColor: mc.icon ? 'var(--border, #E5E7EB)' : color.border,
+                      }}
+                    >
+                      {mc.icon ? (
+                        <DynamicIcon
+                          icon={toAssetUrl(mc.icon)}
+                          alt={mc.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
                         <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center mb-2 text-lg font-bold"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold"
                           style={{ backgroundColor: color.border, color: color.text }}
                         >
                           {mc.title?.[0]?.toUpperCase() || '?'}
                         </div>
-                        <span
-                          className="text-[11px] font-semibold leading-tight w-full truncate"
-                          style={{ color: '#1F2937' }}
-                        >
-                          {mc.title}
-                        </span>
-                      </>
-                    )}
+                      )}
+                    </div>
+                    {/* Text Label Below Card */}
+                    <span
+                      className="text-[11px] font-medium text-center leading-snug line-clamp-2 w-full px-1"
+                      style={{ color: 'var(--text-primary, #111827)' }}
+                    >
+                      {mc.title}
+                    </span>
                   </div>
                 );
               })}
