@@ -24,7 +24,7 @@ const SimpleServiceCard = memo(({ image, title, onClick }) => {
           </div>
         )}
       </div>
-      <h3 className="mt-2 text-[11px] font-semibold text-[#1A1A1A] leading-snug line-clamp-2 px-0.5">
+      <h3 className="mt-2 text-[11px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 px-0.5">
         {title}
       </h3>
     </div>

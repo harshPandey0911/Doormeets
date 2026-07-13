@@ -87,7 +87,7 @@ const CuratedServices = React.memo(({ services, onServiceClick, title, subtitle 
       {/* Title Section */}
       <div ref={titleRef} className="px-4 mb-5" style={{ opacity: 1 }}>
         <h2
-          className="text-[19px] md:text-[22px] font-extrabold tracking-tight"
+          className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]"
           style={{ color: 'var(--text-primary)' }}
         >
           {title || "Thoughtful Curations"}

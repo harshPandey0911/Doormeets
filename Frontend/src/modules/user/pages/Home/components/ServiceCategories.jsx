@@ -91,7 +91,7 @@ const ServiceCategories = React.memo(({
       {/* Title + Inline See All Button */}
       <div className="flex items-center gap-3 mb-4">
         <h2
-          className="text-[19px] md:text-[22px] font-extrabold tracking-tight text-[#1A1A1A] dark:text-white"
+          className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2] text-[#1A1A1A] dark:text-white"
         >
           {title}
         </h2>
@@ -160,7 +160,7 @@ const ServiceCategories = React.memo(({
                 </div>
                 {/* Name below image */}
                 <span
-                  className="text-[11px] font-semibold text-center leading-snug line-clamp-2 w-full px-1"
+                  className="text-[11px] font-medium text-center leading-snug line-clamp-2 w-full px-1"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {category.title}

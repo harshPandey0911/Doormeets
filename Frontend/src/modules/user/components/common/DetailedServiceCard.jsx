@@ -87,7 +87,7 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
         )}
       </div>
       <div className="flex flex-col flex-1 px-0.5">
-        <h3 className="text-[11px] font-semibold text-[#1A1A1A] leading-snug line-clamp-2 min-h-[32px] mb-1">
+        <h3 className="text-[11px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 min-h-[32px] mb-1">
           {title}
         </h3>
 

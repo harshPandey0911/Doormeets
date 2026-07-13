@@ -56,7 +56,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
     <div className="my-10 px-3 md:px-5 w-full">
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
-        <h2 className="text-[19px] md:text-[22px] font-extrabold text-[#1A1A1A] dark:text-white tracking-tight leading-tight">
+        <h2 className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold text-[#1A1A1A] dark:text-white tracking-tight leading-[1.2]">
           {title || "New & Noteworthy"}
         </h2>
       </div>
@@ -115,7 +115,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
                   )}
                 </div>
                 {/* Title */}
-                <h3 className="mt-3 text-[13px] md:text-[15.5px] font-bold text-[#1A1A1A] dark:text-white leading-snug line-clamp-2 px-1">
+                <h3 className="mt-3 text-[13px] md:text-[15.5px] font-medium md:font-semibold text-[#1A1A1A] dark:text-white leading-snug line-clamp-2 px-1">
                   {service.title}
                 </h3>
                 {/* Conditional Lightning Badge */}

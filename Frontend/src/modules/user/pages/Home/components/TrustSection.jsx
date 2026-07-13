@@ -26,7 +26,7 @@ const TrustSection = ({ items = [] }) => {
                 delay: index * 0.08 
               }}
               onClick={() => hasLongDescription && setSelectedItem(item)}
-              className={`group flex flex-col items-center text-center gap-2 md:gap-4 p-3.5 md:p-6 rounded-[18px] md:rounded-[24px] border border-gray-100/90 dark:border-zinc-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.035)] transition-shadow duration-300 bg-white dark:bg-zinc-900 w-[150px] shrink-0 md:w-full md:shrink md:h-full ${hasLongDescription ? 'cursor-pointer' : ''}`}
+              className={`group flex flex-col items-center text-center gap-1 md:gap-4 py-3 px-2 md:p-6 rounded-[18px] md:rounded-[24px] border border-gray-100/90 dark:border-zinc-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.035)] transition-shadow duration-300 bg-white dark:bg-zinc-900 w-[210px] shrink-0 md:w-full md:shrink md:h-full ${hasLongDescription ? 'cursor-pointer' : ''}`}
             >
               <div 
                 className="w-9 h-9 md:w-11 md:h-11 shrink-0 flex items-center justify-center rounded-xl md:rounded-2xl text-sm md:text-lg font-bold transition-transform duration-300 group-hover:scale-110"
@@ -46,7 +46,7 @@ const TrustSection = ({ items = [] }) => {
                 
                 {item.description && (
                   <div className="flex flex-col items-center mt-1 w-full">
-                    <span className="text-[9.5px] md:text-[11px] text-gray-400 dark:text-zinc-500 leading-relaxed line-clamp-3 w-full font-medium">
+                    <span className="text-[9.5px] md:text-[11px] text-gray-400 dark:text-zinc-500 leading-relaxed line-clamp-2 md:line-clamp-3 w-full font-medium">
                       {item.description}
                     </span>
                     

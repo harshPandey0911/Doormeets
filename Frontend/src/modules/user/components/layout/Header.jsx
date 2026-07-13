@@ -73,7 +73,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             </svg>
           </div>
           <h1
-            className="text-[17px] md:text-[21px] font-semibold leading-[1.2] tracking-tight mt-0.5 md:mt-1.5 max-w-[220px] md:max-w-none md:whitespace-nowrap"
+            className="text-[15.5px] md:text-[21px] font-medium md:font-semibold leading-[1.2] tracking-tight mt-0.5 md:mt-1.5 max-w-[220px] md:max-w-none md:whitespace-nowrap"
             style={{ color: 'var(--text-primary)' }}
           >
             What you are looking for today

@@ -729,7 +729,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[88px] md:pt-[100px] space-y-5 md:space-y-8 max-w-[1600px] mx-auto w-full px-0 md:px-12">
+        <main className="pt-[78px] md:pt-[100px] space-y-5 md:space-y-8 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -756,7 +756,7 @@ const Home = () => {
           ) : (
             <>
               {/* Search Bar Section */}
-              <div className="mt-5 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
+              <div className="mt-2 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
                 <div className="w-full">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>

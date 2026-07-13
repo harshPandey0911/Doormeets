@@ -543,26 +543,25 @@ const PremiumCategoryPage = () => {
           <div className="mb-8">
             <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
               {subCategories.map((sub, index) => {
-                const color = pastelPalettes[index % pastelPalettes.length];
                 const subImage = toAssetUrl(sub.iconUrl) || 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=150&auto=format&fit=crop&q=80';
                 return (
-                  <button
+                  <div
                     key={sub.id || sub._id}
                     onClick={() => handleScrollToSub(sub.id || sub._id)}
-                    className="relative flex flex-col items-center justify-center rounded-2xl border transition-all hover:scale-[1.02] active:scale-95 text-center aspect-square shadow-sm overflow-hidden p-0"
-                    style={{
-                      backgroundColor: isDark ? color.darkBg : color.bg,
-                      borderColor: isDark ? color.darkBorder : color.border,
-                    }}
+                    className="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-full"
                   >
-                    <div className="absolute inset-0 w-full h-full">
+                    {/* Image Card */}
+                    <div className="w-full aspect-square rounded-2xl overflow-hidden relative shadow-sm border border-gray-150 dark:border-zinc-800/80 group-hover:scale-[1.02] transition-transform duration-200">
                       <img src={subImage} alt={sub.title} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                     </div>
-                    <span className="absolute bottom-2 left-0 right-0 px-2 text-[10px] md:text-xs font-black tracking-tight truncate text-white z-10">
+                    {/* Title Text Below Image */}
+                    <span
+                      className="text-[11px] font-medium text-center leading-snug line-clamp-2 w-full px-1"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
                       {sub.title}
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>

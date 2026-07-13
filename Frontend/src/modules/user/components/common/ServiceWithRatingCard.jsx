@@ -48,7 +48,7 @@ const ServiceWithRatingCard = memo(({
 
       {/* Info below image */}
       <div className="flex flex-col flex-1 px-0.5 text-left">
-        <h3 className="text-[13px] md:text-[15px] font-bold text-[#1A1A1A] dark:text-white leading-snug line-clamp-2 min-h-[38px] mb-1">
+        <h3 className="text-[13px] md:text-[15px] font-medium md:font-semibold text-[#1A1A1A] dark:text-white leading-snug line-clamp-2 min-h-[38px] mb-1">
           {title}
         </h3>
 

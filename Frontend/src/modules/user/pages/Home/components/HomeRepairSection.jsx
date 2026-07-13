@@ -18,7 +18,7 @@ const HomeRepairSection = ({ services, onSeeAllClick, onServiceClick, onAddClick
     <div className="mb-6">
       <div className="px-4 mb-5 flex items-center justify-between">
         <h2
-          className="text-xl font-bold text-gray-900 tracking-tight"
+          className="text-[15.5px] md:text-xl font-medium md:font-bold text-gray-900 dark:text-white tracking-tight leading-[1.2]"
         >
           Home repair & installation
         </h2>
