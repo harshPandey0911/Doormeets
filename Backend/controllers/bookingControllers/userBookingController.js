@@ -1034,7 +1034,7 @@ const getBookingById = async (req, res) => {
       .populate('userId', 'name phone email')
       .populate('vendorId', 'name businessName phone email address profilePhoto')
       .populate('serviceId', 'title description iconUrl images')
-      .populate('categoryId', 'title slug')
+      .populate('categoryId', 'title slug sacCode')
       .populate('workerId', 'name phone rating totalJobs location profilePhoto')
       .lean();
 

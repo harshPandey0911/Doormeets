@@ -265,7 +265,7 @@ const childPermissionMap = {
   "All Workers": "view_workers_all",
   "Worker Jobs": "view_workers_jobs",
   "Worker Analytics": "view_workers_analytics",
-  "Worker Payments": "view_workers_payments",
+  "Workers_Worker Payments": "view_workers_payments",
   // Bookings
   "All Bookings": "view_bookings_all",
   "Booking Tracking": "view_bookings_tracking",
@@ -275,7 +275,7 @@ const childPermissionMap = {
   // Payments
   "Payment Overview": "view_payments_overview",
   "User Payments": "view_payments_users",
-  "Worker Payments": "view_payments_workers",
+  "Payments_Worker Payments": "view_payments_workers",
   "Vendor Payments": "view_payments_vendors",
   "Admin Revenue": "view_payments_revenue",
   "Payment Reports": "view_payments_reports",
@@ -600,7 +600,7 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMod
               className="overflow-hidden">
               <div className="ml-4 mt-1 pl-4 border-l-2 border-slate-600 space-y-1">
                 {item.children.map((child, index) => {
-                  const childPerm = childPermissionMap[child];
+                  const childPerm = childPermissionMap[`${item.title}_${child}`] || childPermissionMap[child];
                   if (childPerm && isCityAdmin && !hasPermission(childPerm)) {
                     return null;
                   }

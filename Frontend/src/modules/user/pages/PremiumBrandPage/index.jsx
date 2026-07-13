@@ -406,17 +406,31 @@ const PremiumBrandPage = () => {
                           borderWidth: isSelected ? '2px' : '1px'
                         }}
                       >
-                        <div className="flex items-center justify-center mb-0.5">
+                        {isSelected && variant.iconUrl && (
                           <span
-                            className="flex items-center justify-center w-5 h-5 rounded-full border-[1.5px] text-[9px] font-bold transition-all"
-                            style={isSelected
-                              ? { borderColor: 'var(--primary)', backgroundColor: 'var(--primary)', color: '#fff' }
-                              : { borderColor: color.text, color: color.text }
-                            }
+                            className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4.5 h-4.5 rounded-full text-[9px] font-bold shadow-md z-10"
+                            style={{ backgroundColor: 'var(--primary)', color: '#fff' }}
                           >
-                            {isSelected ? '✓' : <FiPlus className="w-2.5 h-2.5" />}
+                            ✓
                           </span>
-                        </div>
+                        )}
+                        {variant.iconUrl ? (
+                          <div className="w-11 h-11 rounded-lg overflow-hidden border border-white/20 mb-1 flex-shrink-0 bg-white shadow-sm">
+                            <img src={toAssetUrl(variant.iconUrl)} alt={variant.title} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center mb-0.5">
+                            <span
+                              className="flex items-center justify-center w-5 h-5 rounded-full border-[1.5px] text-[9px] font-bold transition-all"
+                              style={isSelected
+                                ? { borderColor: 'var(--primary)', backgroundColor: 'var(--primary)', color: '#fff' }
+                                : { borderColor: color.text, color: color.text }
+                              }
+                            >
+                              {isSelected ? '✓' : <FiPlus className="w-2.5 h-2.5" />}
+                            </span>
+                          </div>
+                        )}
                         <span 
                           className="text-[10px] font-bold tracking-tight leading-tight line-clamp-1 my-0.5 flex-1 flex items-center justify-center" 
                           style={{ color: color.text }}

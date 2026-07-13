@@ -63,7 +63,9 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
           </div>
 
           <div className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>₹{service.price}</span>
+            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+              {service.serviceType === 'package_base' ? `Starting from ₹${service.price}` : `₹${service.price}`}
+            </span>
             {service.originalPrice && (
               <span className="text-xs line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
             )}

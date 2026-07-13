@@ -68,6 +68,11 @@ const pricingConfigSchema = new mongoose.Schema({
     default: null,
     index: true
   },
+  variantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    index: true
+  },
   // For MINUTE_BASED template pricing
   pricePerMinute: {
     type: Number,
@@ -149,7 +154,7 @@ const pricingConfigSchema = new mongoose.Schema({
 
 // Unique combination index
 pricingConfigSchema.index(
-  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, cityId: 1, packageTitle: 1 },
+  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, cityId: 1, packageTitle: 1, variantId: 1 },
   { unique: true }
 );
 
@@ -196,7 +201,8 @@ pricingConfigSchema.post('save', async function(doc) {
         subCategoryId: doc.subCategoryId,
         serviceId: doc.serviceId,
         brandId: doc.brandId,
-        cityId: doc.cityId
+        cityId: doc.cityId,
+        variantId: doc.variantId || null
       },
       {
         categoryId: doc.categoryId,
@@ -204,6 +210,7 @@ pricingConfigSchema.post('save', async function(doc) {
         serviceId: doc.serviceId,
         brandId: doc.brandId,
         cityId: doc.cityId,
+        variantId: doc.variantId || null,
         basePrice: Number(taxableAmount.toFixed(2)),
         gstPercentage: gstPct,
         gstAmount: Number(gstAmount.toFixed(2)),
@@ -228,7 +235,8 @@ pricingConfigSchema.post('findOneAndDelete', async function(doc) {
         subCategoryId: doc.subCategoryId,
         serviceId: doc.serviceId,
         brandId: doc.brandId,
-        cityId: doc.cityId
+        cityId: doc.cityId,
+        variantId: doc.variantId || null
       });
     }
   } catch (error) {
