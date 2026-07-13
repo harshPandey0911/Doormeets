@@ -200,7 +200,43 @@ const BookingTimeline = () => {
 
 
 
-  /* Handlers for Vendor Self-Job */
+  const isStartJourneyDisabled = () => {
+    if (!booking || !booking.scheduledDate) return false;
+    if (booking.bookingType === 'instant' || booking.scheduledTime === 'ASAP') return false;
+
+    try {
+      const schedDateObj = new Date(booking.scheduledDate);
+      const timeStr = booking.scheduledTime || "";
+      const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      
+      if (timeMatch) {
+        let hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3];
+        
+        if (ampm) {
+          if (ampm.toUpperCase() === 'PM' && hours < 12) {
+            hours += 12;
+          }
+          if (ampm.toUpperCase() === 'AM' && hours === 12) {
+            hours = 0;
+          }
+        }
+        
+        schedDateObj.setHours(hours, minutes, 0, 0);
+      }
+      
+      const now = new Date();
+      const diffMs = schedDateObj.getTime() - now.getTime();
+      const oneHourInMs = 60 * 60 * 1000;
+      
+      return diffMs > oneHourInMs;
+    } catch (e) {
+      console.error("Error checking journey start time:", e);
+      return false;
+    }
+  };
+
   const handleStartSelfJob = async () => {
     try {
       setActionLoading(true);
@@ -512,28 +548,40 @@ const BookingTimeline = () => {
                       <p className="text-sm text-gray-600 mb-3">{stage.description}</p>
 
                       {/* Action Button */}
-                      {stage.action && !isSkipped && (
-                        <button
-                          onClick={stage.action}
-                          className="px-4 py-2 rounded-lg font-semibold text-white text-sm transition-all active:scale-95"
-                          style={{
-                            background: themeColors.button,
-                            boxShadow: `0 2px 8px ${themeColors.button}40`,
-                          }}
-                        >
-                          {stage.id === 3 ? 'Assign Worker' :
-                            stage.id === 4 ? 'Start Journey' :
-                              stage.id === 5 ? 'Mark Arrived' :
-                                stage.id === 6 ? 'Mark workdone' :
-                                  stage.id === 7 ? (
-                                    ['success', 'paid', 'completed'].includes(booking?.paymentStatus?.toLowerCase())
-                                      ? 'Complete Booking'
-                                      : (booking?.isSelfJob ? 'Collect Cash' : 'Approve Work')
-                                  ) :
-                                    stage.id === 8 ? 'Pay Worker' :
-                                      stage.id === 9 ? 'Final Settlement' : 'Continue'}
-                        </button>
-                      )}
+                      {stage.action && !isSkipped && (() => {
+                        const isStartJourneyStage = stage.id === 4;
+                        const disabled = isStartJourneyStage && isStartJourneyDisabled();
+                        return (
+                          <div className="w-full mt-2">
+                            <button
+                              onClick={disabled ? undefined : stage.action}
+                              disabled={disabled}
+                              className={`px-4 py-2 rounded-lg font-semibold text-white text-sm transition-all active:scale-95 ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-400' : ''}`}
+                              style={disabled ? { background: '#9CA3AF', boxShadow: 'none' } : {
+                                background: themeColors.button,
+                                boxShadow: `0 2px 8px ${themeColors.button}40`,
+                              }}
+                            >
+                              {stage.id === 3 ? 'Assign Worker' :
+                                stage.id === 4 ? 'Start Journey' :
+                                  stage.id === 5 ? 'Mark Arrived' :
+                                    stage.id === 6 ? 'Mark workdone' :
+                                      stage.id === 7 ? (
+                                        ['success', 'paid', 'completed'].includes(booking?.paymentStatus?.toLowerCase())
+                                          ? 'Complete Booking'
+                                          : (booking?.isSelfJob ? 'Collect Cash' : 'Approve Work')
+                                      ) :
+                                        stage.id === 8 ? 'Pay Worker' :
+                                          stage.id === 9 ? 'Final Settlement' : 'Continue'}
+                            </button>
+                            {disabled && (
+                              <p className="text-[10px] text-amber-600 font-semibold mt-1.5 bg-amber-50 py-1 px-2 rounded border border-amber-100 max-w-max">
+                                🔒 Journey can only be started 1 hour before the scheduled time.
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Online Payment Status Badge for Stage 7 */}
                       {stage.id === 7 && ['success', 'paid', 'completed'].includes(booking?.paymentStatus?.toLowerCase()) && !isCompleted && (

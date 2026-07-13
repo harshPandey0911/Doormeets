@@ -66,14 +66,19 @@ const serviceBrandPricingSchema = new mongoose.Schema({
     ref: 'City',
     default: null, // null = All Cities
     index: true
+  },
+  variantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    index: true
   }
 }, {
   timestamps: true
 });
 
-// Ensure only one pricing matrix entry per category/sub/service/brand/city combo
+// Ensure only one pricing matrix entry per category/sub/service/brand/city/variant combo
 serviceBrandPricingSchema.index(
-  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, cityId: 1 },
+  { categoryId: 1, subCategoryId: 1, serviceId: 1, brandId: 1, cityId: 1, variantId: 1 },
   { unique: true }
 );
 

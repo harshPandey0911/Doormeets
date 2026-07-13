@@ -153,6 +153,7 @@ export const ensureIds = (catalog) => {
       title: c.title || "",
       slug: c.slug || slugify(c.title),
       homeIconUrl: c.homeIconUrl || "",
+      bannerImage: c.bannerImage || "",
       homeBadge: c.homeBadge || "",
       hasSaleBadge: Boolean(c.hasSaleBadge),
       showOnHome: c.showOnHome !== false,

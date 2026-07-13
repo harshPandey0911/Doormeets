@@ -7,7 +7,7 @@ import useAdminHeaderHeight from '../../hooks/useAdminHeaderHeight';
 import { useSocket } from '../../../../context/SocketContext';
 import { FiAlertTriangle, FiX, FiMapPin } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import { playSirenAlarm, stopSirenAlarm, unlockAudioContext, playNotificationSound } from '../../../../utils/notificationSound';
+import { playSirenAlarm, stopSirenAlarm, unlockAudioContext, playNotificationSound, playAdminBookingAlarm } from '../../../../utils/notificationSound';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -109,8 +109,8 @@ const AdminLayout = () => {
         position: 'top-right'
       });
 
-      // Play chime/beep sound
-      playNotificationSound().catch(e => console.warn('Admin notification sound failed:', e));
+      // Play urgent 3-beep alarm so admin doesn't miss it
+      playAdminBookingAlarm().catch(e => console.warn('Admin booking alarm failed:', e));
     };
 
     const handleAdminBookingRejected = (data) => {

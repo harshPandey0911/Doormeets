@@ -58,7 +58,7 @@ const Bookings = () => {
     try {
       setLoading(true);
 
-      // 1. Fetch Bookings
+      // 1. Build params
       const params = {
         page,
         limit: 10,
@@ -70,26 +70,27 @@ const Bookings = () => {
         params.status = statusFilter.toUpperCase().replace(' ', '_');
       }
 
-      const res = await adminBookingService.getAllBookings(params);
+      // 2. Fetch bookings and stats in parallel for faster page load
+      const [res, statsRes] = await Promise.all([
+        adminBookingService.getAllBookings(params),
+        stats.total === 0 ? getDashboardStats() : Promise.resolve(null)
+      ]);
+
       if (res.success) {
         setBookings(res.data);
         setTotalPages(res.pagination.pages);
       }
 
-      // 2. Fetch Stats (only if not already fetched or if total is 0)
-      if (stats.total === 0) {
-        const statsRes = await getDashboardStats();
-        if (statsRes.success) {
-          const s = statsRes.data.stats;
-          setStats({
-            pending: s.pendingBookings || 0,
-            confirmed: 0,
-            inProgress: 0,
-            completed: s.completedBookings || 0,
-            cancelled: s.cancelledBookings || 0,
-            total: s.totalBookings || 0
-          });
-        }
+      if (statsRes?.success) {
+        const s = statsRes.data.stats;
+        setStats({
+          pending: s.pendingBookings || 0,
+          confirmed: 0,
+          inProgress: 0,
+          completed: s.completedBookings || 0,
+          cancelled: s.cancelledBookings || 0,
+          total: s.totalBookings || 0
+        });
       }
     } catch (error) {
       console.error('Error loading data:', error);

@@ -106,13 +106,15 @@ const getDashboardStats = async (req, res) => {
     const pendingSettlementsCount = await Settlement.countDocuments({ status: 'pending', ...dateFilter, ...financialFilter });
     const pendingScraps = await Scrap.countDocuments({ status: 'pending', ...dateFilter, ...cityFilter });
 
-    // Recent activities (filtered by period)
+    // Recent activities (filtered by period) — exclude heavy Base64 image fields
     const recentActivityDocs = await Booking.find({ ...dateFilter, ...bookingFilter })
+      .select('-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails')
       .populate('userId', 'name phone')
       .populate('vendorId', 'name businessName')
       .populate('serviceId', 'title')
       .sort({ createdAt: -1 })
-      .limit(20);
+      .limit(20)
+      .lean();
 
     const recentBookings = recentActivityDocs.map(b => ({
       id: b.bookingNumber || b._id,

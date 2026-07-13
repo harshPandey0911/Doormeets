@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiSliders, FiSave, FiX, FiChevronRight, FiChevronLeft, FiArrowUp, FiArrowDown, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSliders, FiSave, FiX, FiChevronRight, FiChevronLeft, FiArrowUp, FiArrowDown, FiEye, FiEyeOff, FiUpload, FiCamera } from 'react-icons/fi';
 import { MdTimer, MdInventory, MdPhotoCamera, MdRepeat, MdDragHandle } from 'react-icons/md';
 import api from '../../../../../services/api';
+import { toast } from 'react-hot-toast';
 import { toAssetUrl } from '../utils';
 
 // ────────────────────────────────────────────────────────────────────
@@ -729,6 +730,57 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     reviewCount: '1.2k'
   });
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size should be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+      const url = await uploadToCloudinary(file, 'service_icons');
+      if (url) {
+        setFormData(prev => ({ ...prev, iconUrl: url }));
+        toast.success('Image uploaded successfully');
+      } else {
+        toast.error('Image upload failed');
+      }
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      toast.error('Image upload failed');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleVariantImageUpload = async (idx, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size should be less than 5MB');
+      return;
+    }
+
+    try {
+      const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+      const url = await uploadToCloudinary(file, 'variant_icons');
+      if (url) {
+        updateVariant(idx, 'iconUrl', url);
+        toast.success('Add-on image uploaded successfully');
+      } else {
+        toast.error('Image upload failed');
+      }
+    } catch (err) {
+      console.error('Add-on image upload failed:', err);
+      toast.error('Image upload failed');
+    }
+  };
+
   // Service type state
   const [serviceType, setServiceType] = useState('package_base');
   // Minute base
@@ -966,8 +1018,16 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
           await Promise.all(
             pricingConfigs.map(config => {
               const { _tempId, ...configPayload } = config;
+              let finalVariantId = configPayload.variantId || null;
+              if (finalVariantId && typeof finalVariantId === 'string' && Array.isArray(newService.variants)) {
+                const matchedVar = newService.variants.find(v => v.title === finalVariantId);
+                if (matchedVar) {
+                  finalVariantId = matchedVar._id;
+                }
+              }
               return api.post('/admin/pricing', {
                 ...configPayload,
+                variantId: finalVariantId,
                 categoryId: formData.categoryId,
                 subCategoryId: formData.subCategoryId || null,
                 serviceId: newService._id
@@ -1031,7 +1091,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const removePackage = (i) => setPackages(packages.filter((_, idx) => idx !== i));
 
   // ── Variant ops
-  const addVariant = () => setVariants([...variants, { title: '', extraPrice: 0, description: '', isActive: true }]);
+  const addVariant = () => setVariants([...variants, { title: '', extraPrice: 0, vendorPayout: 0, description: '', isActive: true }]);
   const updateVariant = (i, k, v) => { const u = [...variants]; u[i][k] = v; setVariants(u); };
   const removeVariant = (i) => setVariants(variants.filter((_, idx) => idx !== i));
 
@@ -1049,6 +1109,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         _id: config._id || null,
         cityId: config.cityId?._id || config.cityId || '',
         brandId: config.brandId?._id || config.brandId || '',
+        variantId: config.variantId || '',
         customerPrice: config.customerPrice || '',
         originalPrice: config.originalPrice || '',
         pricePerMinute: config.pricePerMinute || '',
@@ -1073,6 +1134,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       setPricingForm({
         cityId: '',
         brandId: '',
+        variantId: '',
         customerPrice: '',
         originalPrice: '',
         pricePerMinute: '',
@@ -1181,11 +1243,23 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
 
     const selectedCategory = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
     
+    let resolvedVariantId = pricingForm.variantId || null;
+    if (resolvedVariantId && typeof resolvedVariantId === 'string' && resolvedVariantId.length > 0) {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(resolvedVariantId);
+      if (!isObjectId) {
+        const matchedVar = variants.find(v => v.title === resolvedVariantId || v._id === resolvedVariantId || v.id === resolvedVariantId);
+        if (matchedVar) {
+          resolvedVariantId = matchedVar._id || matchedVar.id || resolvedVariantId;
+        }
+      }
+    }
+
     const payload = {
       categoryId: formData.categoryId,
       subCategoryId: formData.subCategoryId || null,
       brandId: (selectedCategory?.enableBrands !== false && serviceType !== 'image_base' && pricingForm.brandId) ? pricingForm.brandId : null,
       cityId: pricingForm.cityId || null,
+      variantId: resolvedVariantId,
       customerPrice: Number(pricingForm.customerPrice || 0),
       originalPrice: Number(pricingForm.originalPrice || 0) || null,
       pricePerMinute: isMinuteBased ? Number(pricingForm.pricePerMinute || 0) : null,
@@ -1314,6 +1388,24 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const typeColors = { minute_base: 'bg-blue-100 text-blue-700', package_base: 'bg-emerald-100 text-emerald-700', image_base: 'bg-purple-100 text-purple-700', multi_visit: 'bg-orange-100 text-orange-700', subscription_base: 'bg-violet-100 text-violet-700' };
   const typeLabels = { minute_base: '⏱ Minute Base', package_base: '📦 Package', image_base: '📸 Image Quote', multi_visit: '🔄 Multi-Visit', subscription_base: '💳 Subscription' };
 
+  const getServiceTypeInfo = (srv) => {
+    const catId = srv.categoryId?._id || srv.categoryId;
+    const category = categories.find(c => (c.id === catId || c._id === catId));
+    if (category) {
+      const template = templates.find(t => (t._id === category.templateId || t.id === category.templateId || t.code === category.template));
+      if (template?.code === 'NORMAL_SERVICE') {
+        return {
+          label: '🛠️ Normal Service',
+          color: 'bg-indigo-100 text-indigo-700'
+        };
+      }
+    }
+    return {
+      label: typeLabels[srv.serviceType] || '📦 Package',
+      color: typeColors[srv.serviceType] || 'bg-gray-100 text-gray-600'
+    };
+  };
+
   return (
     <div className="p-6 bg-white rounded-xl shadow-sm">
       <div className="flex justify-between items-center mb-6">
@@ -1342,35 +1434,42 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
               </tr>
             </thead>
             <tbody>
-              {finalFilteredServices.map((srv) => (
-                <tr key={srv._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                  <td className="p-4 font-bold text-gray-800">{srv.title}</td>
-                  <td className="p-4 text-gray-600 text-sm">{srv.categoryId?.title || 'Unknown'} &gt; {srv.subCategoryId?.title || '—'}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${typeColors[srv.serviceType] || 'bg-gray-100 text-gray-600'}`}>
-                      {typeLabels[srv.serviceType] || '📦 Package'}
-                    </span>
-                  </td>
-                  <td className="p-4 font-semibold text-sm text-gray-800">
-                    {srv.finalCustomerPrice !== undefined && srv.finalCustomerPrice !== null ? (
-                      <span className="text-emerald-600 font-bold">₹{srv.finalCustomerPrice}</span>
-                    ) : srv.basePrice !== undefined && srv.basePrice !== null ? (
-                      <span className="text-emerald-600 font-bold">₹{srv.basePrice}</span>
-                    ) : srv.serviceType === 'image_base' ? (
-                      <span className="text-purple-600 font-semibold italic text-[11px]">Quote / Addon based</span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${srv.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{srv.status}</span>
-                  </td>
-                  <td className="p-4 flex justify-end gap-2">
-                    <button onClick={() => handleOpenWizard(srv)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded flex items-center gap-1 font-bold text-xs"><FiSliders /> Configure</button>
-                    <button onClick={() => handleDelete(srv._id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><FiTrash2 /></button>
-                  </td>
-                </tr>
-              ))}
+              {finalFilteredServices.map((srv) => {
+                const typeInfo = getServiceTypeInfo(srv);
+                return (
+                  <tr key={srv._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td className="p-4 font-bold text-gray-800">{srv.title}</td>
+                    <td className="p-4 text-gray-600 text-sm">{srv.categoryId?.title || 'Unknown'} &gt; {srv.subCategoryId?.title || '—'}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${typeInfo.color}`}>
+                        {typeInfo.label}
+                      </span>
+                    </td>
+                    <td className="p-4 font-semibold text-sm text-gray-800">
+                      {srv.serviceType === 'package_base' ? (
+                        <span className="text-emerald-600 font-bold">
+                          Starting from ₹{srv.finalCustomerPrice !== undefined && srv.finalCustomerPrice !== null ? srv.finalCustomerPrice : (srv.basePrice !== undefined && srv.basePrice !== null ? srv.basePrice : 0)}
+                        </span>
+                      ) : srv.finalCustomerPrice !== undefined && srv.finalCustomerPrice !== null ? (
+                        <span className="text-emerald-600 font-bold">₹{srv.finalCustomerPrice}</span>
+                      ) : srv.basePrice !== undefined && srv.basePrice !== null ? (
+                        <span className="text-emerald-600 font-bold">₹{srv.basePrice}</span>
+                      ) : srv.serviceType === 'image_base' ? (
+                        <span className="text-purple-600 font-semibold italic text-[11px]">Quote / Addon based</span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${srv.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{srv.status}</span>
+                    </td>
+                    <td className="p-4 flex justify-end gap-2">
+                      <button onClick={() => handleOpenWizard(srv)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded flex items-center gap-1 font-bold text-xs"><FiSliders /> Configure</button>
+                      <button onClick={() => handleDelete(srv._id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><FiTrash2 /></button>
+                    </td>
+                  </tr>
+                );
+              })}
               {finalFilteredServices.length === 0 && (
                 <tr><td colSpan="6" className="p-8 text-center text-gray-500">No services found.</td></tr>
               )}
@@ -1461,10 +1560,49 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       <input type="text" className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
                         value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Room Deep Cleaning" />
                     </div>
-                    <div>
+                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
                       <textarea className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
                         value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} placeholder="Explain this service..." />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Service Icon / Image</label>
+                      <div className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg bg-gray-50/50">
+                        {formData.iconUrl ? (
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 bg-white">
+                            <img src={toAssetUrl(formData.iconUrl)} alt="Service icon" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, iconUrl: '' }))}
+                              className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                            >
+                              <FiX className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg border border-dashed border-gray-300 flex items-center justify-center bg-gray-50 text-gray-400">
+                            <FiCamera className="w-6 h-6" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            id="service-icon-upload"
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="service-icon-upload"
+                            className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-xs font-bold text-gray-700 cursor-pointer shadow-sm inline-flex items-center gap-1.5 transition-all"
+                          >
+                            <FiUpload className="w-3.5 h-3.5" />
+                            {uploadingImage ? 'Uploading...' : 'Choose Image'}
+                          </label>
+                          <p className="text-[10px] text-gray-400 mt-1.5">Recommended size: 256x256 px. Max size: 5MB.</p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1598,7 +1736,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                   }
                                   cat = `Category ${i}`;
                                 }
-                                setVariants([...variants, { title: '', category: cat, extraPrice: 0, description: '', isActive: true }]);
+                                setVariants([...variants, { title: '', category: cat, extraPrice: 0, vendorPayout: 0, description: '', isActive: true }]);
                                 setNewCatName('');
                               }}
                               className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shrink-0"
@@ -1681,7 +1819,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setVariants([...variants, { title: '', category: catName, extraPrice: 0, description: '', isActive: true }]);
+                                      setVariants([...variants, { title: '', category: catName, extraPrice: 0, vendorPayout: 0, description: '', isActive: true }]);
                                     }}
                                     className="text-xs font-bold text-violet-600 hover:underline flex items-center gap-0.5"
                                   >
@@ -1760,6 +1898,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                           onChange={e => updateVariant(originalIndex, 'gstPercentage', parseFloat(e.target.value) || 0)}
                                         />
                                       </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
                                       <div>
                                         <label className="block text-[10px] font-bold text-gray-500 mb-1">GST Type</label>
                                         <select
@@ -1779,6 +1919,17 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                           className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
                                           value={variant.platformCommission ?? 20}
                                           onChange={e => updateVariant(originalIndex, 'platformCommission', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-emerald-600 mb-1">Vendor Payout (₹)</label>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          className="w-full p-2 border border-emerald-300 rounded-lg text-[10px] bg-white outline-none font-bold text-emerald-700 focus:ring-1 focus:ring-emerald-400"
+                                          value={variant.vendorPayout ?? 0}
+                                          onChange={e => updateVariant(originalIndex, 'vendorPayout', parseFloat(e.target.value) || 0)}
+                                          placeholder="0"
                                         />
                                       </div>
                                     </div>
@@ -1814,15 +1965,52 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                         />
                                       </div>
                                     </div>
-                                    <div>
-                                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
-                                      <input
-                                        type="text"
-                                        placeholder="Short description shown to the user"
-                                        className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
-                                        value={variant.description || ''}
-                                        onChange={e => updateVariant(originalIndex, 'description', e.target.value)}
-                                      />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
+                                        <input
+                                          type="text"
+                                          placeholder="Short description shown to the user"
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                          value={variant.description || ''}
+                                          onChange={e => updateVariant(originalIndex, 'description', e.target.value)}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-600 mb-1">Addon Icon / Image</label>
+                                        <div className="flex items-center gap-2 p-1.5 border border-gray-200 rounded-lg bg-white">
+                                          {variant.iconUrl ? (
+                                            <div className="relative w-8 h-8 rounded border border-gray-200 overflow-hidden bg-gray-50 shrink-0">
+                                              <img src={toAssetUrl(variant.iconUrl)} alt="Addon icon" className="w-full h-full object-cover" />
+                                              <button
+                                                type="button"
+                                                onClick={() => updateVariant(originalIndex, 'iconUrl', '')}
+                                                className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                              >
+                                                <FiX className="w-2 h-2" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="w-8 h-8 rounded border border-dashed border-gray-300 flex items-center justify-center bg-gray-50 text-gray-400 shrink-0">
+                                              <FiCamera className="w-4 h-4" />
+                                            </div>
+                                          )}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={e => handleVariantImageUpload(originalIndex, e)}
+                                            id={`addon-img-${originalIndex}`}
+                                            className="hidden"
+                                          />
+                                          <label
+                                            htmlFor={`addon-img-${originalIndex}`}
+                                            className="px-2.5 py-1.5 bg-gray-150 hover:bg-gray-200 rounded-md text-[9px] font-bold text-gray-700 cursor-pointer shadow-sm flex items-center gap-1 transition-all"
+                                          >
+                                            <FiUpload className="w-2.5 h-2.5" />
+                                            Choose
+                                          </label>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -2059,103 +2247,169 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                 </button>
                               </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            {(() => {
+                              const selectedCatForVar = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+                              const selectedTemplateForVar = selectedCatForVar ? templates.find(t => (t._id === selectedCatForVar.templateId || t.id === selectedCatForVar.templateId || t.code === selectedCatForVar.template)) : null;
+                              const isNormalServiceVar = selectedTemplateForVar?.code === 'NORMAL_SERVICE';
+
+                              return (
+                                <>
+                                  <div className={`grid gap-2 ${isNormalServiceVar ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Variant Title *</label>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. Front Glass Replacement"
+                                        className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                                        value={variant.title}
+                                        onChange={e => updateVariant(idx, 'title', e.target.value)}
+                                      />
+                                    </div>
+                                    {!isNormalServiceVar && (
+                                      <div>
+                                        <label className="block text-[10px] font-bold text-gray-600 mb-1">Customer Price (₹) *</label>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          placeholder="0"
+                                          className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400 font-bold text-gray-800"
+                                          value={variant.extraPrice}
+                                          onChange={e => updateVariant(idx, 'extraPrice', parseFloat(e.target.value) || 0)}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {!isNormalServiceVar && (
+                                    <>
+                                      <div className="grid grid-cols-4 gap-2">
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 mb-1">GST %</label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                            value={variant.gstPercentage ?? 18}
+                                            onChange={e => updateVariant(idx, 'gstPercentage', parseFloat(e.target.value) || 0)}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 mb-1">GST Type</label>
+                                          <select
+                                            className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                            value={variant.gstIncluded !== false ? 'true' : 'false'}
+                                            onChange={e => updateVariant(idx, 'gstIncluded', e.target.value === 'true')}
+                                          >
+                                            <option value="true">Included</option>
+                                            <option value="false">Excluded</option>
+                                          </select>
+                                        </div>
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 mb-1">Platform Comm %</label>
+                                          <input
+                                            type="number"
+                                            min={0} max={100}
+                                            className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                            value={variant.platformCommission ?? 20}
+                                            onChange={e => updateVariant(idx, 'platformCommission', parseFloat(e.target.value) || 0)}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-emerald-600 mb-1">Vendor Payout (₹)</label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            className="w-full p-2 border border-emerald-300 rounded-lg text-[10px] bg-white outline-none font-bold text-emerald-700 focus:ring-1 focus:ring-emerald-400"
+                                            value={variant.vendorPayout ?? 0}
+                                            onChange={e => updateVariant(idx, 'vendorPayout', parseFloat(e.target.value) || 0)}
+                                            placeholder="0"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 mb-1">L1 Comm %</label>
+                                          <input
+                                            type="number"
+                                            min={0} max={100}
+                                            className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                            value={variant.l1Commission ?? 10}
+                                            onChange={e => updateVariant(idx, 'l1Commission', parseFloat(e.target.value) || 0)}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 mb-1">L2 Comm %</label>
+                                          <input
+                                            type="number"
+                                            min={0} max={100}
+                                            className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                            value={variant.l2Commission ?? 15}
+                                            onChange={e => updateVariant(idx, 'l2Commission', parseFloat(e.target.value) || 0)}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[10px] font-bold text-gray-500 mb-1">L3 Comm %</label>
+                                          <input
+                                            type="number"
+                                            min={0} max={100}
+                                            className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
+                                            value={variant.l3Commission ?? 20}
+                                            onChange={e => updateVariant(idx, 'l3Commission', parseFloat(e.target.value) || 0)}
+                                          />
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </>
+                              );
+                            })()}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <div>
-                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Variant Title *</label>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
                                 <input
                                   type="text"
-                                  placeholder="e.g. Front Glass Replacement"
+                                  placeholder="Short description shown to the user"
                                   className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
-                                  value={variant.title}
-                                  onChange={e => updateVariant(idx, 'title', e.target.value)}
+                                  value={variant.description || ''}
+                                  onChange={e => updateVariant(idx, 'description', e.target.value)}
                                 />
                               </div>
                               <div>
-                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Customer Price (₹) *</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  placeholder="0"
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400 font-bold text-gray-800"
-                                  value={variant.extraPrice}
-                                  onChange={e => updateVariant(idx, 'extraPrice', parseFloat(e.target.value) || 0)}
-                                />
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Addon Icon / Image</label>
+                                <div className="flex items-center gap-2 p-1.5 border border-gray-200 rounded-lg bg-white">
+                                  {variant.iconUrl ? (
+                                    <div className="relative w-8 h-8 rounded border border-gray-200 overflow-hidden bg-gray-50 shrink-0">
+                                      <img src={toAssetUrl(variant.iconUrl)} alt="Addon icon" className="w-full h-full object-cover" />
+                                      <button
+                                        type="button"
+                                        onClick={() => updateVariant(idx, 'iconUrl', '')}
+                                        className="absolute top-0.5 right-0.5 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                      >
+                                        <FiX className="w-2 h-2" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="w-8 h-8 rounded border border-dashed border-gray-300 flex items-center justify-center bg-gray-50 text-gray-400 shrink-0">
+                                      <FiCamera className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => handleVariantImageUpload(idx, e)}
+                                    id={`variant-img-${idx}`}
+                                    className="hidden"
+                                  />
+                                  <label
+                                    htmlFor={`variant-img-${idx}`}
+                                    className="px-2.5 py-1.5 bg-gray-150 hover:bg-gray-200 rounded-md text-[9px] font-bold text-gray-700 cursor-pointer shadow-sm flex items-center gap-1 transition-all"
+                                  >
+                                    <FiUpload className="w-2.5 h-2.5" />
+                                    Choose
+                                  </label>
+                                </div>
                               </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1">GST %</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
-                                  value={variant.gstPercentage ?? 18}
-                                  onChange={e => updateVariant(idx, 'gstPercentage', parseFloat(e.target.value) || 0)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1">GST Type</label>
-                                <select
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
-                                  value={variant.gstIncluded !== false ? 'true' : 'false'}
-                                  onChange={e => updateVariant(idx, 'gstIncluded', e.target.value === 'true')}
-                                >
-                                  <option value="true">Included</option>
-                                  <option value="false">Excluded</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1">Platform Comm %</label>
-                                <input
-                                  type="number"
-                                  min={0} max={100}
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
-                                  value={variant.platformCommission ?? 20}
-                                  onChange={e => updateVariant(idx, 'platformCommission', parseFloat(e.target.value) || 0)}
-                                />
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1">L1 Comm %</label>
-                                <input
-                                  type="number"
-                                  min={0} max={100}
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
-                                  value={variant.l1Commission ?? 10}
-                                  onChange={e => updateVariant(idx, 'l1Commission', parseFloat(e.target.value) || 0)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1">L2 Comm %</label>
-                                <input
-                                  type="number"
-                                  min={0} max={100}
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
-                                  value={variant.l2Commission ?? 15}
-                                  onChange={e => updateVariant(idx, 'l2Commission', parseFloat(e.target.value) || 0)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 mb-1">L3 Comm %</label>
-                                <input
-                                  type="number"
-                                  min={0} max={100}
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-[10px] bg-white outline-none"
-                                  value={variant.l3Commission ?? 20}
-                                  onChange={e => updateVariant(idx, 'l3Commission', parseFloat(e.target.value) || 0)}
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-600 mb-1">Description (optional)</label>
-                              <input
-                                type="text"
-                                placeholder="Short description shown to the user"
-                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-violet-400"
-                                value={variant.description || ''}
-                                onChange={e => updateVariant(idx, 'description', e.target.value)}
-                              />
                             </div>
                           </div>
                         ))}
@@ -2341,7 +2595,14 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                       {cityName}
                                     </span>
                                   </td>
-                                  <td className="p-2.5 font-semibold text-gray-700">{brandName}</td>
+                                  <td className="p-2.5 font-semibold text-gray-700">
+                                    {brandName}
+                                    {config.variantId && (
+                                      <span className="block text-[9px] font-bold text-violet-700 bg-violet-50 border border-violet-100 rounded px-1.5 py-0.5 mt-1 w-fit">
+                                        Addon: {variants.find(v => String(v._id || v.id) === String(config.variantId?._id || config.variantId) || v.title === config.variantId)?.title || 'Selected Addon'}
+                                      </span>
+                                    )}
+                                  </td>
                                   <td className="p-2.5 font-bold text-gray-800">
                                     {isMinuteBased ? (
                                       <span>
@@ -2393,17 +2654,19 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       </div>
                     </div>
 
-                    {/* Inline add/edit form */}
                     {isPricingModalOpen && (
-                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="text-xs font-bold text-gray-700">
-                            {editingPricingConfigIdx !== null ? '📝 Edit Pricing configuration' : '➕ Add Pricing configuration'}
-                          </span>
-                          <button type="button" onClick={() => { setIsPricingModalOpen(false); setEditingPricingConfigIdx(null); }} className="text-xs font-bold text-gray-400 hover:text-gray-600">✕ Close</button>
-                        </div>
+                      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[99999] p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+                          <div className="flex justify-between items-center border-b p-5 shrink-0">
+                            <span className="text-sm font-extrabold text-gray-800">
+                              {editingPricingConfigIdx !== null ? '📝 Edit Pricing configuration' : '➕ Add Pricing configuration'}
+                            </span>
+                            <button type="button" onClick={() => { setIsPricingModalOpen(false); setEditingPricingConfigIdx(null); }} className="text-xl font-bold text-gray-400 hover:text-gray-650">✕</button>
+                          </div>
+                          
+                          <div className="flex-1 overflow-y-auto p-6 space-y-4">
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
                             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">City Availability</label>
                             <select
@@ -2413,6 +2676,22 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             >
                               <option value="">All Cities (Global Pricing)</option>
                               {cities.map(city => <option key={city._id || city.id} value={city._id || city.id}>{city.name}</option>)}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variant (Addon)</label>
+                            <select
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-violet-700"
+                              value={pricingForm.variantId}
+                              onChange={e => setPricingForm({ ...pricingForm, variantId: e.target.value })}
+                            >
+                              <option value="">-- Apply to Base Service --</option>
+                              {variants.map((v, vIdx) => (
+                                <option key={v._id || vIdx} value={v._id || v.title}>
+                                  {v.title}
+                                </option>
+                              ))}
                             </select>
                           </div>
                           
@@ -2760,16 +3039,26 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           );
                         })()}
 
-                        <div className="flex justify-end gap-2 pt-2 border-t">
+                        </div>
+
+                        <div className="flex justify-end gap-2 p-5 border-t bg-gray-50 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => { setIsPricingModalOpen(false); setEditingPricingConfigIdx(null); }}
+                            className="px-4 py-2 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 font-bold text-xs"
+                          >
+                            Cancel
+                          </button>
                           <button
                             type="button"
                             onClick={handleSavePricingConfig}
-                            className="px-4 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                            className="px-5 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-md text-xs"
                           >
                             Save Configuration
                           </button>
                         </div>
                       </div>
+                    </div>
                     )}
 
 

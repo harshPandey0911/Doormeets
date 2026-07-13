@@ -297,9 +297,6 @@ const AdminSettings = () => {
 
     if (!invoicePrefix?.trim()) return "Invoice Prefix is required";
 
-    const sacRegex = /^\d{6}$/;
-    if (!sacCode || !sacRegex.test(sacCode)) return "Invalid SAC Code (must be 6 digits)";
-
     return null;
   };
 
@@ -799,17 +796,10 @@ const AdminSettings = () => {
 
                     <div className="pt-4 border-t border-gray-100">
                       <h4 className="text-xs font-bold text-gray-700 mb-3">Invoice Settings</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Prefix</label>
-                          <input type="text" name="invoicePrefix" value={billingSettings.invoicePrefix} onChange={handleBillingChange}
-                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500 uppercase" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">SAC Code</label>
-                          <input type="text" name="sacCode" value={billingSettings.sacCode} onChange={handleBillingChange}
-                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500" />
-                        </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Prefix</label>
+                        <input type="text" name="invoicePrefix" value={billingSettings.invoicePrefix} onChange={handleBillingChange}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500 uppercase" />
                       </div>
                     </div>
 

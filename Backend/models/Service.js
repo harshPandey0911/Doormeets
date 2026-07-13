@@ -78,10 +78,12 @@ const variantSchema = new mongoose.Schema({
   category: { type: String, trim: true, default: '' },       // Grouping of variants (addons)
   extraPrice: { type: Number, default: 0 },                  // Extra ₹ added to base price
   description: { type: String, trim: true, default: '' },    // Optional short description
+  iconUrl: { type: String, default: null },                  // Add-on/Variant image URL
   isActive: { type: Boolean, default: true },
   gstPercentage: { type: Number, default: 18 },
   gstIncluded: { type: Boolean, default: true },
   platformCommission: { type: Number, default: 20 },
+  vendorPayout: { type: Number, default: 0 },
   l1Commission: { type: Number, default: 10 },
   l2Commission: { type: Number, default: 15 },
   l3Commission: { type: Number, default: 20 }

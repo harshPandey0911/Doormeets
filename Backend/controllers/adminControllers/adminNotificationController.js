@@ -10,9 +10,13 @@ const Vendor = require('../../models/Vendor');
 const {
   sendNotificationToUser,
   sendNotificationToVendor,
+  sendNotificationToWorker,
   sendBroadcastToAllUsers,
-  sendBroadcastToAllVendors
+  sendBroadcastToAllVendors,
+  sendBroadcastToAllWorkers
 } = require('../../services/firebaseAdmin');
+const mongoose = require('mongoose');
+const Worker = mongoose.models.Worker || mongoose.model('Worker');
 
 // ─── Helper: build FCM payload from admin form data ─────────────────────────
 function buildFCMPayload({ title, body, imageUrl, actionUrl }) {
@@ -307,13 +311,127 @@ const deleteNotification = async (req, res) => {
   }
 };
 
+// ─── 9. Send notification to a specific Worker ───────────────────────────────
+const sendToWorker = async (req, res) => {
+  try {
+    const { workerId, title, body, imageUrl, actionUrl } = req.body;
+
+    if (!workerId || !title || !body) {
+      return res.status(400).json({
+        success: false,
+        message: 'workerId, title, and body are required'
+      });
+    }
+
+    const worker = await Worker.findById(workerId).select('name phone fcmTokens fcmTokenMobile');
+    if (!worker) {
+      return res.status(404).json({ success: false, message: 'Worker not found' });
+    }
+
+    const notification = await Notification.create({
+      workerId,
+      type: 'admin_broadcast',
+      title,
+      message: body,
+      imageUrl: imageUrl || null,
+      actionUrl: actionUrl || null,
+      data: { sentBy: req.user?.id, targetType: 'specific_worker' }
+    });
+
+    const payload = buildFCMPayload({ title, body, imageUrl, actionUrl });
+    await sendNotificationToWorker(workerId, payload);
+
+    console.log(`[Admin Notif] Sent to worker: ${worker.name} (${workerId})`);
+
+    res.status(200).json({
+      success: true,
+      message: `Notification "${title}" sent to worker ${worker.name}`,
+      notification
+    });
+  } catch (error) {
+    console.error('[Admin Notif] sendToWorker error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send notification' });
+  }
+};
+
+// ─── 10. Broadcast to ALL Workers ─────────────────────────────────────────────
+const sendToAllWorkers = async (req, res) => {
+  try {
+    const { title, body, imageUrl, actionUrl } = req.body;
+
+    if (!title || !body) {
+      return res.status(400).json({
+        success: false,
+        message: 'title and body are required'
+      });
+    }
+
+    const payload = buildFCMPayload({ title, body, imageUrl, actionUrl });
+
+    const notification = await Notification.create({
+      type: 'admin_broadcast',
+      title,
+      message: body,
+      imageUrl: imageUrl || null,
+      actionUrl: actionUrl || null,
+      data: {
+        sentBy: req.user?.id,
+        targetType: 'all_workers',
+        isBroadcast: true
+      }
+    });
+
+    const result = await sendBroadcastToAllWorkers(payload);
+
+    console.log(`[Admin Notif] Broadcast to all workers: Success=${result.successCount}, Failed=${result.failureCount}`);
+
+    res.status(200).json({
+      success: true,
+      message: `Broadcast "${title}" sent to ${result.totalWorkers} workers`,
+      stats: result,
+      notificationId: notification._id
+    });
+  } catch (error) {
+    console.error('[Admin Notif] sendToAllWorkers error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send broadcast notification' });
+  }
+};
+
+// ─── 11. Search Workers for targeting ─────────────────────────────────────────
+const searchWorkers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    let queryObj = {};
+
+    if (q && q.trim().length >= 1) {
+      queryObj.$or = [
+        { name: { $regex: q.trim(), $options: 'i' } },
+        { phone: { $regex: q.trim(), $options: 'i' } }
+      ];
+    }
+
+    const workers = await Worker.find(queryObj)
+      .select('name phone')
+      .limit(30)
+      .lean();
+
+    res.status(200).json({ success: true, data: workers });
+  } catch (error) {
+    console.error('[Admin Notif] searchWorkers error:', error);
+    res.status(500).json({ success: false, message: 'Worker search mein error aaya' });
+  }
+};
+
 module.exports = {
   sendToUser,
   sendToAllUsers,
   sendToVendor,
   sendToAllVendors,
+  sendToWorker,
+  sendToAllWorkers,
   getBroadcastHistory,
   searchUsers,
   searchVendors,
+  searchWorkers,
   deleteNotification
 };

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { themeColors } from '../../../../../theme';
-import { FiClock, FiStar, FiChevronRight, FiCheck, FiX, FiUser } from 'react-icons/fi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { FiClock, FiStar, FiChevronRight, FiCheck, FiX, FiUser, FiAlertCircle } from 'react-icons/fi';
 
 const VendorSearchModal = ({ 
   isOpen, 
@@ -12,12 +11,30 @@ const VendorSearchModal = ({
   bids = [], 
   onSelectBid, 
   onWait,
-  bookingDeadline 
+  onCancelSearch,
+  bookingDeadline,
+  maxSearchTimeMinutes = 10 // Total search time from settings (default 10 min)
 }) => {
   const [dots, setDots] = useState('.');
   const [timeLeft, setTimeLeft] = useState('');
+  const [searchTimeLeft, setSearchTimeLeft] = useState('');
   const [viewMode, setViewMode] = useState('searching'); // 'searching' | 'single_quote' | 'multi_quote'
   const [activeBidIndex, setActiveBidIndex] = useState(0);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const searchStartRef = useRef(null);
+
+  // Track search start time
+  useEffect(() => {
+    if (isOpen && (currentStep === 'searching' || currentStep === 'waiting')) {
+      if (!searchStartRef.current) {
+        searchStartRef.current = Date.now();
+      }
+    }
+    if (!isOpen) {
+      searchStartRef.current = null;
+    }
+  }, [isOpen, currentStep]);
 
   // Sync viewMode with bids and currentStep
   useEffect(() => {
@@ -40,13 +57,38 @@ const VendorSearchModal = ({
     }
   }, [isOpen, viewMode]);
 
-  // Timer Countdown Logic
+  // Total search time countdown
+  useEffect(() => {
+    if (!isOpen || (currentStep !== 'searching' && currentStep !== 'waiting')) return;
+
+    const totalSearchMs = maxSearchTimeMinutes * 60 * 1000;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const startTime = searchStartRef.current || now;
+      const elapsed = now - startTime;
+      const remaining = totalSearchMs - elapsed;
+
+      if (remaining <= 0) {
+        setSearchTimeLeft('00:00');
+        clearInterval(interval);
+      } else {
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        setSearchTimeLeft(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, currentStep, maxSearchTimeMinutes]);
+
+  // Timer Countdown for multi-quote deadline
   useEffect(() => {
     if (!isOpen) return;
 
     const interval = setInterval(() => {
       const now = new Date().getTime();
-      const targetTime = viewMode === 'multi_quote' ? (bookingDeadline || Date.now() + 300000) : (Date.now() + 60000); 
+      const targetTime = viewMode === 'multi_quote' ? (bookingDeadline || Date.now() + 300000) : (Date.now() + 60000);
       const end = new Date(targetTime).getTime();
       const diff = end - now;
 
@@ -63,9 +105,26 @@ const VendorSearchModal = ({
     return () => clearInterval(interval);
   }, [isOpen, bookingDeadline, viewMode]);
 
+  const handleCancelClick = () => {
+    setShowCancelConfirm(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    setCancelLoading(true);
+    try {
+      if (onCancelSearch) {
+        await onCancelSearch();
+      }
+    } finally {
+      setCancelLoading(false);
+      setShowCancelConfirm(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const currentBid = bids[activeBidIndex] || bids[0];
+  const isSearching = currentStep === 'searching' || currentStep === 'waiting';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
@@ -80,9 +139,10 @@ const VendorSearchModal = ({
         </button>
 
         {/* SEARCHING RADAR VIEW */}
-        {(currentStep === 'searching' || currentStep === 'waiting') && viewMode === 'searching' && (
-          <div className="flex flex-col items-center justify-center pt-12 pb-16 px-6 min-h-[480px]">
-            <div className="relative w-56 h-56 flex items-center justify-center mb-8">
+        {isSearching && viewMode === 'searching' && (
+          <div className="flex flex-col items-center justify-center pt-10 pb-8 px-6 min-h-[480px]">
+            {/* Radar Animation */}
+            <div className="relative w-52 h-52 flex items-center justify-center mb-6">
               <div className="absolute inset-0 rounded-full border-2 opacity-20 animate-ping" style={{ borderColor: themeColors.brand.teal, animationDuration: '3s' }}></div>
               <div className="absolute inset-4 rounded-full border opacity-40 animate-ping" style={{ borderColor: themeColors.brand.teal, animationDuration: '3s', animationDelay: '0.6s' }}></div>
               <div className="absolute inset-0 rounded-full animate-spin-slow opacity-30" style={{ background: `conic-gradient(transparent 180deg, ${themeColors.brand.teal})`, animationDuration: '4s' }}></div>
@@ -92,16 +152,40 @@ const VendorSearchModal = ({
                 </div>
               </div>
             </div>
-            <div className="text-center relative z-20 px-4 mb-4">
+
+            {/* Title */}
+            <div className="text-center relative z-20 px-4 mb-3">
               <h3 className="text-xl font-normal text-gray-900 mb-2 italic uppercase tracking-tight">Searching Experts</h3>
               <p className="text-gray-400 text-[10px] font-normal uppercase tracking-[0.2em]">Finding nearby professionals{dots}</p>
             </div>
-            <div className="px-4 py-2 bg-gray-50 rounded-full border border-gray-100 text-[10px] font-normal uppercase tracking-tighter text-gray-400 mt-4">Estimated wait: 1-2 mins</div>
+
+            {/* Search Time Countdown */}
+            <div className="flex items-center gap-2 px-5 py-2.5 bg-gray-50 rounded-2xl border border-gray-100 mb-5">
+              <FiClock className="w-3.5 h-3.5 text-gray-400 animate-pulse" />
+              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                Search expires in{' '}
+                <span className="text-gray-800 font-bold tabular-nums">{searchTimeLeft || `${maxSearchTimeMinutes}:00`}</span>
+              </span>
+            </div>
+
+            {/* Total Search Info */}
+            <p className="text-[10px] text-gray-300 font-normal mb-6 uppercase tracking-widest text-center">
+              Up to {maxSearchTimeMinutes} min search window
+            </p>
+
+            {/* Cancel Search Button */}
+            <button
+              onClick={handleCancelClick}
+              className="w-full py-3.5 rounded-2xl border-2 border-red-100 bg-red-50/60 text-red-500 text-xs font-semibold uppercase tracking-widest transition-all active:scale-95 hover:bg-red-50 flex items-center justify-center gap-2"
+            >
+              <FiX className="w-4 h-4" strokeWidth={2.5} />
+              Cancel Search
+            </button>
           </div>
         )}
 
         {/* SINGLE QUOTE VIEW (SS1 style) */}
-        {(currentStep === 'searching' || currentStep === 'waiting') && viewMode === 'single_quote' && currentBid && (
+        {isSearching && viewMode === 'single_quote' && currentBid && (
           <div className="flex flex-col">
             <div className="h-44 bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] flex flex-col items-center justify-center p-6 text-white relative">
               <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 border border-white/30 shadow-xl">
@@ -162,7 +246,7 @@ const VendorSearchModal = ({
         )}
 
         {/* MULTI QUOTE VIEW */}
-        {(currentStep === 'searching' || currentStep === 'waiting') && viewMode === 'multi_quote' && (
+        {isSearching && viewMode === 'multi_quote' && (
           <div className="flex flex-col pt-12 pb-8 px-6 min-h-[520px]">
             <div className="text-center mb-6">
               <h3 className="text-2xl font-normal text-gray-900 mb-1 italic">Choice is Yours</h3>
@@ -228,6 +312,34 @@ const VendorSearchModal = ({
                 className="w-full py-5 bg-black text-white rounded-[2rem] font-normal text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95"
               >
                 Back to Details
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* CANCEL CONFIRM OVERLAY */}
+        {showCancelConfirm && (
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-[2.5rem] px-8 py-10">
+            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-5">
+              <FiAlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">Cancel Search?</h3>
+            <p className="text-sm text-gray-500 text-center mb-8 leading-relaxed">
+              Your booking request will be cancelled and you'll be returned to checkout.
+            </p>
+            <div className="w-full space-y-3">
+              <button
+                onClick={handleConfirmCancel}
+                disabled={cancelLoading}
+                className="w-full py-4 bg-red-500 text-white rounded-2xl font-semibold text-sm uppercase tracking-wider transition-all active:scale-95 disabled:opacity-60"
+              >
+                {cancelLoading ? 'Cancelling...' : 'Yes, Cancel Search'}
+              </button>
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="w-full py-4 bg-gray-50 text-gray-700 rounded-2xl font-semibold text-sm uppercase tracking-wider transition-all active:scale-95"
+              >
+                Keep Searching
               </button>
             </div>
           </div>

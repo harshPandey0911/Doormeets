@@ -305,8 +305,8 @@ const createBooking = async (req, res) => {
           const totalAfterCharges = amount - visitingCharges;
           basePrice = parseFloat((totalAfterCharges / 1.18).toFixed(2));
           tax = parseFloat((totalAfterCharges - basePrice).toFixed(2));
-          discount = 0;
-          finalAmount = amount + pendingPenalty;
+          discount = reqDiscount || 0;
+          finalAmount = amount - discount + pendingPenalty;
         }
       } else {
         // Fallback to service pricing (if no amount sent)
@@ -724,11 +724,12 @@ const createBooking = async (req, res) => {
           categoryForBackground?.categoryType === 'product';
 
         // Assign waves to vendors
-        const potentialVendorsWithWaves = sortedVendors.map((v, index) => {
+        // ALL vendors assigned to wave 1 — simultaneous broadcast within 1 minute
+        const potentialVendorsWithWaves = sortedVendors.map((v) => {
           return {
             vendorId: v._id,
             distance: v.distance || 0,
-            wave: isProduct ? 1 : index + 1 // Sequential waves for services, broadcast for products
+            wave: 1 // Always wave 1 — all vendors notified at once
           };
         });
 
@@ -1033,7 +1034,7 @@ const getBookingById = async (req, res) => {
       .populate('userId', 'name phone email')
       .populate('vendorId', 'name businessName phone email address profilePhoto')
       .populate('serviceId', 'title description iconUrl images')
-      .populate('categoryId', 'title slug')
+      .populate('categoryId', 'title slug sacCode')
       .populate('workerId', 'name phone rating totalJobs location profilePhoto')
       .lean();
 
@@ -1256,6 +1257,72 @@ const cancelBooking = async (req, res) => {
     booking.cancellationReason = cancellationReason || 'Cancelled by user';
 
     await booking.save();
+
+    // ── REAL-TIME: Notify vendor/worker/all notified vendors via Socket.IO ──
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        // Notify assigned vendor
+        if (booking.vendorId) {
+          io.to(`vendor_${booking.vendorId}`).emit('booking_cancelled', {
+            bookingId: booking._id.toString(),
+            bookingNumber: booking.bookingNumber,
+            message: `Booking #${booking.bookingNumber} has been cancelled by the customer.`
+          });
+          io.to(`vendor_${booking.vendorId}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            status: 'cancelled'
+          });
+        }
+
+        // Notify assigned worker
+        if (booking.workerId) {
+          io.to(`worker_${booking.workerId}`).emit('booking_cancelled', {
+            bookingId: booking._id.toString(),
+            bookingNumber: booking.bookingNumber,
+            message: `Job #${booking.bookingNumber} has been cancelled by the customer.`
+          });
+          io.to(`worker_${booking.workerId}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            status: 'cancelled'
+          });
+        }
+
+        // Remove from ALL notified vendors who haven't been assigned
+        if (booking.notifiedVendors && booking.notifiedVendors.length > 0) {
+          booking.notifiedVendors.forEach(vId => {
+            io.to(`vendor_${vId}`).emit('booking_cancelled', {
+              bookingId: booking._id.toString(),
+              bookingNumber: booking.bookingNumber,
+              message: `Booking #${booking.bookingNumber} has been cancelled.`
+            });
+            io.to(`vendor_${vId}`).emit('removeVendorBooking', {
+              id: booking._id.toString()
+            });
+          });
+        }
+
+        // Notify user
+        io.to(`user_${userId}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: 'cancelled'
+        });
+      }
+    } catch (socketErr) {
+      console.error('[CancelBooking] Socket notification failed:', socketErr);
+    }
+
+    // Expire all pending BookingRequests for this booking
+    try {
+      const BookingRequest = require('../../models/BookingRequest');
+      await BookingRequest.updateMany(
+        { bookingId: booking._id, status: { $in: ['PENDING', 'VIEWED'] } },
+        { $set: { status: 'EXPIRED' } }
+      );
+    } catch (brErr) {
+      console.error('[CancelBooking] Failed to expire BookingRequests:', brErr);
+    }
 
     // Send notification to user
     await createNotification({

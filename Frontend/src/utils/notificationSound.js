@@ -157,6 +157,53 @@ export const stopAlertRing = () => {
   }
 };
 
+/**
+ * Play urgent admin booking alarm
+ * Plays 3 loud descending beeps repeated 3 times.
+ * Specifically for when a booking needs manual admin assignment.
+ */
+export const playAdminBookingAlarm = async () => {
+  try {
+    initAudio();
+    if (audioContext.state === 'suspended') {
+      try { await audioContext.resume(); } catch (e) { /* ignore */ }
+    }
+
+    const playBeepSet = (delayMs) => {
+      const now = audioContext.currentTime + (delayMs / 1000);
+      // Three descending beeps: C6, A5, F5
+      const beeps = [
+        { freq: 1046.5, start: 0, dur: 0.18 },
+        { freq: 880.0, start: 0.22, dur: 0.18 },
+        { freq: 698.5, start: 0.44, dur: 0.22 },
+      ];
+      beeps.forEach(({ freq, start, dur }) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, now + start);
+        gain.gain.setValueAtTime(0, now + start);
+        gain.gain.linearRampToValueAtTime(0.55, now + start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + start + dur);
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start(now + start);
+        osc.stop(now + start + dur);
+      });
+    };
+
+    // Play 3 rounds with 700ms gap between each
+    playBeepSet(0);
+    playBeepSet(800);
+    playBeepSet(1600);
+
+    return true;
+  } catch (error) {
+    console.error('Error playing admin booking alarm:', error);
+    return false;
+  }
+};
+
 // Check if sound is enabled in settings
 export const isSoundEnabled = (userType = 'vendor') => {
   let storageKey = 'vendorData';
@@ -272,6 +319,7 @@ export default {
   playNotificationSound,
   playSingleBeep,
   playAlertRing,
+  playAdminBookingAlarm,
   isSoundEnabled,
   playSirenAlarm,
   stopSirenAlarm,

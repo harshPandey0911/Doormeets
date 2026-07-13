@@ -15,6 +15,8 @@ const categorySchema = z.object({
   title: z.string().min(2, "Category title must be at least 2 characters"),
   slug: z.string().optional(),
   homeIconUrl: z.string().optional(),
+  bannerImage: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
   homeBadge: z.string().optional(),
   hasSaleBadge: z.boolean(),
   showOnHome: z.boolean(),
@@ -291,6 +293,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       title: titleVal,
       slug: slugify(titleVal),
       homeIconUrl: homeIconUrlVal,
+      bannerImage: form.bannerImage || null,
+      description: form.description || null,
       homeBadge: homeBadgeVal,
       hasSaleBadge: Boolean(form.hasSaleBadge),
       hasBrands: Boolean(form.hasBrands),
@@ -316,7 +320,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       return;
     }
 
-    const { title, slug, homeIconUrl, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, templateId, enableBrands, brandRequired, enableConsultantBooking, enableWarranty, enableMultiVisit, enablePricingMatrix, showOnHome, categoryType, status, minWalletBalance, sacCode } = validationResult.data;
+    const { title, slug, homeIconUrl, bannerImage, description, homeBadge, hasSaleBadge, hasBrands, hasSubCategory, hasBrand, templateId, enableBrands, brandRequired, enableConsultantBooking, enableWarranty, enableMultiVisit, enablePricingMatrix, showOnHome, categoryType, status, minWalletBalance, sacCode } = validationResult.data;
 
     try {
       setLoading(true);
@@ -344,8 +348,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         title,
         slug,
         homeIconUrl: homeIconUrl || null,
-        bannerImage: form.bannerImage || null,
-        description: (form.description || '').trim() || null,
+        bannerImage: bannerImage || null,
+        description: (description || '').trim() || null,
         homeBadge: homeBadge || null,
         hasSaleBadge,
         hasBrands,
@@ -944,7 +948,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             <div className="flex items-center gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
               <div className="h-16 w-24 bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                 {form.bannerImage ? (
-                  <img src={form.bannerImage} alt="Banner Preview" className="w-full h-full object-cover" />
+                  <img src={toAssetUrl(form.bannerImage)} alt="Banner Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="text-gray-400 text-xs font-semibold text-center">No Banner</div>
                 )}
@@ -1012,21 +1016,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
           )}
 
 
-          <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">Link to Profession (Optional)</label>
-            <select
-              value={form.professionId}
-              onChange={(e) => setForm((p) => ({ ...p, professionId: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">-- Select a Profession --</option>
-              {professions.map((prof) => (
-                <option key={prof._id || prof.id} value={prof._id || prof.id}>
-                  {prof.name}
-                </option>
-              ))}
-            </select>
-          </div>
+
 
           {/* City Assignment */}
           <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">

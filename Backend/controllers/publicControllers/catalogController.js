@@ -545,11 +545,44 @@ const getPublicBrandBySlug = async (req, res) => {
       ];
     }
 
-    const allServices = await Service.find(allServicesQuery)
-      .populate('vendorId', 'name businessName isOnline availability workStatus location address geoLocation')
-      .lean();
+    const allServicesRaw = await Service.find(allServicesQuery).populate('vendorId', 'name businessName isOnline availability workStatus location address geoLocation').lean();
+    const ServiceBrandPricing = require('../../models/ServiceBrandPricing');
+    const allPricings = await ServiceBrandPricing.find({
+      serviceId: { $in: allServicesRaw.map(s => s._id) },
+      isActive: true
+    }).lean();
+    const allServices = allServicesRaw.map(svc => {
+      let resolvedVariants = [];
+      if (Array.isArray(svc.variants)) {
+        resolvedVariants = svc.variants.map(v => {
+          const variantPricing = allPricings.find(p => 
+            p.serviceId.toString() === svc._id.toString() &&
+            p.variantId && p.variantId.toString() === v._id.toString()
+          );
+          return {
+            ...v,
+            extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : v.extraPrice
+          };
+        });
+      }
 
-    // Deduplicate services by title, picking the one from the closest/best vendor
+      let cheapestPrice = 0;
+      const variantPrices = resolvedVariants.map(v => v.extraPrice).filter(price => price > 0);
+      if (variantPrices.length > 0) {
+        cheapestPrice = Math.min(...variantPrices);
+      } else {
+        const basePricing = allPricings.find(p => p.serviceId.toString() === svc._id.toString() && !p.variantId);
+        if (basePricing) {
+          cheapestPrice = basePricing.finalCustomerPrice || basePricing.basePrice || 0;
+        }
+      }
+      return {
+        ...svc,
+        basePrice: cheapestPrice,
+        variants: resolvedVariants
+      };
+    });
+
     const groupedServices = new Map();
     allServices.forEach(svc => {
       const vendor = svc.vendorId;
@@ -893,27 +926,45 @@ const getPublicServices = async (req, res) => {
       isActive: true
     }).lean();
 
-    // Map pricing back to activeServices
+    // Map pricing back to activeServices - resolve variant prices and use the cheapest variant price
     activeServices = activeServices.map(svc => {
-      // Find exact pricing match if possible (matching subCategoryId and brandId)
-      const exactPricing = pricings.find(p => 
-        p.serviceId.toString() === svc._id.toString() &&
-        (targetBrand ? (p.brandId && p.brandId.toString() === targetBrand._id.toString()) : true) &&
-        (p.subCategoryId ? p.subCategoryId.toString() === svc.subCategoryId?.toString() : true)
-      );
-
-      // Or fallback to first pricing found for this service
-      const pricing = exactPricing || pricings.find(p => p.serviceId.toString() === svc._id.toString());
-
-      if (pricing) {
-        return {
-          ...svc,
-          basePrice: pricing.finalCustomerPrice || pricing.basePrice, // Present final price as basePrice for user app
-          gstPercentage: pricing.gstPercentage || 18,
-          // Vendor profit shouldn't be exposed to the public user app, only to vendors
-        };
+      // Map variants with resolved prices
+      let resolvedVariants = [];
+      if (Array.isArray(svc.variants)) {
+        resolvedVariants = svc.variants.map(v => {
+          // Find pricing config specifically for this variant
+          const variantPricing = pricings.find(p => 
+            p.serviceId.toString() === svc._id.toString() &&
+            p.variantId && p.variantId.toString() === v._id.toString()
+          );
+          return {
+            ...v,
+            extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : v.extraPrice
+          };
+        });
       }
-      return svc;
+
+      // Determine cheapest price
+      let cheapestPrice = 0;
+      const variantPrices = resolvedVariants.map(v => v.extraPrice).filter(price => price > 0);
+      if (variantPrices.length > 0) {
+        cheapestPrice = Math.min(...variantPrices);
+      } else {
+        // Fallback to base pricing configuration if no variant pricing is defined
+        const basePricing = pricings.find(p => p.serviceId.toString() === svc._id.toString() && !p.variantId);
+        if (basePricing) {
+          cheapestPrice = basePricing.finalCustomerPrice || basePricing.basePrice || 0;
+        }
+      }
+
+      const cheapestPricing = pricings.find(p => p.serviceId.toString() === svc._id.toString());
+
+      return {
+        ...svc,
+        basePrice: cheapestPrice, // Present final cheapest price as basePrice for user app
+        variants: resolvedVariants,
+        gstPercentage: cheapestPricing ? (cheapestPricing.gstPercentage || 18) : 18
+      };
     });
 
     // Fetch workflow data for multi_visit services
@@ -1764,6 +1815,36 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     }
     const pricingRules = await PricingRule.find({ serviceId }).lean();
     const pageBlocks = await ServicePageBlock.find({ serviceId, isVisible: true }).sort({ order: 1 }).lean();
+
+    // Resolve variant-specific prices from ServiceBrandPricing cache
+    const pricings = await ServiceBrandPricing.find({
+      serviceId,
+      isActive: true
+    }).lean();
+
+    let resolvedVariants = [];
+    if (Array.isArray(resolvedService.variants)) {
+      resolvedVariants = resolvedService.variants.map(v => {
+        let variantPricing = null;
+        if (cityId) {
+          variantPricing = pricings.find(p => 
+            p.variantId && p.variantId.toString() === v._id.toString() &&
+            p.cityId && p.cityId.toString() === cityId.toString()
+          );
+        }
+        if (!variantPricing) {
+          variantPricing = pricings.find(p => 
+            p.variantId && p.variantId.toString() === v._id.toString() &&
+            !p.cityId
+          );
+        }
+        return {
+          ...v,
+          extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : v.extraPrice
+        };
+      });
+      resolvedService.variants = resolvedVariants;
+    }
 
     res.status(200).json({
       success: true,

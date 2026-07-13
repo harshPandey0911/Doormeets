@@ -715,9 +715,24 @@ export default function BookingDetails() {
       socket.on('booking_updated', handleBookingUpdate);
       socket.on('payment_success', handleBookingUpdate);
 
+      // Listen for booking cancellation by user — redirect vendor immediately
+      const handleBookingCancelled = (data) => {
+        if (data.bookingId === id || data.bookingId === booking?._id || data.bookingId === booking?.id) {
+          toast.error(data.message || 'This booking has been cancelled by the customer.');
+          // Update local state to show cancelled status
+          setBooking(prev => prev ? { ...prev, status: 'cancelled' } : prev);
+          // Redirect to dashboard after short delay
+          setTimeout(() => {
+            navigate('/vendor/dashboard');
+          }, 2000);
+        }
+      };
+      socket.on('booking_cancelled', handleBookingCancelled);
+
       return () => {
         socket.off('booking_updated', handleBookingUpdate);
         socket.off('payment_success', handleBookingUpdate);
+        socket.off('booking_cancelled', handleBookingCancelled);
       };
     }
   }, [socket, id]);
@@ -1078,6 +1093,43 @@ export default function BookingDetails() {
         }
       }
     });
+  };
+
+  const isStartJourneyDisabled = () => {
+    if (!booking || !booking.scheduledDate) return false;
+    if (booking.bookingType === 'instant' || booking.scheduledTime === 'ASAP') return false;
+
+    try {
+      const schedDateObj = new Date(booking.scheduledDate);
+      const timeStr = booking.scheduledTime || "";
+      const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      
+      if (timeMatch) {
+        let hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3];
+        
+        if (ampm) {
+          if (ampm.toUpperCase() === 'PM' && hours < 12) {
+            hours += 12;
+          }
+          if (ampm.toUpperCase() === 'AM' && hours === 12) {
+            hours = 0;
+          }
+        }
+        
+        schedDateObj.setHours(hours, minutes, 0, 0);
+      }
+      
+      const now = new Date();
+      const diffMs = schedDateObj.getTime() - now.getTime();
+      const oneHourInMs = 60 * 60 * 1000;
+      
+      return diffMs > oneHourInMs;
+    } catch (e) {
+      console.error("Error checking journey start time:", e);
+      return false;
+    }
   };
 
   const handleStartJourney = async () => {
@@ -2271,19 +2323,30 @@ export default function BookingDetails() {
                 </div>
               )}
 
-              {(booking.status === 'confirmed' || booking.status === 'accepted' || booking.status === 'assigned') && (
-                <button
-                  onClick={handleStartJourney}
-                  className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
-                  style={{
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
-                  }}
-                >
-                  <FiNavigation className="w-5 h-5" />
-                  Start Journey
-                </button>
-              )}
+              {(booking.status === 'confirmed' || booking.status === 'accepted' || booking.status === 'assigned') && (() => {
+                const disabled = isStartJourneyDisabled();
+                return (
+                  <div className="w-full">
+                    <button
+                      onClick={handleStartJourney}
+                      disabled={disabled}
+                      className={`w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-gradient-to-r from-green-500 to-green-600 hover:brightness-105'}`}
+                      style={disabled ? { boxShadow: 'none', background: '#9CA3AF' } : {
+                        background: 'linear-gradient(135deg, #10B981, #059669)',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                      }}
+                    >
+                      <FiNavigation className="w-5 h-5" />
+                      Start Journey
+                    </button>
+                    {disabled && (
+                      <p className="text-[11px] text-amber-600 font-semibold text-center mt-1.5 bg-amber-50 py-1.5 px-2.5 rounded-lg border border-amber-100">
+                        🔒 Journey can only be started 1 hour before the scheduled time.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {booking.status === 'journey_started' && (
                 <button

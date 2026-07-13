@@ -108,6 +108,17 @@ exports.createPricing = async (req, res) => {
     if (req.body.brandId === '') req.body.brandId = null;
     if (req.body.subCategoryId === '') req.body.subCategoryId = null;
     if (req.body.cityId === '' || req.body.cityId === 'all') req.body.cityId = null;
+    // Normalize variantId — empty string or falsy → null
+    if (!req.body.variantId || req.body.variantId === '') req.body.variantId = null;
+
+    console.log('[CreatePricing] Incoming payload:', {
+      serviceId: req.body.serviceId,
+      variantId: req.body.variantId,
+      categoryId: req.body.categoryId,
+      brandId: req.body.brandId,
+      cityId: req.body.cityId,
+      customerPrice: req.body.customerPrice
+    });
 
     // Fetch global settings to overwrite commission rates
     let settings = await Settings.findOne({ type: 'global' });
@@ -139,6 +150,8 @@ exports.createPricing = async (req, res) => {
       createdBy: req.user.id
     });
 
+    console.log('[CreatePricing] Successfully created pricing:', pricing._id, 'variantId:', pricing.variantId);
+
     const liveCalculations = calculatePricingDetails(
       pricing.customerPrice,
       pricing.gstPercentage,
@@ -161,6 +174,7 @@ exports.createPricing = async (req, res) => {
     });
   } catch (error) {
     if (error.code === 11000) {
+      console.error('[CreatePricing] Duplicate key error. keyPattern:', error.keyPattern, 'keyValue:', error.keyValue);
       return res.status(400).json({ success: false, message: 'Pricing config already exists for this exact combination.' });
     }
     console.error('Create pricing error:', error);
