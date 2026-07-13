@@ -1816,6 +1816,36 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const pricingRules = await PricingRule.find({ serviceId }).lean();
     const pageBlocks = await ServicePageBlock.find({ serviceId, isVisible: true }).sort({ order: 1 }).lean();
 
+    // Resolve variant-specific prices from ServiceBrandPricing cache
+    const pricings = await ServiceBrandPricing.find({
+      serviceId,
+      isActive: true
+    }).lean();
+
+    let resolvedVariants = [];
+    if (Array.isArray(resolvedService.variants)) {
+      resolvedVariants = resolvedService.variants.map(v => {
+        let variantPricing = null;
+        if (cityId) {
+          variantPricing = pricings.find(p => 
+            p.variantId && p.variantId.toString() === v._id.toString() &&
+            p.cityId && p.cityId.toString() === cityId.toString()
+          );
+        }
+        if (!variantPricing) {
+          variantPricing = pricings.find(p => 
+            p.variantId && p.variantId.toString() === v._id.toString() &&
+            !p.cityId
+          );
+        }
+        return {
+          ...v,
+          extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : v.extraPrice
+        };
+      });
+      resolvedService.variants = resolvedVariants;
+    }
+
     res.status(200).json({
       success: true,
       service: resolvedService,

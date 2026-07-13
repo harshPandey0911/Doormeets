@@ -1018,8 +1018,16 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
           await Promise.all(
             pricingConfigs.map(config => {
               const { _tempId, ...configPayload } = config;
+              let finalVariantId = configPayload.variantId || null;
+              if (finalVariantId && typeof finalVariantId === 'string' && Array.isArray(newService.variants)) {
+                const matchedVar = newService.variants.find(v => v.title === finalVariantId);
+                if (matchedVar) {
+                  finalVariantId = matchedVar._id;
+                }
+              }
               return api.post('/admin/pricing', {
                 ...configPayload,
+                variantId: finalVariantId,
                 categoryId: formData.categoryId,
                 subCategoryId: formData.subCategoryId || null,
                 serviceId: newService._id
@@ -1235,12 +1243,23 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
 
     const selectedCategory = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
     
+    let resolvedVariantId = pricingForm.variantId || null;
+    if (resolvedVariantId && typeof resolvedVariantId === 'string' && resolvedVariantId.length > 0) {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(resolvedVariantId);
+      if (!isObjectId) {
+        const matchedVar = variants.find(v => v.title === resolvedVariantId || v._id === resolvedVariantId || v.id === resolvedVariantId);
+        if (matchedVar) {
+          resolvedVariantId = matchedVar._id || matchedVar.id || resolvedVariantId;
+        }
+      }
+    }
+
     const payload = {
       categoryId: formData.categoryId,
       subCategoryId: formData.subCategoryId || null,
       brandId: (selectedCategory?.enableBrands !== false && serviceType !== 'image_base' && pricingForm.brandId) ? pricingForm.brandId : null,
       cityId: pricingForm.cityId || null,
-      variantId: pricingForm.variantId || null,
+      variantId: resolvedVariantId,
       customerPrice: Number(pricingForm.customerPrice || 0),
       originalPrice: Number(pricingForm.originalPrice || 0) || null,
       pricePerMinute: isMinuteBased ? Number(pricingForm.pricePerMinute || 0) : null,
@@ -2635,15 +2654,17 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       </div>
                     </div>
 
-                    {/* Inline add/edit form */}
                     {isPricingModalOpen && (
-                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="text-xs font-bold text-gray-700">
-                            {editingPricingConfigIdx !== null ? '📝 Edit Pricing configuration' : '➕ Add Pricing configuration'}
-                          </span>
-                          <button type="button" onClick={() => { setIsPricingModalOpen(false); setEditingPricingConfigIdx(null); }} className="text-xs font-bold text-gray-400 hover:text-gray-600">✕ Close</button>
-                        </div>
+                      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[99999] p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+                          <div className="flex justify-between items-center border-b p-5 shrink-0">
+                            <span className="text-sm font-extrabold text-gray-800">
+                              {editingPricingConfigIdx !== null ? '📝 Edit Pricing configuration' : '➕ Add Pricing configuration'}
+                            </span>
+                            <button type="button" onClick={() => { setIsPricingModalOpen(false); setEditingPricingConfigIdx(null); }} className="text-xl font-bold text-gray-400 hover:text-gray-650">✕</button>
+                          </div>
+                          
+                          <div className="flex-1 overflow-y-auto p-6 space-y-4">
                         
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
@@ -3018,16 +3039,26 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           );
                         })()}
 
-                        <div className="flex justify-end gap-2 pt-2 border-t">
+                        </div>
+
+                        <div className="flex justify-end gap-2 p-5 border-t bg-gray-50 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => { setIsPricingModalOpen(false); setEditingPricingConfigIdx(null); }}
+                            className="px-4 py-2 border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-100 font-bold text-xs"
+                          >
+                            Cancel
+                          </button>
                           <button
                             type="button"
                             onClick={handleSavePricingConfig}
-                            className="px-4 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                            className="px-5 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-md text-xs"
                           >
                             Save Configuration
                           </button>
                         </div>
                       </div>
+                    </div>
                     )}
 
 

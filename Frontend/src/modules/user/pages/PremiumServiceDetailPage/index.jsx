@@ -87,6 +87,8 @@ const PremiumServiceDetailPage = () => {
       rawImages = service.gallery;
     } else if (service?.image) {
       rawImages = [service.image];
+    } else if (service?.iconUrl) {
+      rawImages = [service.iconUrl];
     } else {
       rawImages = [getDetailDummyImage(service?.title)];
     }
@@ -191,9 +193,28 @@ const PremiumServiceDetailPage = () => {
 
   const toggleVariant = useCallback((variant) => {
     setSelectedVariants(prev => {
-      const isSelected = prev.some(v => v._id === variant._id || v.title === variant.title);
+      const isSelected = prev.some(v => (v._id || v.title) === (variant._id || variant.title));
       if (isSelected) return prev.filter(v => (v._id || v.title) !== (variant._id || variant.title));
-      return [...prev, variant];
+      return [...prev, { ...variant, quantity: 1 }];
+    });
+  }, []);
+
+  const updateVariantQuantity = useCallback((variant, change) => {
+    setSelectedVariants(prev => {
+      const existingIndex = prev.findIndex(v => (v._id || v.title) === (variant._id || variant.title));
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        const newQty = (updated[existingIndex].quantity || 1) + change;
+        if (newQty <= 0) {
+          return prev.filter(v => (v._id || v.title) !== (variant._id || variant.title));
+        } else {
+          updated[existingIndex] = { ...updated[existingIndex], quantity: newQty };
+          return updated;
+        }
+      } else if (change > 0) {
+        return [...prev, { ...variant, quantity: 1 }];
+      }
+      return prev;
     });
   }, []);
 
@@ -207,7 +228,7 @@ const PremiumServiceDetailPage = () => {
     return groups;
   }, [variants]);
 
-  const variantExtraTotal = selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0), 0);
+  const variantExtraTotal = selectedVariants.reduce((sum, v) => sum + (Number(v.extraPrice) || 0) * (v.quantity || 1), 0);
   const finalPrice = calculatedPrice + variantExtraTotal;
 
   const [selectedDuration, setSelectedDuration] = useState(30);
@@ -240,6 +261,100 @@ const PremiumServiceDetailPage = () => {
     if (rem === 0) return `${hrs} Hour${hrs > 1 ? 's' : ''}`;
     return `${hrs} Hr ${rem} Min`;
   };
+
+  const renderVariantsList = () => {
+    if (variants.length === 0) return null;
+    return (
+      <div className="space-y-5 w-full">
+        <div className="border-b pb-3 border-gray-100 dark:border-zinc-800">
+          <h3 className="text-base font-black text-slate-800 dark:text-zinc-150 flex items-center gap-2">
+            💅 Choose Services & Add-ons
+          </h3>
+          <p className="text-xs text-gray-400 mt-0.5">Select the services/add-ons you want to book from the list below</p>
+        </div>
+        
+        <div className="space-y-4">
+          {variants.map((variant, idx) => {
+            const selectedEntry = selectedVariants.find(v => (v._id || v.title) === (variant._id || variant.title));
+            const isSelected = !!selectedEntry;
+            const qty = selectedEntry?.quantity || 0;
+            return (
+              <div
+                key={variant._id || idx}
+                className={`p-4 rounded-[24px] border-2 flex items-center justify-between transition-all select-none ${
+                  isSelected ? 'border-violet-600 dark:border-violet-500 shadow-md' : 'border-gray-100 dark:border-zinc-850 hover:border-gray-200'
+                }`}
+                style={{
+                  backgroundColor: isSelected ? 'rgba(124,58,237,0.03)' : 'var(--card-bg)'
+                }}
+              >
+                <div className="flex gap-4 items-center flex-1 pr-4">
+                  {variant.iconUrl ? (
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white shrink-0 border border-gray-150 flex items-center justify-center shadow-sm">
+                      <img src={toAssetUrl(variant.iconUrl)} alt={variant.title} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-800 shrink-0 flex items-center justify-center text-xl shadow-sm">
+                      📦
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-800 dark:text-zinc-200">{variant.title}</h4>
+                    {variant.description && (
+                      <p className="text-[11px] text-gray-500 dark:text-zinc-400 leading-relaxed max-w-xl mt-1 line-clamp-2">
+                        {variant.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end shrink-0 gap-3">
+                  <div className="text-right">
+                    <div className="font-extrabold text-sm text-violet-700 dark:text-violet-400">
+                      ₹{(variant.extraPrice || 0) * (qty || 1)}
+                    </div>
+                    {qty > 1 && (
+                      <div className="text-[10px] text-gray-400 mt-0.5">₹{variant.extraPrice} × {qty}</div>
+                    )}
+                  </div>
+                  {isSelected ? (
+                    <div className="flex items-center gap-0 rounded-full border-2 border-violet-600 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, -1); }}
+                        className="w-8 h-8 flex items-center justify-center bg-violet-600 text-white text-sm font-black hover:bg-violet-700 transition-colors cursor-pointer"
+                      >
+                        −
+                      </button>
+                      <span className="w-8 h-8 flex items-center justify-center text-xs font-black text-violet-700 dark:text-violet-300 bg-white dark:bg-zinc-900">
+                        {qty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
+                        className="w-8 h-8 flex items-center justify-center bg-violet-600 text-white text-sm font-black hover:bg-violet-700 transition-colors cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
+                      className="px-5 py-1.5 rounded-full border border-violet-600 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/20 text-xs font-black transition-all cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const [uploadingFiles, setUploadingFiles] = useState({});
   const [lightboxImages, setLightboxImages] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
@@ -497,8 +612,8 @@ const PremiumServiceDetailPage = () => {
   const handleAdd = async () => {
     if (!service) return;
 
-    // If variants exist and popup hasn't been shown yet, open the popup
-    if (service?.serviceType !== 'image_base' && variants.length > 0 && !showVariantPopup) {
+    // If variants exist, they select them inline directly on the page
+    if (false && service?.serviceType !== 'image_base' && variants.length > 0 && !showVariantPopup) {
       setShowVariantPopup(true);
       return;
     }
@@ -524,13 +639,12 @@ const PremiumServiceDetailPage = () => {
           value: dynamicAnswers[key]
         };
       });
-
     // Add selected variants to dynamic fields
     if (selectedVariants.length > 0) {
       dynamicFieldsPayload.push({
         name: 'Selected Variants',
         label: 'Selected Variants',
-        value: selectedVariants.map(v => `${v.title}${v.extraPrice > 0 ? ` (+₹${v.extraPrice})` : ''}`).join(', ')
+        value: selectedVariants.map(v => `${v.title} (x${v.quantity || 1})${v.extraPrice > 0 ? ` (+₹${v.extraPrice * (v.quantity || 1)})` : ''}`).join(', ')
       });
     }
 
@@ -1453,6 +1567,8 @@ const PremiumServiceDetailPage = () => {
           </section>
         )}
 
+        {renderVariantsList()}
+
         {fields.filter(f => f.showToUser !== false).length > 0 && (
           <section className="mt-3 py-2 px-1">
             <div className="flex items-center gap-2 mb-4">
@@ -1942,6 +2058,18 @@ const PremiumServiceDetailPage = () => {
                 </div>
               </div>
             </div>
+            {(!service.packages || service.packages.length === 0) && (
+              <div className="pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={handleAdd}
+                  className="w-full py-4 rounded-2xl font-black text-white text-xs shadow-lg transition-transform hover:scale-[1.01] uppercase tracking-wider cursor-pointer"
+                  style={{ background: 'linear-gradient(to right, var(--primary), var(--primary-dark, #e08a30))' }}
+                >
+                  {variants.length > 0 ? 'Select Add-ons & Add to Cart' : 'Add to Cart'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1978,6 +2106,8 @@ const PremiumServiceDetailPage = () => {
             </div>
           </div>
         )}
+
+
 
         {/* Two-Column Split Layout or Full Width Grid */}
         {false && service?.serviceType === 'package_base' && service?.packages?.length > 0 ? (
@@ -2075,12 +2205,15 @@ const PremiumServiceDetailPage = () => {
           </div>
         ) : (
           /* 2-Column Grid Layout when NO Packages */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 w-full">
-            {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, idx) => (
-              <div key={idx}>
-                {renderBlockContent(block)}
-              </div>
-            ))}
+          <div className="flex flex-col gap-8 mb-12 w-full">
+            {renderVariantsList()}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+              {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, idx) => (
+                <div key={idx}>
+                  {renderBlockContent(block)}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
