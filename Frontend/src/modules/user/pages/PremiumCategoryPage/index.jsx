@@ -572,7 +572,7 @@ const PremiumCategoryPage = () => {
         {/* Mobile Packages Section */}
         {generatedPackages.length > 0 && (
           <div className="mb-8 space-y-4">
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">Combos</h2>
+            <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">Packages</h2>
             {generatedPackages.map((comboItem, comboIdx) => {
               // Check if package is already inside cart by matching dynamic field selected package value
               const matchedCartItem = cartItems.find(item => {
@@ -651,46 +651,47 @@ const PremiumCategoryPage = () => {
               };
 
               return (
-                <div key={comboItem.id || comboIdx} className="p-4 bg-[#FDF2F8] dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-3xl shadow-sm">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-pink-600 dark:text-pink-400">
-                    <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-[10px] uppercase">Special Combo</span>
-                    <span>{comboItem.discount || 'Special Combo'}</span>
+                <div key={comboItem.id || comboIdx} className="p-5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[20px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-4">
+                  {/* Discount tag badge */}
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <span>🏷️</span>
+                    <span>{comboItem.discount || '10% off *'}</span>
                   </div>
-                  <div className="flex justify-between items-start mt-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-800 dark:text-pink-200">{comboItem.title}</h3>
-                      <p className="mt-1 text-xs text-slate-650 dark:text-zinc-400 leading-normal max-w-lg">{comboItem.description}</p>
-                      
-                      <ul className="space-y-1 mt-2.5">
-                        {comboItem.services.map((s, idx) => (
-                          <li key={idx} className="text-[10px] text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
-                            <span className="w-1 h-1 bg-gray-400 dark:bg-zinc-650 rounded-full"></span>
-                            <span>{s.title}</span>
-                          </li>
-                        ))}
-                      </ul>
 
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="text-base font-bold text-slate-900 dark:text-white">₹{comboItem.price}</span>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0 pr-4">
+                      <h3 className="text-base font-extrabold text-gray-900 dark:text-white leading-snug">{comboItem.title}</h3>
+                      
+                      {/* Rating under title */}
+                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-zinc-400 mt-1">
+                        <span className="text-yellow-500">★</span>
+                        <span className="font-extrabold text-gray-800 dark:text-zinc-200">{comboItem.rating || '4.5'}</span>
+                        <span>({comboItem.reviews || '1.2k'} reviews)</span>
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <span className="text-base font-extrabold text-gray-900 dark:text-white">₹{comboItem.price}</span>
                         {comboItem.originalPrice > comboItem.price && (
-                          <span className="text-xs text-slate-400 line-through">₹{comboItem.originalPrice}</span>
+                          <span className="text-xs text-slate-450 dark:text-zinc-500 line-through">₹{comboItem.originalPrice}</span>
                         )}
                       </div>
                     </div>
 
-                    <div className="shrink-0 ml-4">
+                    {/* Add button / Quantity selector */}
+                    <div className="shrink-0">
                       {addedCount > 0 ? (
-                        <div className="w-[72px] h-[32px] bg-white dark:bg-zinc-800 border border-pink-200 rounded-xl text-[#B33A35] font-bold text-xs shadow-sm flex items-center justify-between px-1.5">
+                        <div className="w-[84px] h-[32px] bg-violet-750 text-white rounded-lg text-xs shadow-md flex items-center justify-between px-2">
                           <button
                             onClick={handleDecreaseComboItem}
-                            className="w-5 h-5 hover:bg-pink-50 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-sm"
+                            className="w-5 h-5 hover:bg-violet-855 rounded-full flex items-center justify-center text-sm font-bold"
                           >
                             -
                           </button>
-                          <span className="text-slate-800 dark:text-white font-extrabold">{addedCount}</span>
+                          <span className="font-extrabold">{addedCount}</span>
                           <button
                             onClick={handleIncreaseComboItem}
-                            className="w-5 h-5 hover:bg-pink-50 dark:hover:bg-zinc-700 rounded-full flex items-center justify-center text-sm"
+                            className="w-5 h-5 hover:bg-violet-855 rounded-full flex items-center justify-center text-sm font-bold"
                           >
                             +
                           </button>
@@ -698,12 +699,35 @@ const PremiumCategoryPage = () => {
                       ) : (
                         <button
                           onClick={handleAddComboItem}
-                          className="px-4 py-2 rounded-2xl bg-pink-600 dark:bg-pink-700 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-pink-200 dark:shadow-none"
+                          className="px-4 py-1.5 rounded-lg border border-violet-200 dark:border-zinc-700 text-violet-700 dark:text-violet-400 font-extrabold text-xs hover:bg-violet-50 dark:hover:bg-zinc-800 transition-colors"
                         >
-                          Add Combo
+                          Add
                         </button>
                       )}
                     </div>
+                  </div>
+
+                  {/* Divider line */}
+                  <div className="w-full border-t border-gray-100 dark:border-zinc-800/80 my-2" />
+
+                  {/* List of services */}
+                  <div className="space-y-1">
+                    {comboItem.services.map((s, idx) => (
+                      <div key={idx} className="text-[11px] leading-relaxed">
+                        <span className="font-bold text-gray-700 dark:text-zinc-300">{s.title}: </span>
+                        <span className="text-gray-500 dark:text-zinc-400">{s.description || s.title}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Edit action */}
+                  <div className="pt-1.5">
+                    <button
+                      onClick={() => setShowComboEditModal(true)}
+                      className="text-violet-700 dark:text-violet-400 font-extrabold text-xs hover:underline flex items-center gap-0.5"
+                    >
+                      Edit your package
+                    </button>
                   </div>
                 </div>
               );
@@ -874,7 +898,7 @@ const PremiumCategoryPage = () => {
               {/* Desktop Packages Section */}
               {generatedPackages.length > 0 && (
                 <div className="pb-8 border-b border-gray-200 dark:border-zinc-800 space-y-8">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Combos</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Packages</h2>
                   {generatedPackages.map((comboItem, comboIdx) => {
                     // Check if package is already inside cart by matching dynamic field selected package value
                     const matchedCartItem = cartItems.find(item => {
@@ -994,6 +1018,16 @@ const PremiumCategoryPage = () => {
                               </li>
                             ))}
                           </ul>
+
+                          {/* Edit action */}
+                          <div className="pt-3">
+                            <button
+                              onClick={() => setShowComboEditModal(true)}
+                              className="text-violet-700 dark:text-violet-400 font-extrabold text-xs hover:underline flex items-center gap-0.5"
+                            >
+                              Edit your package
+                            </button>
+                          </div>
                         </div>
 
                         {/* Right Column: Rounded Cover Image with Absolute ADD Button */}

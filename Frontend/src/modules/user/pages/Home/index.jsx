@@ -893,7 +893,6 @@ const Home = () => {
                               image: toAssetUrl(service.image),
                               slug: service.slug
                             }))}
-                            onSeeAllClick={() => navigate('/user/categories')}
                             onServiceClick={(service) => {
                               if (service.categoryId) {
                                 const cat = categories.find(c => c.id === service.categoryId);
