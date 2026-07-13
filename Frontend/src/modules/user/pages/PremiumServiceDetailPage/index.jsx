@@ -266,13 +266,6 @@ const PremiumServiceDetailPage = () => {
     if (variants.length === 0) return null;
     return (
       <div className="space-y-5 w-full">
-        <div className="border-b pb-3 border-gray-100 dark:border-zinc-800">
-          <h3 className="text-base font-black text-slate-800 dark:text-zinc-150 flex items-center gap-2">
-            💅 Choose Services & Add-ons
-          </h3>
-          <p className="text-xs text-gray-400 mt-0.5">Select the services/add-ons you want to book from the list below</p>
-        </div>
-        
         <div className="space-y-4">
           {variants.map((variant, idx) => {
             const selectedEntry = selectedVariants.find(v => (v._id || v.title) === (variant._id || variant.title));
@@ -2058,7 +2051,7 @@ const PremiumServiceDetailPage = () => {
                 </div>
               </div>
             </div>
-            {(!service.packages || service.packages.length === 0) && (
+            {(!service.packages || service.packages.length === 0) && (!variants || variants.length === 0) && (
               <div className="pt-4 border-t border-gray-100">
                 <button
                   type="button"
@@ -2066,7 +2059,7 @@ const PremiumServiceDetailPage = () => {
                   className="w-full py-4 rounded-2xl font-black text-white text-xs shadow-lg transition-transform hover:scale-[1.01] uppercase tracking-wider cursor-pointer"
                   style={{ background: 'linear-gradient(to right, var(--primary), var(--primary-dark, #e08a30))' }}
                 >
-                  {variants.length > 0 ? 'Select Add-ons & Add to Cart' : 'Add to Cart'}
+                  Add to Cart
                 </button>
               </div>
             )}

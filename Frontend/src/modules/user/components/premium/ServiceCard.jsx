@@ -152,39 +152,6 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             <div className="w-full h-full bg-slate-200 dark:bg-zinc-700" />
           )}
         </div>
-
-        {/* Add/Quantity Button positioned on bottom center of image */}
-        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-[85%] z-10" onClick={(e) => e.stopPropagation()}>
-          {quantity > 0 ? (
-            <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-lg px-1 py-0.5 shadow-md">
-              <button 
-                type="button" 
-                onClick={() => onDecrease?.(service)} 
-                className="p-0.5 rounded text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
-              >
-                <FiMinus className="w-2.5 h-2.5" />
-              </button>
-              <span className="text-[9px] font-extrabold text-emerald-800 dark:text-emerald-300">
-                Added ({quantity})
-              </span>
-              <button 
-                type="button" 
-                onClick={() => onIncrease?.(service)} 
-                className="p-0.5 rounded text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
-              >
-                <FiPlus className="w-2.5 h-2.5" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => onAdd?.(service, e)}
-              className="w-full py-1 bg-white dark:bg-zinc-900 text-indigo-700 dark:text-indigo-400 border border-slate-200 dark:border-zinc-800 rounded-lg text-[10px] font-extrabold shadow-md hover:scale-[1.02] active:scale-95 transition-all text-center"
-            >
-              Add
-            </button>
-          )}
-        </div>
       </div>
     </motion.article>
   );
