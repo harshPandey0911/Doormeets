@@ -60,68 +60,77 @@ const Rewards = () => {
 
   return (
     <div
-      className="min-h-screen bg-white"
-      style={{ background: themeColors.backgroundGradient }}
+      className="min-h-screen transition-colors duration-200"
+      style={{ backgroundColor: 'var(--background)' }}
     >
       {/* Header */}
-      <div className="bg-white sticky top-0 z-50 border-b border-gray-100 px-4 py-3 flex items-center justify-between shadow-sm">
+      <div 
+        className="sticky top-0 z-50 border-b px-4 py-3 flex items-center justify-between shadow-xs transition-colors"
+        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+      >
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-1.5 hover:bg-gray-50 rounded-full transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors cursor-pointer"
           >
-            <FiArrowLeft className="w-5 h-5 text-gray-800" />
+            <FiArrowLeft className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
           </button>
           <div className="flex items-center gap-2">
-            <FiGift className="w-5 h-5" style={{ color: '#00A6A6' }} />
-            <h1 className="text-lg font-bold text-gray-900">Refer & Earn</h1>
+            <FiGift className="w-5 h-5 text-emerald-500" />
+            <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Refer & Earn</h1>
           </div>
         </div>
         <button
           onClick={() => navigate('/user/notifications')}
-          className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors cursor-pointer"
         >
-          <FiBell className="w-6 h-6 text-gray-700" />
+          <FiBell className="w-6 h-6" style={{ color: 'var(--text-secondary)' }} />
         </button>
       </div>
 
-      <main>
-        {/* Main Referral Section */}
-        <div className="bg-gray-50 relative overflow-hidden" style={{ background: 'transparent' }}>
+      <main className="max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
+        {/* Main Referral Section Card */}
+        <div 
+          className="relative overflow-hidden border rounded-3xl p-5 shadow-xs transition-colors"
+          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+        >
           {/* Dotted Pattern Background */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_black_1px,_transparent_1px)] bg-[length:20px_20px]"></div>
+          <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_var(--text-primary)_1px,_transparent_1px)] bg-[length:20px_20px]"></div>
           </div>
 
-          <div className="relative px-4 py-4">
-            <div className="flex items-start gap-3 mb-4">
+          <div className="relative space-y-5">
+            <div className="flex items-start gap-4">
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-black mb-2">
+                <h2 className="text-xl font-extrabold mb-2" style={{ color: 'var(--text-primary)' }}>
                   Refer and get FREE services
                 </h2>
-                <p className="text-xs text-gray-700 leading-relaxed">
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                   Invite your friends to try our services. They get instant ₹{referralData.refereeReward} wallet balance on signup. You get ₹{referralData.referrerReward} once they complete their first booking.
                 </p>
               </div>
               {/* Gift Box Illustration */}
               <div className="relative shrink-0">
-                <div className="w-16 h-16 bg-yellow-400 rounded-lg flex items-center justify-center transform rotate-12 shadow-lg">
+                <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center transform rotate-12 shadow-md">
                   <span className="text-3xl">🎁</span>
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full"></div>
-                <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-orange-300 rounded-full"></div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full"></div>
+                <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-orange-400 rounded-full"></div>
               </div>
             </div>
 
             {/* Referral Code Display Box */}
-            <div className="bg-white/90 backdrop-blur-sm border border-teal-100 rounded-2xl p-4 mb-4 flex items-center justify-between shadow-sm">
+            <div 
+              className="border rounded-2xl p-4 flex items-center justify-between shadow-xs transition-colors"
+              style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+            >
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-0.5">Your Referral Code</p>
-                <p className="text-xl font-bold text-gray-900 tracking-wide font-mono">{referralData.referralCode || 'DM-XXXXXX'}</p>
+                <p className="text-[10px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: 'var(--text-muted)' }}>Your Referral Code</p>
+                <p className="text-xl font-bold tracking-wide font-mono" style={{ color: 'var(--text-primary)' }}>{referralData.referralCode || 'DM-XXXXXX'}</p>
               </div>
               <button
                 onClick={handleCopyLink}
-                className="flex items-center gap-1.5 px-3 py-2 bg-teal-50 hover:bg-teal-100 text-[#00A6A6] text-xs font-semibold rounded-xl transition-all duration-200"
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold rounded-xl transition-all duration-200 cursor-pointer"
               >
                 <FiCopy className="w-4 h-4" />
                 Copy
@@ -129,52 +138,58 @@ const Rewards = () => {
             </div>
 
             {/* Stats Box */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-3.5 shadow-sm text-center">
-                <p className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Total Referrals</p>
-                <p className="text-2xl font-extrabold text-[#00A6A6]">{referralData.successfulReferrals}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div 
+                className="border rounded-2xl p-4 shadow-xs text-center transition-colors"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+              >
+                <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Total Referrals</p>
+                <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{referralData.successfulReferrals}</p>
               </div>
-              <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-3.5 shadow-sm text-center">
-                <p className="text-[10px] text-gray-500 font-semibold uppercase mb-1">Total Earnings</p>
-                <p className="text-2xl font-extrabold text-teal-600">₹{referralData.totalEarnings}</p>
+              <div 
+                className="border rounded-2xl p-4 shadow-xs text-center transition-colors"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+              >
+                <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Total Earnings</p>
+                <p className="text-2xl font-extrabold text-teal-600 dark:text-teal-400">₹{referralData.totalEarnings}</p>
               </div>
             </div>
 
             {/* Refer Via Section */}
-            <div className="mb-2">
-              <p className="text-xs font-medium text-gray-700 mb-2">Refer via</p>
-              <div className="flex gap-3">
+            <div className="pt-2">
+              <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Refer via</p>
+              <div className="flex gap-4">
                 {/* WhatsApp */}
                 <button
                   onClick={handleShareWhatsApp}
-                  className="flex flex-col items-center gap-1.5"
+                  className="flex flex-col items-center gap-1.5 cursor-pointer group"
                 >
-                  <div className="w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center shadow-xs transition-transform group-hover:scale-105 active:scale-95">
                     <FaWhatsapp className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-[10px] text-gray-700">Whatsapp</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Whatsapp</span>
                 </button>
 
                 {/* Messenger */}
                 <button
                   onClick={handleShareMessenger}
-                  className="flex flex-col items-center gap-1.5"
+                  className="flex flex-col items-center gap-1.5 cursor-pointer group"
                 >
-                  <div className="w-12 h-12 bg-[#0084FF] rounded-full flex items-center justify-center">
-                    <FaFacebookMessenger className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-[#0084FF] rounded-full flex items-center justify-center shadow-xs transition-transform group-hover:scale-105 active:scale-95">
+                    <FaFacebookMessenger className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-[10px] text-gray-700">Messenger</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Messenger</span>
                 </button>
 
                 {/* Copy Link */}
                 <button
                   onClick={handleCopyLink}
-                  className="flex flex-col items-center gap-1.5"
+                  className="flex flex-col items-center gap-1.5 cursor-pointer group"
                 >
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#00A6A6' }}>
-                    <FiCopy className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center shadow-xs transition-transform group-hover:scale-105 active:scale-95">
+                    <FiCopy className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-[10px] text-gray-700">Copy Link</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Copy Link</span>
                 </button>
               </div>
             </div>
@@ -182,70 +197,85 @@ const Rewards = () => {
         </div>
 
         {/* How it works Section */}
-        <div className="px-4 py-4 bg-white rounded-t-3xl shadow-sm border-t border-gray-100">
-          <h3 className="text-base font-bold text-black mb-3">How it works?</h3>
+        <div 
+          className="p-5 border rounded-3xl shadow-xs transition-colors"
+          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+        >
+          <h3 className="text-base font-extrabold mb-4" style={{ color: 'var(--text-primary)' }}>How it works?</h3>
 
-          <div className="relative pl-7">
+          <div className="relative pl-7 space-y-5">
             {/* Vertical Line */}
-            <div className="absolute left-3.5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+            <div 
+              className="absolute left-3.5 top-2 bottom-2 w-0.5"
+              style={{ backgroundColor: 'var(--border)' }}
+            ></div>
 
             {/* Step 1 */}
-            <div className="relative mb-4">
-              <div className="absolute -left-7 w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
+            <div className="relative">
+              <div 
+                className="absolute -left-7 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+                style={{ backgroundColor: 'var(--background)', color: 'var(--text-primary)' }}
+              >
                 1
               </div>
-              <p className="text-xs text-gray-700">Invite your friends & get rewarded</p>
+              <p className="text-xs pt-0.5" style={{ color: 'var(--text-secondary)' }}>Invite your friends & get rewarded</p>
             </div>
 
             {/* Step 2 */}
-            <div className="relative mb-4">
-              <div className="absolute -left-7 w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
+            <div className="relative">
+              <div 
+                className="absolute -left-7 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+                style={{ backgroundColor: 'var(--background)', color: 'var(--text-primary)' }}
+              >
                 2
               </div>
-              <p className="text-xs text-gray-700">They get ₹{referralData.refereeReward} wallet bonus instantly upon signup</p>
+              <p className="text-xs pt-0.5" style={{ color: 'var(--text-secondary)' }}>They get ₹{referralData.refereeReward} wallet bonus instantly upon signup</p>
             </div>
 
             {/* Step 3 */}
             <div className="relative">
-              <div className="absolute -left-7 w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
+              <div 
+                className="absolute -left-7 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors"
+                style={{ backgroundColor: 'var(--background)', color: 'var(--text-primary)' }}
+              >
                 3
               </div>
-              <p className="text-xs text-gray-700">You get ₹{referralData.referrerReward} once their first booking is completed</p>
+              <p className="text-xs pt-0.5" style={{ color: 'var(--text-secondary)' }}>You get ₹{referralData.referrerReward} once their first booking is completed</p>
             </div>
           </div>
         </div>
 
-        {/* Links Section */}
-        <div className="px-4 py-3 border-t border-gray-100 bg-white">
-          <div className="flex items-center gap-2 text-[#00A6A6] text-xs">
-            <span className="text-[#00A6A6]">•</span>
-            <button className="hover:underline">Terms and conditions</button>
-            <span className="text-[#00A6A6]">•</span>
-            <button className="hover:underline">FAQs</button>
-          </div>
-        </div>
-
-        {/* Scratch Cards Section - New Addition */}
-        <div className="px-4 py-4 bg-white border-t border-gray-100">
-          <h2 className="text-base font-bold text-gray-800 mb-1.5">
+        {/* Scratch Cards Section */}
+        <div 
+          className="p-5 border rounded-3xl shadow-xs transition-colors"
+          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+        >
+          <h2 className="text-base font-extrabold mb-1" style={{ color: 'var(--text-primary)' }}>
             You are yet to earn any scratch cards
           </h2>
-          <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
             Start referring to get surprises
           </p>
 
           {/* Dotted Line Separator */}
-          <div className="border-t border-dotted border-gray-300 my-3"></div>
+          <div className="border-t border-dotted my-4" style={{ borderColor: 'var(--border)' }}></div>
 
           {/* Referral Offer */}
-          <div className="flex items-center gap-2.5 mt-4">
-            <div className="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-3 mt-4">
+            <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center flex-shrink-0">
               <span className="text-xl">🎁</span>
             </div>
-            <p className="text-sm text-gray-800 font-medium">
+            <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
               Earn ₹{referralData.referrerReward} on every successful referral
             </p>
           </div>
+        </div>
+
+        {/* Links Section */}
+        <div className="flex items-center gap-3 text-xs pl-2">
+          <button className="hover:underline text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer">Terms and conditions</button>
+          <span style={{ color: 'var(--text-muted)' }}>•</span>
+          <button className="hover:underline text-emerald-600 dark:text-emerald-400 font-semibold cursor-pointer">FAQs</button>
         </div>
       </main>
     </div>

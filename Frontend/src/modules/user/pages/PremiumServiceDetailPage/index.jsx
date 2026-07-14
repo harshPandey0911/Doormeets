@@ -331,38 +331,35 @@ const PremiumServiceDetailPage = () => {
   const renderVariantsList = () => {
     if (variants.length === 0) return null;
     return (
-      <div className="space-y-4 w-full px-1">
+      <div className="space-y-4 w-full px-0">
         <div className="space-y-3.5">
           {variants.map((variant, idx) => {
             const selectedEntry = selectedVariants.find(v => (v._id || v.title) === (variant._id || variant.title));
             const isSelected = !!selectedEntry;
             const qty = selectedEntry?.quantity || 0;
-            return (
+             return (
               <div
                 key={variant._id || idx}
-                className={`p-3.5 rounded-[20px] flex items-center justify-between transition-all select-none border-2 ${
-                  isSelected 
-                    ? 'border-[#B33A35] dark:border-[#B33A35] shadow-[0_6px_20px_-4px_rgba(179,58,53,0.15)] scale-[1.01]' 
-                    : 'border-gray-100 dark:border-zinc-850 hover:border-gray-200'
-                }`}
+                className={`p-2 rounded-2xl flex items-center justify-between transition-all select-none border-2`}
                 style={{
-                  backgroundColor: isSelected ? 'rgba(179, 58, 53, 0.03)' : 'var(--card-bg)'
+                  backgroundColor: isSelected ? 'rgba(179, 58, 53, 0.03)' : 'var(--card-bg)',
+                  borderColor: 'var(--border)'
                 }}
               >
-                <div className="flex gap-3.5 items-center flex-1 pr-3 min-w-0">
+                <div className="flex gap-3 items-center flex-1 pr-2 min-w-0">
                   {variant.iconUrl ? (
-                    <div className="w-14 h-14 rounded-[16px] overflow-hidden bg-white shrink-0 border border-gray-100 dark:border-zinc-800 flex items-center justify-center shadow-sm">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-white shrink-0 border" style={{ borderColor: 'var(--border)' }}>
                       <img src={toAssetUrl(variant.iconUrl)} alt={variant.title} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="w-14 h-14 rounded-[16px] bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-800 shrink-0 flex items-center justify-center text-lg shadow-sm">
+                    <div className="w-20 h-20 rounded-xl bg-gray-50 dark:bg-zinc-800 border shrink-0 flex items-center justify-center text-2xl shadow-sm" style={{ borderColor: 'var(--border)' }}>
                       📦
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h4 className="font-extrabold text-[13px] text-slate-800 dark:text-zinc-200 truncate">{variant.title}</h4>
+                    <h4 className="font-semibold text-[12px]" style={{ color: 'var(--text-primary)' }}>{variant.title}</h4>
                     {variant.description && (
-                      <p className="text-[10px] text-gray-400 dark:text-zinc-500 leading-relaxed max-w-xl mt-0.5 line-clamp-2">
+                      <p className="text-[10px] leading-relaxed max-w-xl mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
                         {variant.description}
                       </p>
                     )}
@@ -371,7 +368,7 @@ const PremiumServiceDetailPage = () => {
 
                 <div className="flex flex-col items-end shrink-0 gap-2.5 ml-2">
                   <div className="text-right">
-                    <div className="font-extrabold text-[13px] text-[#B33A35] dark:text-[#D56C67]">
+                    <div className="font-semibold text-[12px] text-[#B33A35] dark:text-[#D56C67]">
                       ₹{(variant.extraPrice || 0) * (qty || 1)}
                     </div>
                     {qty > 1 && (
@@ -379,21 +376,21 @@ const PremiumServiceDetailPage = () => {
                     )}
                   </div>
                   {isSelected ? (
-                    <div className="flex items-center gap-0 rounded-full bg-[#B33A35] text-white shadow-sm overflow-hidden border border-[#B33A35]">
+                    <div className="flex items-center gap-0 rounded-xl bg-[#B33A35] text-white shadow-sm overflow-hidden border border-[#B33A35]">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, -1); }}
-                        className="w-7.5 h-7.5 flex items-center justify-center text-white text-xs font-black hover:bg-[#9E2E2A] transition-colors cursor-pointer"
+                        className="w-7.5 h-7.5 flex items-center justify-center text-white text-xs font-semibold hover:bg-[#9E2E2A] transition-colors cursor-pointer"
                       >
                         −
                       </button>
-                      <span className="w-7.5 h-7.5 flex items-center justify-center text-xs font-extrabold text-white">
+                      <span className="w-7.5 h-7.5 flex items-center justify-center text-xs font-semibold text-white">
                         {qty}
                       </span>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
-                        className="w-7.5 h-7.5 flex items-center justify-center text-white text-xs font-black hover:bg-[#9E2E2A] transition-colors cursor-pointer"
+                        className="w-7.5 h-7.5 flex items-center justify-center text-white text-xs font-semibold hover:bg-[#9E2E2A] transition-colors cursor-pointer"
                       >
                         +
                       </button>
@@ -402,7 +399,7 @@ const PremiumServiceDetailPage = () => {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
-                      className="px-4 py-1.5 rounded-full border-2 border-[#B33A35] text-[#B33A35] hover:bg-red-50/50 dark:hover:bg-red-950/20 text-xs font-black transition-all cursor-pointer"
+                      className="px-4 py-1.5 rounded-xl border-2 border-[#B33A35] text-[#B33A35] hover:bg-red-50/50 dark:hover:bg-red-950/20 text-xs font-semibold transition-all cursor-pointer"
                     >
                       Add
                     </button>
@@ -1102,11 +1099,6 @@ const PremiumServiceDetailPage = () => {
           <FiArrowLeft className="w-3.5 h-3.5" />
         </button>
 
-        {/* Heart & Share Overlay */}
-        <div className="absolute right-4 top-4 flex gap-2 z-20">
-          <button className="rounded-full bg-black/20 p-1.5 backdrop-blur text-white hover:bg-black/30"><FiHeart className="w-3.5 h-3.5" /></button>
-          <button className="rounded-full bg-black/20 p-1.5 backdrop-blur text-white hover:bg-black/30"><FiShare2 className="w-3.5 h-3.5" /></button>
-        </div>
 
         {/* Progress Bar / Dots (Dynamic: shows only if more than 1 image) */}
         {serviceImages.length > 1 && (
