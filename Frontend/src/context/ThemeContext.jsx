@@ -18,6 +18,12 @@ export const ThemeProvider = ({ children }) => {
       root.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
+
+    // Clean up theme classes/attributes on unmount (e.g. when leaving user module to admin/vendor/worker)
+    return () => {
+      root.removeAttribute('data-theme');
+      root.classList.remove('dark');
+    };
   }, [theme]);
 
   const toggleTheme = () => {

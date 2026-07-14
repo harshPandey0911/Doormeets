@@ -729,7 +729,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[78px] md:pt-[100px] space-y-5 md:space-y-8 max-w-[1600px] mx-auto w-full px-0 md:px-12">
+        <main className="pt-[68px] md:pt-[80px] space-y-6 md:space-y-10 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -756,7 +756,7 @@ const Home = () => {
           ) : (
             <>
               {/* Search Bar Section */}
-              <div className="mt-2 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
+              <div className="px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
                 <div className="w-full">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>
@@ -764,7 +764,7 @@ const Home = () => {
 
               {/* Painting Quote Approval Section */}
               {pendingQuotes.length > 0 && (
-                <motion.div variants={itemVariants} className="px-3 md:px-5 max-w-lg lg:max-w-2xl mx-auto w-full mt-4">
+                <motion.div variants={itemVariants} className="px-3 md:px-5 max-w-lg lg:max-w-2xl mx-auto w-full">
                   <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-ping" />
                     🎨 Painting Quotes Awaiting Your Approval
@@ -838,7 +838,7 @@ const Home = () => {
                           {/* Service Categories */}
                           <motion.section 
                             variants={itemVariants} 
-                            className="relative overflow-hidden py-2"
+                            className="relative overflow-hidden"
                             style={{ backgroundColor: 'var(--background)' }}
                           >
                             <ServiceCategories
@@ -855,7 +855,7 @@ const Home = () => {
                           {categories.some(c => c.categoryType === 'product') && (
                             <motion.section 
                               variants={itemVariants} 
-                              className="relative overflow-hidden py-2"
+                              className="relative overflow-hidden"
                               style={{ backgroundColor: 'var(--background)' }}
                             >
                               <ServiceCategories
