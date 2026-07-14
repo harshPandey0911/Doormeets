@@ -232,6 +232,26 @@ const PackageBased = () => {
     }
   };
 
+  // Helper to upload image for a specific group item by index
+  const [uploadingItemImageIdx, setUploadingItemImageIdx] = useState(null);
+  const handleItemImageUpload = async (file, itemIdx) => {
+    setUploadingItemImageIdx(itemIdx);
+    try {
+      const response = await serviceService.uploadImage(file, 'Doormeets/item_images');
+      if (response.success && response.imageUrl) {
+        handleUpdateItemInGroup(itemIdx, 'imageUrl', response.imageUrl);
+        toast.success('Item image uploaded!');
+      } else {
+        toast.error('Upload failed');
+      }
+    } catch (error) {
+      toast.error('Upload error');
+    } finally {
+      setUploadingItemImageIdx(null);
+    }
+  };
+
+
   // Initialize service under subcategory
   const handleInitializeService = async () => {
     if (!selectedSubCategoryId) return;
@@ -328,7 +348,7 @@ const PackageBased = () => {
   const handleAddItemToGroup = () => {
     setGroupForm(p => ({
       ...p,
-      items: [...p.items, { title: '', price: 0, vendorPayout: 0, description: '', duration: '' }]
+      items: [...p.items, { title: '', price: 0, vendorPayout: 0, description: '', duration: '', imageUrl: '' }]
     }));
   };
 
@@ -1163,7 +1183,8 @@ const PackageBased = () => {
                   required
                   value={groupForm.title}
                   onChange={e => setGroupForm({ ...groupForm, title: e.target.value })}
-                  className="w-full px-3 py-2.5 border rounded-xl text-xs focus:outline-none font-semibold text-gray-800"
+                  className="w-full px-3 py-2.5 border rounded-xl text-xs focus:outline-none font-semibold"
+                  style={{ color: '#1f2937', backgroundColor: '#ffffff', borderColor: '#d1d5db' }}
                   placeholder="e.g. Haircut, Massage, Face care"
                 />
               </div>
@@ -1200,6 +1221,7 @@ const PackageBased = () => {
                     value={groupForm.iconUrl || ''}
                     onChange={e => setGroupForm({ ...groupForm, iconUrl: e.target.value })}
                     className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                    style={{ color: '#1f2937', backgroundColor: '#ffffff', borderColor: '#d1d5db' }}
                     placeholder="Or enter image URL: https://..."
                   />
                 </div>
@@ -1242,7 +1264,8 @@ const PackageBased = () => {
                           value={item.title}
                           onChange={e => handleUpdateItemInGroup(i, 'title', e.target.value)}
                           placeholder="Item Name (e.g. Haircut for men)"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white font-semibold"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none font-semibold"
+                          style={{ backgroundColor: '#ffffff', color: '#1f2937', borderColor: '#d1d5db' }}
                         />
                         <input
                           type="number"
@@ -1250,7 +1273,8 @@ const PackageBased = () => {
                           value={item.price}
                           onChange={e => handleUpdateItemInGroup(i, 'price', Number(e.target.value))}
                           placeholder="Price ₹"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white font-bold text-emerald-600"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none font-bold text-emerald-600"
+                          style={{ backgroundColor: '#ffffff', color: '#10b981', borderColor: '#d1d5db' }}
                           min="0"
                         />
                         <input
@@ -1259,7 +1283,8 @@ const PackageBased = () => {
                           value={item.vendorPayout === 0 ? '' : item.vendorPayout}
                           onChange={e => handleUpdateItemInGroup(i, 'vendorPayout', Number(e.target.value) || 0)}
                           placeholder="Payout ₹"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white font-bold text-blue-600"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none font-bold text-blue-600"
+                          style={{ backgroundColor: '#ffffff', color: '#2563eb', borderColor: '#d1d5db' }}
                           min="0"
                         />
                       </div>
@@ -1269,15 +1294,55 @@ const PackageBased = () => {
                           value={item.duration || ''}
                           onChange={e => handleUpdateItemInGroup(i, 'duration', e.target.value)}
                           placeholder="Duration (e.g. 30 mins)"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none"
+                          style={{ backgroundColor: '#ffffff', color: '#1f2937', borderColor: '#d1d5db' }}
                         />
                         <input
                           type="text"
                           value={item.description || ''}
                           onChange={e => handleUpdateItemInGroup(i, 'description', e.target.value)}
                           placeholder="Description / Note"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none bg-white"
+                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none"
+                          style={{ backgroundColor: '#ffffff', color: '#1f2937', borderColor: '#d1d5db' }}
                         />
+                      </div>
+                      {/* Item Image Upload */}
+                      <div className="pt-1 space-y-1.5">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Item Image (shown in options modal)</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            id={`itemImg_${i}`}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={e => e.target.files?.[0] && handleItemImageUpload(e.target.files[0], i)}
+                          />
+                          <label
+                            htmlFor={`itemImg_${i}`}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg cursor-pointer transition-all flex items-center gap-1"
+                          >
+                            + Upload Image
+                          </label>
+                          {uploadingItemImageIdx === i && (
+                            <span className="text-[10px] text-blue-500 animate-pulse font-bold">Uploading...</span>
+                          )}
+                        </div>
+                        {item.imageUrl ? (
+                          <div className="flex items-center gap-2 border p-1.5 rounded-lg bg-white">
+                            <img src={item.imageUrl} alt="" className="w-8 h-8 object-cover rounded border" />
+                            <span className="text-[9px] text-gray-400 truncate flex-1">{item.imageUrl}</span>
+                            <button type="button" onClick={() => handleUpdateItemInGroup(i, 'imageUrl', '')} className="text-red-400 hover:text-red-600 text-[10px] font-bold">✕</button>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            value={item.imageUrl || ''}
+                            onChange={e => handleUpdateItemInGroup(i, 'imageUrl', e.target.value)}
+                            placeholder="Or paste image URL: https://..."
+                            className="w-full px-2.5 py-1.5 border rounded-lg text-[10px] focus:outline-none"
+                            style={{ backgroundColor: 'var(--background, #f9fafb)', color: 'var(--text-primary, #111827)', borderColor: 'var(--border, #e5e7eb)' }}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}

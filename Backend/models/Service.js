@@ -11,6 +11,7 @@ const serviceGroupItemSchema = new mongoose.Schema({
   vendorPayout: { type: Number, default: 0 },
   description: { type: String, trim: true, default: '' },  // Optional description
   duration: { type: String, trim: true, default: '' },     // "30 mins"
+  imageUrl: { type: String, default: null },               // Item image shown in options modal
   isActive: { type: Boolean, default: true }
 }, { _id: true });
 

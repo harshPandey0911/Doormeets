@@ -50,6 +50,7 @@ const PremiumServiceDetailPage = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+  const [activeItemDescModal, setActiveItemDescModal] = useState(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = React.useRef(null);
 
@@ -1155,17 +1156,17 @@ const PremiumServiceDetailPage = () => {
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
-                    className="relative rounded-2xl overflow-hidden cursor-pointer select-none transition-all duration-200 hover:scale-[1.04] hover:shadow-md"
-                    style={{ minHeight: '100px', borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    className="relative rounded-xl overflow-hidden cursor-pointer select-none transition-all duration-200 hover:scale-[1.04] hover:shadow-md"
+                    style={{ minHeight: '76px', borderColor: 'var(--border)', border: '1px solid var(--border)' }}
                   >
                     <img
                       src={toAssetUrl(group.iconUrl)}
                       alt={group.title}
                       className="absolute inset-0 w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="relative z-10 flex flex-col justify-end h-full p-2.5" style={{ minHeight: '100px' }}>
-                      <span className="text-[11px] font-black text-white tracking-tight leading-tight line-clamp-2 drop-shadow">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="relative z-10 flex flex-col justify-end h-full p-2" style={{ minHeight: '76px' }}>
+                      <span className="text-[10px] font-black text-white tracking-tight leading-tight line-clamp-2 drop-shadow">
                         {group.title}
                       </span>
                     </div>
@@ -1174,19 +1175,19 @@ const PremiumServiceDetailPage = () => {
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
-                    className="flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 hover:scale-[1.04] hover:shadow-md cursor-pointer select-none"
+                    className="flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all duration-200 hover:scale-[1.04] hover:shadow-md cursor-pointer select-none"
                     style={{
                       backgroundColor: colors.bg,
                       borderColor: colors.border,
-                      minHeight: '100px'
+                      minHeight: '76px'
                     }}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/90 flex items-center justify-center mb-2 shadow-sm">
-                      <span className="text-sm font-black" style={{ color: colors.text }}>
+                    <div className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center mb-1 shadow-sm shrink-0">
+                      <span className="text-xs font-black" style={{ color: colors.text }}>
                         {group.title ? group.title[0].toUpperCase() : 'S'}
                       </span>
                     </div>
-                    <span className="text-[11px] font-bold tracking-tight leading-tight line-clamp-2" style={{ color: colors.text }}>
+                    <span className="text-[10px] font-bold tracking-tight leading-tight line-clamp-2" style={{ color: colors.text }}>
                       {group.title}
                     </span>
                   </div>
@@ -1379,11 +1380,11 @@ const PremiumServiceDetailPage = () => {
                     }
 
                     return (
-                      <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
+                      <div key={i} className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
                         <span className="text-emerald-500 font-bold">✓</span>
                         <span>
                           {incItem.serviceGroupTitle}:{' '}
-                          <span className="font-bold text-gray-800 dark:text-zinc-100">{displayItemTitle}</span>
+                          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{displayItemTitle}</span>
                         </span>
                       </div>
                     );
@@ -1402,11 +1403,11 @@ const PremiumServiceDetailPage = () => {
                     if (!matched) return null;
 
                     return (
-                      <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
+                      <div key={i} className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
                         <span className="text-emerald-500 font-bold">✓</span>
                         <span>
                           {group.title}:{' '}
-                          <span className="font-bold text-gray-800 dark:text-zinc-100">{matched.title} (₹{matched.price})</span>
+                          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{matched.title} (₹{matched.price})</span>
                         </span>
                       </div>
                     );
@@ -2218,51 +2219,87 @@ const PremiumServiceDetailPage = () => {
                 {/* Items List */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Available Options:</h4>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-[305px] md:max-h-[365px] overflow-y-auto pr-1">
                     {activeCategoryModal.items?.map((item) => {
                       const cartItem = cartItems.find(entry => entry.title === item.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
                       const qty = cartItem ? (cartItem.serviceCount || 1) : 0;
-                      return (
+                      return item.imageUrl ? (
+                        /* Image Card Layout */
+                        <div
+                          key={item._id}
+                          className="rounded-2xl border overflow-hidden flex transition-all select-none h-[90px] md:h-[110px]"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+                        >
+                          {/* Left Image */}
+                          <div className="w-24 md:w-28 shrink-0 overflow-hidden h-[90px] md:h-[110px]">
+                            <img src={toAssetUrl(item.imageUrl)} alt={item.title} className="w-full h-full object-cover" />
+                          </div>
+                          {/* Right Details */}
+                          <div className="flex-1 p-2 md:p-3 flex flex-col justify-between gap-1 h-[90px] md:h-[110px]">
+                            <div>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="font-bold text-xs md:text-sm truncate" style={{ color: 'var(--text-primary)' }}>{item.title}</div>
+                                {(item.description || item.duration) && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setActiveItemDescModal(item); }}
+                                    className="text-gray-400 hover:text-[#B33A35] transition-colors cursor-pointer shrink-0"
+                                  >
+                                    <FiInfo className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs md:text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                              {qty > 0 ? (
+                                <div className="flex items-center gap-1.5 md:gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-1.5 md:px-2 py-0.5">
+                                  <button onClick={(e) => { e.stopPropagation(); handleDecreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-xs md:text-sm hover:scale-110 active:scale-95 px-1 cursor-pointer">-</button>
+                                  <span className="text-slate-800 dark:text-white font-extrabold text-[10px] md:text-xs">{qty}</span>
+                                  <button onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-xs md:text-sm hover:scale-110 active:scale-95 px-1 cursor-pointer">+</button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }}
+                                  className="text-[9px] md:text-[10px] font-bold px-3 md:px-4 py-1 md:py-1.5 rounded-full border transition-colors cursor-pointer"
+                                  style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35', borderColor: 'rgba(179, 58, 53, 0.2)' }}
+                                >
+                                  Add +
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Default Text Card Layout (no image) */
                         <div
                           key={item._id}
                           className="p-4 rounded-2xl border flex justify-between items-start gap-4 transition-all select-none"
                           style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                         >
-                          <div className="space-y-1">
-                            <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{item.title}</div>
-                            {item.duration && <div className="text-[10px] text-gray-400 flex items-center gap-1 font-medium"><FiClock /> {item.duration}</div>}
-                            {item.description && <p className="text-xs leading-normal" style={{ color: 'var(--text-secondary)' }}>{item.description}</p>}
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{item.title}</div>
+                              {(item.description || item.duration) && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setActiveItemDescModal(item); }}
+                                  className="text-gray-400 hover:text-[#B33A35] transition-colors cursor-pointer shrink-0"
+                                >
+                                  <FiInfo className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
                             <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
                             {qty > 0 ? (
                               <div className="flex items-center gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-2 py-0.5 shrink-0">
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDecreaseSubItem(item);
-                                  }} 
-                                  className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer"
-                                >
-                                  -
-                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDecreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer">-</button>
                                 <span className="text-slate-800 dark:text-white font-extrabold text-xs">{qty}</span>
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleIncreaseSubItem(item);
-                                  }} 
-                                  className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer"
-                                >
-                                  +
-                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer">+</button>
                               </div>
                             ) : (
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleIncreaseSubItem(item);
-                                }}
+                                onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }}
                                 className="text-[10px] font-bold px-4 py-1.5 rounded-full border transition-colors cursor-pointer"
                                 style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35', borderColor: 'rgba(179, 58, 53, 0.2)' }}
                               >
@@ -2515,6 +2552,52 @@ const PremiumServiceDetailPage = () => {
                     </span>
                   </div>
                 ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ITEM DESCRIPTION DETAIL MODAL */}
+      <AnimatePresence>
+        {activeItemDescModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveItemDescModal(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] cursor-pointer"
+            />
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed bottom-0 inset-x-0 md:inset-0 md:m-auto w-full md:max-w-sm h-fit max-h-[85vh] z-[999] shadow-2xl p-6 flex flex-col gap-4 border overflow-y-auto pointer-events-auto rounded-t-[32px] md:rounded-[32px]"
+              style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+            >
+              <div className="flex justify-between items-center border-b pb-3 shrink-0" style={{ borderColor: 'var(--border)' }}>
+                <h3 className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>
+                  {activeItemDescModal.title} Info
+                </h3>
+                <button
+                  onClick={() => setActiveItemDescModal(null)}
+                  className="p-1 hover:bg-gray-150 dark:hover:bg-zinc-800 rounded-full text-gray-500 transition-colors cursor-pointer"
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-3 overflow-y-auto pr-1 py-1 flex-1 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                {activeItemDescModal.duration && (
+                  <div className="flex items-center gap-1.5 font-bold" style={{ color: 'var(--text-primary)' }}>
+                    <FiClock className="text-[#B33A35]" /> {activeItemDescModal.duration}
+                  </div>
+                )}
+                <p className="whitespace-pre-wrap">{activeItemDescModal.description}</p>
+                <div className="pt-2 border-t font-black text-sm" style={{ color: '#B33A35', borderColor: 'var(--border)' }}>
+                  Price: ₹{activeItemDescModal.price}
+                </div>
               </div>
             </motion.div>
           </>
