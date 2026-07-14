@@ -235,12 +235,14 @@ const getUserBookings = async (req, res) => {
 
     // Get bookings
     const bookings = await Booking.find(query)
+      .select('-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails')
       .populate('vendorId', 'name businessName')
       .populate('serviceId', 'title iconUrl')
       .populate('workerId', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     const total = await Booking.countDocuments(query);
 
@@ -337,12 +339,14 @@ const getAllUserBookings = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const bookings = await Booking.find(query)
+      .select('-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails')
       .populate('userId', 'name phone email')
       .populate('workerId', 'name phone')
       .populate('serviceId', 'title')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     const total = await Booking.countDocuments(query);
 

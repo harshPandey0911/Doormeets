@@ -347,11 +347,13 @@ const getWorkerJobs = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const jobs = await Booking.find(query)
+      .select('-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails')
       .populate('userId', 'name phone')
       .populate('serviceId', 'title iconUrl')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     const total = await Booking.countDocuments(query);
 
@@ -478,12 +480,14 @@ const getAllWorkerJobs = async (req, res) => {
     }
 
     const jobs = await Booking.find(query)
+      .select('-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails')
       .populate('workerId', 'name phone profileImage')
       .populate('userId', 'name phone')
       .populate('serviceId', 'title iconUrl')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     const total = await Booking.countDocuments(query);
 
