@@ -146,6 +146,7 @@
     ],
     "children": [
       "Payment Overview",
+      "Tax Earnings",
       "User Payments",
       "Worker Payments",
       "Vendor Payments",

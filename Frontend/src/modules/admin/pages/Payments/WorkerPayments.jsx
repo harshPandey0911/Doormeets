@@ -67,7 +67,7 @@ const WorkerPayments = () => {
       worker.name.toLowerCase().includes(filters.search.toLowerCase()) ||
       worker.phone.includes(filters.search);
 
-    const matchesStatus = filters.status === 'all' || worker.approvalStatus === filters.status;
+    const matchesStatus = filters.status === 'all' || (worker.status || 'active') === filters.status;
 
     return matchesSearch && matchesStatus;
   });
@@ -92,7 +92,7 @@ const WorkerPayments = () => {
       Service: w.serviceCategory,
       'Wallet Balance': w.wallet?.balance || 0,
       'Total Earnings': w.wallet?.totalEarnings || 0,
-      Status: w.approvalStatus
+      Status: w.status || 'active'
     }));
     exportToCSV(dataToExport, 'worker_payments');
   };
@@ -252,8 +252,8 @@ const WorkerPayments = () => {
                         {formatCurrency(worker.wallet?.totalEarnings)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(worker.approvalStatus)}`}>
-                          {worker.approvalStatus.toUpperCase()}
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(worker.status || 'active')}`}>
+                          {(worker.status || 'active').toUpperCase()}
                         </span>
                       </td>
                       <td className="px-6 py-4">

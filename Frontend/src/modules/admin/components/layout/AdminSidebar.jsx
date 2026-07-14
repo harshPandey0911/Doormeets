@@ -160,6 +160,7 @@ const getChildRoute = (parentRoute, childName) => {
     },
     "/admin/payments": {
       "Payment Overview": "/admin/payments/overview",
+      "Tax Earnings": "/admin/payments/taxes",
       "User Payments": "/admin/payments/users",
       "Worker Payments": "/admin/payments/workers",
       "Vendor Payments": "/admin/payments/vendors",
@@ -274,6 +275,7 @@ const childPermissionMap = {
   "Reassignments": "view_bookings_reassignments",
   // Payments
   "Payment Overview": "view_payments_overview",
+  "Tax Earnings": "view_payments_overview",
   "User Payments": "view_payments_users",
   "Payments_Worker Payments": "view_payments_workers",
   "Vendor Payments": "view_payments_vendors",
