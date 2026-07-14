@@ -91,7 +91,8 @@ const ServiceCategories = React.memo(({
       {/* Title + Inline See All Button */}
       <div className="flex items-center gap-3 mb-4">
         <h2
-          className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2] text-[#1A1A1A] dark:text-white"
+          className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]"
+          style={{ color: 'var(--text-primary)' }}
         >
           {title}
         </h2>

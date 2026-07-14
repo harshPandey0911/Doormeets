@@ -18,7 +18,7 @@ const ServiceWithRatingCard = memo(({
     : price || 'Contact for price';
 
   const cardContent = (
-    <div className="w-full h-full flex flex-col bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[20px] p-3 shadow-[0_4px_12px_rgba(0,0,0,0.03)] group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300">
+    <div className="w-full h-full flex flex-col border rounded-[20px] p-3 shadow-[0_4px_12px_rgba(0,0,0,0.03)] group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
       {/* Image container */}
       <div className="w-full aspect-[4/3] rounded-[12px] bg-gray-50 overflow-hidden relative mb-3">
         {discount && (
@@ -48,22 +48,22 @@ const ServiceWithRatingCard = memo(({
 
       {/* Info below image */}
       <div className="flex flex-col flex-1 px-0.5 text-left">
-        <h3 className="text-[13px] md:text-[15px] font-medium md:font-semibold text-[#1A1A1A] dark:text-white leading-snug line-clamp-2 min-h-[38px] mb-1">
+        <h3 className="text-[13px] md:text-[15px] font-medium md:font-semibold leading-snug line-clamp-2 min-h-[38px] mb-1" style={{ color: 'var(--text-primary)' }}>
           {title}
         </h3>
 
         {rating && (
-          <div className="flex items-center gap-1 mb-1 text-[11px] md:text-[12px] text-gray-600 dark:text-gray-455 font-medium">
+          <div className="flex items-center gap-1 mb-1 text-[11px] md:text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>
             <span className="text-yellow-500">★</span>
-            <span className="font-bold text-gray-800 dark:text-zinc-200">{rating}</span>
+            <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{rating}</span>
             {reviews && (
-              <span className="text-gray-400">({reviews.toString().includes('reviews') ? reviews : `${reviews} reviews`})</span>
+              <span style={{ color: 'var(--text-muted)' }}>({reviews.toString().includes('reviews') ? reviews : `${reviews} reviews`})</span>
             )}
           </div>
         )}
 
         <div className="flex items-baseline gap-2 mt-1">
-          <span className="text-[13px] md:text-[15px] font-extrabold text-[#1A1A1A] dark:text-white">
+          <span className="text-[13px] md:text-[15px] font-extrabold" style={{ color: 'var(--text-primary)' }}>
             {displayPrice}
           </span>
           {originalPrice && (

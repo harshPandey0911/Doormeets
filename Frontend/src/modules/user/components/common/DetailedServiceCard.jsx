@@ -82,17 +82,17 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            <span style={{ color: '#1A1A1A' }} className="text-[10px] font-medium">No Image</span>
+            <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>No Image</span>
           </div>
         )}
       </div>
       <div className="flex flex-col flex-1 px-0.5">
-        <h3 className="text-[11px] font-medium text-[#1A1A1A] leading-snug line-clamp-2 min-h-[32px] mb-1">
+        <h3 className="text-[11px] font-medium leading-snug line-clamp-2 min-h-[32px] mb-1" style={{ color: 'var(--text-primary)' }}>
           {title}
         </h3>
 
         {rating && (
-          <div className="flex items-center gap-1 mb-1 text-[10.5px] text-gray-600 font-medium">
+          <div className="flex items-center gap-1 mb-1 text-[10.5px] text-gray-600 dark:text-zinc-400 font-medium">
             <AiFillStar className="w-3 h-3 text-yellow-400" />
             <span>{rating}</span>
             {reviews && (
@@ -113,10 +113,10 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
               {displayOriginalPrice && (
                 <span className="text-[10px] text-gray-400 line-through">₹{displayOriginalPrice}</span>
               )}
-              <span className="text-[11.5px] font-bold text-[#1A1A1A]">₹{displayPrice}</span>
+              <span className="text-[11.5px] font-bold" style={{ color: 'var(--text-primary)' }}>₹{displayPrice}</span>
             </>
           ) : (
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter bg-gray-50 px-1.5 py-0.5 rounded-md border border-gray-100">Not Disclosed</span>
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter px-1.5 py-0.5 rounded-md border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>Not Disclosed</span>
           )}
         </div>
       </div>

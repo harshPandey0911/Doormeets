@@ -26,7 +26,8 @@ const TrustSection = ({ items = [] }) => {
                 delay: index * 0.08 
               }}
               onClick={() => hasLongDescription && setSelectedItem(item)}
-              className={`group flex flex-col items-center text-center gap-1 md:gap-4 py-3 px-2 md:p-6 rounded-[18px] md:rounded-[24px] border border-gray-100/90 dark:border-zinc-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.035)] transition-shadow duration-300 bg-white dark:bg-zinc-900 w-[210px] shrink-0 md:w-full md:shrink md:h-full ${hasLongDescription ? 'cursor-pointer' : ''}`}
+              className={`group flex flex-col items-center text-center gap-1 md:gap-4 py-3 px-2 md:p-6 rounded-[18px] md:rounded-[24px] border shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.035)] transition-shadow duration-300 w-[210px] shrink-0 md:w-full md:shrink md:h-full ${hasLongDescription ? 'cursor-pointer' : ''}`}
+              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
             >
               <div 
                 className="w-9 h-9 md:w-11 md:h-11 shrink-0 flex items-center justify-center rounded-xl md:rounded-2xl text-sm md:text-lg font-bold transition-transform duration-300 group-hover:scale-110"
@@ -40,13 +41,13 @@ const TrustSection = ({ items = [] }) => {
               </div>
               
               <div className="flex flex-col items-center min-w-0 w-full flex-1">
-                <span className="text-[11.5px] md:text-[14px] font-extrabold text-gray-900 dark:text-white tracking-tight leading-snug">
+                <span className="text-[11.5px] md:text-[14px] font-extrabold tracking-tight leading-snug" style={{ color: 'var(--text-primary)' }}>
                   {item.title}
                 </span>
                 
                 {item.description && (
                   <div className="flex flex-col items-center mt-1 w-full">
-                    <span className="text-[9.5px] md:text-[11px] text-gray-400 dark:text-zinc-500 leading-relaxed line-clamp-2 md:line-clamp-3 w-full font-medium">
+                    <span className="text-[9.5px] md:text-[11px] leading-relaxed line-clamp-2 md:line-clamp-3 w-full font-medium" style={{ color: 'var(--text-secondary)' }}>
                       {item.description}
                     </span>
                     
@@ -78,7 +79,8 @@ const TrustSection = ({ items = [] }) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ type: 'spring', duration: 0.45, bounce: 0.2 }}
-                className="bg-white dark:bg-zinc-900 rounded-[32px] p-7 max-w-sm w-full border border-gray-100 dark:border-zinc-800/80 shadow-2xl relative overflow-hidden"
+                className="rounded-[32px] p-7 max-w-sm w-full border shadow-2xl relative overflow-hidden"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
               >
                 {/* Top decorative gradient blur */}
                 <div 
@@ -106,14 +108,14 @@ const TrustSection = ({ items = [] }) => {
                   </div>
                   
                   <div className="space-y-1">
-                    <h3 className="text-base md:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
+                    <h3 className="text-base md:text-lg font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                       {selectedItem.title}
                     </h3>
                   </div>
 
-                  <div className="w-full border-t border-gray-100 dark:border-zinc-800/80 my-1" />
+                  <div className="w-full border-t my-1" style={{ borderColor: 'var(--border)' }} />
                   
-                  <p className="text-xs md:text-sm text-gray-600 dark:text-zinc-300 leading-relaxed max-h-[40vh] overflow-y-auto text-left w-full pr-1 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+                  <p className="text-xs md:text-sm leading-relaxed max-h-[40vh] overflow-y-auto text-left w-full pr-1 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-zinc-850 scrollbar-track-transparent" style={{ color: 'var(--text-secondary)' }}>
                     {selectedItem.description}
                   </p>
                 </div>

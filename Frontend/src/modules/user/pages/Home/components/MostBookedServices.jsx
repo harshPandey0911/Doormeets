@@ -55,7 +55,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
     <div className="my-10 px-3 md:px-5 w-full">
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
-        <h2 className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold text-[#1A1A1A] dark:text-white tracking-tight leading-[1.2]">
+        <h2 className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]" style={{ color: 'var(--text-primary)' }}>
           {title || "Most booked services"}
         </h2>
       </div>
@@ -123,7 +123,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
                 </div>
 
                 {/* Details */}
-                <h3 className="mt-3 text-[13px] md:text-[15.5px] font-medium md:font-semibold text-[#1A1A1A] dark:text-white leading-snug line-clamp-1 px-1">
+                <h3 className="mt-3 text-[13px] md:text-[15.5px] font-medium md:font-semibold leading-snug line-clamp-1 px-1" style={{ color: 'var(--text-primary)' }}>
                   {service.title}
                 </h3>
 
@@ -145,7 +145,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
 
                 {/* Price Row */}
                 <div className="flex items-baseline gap-2 mt-1.5 px-1">
-                  <span className="text-[13px] md:text-[15px] font-extrabold text-[#1A1A1A] dark:text-white">
+                  <span className="text-[13px] md:text-[15px] font-extrabold" style={{ color: 'var(--text-primary)' }}>
                     {displayPrice}
                   </span>
                   {service.originalPrice && (

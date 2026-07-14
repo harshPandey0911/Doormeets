@@ -83,7 +83,8 @@ const PremiumCategoryPage = () => {
 
   // Variants popup states
   const [showVariantPopup, setShowVariantPopup] = useState(false);
-  const [showComboEditModal, setShowComboEditModal] = useState(false);
+  const [editingPackage, setEditingPackage] = useState(null);
+  const [customizedOptions, setCustomizedOptions] = useState({}); // groupId -> selectedItemId (or 'skip')
   const [selectedServiceForPopup, setSelectedServiceForPopup] = useState(null);
   const [selectedVariants, setSelectedVariants] = useState([]);
   const [activeSubId, setActiveSubId] = useState(null);
@@ -324,6 +325,109 @@ const PremiumCategoryPage = () => {
     });
     return list;
   }, [services]);
+
+  const handleOpenEditPackage = (comboItem) => {
+    setEditingPackage(comboItem);
+    
+    // Find if this package is already in the cart
+    const matchedCartItem = cartItems.find(item => {
+      const sId = getCartItemServiceId(item);
+      if (sId !== (comboItem.parentService?.id || comboItem.parentService?._id)) return false;
+      const pkgField = item.dynamicFields?.find(f => f.name === 'Selected Package');
+      return pkgField?.value === comboItem.title;
+    });
+
+    const selections = {};
+    if (matchedCartItem) {
+      // Load current selections from cart item's dynamicFields
+      comboItem.parentService?.serviceGroups?.forEach(group => {
+        const groupField = matchedCartItem.dynamicFields?.find(f => f.name === `Group: ${group.title}`);
+        if (groupField) {
+          const val = groupField.value;
+          const matchedItem = group.items?.find(i => val.startsWith(i.title));
+          if (matchedItem) {
+            selections[group._id || group.id] = matchedItem._id || matchedItem.id;
+          } else {
+            selections[group._id || group.id] = 'skip';
+          }
+        } else {
+          selections[group._id || group.id] = 'skip';
+        }
+      });
+    } else {
+      // Load default selections from package configuration
+      comboItem.parentService?.serviceGroups?.forEach(group => {
+        const defaultItem = comboItem.rawPackage?.includedItems?.find(inc => inc.serviceGroupId?.toString() === (group._id || group.id)?.toString());
+        if (defaultItem?.selectedItemId) {
+          selections[group._id || group.id] = defaultItem.selectedItemId;
+        } else {
+          selections[group._id || group.id] = 'skip';
+        }
+      });
+    }
+    setCustomizedOptions(selections);
+  };
+
+  const handleSaveCustomizedPackage = async () => {
+    if (!editingPackage) return;
+
+    // Build dynamic fields payload
+    const dynamicFieldsPayload = [];
+    dynamicFieldsPayload.push({
+      name: 'Selected Package',
+      label: 'Selected Package',
+      value: editingPackage.title
+    });
+
+    if (editingPackage.parentService?.serviceGroups) {
+      editingPackage.parentService.serviceGroups.forEach(group => {
+        const selectedId = customizedOptions[group._id || group.id];
+        if (selectedId && selectedId !== 'skip') {
+          const selectedItem = group.items?.find(i => (i._id || i.id)?.toString() === selectedId.toString());
+          if (selectedItem) {
+            dynamicFieldsPayload.push({
+              name: `Group: ${group.title}`,
+              label: group.title,
+              value: `${selectedItem.title} (₹${selectedItem.price})`
+            });
+          }
+        }
+      });
+    }
+
+    const matchedCartItem = cartItems.find(item => {
+      const sId = getCartItemServiceId(item);
+      if (sId !== (editingPackage.parentService?.id || editingPackage.parentService?._id)) return false;
+      const pkgField = item.dynamicFields?.find(f => f.name === 'Selected Package');
+      return pkgField?.value === editingPackage.title;
+    });
+
+    if (matchedCartItem) {
+      // Remove old item
+      await removeItem(matchedCartItem._id || matchedCartItem.id);
+    }
+
+    // Add new customized item
+    const cartData = buildCartItemData({ service: editingPackage.parentService, category: activeCategory });
+    cartData.card.title = `${editingPackage.parentService.title} - ${editingPackage.title}`;
+    if (editingPackage.rawPackage?.duration) cartData.card.duration = editingPackage.rawPackage.duration;
+    
+    cartData.price = editingPackage.price;
+    cartData.unitPrice = editingPackage.price;
+    cartData.originalPrice = editingPackage.originalPrice;
+    if (cartData.card) {
+      cartData.card.price = editingPackage.price;
+      cartData.card.originalPrice = editingPackage.originalPrice;
+    }
+    cartData.dynamicFields = dynamicFieldsPayload;
+
+    const response = await addToCart(cartData);
+    if (response?.success) {
+      toast.success(`${editingPackage.title} customization saved!`);
+    }
+
+    setEditingPackage(null);
+  };
 
   // Scroll to subcategory helper
   const handleScrollToSub = (subId) => {
@@ -680,17 +784,17 @@ const PremiumCategoryPage = () => {
                     {/* Add button / Quantity selector */}
                     <div className="shrink-0">
                       {addedCount > 0 ? (
-                        <div className="w-[80px] h-[30px] bg-violet-750 text-white rounded-lg text-xs shadow-md flex items-center justify-between px-2">
+                        <div className="w-[80px] h-[30px] bg-[#B33A35] text-white rounded-lg text-xs shadow-md flex items-center justify-between px-2">
                           <button
                             onClick={handleDecreaseComboItem}
-                            className="w-5 h-5 hover:bg-violet-855 rounded-full flex items-center justify-center text-sm font-bold"
+                            className="w-5 h-5 hover:bg-[#992E29] rounded-full flex items-center justify-center text-sm font-bold"
                           >
                             -
                           </button>
                           <span className="font-extrabold">{addedCount}</span>
                           <button
                             onClick={handleIncreaseComboItem}
-                            className="w-5 h-5 hover:bg-violet-855 rounded-full flex items-center justify-center text-sm font-bold"
+                            className="w-5 h-5 hover:bg-[#992E29] rounded-full flex items-center justify-center text-sm font-bold"
                           >
                             +
                           </button>
@@ -698,7 +802,7 @@ const PremiumCategoryPage = () => {
                       ) : (
                         <button
                           onClick={handleAddComboItem}
-                          className="px-3.5 py-1 rounded-lg border border-violet-200 dark:border-zinc-700 text-violet-700 dark:text-violet-400 font-extrabold text-[11px] hover:bg-violet-50 dark:hover:bg-zinc-800 transition-colors"
+                          className="px-3.5 py-1 rounded-lg border border-red-200 dark:border-zinc-700 text-[#B33A35] dark:text-red-400 font-extrabold text-[11px] hover:bg-red-50 dark:hover:bg-zinc-800 transition-colors"
                         >
                           Add
                         </button>
@@ -722,8 +826,8 @@ const PremiumCategoryPage = () => {
                   {/* Edit action */}
                   <div className="pt-1">
                     <button
-                      onClick={() => setShowComboEditModal(true)}
-                      className="text-violet-700 dark:text-violet-400 font-extrabold text-[11px] hover:underline flex items-center gap-0.5"
+                      onClick={() => handleOpenEditPackage(comboItem)}
+                      className="text-[#B33A35] dark:text-red-400 font-extrabold text-[11px] hover:underline flex items-center gap-0.5"
                     >
                       Edit your package
                     </button>
@@ -1021,8 +1125,8 @@ const PremiumCategoryPage = () => {
                           {/* Edit action */}
                           <div className="pt-3">
                             <button
-                              onClick={() => setShowComboEditModal(true)}
-                              className="text-violet-700 dark:text-violet-400 font-extrabold text-xs hover:underline flex items-center gap-0.5"
+                              onClick={() => handleOpenEditPackage(comboItem)}
+                              className="text-[#B33A35] dark:text-red-400 font-extrabold text-xs hover:underline flex items-center gap-0.5"
                             >
                               Edit your package
                             </button>
@@ -1449,7 +1553,7 @@ const PremiumCategoryPage = () => {
         )}
 
         {/* Customize Combo Package Modal */}
-        {showComboEditModal && generatedPackages.length > 0 && (
+        {editingPackage && (
           <>
             {/* Backdrop */}
             <motion.div
@@ -1458,91 +1562,122 @@ const PremiumCategoryPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-              onClick={() => setShowComboEditModal(false)}
+              onClick={() => setEditingPackage(null)}
             />
-            {/* Centered Modal */}
+            {/* Centered Modal / Sheet */}
             <motion.div
               key="combo-sheet"
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              onClick={() => setShowComboEditModal(false)}
+              className="fixed bottom-0 inset-x-0 z-50 flex items-end justify-center md:items-center md:p-4"
+              onClick={() => setEditingPackage(null)}
             >
               <div 
-                className="w-full max-w-md rounded-[32px] p-6 shadow-2xl space-y-6 relative overflow-hidden"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+                className="w-full max-w-md rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl space-y-6 relative overflow-hidden bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Header dragging line */}
+                <div className="w-12 h-1 bg-gray-205 dark:bg-zinc-750 rounded-full mx-auto mb-2 md:hidden" />
+                
                 {/* Header */}
-                <div className="flex justify-between items-center pb-2">
+                <div className="flex justify-between items-start pb-2 border-b border-gray-100 dark:border-zinc-800">
                   <div>
-                    <h3 className="text-base font-black text-slate-900 dark:text-white">
-                      Customize Combo Package
+                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                      Combos Packages
                     </h3>
-                    <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5">
-                      Select or deselect items to include in your combo bundle
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                      Customize individual options inside this combo package
                     </p>
                   </div>
                   <button
-                    onClick={() => setShowComboEditModal(false)}
+                    onClick={() => setEditingPackage(null)}
                     className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-400 dark:text-zinc-500"
                   >
                     <FiX className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Services List inside Combo */}
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
-                  {generatedPackages[0].services.map((s) => {
-                    const isInCart = (quantities[s.id || s._id] || 0) > 0;
-                    const totalPrice = generatedPackages[0].originalPrice;
-                    const bundlePrice = generatedPackages[0].price;
-                    const multiplier = totalPrice > 0 ? (bundlePrice / totalPrice) : 0.85;
-
+                {/* Groups list */}
+                <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-1">
+                  {editingPackage.parentService?.serviceGroups?.map((group) => {
+                    const selectedId = customizedOptions[group._id || group.id];
                     return (
-                      <div 
-                        key={s.id || s._id} 
-                        className="flex justify-between items-center p-3 rounded-2xl border transition-all"
-                        style={{
-                          backgroundColor: isInCart ? 'rgba(16,185,129,0.02)' : 'transparent',
-                          borderColor: isInCart ? 'rgba(16,185,129,0.15)' : 'var(--border)'
-                        }}
-                      >
-                        <div className="min-w-0 flex-1 pr-3">
-                          <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{s.title}</p>
-                          <p className="text-[10px] text-gray-500 truncate">{s.description}</p>
-                        </div>
+                      <div key={group._id || group.id} className="space-y-3">
+                        <h4 className="text-xs font-extrabold text-slate-800 dark:text-zinc-200 uppercase tracking-wider">
+                          {group.title}
+                        </h4>
                         
-                        {/* Toggle button */}
-                        <button
-                          onClick={async () => {
-                            const item = cartItems.find((entry) => getCartItemServiceId(entry) === (s.id || s._id));
-                            if (item) {
-                              await removeItem(item._id || item.id);
-                              toast.success(`Removed ${s.title} from bundle`);
-                            } else {
-                              await handleAdd(s, multiplier);
-                            }
-                          }}
-                          className={`text-[10px] font-extrabold px-3 py-1.5 rounded-xl border transition-all ${
-                            isInCart
-                              ? 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700'
-                              : 'border-slate-200 text-slate-700 dark:text-zinc-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                          }`}
-                        >
-                          {isInCart ? 'Included ✓' : 'Add to bundle'}
-                        </button>
+                        <div className="space-y-2">
+                          {/* Render Group Options */}
+                          {group.items?.map((item) => {
+                            const isSelected = selectedId?.toString() === (item._id || item.id)?.toString();
+                            return (
+                              <label
+                                key={item._id || item.id}
+                                className="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-zinc-850 transition-all cursor-pointer select-none bg-gray-50/30 dark:bg-zinc-950/20"
+                                style={{
+                                  borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
+                                }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="radio"
+                                    name={`group-${group._id || group.id}`}
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      setCustomizedOptions(prev => ({
+                                        ...prev,
+                                        [group._id || group.id]: item._id || item.id
+                                      }));
+                                    }}
+                                    className="w-4 h-4 text-violet-650 border-gray-300 focus:ring-violet-500"
+                                  />
+                                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200">
+                                    {item.title}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                                  ₹{item.price}
+                                </span>
+                              </label>
+                            );
+                          })}
+
+                          {/* Exclude / Skip Option */}
+                          <label
+                            className="flex items-center gap-3 p-3.5 rounded-2xl border border-dashed border-red-200/50 dark:border-red-900/30 transition-all cursor-pointer select-none bg-red-50/10 dark:bg-red-950/5"
+                            style={{
+                              borderColor: selectedId === 'skip' ? '#ef4444' : 'var(--border)',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name={`group-${group._id || group.id}`}
+                              checked={selectedId === 'skip'}
+                              onChange={() => {
+                                      setCustomizedOptions(prev => ({
+                                        ...prev,
+                                        [group._id || group.id]: 'skip'
+                                      }));
+                              }}
+                              className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                            />
+                            <span className="text-xs font-semibold text-red-650 dark:text-red-400">
+                              I don't need {group.title?.toLowerCase() || 'this service'}
+                            </span>
+                          </label>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Footer buttons */}
+                {/* Done button */}
                 <button
                   type="button"
-                  onClick={() => setShowComboEditModal(false)}
+                  onClick={handleSaveCustomizedPackage}
                   className="w-full py-3.5 rounded-2xl font-bold text-white text-xs shadow-lg transition-transform hover:scale-[1.01]"
                   style={{ backgroundColor: '#B33A35' }}
                 >

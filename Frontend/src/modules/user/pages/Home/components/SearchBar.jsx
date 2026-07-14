@@ -57,14 +57,19 @@ const SearchBar = ({ onInputClick }) => {
 
           {/* Simulated Input */}
           <div
-            className="w-full pl-11 pr-4 py-3 rounded-xl border transition-all duration-300 flex items-center h-[46px] overflow-hidden bg-white border-gray-200 group-hover:border-gray-300"
+            className="w-full pl-11 pr-4 py-3 rounded-xl border transition-all duration-300 flex items-center h-[46px] overflow-hidden"
+            style={{
+              backgroundColor: 'var(--card-bg)',
+              borderColor: 'var(--border)'
+            }}
           >
             {/* Placeholder text with typing animation */}
             <span
-              className="text-[14.5px] text-gray-400 tracking-wide font-normal flex items-center whitespace-nowrap overflow-hidden w-full"
+              className="text-[14.5px] tracking-wide font-normal flex items-center whitespace-nowrap overflow-hidden w-full"
+              style={{ color: 'var(--text-muted)' }}
             >
-              Search for&nbsp;<span className="text-gray-500 font-medium">'{displayedText}'</span>
-              <span className="animate-pulse ml-0.5 text-gray-400 font-light">|</span>
+              Search for&nbsp;<span className="font-medium" style={{ color: 'var(--text-secondary)' }}>'{displayedText}'</span>
+              <span className="animate-pulse ml-0.5 font-light" style={{ color: 'var(--text-muted)' }}>|</span>
             </span>
           </div>
         </div>
