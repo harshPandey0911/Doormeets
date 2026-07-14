@@ -971,6 +971,7 @@ const getUserBookings = async (req, res) => {
 
     // Get bookings
     const bookings = await Booking.find(query)
+      .select('-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails')
       .populate('vendorId', 'name businessName profilePhoto')
       .populate('serviceId', 'title iconUrl')
       .populate('categoryId', 'title slug')

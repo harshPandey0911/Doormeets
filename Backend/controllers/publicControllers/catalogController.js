@@ -1747,13 +1747,13 @@ const getPublicServiceDynamicDetails = async (req, res) => {
     const PricingConfig = require('../../models/PricingConfig');
     let pricing = null;
     if (cityId) {
-      pricing = await PricingConfig.findOne({ serviceId, cityId }).lean();
+      pricing = await PricingConfig.findOne({ serviceId, cityId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
     if (!pricing) {
-      pricing = await PricingConfig.findOne({ serviceId, cityId: null }).lean();
+      pricing = await PricingConfig.findOne({ serviceId, cityId: null, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
     if (!pricing) {
-      pricing = await PricingConfig.findOne({ serviceId }).lean();
+      pricing = await PricingConfig.findOne({ serviceId, $or: [{ variantId: null }, { variantId: { $exists: false } }] }).lean();
     }
 
     let resolvedService = { ...service };
