@@ -97,7 +97,7 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
                 className="snap-start shrink-0 w-[150px] md:w-[220px] cursor-pointer flex flex-col group transition-all duration-300 active:scale-95 text-left"
               >
                 {/* Image Box */}
-                <div className="w-full aspect-square rounded-[24px] bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 overflow-hidden relative shadow-[0_2px_12px_rgba(0,0,0,0.02)] group-hover:scale-[1.01] transition-transform duration-200">
+                <div className="w-full aspect-square rounded-[24px] bg-gray-50 dark:bg-zinc-900 border overflow-hidden relative shadow-[0_2px_12px_rgba(0,0,0,0.02)] group-hover:scale-[1.01] transition-transform duration-200" style={{ borderColor: 'var(--border)' }}>
                   {service.discount && (
                     <div className="absolute top-0 left-0 bg-[#0F8A5F] text-white text-[9px] md:text-[10px] font-bold px-2.5 py-1 rounded-br-[12px] z-10">
                       {service.discount.toString().toUpperCase().includes('OFF') ? service.discount : `${service.discount}% OFF`}

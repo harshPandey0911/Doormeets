@@ -99,7 +99,7 @@ const ServiceCard = memo(({ image, title, onClick, gif, youtubeUrl }) => {
       className="relative min-w-[150px] w-[150px] md:min-w-[190px] md:w-[190px] h-[220px] md:h-[280px] rounded-2xl overflow-hidden cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]"
       style={{
         boxShadow: themeColors.cardShadow,
-        border: themeColors.cardBorder,
+        border: '1px solid var(--border)',
         willChange: 'transform',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',

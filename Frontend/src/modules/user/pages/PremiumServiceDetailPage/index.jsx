@@ -39,7 +39,7 @@ const PremiumServiceDetailPage = () => {
   const { slug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { addToCart, cartCount, cartItems = [] } = useCart();
+  const { addToCart, updateItem, removeItem, cartCount, cartItems = [] } = useCart();
 
   const [service, setService] = useState(location.state?.service || null);
   const brand = location.state?.brand || null;
@@ -165,6 +165,71 @@ const PremiumServiceDetailPage = () => {
   const [calculatedPrice, setCalculatedPrice] = useState(0);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [activeCategoryModal, setActiveCategoryModal] = useState(null);
+
+  const handleIncreaseSubItem = async (subItem) => {
+    // Sync with local page selections
+    const groupId = activeCategoryModal?._id?.toString();
+    if (groupId) {
+      const updatedSelections = { ...customSelectedItems };
+      updatedSelections[groupId] = [subItem._id?.toString()];
+      setCustomSelectedItems(updatedSelections);
+      setIsCustomizing(true);
+      setSelectedPackage(null);
+    }
+
+    const existing = cartItems.find(entry => entry.title === subItem.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
+    if (existing) {
+      await updateItem(existing._id || existing.id, (existing.serviceCount || 1) + 1);
+    } else {
+      const cartData = buildCartItemData({ service, category, brand });
+      cartData.title = subItem.title;
+      cartData.price = subItem.price;
+      cartData.unitPrice = subItem.price;
+      cartData.originalPrice = subItem.originalPrice || subItem.price;
+      if (cartData.card) {
+        cartData.card.title = subItem.title;
+        cartData.card.price = subItem.price;
+        cartData.card.originalPrice = subItem.originalPrice || subItem.price;
+        cartData.card.description = subItem.description || '';
+      }
+      await addToCart(cartData);
+    }
+  };
+
+  const handleDecreaseSubItem = async (subItem) => {
+    const existing = cartItems.find(entry => entry.title === subItem.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
+    if (!existing) return;
+    
+    const newCount = (existing.serviceCount || 1) - 1;
+    if (newCount <= 0) {
+      await removeItem(existing._id || existing.id);
+      // Remove or set to skip locally
+      const groupId = activeCategoryModal?._id?.toString();
+      if (groupId) {
+        const updatedSelections = { ...customSelectedItems };
+        updatedSelections[groupId] = ['skip'];
+        setCustomSelectedItems(updatedSelections);
+      }
+    } else {
+      await updateItem(existing._id || existing.id, newCount);
+    }
+  };
+
+  const handleIncreaseQuantity = async (itemId) => {
+    const item = cartItems.find((entry) => (entry._id === itemId || entry.id === itemId));
+    if (!item) return;
+    await updateItem(item._id || item.id, (item.serviceCount || 1) + 1);
+  };
+
+  const handleDecreaseQuantity = async (itemId) => {
+    const item = cartItems.find((entry) => (entry._id === itemId || entry.id === itemId));
+    if (!item) return;
+    if ((item.serviceCount || 1) <= 1) {
+      await removeItem(item._id || item.id);
+    } else {
+      await updateItem(item._id || item.id, (item.serviceCount || 1) - 1);
+    }
+  };
 
   useEffect(() => {
     setIsCustomizing(false);
@@ -1086,7 +1151,26 @@ const PremiumServiceDetailPage = () => {
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
               {service.serviceGroups.map((group, idx) => {
                 const colors = cardColors[idx % cardColors.length];
-                return (
+                return group.iconUrl ? (
+                  <div
+                    key={group._id || idx}
+                    onClick={() => setActiveCategoryModal(group)}
+                    className="relative rounded-2xl overflow-hidden cursor-pointer select-none transition-all duration-200 hover:scale-[1.04] hover:shadow-md"
+                    style={{ minHeight: '100px', borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                  >
+                    <img
+                      src={toAssetUrl(group.iconUrl)}
+                      alt={group.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="relative z-10 flex flex-col justify-end h-full p-2.5" style={{ minHeight: '100px' }}>
+                      <span className="text-[11px] font-black text-white tracking-tight leading-tight line-clamp-2 drop-shadow">
+                        {group.title}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
@@ -1098,13 +1182,9 @@ const PremiumServiceDetailPage = () => {
                     }}
                   >
                     <div className="w-10 h-10 rounded-xl bg-white/90 flex items-center justify-center mb-2 shadow-sm">
-                      {group.iconUrl ? (
-                        <img src={toAssetUrl(group.iconUrl)} alt={group.title} className="w-6 h-6 object-contain" />
-                      ) : (
-                        <span className="text-sm font-black" style={{ color: colors.text }}>
-                          {group.title ? group.title[0].toUpperCase() : 'S'}
-                        </span>
-                      )}
+                      <span className="text-sm font-black" style={{ color: colors.text }}>
+                        {group.title ? group.title[0].toUpperCase() : 'S'}
+                      </span>
                     </div>
                     <span className="text-[11px] font-bold tracking-tight leading-tight line-clamp-2" style={{ color: colors.text }}>
                       {group.title}
@@ -1263,44 +1343,75 @@ const PremiumServiceDetailPage = () => {
         )}
 
         {/* Package Included Items List Section */}
-        {service?.serviceType === 'package_base' && selectedPackage && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
+        {service?.serviceType === 'package_base' && (
+          (selectedPackage && selectedPackage.includedItems && selectedPackage.includedItems.length > 0) ||
+          (!selectedPackage && Object.keys(customSelectedItems).some(groupId => {
+            const val = customSelectedItems[groupId];
+            return val && val.length > 0 && !val.includes('skip');
+          }))
+        ) && (
           <section id="customize-package-section" className="mt-5 md:mt-8 space-y-4 md:space-y-6 scroll-mt-24">
             <div className="border-b pb-4" style={{ borderColor: 'var(--border)' }}>
               <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>
-                Package Includes
+                {selectedPackage ? "Package Includes" : "Your Customized Selection"}
               </h2>
             </div>
             
             <div className="py-1 space-y-3">
               <div className="grid grid-cols-1 gap-2">
-                {selectedPackage.includedItems.map((incItem, i) => {
-                  const groupId = incItem.serviceGroupId?.toString();
-                  const selectedVal = customSelectedItems[groupId];
-                  const selectedIds = Array.isArray(selectedVal)
-                    ? selectedVal
-                    : (selectedVal ? [selectedVal.toString()] : []);
-                  
-                  let displayItemTitle = incItem.selectedItemTitle;
-                  if (selectedIds.includes('skip')) {
-                    displayItemTitle = 'Skipped ("I don\'t need this")';
-                  } else if (selectedIds.length > 0) {
-                    const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
-                    const matched = group?.items?.find(item => item._id?.toString() === selectedIds[0]);
-                    if (matched) {
-                      displayItemTitle = matched.title;
+                {selectedPackage ? (
+                  selectedPackage.includedItems.map((incItem, i) => {
+                    const groupId = incItem.serviceGroupId?.toString();
+                    const selectedVal = customSelectedItems[groupId];
+                    const selectedIds = Array.isArray(selectedVal)
+                      ? selectedVal
+                      : (selectedVal ? [selectedVal.toString()] : []);
+                    
+                    let displayItemTitle = incItem.selectedItemTitle;
+                    if (selectedIds.includes('skip')) {
+                      displayItemTitle = 'Skipped ("I don\'t need this")';
+                    } else if (selectedIds.length > 0) {
+                      const group = service.serviceGroups?.find(g => g._id?.toString() === groupId);
+                      const matched = group?.items?.find(item => item._id?.toString() === selectedIds[0]);
+                      if (matched) {
+                        displayItemTitle = matched.title;
+                      }
                     }
-                  }
 
-                  return (
-                    <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
-                      <span className="text-emerald-500 font-bold">✓</span>
-                      <span>
-                        {incItem.serviceGroupTitle}:{' '}
-                        <span className="font-bold text-gray-800 dark:text-zinc-100">{displayItemTitle}</span>
-                      </span>
-                    </div>
-                  );
-                })}
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
+                        <span className="text-emerald-500 font-bold">✓</span>
+                        <span>
+                          {incItem.serviceGroupTitle}:{' '}
+                          <span className="font-bold text-gray-800 dark:text-zinc-100">{displayItemTitle}</span>
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  service.serviceGroups.map((group, i) => {
+                    const groupId = group._id?.toString();
+                    const selectedVal = customSelectedItems[groupId];
+                    const selectedIds = Array.isArray(selectedVal)
+                      ? selectedVal
+                      : (selectedVal ? [selectedVal.toString()] : []);
+                    
+                    if (selectedIds.length === 0 || selectedIds.includes('skip')) return null;
+                    
+                    const matched = group.items?.find(item => item._id?.toString() === selectedIds[0]);
+                    if (!matched) return null;
+
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600 dark:text-zinc-300">
+                        <span className="text-emerald-500 font-bold">✓</span>
+                        <span>
+                          {group.title}:{' '}
+                          <span className="font-bold text-gray-800 dark:text-zinc-100">{matched.title} (₹{matched.price})</span>
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </section>
@@ -1762,7 +1873,7 @@ const PremiumServiceDetailPage = () => {
         <div className="grid grid-cols-12 gap-8 items-start mb-8 mt-8">
           {/* Left: Main Image/Video & Thumbnails */}
           <div className="col-span-8 space-y-4">
-            <div className="relative w-full aspect-[1.8/1] rounded-3xl overflow-hidden bg-gray-100 shadow-sm border border-gray-100">
+            <div className="relative w-full aspect-[1.8/1] rounded-3xl overflow-hidden shadow-sm border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
               {serviceImages[activeImageIndex]?.type === 'video' ? (
                 <video
                   ref={videoRef}
@@ -1797,8 +1908,9 @@ const PremiumServiceDetailPage = () => {
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
                       className={`w-16 h-12 rounded-xl overflow-hidden border-2 transition-all relative ${
-                        activeImageIndex === idx ? 'border-[#B33A35] scale-105' : 'border-gray-100 hover:border-gray-300'
+                        activeImageIndex === idx ? 'border-[#B33A35] scale-105' : 'hover:border-gray-300'
                       }`}
+                      style={activeImageIndex !== idx ? { borderColor: 'var(--border)' } : {}}
                     >
                       {img.type === 'video' ? (
                         <div className="w-full h-full relative bg-black flex items-center justify-center">
@@ -1826,18 +1938,18 @@ const PremiumServiceDetailPage = () => {
           {/* Right: Title, Badge, Star, Description & Features Grid */}
           <div className="col-span-4 space-y-5 pt-2">
             <div className="space-y-2">
-              <span className="inline-block px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-semibold">
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35' }}>
                 {category?.title || 'Mens and kids salon'}
               </span>
-              <h1 className="text-3xl font-black text-slate-900 leading-tight">
+              <h1 className="text-3xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>
                 {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
               </h1>
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
+              <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
                 <FiStar className="fill-amber-400 text-amber-400 w-4 h-4" />
-                <span className="text-slate-900 font-extrabold">{service.rating || "4.5"}</span>
-                <span>({service.reviewCount ? `${service.reviewCount} reviews` : "1.2k reviews"})</span>
+                <span className="font-extrabold" style={{ color: 'var(--text-primary)' }}>{service.rating || "4.5"}</span>
+                <span style={{ color: 'var(--text-muted)' }}>({service.reviewCount ? `${service.reviewCount} reviews` : "1.2k reviews"})</span>
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed font-normal pt-2">
+              <p className="text-sm leading-relaxed font-normal pt-2" style={{ color: 'var(--text-secondary)' }}>
                 {service.description}
               </p>
             </div>
@@ -1855,14 +1967,73 @@ const PremiumServiceDetailPage = () => {
                 </button>
               </div>
             )}
+
+            {/* CART Sidebar widget */}
+            <div className="border rounded-[28px] p-6 shadow-sm space-y-6 mt-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+              <h4 className="text-xs font-black uppercase tracking-wider border-b pb-3" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>Cart</h4>
+              
+              {cartItems.length > 0 ? (
+                <div className="space-y-6">
+                  {/* Cart Items List */}
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                    {cartItems.map((item, index) => {
+                      const itemPrice = Number(item.price || 0);
+                      return (
+                        <div key={item._id || index} className="flex justify-between items-center gap-4">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{item.title}</p>
+                          </div>
+                          
+                          {/* Quantity pill selector */}
+                          <div className="flex items-center gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-2.5 py-0.5 shrink-0">
+                            <button 
+                              onClick={() => handleDecreaseQuantity(item._id || item.id)} 
+                              className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 cursor-pointer px-1"
+                            >
+                              -
+                            </button>
+                            <span className="text-slate-800 dark:text-white font-extrabold text-xs">{item.serviceCount}</span>
+                            <button 
+                              onClick={() => handleIncreaseQuantity(item._id || item.id)} 
+                              className="text-[#B33A35] font-extrabold text-xs hover:scale-110 active:scale-95 cursor-pointer px-1"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <span className="text-xs font-bold shrink-0 min-w-[50px] text-right" style={{ color: 'var(--text-primary)' }}>
+                            ₹{itemPrice}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Red checkout/view cart button */}
+                  <button
+                    onClick={() => navigate('/user/cart')}
+                    className="w-full py-4 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-[#B33A35]/15 transition-all flex items-center justify-between px-6 cursor-pointer active:scale-[0.98]"
+                  >
+                    <span className="text-sm font-black">₹{cartItems.reduce((acc, item) => acc + Number(item.price || 0), 0)}</span>
+                    <span className="h-4 w-[1px] bg-white/30 mx-2" />
+                    <span className="uppercase tracking-wider flex items-center gap-1.5">View Cart <FiShoppingBag /></span>
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FiShoppingBag className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                  <p className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>No items in your cart</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Service Categories Section */}
         {service?.serviceType === 'package_base' && service?.serviceGroups?.length > 0 && (
-          <div className="grid grid-cols-12 gap-8 items-center py-6 border-y border-gray-100 mb-8">
+          <div className="grid grid-cols-12 gap-8 items-center py-6 border-y mb-8" style={{ borderColor: 'var(--border)' }}>
             <div className="col-span-3">
-              <h2 className="text-base font-extrabold text-slate-800">
+              <h2 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
                 Service Categories
               </h2>
             </div>
@@ -1873,17 +2044,23 @@ const PremiumServiceDetailPage = () => {
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
-                    className="flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 hover:scale-[1.02] cursor-pointer select-none bg-white min-w-[220px]"
-                    style={{ borderColor: colors.border }}
+                    className="flex items-center gap-4 rounded-2xl border transition-all duration-200 hover:scale-[1.02] cursor-pointer select-none overflow-hidden min-w-[220px]"
+                    style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm shrink-0" style={{ backgroundColor: colors.bg }}>
-                      <span className="text-sm font-black" style={{ color: colors.text }}>
-                        {group.title ? group.title[0].toUpperCase() : 'S'}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-800">{group.title}</h4>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Custom selection available</p>
+                    {group.iconUrl ? (
+                      <div className="w-14 h-14 shrink-0 overflow-hidden">
+                        <img src={toAssetUrl(group.iconUrl)} alt={group.title} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm shrink-0 ml-4" style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)' }}>
+                        <span className="text-sm font-black" style={{ color: '#B33A35' }}>
+                          {group.title ? group.title[0].toUpperCase() : 'S'}
+                        </span>
+                      </div>
+                    )}
+                    <div className={group.iconUrl ? 'py-3 pr-4' : 'pr-4'}>
+                      <h4 className="text-xs font-black" style={{ color: 'var(--text-primary)' }}>{group.title}</h4>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>Custom selection available</p>
                     </div>
                   </div>
                 );
@@ -1989,7 +2166,7 @@ const PremiumServiceDetailPage = () => {
             </div>
           </div>
         ) : (
-          /* 2-Column Grid Layout when NO Packages */
+          /* Full Width Layout when NO Packages */
           <div className="flex flex-col gap-8 mb-12 w-full">
             {renderVariantsList()}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -1998,29 +2175,6 @@ const PremiumServiceDetailPage = () => {
                   {renderBlockContent(block)}
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Desktop Bottom checkout bar */}
-        {cartCount > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] py-3">
-            <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase font-black tracking-wider">Total Price</p>
-                <div className="flex items-baseline gap-1.5 mt-0.5">
-                  <span className="text-lg font-black text-slate-900">₹{finalPrice}</span>
-                  {service.originalPrice && (
-                    <span className="text-xs text-gray-400 line-through">₹{service.originalPrice}</span>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => navigate('/user/cart')}
-                className="px-8 py-3 bg-[#B33A35] hover:bg-[#9E2E2A] text-white text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
-              >
-                <FiShoppingBag /> View Cart
-              </button>
             </div>
           </div>
         )}
@@ -2039,72 +2193,90 @@ const PremiumServiceDetailPage = () => {
               onClick={() => setActiveCategoryModal(null)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-pointer"
             />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-white dark:bg-zinc-900 rounded-t-[32px] z-50 shadow-2xl p-6 pb-[calc(env(safe-area-inset-bottom)+24px)] flex flex-col gap-5 border-t dark:border-zinc-800"
-            >
-              <div className="flex justify-between items-center border-b pb-3 dark:border-zinc-800">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
-                  {activeCategoryModal.title} Options & Packages
-                </h3>
-                <button
-                  onClick={() => setActiveCategoryModal(null)}
-                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full text-gray-500"
-                >
-                  <FiX className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Items List */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Available Options:</h4>
-                <div className="space-y-3">
-                  {activeCategoryModal.items?.map((item) => (
-                    <div
-                      key={item._id}
-                      onClick={() => {
-                        const groupId = activeCategoryModal._id?.toString();
-                        if (groupId) {
-                          // Select this option and default all other groups to 'skip'
-                          const updatedSelections = {};
-                          const groups = service.serviceGroups || [];
-                          groups.forEach(g => {
-                            const gId = g._id?.toString();
-                            if (gId === groupId) {
-                              updatedSelections[gId] = [item._id?.toString()];
-                            } else {
-                              updatedSelections[gId] = ['skip'];
-                            }
-                          });
-
-                          setCustomSelectedItems(updatedSelections);
-                          setIsCustomizing(true);
-                          setSelectedPackage(null); // Clear active combo package
-                          setActiveCategoryModal(null);
-                          toast.success(`Selected ${item.title}`);
-                        }
-                      }}
-                      className="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border dark:border-zinc-800 flex justify-between items-start gap-4 cursor-pointer hover:border-violet-400 dark:hover:border-violet-500 transition-all active:scale-[0.99] select-none"
-                    >
-                      <div className="space-y-1">
-                        <div className="font-semibold text-sm text-gray-800 dark:text-zinc-200">{item.title}</div>
-                        {item.duration && <div className="text-[10px] text-gray-400 flex items-center gap-1 font-medium"><FiClock /> {item.duration}</div>}
-                        {item.description && <p className="text-xs text-gray-500 leading-normal">{item.description}</p>}
-                      </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <span className="font-bold text-sm text-brand">₹{item.price}</span>
-                        <span className="text-[10px] font-bold bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400 px-3 py-1 rounded-full border border-violet-100 dark:border-violet-900/50 transition-colors">
-                          Choose
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+            {/* Centered Modal / Sheet */}
+            <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4 pointer-events-none">
+              <motion.div
+                initial={{ y: '100%', opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: '100%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                className="w-full max-w-md md:max-w-lg rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+              >
+                <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {activeCategoryModal.title} Options & Packages
+                  </h3>
+                  <button
+                    onClick={() => setActiveCategoryModal(null)}
+                    className="p-1.5 hover:bg-red-50/50 dark:hover:bg-zinc-800 rounded-full text-gray-500 cursor-pointer"
+                  >
+                    <FiX className="w-5 h-5" />
+                  </button>
                 </div>
-              </div>
-            </motion.div>
+
+                {/* Items List */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Available Options:</h4>
+                  <div className="space-y-3">
+                    {activeCategoryModal.items?.map((item) => {
+                      const cartItem = cartItems.find(entry => entry.title === item.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
+                      const qty = cartItem ? (cartItem.serviceCount || 1) : 0;
+                      return (
+                        <div
+                          key={item._id}
+                          className="p-4 rounded-2xl border flex justify-between items-start gap-4 transition-all select-none"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+                        >
+                          <div className="space-y-1">
+                            <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{item.title}</div>
+                            {item.duration && <div className="text-[10px] text-gray-400 flex items-center gap-1 font-medium"><FiClock /> {item.duration}</div>}
+                            {item.description && <p className="text-xs leading-normal" style={{ color: 'var(--text-secondary)' }}>{item.description}</p>}
+                          </div>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                            {qty > 0 ? (
+                              <div className="flex items-center gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-2 py-0.5 shrink-0">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDecreaseSubItem(item);
+                                  }} 
+                                  className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer"
+                                >
+                                  -
+                                </button>
+                                <span className="text-slate-800 dark:text-white font-extrabold text-xs">{qty}</span>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleIncreaseSubItem(item);
+                                  }} 
+                                  className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleIncreaseSubItem(item);
+                                }}
+                                className="text-[10px] font-bold px-4 py-1.5 rounded-full border transition-colors cursor-pointer"
+                                style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35', borderColor: 'rgba(179, 58, 53, 0.2)' }}
+                              >
+                                Add +
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </>
         )}
 

@@ -207,7 +207,7 @@ const PackageBased = () => {
   // Helper to upload media to Cloudinary
   const handleMediaUpload = async (file, type) => {
     const folder = `Doormeets/categories/${type}`;
-    if (type === 'icon' || type === 'main_icon') setUploadingIcon(true);
+    if (type === 'icon' || type === 'main_icon' || type === 'group_icon') setUploadingIcon(true);
     if (type === 'image') setUploadingImage(true);
     if (type === 'video') setUploadingVideo(true);
 
@@ -218,6 +218,7 @@ const PackageBased = () => {
         if (type === 'image') setSubCatForm(p => ({ ...p, imageUrl: response.imageUrl }));
         if (type === 'video') setSubCatForm(p => ({ ...p, videoUrl: response.imageUrl }));
         if (type === 'main_icon') setMainCatForm(p => ({ ...p, homeIconUrl: response.imageUrl }));
+        if (type === 'group_icon') setGroupForm(p => ({ ...p, iconUrl: response.imageUrl }));
         toast.success('File uploaded successfully');
       } else {
         toast.error('Upload failed');
@@ -255,7 +256,7 @@ const PackageBased = () => {
   };
 
   // Service Group Management (Packages)
-  const [groupForm, setGroupForm] = useState({ title: '', items: [], allowSkip: true });
+  const [groupForm, setGroupForm] = useState({ title: '', iconUrl: '', items: [], allowSkip: true });
   const [editingGroupIdx, setEditingGroupIdx] = useState(null);
 
   const handleOpenGroup = (idx = null) => {
@@ -264,12 +265,13 @@ const PackageBased = () => {
       const group = activeService.serviceGroups[idx];
       setGroupForm({
         title: group.title,
+        iconUrl: group.iconUrl || '',
         items: group.items || [],
         allowSkip: group.allowSkip !== false
       });
       setEditingGroupIdx(idx);
     } else {
-      setGroupForm({ title: '', items: [], allowSkip: true });
+      setGroupForm({ title: '', iconUrl: '', items: [], allowSkip: true });
       setEditingGroupIdx('new');
     }
     setEditingServiceGroup(true);
@@ -1164,6 +1166,43 @@ const PackageBased = () => {
                   className="w-full px-3 py-2.5 border rounded-xl text-xs focus:outline-none font-semibold text-gray-800"
                   placeholder="e.g. Haircut, Massage, Face care"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Group Icon / Image</label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      id="groupIconUpload"
+                      accept="image/*"
+                      onChange={e => e.target.files?.[0] && handleMediaUpload(e.target.files[0], 'group_icon')}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="groupIconUpload"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-sm transition-all hover:scale-[1.02] flex items-center gap-1.5"
+                    >
+                      <span>+ Upload Image</span>
+                    </label>
+                    {uploadingIcon && (
+                      <span className="text-[10px] text-blue-500 animate-pulse font-bold">Uploading...</span>
+                    )}
+                  </div>
+                  {groupForm.iconUrl && (
+                    <div className="flex items-center gap-2 border p-1.5 rounded-xl bg-gray-50">
+                      <img src={groupForm.iconUrl} alt="" className="w-8 h-8 object-contain rounded bg-white border" />
+                      <span className="text-[10px] text-gray-500 truncate flex-1">{groupForm.iconUrl}</span>
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={groupForm.iconUrl || ''}
+                    onChange={e => setGroupForm({ ...groupForm, iconUrl: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                    placeholder="Or enter image URL: https://..."
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-2 py-1">

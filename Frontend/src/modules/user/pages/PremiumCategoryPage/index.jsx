@@ -670,12 +670,10 @@ const PremiumCategoryPage = () => {
               })}
             </div>
           </div>
-        )}
-
-        {/* Mobile Packages Section */}
+        )}        {/* Mobile Packages Section */}
         {generatedPackages.length > 0 && (
           <div className="mb-8 space-y-4">
-            <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">Packages</h2>
+            <h2 className="text-[17px] font-bold" style={{ color: 'var(--text-primary)' }}>Packages</h2>
             {generatedPackages.map((comboItem, comboIdx) => {
               // Check if package is already inside cart by matching dynamic field selected package value
               const matchedCartItem = cartItems.find(item => {
@@ -754,7 +752,7 @@ const PremiumCategoryPage = () => {
               };
 
               return (
-                <div key={comboItem.id || comboIdx} className="p-3.5 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[20px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5">
+                <div key={comboItem.id || comboIdx} className="p-3.5 border rounded-[20px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                   {/* Discount tag badge */}
                   <div className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
                     <span>🏷️</span>
@@ -763,20 +761,20 @@ const PremiumCategoryPage = () => {
 
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0 pr-4">
-                      <h3 className="text-[14.5px] font-extrabold text-gray-900 dark:text-white leading-snug">{comboItem.title}</h3>
+                      <h3 className="text-[14.5px] font-extrabold leading-snug" style={{ color: 'var(--text-primary)' }}>{comboItem.title}</h3>
                       
                       {/* Rating under title */}
-                      <div className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                      <div className="flex items-center gap-1 text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                         <span className="text-yellow-500">★</span>
-                        <span className="font-extrabold text-gray-800 dark:text-zinc-200">{comboItem.rating || '4.5'}</span>
-                        <span>({comboItem.reviews || '1.2k'} reviews)</span>
+                        <span className="font-extrabold" style={{ color: 'var(--text-primary)' }}>{comboItem.rating || '4.5'}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>({comboItem.reviews || '1.2k'} reviews)</span>
                       </div>
 
                       {/* Pricing */}
                       <div className="mt-1 flex items-center gap-2">
-                        <span className="text-[14px] font-extrabold text-gray-900 dark:text-white">₹{comboItem.price}</span>
+                        <span className="text-[14px] font-extrabold" style={{ color: 'var(--text-primary)' }}>₹{comboItem.price}</span>
                         {comboItem.originalPrice > comboItem.price && (
-                          <span className="text-[10.5px] text-slate-450 dark:text-zinc-500 line-through">₹{comboItem.originalPrice}</span>
+                          <span className="text-[10.5px] line-through" style={{ color: 'var(--text-muted)' }}>₹{comboItem.originalPrice}</span>
                         )}
                       </div>
                     </div>
@@ -802,7 +800,7 @@ const PremiumCategoryPage = () => {
                       ) : (
                         <button
                           onClick={handleAddComboItem}
-                          className="px-3.5 py-1 rounded-lg border border-red-200 dark:border-zinc-700 text-[#B33A35] dark:text-red-400 font-extrabold text-[11px] hover:bg-red-50 dark:hover:bg-zinc-800 transition-colors"
+                          className="px-3.5 py-1 rounded-lg border-2 border-[#B33A35] text-[#B33A35] font-extrabold text-[11px] hover:bg-red-50/50 dark:hover:bg-zinc-800 transition-colors"
                         >
                           Add
                         </button>
@@ -811,14 +809,14 @@ const PremiumCategoryPage = () => {
                   </div>
 
                   {/* Divider line */}
-                  <div className="w-full border-t border-gray-100 dark:border-zinc-800/80 my-1.5" />
+                  <div className="w-full border-t my-1.5" style={{ borderColor: 'var(--border)' }} />
 
                   {/* List of services */}
                   <div className="space-y-0.5">
                     {comboItem.services.map((s, idx) => (
                       <div key={idx} className="text-[9.5px] leading-snug">
-                        <span className="font-medium text-gray-800 dark:text-zinc-300">{s.title}: </span>
-                        <span className="text-gray-450 dark:text-zinc-500">{s.description || s.title}</span>
+                        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{s.title}: </span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{s.description || s.title}</span>
                       </div>
                     ))}
                   </div>
@@ -915,17 +913,17 @@ const PremiumCategoryPage = () => {
               <FiArrowLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight">
+            <h1 className="text-3xl font-extrabold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
               {activeCategory?.title}
             </h1>
             <div className="flex items-center gap-2 mt-3">
               <span className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center">
                 <FiStar className="fill-white text-white w-3 h-3" />
               </span>
-              <span className="text-sm font-bold text-gray-800 dark:text-zinc-200">4.80</span>
-              <span className="text-sm text-gray-400 dark:text-zinc-500 font-medium">(9.3 M bookings)</span>
+              <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>4.80</span>
+              <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>(9.3 M bookings)</span>
             </div>
-            <p className="mt-4 text-[13px] text-gray-500 dark:text-zinc-400 leading-relaxed font-medium">
+            <p className="mt-4 text-[13px] leading-relaxed font-medium" style={{ color: 'var(--text-secondary)' }}>
               {activeCategory?.description || `Our ${activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages.`}
             </p>
           </div>
@@ -933,12 +931,12 @@ const PremiumCategoryPage = () => {
           {/* Sticky Select a Service Box (Sticks right below fixed navbar) */}
           <div 
             ref={boxRef}
-            className="border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
-            style={{ position: 'sticky', top: '88px', zIndex: 20 }}
+            className="border rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
+            style={{ position: 'sticky', top: '88px', zIndex: 20, backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <h3 className="text-sm font-semibold text-slate-500 dark:text-zinc-400 whitespace-nowrap">Select a service</h3>
-              <div className="h-[1px] bg-gray-200 dark:bg-zinc-800 flex-1"></div>
+              <h3 className="text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Select a service</h3>
+              <div className="h-[1px] flex-1" style={{ backgroundColor: 'var(--border)' }}></div>
             </div>
             
             <div className="grid grid-cols-3 gap-x-3 gap-y-6">
@@ -955,18 +953,23 @@ const PremiumCategoryPage = () => {
                     }}
                     className="flex flex-col items-center group cursor-pointer focus:outline-none"
                   >
-                    <div className={`w-[72px] h-[72px] rounded-[18px] overflow-hidden flex items-center justify-center transition-all duration-200 ${
-                      isActive 
-                        ? 'ring-2 ring-slate-300 dark:ring-zinc-700 scale-105 shadow-md' 
-                        : 'border border-gray-100 dark:border-zinc-800 group-hover:shadow-sm active:scale-95'
-                    }`}>
+                    <div 
+                      className={`w-[72px] h-[72px] rounded-[18px] overflow-hidden flex items-center justify-center transition-all duration-200 ${
+                        isActive 
+                          ? 'ring-2 ring-slate-300 dark:ring-zinc-700 scale-105 shadow-md' 
+                          : 'border group-hover:shadow-sm active:scale-95'
+                      }`}
+                      style={!isActive ? { borderColor: 'var(--border)' } : {}}
+                    >
                       <img src={subImage} alt={sub.title} className="w-full h-full object-cover" />
                     </div>
-                    <span className={`text-[11.5px] mt-2.5 text-center leading-tight max-w-[85px] break-words transition-colors ${
-                      isActive 
-                        ? 'font-bold text-slate-900 dark:text-white' 
-                        : 'font-medium text-gray-700 dark:text-zinc-400'
-                    }`}>
+                    <span 
+                      className="text-[11.5px] mt-2.5 text-center leading-tight max-w-[85px] break-words transition-colors"
+                      style={{ 
+                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        fontWeight: isActive ? '700' : '500'
+                      }}
+                    >
                       {sub.title}
                     </span>
                     <span className="w-10 h-[2.5px] bg-slate-900 dark:bg-white rounded-full mt-1.5 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -1001,7 +1004,7 @@ const PremiumCategoryPage = () => {
               {/* Desktop Packages Section */}
               {generatedPackages.length > 0 && (
                 <div className="pb-8 border-b border-gray-200 dark:border-zinc-800 space-y-8">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Packages</h2>
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Packages</h2>
                   {generatedPackages.map((comboItem, comboIdx) => {
                     // Check if package is already inside cart by matching dynamic field selected package value
                     const matchedCartItem = cartItems.find(item => {
@@ -1080,43 +1083,43 @@ const PremiumCategoryPage = () => {
                     };
 
                     return (
-                      <div key={comboItem.id || comboIdx} className="flex justify-between items-start py-2 border-b last:border-b-0 pb-6">
+                      <div key={comboItem.id || comboIdx} className="flex justify-between items-start py-2 border-b last:border-b-0 pb-6" style={{ borderColor: 'var(--border)' }}>
                         {/* Left Column: Info, Price, Tag, Bullet points */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-snug">
+                          <h3 className="text-[17px] font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>
                             {comboItem.title}
                           </h3>
                           
                           {/* Rating under title */}
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400 mt-1.5">
+                          <div className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>
                             <span className="text-yellow-500">★</span>
-                            <span className="font-bold text-gray-800 dark:text-zinc-200">{comboItem.rating || '4.80'}</span>
-                            <span>({comboItem.reviews || '1.2k'} reviews)</span>
+                            <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{comboItem.rating || '4.80'}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>({comboItem.reviews || '1.2k'} reviews)</span>
                           </div>
 
                           {/* Pricing with tag */}
                           <div className="flex items-center gap-2.5 mt-3">
-                            <span className="text-base font-extrabold text-slate-900 dark:text-white">₹{comboItem.price}</span>
+                            <span className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>₹{comboItem.price}</span>
                             {comboItem.originalPrice > comboItem.price && (
-                              <span className="text-sm text-slate-400 line-through">₹{comboItem.originalPrice}</span>
+                              <span className="text-sm text-slate-450 line-through">₹{comboItem.originalPrice}</span>
                             )}
                             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• {comboItem.discount || 'Special Combo'}</span>
                           </div>
 
                           {/* Green Tag Banner */}
-                          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/20 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-100/50 dark:border-emerald-900/30">
+                          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg border" style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
                             <span>🏷️</span>
                             <span>Special Bundle Deal</span>
                           </div>
 
                           {/* Dotted Divider line */}
-                          <div className="w-full border-t border-dashed border-gray-200 dark:border-zinc-800 my-4" />
+                          <div className="w-full border-t border-dashed my-4" style={{ borderColor: 'var(--border)' }} />
 
                           {/* Bullet points description */}
                           <ul className="space-y-1.5">
                             {comboItem.services.map((s, idx) => (
-                              <li key={idx} className="text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-2">
-                                <span className="w-1 h-1 bg-gray-400 dark:bg-zinc-600 rounded-full flex-shrink-0"></span>
+                              <li key={idx} className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--text-muted)' }}></span>
                                 <span>{s.title}</span>
                               </li>
                             ))}
@@ -1135,7 +1138,7 @@ const PremiumCategoryPage = () => {
 
                         {/* Right Column: Rounded Cover Image with Absolute ADD Button */}
                         <div className="relative w-[120px] h-[120px] ml-6 flex-shrink-0 overflow-visible">
-                          <div className="w-full h-full rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+                          <div className="w-full h-full rounded-2xl overflow-hidden border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                             <img 
                               src={comboItem.parentService?.image || activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300'} 
                               alt={comboItem.title}
@@ -1200,7 +1203,7 @@ const PremiumCategoryPage = () => {
                     if (subServices.length === 0) return null;
                     return (
                       <div key={subId} id={`subcat-sec-${subId}`} className="scroll-mt-24 pb-2">
-                        <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">{sub.title}</h3>
+                        <h3 className="text-lg font-bold tracking-tight pt-6 pb-4 border-b mb-1" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>{sub.title}</h3>
                         <div className="divide-y divide-gray-100 dark:divide-zinc-800">
                           {subServices.map((service) => (
                             <div key={service.id} className="py-4">
@@ -1220,7 +1223,7 @@ const PremiumCategoryPage = () => {
                   })}
                   {groupedServices['other'] && groupedServices['other'].length > 0 && (
                     <div id="subcat-sec-other" className="scroll-mt-24 pb-2">
-                      <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white pt-6 pb-4 border-b border-gray-200 dark:border-zinc-800 mb-1">General Services</h3>
+                      <h3 className="text-lg font-bold tracking-tight pt-6 pb-4 border-b mb-1" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>General Services</h3>
                       <div className="divide-y divide-gray-100 dark:divide-zinc-800">
                         {groupedServices['other'].map((service) => (
                           <div key={service.id} className="py-4">
@@ -1248,20 +1251,20 @@ const PremiumCategoryPage = () => {
               style={{ position: 'sticky', top: '88px', alignSelf: 'start', height: 'fit-content' }}
             >
               {/* Buy More Save More Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+              <div className="border rounded-2xl p-4 shadow-sm flex items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                 <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
                   <span className="text-xl font-bold">%</span>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800 dark:text-white">Buy more save more</h4>
-                  <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">15% off 2nd item onwards</p>
+                  <h4 className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>Buy more save more</h4>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>15% off 2nd item onwards</p>
                 </div>
               </div>
 
               {/* Safety Promise Card */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4">
-                <h4 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider border-b pb-2 dark:border-zinc-800">Doormeets Promise</h4>
-                <ul className="space-y-3 text-xs text-gray-600 dark:text-zinc-400 font-bold">
+              <div className="border rounded-2xl p-5 shadow-sm space-y-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                <h4 className="text-xs font-black uppercase tracking-wider border-b pb-2" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>Doormeets Promise</h4>
+                <ul className="space-y-3 text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
                   <li className="flex items-center gap-2">
                     <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">✓</span>
                     <span>Verified Professionals</span>
@@ -1278,10 +1281,10 @@ const PremiumCategoryPage = () => {
               </div>
 
               {/* Sticky Cart Summary */}
-              <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="border rounded-2xl p-5 shadow-sm space-y-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                 {cartCount > 0 ? (
                   <div className="space-y-4 text-left">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-2 dark:border-zinc-800">Cart</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider border-b pb-2" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>Cart</h4>
                     
                     {/* Cart Items List */}
                     <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
@@ -1290,7 +1293,7 @@ const PremiumCategoryPage = () => {
                         return (
                           <div key={item._id || index} className="flex justify-between items-center gap-2 py-1">
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{item.title}</p>
+                              <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>{item.title}</p>
                             </div>
                             
                             {/* Quantity pill selector */}
@@ -1575,25 +1578,29 @@ const PremiumCategoryPage = () => {
               onClick={() => setEditingPackage(null)}
             >
               <div 
-                className="w-full max-w-md rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl space-y-6 relative overflow-hidden bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800"
+                className="w-full max-w-md rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl space-y-6 relative overflow-hidden border"
+                style={{
+                  backgroundColor: 'var(--background)',
+                  borderColor: 'var(--border)'
+                }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header dragging line */}
-                <div className="w-12 h-1 bg-gray-205 dark:bg-zinc-750 rounded-full mx-auto mb-2 md:hidden" />
+                <div className="w-12 h-1 rounded-full mx-auto mb-2 md:hidden" style={{ backgroundColor: 'var(--border)' }} />
                 
                 {/* Header */}
-                <div className="flex justify-between items-start pb-2 border-b border-gray-100 dark:border-zinc-800">
+                <div className="flex justify-between items-start pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    <h3 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
                       Combos Packages
                     </h3>
-                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                       Customize individual options inside this combo package
                     </p>
                   </div>
                   <button
                     onClick={() => setEditingPackage(null)}
-                    className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-gray-400 dark:text-zinc-500"
+                    className="p-1.5 rounded-full hover:bg-red-50/50 dark:hover:bg-zinc-800 transition-colors text-gray-400 dark:text-zinc-500"
                   >
                     <FiX className="w-5 h-5" />
                   </button>
@@ -1605,7 +1612,7 @@ const PremiumCategoryPage = () => {
                     const selectedId = customizedOptions[group._id || group.id];
                     return (
                       <div key={group._id || group.id} className="space-y-3">
-                        <h4 className="text-xs font-extrabold text-slate-800 dark:text-zinc-200 uppercase tracking-wider">
+                        <h4 className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                           {group.title}
                         </h4>
                         
@@ -1616,8 +1623,9 @@ const PremiumCategoryPage = () => {
                             return (
                               <label
                                 key={item._id || item.id}
-                                className="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 dark:border-zinc-850 transition-all cursor-pointer select-none bg-gray-50/30 dark:bg-zinc-950/20"
+                                className="flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer select-none"
                                 style={{
+                                  backgroundColor: isSelected ? 'rgba(179, 58, 53, 0.03)' : 'var(--card-bg)',
                                   borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
                                 }}
                               >
@@ -1634,11 +1642,11 @@ const PremiumCategoryPage = () => {
                                     }}
                                     className="w-4 h-4 text-violet-650 border-gray-300 focus:ring-violet-500"
                                   />
-                                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-200">
+                                  <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
                                     {item.title}
                                   </span>
                                 </div>
-                                <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                                <span className="text-xs font-extrabold" style={{ color: 'var(--text-primary)' }}>
                                   ₹{item.price}
                                 </span>
                               </label>
@@ -1647,8 +1655,9 @@ const PremiumCategoryPage = () => {
 
                           {/* Exclude / Skip Option */}
                           <label
-                            className="flex items-center gap-3 p-3.5 rounded-2xl border border-dashed border-red-200/50 dark:border-red-900/30 transition-all cursor-pointer select-none bg-red-50/10 dark:bg-red-950/5"
+                            className="flex items-center gap-3 p-3.5 rounded-2xl border border-dashed transition-all cursor-pointer select-none"
                             style={{
+                              backgroundColor: selectedId === 'skip' ? 'rgba(239, 68, 68, 0.05)' : 'transparent',
                               borderColor: selectedId === 'skip' ? '#ef4444' : 'var(--border)',
                             }}
                           >
@@ -1662,9 +1671,9 @@ const PremiumCategoryPage = () => {
                                         [group._id || group.id]: 'skip'
                                       }));
                               }}
-                              className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                              className="w-4 h-4 text-red-650 border-gray-300 focus:ring-red-500"
                             />
-                            <span className="text-xs font-semibold text-red-650 dark:text-red-400">
+                            <span className="text-xs font-semibold" style={{ color: '#ef4444' }}>
                               I don't need {group.title?.toLowerCase() || 'this service'}
                             </span>
                           </label>

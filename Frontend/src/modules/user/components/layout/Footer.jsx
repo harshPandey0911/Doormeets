@@ -31,7 +31,7 @@ const Footer = () => {
   }
 
   return (
-    <footer className="hidden md:block bg-gray-50 border-t border-gray-100 pt-8 md:pt-16 pb-8 lg:pb-12 mt-6 md:mt-20 relative overflow-hidden group">
+    <footer className="hidden md:block border-t pt-8 md:pt-16 pb-8 lg:pb-12 mt-6 md:mt-20 relative overflow-hidden group" style={{ backgroundColor: 'var(--card-bg)', borderTopColor: 'var(--border)' }}>
       {/* Decorative Background Elements */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl -mr-32 -mt-32 transition-colors group-hover:bg-teal-500/10" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -ml-32 -mb-32 transition-colors group-hover:bg-orange-500/10" />
@@ -43,32 +43,32 @@ const Footer = () => {
             <Link to="/user" className="inline-block transform hover:scale-[1.01] transition-transform duration-300">
               <Logo className="h-8 w-auto" />
             </Link>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--text-secondary)' }}>
               {settings?.companyName || 'DoorMeets'} is your one-stop destination for all home services. From electrical repairs to premium salon services, we bring the experts to your doorstep.
             </p>
           </div>
 
           {/* Column 2: For customers */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">For customers</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>For customers</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/user/about" className="text-gray-500 hover:text-[#B33A35] text-sm transition-colors duration-200">
+                <Link to="/user/about" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/user/help-support" className="text-gray-500 hover:text-[#B33A35] text-sm transition-colors duration-200">
+                <Link to="/user/help-support" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                   Help & Support
                 </Link>
               </li>
               <li>
-                <Link to="/user/cancellation-policy" className="text-gray-500 hover:text-[#B33A35] text-sm transition-colors duration-200">
+                <Link to="/user/cancellation-policy" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                   Cancellation Policy
                 </Link>
               </li>
               <li>
-                <Link to="/user/contact" className="text-gray-500 hover:text-[#B33A35] text-sm transition-colors duration-200">
+                <Link to="/user/contact" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                   Contact Us
                 </Link>
               </li>
@@ -77,15 +77,15 @@ const Footer = () => {
 
           {/* Column 3: For professionals */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">For professionals</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>For professionals</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/vendor/signup" className="text-gray-500 hover:text-[#B33A35] text-sm transition-colors duration-200">
+                <Link to="/vendor/signup" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                   Register as Vendor
                 </Link>
               </li>
               <li>
-                <Link to="/worker/signup" className="text-gray-500 hover:text-[#B33A35] text-sm transition-colors duration-200">
+                <Link to="/worker/signup" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
                   Register as Worker
                 </Link>
               </li>
@@ -94,7 +94,7 @@ const Footer = () => {
 
           {/* Column 4: Social links & Store buttons */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Social links</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Social links</h3>
             <div className="flex items-center gap-3">
               {[
                 { Icon: FiTwitter, href: "#" },
@@ -105,7 +105,8 @@ const Footer = () => {
                 <a
                   key={i}
                   href={href}
-                  className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-black transition-colors"
+                  className="w-9 h-9 rounded-full border flex items-center justify-center hover:bg-[#B33A35] hover:text-white transition-colors"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                 >
                   <Icon className="w-4 h-4" />
                 </a>
@@ -144,19 +145,19 @@ const Footer = () => {
         </div>
 
         {/* Bottom copyright row */}
-        <div className="border-t border-gray-200 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="border-t pt-6 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderTopColor: 'var(--border)' }}>
           <div className="flex flex-col gap-1 text-left w-full md:w-auto">
-            <p className="text-[11px] text-gray-400 font-medium">
+            <p className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
               * As of July 2026
             </p>
-            <p className="text-[11px] text-gray-400 font-medium">
+            <p className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
               © Copyright {currentYear} {settings?.companyName || 'DoorMeets'} Limited. All rights reserved.
             </p>
           </div>
           <div className="flex items-center gap-6 self-start md:self-center">
-            <Link to="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Privacy Policy</Link>
-            <Link to="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Terms of Service</Link>
-            <Link to="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Cookie Policy</Link>
+            <Link to="#" className="text-xs hover:text-slate-650 transition-colors" style={{ color: 'var(--text-muted)' }}>Privacy Policy</Link>
+            <Link to="#" className="text-xs hover:text-slate-650 transition-colors" style={{ color: 'var(--text-muted)' }}>Terms of Service</Link>
+            <Link to="#" className="text-xs hover:text-slate-650 transition-colors" style={{ color: 'var(--text-muted)' }}>Cookie Policy</Link>
           </div>
         </div>
       </div>
