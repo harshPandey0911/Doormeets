@@ -1173,20 +1173,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     const vCgstPct = Number(globalSettings?.vendorCgstPercentage ?? 2.5);
     const vTdsPct = 0; // TDS is removed entirely u/s request "Vendor TDS (%) hatao"
 
-    // 1. Admin/Company Gross Margin
-    const adminGrossMargin = Math.max(0, cp - vPayoutBase);
-    let adminTaxableBase = 0;
-    let adminGstAmount = 0;
-
-    if (gstInc) {
-      adminGstAmount = adminGrossMargin * (gstPct / 100);
-      adminTaxableBase = adminGrossMargin - adminGstAmount;
-    } else {
-      adminTaxableBase = adminGrossMargin;
-      adminGstAmount = adminGrossMargin * (gstPct / 100);
-    }
-
-    // 2. Vendor Payout Breakdown
+    // 1. Vendor Payout Breakdown
     const sgstAmount = vPayoutBase * (vSgstPct / 100);
     const cgstAmount = vPayoutBase * (vCgstPct / 100);
     const tdsAmount = vPayoutBase * (vTdsPct / 100);
@@ -1198,15 +1185,24 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     const platformCommissionAmount = remainingBase * (pCommPct / 100);
     const netVendorShare = Math.max(0, remainingBase - platformCommissionAmount);
 
+    // 2. Admin/Company Gross Margin (includes platform commission)
+    const customerShareMargin = Math.max(0, cp - vPayoutBase);
+    const marginGstAmount = customerShareMargin * (gstPct / 100);
+    const marginTaxableBase = customerShareMargin - marginGstAmount;
+
+    const adminGrossMargin = customerShareMargin + platformCommissionAmount;
+    const adminTaxableBase = marginTaxableBase + platformCommissionAmount;
+    const adminGstAmount = marginGstAmount;
+
     const l1CommAmount = remainingBase * (l1Pct / 100);
     const l2CommAmount = remainingBase * (l2Pct / 100);
     const l3CommAmount = remainingBase * (l3Pct / 100);
     const payoutL1 = Math.max(0, remainingBase - platformCommissionAmount - l1CommAmount);
     const payoutL2 = Math.max(0, remainingBase - platformCommissionAmount - l2CommAmount);
     const payoutL3 = Math.max(0, remainingBase - platformCommissionAmount - l3CommAmount);
-    const profitL1 = adminTaxableBase + platformCommissionAmount + l1CommAmount;
-    const profitL2 = adminTaxableBase + platformCommissionAmount + l2CommAmount;
-    const profitL3 = adminTaxableBase + platformCommissionAmount + l3CommAmount;
+    const profitL1 = marginTaxableBase + platformCommissionAmount + l1CommAmount;
+    const profitL2 = marginTaxableBase + platformCommissionAmount + l2CommAmount;
+    const profitL3 = marginTaxableBase + platformCommissionAmount + l3CommAmount;
 
     return {
       taxableAmount: adminTaxableBase + remainingBase,
@@ -1217,7 +1213,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       vendorShare: netVendorShare,
       l1CommAmount, l2CommAmount, l3CommAmount, payoutL1, payoutL2, payoutL3,
       profitL1, profitL2, profitL3, totalCustomerPay: cp, platformTaxableBase: adminTaxableBase, vendorTaxableBase: remainingBase,
-      adminGrossMargin, adminTaxableBase, adminGstAmount, tdsAmount, remainingBase
+      adminGrossMargin, adminTaxableBase, adminGstAmount, tdsAmount, remainingBase,
+      marginTaxableBase
     };
   };
 
@@ -2963,8 +2960,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                     </div>
                                   </div>
                                   <div className="flex justify-between items-center text-xs font-semibold text-indigo-700">
-                                    <span>Admin Gross Share</span>
-                                    <span>₹{calcs.adminGrossMargin.toFixed(2)}</span>
+                                    <span>Vendor Share (After SGST & CGST)</span>
+                                    <span>₹{calcs.remainingBase.toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between items-center text-xs pt-1 border-t">
                                     <span className="text-slate-500">Admin Taxable Base</span>
@@ -3012,7 +3009,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                       <div className="text-[10px] bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1 my-1">
                                         <div className="flex justify-between">
                                           <span className="text-slate-500">Customer Share Net:</span>
-                                          <span className="font-semibold text-slate-700">₹{calcs.adminTaxableBase.toFixed(2)}</span>
+                                          <span className="font-semibold text-slate-700">₹{calcs.marginTaxableBase.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                           <span className="text-slate-500">Platform Comm:</span>
@@ -3030,6 +3027,16 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                       <div className="text-xs flex justify-between text-gray-700 font-semibold">
                                         <span>Admin Profit (L3)</span>
                                         <span className="text-blue-700 font-bold">₹{calcs.profitL3.toFixed(1)}</span>
+                                      </div>
+                                      <div className="pt-2 mt-2 border-t border-dashed border-gray-200 space-y-1">
+                                        <div className="text-[11px] flex justify-between text-gray-550 font-bold">
+                                          <span>Total GST</span>
+                                          <span className="text-gray-700">₹{calcs.gstAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="text-[11px] flex justify-between text-gray-550 font-bold">
+                                          <span>Total SGST &amp; CGST</span>
+                                          <span className="text-gray-700">₹{(((Number(pricingForm.vendorPayoutBase) || 0) * (Number(globalSettings?.vendorCgstPercentage ?? 2.5) + Number(globalSettings?.vendorSgstPercentage ?? 2.5))) / 100).toFixed(2)}</span>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>

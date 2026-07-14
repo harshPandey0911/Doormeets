@@ -57,9 +57,35 @@ const Dashboard = memo(() => {
   const [pendingBookings, setPendingBookings] = useState([]);
   const [banners, setBanners] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null); // For video preview modal
+  const [playingVideoId, setPlayingVideoId] = useState(null); // For inline video playback
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [globalConfig, setGlobalConfig] = useState({ maxSearchTime: 5, waveDuration: 60 });
+
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const bannerContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+    }, 4000); // Auto-slide every 4 seconds
+    return () => clearInterval(interval);
+  }, [banners]);
+
+  useEffect(() => {
+    if (bannerContainerRef.current && banners.length > 0) {
+      const container = bannerContainerRef.current;
+      const child = container.children[currentBannerIndex];
+      if (child) {
+        child.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'start'
+        });
+      }
+    }
+  }, [currentBannerIndex, banners.length]);
 
   const ignoredBookingIds = useRef(new Set());
 
@@ -398,7 +424,7 @@ const Dashboard = memo(() => {
 
   const handleBannerClick = (item) => {
     if (item.mediaType === 'video') {
-      setSelectedVideo(item);
+      setPlayingVideoId(item._id);
       return;
     }
     
@@ -787,34 +813,36 @@ const Dashboard = memo(() => {
         {/* Banners Media Carousel */}
         {banners.length > 0 && (
           <div className="px-4 pt-4">
-            <div className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2">
+            <div
+              ref={bannerContainerRef}
+              className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2"
+            >
               {banners.map((b) => (
                 <div
                   key={b._id}
-                  onClick={() => handleBannerClick(b)}
+                  onClick={b.mediaType === 'video' ? undefined : () => handleBannerClick(b)}
                   className="w-full flex-shrink-0 h-48 md:h-64 rounded-2xl overflow-hidden shadow-md snap-start cursor-pointer border border-white/10 hover:shadow-lg transition-shadow relative"
                   style={{ backgroundColor: b.bgColor || '#1e293b' }}
                 >
                   {b.mediaType === 'video' ? (
-                    <div className="w-full h-full relative bg-black">
-                      {b.thumbnailUrl ? (
-                        <img src={b.thumbnailUrl} alt={b.title} className="w-full h-full object-cover opacity-80" />
+                    <div className="w-full h-full relative bg-black" onClick={(e) => e.stopPropagation()}>
+                      {b.videoSource === 'youtube' ? (
+                        <iframe
+                          className="w-full h-full border-0 pointer-events-none"
+                          src={`https://www.youtube.com/embed/${b.videoUrl.replace('https://www.youtube.com/watch?v=', '').replace('https://youtu.be/', '').split('?')[0]}?autoplay=1&mute=1&loop=1&playlist=${b.videoUrl.replace('https://www.youtube.com/watch?v=', '').replace('https://youtu.be/', '').split('?')[0]}&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          title={b.title}
+                        />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                          <FiPlayCircle className="w-12 h-12 text-white/80" />
-                        </div>
+                        <video
+                          src={b.videoUrl}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                        />
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4">
-                        <div className="flex items-center gap-2 text-white">
-                          <div className="p-2 rounded-full bg-red-600/90 text-white shrink-0">
-                            <FiPlayCircle className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm leading-tight text-white">{b.title}</p>
-                            <p className="text-[10px] text-gray-300 leading-tight mt-0.5">{b.subtitle || 'Play video guide'}</p>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   ) : (
                     <div className="w-full h-full relative">

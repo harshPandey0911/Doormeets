@@ -1,18 +1,22 @@
 const mongoose = require('mongoose');
-const Booking = require('./models/Booking');
 
-async function run() {
-  await mongoose.connect('mongodb+srv://ac-ysrqqj9-shard-00-00.4a1n75n.mongodb.net/Doormeets?authSource=admin', {
-    user: 'appzeto_user',
-    pass: 'Appzeto2024'
-  });
-  console.log('Connected to DB');
-  const b = await Booking.findById('6a4b8121df540804c3d51615').lean();
-  console.log('STATUS:', b.status);
-  console.log('PAYMENT_STATUS:', b.paymentStatus);
-  console.log('PAYMENT_METHOD:', b.paymentMethod);
-  console.log('isSelfJob:', b.isSelfJob);
-  mongoose.disconnect();
-}
+const mongoUri = "mongodb+srv://harshpandey09112004_db_user:harshpandey09112004_db_user@doormeets.4a1n75n.mongodb.net/civilconnect?appName=Doormeets";
 
-run();
+const test = async () => {
+  try {
+    await mongoose.connect(mongoUri);
+    console.log("Connected to MongoDB");
+
+    const templates = await mongoose.connection.db.collection('categorytemplates').find({}).toArray();
+    console.log("Category Templates in DB:");
+    templates.forEach(t => {
+      console.log(`- Name: ${t.name}, Code: ${t.code}, ID: ${t._id}`);
+    });
+
+    await mongoose.disconnect();
+  } catch (err) {
+    console.error("Error:", err);
+  }
+};
+
+test();

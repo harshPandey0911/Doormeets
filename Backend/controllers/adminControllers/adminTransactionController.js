@@ -48,6 +48,7 @@ const getAllTransactions = async (req, res) => {
       // Note: Pagination here applies to bookings, not rows, which might result in variable row counts per page
       // This is an acceptable trade-off for virtualizing the data
       const bookings = await Booking.find(bookingQuery)
+        .select('bookingNumber createdAt completedAt updatedAt userId vendorId visitingCharges')
         .populate('userId', 'name email phone')
         .populate('vendorId', 'name email phone')
         .sort({ createdAt: -1 })
@@ -321,12 +322,78 @@ const getTransactionStats = async (req, res) => {
     const stats = revenueStats[0] || { totalRevenue: 0, totalRefunds: 0 };
     const netRevenue = stats.totalRevenue - stats.totalRefunds;
 
+    // Calculate dynamic tax totals
+    let totalGST = 0;
+    let totalCGST = 0;
+    let totalSGST = 0;
+
+    try {
+      const bookingQuery = {
+        status: { $in: ['COMPLETED', 'completed', 'paid', 'PAID'] }
+      };
+      const bookingFilter = await getBookingQueryFilter(req.user);
+      Object.assign(bookingQuery, bookingFilter);
+
+      const bookingsForTaxes = await Booking.find(bookingQuery)
+        .select('finalAmount basePrice serviceId cityId brandId vendorId')
+        .populate('vendorId', 'level');
+
+      const serviceIds = bookingsForTaxes.map(b => b.serviceId).filter(Boolean);
+      const PricingConfig = require('../../models/PricingConfig');
+      const pricings = await PricingConfig.find({ serviceId: { $in: serviceIds } });
+
+      const pricingMap = {};
+      pricings.forEach(p => {
+        const sId = p.serviceId.toString();
+        if (!pricingMap[sId]) pricingMap[sId] = [];
+        pricingMap[sId].push(p);
+      });
+
+      bookingsForTaxes.forEach(booking => {
+        const sId = booking.serviceId ? booking.serviceId.toString() : '';
+        const list = pricingMap[sId] || [];
+        let pricing = null;
+        if (list.length > 0) {
+          if (booking.cityId) {
+            pricing = list.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+          }
+          if (!pricing && booking.brandId) {
+            pricing = list.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+          }
+          if (!pricing) {
+            pricing = list.find(p => !p.cityId && !p.brandId) || list[0];
+          }
+        }
+
+        const cp = Number(booking.finalAmount || booking.basePrice || 0);
+        const vPayoutBase = pricing ? Number(pricing.vendorPayoutBase || 0) : 0;
+
+        const gstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
+        const vSgstPct = pricing ? Number(pricing.vendorSgstPercentage ?? 2.5) : 2.5;
+        const vCgstPct = pricing ? Number(pricing.vendorCgstPercentage ?? 2.5) : 2.5;
+
+        const adminGrossShare = Math.max(0, cp - vPayoutBase);
+        const platformGstAmount = adminGrossShare * (gstPct / 100);
+        const vendorSgstAmount = vPayoutBase * (vSgstPct / 100);
+        const vendorCgstAmount = vPayoutBase * (vCgstPct / 100);
+
+        totalGST += (platformGstAmount + vendorSgstAmount + vendorCgstAmount);
+        totalCGST += vendorCgstAmount;
+        totalSGST += vendorSgstAmount;
+      });
+    } catch (taxErr) {
+      console.error('Error calculating dynamic tax stats:', taxErr);
+    }
+
     res.status(200).json({
       success: true,
       data: {
         totalRevenue: stats.totalRevenue,
         totalRefunds: stats.totalRefunds,
-        netRevenue
+        netRevenue,
+        totalGST,
+        totalCGST,
+        totalSGST
       }
     });
 
@@ -370,6 +437,7 @@ const getEarningsBreakdown = async (req, res) => {
     }
 
     const bookings = await Booking.find(bookingQuery)
+      .select('bookingNumber createdAt userId vendorId finalAmount basePrice serviceId cityId brandId completedAt updatedAt serviceName serviceCategory')
       .populate('userId', 'name email phone')
       .populate('vendorId', 'name email phone businessName level')
       .sort({ createdAt: -1 });
@@ -446,6 +514,8 @@ const getEarningsBreakdown = async (req, res) => {
         createdAt: booking.completedAt || booking.updatedAt || booking.createdAt,
         user: booking.userId,
         vendor: booking.vendorId,
+        serviceName: booking.serviceName || 'General Service',
+        serviceCategory: booking.serviceCategory || 'Service',
         customerPay: cp,
         vendorPayoutBase: vPayoutBase,
         adminGrossShare,

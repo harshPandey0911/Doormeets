@@ -89,10 +89,21 @@ const VerificationPage = () => {
     const ytId = video.videoUrl.split(/[?&=/]/).filter(s => s.length === 11)[0] || video.videoUrl;
 
     let interval;
+    let checkYT;
     let lastTime = 0;
     let maxTime = 0;
+    let initialized = false;
 
-    window.onYouTubeIframeAPIReady = () => {
+    const initPlayer = () => {
+      if (initialized) return;
+      initialized = true;
+
+      const container = document.getElementById('yt-player');
+      if (!container) {
+        initialized = false; // retry on next tick if DOM element isn't ready
+        return;
+      }
+
       playerRef.current = new window.YT.Player('yt-player', {
         height: '100%',
         width: '100%',
@@ -103,23 +114,29 @@ const VerificationPage = () => {
           controls: 1
         },
         events: {
-          onReady: () => {
+          onReady: (event) => {
+            const player = event.target;
+            playerRef.current = player;
             interval = setInterval(() => {
-              if (!playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
+              if (!player || typeof player.getCurrentTime !== 'function') {
+                return;
+              }
 
-              const currentTime = playerRef.current.getCurrentTime();
-              const duration = playerRef.current.getDuration() || video.durationSeconds || 300;
-              const rate = playerRef.current.getPlaybackRate();
+              const currentTime = player.getCurrentTime();
+              const actualDuration = player.getDuration() || 300;
+              const requiredDuration = video.durationSeconds || actualDuration;
+              const targetDuration = Math.min(actualDuration, requiredDuration);
+              const rate = player.getPlaybackRate();
 
               // 1. Prevent speed change
               if (rate > 1) {
-                playerRef.current.setPlaybackRate(1);
+                player.setPlaybackRate(1);
                 toast.error('Speeding up the training video is not allowed.');
               }
 
               // 2. Prevent skipping forward
               if (currentTime - lastTime > 2.0) {
-                playerRef.current.seekTo(maxTime, true);
+                player.seekTo(maxTime, true);
                 toast.error('Skipping forward is not allowed.');
               } else {
                 lastTime = currentTime;
@@ -128,8 +145,8 @@ const VerificationPage = () => {
                 }
               }
 
-              // 3. Enable submit button when 95% of video is watched
-              if (maxTime >= duration * 0.95) {
+              // 3. Enable submit button when 95% of target duration is watched
+              if (maxTime >= targetDuration * 0.95) {
                 setCanSubmitVideo(true);
               }
             }, 500);
@@ -139,11 +156,26 @@ const VerificationPage = () => {
     };
 
     if (window.YT && window.YT.Player) {
-      window.onYouTubeIframeAPIReady();
+      initPlayer();
+    } else {
+      window.onYouTubeIframeAPIReady = () => {
+        initPlayer();
+      };
     }
+
+    // Polling backup to cover all script load race conditions or DOM render delays
+    checkYT = setInterval(() => {
+      if (window.YT && window.YT.Player) {
+        initPlayer();
+        if (initialized) {
+          clearInterval(checkYT);
+        }
+      }
+    }, 200);
 
     return () => {
       if (interval) clearInterval(interval);
+      if (checkYT) clearInterval(checkYT);
     };
   }, [step, video]);
 
@@ -373,8 +405,12 @@ const VerificationPage = () => {
       }
     }
 
-    // Enable submit at 95% completion
-    if (maxHtml5Time.current >= videoEl.duration * 0.95) {
+    // Enable submit at 95% completion of target duration
+    const actualDuration = videoEl.duration || 300;
+    const requiredDuration = video?.durationSeconds || actualDuration;
+    const targetDuration = Math.min(actualDuration, requiredDuration);
+
+    if (maxHtml5Time.current >= targetDuration * 0.95) {
       setCanSubmitVideo(true);
     }
   };

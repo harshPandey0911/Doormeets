@@ -64,7 +64,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
 
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-              {service.serviceType === 'package_base' ? `Starting from ₹${service.price}` : `₹${service.price}`}
+              ₹{service.price}
             </span>
             {service.originalPrice && (
               <span className="text-xs line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
@@ -150,6 +150,48 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             <img src={toAssetUrl(service.image || service.icon || service.iconUrl)} alt={service.title} className="h-full w-full object-cover" />
           ) : (
             <div className="w-full h-full bg-slate-200 dark:bg-zinc-700" />
+          )}
+        </div>
+
+        {/* Absolute Add Button centered at the bottom overlap */}
+        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[72px] h-[28px] z-10">
+          {quantity > 0 ? (
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="w-full h-full bg-white dark:bg-zinc-900 border border-violet-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs shadow-md flex items-center justify-between px-1.5"
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDecrease(service);
+                }}
+                className="w-5 h-5 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm"
+              >
+                -
+              </button>
+              <span className="font-extrabold text-[11px]">{quantity}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onIncrease(service);
+                }}
+                className="w-5 h-5 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(service);
+              }}
+              className="w-full h-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-0.5"
+              style={{ color: '#B33A35' }}
+            >
+              <span>Add</span>
+              <span className="text-[10px] font-semibold">+</span>
+            </button>
           )}
         </div>
       </div>

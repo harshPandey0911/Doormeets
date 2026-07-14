@@ -11,7 +11,9 @@ import {
   FiCheckCircle,
   FiClock,
   FiXCircle,
-  FiPercent
+  FiPercent,
+  FiX,
+  FiCreditCard
 } from 'react-icons/fi';
 import { adminTransactionService } from '../../../../services/adminTransactionService';
 import api from '../../../../services/api';
@@ -22,7 +24,10 @@ const PaymentOverview = () => {
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalRefunds: 0,
-    netRevenue: 0
+    netRevenue: 0,
+    totalGST: 0,
+    totalCGST: 0,
+    totalSGST: 0
   });
 
   const [transactions, setTransactions] = useState([]);
@@ -59,6 +64,14 @@ const PaymentOverview = () => {
     vendorId: 'all'
   });
   const [debouncedBreakdownSearch, setDebouncedBreakdownSearch] = useState('');
+  const [selectedTaxDetails, setSelectedTaxDetails] = useState(null);
+
+  // Sync pathname to activeTab
+  useEffect(() => {
+    if (window.location.pathname.endsWith('/taxes')) {
+      setActiveTab('taxes');
+    }
+  }, [window.location.pathname]);
 
   // Debounce search for transactions
   useEffect(() => {
@@ -278,6 +291,55 @@ const PaymentOverview = () => {
             <FiTrendingUp className="w-5 h-5" />
           </div>
         </div>
+
+        {/* GST, CGST, and SGST Cards */}
+        <div 
+          onClick={() => {
+            setActiveTab('taxes');
+            setBreakdownFilters(prev => ({ ...prev, taxType: 'gst' }));
+          }}
+          className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-purple-300 transition-all duration-200"
+        >
+          <div>
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total GST</p>
+            <h3 className="text-2xl font-bold text-gray-800 mt-1">{formatCurrency(stats.totalGST || 0)}</h3>
+          </div>
+          <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+            <FiPercent className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div 
+          onClick={() => {
+            setActiveTab('taxes');
+            setBreakdownFilters(prev => ({ ...prev, taxType: 'cgst' }));
+          }}
+          className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all duration-200"
+        >
+          <div>
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total CGST</p>
+            <h3 className="text-2xl font-bold text-gray-800 mt-1">{formatCurrency(stats.totalCGST || 0)}</h3>
+          </div>
+          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+            <FiPercent className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div 
+          onClick={() => {
+            setActiveTab('taxes');
+            setBreakdownFilters(prev => ({ ...prev, taxType: 'sgst' }));
+          }}
+          className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-teal-300 transition-all duration-200"
+        >
+          <div>
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">Total SGST</p>
+            <h3 className="text-2xl font-bold text-gray-800 mt-1">{formatCurrency(stats.totalSGST || 0)}</h3>
+          </div>
+          <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600">
+            <FiPercent className="w-5 h-5" />
+          </div>
+        </div>
       </div>
 
       {/* Tabs Navigation */}
@@ -286,19 +348,19 @@ const PaymentOverview = () => {
           onClick={() => { setActiveTab('transactions'); }}
           className={`py-3 px-4 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'transactions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          💳 Transactions Overview
+          <FiCreditCard className="w-4 h-4" /> Transactions Overview
         </button>
         <button
           onClick={() => { setActiveTab('commissions'); }}
           className={`py-3 px-4 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'commissions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          💰 Commission Earnings
+          <FiDollarSign className="w-4 h-4" /> Commission Earnings
         </button>
         <button
           onClick={() => { setActiveTab('taxes'); }}
           className={`py-3 px-4 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'taxes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          📈 Tax Earnings
+          <FiPercent className="w-4 h-4" /> Tax Earnings
         </button>
       </div>
 
@@ -667,14 +729,14 @@ const PaymentOverview = () => {
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Booking Number</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Pay</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Gross</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Name</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Name</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">CGST (2.5%)</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">SGST (2.5%)</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Platform GST (18%)</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor Base</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor CGST (2.5%)</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor SGST (2.5%)</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Tax</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor Details</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -695,21 +757,25 @@ const PaymentOverview = () => {
                     </tr>
                   ) : (
                     breakdownData.map((row) => (
-                      <tr key={row._id} className="hover:bg-gray-50 transition-colors">
+                      <tr 
+                        key={row._id} 
+                        onClick={() => setSelectedTaxDetails(row)}
+                        className="hover:bg-blue-50/30 transition-colors cursor-pointer"
+                      >
                         <td className="py-3 px-4 font-bold text-gray-800">#{row.bookingNumber}</td>
-                        <td className="py-3 px-4 font-medium text-gray-700">{formatCurrency(row.customerPay)}</td>
-                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.adminGrossShare)}</td>
-                        <td className="py-3 px-4 font-semibold text-indigo-600">{formatCurrency(row.platformGstAmount)}</td>
-                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.vendorPayoutBase)}</td>
-                        <td className="py-3 px-4 text-gray-500">{formatCurrency(row.vendorCgstAmount)}</td>
-                        <td className="py-3 px-4 text-gray-500">{formatCurrency(row.vendorSgstAmount)}</td>
-                        <td className="py-3 px-4 font-extrabold text-blue-700">{formatCurrency(row.totalGstCalculated)}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 font-semibold text-gray-700">{row.serviceName || 'General Service'}</td>
+                        <td className="py-3 px-4 text-gray-700">
                           <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-700">{row.vendor?.businessName || row.vendor?.name || '—'}</span>
-                            <span className="text-[10px] text-gray-400 font-mono">{formatDate(row.createdAt)}</span>
+                            <span className="font-semibold text-gray-800">{row.user?.name || '—'}</span>
+                            <span className="text-[10px] text-gray-400">{row.user?.email || ''}</span>
                           </div>
                         </td>
+                        <td className="py-3 px-4 text-gray-600 font-semibold">{formatCurrency(row.vendorCgstAmount)}</td>
+                        <td className="py-3 px-4 text-gray-600 font-semibold">{formatCurrency(row.vendorSgstAmount)}</td>
+                        <td className="py-3 px-4 font-semibold text-indigo-600">{formatCurrency(row.platformGstAmount)}</td>
+                        <td className="py-3 px-4 font-extrabold text-blue-700">{formatCurrency(row.totalGstCalculated)}</td>
+                        <td className="py-3 px-4 text-gray-700 font-medium">{row.vendor?.businessName || row.vendor?.name || '—'}</td>
+                        <td className="py-3 px-4 text-gray-400 text-xs font-mono">{formatDate(row.createdAt)}</td>
                       </tr>
                     ))
                   )}
@@ -743,6 +809,92 @@ const PaymentOverview = () => {
             )}
           </div>
         </>
+      )}
+
+      {/* Dynamic Tax Details Modal */}
+      {selectedTaxDetails && (
+        <div className="fixed inset-0 bg-black/50 z-[99999] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setSelectedTaxDetails(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1.5 hover:bg-gray-100 rounded-lg"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <FiPercent className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">Tax Breakdown Details</h3>
+                <p className="text-xs text-gray-400">Booking #{selectedTaxDetails.bookingNumber}</p>
+              </div>
+            </div>
+
+            <div className="py-4 space-y-4">
+              {/* Service & Customer */}
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-100">
+                <div>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Service</span>
+                  <span className="text-sm font-semibold text-gray-800">{selectedTaxDetails.serviceName}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Customer</span>
+                  <span className="text-sm font-semibold text-gray-800">{selectedTaxDetails.user?.name || '—'}</span>
+                  {selectedTaxDetails.user?.phone && (
+                    <span className="text-xs text-gray-400 block">{selectedTaxDetails.user.phone}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Tax Table Breakdown */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Tax Distribution</span>
+                
+                <div className="border border-gray-100 rounded-xl divide-y divide-gray-100 overflow-hidden">
+                  <div className="flex justify-between p-3 text-sm">
+                    <span className="text-gray-500">Platform GST (18%)</span>
+                    <span className="font-semibold text-gray-800">{formatCurrency(selectedTaxDetails.platformGstAmount)}</span>
+                  </div>
+                  <div className="flex justify-between p-3 text-sm">
+                    <span className="text-gray-500">Vendor CGST (2.5%)</span>
+                    <span className="font-semibold text-gray-800">{formatCurrency(selectedTaxDetails.vendorCgstAmount)}</span>
+                  </div>
+                  <div className="flex justify-between p-3 text-sm">
+                    <span className="text-gray-500">Vendor SGST (2.5%)</span>
+                    <span className="font-semibold text-gray-800">{formatCurrency(selectedTaxDetails.vendorSgstAmount)}</span>
+                  </div>
+                  <div className="flex justify-between p-3 text-sm bg-blue-50/30 font-bold">
+                    <span className="text-blue-700">Total GST Earning</span>
+                    <span className="text-blue-700">{formatCurrency(selectedTaxDetails.totalGstCalculated)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transaction Details */}
+              <div className="grid grid-cols-2 gap-4 text-sm pt-2">
+                <div>
+                  <span className="text-gray-400 block">Customer Paid</span>
+                  <span className="font-semibold text-gray-700">{formatCurrency(selectedTaxDetails.customerPay)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block">Vendor Payout Base</span>
+                  <span className="font-semibold text-gray-700">{formatCurrency(selectedTaxDetails.vendorPayoutBase)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-4 flex justify-end">
+              <button 
+                onClick={() => setSelectedTaxDetails(null)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </motion.div>
   );
