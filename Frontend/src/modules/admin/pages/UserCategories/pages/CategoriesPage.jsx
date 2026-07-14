@@ -647,11 +647,11 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     setDraggedItem(null);
   };
 
-  // Filter categories strictly by template ID if provided (checking both templateId and template fields)
-  let filteredCategories = categories;
+  // Filter categories strictly by template ID if provided (checking both templateId and template fields), excluding group categories
+  let filteredCategories = categories.filter(c => c.isGroupCategory !== true);
   if (filterTemplateId) {
     const filterIdStr = String(filterTemplateId);
-    filteredCategories = categories.filter(c => {
+    filteredCategories = filteredCategories.filter(c => {
       const tId = c.templateId || c.template;
       if (!tId) return false;
       const catTemplateId = typeof tId === 'object'
