@@ -1851,45 +1851,7 @@ const PremiumServiceDetailPage = () => {
               </p>
             </div>
 
-            {/* Features Horizontal Grid */}
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                  <FiCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-800">Hygienic Tools</h4>
-                  <p className="text-[10px] text-gray-400 mt-0.5">100% sanitized</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-green-50 text-green-600 rounded-xl">
-                  <FiAward className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-800">Expert Stylists</h4>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Trained professionals</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-                  <FiHeart className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-800">Kids Friendly</h4>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Special care for kids</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
-                  <FiSmile className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-800">Premium Products</h4>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Quality you can trust</p>
-                </div>
-              </div>
-            </div>
+
             {(!service.packages || service.packages.length === 0) && (!variants || variants.length === 0) && (
               <div className="pt-4 border-t border-gray-100">
                 <button
