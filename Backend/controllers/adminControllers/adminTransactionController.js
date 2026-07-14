@@ -53,7 +53,8 @@ const getAllTransactions = async (req, res) => {
         .populate('vendorId', 'name email phone')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit));
+        .limit(parseInt(limit))
+        .lean();
 
       const totalBookings = await Booking.countDocuments(bookingQuery);
 
@@ -336,7 +337,8 @@ const getTransactionStats = async (req, res) => {
 
       const bookingsForTaxes = await Booking.find(bookingQuery)
         .select('finalAmount basePrice serviceId cityId brandId vendorId')
-        .populate('vendorId', 'level');
+        .populate('vendorId', 'level')
+        .lean();
 
       const serviceIds = bookingsForTaxes.map(b => b.serviceId).filter(Boolean);
       const PricingConfig = require('../../models/PricingConfig');
@@ -440,7 +442,8 @@ const getEarningsBreakdown = async (req, res) => {
       .select('bookingNumber createdAt userId vendorId finalAmount basePrice serviceId cityId brandId completedAt updatedAt serviceName serviceCategory')
       .populate('userId', 'name email phone')
       .populate('vendorId', 'name email phone businessName level')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     // 2. Fetch PricingConfigs in batch to avoid N+1 queries
     const serviceIds = bookings.map(b => b.serviceId).filter(Boolean);

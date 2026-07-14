@@ -429,7 +429,7 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'whats_included':
       return (
         <div className="space-y-3">
-          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title || "What's Included"} onChange={e => update('title', e.target.value)} /></div>
+          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title ?? "What's Included"} onChange={e => update('title', e.target.value)} /></div>
           <label className={labelCls}>Items</label>
           <EditableList items={data.items || []} onChange={v => update('items', v)} placeholder="e.g. Professional staff" />
         </div>
@@ -438,7 +438,7 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'please_note':
       return (
         <div className="space-y-3">
-          <div><label className={labelCls}>Title</label><input className={inputCls} value={data.title || 'Please Note'} onChange={e => update('title', e.target.value)} /></div>
+          <div><label className={labelCls}>Title</label><input className={inputCls} value={data.title ?? 'Please Note'} onChange={e => update('title', e.target.value)} /></div>
           <label className={labelCls}>Notes</label>
           <EditableList items={data.notes || []} onChange={v => update('notes', v)} placeholder="e.g. Advance booking required" />
         </div>
@@ -496,7 +496,42 @@ const BlockDataEditor = ({ block, onChange }) => {
               </div>
               <input className={inputCls} value={step.title} placeholder="Step title" onChange={e => { const s = [...(data.steps || [])]; s[i] = { ...s[i], title: e.target.value }; update('steps', s); }} />
               <input className={inputCls} value={step.desc} placeholder="Step description" onChange={e => { const s = [...(data.steps || [])]; s[i] = { ...s[i], desc: e.target.value }; update('steps', s); }} />
-              {data.hasImages && <input className={inputCls} value={step.imageUrl || ''} placeholder="Step image URL" onChange={e => { const s = [...(data.steps || [])]; s[i] = { ...s[i], imageUrl: e.target.value }; update('steps', s); }} />}
+              {data.hasImages && (
+                <div className="space-y-1.5 pt-0.5">
+                  <div className="flex gap-2">
+                    <input className={inputCls} value={step.imageUrl || ''} placeholder="Step image URL" onChange={e => { const s = [...(data.steps || [])]; s[i] = { ...s[i], imageUrl: e.target.value }; update('steps', s); }} />
+                    <label className="px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-gray-700 dark:text-zinc-300 cursor-pointer shadow-sm hover:bg-gray-50 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0">
+                      <span>Upload</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            toast.loading('Uploading step image...', { id: 'step-upload' });
+                            const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+                            const url = await uploadToCloudinary(file, 'service_blocks');
+                            const s = [...(data.steps || [])];
+                            s[i] = { ...s[i], imageUrl: url };
+                            update('steps', s);
+                            toast.success('Uploaded step image successfully!', { id: 'step-upload' });
+                          } catch (err) {
+                            console.error(err);
+                            toast.error('Upload failed', { id: 'step-upload' });
+                          }
+                        }} 
+                      />
+                    </label>
+                  </div>
+                  {step.imageUrl && (
+                    <div className="w-14 h-10 rounded-lg overflow-hidden border border-gray-200 bg-white">
+                      <img src={step.imageUrl} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           <button type="button" onClick={() => update('steps', [...(data.steps || []), { title: '', desc: '', imageUrl: '' }])} className="text-blue-600 text-xs font-bold hover:underline">+ Add Step</button>
@@ -506,7 +541,7 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'brands':
       return (
         <div className="space-y-3">
-          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title || 'Brands We Service'} onChange={e => update('title', e.target.value)} /></div>
+          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title ?? 'Brands We Service'} onChange={e => update('title', e.target.value)} /></div>
           <p className="text-xs text-gray-500">Brands are linked from the Brands section. Enter Brand IDs to display:</p>
           <EditableList items={data.brandIds || []} onChange={v => update('brandIds', v)} placeholder="Brand ID..." />
         </div>
@@ -515,7 +550,7 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'whats_not_included':
       return (
         <div className="space-y-3">
-          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title || "Not Included"} onChange={e => update('title', e.target.value)} /></div>
+          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title ?? "Not Included"} onChange={e => update('title', e.target.value)} /></div>
           <label className={labelCls}>Items</label>
           <EditableList items={data.items || []} onChange={v => update('items', v)} placeholder="e.g. Outside area cleaning" />
         </div>
@@ -524,7 +559,7 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'rate_card':
       return (
         <div className="space-y-3">
-          <div><label className={labelCls}>Button Label</label><input className={inputCls} value={data.linkLabel || 'View Rate Card'} onChange={e => update('linkLabel', e.target.value)} /></div>
+          <div><label className={labelCls}>Button Label</label><input className={inputCls} value={data.linkLabel ?? 'View Rate Card'} onChange={e => update('linkLabel', e.target.value)} /></div>
           <div><label className={labelCls}>Link URL (PDF or page)</label><input className={inputCls} value={data.linkUrl || ''} placeholder="https://..." onChange={e => update('linkUrl', e.target.value)} /></div>
         </div>
       );
@@ -532,8 +567,8 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'comparison':
       return (
         <div className="space-y-3">
-          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title || 'Compare Plans'} onChange={e => update('title', e.target.value)} /></div>
-          <div><label className={labelCls}>Button Label</label><input className={inputCls} value={data.linkLabel || 'View Comparison'} onChange={e => update('linkLabel', e.target.value)} /></div>
+          <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title ?? 'Compare Plans'} onChange={e => update('title', e.target.value)} /></div>
+          <div><label className={labelCls}>Button Label</label><input className={inputCls} value={data.linkLabel ?? 'View Comparison'} onChange={e => update('linkLabel', e.target.value)} /></div>
           <div><label className={labelCls}>Link URL</label><input className={inputCls} value={data.linkUrl || ''} placeholder="https://..." onChange={e => update('linkUrl', e.target.value)} /></div>
         </div>
       );
@@ -541,7 +576,39 @@ const BlockDataEditor = ({ block, onChange }) => {
     case 'offer_image':
       return (
         <div className="space-y-3">
-          <div><label className={labelCls}>Offer Image URL</label><input className={inputCls} value={data.imageUrl || ''} placeholder="https://image-url..." onChange={e => update('imageUrl', e.target.value)} /></div>
+          <div>
+            <label className={labelCls}>Offer Image URL</label>
+            <div className="flex gap-2">
+              <input className={inputCls} value={data.imageUrl || ''} placeholder="https://image-url..." onChange={e => update('imageUrl', e.target.value)} />
+              <label className="px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-lg text-xs font-bold text-gray-700 dark:text-zinc-300 cursor-pointer shadow-sm hover:bg-gray-50 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0">
+                <span>Upload</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      toast.loading('Uploading offer image...', { id: 'offer-upload' });
+                      const { uploadToCloudinary } = await import('../../../../../utils/cloudinaryUpload');
+                      const url = await uploadToCloudinary(file, 'service_blocks');
+                      update('imageUrl', url);
+                      toast.success('Uploaded offer image successfully!', { id: 'offer-upload' });
+                    } catch (err) {
+                      console.error(err);
+                      toast.error('Upload failed', { id: 'offer-upload' });
+                    }
+                  }} 
+                />
+              </label>
+            </div>
+            {data.imageUrl && (
+              <div className="mt-2 w-32 aspect-[3/1] rounded-lg overflow-hidden border border-gray-200 bg-white">
+                <img src={data.imageUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
           <div><label className={labelCls}>Alt Text</label><input className={inputCls} value={data.altText || ''} placeholder="Special Offer" onChange={e => update('altText', e.target.value)} /></div>
           <div><label className={labelCls}>Link on click (optional)</label><input className={inputCls} value={data.linkUrl || ''} placeholder="https://..." onChange={e => update('linkUrl', e.target.value)} /></div>
         </div>
@@ -700,6 +767,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const [pricingForm, setPricingForm] = useState({
     cityId: '',
     brandId: '',
+    variantId: '',
+    subCategoryId: '',
     customerPrice: '',
     originalPrice: '',
     pricePerMinute: '',
@@ -905,7 +974,21 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         rating: srv.rating || 4.5,
         reviewCount: srv.reviewCount || '1.2k'
       });
-      setServiceType(srv.serviceType || 'package_base');
+      // Derive serviceType from category template to make sure it is accurate
+      const srvCatId = srv.categoryId?._id || srv.categoryId || '';
+      const selectedCat = categories.find(c => (c.id || c._id) === srvCatId);
+      let derivedType = srv.serviceType || 'package_base';
+      if (selectedCat) {
+        const template = templates.find(t => (t._id || t.id) === selectedCat.templateId);
+        if (template) {
+          if (template.code === 'MINUTE_BASED') derivedType = 'minute_base';
+          else if (template.code === 'SUBSCRIPTION_BASED') derivedType = 'subscription_base';
+          else if (template.code === 'PACKAGE_BASED' || template.code === 'SERVICE_PAGE' || template.code === 'NORMAL_SERVICE') derivedType = 'package_base';
+          else if (template.code === 'IMAGE_CONSULTANT') derivedType = 'image_base';
+          else if (template.code === 'MULTI_VISIT') derivedType = 'multi_visit';
+        }
+      }
+      setServiceType(derivedType);
       setPricePerMinute(srv.pricePerMinute || '');
       setMinimumMinutes(srv.minimumMinutes || 30);
       setPackages(srv.packages || []);
@@ -1110,6 +1193,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         cityId: config.cityId?._id || config.cityId || '',
         brandId: config.brandId?._id || config.brandId || '',
         variantId: config.variantId || '',
+        subCategoryId: config.subCategoryId?._id || config.subCategoryId || '',
         customerPrice: config.customerPrice || '',
         originalPrice: config.originalPrice || '',
         pricePerMinute: config.pricePerMinute || '',
@@ -1135,6 +1219,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         cityId: '',
         brandId: '',
         variantId: '',
+        subCategoryId: '',
         customerPrice: '',
         originalPrice: '',
         pricePerMinute: '',
@@ -1253,7 +1338,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
 
     const payload = {
       categoryId: formData.categoryId,
-      subCategoryId: formData.subCategoryId || null,
+      subCategoryId: pricingForm.subCategoryId || formData.subCategoryId || null,
       brandId: (selectedCategory?.enableBrands !== false && serviceType !== 'image_base' && pricingForm.brandId) ? pricingForm.brandId : null,
       cityId: pricingForm.cityId || null,
       variantId: resolvedVariantId,
@@ -1334,6 +1419,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     }
   };
 
+  const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
+  const selectedTemplate = selectedCat ? templates.find(t => (t._id === selectedCat.templateId || t.id === selectedCat.templateId || t.code === selectedCat.template)) : null;
+  const isNormalService = selectedTemplate ? selectedTemplate.code === 'NORMAL_SERVICE' : true; // default to true if template not loaded
+  const isPricingMatrixEnabled = selectedTemplate ? (selectedTemplate.code === 'NORMAL_SERVICE' || selectedTemplate.code === 'MINUTE_BASED') : true;
+
   const getSteps = () => {
     const baseSteps = [
       { title: 'Basic Info', key: 'basic' },
@@ -1346,7 +1436,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       baseSteps.push({ title: 'Scheduling Workflow', key: 'workflow' });
     }
 
-    baseSteps.push({ title: 'Pricing Matrix', key: 'pricing_matrix' });
+    if (isPricingMatrixEnabled) {
+      baseSteps.push({ title: 'Pricing Matrix', key: 'pricing_matrix' });
+    }
 
     return baseSteps.map((step, idx) => ({
       ...step,
@@ -1390,11 +1482,43 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     const category = categories.find(c => (c.id === catId || c._id === catId));
     if (category) {
       const template = templates.find(t => (t._id === category.templateId || t.id === category.templateId || t.code === category.template));
-      if (template?.code === 'NORMAL_SERVICE') {
-        return {
-          label: '🛠️ Normal Service',
-          color: 'bg-indigo-100 text-indigo-700'
-        };
+      if (template) {
+        if (template.code === 'NORMAL_SERVICE') {
+          return {
+            label: '🛠️ Normal Service',
+            color: 'bg-indigo-100 text-indigo-700'
+          };
+        }
+        if (template.code === 'MINUTE_BASED') {
+          return {
+            label: '⏱ Minute Base',
+            color: 'bg-blue-100 text-blue-700'
+          };
+        }
+        if (template.code === 'PACKAGE_BASED' || template.code === 'SERVICE_PAGE') {
+          return {
+            label: '📦 Package',
+            color: 'bg-emerald-100 text-emerald-700'
+          };
+        }
+        if (template.code === 'IMAGE_CONSULTANT') {
+          return {
+            label: '📸 Image Quote',
+            color: 'bg-purple-100 text-purple-700'
+          };
+        }
+        if (template.code === 'MULTI_VISIT') {
+          return {
+            label: '🔄 Multi-Visit',
+            color: 'bg-orange-100 text-orange-700'
+          };
+        }
+        if (template.code === 'SUBSCRIPTION_BASED') {
+          return {
+            label: '💳 Subscription',
+            color: 'bg-violet-100 text-violet-700'
+          };
+        }
       }
     }
     return {
@@ -1693,18 +1817,175 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                     </div>
 
                     {/* All pricing is managed in Pricing Matrix tab */}
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
-                      <div className="text-2xl mt-0.5">💰</div>
-                      <div>
-                        <h5 className="font-bold text-green-800 text-sm">Configure Pricing in the Pricing Matrix tab</h5>
-                        <p className="text-xs text-green-700 mt-1">
-                          All pricing for this service (price per minute, fixed rates, GST, commissions) is managed from the <strong>Pricing Matrix</strong> tab — a single consistent source of truth for all prices across templates.
-                        </p>
-                        <p className="text-xs text-green-600 mt-1.5 font-semibold">
-                          After saving this service → go to Pricing Matrix → Add Pricing Config
-                        </p>
+                    {isPricingMatrixEnabled ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
+                        <div className="text-2xl mt-0.5">💰</div>
+                        <div>
+                          <h5 className="font-bold text-green-800 text-sm">Configure Pricing in the Pricing Matrix tab</h5>
+                          <p className="text-xs text-green-700 mt-1">
+                            All pricing for this service (price per minute, fixed rates, GST, commissions) is managed from the <strong>Pricing Matrix</strong> tab — a single consistent source of truth for all prices across templates.
+                          </p>
+                          <p className="text-xs text-green-600 mt-1.5 font-semibold">
+                            After saving this service → go to Pricing Matrix → Add Pricing Config
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        {/* Minute based pricing configuration */}
+                        {serviceType === 'minute_base' && (
+                          <div className="grid grid-cols-2 gap-4 border border-blue-100 bg-blue-50/20 p-4 rounded-xl">
+                            <div>
+                              <label className="block text-xs font-bold text-gray-700 mb-1">Base Price / Price Per Minute (₹) *</label>
+                              <input
+                                type="number"
+                                min={0}
+                                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white font-bold outline-none"
+                                value={pricePerMinute}
+                                onChange={e => setPricePerMinute(e.target.value)}
+                                placeholder="e.g. 10"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-700 mb-1">Minimum Duration (Minutes) *</label>
+                              <input
+                                type="number"
+                                min={1}
+                                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white font-semibold outline-none"
+                                value={minimumMinutes}
+                                onChange={e => setMinimumMinutes(parseInt(e.target.value) || 30)}
+                                placeholder="e.g. 30"
+                                required
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Package based pricing configuration */}
+                        {serviceType === 'package_base' && (
+                          <div className="pt-4 border-t space-y-4">
+                            <div className="flex justify-between items-center bg-gray-50 border border-gray-200 rounded-xl p-3.5">
+                              <div>
+                                <h5 className="text-sm font-bold text-gray-800">📦 Packages</h5>
+                                <p className="text-xs text-gray-500 mt-0.5">Manage pricing packages for this service.</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={addPackage}
+                                className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-bold hover:bg-violet-700 flex items-center gap-1"
+                              >
+                                <FiPlus /> Add Package
+                              </button>
+                            </div>
+
+                            {packages.length === 0 && (
+                              <div className="text-center py-5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-xs">
+                                No packages yet. Click "Add Package" to create one.
+                              </div>
+                            )}
+
+                            <div className="space-y-4">
+                              {packages.map((pkg, idx) => (
+                                <div key={idx} className="p-4 border border-violet-150 rounded-xl bg-violet-50/30 space-y-3">
+                                  <div className="flex justify-between items-center pb-2 border-b border-violet-100">
+                                    <span className="text-xs font-bold text-violet-700">Package #{idx + 1}</span>
+                                    <div className="flex items-center gap-3">
+                                      <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={pkg.isActive !== false}
+                                          onChange={e => updatePackage(idx, 'isActive', e.target.checked)}
+                                          className="accent-violet-600"
+                                        />
+                                        Active
+                                      </label>
+                                      <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={!!pkg.isPopular}
+                                          onChange={e => updatePackage(idx, 'isPopular', e.target.checked)}
+                                          className="accent-violet-600"
+                                        />
+                                        Popular
+                                      </label>
+                                      <button
+                                        type="button"
+                                        onClick={() => removePackage(idx)}
+                                        className="text-red-500 text-xs font-bold hover:text-red-700 ml-2"
+                                      >
+                                        ✕ Remove
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Package Title *</label>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. 1 BHK Cleaning"
+                                        className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                        value={pkg.title}
+                                        onChange={e => updatePackage(idx, 'title', e.target.value)}
+                                        required
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Duration *</label>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. 2-3 hours"
+                                        className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                        value={pkg.duration || ''}
+                                        onChange={e => updatePackage(idx, 'duration', e.target.value)}
+                                        required
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Price (₹) *</label>
+                                      <input
+                                        type="number"
+                                        className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold"
+                                        value={pkg.price}
+                                        onChange={e => updatePackage(idx, 'price', parseFloat(e.target.value) || 0)}
+                                        required
+                                        min="0"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-gray-600 mb-1">Original Price (₹) (optional)</label>
+                                      <input
+                                        type="number"
+                                        className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                        value={pkg.originalPrice || ''}
+                                        onChange={e => updatePackage(idx, 'originalPrice', e.target.value ? parseFloat(e.target.value) : null)}
+                                        placeholder="Strike-through original price"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Short Description *</label>
+                                    <textarea
+                                      placeholder="What's included in this package..."
+                                      rows={2}
+                                      className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                      value={pkg.description || ''}
+                                      onChange={e => updatePackage(idx, 'description', e.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
 
                     {/* ── SERVICE VARIANTS ── */}
                     {serviceType === 'image_base' ? (
@@ -2676,21 +2957,39 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             </select>
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variant (Addon)</label>
-                            <select
-                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-violet-700"
-                              value={pricingForm.variantId}
-                              onChange={e => setPricingForm({ ...pricingForm, variantId: e.target.value })}
-                            >
-                              <option value="">-- Apply to Base Service --</option>
-                              {variants.map((v, vIdx) => (
-                                <option key={v._id || vIdx} value={v._id || v.title}>
-                                  {v.title}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                          {isNormalService ? (
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variant (Addon)</label>
+                              <select
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-violet-700"
+                                value={pricingForm.variantId}
+                                onChange={e => setPricingForm({ ...pricingForm, variantId: e.target.value })}
+                              >
+                                <option value="">-- Apply to Base Service --</option>
+                                {variants.map((v, vIdx) => (
+                                  <option key={v._id || vIdx} value={v._id || v.title}>
+                                    {v.title}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Subcategory</label>
+                              <select
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-blue-700"
+                                value={pricingForm.subCategoryId}
+                                onChange={e => setPricingForm({ ...pricingForm, subCategoryId: e.target.value })}
+                              >
+                                <option value="">-- Select Subcategory --</option>
+                                {subCategories.filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId).map(sub => (
+                                  <option key={sub._id || sub.id} value={sub._id || sub.id}>
+                                    {sub.title}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                           
                           {(() => {
                             const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
@@ -2722,7 +3021,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                         {serviceType === 'minute_base' ? (
                           <div className="grid grid-cols-3 gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
                             <div>
-                              <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Base Charge (₹)</label>
+                              <label className="block text-[10px] font-bold text-blue-700 uppercase mb-1">Service Price (₹)</label>
                               <input
                                 type="number"
                                 className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"

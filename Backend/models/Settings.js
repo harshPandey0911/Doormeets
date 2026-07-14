@@ -242,10 +242,6 @@ const settingsSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  welcomeVideoUrl: {
-    type: String,
-    default: null
-  },
   loyaltyPointsEarningRate: {
     type: Number,
     default: 1, // 1 point per 100 Rs spent

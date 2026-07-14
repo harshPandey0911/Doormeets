@@ -82,12 +82,3 @@ export const toggleAdminStatus = async (id) => {
   }
 };
 
-// Upload welcome video to Cloudinary then save URL to settings
-export const uploadWelcomeVideo = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await api.post('/admin/upload/video', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-  return response.data;
-};

@@ -18,8 +18,7 @@ const rateLimiter = require('./middleware/rateLimiter');
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Connect to database
-connectDB();
+// Connect to database deferred to startup block at the bottom
 
 // Initialize Redis (if enabled)
 const { initRedis } = require('./services/redisService');
@@ -317,55 +316,64 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize Socket.io
+// Connect to database and then initialize services and start the server
 let server;
-if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
-  const PORT = process.env.PORT || 5000;
-  server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-  }).on('error', (err) => {
-    // Handle common listen errors gracefully so nodemon doesn't crash unhelpfully
-    if (err && err.code === 'EADDRINUSE') {
-      console.error(`Port ${PORT} is already in use. Please free the port or set PORT env variable.`);
-      // Allow nodemon to keep running so developer can fix without forcing multiple restarts
-    } else {
-      console.error('Server listen error:', err);
-      // For unexpected errors, exit so process manager can restart if configured
-      process.exit(1);
-    }
-  });
-
-  // Initialize Socket.io
-  const { initializeSocket, getIO } = require('./sockets');
-  initializeSocket(server);
-
-  // Make io instance available in request
-  app.set('io', getIO());
-
-  // Initialize Booking Scheduler for Wave-Based Alerting
-  const { initializeScheduler } = require('./services/bookingScheduler');
-  initializeScheduler(getIO());
-  console.log('[Server] Booking Scheduler initialized for wave-based alerting');
-
-  // Initialize Booking Availability & Reconfirmation Scheduler
-  const { initializeAvailabilityScheduler } = require('./services/bookingAvailabilityScheduler');
-  initializeAvailabilityScheduler(getIO());
-  console.log('[Server] Booking Availability & Reconfirmation Scheduler initialized');
-
-  // Handle unhandled promise rejections
-  process.on('unhandledRejection', (err) => {
-    console.error('Unhandled Promise Rejection:', err);
-    server.close(() => {
-      process.exit(1);
+connectDB().then(() => {
+  if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
+    const PORT = process.env.PORT || 5000;
+    server = app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    }).on('error', (err) => {
+      // Handle common listen errors gracefully so nodemon doesn't crash unhelpfully
+      if (err && err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Please free the port or set PORT env variable.`);
+        // Allow nodemon to keep running so developer can fix without forcing multiple restarts
+      } else {
+        console.error('Server listen error:', err);
+        // For unexpected errors, exit so process manager can restart if configured
+        process.exit(1);
+      }
     });
-  });
-} else {
-  // For Vercel, create HTTP server for Socket.io
-  const http = require('http');
-  server = http.createServer(app);
-  const { initializeSocket } = require('./sockets');
-  initializeSocket(server);
-}
+
+    // Initialize Socket.io
+    const { initializeSocket, getIO } = require('./sockets');
+    initializeSocket(server);
+
+    // Make io instance available in request
+    app.set('io', getIO());
+
+    // Initialize Booking Scheduler for Wave-Based Alerting
+    const { initializeScheduler } = require('./services/bookingScheduler');
+    initializeScheduler(getIO());
+    console.log('[Server] Booking Scheduler initialized for wave-based alerting');
+
+    // Initialize Booking Availability & Reconfirmation Scheduler
+    const { initializeAvailabilityScheduler } = require('./services/bookingAvailabilityScheduler');
+    initializeAvailabilityScheduler(getIO());
+    console.log('[Server] Booking Availability & Reconfirmation Scheduler initialized');
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (err) => {
+      console.error('Unhandled Promise Rejection:', err);
+      if (server) {
+        server.close(() => {
+          process.exit(1);
+        });
+      } else {
+        process.exit(1);
+      }
+    });
+  } else {
+    // For Vercel, create HTTP server for Socket.io
+    const http = require('http');
+    server = http.createServer(app);
+    const { initializeSocket } = require('./sockets');
+    initializeSocket(server);
+  }
+}).catch((err) => {
+  console.error('Database connection failed, server could not be started:', err);
+  process.exit(1);
+});
 
 module.exports = app;
 

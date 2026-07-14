@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiLoader, FiCalendar, FiClock, FiUser, FiShoppingBag } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import CardShell from '../UserCategories/components/CardShell';
 import { adminUserService } from '../../../../services/adminUserService';
 
 const UserBookings = () => {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const loadBookings = async (page = 1) => {
     try {
@@ -19,7 +33,7 @@ const UserBookings = () => {
         page,
         limit: pagination.limit,
         status: filterStatus === 'all' ? undefined : filterStatus,
-        search: searchQuery || undefined
+        search: debouncedSearch || undefined
       };
       // Note: We'll need to implement getAllUserBookings in adminUserService
       const response = await adminUserService.getAllUserBookings(params);
@@ -36,8 +50,8 @@ const UserBookings = () => {
   };
 
   useEffect(() => {
-    loadBookings();
-  }, [filterStatus, searchQuery]);
+    loadBookings(1);
+  }, [filterStatus, debouncedSearch]);
 
   const getStatusStyle = (status) => {
     const styles = {
@@ -120,7 +134,7 @@ const UserBookings = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <FiCalendar className="w-4 h-4" />
-                            <span>Date: {new Date(booking.bookingDate).toLocaleDateString()}</span>
+                            <span>Date: {booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString() : (booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : 'N/A')}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <FiUser className="w-4 h-4 text-green-500" />
@@ -128,14 +142,19 @@ const UserBookings = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <FiClock className="w-4 h-4" />
-                            <span>Slot: {booking.bookingSlot}</span>
+                            <span>Slot: {booking.scheduledTime || (booking.timeSlot ? `${booking.timeSlot.start} - ${booking.timeSlot.end}` : 'N/A')}</span>
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <div className="text-lg font-bold text-gray-900">₹{booking.finalAmount}</div>
-                      <button className="text-sm text-blue-600 font-semibold hover:underline">View Details</button>
+                      <button 
+                        onClick={() => navigate(`/admin/bookings/${booking._id}`)} 
+                        className="text-sm text-blue-600 font-semibold hover:underline"
+                      >
+                        View Details
+                      </button>
                     </div>
                   </div>
                 </motion.div>

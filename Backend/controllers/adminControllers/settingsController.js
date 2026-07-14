@@ -59,7 +59,6 @@ exports.updateSettings = async (req, res, next) => {
       mcqTimeLimitMinutes,
       mcqMinScoreL1,
       mcqMinScoreL2,
-      welcomeVideoUrl,
       commissionPercentage,
       loyaltyPointsEarningRate,
       loyaltyPointsRedemptionRate,
@@ -113,7 +112,6 @@ exports.updateSettings = async (req, res, next) => {
         companyCIN,
         companyWebsite,
         isOnlinePaymentEnabled: isOnlinePaymentEnabled !== undefined ? isOnlinePaymentEnabled : true,
-        welcomeVideoUrl,
         commissionPercentage: commissionPercentage !== undefined ? Number(commissionPercentage) : 10,
         loyaltyPointsEarningRate: loyaltyPointsEarningRate !== undefined ? Number(loyaltyPointsEarningRate) : 1,
         loyaltyPointsRedemptionRate: loyaltyPointsRedemptionRate !== undefined ? Number(loyaltyPointsRedemptionRate) : 1,
@@ -188,7 +186,6 @@ exports.updateSettings = async (req, res, next) => {
       if (mcqTimeLimitMinutes !== undefined) settings.mcqTimeLimitMinutes = mcqTimeLimitMinutes;
       if (mcqMinScoreL1 !== undefined) settings.mcqMinScoreL1 = mcqMinScoreL1;
       if (mcqMinScoreL2 !== undefined) settings.mcqMinScoreL2 = mcqMinScoreL2;
-      if (welcomeVideoUrl !== undefined) settings.welcomeVideoUrl = welcomeVideoUrl;
       if (commissionPercentage !== undefined) settings.commissionPercentage = Number(commissionPercentage);
       if (loyaltyPointsEarningRate !== undefined) settings.loyaltyPointsEarningRate = Number(loyaltyPointsEarningRate);
       if (loyaltyPointsRedemptionRate !== undefined) settings.loyaltyPointsRedemptionRate = Number(loyaltyPointsRedemptionRate);
@@ -270,7 +267,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled welcomeVideoUrl loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig');
 
     // Default if not found (fallback values)
     if (!settings) {
