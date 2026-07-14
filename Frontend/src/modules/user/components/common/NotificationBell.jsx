@@ -81,12 +81,14 @@ const NotificationBell = ({ notificationCount = 0 }) => {
     >
       {/* 1. Subtle Circular Border */}
       <div
-        className="absolute inset-0 rounded-full z-0 border border-black/[0.12] bg-white shadow-sm"
+        className="absolute inset-0 rounded-full z-0 border transition-colors duration-200"
+        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
       />
 
       {/* 2. Inner Button */}
       <button
-        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden bg-white"
+        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden transition-colors duration-200"
+        style={{ backgroundColor: 'var(--card-bg)' }}
       >
         <svg width="0" height="0" className="absolute">
           <linearGradient id="doormeets-bell-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -105,7 +107,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
           strokeLinecap="round"
           strokeLinejoin="round"
           style={{
-            stroke: '#000000',
+            stroke: 'var(--text-primary)',
             color: 'transparent',
           }}
         >
@@ -131,8 +133,8 @@ const NotificationBell = ({ notificationCount = 0 }) => {
           style={{
             minWidth: '20px',
             height: '20px',
-            boxShadow: '0 3px 8px rgba(239, 68, 68, 0.5), 0 0 0 2px #fff',
-            border: '2px solid #fff'
+            boxShadow: '0 3px 8px rgba(239, 68, 68, 0.5)',
+            border: '2px solid var(--background)'
           }}
         >
           {count > 9 ? '9+' : count}

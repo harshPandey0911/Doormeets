@@ -2161,13 +2161,67 @@ const PremiumServiceDetailPage = () => {
         ) : (
           /* Full Width Layout when NO Packages */
           <div className="flex flex-col gap-8 mb-12 w-full">
-            {renderVariantsList()}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-              {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, idx) => (
-                <div key={idx}>
-                  {renderBlockContent(block)}
+            {service?.serviceType === 'minute_base' && (
+              <section className="py-5 px-5 rounded-3xl border transition-colors" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                <h2 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <FiClock className="text-brand" /> Select Massage Duration
+                </h2>
+                <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Standard base charge is <span className="font-semibold text-brand">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {durationOptions.map((mins) => {
+                    const minPrice = Number(service.basePrice || 0);
+                    const minMins = Number(service.minimumMinutes || 30);
+                    const extraRatePer10Mins = Number(service.pricePerMinute || 0);
+                    const currentDurationPrice = mins <= minMins
+                      ? minPrice
+                      : minPrice + (extraRatePer10Mins * ((mins - minMins) / 10));
+                    return (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => setSelectedDuration(mins)}
+                        className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer ${selectedDuration === mins ? 'font-semibold shadow-xs' : ''
+                          }`}
+                        style={
+                          selectedDuration === mins
+                            ? { backgroundColor: 'rgba(255,159,69,0.12)', color: 'var(--primary)', borderColor: 'var(--primary)' }
+                            : { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }
+                        }
+                      >
+                        <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
+                        <span className="text-xs mt-1 font-medium" style={{ color: selectedDuration === mins ? 'var(--primary)' : 'var(--text-muted)' }}>₹{currentDurationPrice.toFixed(0)}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
+              </section>
+            )}
+            {renderVariantsList()}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-start">
+              {/* Left Column */}
+              <div className="flex flex-col gap-6">
+                {pageBlocks
+                  .filter(b => b.isVisible && b.blockType !== 'banner_slider')
+                  .filter((_, idx) => idx % 2 === 0)
+                  .map((block, idx) => (
+                    <div key={idx}>
+                      {renderBlockContent(block)}
+                    </div>
+                  ))}
+              </div>
+              {/* Right Column */}
+              <div className="flex flex-col gap-6">
+                {pageBlocks
+                  .filter(b => b.isVisible && b.blockType !== 'banner_slider')
+                  .filter((_, idx) => idx % 2 !== 0)
+                  .map((block, idx) => (
+                    <div key={idx}>
+                      {renderBlockContent(block)}
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
         )}
