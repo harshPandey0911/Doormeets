@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 const Booking = require('./models/Booking');
-const Settings = require('./models/Settings');
-const VendorBill = require('./models/VendorBill');
 require('dotenv').config();
 
 async function run() {
@@ -13,29 +11,25 @@ async function run() {
     const id = '6a57501a97e741f8ce86fada';
     console.log('Fetching booking:', id);
 
-    const booking = await Booking.findById(id)
-      .populate('userId', 'name phone email')
-      .populate('vendorId', 'name businessName phone email address profilePhoto')
-      .populate('serviceId', 'title description iconUrl images')
-      .populate('categoryId', 'title slug sacCode')
-      .populate('workerId', 'name phone rating totalJobs location profilePhoto');
+    const booking = await Booking.findById(id).lean();
 
     if (!booking) {
       console.log('❌ Booking not found');
       return;
     }
 
-    console.log('✅ Booking found:', {
+    console.log('✅ Booking details:', {
       _id: booking._id,
       status: booking.status,
       paymentStatus: booking.paymentStatus,
       paymentMethod: booking.paymentMethod,
       basePrice: booking.basePrice,
-      discount: booking.discount
+      discount: booking.discount,
+      workerId: booking.workerId,
+      assignedAt: booking.assignedAt,
+      workerPaymentStatus: booking.workerPaymentStatus,
+      finalSettlementStatus: booking.finalSettlementStatus
     });
-
-    const bill = await VendorBill.findOne({ bookingId: booking._id });
-    console.log('✅ Bill found:', bill ? bill._id : 'None');
 
   } catch (error) {
     console.error('❌ Error:', error);

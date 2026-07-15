@@ -1422,7 +1422,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
   const selectedTemplate = selectedCat ? templates.find(t => (t._id === selectedCat.templateId || t.id === selectedCat.templateId || t.code === selectedCat.template)) : null;
   const isNormalService = selectedTemplate ? selectedTemplate.code === 'NORMAL_SERVICE' : true; // default to true if template not loaded
-  const isPricingMatrixEnabled = selectedTemplate ? (selectedTemplate.code === 'NORMAL_SERVICE' || selectedTemplate.code === 'MINUTE_BASED') : true;
+  const isPricingMatrixEnabled = selectedTemplate ? (selectedTemplate.code !== 'IMAGE_CONSULTANT' && selectedTemplate.code !== 'SERVICE_PAGE') : true;
 
   const getSteps = () => {
     const baseSteps = [
@@ -2786,11 +2786,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             <div className="flex gap-2 items-center flex-wrap">
                               <input type="text" placeholder="e.g. Follow-up treatment" className="p-2 border border-gray-300 rounded-lg text-xs bg-white w-44" value={step.title} onChange={e => updateWorkflowStep(idx, 'title', e.target.value)} />
                               <input type="number" placeholder="Days offset" className="p-2 border border-gray-300 rounded-lg text-xs bg-white w-20" value={step.daysAfterPreviousVisit} onChange={e => updateWorkflowStep(idx, 'daysAfterPreviousVisit', parseInt(e.target.value) || 0)} />
-                              <span className="text-[10px] text-gray-500">days offset</span>
-                              <select className="p-2 border border-gray-300 rounded-lg text-xs bg-white" value={step.schedulingType} onChange={e => updateWorkflowStep(idx, 'schedulingType', e.target.value)}>
-                                <option value="auto_offset">Auto Date Offset</option>
-                                <option value="custom_scheduling">User Picks Date</option>
-                              </select>
+                              <span className="text-[10px] text-gray-500 font-bold bg-gray-100 border border-gray-200 px-2 py-1 rounded">Auto Date Offset</span>
                             </div>
                             <button onClick={() => removeWorkflowStep(idx)} className="text-xs font-bold text-red-600 hover:text-red-800">Delete</button>
                           </div>
