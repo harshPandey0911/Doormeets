@@ -244,7 +244,10 @@ const ActiveJobs = memo(() => {
               return (
                 <div
                   key={job.id}
-                  onClick={() => navigate(`/vendor/booking/${job.id}`)}
+                  onClick={() => {
+                    const isWorker = window.location.pathname.startsWith('/worker') || localStorage.getItem('role') === 'worker';
+                    navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`);
+                  }}
                   className="rounded-xl p-3 shadow-md cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
                   style={{
                     background: 'linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%)',
@@ -356,7 +359,8 @@ const ActiveJobs = memo(() => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/vendor/booking/${job.id}/assign-worker`);
+                            const isWorker = window.location.pathname.startsWith('/worker') || localStorage.getItem('role') === 'worker';
+                            navigate(isWorker ? `/worker/booking/${job.id}/assign-worker` : `/vendor/booking/${job.id}/assign-worker`);
                           }}
                           className="flex-1 py-1.5 rounded-lg text-[11px] font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-1.5"
                           style={{
