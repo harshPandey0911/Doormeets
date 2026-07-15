@@ -27,6 +27,9 @@ initRedis();
 // Initialize Express app
 const app = express();
 
+// Trust proxy for reverse proxies (Nginx/PM2) to allow express-rate-limit to read X-Forwarded-For headers correctly
+app.set('trust proxy', 1);
+
 // Security middleware - allow cross-origin resource loading (images) for user app
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }

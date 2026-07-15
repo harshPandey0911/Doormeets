@@ -537,7 +537,7 @@ vendorSchema.statics.updateWorkStatus = async function (vendorId) {
     if (['visited', 'in_progress', 'work_done', 'final_settlement'].includes(status)) {
       // Only treat as busy if this was a self job (vendor doing it themselves)
       // If it was assigned to a worker, the vendor is not busy.
-      if (job.isSelfJob || !job.workerId) {
+      if (job.isSelfJob) {
         isBusy = true;
         break;
       }
@@ -545,7 +545,7 @@ vendorSchema.statics.updateWorkStatus = async function (vendorId) {
 
     // 2. If scheduled, only busy starting dynamic buffer hours before scheduled time
     if (['accepted', 'assigned', 'confirmed'].includes(status)) {
-      if (job.isSelfJob || !job.workerId) {
+      if (job.isSelfJob) {
         const scheduledStart = parseScheduledStartTime(job.scheduledDate, job.timeSlot?.start || job.scheduledTime);
         const busyBufferMs = busyBufferHours * 60 * 60 * 1000;
         const bufferBeforeStart = new Date(scheduledStart.getTime() - busyBufferMs);

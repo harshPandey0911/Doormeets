@@ -315,7 +315,7 @@ const acceptBooking = async (req, res) => {
     const activeSelfJob = await Booking.findOne({
       vendorId: vendorId,
       isSelfJob: true,
-      status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement'] }
+      status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] }
     });
 
     if (activeSelfJob) {
@@ -353,7 +353,7 @@ const acceptBooking = async (req, res) => {
     const booking = bookingCheck;
     const isInstant = booking.bookingType === 'instant';
     const statusToSet = isInstant ? BOOKING_STATUS.CONFIRMED : BOOKING_STATUS.ACCEPTED;
-    const isSelfJobToSet = isInstant ? true : false;
+    const isSelfJobToSet = isInstant ? (activeSelfJob ? false : true) : false;
 
     // Check if the booking is already accepted by another vendor
     if (booking.vendorId && booking.vendorId.toString() !== vendorId.toString()) {
