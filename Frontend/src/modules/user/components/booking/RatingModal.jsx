@@ -40,7 +40,7 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName }) => {
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
           className="relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border"
-          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+          style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
         >
 
           <div className="p-6 sm:p-8">
@@ -114,7 +114,7 @@ const RatingModal = ({ isOpen, onClose, onSubmit, bookingName }) => {
                     placeholder="Tell us what you liked or what could be better..."
                     className="w-full border rounded-2xl p-4 text-xs min-h-[100px] transition-all outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
                     style={{ 
-                      backgroundColor: 'var(--card-bg)', 
+                      backgroundColor: 'var(--background)', 
                       borderColor: 'var(--border)', 
                       color: 'var(--text-primary)' 
                     }}
