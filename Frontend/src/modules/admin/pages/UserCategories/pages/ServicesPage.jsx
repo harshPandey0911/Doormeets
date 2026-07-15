@@ -2789,7 +2789,6 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                               <span className="text-[10px] text-gray-500">days offset</span>
                               <select className="p-2 border border-gray-300 rounded-lg text-xs bg-white" value={step.schedulingType} onChange={e => updateWorkflowStep(idx, 'schedulingType', e.target.value)}>
                                 <option value="auto_offset">Auto Date Offset</option>
-                                <option value="custom_scheduling">User Picks Date</option>
                               </select>
                             </div>
                             <button onClick={() => removeWorkflowStep(idx)} className="text-xs font-bold text-red-600 hover:text-red-800">Delete</button>
