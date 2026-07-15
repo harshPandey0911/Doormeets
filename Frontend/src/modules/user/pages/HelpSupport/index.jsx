@@ -6,7 +6,7 @@ import {
   FiCheckCircle, FiClock, FiSend
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
-import api from '../../../../services/api';
+import { configService } from '../../../../services/configService';
 
 const HelpSupport = () => {
   const navigate = useNavigate();
@@ -22,9 +22,10 @@ const HelpSupport = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await api.get('/public/config');
-        if (response.data?.success && response.data?.settings) {
-          const { supportEmail, supportPhone, supportWhatsapp } = response.data.settings;
+        const result = await configService.getSettings();
+        const settings = result?.settings;
+        if (settings) {
+          const { supportEmail, supportPhone, supportWhatsapp } = settings;
           setSupportInfo({
             email: supportEmail || 'support@doormeets.com',
             phone: supportPhone || '',

@@ -39,6 +39,8 @@ import PromoTicker from './components/PromoTicker';
 import promoService from '../../../../services/promoService';
 import QuoteApproval from '../PaintingConsultation/QuoteApproval';
 import { getMyConsultations } from '../../services/paintingConsultationService';
+import { apiCache } from '../../../../utils/apiCache';
+import { useSocket } from '../../../../context/SocketContext';
 
 
 
@@ -54,6 +56,7 @@ const toAssetUrl = (url) => {
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const socket = useSocket();
   const [address, setAddress] = useState(localStorage.getItem('currentAddress') || 'Select Location');
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [houseNumber, setHouseNumber] = useState('');
@@ -90,6 +93,16 @@ const Home = () => {
   useEffect(() => {
     fetchPendingQuotes();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('booking_updated', fetchPendingQuotes);
+    socket.on('notification', fetchPendingQuotes);
+    return () => {
+      socket.off('booking_updated', fetchPendingQuotes);
+      socket.off('notification', fetchPendingQuotes);
+    };
+  }, [socket]);
 
   // Sync detectedCityName with Address on mount/update if not already set
   useEffect(() => {
@@ -133,7 +146,7 @@ const Home = () => {
       const matchedId = matchedCity._id || matchedCity.id;
       const currentId = currentCity?._id || currentCity?.id;
 
-      if (!cityLoading && currentId && matchedId !== currentId) {
+      if (!cityLoading && matchedId !== currentId) {
         selectCity(matchedCity);
         toast.success(`Location updated to ${matchedCity.name}`);
       }
@@ -141,7 +154,7 @@ const Home = () => {
       setIsLocationSupported(false);
       if (currentCity) selectCity(null);
     }
-  }, [detectedCityName, cities, currentCity, cityLoading]);
+  }, [detectedCityName, cities, currentCity?._id || currentCity?.id, cityLoading]);
 
 
   const handleAddressSave = (savedHouseNumber, locationObj) => {
@@ -266,12 +279,54 @@ const Home = () => {
     registerFCMToken('user', true).catch(err => {/* Silent fail */ });
   }, []);
 
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(() => {
+    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+    const lat = localStorage.getItem('user_lat');
+    const lng = localStorage.getItem('user_lng');
+    const cacheKey = `public:homeData:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached && cached.categories) {
+      return cached.categories.map(cat => ({
+        id: cat.id,
+        title: cat.title,
+        slug: cat.slug,
+        icon: toAssetUrl(cat.icon),
+        hasSaleBadge: cat.hasSaleBadge,
+        badge: cat.badge,
+        categoryType: cat.categoryType || 'service',
+        status: cat.status || 'active',
+        interestedCount: cat.interestedCount || 0,
+        isInterested: cat.isInterested || false,
+        isGroupCategory: cat.isGroupCategory || false,
+        mappedCategories: (cat.mappedCategories || []).map(mc => ({
+          id: mc.id,
+          title: mc.title,
+          slug: mc.slug,
+          icon: toAssetUrl(mc.icon)
+        }))
+      }));
+    }
+    return [];
+  });
   const [productBrands, setProductBrands] = useState([]); // New state for direct product listing
-  const [homeContent, setHomeContent] = useState(null);
+  const [homeContent, setHomeContent] = useState(() => {
+    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+    const lat = localStorage.getItem('user_lat');
+    const lng = localStorage.getItem('user_lng');
+    const cacheKey = `public:homeData:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+    const cached = apiCache.get(cacheKey);
+    return (cached && cached.homeContent) ? cached.homeContent : null;
+  });
   const [offerBanners, setOfferBanners] = useState([]);
   const [activePromos, setActivePromos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+    const lat = localStorage.getItem('user_lat');
+    const lng = localStorage.getItem('user_lng');
+    const cacheKey = `public:homeData:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+    const cached = apiCache.get(cacheKey);
+    return !cached;
+  });
 
   // Handle scroll separately (only when needed)
   useEffect(() => {
@@ -331,8 +386,15 @@ const Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const cityId = currentCity?._id || currentCity?.id;
+        const lat = localStorage.getItem('user_lat');
+        const lng = localStorage.getItem('user_lng');
+        const cacheKey = `public:homeData:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+        const hasCached = apiCache.get(cacheKey);
+
+        if (!hasCached) {
+          setLoading(true);
+        }
 
         const response = await publicCatalogService.getHomeData(cityId);
 
@@ -403,7 +465,7 @@ const Home = () => {
     fetchData();
     fetchBanners();
     fetchPromos();
-  }, [currentCity]);
+  }, [currentCity?._id || currentCity?.id]);
   // Fetch user bookings for "Order Again" section (highly optimized)
   useEffect(() => {
     const fetchPastOrders = async () => {
@@ -756,7 +818,7 @@ const Home = () => {
           ) : (
             <>
               {/* Search Bar Section */}
-              <div className="mt-6 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
+              <div className="mt-1 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
                 <div className="w-full">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>

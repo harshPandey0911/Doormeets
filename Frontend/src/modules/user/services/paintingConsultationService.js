@@ -1,4 +1,5 @@
 import api from '../../../services/api';
+import { configService } from '../../../services/configService';
 
 export const requestConsultation = async (data) => {
   const response = await api.post('/users/painting-consultations/request', data);
@@ -16,6 +17,6 @@ export const quoteAction = async (id, action, extras = {}) => {
 };
 
 export const getPaintingPublicSettings = async () => {
-  const response = await api.get('/public/config');
-  return response.data;
+  // Uses centralized cached configService (10-minute TTL)
+  return configService.getSettings();
 };

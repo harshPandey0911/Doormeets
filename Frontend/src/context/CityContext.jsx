@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../services/api';
+import { apiCache } from '../utils/apiCache';
 
 const CityContext = createContext();
 
@@ -15,11 +16,20 @@ export const CityProvider = ({ children }) => {
     const initCity = async () => {
       try {
         setLoading(true);
-        // Fetch active cities from public API
-        const response = await api.get('/public/cities');
 
-        if (response.data.success && response.data.cities.length > 0) {
-          const fetchedCities = response.data.cities;
+        const CITY_CACHE_KEY = 'public:cities';
+        let fetchedCities = apiCache.get(CITY_CACHE_KEY);
+
+        if (!fetchedCities) {
+          // Fetch active cities from public API
+          const response = await api.get('/public/cities');
+          if (response.data.success && response.data.cities.length > 0) {
+            fetchedCities = response.data.cities;
+            apiCache.set(CITY_CACHE_KEY, fetchedCities, 300); // Cache 5 minutes
+          }
+        }
+
+        if (fetchedCities && fetchedCities.length > 0) {
           setCities(fetchedCities);
 
           // Check if user has a saved city

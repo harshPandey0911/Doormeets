@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { FiArrowLeft, FiPlus, FiMoreVertical, FiEdit2, FiTrash2, FiMapPin, FiNavigation } from 'react-icons/fi';
 import AddressSelectionModal from '../Checkout/components/AddressSelectionModal';
 import { userAuthService } from '../../../../services/authService';
+import { apiCache } from '../../../../utils/apiCache';
 
 import { z } from "zod";
 
@@ -18,8 +19,33 @@ const addressSchema = z.object({
 
 const ManageAddresses = () => {
   const navigate = useNavigate();
-  const [addresses, setAddresses] = useState([]); // Stores Red raw DB address objects
-  const [loading, setLoading] = useState(true);
+
+  // Initialize addresses from profile cache or localStorage instantly
+  const [addresses, setAddresses] = useState(() => {
+    const cached = apiCache.getStale('user:profile');
+    if (cached?.addresses) return cached.addresses;
+    try {
+      const stored = localStorage.getItem('userData');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return u.addresses || [];
+      }
+    } catch {}
+    return [];
+  });
+  // Only show loader if truly no address data cached
+  const [loading, setLoading] = useState(() => {
+    const cached = apiCache.getStale('user:profile');
+    if (cached?.addresses) return false;
+    try {
+      const stored = localStorage.getItem('userData');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return !u.addresses;
+      }
+    } catch {}
+    return true;
+  });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMenu, setShowMenu] = useState(null);
   const [editingAddress, setEditingAddress] = useState(null);
@@ -32,10 +58,25 @@ const ManageAddresses = () => {
 
   const fetchAddresses = async () => {
     try {
-      setLoading(true);
+      // Don't show loader if we already have addresses from cache
+      const hasStale = apiCache.getStale('user:profile');
+      if (!hasStale) setLoading(true);
+
       const response = await userAuthService.getProfile();
       if (response.success && response.user?.addresses) {
         setAddresses(response.user.addresses);
+        // Update profile cache with fresh addresses for next visit
+        const freshProfile = {
+          name: response.user.name || '',
+          phone: response.user.phone || '',
+          email: response.user.email || '',
+          profilePhoto: response.user.profilePhoto || '',
+          walletBalance: response.user.wallet?.balance ?? 0,
+          plans: response.user.plans,
+          addresses: response.user.addresses
+        };
+        apiCache.set('user:profile', freshProfile, 60);
+        try { localStorage.setItem('userData', JSON.stringify(response.user)); } catch {}
       }
     } catch (error) {
       toast.error('Failed to load addresses');

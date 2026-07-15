@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiArrowLeft, FiClock, FiHeart, FiShare2, FiShield, FiStar, FiX, FiPlus, FiCheckCircle } from 'react-icons/fi';
@@ -13,6 +13,7 @@ import { publicCatalogService } from '../../../../services/catalogService';
 import { bookingService } from '../../../../services/bookingService';
 import { toast } from 'react-hot-toast';
 import api from '../../../../services/api';
+import { apiCache } from '../../../../utils/apiCache';
 
 const pastelPalettes = [
   { bg: '#FEFBE8', border: '#FEF08A', text: '#854D0E', darkBg: '#59522B', darkBorder: '#7A703C', darkText: '#FEF08A' }, // Yellow
@@ -30,9 +31,44 @@ const PremiumBrandPage = () => {
   const { currentCity } = useCity();
   const { isDark } = useTheme();
   const { cartCount, cartItems, addToCart, updateItem, removeItem } = useCart();
+  const socket = useSocket();
 
-  const [brand, setBrand] = useState(location.state?.vendor || null);
-  const [services, setServices] = useState([]);
+  const [brand, setBrand] = useState(() => {
+    if (location.state?.vendor) return location.state.vendor;
+    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+    const lat = localStorage.getItem('user_lat');
+    const lng = localStorage.getItem('user_lng');
+    const cacheKey = `public:brand:${slug}:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+    const cached = apiCache.get(cacheKey);
+    return (cached && cached.success) ? (cached.brand || cached.data || cached) : null;
+  });
+  const [services, setServices] = useState(() => {
+    const initialBrand = location.state?.vendor;
+    const brandId = initialBrand?.id || initialBrand?._id;
+    if (!brandId) return [];
+    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+    const queryParams = new URLSearchParams();
+    queryParams.append('brandId', brandId);
+    if (cityId) queryParams.append('cityId', cityId);
+    const cacheKey = `public:services:${queryParams.toString()}`;
+    const cached = apiCache.get(cacheKey);
+    return (cached && cached.success && Array.isArray(cached.services)) ? cached.services.map((service, index) => ({
+      id: service.id || service._id || `brand-service-${index}`,
+      title: service.title,
+      description: service.description || 'Premium service by verified professionals.',
+      image: toAssetUrl(service.icon || service.image),
+      rating: service.rating || 4.8,
+      reviews: service.reviewCount || 120,
+      price: service.discountPrice || service.basePrice || service.price || 0,
+      originalPrice: service.basePrice || null,
+      features: service.features || [],
+      steps: service.steps || [],
+      vendorId: service.vendorId || initialBrand.vendorId,
+      brandId,
+      serviceType: service.serviceType || 'package_base',
+      workflow: service.workflow || null
+    })) : [];
+  });
   const [reviews, setReviews] = useState([]);
 
   // Variants popup states
@@ -40,71 +76,102 @@ const PremiumBrandPage = () => {
   const [selectedServiceForPopup, setSelectedServiceForPopup] = useState(null);
   const [selectedVariants, setSelectedVariants] = useState([]);
 
-  useEffect(() => {
-    const loadBrand = async () => {
-      try {
-        const brandRes = await publicCatalogService.getBrandBySlug(slug, currentCity?._id || currentCity?.id);
-        if (brandRes?.success) {
-          setBrand(brandRes.brand || brandRes.data || brandRes);
-        }
-      } catch (error) {
-        console.error('Brand load error', error);
+  const loadBrand = useCallback(async () => {
+    try {
+      const brandRes = await publicCatalogService.getBrandBySlug(slug, currentCity?._id || currentCity?.id);
+      if (brandRes?.success) {
+        setBrand(brandRes.brand || brandRes.data || brandRes);
       }
-    };
+    } catch (error) {
+      console.error('Brand load error', error);
+    }
+  }, [currentCity, slug]);
 
-    if (!brand) loadBrand();
-  }, [brand, currentCity, slug]);
-
-  useEffect(() => {
-    const loadServices = async () => {
-      try {
-        if (!brand) return;
-        const brandId = brand.id || brand._id;
-        const serviceRes = await publicCatalogService.getServices({ brandId, cityId: currentCity?._id || currentCity?.id });
-        if (serviceRes?.success && Array.isArray(serviceRes.services)) {
-          setServices(serviceRes.services.map((service, index) => ({
-            id: service.id || service._id || `brand-service-${index}`,
-            title: service.title,
-            description: service.description || 'Premium service by verified professionals.',
-            image: toAssetUrl(service.icon || service.image),
-            rating: service.rating || 4.8,
-            reviews: service.reviewCount || 120,
-            price: service.discountPrice || service.basePrice || service.price || 0,
-            originalPrice: service.basePrice || null,
-            features: service.features || [],
-            steps: service.steps || [],
-            vendorId: service.vendorId || brand.vendorId,
-            brandId,
-            serviceType: service.serviceType || 'package_base',
-            workflow: service.workflow || null
-          })));
-        } else {
-          setServices([]);
-        }
-
-        try {
-          const ratingRes = await bookingService.getRatings({ brandId });
-          const ratingList = ratingRes?.data || ratingRes?.reviews || ratingRes?.ratings || [];
-          if (Array.isArray(ratingList) && ratingList.length) {
-            setReviews(ratingList.map((item, index) => ({
-              id: item.id || item._id || `review-${index}`,
-              name: item.userName || item.user?.name || item.customerName || 'User',
-              rating: item.rating || 5,
-              comment: item.comment || item.review || item.message || 'Great service',
-            })));
-          }
-        } catch (ratingError) {
-          setReviews([]);
-        }
-      } catch (error) {
-        console.error('Brand services load error', error);
+  const loadServices = useCallback(async () => {
+    try {
+      if (!brand) return;
+      const brandId = brand.id || brand._id;
+      const serviceRes = await publicCatalogService.getServices({ brandId, cityId: currentCity?._id || currentCity?.id });
+      if (serviceRes?.success && Array.isArray(serviceRes.services)) {
+        setServices(serviceRes.services.map((service, index) => ({
+          id: service.id || service._id || `brand-service-${index}`,
+          title: service.title,
+          description: service.description || 'Premium service by verified professionals.',
+          image: toAssetUrl(service.icon || service.image),
+          rating: service.rating || 4.8,
+          reviews: service.reviewCount || 120,
+          price: service.discountPrice || service.basePrice || service.price || 0,
+          originalPrice: service.basePrice || null,
+          features: service.features || [],
+          steps: service.steps || [],
+          vendorId: service.vendorId || brand.vendorId,
+          brandId,
+          serviceType: service.serviceType || 'package_base',
+          workflow: service.workflow || null
+        })));
+      } else {
         setServices([]);
+      }
+
+      try {
+        const ratingRes = await bookingService.getRatings({ brandId });
+        const ratingList = ratingRes?.data || ratingRes?.reviews || ratingRes?.ratings || [];
+        if (Array.isArray(ratingList) && ratingList.length) {
+          setReviews(ratingList.map((item, index) => ({
+            id: item.id || item._id || `review-${index}`,
+            name: item.userName || item.user?.name || item.customerName || 'User',
+            rating: item.rating || 5,
+            comment: item.comment || item.review || item.message || 'Great service',
+          })));
+        }
+      } catch (ratingError) {
         setReviews([]);
       }
+    } catch (error) {
+      console.error('Brand services load error', error);
+      setServices([]);
+      setReviews([]);
+    }
+  }, [brand, currentCity]);
+
+  useEffect(() => {
+    if (!brand) loadBrand();
+  }, [brand, loadBrand]);
+
+  useEffect(() => {
+    loadServices();
+  }, [loadServices]);
+
+  // Real-time socket sync
+  useEffect(() => {
+    if (!socket) return;
+    const handleSocketUpdate = () => {
+      const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+      const lat = localStorage.getItem('user_lat');
+      const lng = localStorage.getItem('user_lng');
+      
+      // Invalidate brand and service cache
+      apiCache.invalidate(`public:brand:${slug}:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`);
+      if (brand) {
+        const brandId = brand.id || brand._id;
+        const queryParams = new URLSearchParams();
+        queryParams.append('brandId', brandId);
+        if (cityId) queryParams.append('cityId', cityId);
+        apiCache.invalidate(`public:services:${queryParams.toString()}`);
+      }
+
+      loadBrand();
+      loadServices();
     };
 
-    loadServices();
-  }, [brand, currentCity]);
+    socket.on('booking_updated', handleSocketUpdate);
+    socket.on('notification', handleSocketUpdate);
+
+    return () => {
+      socket.off('booking_updated', handleSocketUpdate);
+      socket.off('notification', handleSocketUpdate);
+    };
+  }, [socket, slug, currentCity, brand, loadBrand, loadServices]);
 
   const heroImage = brand?.coverImage || brand?.image || services[0]?.image || '';
   const topServices = services.slice(0, 2);

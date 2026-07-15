@@ -1,6 +1,9 @@
 /**
  * API Response Cache Utility
- * Provides in-memory caching for API responses to reduce network requests
+ * Supports Stale-While-Revalidate (SWR) pattern:
+ *   - getStale()  → returns data even if TTL expired (for instant display)
+ *   - isExpired() → checks if entry exists but is past TTL
+ *   - Services use these to show stale data instantly + background refresh silently
  */
 
 class ApiCache {
@@ -9,16 +12,15 @@ class ApiCache {
   }
 
   /**
-   * Get cached data if valid
-   * @param {string} key - Cache key
-   * @returns {any|null} - Cached data or null if expired/missing
+   * Get cached data only if still valid (within TTL)
+   * Returns null if missing or expired
    */
   get(key) {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
     if (Date.now() > entry.expiry) {
-      this.cache.delete(key);
+      // Don't delete — keep for getStale()
       return null;
     }
 
@@ -26,10 +28,27 @@ class ApiCache {
   }
 
   /**
+   * Get cached data even if TTL has expired (for SWR instant display)
+   * Returns null only if key was never set
+   */
+  getStale(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    return entry.data;
+  }
+
+  /**
+   * Check if a cache entry exists but its TTL has expired
+   * Used by SWR to decide if background refresh is needed
+   */
+  isExpired(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return false;
+    return Date.now() > entry.expiry;
+  }
+
+  /**
    * Store data in cache
-   * @param {string} key - Cache key
-   * @param {any} data - Data to cache
-   * @param {number} ttlSeconds - Time to live in seconds (default: 60)
    */
   set(key, data, ttlSeconds = 60) {
     this.cache.set(key, {
@@ -40,7 +59,6 @@ class ApiCache {
 
   /**
    * Invalidate a specific cache entry
-   * @param {string} key - Cache key to invalidate
    */
   invalidate(key) {
     this.cache.delete(key);
@@ -48,11 +66,22 @@ class ApiCache {
 
   /**
    * Invalidate all cache entries with a given prefix
-   * @param {string} prefix - Key prefix to match
    */
   invalidatePrefix(prefix) {
     for (const key of this.cache.keys()) {
       if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Invalidate only list-type cache entries (avoids deleting detail keys)
+   * e.g. invalidateListKeys('user:bookings:') won't delete 'user:booking:abc123'
+   */
+  invalidateListKeys(exactPrefix) {
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(exactPrefix)) {
         this.cache.delete(key);
       }
     }

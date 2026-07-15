@@ -4,6 +4,9 @@ import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
 import { userAuthService } from '../../../../services/authService';
 import api from '../../../../services/api';
+import { apiCache } from '../../../../utils/apiCache';
+import { getPlans } from '../../services/planService';
+import bookingService from '../../../../services/bookingService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { motion } from 'framer-motion';
 import {
@@ -30,42 +33,54 @@ import { MdAccountBalanceWallet } from 'react-icons/md';
 import NotificationBell from '../../components/common/NotificationBell';
 import Logo from '../../../../components/common/Logo';
 
+const PROFILE_CACHE_KEY = 'user:profile';
+
 const Account = () => {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState({
-    name: 'Verified Customer',
-    phone: '',
-    email: '',
-    isPhoneVerified: false,
-    isEmailVerified: false,
-    walletBalance: 0,
-    plans: null
+
+  // Initialize instantly from localStorage (no loader on first render)
+  const [userProfile, setUserProfile] = useState(() => {
+    // 1. Check apiCache first (fastest)
+    const cached = apiCache.getStale(PROFILE_CACHE_KEY);
+    if (cached) return cached;
+    // 2. Fallback to localStorage (always available)
+    try {
+      const stored = localStorage.getItem('userData');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return {
+          name: u.name || 'Verified Customer',
+          phone: u.phone || '',
+          email: u.email || '',
+          isPhoneVerified: u.isPhoneVerified || false,
+          isEmailVerified: u.isEmailVerified || false,
+          profilePhoto: u.profilePhoto || '',
+          walletBalance: u.wallet?.balance ?? 0,
+          plans: u.plans || null
+        };
+      }
+    } catch {}
+    return { name: 'Verified Customer', phone: '', email: '', isPhoneVerified: false, isEmailVerified: false, walletBalance: 0, plans: null };
   });
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Never show full-screen loader — data always available from localStorage/cache
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch user profile from database
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // First check localStorage
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-          const userData = JSON.parse(storedUserData);
-          setUserProfile({
-            name: userData.name || 'Verified Customer',
-            phone: userData.phone || '',
-            email: userData.email || '',
-            isPhoneVerified: userData.isPhoneVerified || false,
-            isEmailVerified: userData.isEmailVerified || false,
-            profilePhoto: userData.profilePhoto || '',
-            walletBalance: userData.wallet?.balance ?? 0
-          });
+        // SWR: if cache is still valid, skip the API call
+        const cached = apiCache.get(PROFILE_CACHE_KEY);
+        if (cached) {
+          setUserProfile(cached);
+          return;
         }
 
-        // Fetch fresh data from API
+        // Fetch fresh data from API (background — no loader shown)
         const response = await userAuthService.getProfile();
         if (response.success && response.user) {
-          setUserProfile({
+          const freshProfile = {
             name: response.user.name || 'Verified Customer',
             phone: response.user.phone || '',
             email: response.user.email || '',
@@ -74,27 +89,44 @@ const Account = () => {
             profilePhoto: response.user.profilePhoto || '',
             walletBalance: response.user.wallet?.balance ?? 0,
             plans: response.user.plans
-          });
+          };
+          apiCache.set(PROFILE_CACHE_KEY, freshProfile, 60); // Cache 60 seconds
+          setUserProfile(freshProfile);
+          // Update localStorage too for next visit
+          try { localStorage.setItem('userData', JSON.stringify(response.user)); } catch {}
         }
       } catch (error) {
-        // Use localStorage data if API fails
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-          const userData = JSON.parse(storedUserData);
-          setUserProfile({
-            name: userData.name || 'Verified Customer',
-            phone: userData.phone || '',
-            email: userData.email || '',
-            isPhoneVerified: userData.isPhoneVerified || false,
-            isEmailVerified: userData.isEmailVerified || false
-          });
-        }
-      } finally {
-        setIsLoading(false);
+        // Silently fail — localStorage data already shown
       }
     };
 
     fetchProfile();
+  }, []);
+
+  // Pre-fetch sub-page data so they load instantly when user navigates
+  useEffect(() => {
+    const prefetchSubPages = () => {
+      // 1. My Ratings — prefetch page 1 if not cached
+      if (!apiCache.getStale('user:ratings:page1')) {
+        bookingService.getRatings({ page: 1, limit: 10 })
+          .then(res => { if (res.success) apiCache.set('user:ratings:page1', res, 60); })
+          .catch(() => {});
+      }
+
+      // 2. My Plans — prefetch plans list if not cached
+      if (!apiCache.getStale('public:plans')) {
+        getPlans().catch(() => {});
+      }
+
+      // 3. My Bookings — prefetch if not cached
+      if (!apiCache.getStale('user:bookings:')) {
+        bookingService.getUserBookings({}).catch(() => {});
+      }
+    };
+
+    // Small delay so profile fetch takes priority
+    const timer = setTimeout(prefetchSubPages, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   // Format phone number for display
@@ -218,13 +250,7 @@ const Account = () => {
     visible: { opacity: 1, y: 0 }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+  // Never block render with full-screen spinner — data available from cache/localStorage
 
   return (
     <div className="min-h-screen pb-32 relative bg-transparent">

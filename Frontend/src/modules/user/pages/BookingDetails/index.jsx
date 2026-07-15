@@ -37,7 +37,8 @@ import PaymentVerificationModal from '../../components/booking/PaymentVerificati
 import { ConfirmDialog } from '../../../../components/common';
 import ReviewCard from '../../components/booking/ReviewCard';
 import NotificationBell from '../../components/common/NotificationBell';
-import api from '../../../../services/api';
+import { apiCache } from '../../../../utils/apiCache';
+import { configService } from '../../../../services/configService';
 import { downloadInvoice } from '../../utils/invoiceGenerator';
 
 const toAssetUrl = (url) => {
@@ -52,8 +53,28 @@ const BookingDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [booking, setBooking] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState(() => {
+    if (!id) return null;
+    const cacheKey = `user:booking:${id}`;
+    // Use getStale() — show even expired cache instantly (SWR: background refresh will update)
+    const cached = apiCache.getStale(cacheKey);
+    if (cached && cached.success) {
+      const data = { ...cached.data };
+      if (data.paymentMethod === 'plan_benefit') {
+        if (!data.tax) data.tax = (data.basePrice || 0) * 0.18;
+        if (!data.visitingCharges && !data.visitationFee) data.visitingCharges = 49;
+      }
+      return data;
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(() => {
+    if (!id) return true;
+    const cacheKey = `user:booking:${id}`;
+    // loading=true only if no cache at all (first visit) — stale cache counts as loaded
+    const stale = apiCache.getStale(cacheKey);
+    return !stale;
+  });
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -112,33 +133,34 @@ const BookingDetails = () => {
 
   const socket = useAppNotifications();
 
-  // Fetch support settings
+  // Fetch support settings via centralized cached configService
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await api.get('/public/config');
-        if (response.data?.success && response.data?.settings) {
-          const { supportEmail, supportPhone } = response.data.settings;
+        const result = await configService.getSettings();
+        const settings = result?.settings;
+        if (settings) {
+          const { supportEmail, supportPhone } = settings;
           setSupportInfo({
             email: supportEmail || 'help@doormeets.com',
             phone: supportPhone || '+919999999999'
           });
           setCompanyDetails({
-            companyName: response.data.settings.companyName || 'Doormeeets',
-            companyGSTIN: response.data.settings.companyGSTIN || '',
-            companyPAN: response.data.settings.companyPAN || '',
-            companyAddress: response.data.settings.companyAddress || '',
-            companyCity: response.data.settings.companyCity || '',
-            companyState: response.data.settings.companyState || '',
-            companyPincode: response.data.settings.companyPincode || '',
-            companyPhone: response.data.settings.companyPhone || '',
-            companyEmail: response.data.settings.companyEmail || '',
-            companyCIN: response.data.settings.companyCIN || '',
-            companyWebsite: response.data.settings.companyWebsite || '',
-            vendorCgstPercentage: response.data.settings.vendorCgstPercentage || 2.5,
-            vendorSgstPercentage: response.data.settings.vendorSgstPercentage || 2.5,
-            sacCode: (response.data.settings.sacCode !== undefined && response.data.settings.sacCode !== null) ? response.data.settings.sacCode : '998599',
-            invoiceTitle: response.data.settings.invoiceTitle || 'Convenience and Platform Fee'
+            companyName: settings.companyName || 'Doormeeets',
+            companyGSTIN: settings.companyGSTIN || '',
+            companyPAN: settings.companyPAN || '',
+            companyAddress: settings.companyAddress || '',
+            companyCity: settings.companyCity || '',
+            companyState: settings.companyState || '',
+            companyPincode: settings.companyPincode || '',
+            companyPhone: settings.companyPhone || '',
+            companyEmail: settings.companyEmail || '',
+            companyCIN: settings.companyCIN || '',
+            companyWebsite: settings.companyWebsite || '',
+            vendorCgstPercentage: settings.vendorCgstPercentage || 2.5,
+            vendorSgstPercentage: settings.vendorSgstPercentage || 2.5,
+            sacCode: (settings.sacCode !== undefined && settings.sacCode !== null) ? settings.sacCode : '998599',
+            invoiceTitle: settings.invoiceTitle || 'Convenience and Platform Fee'
           });
         }
       } catch (error) {
@@ -155,6 +177,12 @@ const BookingDetails = () => {
   // Function to load booking
   const loadBooking = async () => {
     try {
+      const cacheKey = `user:booking:${id}`;
+      // Only show skeleton if there's absolutely no cached data (stale included)
+      const hasAnyCached = apiCache.getStale(cacheKey);
+      if (!hasAnyCached) {
+        setLoading(true);
+      }
       // Don't set loading true on refresh to avoid flicker
       const response = await bookingService.getById(id);
       if (response.success) {
@@ -252,6 +280,7 @@ const BookingDetails = () => {
           });
 
           // Fetch full data to ensure consistency
+          apiCache.invalidate(`user:booking:${id}`);
           loadBooking();
 
           if (data.message) {

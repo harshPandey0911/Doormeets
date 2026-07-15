@@ -3,13 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCheck, FiStar, FiCheckCircle, FiShield, FiZap, FiGift } from 'react-icons/fi';
 import { getPlans } from '../../services/planService';
 import { userAuthService } from '../../../../services/authService';
+import { apiCache } from '../../../../utils/apiCache';
 import { toast } from 'react-hot-toast';
 
 const MyPlan = () => {
   const navigate = useNavigate();
-  const [plans, setPlans] = useState([]);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  // Initialize from cache instantly — no spinner on revisit
+  const [plans, setPlans] = useState(() => {
+    const cached = apiCache.getStale('public:plans');
+    return cached?.data || [];
+  });
+  const [user, setUser] = useState(() => {
+    const cached = apiCache.getStale('user:profile');
+    if (cached) return cached;
+    try {
+      const stored = localStorage.getItem('userData');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return null;
+  });
+  // Show loader only if no plans cached at all
+  const [loading, setLoading] = useState(() => {
+    const cached = apiCache.getStale('public:plans');
+    return !cached?.data?.length;
+  });
 
   // Helper to determine card styling based on plan name
   const getCardStyle = (name) => {
