@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload, FiPlus, FiMinus, FiX, FiFolder, FiChevronDown, FiChevronUp, FiChevronLeft, FiChevronRight, FiCheck, FiAward, FiSmile, FiShoppingBag } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload, FiPlus, FiMinus, FiX, FiFolder, FiChevronDown, FiChevronUp, FiChevronLeft, FiChevronRight, FiCheck, FiAward, FiSmile, FiShoppingBag, FiFileText } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import Navbar from '../../components/premium/Navbar';
 import BottomCheckoutBar from '../../components/premium/BottomCheckoutBar';
@@ -1037,6 +1037,38 @@ const PremiumServiceDetailPage = () => {
                 );
               })}
             </div>
+          </div>
+        );
+      case 'rate_card':
+        return (
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+            <div className="flex items-center gap-2 mb-3">
+              <FiFileText className="text-emerald-500 w-5 h-5 shrink-0" />
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'View Rate Card'}</h4>
+            </div>
+            {data.linkUrl ? (
+              <a
+                href={toAssetUrl(data.linkUrl)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-between w-full p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl hover:bg-emerald-100/50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer group shadow-xs"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <FiFileText className="w-5 h-5" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-xs font-bold text-emerald-800 dark:text-emerald-400 truncate">{data.linkLabel || 'Download PDF'}</p>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-500/80 truncate mt-0.5">Click to view rate card details</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30 group-hover:scale-105 transition-transform">
+                  Open File →
+                </span>
+              </a>
+            ) : (
+              <p className="text-[10px] text-gray-400 font-normal">Rate card details not uploaded yet.</p>
+            )}
           </div>
         );
       default:

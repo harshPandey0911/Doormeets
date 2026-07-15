@@ -1631,16 +1631,6 @@ const BookingDetails = () => {
                 </button>
               )}
 
-              {/* Cancellation Option */}
-              {['pending', 'pending_admin', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
-                <button
-                  onClick={handleCancelBooking}
-                  className="w-full py-3 border border-red-500/30 text-red-500 hover:bg-red-500/5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
-                >
-                  Cancel Booking
-                </button>
-              )}
-
               {/* Reschedule Option */}
               {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
                 <button
