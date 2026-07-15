@@ -214,15 +214,9 @@ export default function GlobalBookingAlert() {
                 await submitBid(id, price, note);
                 toast.success('Quote sent successfully!');
               } else {
-                const bookingItem = activeAlertBookings.find(b => String(b.id || b._id) === String(id));
-                const isScheduled = bookingItem?.bookingType === 'scheduled';
                 await acceptBooking(id);
-                if (!isScheduled) {
-                  await assignWorker(id, 'SELF');
-                  toast.success('Job claimed successfully! Assigned to you.');
-                } else {
-                  toast.success('Scheduled job accepted! You can assign yourself or a worker 30 minutes before the start time.');
-                }
+                toast.success('Job accepted successfully!');
+                navigate(`/vendor/booking/${id}`);
               }
 
               // Remove from local storage
@@ -236,7 +230,6 @@ export default function GlobalBookingAlert() {
 
               window.dispatchEvent(new Event('vendorJobsUpdated'));
               window.dispatchEvent(new Event('vendorStatsUpdated'));
-              toast.success('Job claimed successfully! Assigned to you.');
             } catch (e) {
               toast.error('Failed to claim job');
             }

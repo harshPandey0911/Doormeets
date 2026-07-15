@@ -613,7 +613,8 @@ const approveCancelBooking = async (req, res) => {
 
         const userDoc = await User.findById(booking.userId);
         if (userDoc) {
-          userDoc.wallet.balance = (userDoc.wallet.balance || 0) + refundAmount;
+          const balanceBefore = userDoc.wallet.balance || 0;
+          userDoc.wallet.balance = balanceBefore + refundAmount;
           await userDoc.save();
 
           // Create refund transaction
@@ -622,15 +623,17 @@ const approveCancelBooking = async (req, res) => {
             type: 'refund',
             amount: refundAmount,
             status: 'completed',
-            paymentMethod: 'wallet',
-            description: `Refund of ₹${refundAmount} for booking #${booking.bookingNumber} (cancellation request approved)`,
+            paymentMethod: 'system',
+            description: `Refund of ₹${refundAmount} for cancelled booking #${booking.bookingNumber}`,
             bookingId: booking._id,
+            referenceType: 'cancellation_refund',
+            balanceBefore: balanceBefore,
             balanceAfter: userDoc.wallet.balance
           });
           
           booking.paymentStatus = 'refunded';
           booking.penalty = 0;
-          console.log(`[AdminApproveCancel] Refunded ₹${refundAmount} to user ${booking.userId} wallet.`);
+          console.log(`[AdminApproveCancel] Refunded ₹${refundAmount} to user ${booking.userId} wallet. Balance: ${balanceBefore} → ${userDoc.wallet.balance}`);
         }
       } catch (refundErr) {
         console.error('[AdminApproveCancel] Error refunding upfront payment to wallet:', refundErr);

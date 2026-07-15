@@ -76,14 +76,8 @@ const BookingAlert = () => {
         await submitBid(id, price, note);
         toast.success('Your quote has been submitted!');
       } else {
-        const isScheduled = booking?.bookingType === 'scheduled';
         await acceptBooking(id);
-        if (!isScheduled) {
-          await assignWorker(id, 'SELF');
-          toast.success('Booking accepted & assigned to you!');
-        } else {
-          toast.success('Scheduled booking accepted! You can assign yourself or a worker 30 minutes before the start time.');
-        }
+        toast.success('Booking accepted successfully!');
       }
 
       // Update local storage states
@@ -92,7 +86,7 @@ const BookingAlert = () => {
       localStorage.setItem('vendorPendingJobs', JSON.stringify(updatedPending));
 
       window.dispatchEvent(new Event('vendorJobsUpdated'));
-      navigate('/vendor/dashboard', { replace: true });
+      navigate(`/vendor/booking/${id}`, { replace: true });
     } catch (error) {
       console.error('Error accepting:', error);
       toast.error(error.response?.data?.message || 'Failed to process request.');

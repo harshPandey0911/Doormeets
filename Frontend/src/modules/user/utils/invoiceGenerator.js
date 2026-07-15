@@ -110,7 +110,7 @@ export const downloadInvoice = (booking, companyDetails) => {
   const compStateCode = getStateCode(companyDetails.companyState);
 
   // Fetch SAC Code from booking's category
-  const sacCodeVal = booking.categoryId?.sacCode || companyDetails.sacCode || null;
+  const sacCodeVal = (booking.categoryId?.sacCode || companyDetails.sacCode || '').trim();
 
   // Render HTML for Invoice
   const invoiceHtml = `
@@ -185,10 +185,12 @@ export const downloadInvoice = (booking, companyDetails) => {
           <td style="width: 50%; vertical-align: top; padding: 20px 0 20px 20px;">
             <div style="color: #000; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px;">Delivery Service Provider</div>
 
+            ${companyDetails.companyGSTIN ? `
             <div style="margin-bottom: 12px;">
               <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Business GSTIN</span>
-              <span style="font-size: 13px; font-weight: bold; color: #111;">${companyDetails.companyGSTIN || 'N/A'}</span>
+              <span style="font-size: 13px; font-weight: bold; color: #111;">${companyDetails.companyGSTIN}</span>
             </div>
+            ` : ''}
 
             <div style="margin-bottom: 12px;">
               <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Business Name</span>
@@ -223,9 +225,9 @@ export const downloadInvoice = (booking, companyDetails) => {
           <tr style="border-bottom: 1px solid #e5e7eb;">
             <td style="padding: 24px 8px; vertical-align: top;">
               <span style="font-size: 14px; font-weight: bold; color: #111; display: block; margin-bottom: 6px;">
-                Convenience and Platform Fee - ${booking.serviceName}
+                ${companyDetails.invoiceTitle || 'Convenience and Platform Fee'} - ${booking.serviceName}
               </span>
-              ${sacCodeVal ? `<span style="color: #555; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;">SAC: ${sacCodeVal}</span>` : ''}
+              ${sacCodeVal && sacCodeVal !== '' ? `<span style="color: #555; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;">SAC: ${sacCodeVal}</span>` : ''}
             </td>
             <td style="text-align: right; padding: 24px 8px; vertical-align: top;">
               <table style="width: 100%; border-collapse: collapse; font-size: 12px;">

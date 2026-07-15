@@ -401,6 +401,18 @@ const bookingSchema = new mongoose.Schema({
   cancelledAt: { type: Date, default: null },
   cancellationReason: { type: String, default: null },
   cancelledBy: { type: String, default: null },
+  cancelRequestStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', null],
+    default: null
+  },
+  cancelRequestedBy: {
+    type: String,
+    enum: ['user', 'vendor', null],
+    default: null
+  },
+  cancelRequestReason: { type: String, default: null },
+  cancelRequestAt: { type: Date, default: null },
 
   // ==========================================
   // 11. REVIEW & RATING

@@ -54,7 +54,8 @@ const AdminSettings = () => {
     companyCIN: '',
     companyWebsite: '',
     invoicePrefix: 'INV',
-    sacCode: '998599'
+    sacCode: '998599',
+    invoiceTitle: 'Convenience and Platform Fee'
   });
   const [billingLoading, setBillingLoading] = useState(false);
 
@@ -164,7 +165,8 @@ const AdminSettings = () => {
             companyCIN: res.settings.companyCIN || '',
             companyWebsite: res.settings.companyWebsite || '',
             invoicePrefix: res.settings.invoicePrefix || 'INV',
-            sacCode: res.settings.sacCode || '998599'
+            sacCode: res.settings.sacCode !== undefined && res.settings.sacCode !== null ? res.settings.sacCode : '998599',
+            invoiceTitle: res.settings.invoiceTitle || 'Convenience and Platform Fee'
           });
           // Load support settings
           setSupportSettings({
@@ -263,16 +265,20 @@ const AdminSettings = () => {
     const {
       companyName, companyGSTIN, companyPAN, companyAddress,
       companyCity, companyState, companyPincode,
-      companyPhone, companyEmail, invoicePrefix, sacCode
+      companyPhone, companyEmail, invoicePrefix, sacCode, invoiceTitle
     } = billingSettings;
 
     if (!companyName?.trim()) return "Company Name is required";
 
-    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-    if (!companyGSTIN || !gstRegex.test(companyGSTIN)) return "Invalid GSTIN format (e.g., 27ABCDE1234F1Z5)";
+    if (companyGSTIN?.trim()) {
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!gstRegex.test(companyGSTIN.trim())) return "Invalid GSTIN format (e.g., 27ABCDE1234F1Z5)";
+    }
 
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (!companyPAN || !panRegex.test(companyPAN)) return "Invalid PAN format (e.g., ABCDE1234F)";
+    if (companyPAN?.trim()) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(companyPAN.trim())) return "Invalid PAN format (e.g., ABCDE1234F)";
+    }
 
     if (!companyAddress?.trim()) return "Address is required";
 
@@ -739,12 +745,26 @@ const AdminSettings = () => {
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-gray-100">
-                      <h4 className="text-xs font-bold text-gray-700 mb-3">Invoice Settings</h4>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Prefix</label>
-                        <input type="text" name="invoicePrefix" value={billingSettings.invoicePrefix} onChange={handleBillingChange}
-                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500 uppercase" />
+                    <div className="pt-4 border-t border-gray-100 space-y-4">
+                      <h4 className="text-xs font-bold text-gray-700">Invoice Settings</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Prefix</label>
+                          <input type="text" name="invoicePrefix" value={billingSettings.invoicePrefix} onChange={handleBillingChange}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500 uppercase" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Default SAC Code</label>
+                          <input type="text" name="sacCode" value={billingSettings.sacCode} onChange={handleBillingChange}
+                            placeholder="e.g. 998599"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Item Title</label>
+                          <input type="text" name="invoiceTitle" value={billingSettings.invoiceTitle} onChange={handleBillingChange}
+                            placeholder="e.g. Convenience and Platform Fee"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-500" />
+                        </div>
                       </div>
                     </div>
 

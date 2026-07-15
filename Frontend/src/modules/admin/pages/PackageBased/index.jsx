@@ -52,7 +52,7 @@ const PackageBased = () => {
   const [editingCombo, setEditingCombo] = useState(null);     // null | 'new' | combo object
 
   // Form states
-  const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '' });
+  const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '', sacCode: '' });
   const [subCatForm, setSubCatForm] = useState({ categoryId: '', title: '', description: '', iconUrl: '', imageUrl: '', videoUrl: '', status: 'active' });
   const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0, allowUserEdit: true, codEnabled: true, codAdvanceAmount: 0 });
 
@@ -120,10 +120,11 @@ const PackageBased = () => {
         title: cat.title,
         status: cat.status || 'active',
         homeIconUrl: cat.homeIconUrl || '',
-        homeBadge: cat.homeBadge || ''
+        homeBadge: cat.homeBadge || '',
+        sacCode: cat.sacCode || ''
       });
     } else {
-      setMainCatForm({ title: '', status: 'active', homeIconUrl: '', homeBadge: '' });
+      setMainCatForm({ title: '', status: 'active', homeIconUrl: '', homeBadge: '', sacCode: '' });
     }
     setEditingMainCat(cat || 'new');
   };
@@ -1018,6 +1019,16 @@ const PackageBased = () => {
                   onChange={e => setMainCatForm({ ...mainCatForm, homeBadge: e.target.value })}
                   className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
                   placeholder="e.g. 20% OFF, NEW"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">SAC Code (Optional)</label>
+                <input
+                  type="text"
+                  value={mainCatForm.sacCode}
+                  onChange={e => setMainCatForm({ ...mainCatForm, sacCode: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                  placeholder="e.g. 998599"
                 />
               </div>
               <div>

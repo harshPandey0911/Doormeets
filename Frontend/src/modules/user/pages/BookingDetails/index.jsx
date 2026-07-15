@@ -137,7 +137,8 @@ const BookingDetails = () => {
             companyWebsite: response.data.settings.companyWebsite || '',
             vendorCgstPercentage: response.data.settings.vendorCgstPercentage || 2.5,
             vendorSgstPercentage: response.data.settings.vendorSgstPercentage || 2.5,
-            sacCode: response.data.settings.sacCode || '998599'
+            sacCode: (response.data.settings.sacCode !== undefined && response.data.settings.sacCode !== null) ? response.data.settings.sacCode : '998599',
+            invoiceTitle: response.data.settings.invoiceTitle || 'Convenience and Platform Fee'
           });
         }
       } catch (error) {
@@ -1303,6 +1304,13 @@ const BookingDetails = () => {
                             <span>Total Service</span>
                             <span>₹{(originalBase + extraServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
                           </div>
+
+                          {instantMarkup > 0 && (
+                            <div className="flex justify-between items-center text-secondary-text pt-2 mt-2 border-t border-dashed border-border-color">
+                              <span className="flex items-center gap-1 text-xs">⚡ Instant Booking Fee</span>
+                              <span className="font-bold text-dark-text">₹{instantMarkup.toFixed(2)}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1418,6 +1426,13 @@ const BookingDetails = () => {
                         </div>
                       )}
 
+                      {instantMarkup > 0 && (
+                        <div className="flex justify-between items-center text-secondary-text pt-2 mt-2 border-t border-dashed border-border-color">
+                          <span className="flex items-center gap-1 text-xs">⚡ Instant Booking Fee</span>
+                          <span className="font-bold text-dark-text">₹{instantMarkup.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+
                       {/* Extra Charges Section */}
                       {booking.extraCharges && booking.extraCharges.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-border-color">
@@ -1445,7 +1460,7 @@ const BookingDetails = () => {
                         <span className="font-black text-dark-text text-xl">
                           ₹{(booking.paymentMethod === 'plan_benefit'
                             ? (booking.userPayableAmount || booking.extraChargesTotal || 0)
-                            : (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0))
+                            : (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0) + instantMarkup)
                           ).toLocaleString('en-IN')}
                         </span>
                       </div>

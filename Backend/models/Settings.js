@@ -188,6 +188,10 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: '998599'  // Event services SAC code
   },
+  invoiceTitle: {
+    type: String,
+    default: 'Convenience and Platform Fee'
+  },
   currentInvoiceNumber: {
     type: Number,
     default: 0

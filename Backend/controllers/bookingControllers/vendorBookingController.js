@@ -2576,29 +2576,17 @@ const requestCancelBooking = async (req, res) => {
 
     console.log(`[CancelRequest] Vendor ${vendorId} requested cancellation for booking ${booking.bookingNumber}`);
 
-    // Send notifications to admins
+    // Send notifications to admins — ONE socket event only
     try {
       const Admin = require('../../models/Admin');
-      const City = require('../../models/City');
       const { createNotification } = require('../notificationControllers/notificationController');
 
-      const city = booking.address?.city || '';
-      const cityDoc = await City.findOne({ name: new RegExp(`^${city}$`, 'i') });
-      let adminQuery = { role: { $in: ['admin', 'super_admin', 'super-admin'] } };
-      if (cityDoc) {
-        adminQuery = {
-          $or: [
-            { role: { $in: ['admin', 'super_admin', 'super-admin'] } },
-            { role: 'CITY_ADMIN', assignedCities: cityDoc._id }
-          ]
-        };
-      }
-
-      const admins = await Admin.find(adminQuery);
+      const admins = await Admin.find({ role: { $in: ['admin', 'super_admin', 'super-admin'] } });
       const { getIO } = require('../../sockets');
       const io = getIO();
       const msg = `Vendor has requested cancellation for Booking #${booking.bookingNumber}. Reason: ${reason}`;
 
+      // Create one DB notification per admin
       for (const admin of admins) {
         await createNotification({
           adminId: admin._id,
@@ -2607,23 +2595,24 @@ const requestCancelBooking = async (req, res) => {
           message: msg,
           relatedId: booking._id,
           relatedType: 'booking',
+          skipPush: true,
           pushData: {
             type: 'booking_escalation',
             bookingId: booking._id.toString(),
             link: `/admin/bookings/${booking._id}`
           }
         });
+      }
 
-        if (io) {
-          const payload = {
-            bookingId: booking._id,
-            bookingNumber: booking.bookingNumber,
-            message: msg,
-            severity: 'MEDIUM'
-          };
-          io.to(`admin_${admin._id.toString()}`).emit('booking_escalation', payload);
-          io.to('all_admins').emit('booking_escalation', payload);
-        }
+      // Emit socket event ONCE to 'all_admins' room
+      if (io) {
+        io.to('all_admins').emit('booking_escalation', {
+          bookingId: booking._id,
+          bookingNumber: booking.bookingNumber,
+          message: msg,
+          severity: 'MEDIUM',
+          playSound: true
+        });
       }
     } catch (notifErr) {
       console.error('Error notifying admins about vendor cancellation request:', notifErr);

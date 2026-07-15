@@ -179,17 +179,17 @@ const BookingDetails = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6 max-w-6xl mx-auto"
     >
-      {booking.cancelRequestStatus === 'pending' && booking.cancelRequestedBy === 'vendor' && (
+      {booking.cancelRequestStatus === 'pending' && (
         <div className="bg-red-50 border-2 border-red-200 rounded-xl p-5 shadow-sm space-y-3">
           <div className="flex items-start gap-3">
             <FiAlertTriangle className="w-6 h-6 text-red-650 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-extrabold text-red-750 text-sm uppercase tracking-wide">Vendor Cancellation Request Pending</h4>
+              <h4 className="font-extrabold text-red-750 text-sm uppercase tracking-wide">{booking.cancelRequestedBy === 'vendor' ? 'Vendor' : 'User'} Cancellation Request Pending</h4>
               <p className="text-xs text-red-650 font-semibold mt-1">
-                The assigned vendor has requested to cancel this booking's services.
+                {booking.cancelRequestedBy === 'vendor' ? 'The assigned vendor has requested to cancel this booking.' : 'The customer has requested cancellation for this paid booking.'}
               </p>
               <div className="mt-2 text-xs text-gray-700 bg-white p-3 rounded-lg border border-red-100/50">
-                <span className="font-bold text-gray-500 uppercase block text-[9px] mb-1">Reason provided by Vendor:</span>
+                <span className="font-bold text-gray-500 uppercase block text-[9px] mb-1">Reason provided by {booking.cancelRequestedBy === 'vendor' ? 'Vendor' : 'User'}:</span>
                 <p className="font-medium text-gray-800">{booking.cancelRequestReason || 'No reason specified'}</p>
               </div>
             </div>
@@ -486,6 +486,12 @@ const BookingDetails = () => {
                 <div className="flex justify-between text-xs text-red-500">
                   <span>Discounts Applied:</span>
                   <span className="font-semibold">-{formatCurrency(booking.discount || 0)}</span>
+                </div>
+              )}
+              {booking.bookingType === 'instant' && booking.instantMarkupCharged > 0 && (
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>⚡ Instant Booking Fee:</span>
+                  <span className="font-semibold text-gray-700">{formatCurrency(booking.instantMarkupCharged || 0)}</span>
                 </div>
               )}
               <div className="border-t border-gray-100 my-2 pt-2 flex justify-between text-sm font-bold text-gray-800">

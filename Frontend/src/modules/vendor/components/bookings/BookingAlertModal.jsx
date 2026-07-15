@@ -11,14 +11,11 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
   // Calculate initial time
   const calculateInitialRemaining = () => {
     try {
-      if (booking?.expiresAt) {
-        const end = new Date(booking.expiresAt).getTime();
-        if (!isNaN(end)) {
-          const left = Math.floor((end - Date.now()) / 1000);
-          return Math.max(0, left);
-        }
-      }
-      return (Number(maxSearchTimeMins) || 1) * 60;
+      // Wave duration is 1 minute (60s)
+      const start = new Date(booking.createdAt || booking.sentAt || Date.now()).getTime();
+      const end = start + (60 * 1000); // 1 minute from creation/send time
+      const left = Math.floor((end - Date.now()) / 1000);
+      return Math.max(0, Math.min(60, left));
     } catch {
       return 60;
     }
