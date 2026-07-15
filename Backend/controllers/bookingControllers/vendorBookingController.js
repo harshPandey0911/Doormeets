@@ -834,6 +834,15 @@ const cancelAcceptedBooking = async (req, res) => {
       });
     }
 
+    // Check if the booking is paid (online, success, paid, completed)
+    const isPaid = ['success', 'completed', 'paid'].includes(booking.paymentStatus?.toLowerCase());
+    if (isPaid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Paid bookings cannot be cancelled directly. Please submit a cancellation request to the admin.'
+      });
+    }
+
     if (!booking.acceptedAt) {
       return res.status(400).json({
         success: false,

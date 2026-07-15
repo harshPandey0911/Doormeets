@@ -149,17 +149,16 @@ const Wallet = () => {
           {/* Main Balance & Loyalty Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Wallet Balance Card */}
-            <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-800 to-teal-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-12 -mt-12"></div>
               <div className="relative z-10">
-                <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Penalty Balance</p>
-                <h2 className="text-3xl font-extrabold text-red-400">
-                  -₹{transactions
-                    .filter(t => ['penalty', 'fine', 'cancellation_fee', 'debit'].includes(t.type))
-                    .reduce((sum, t) => sum + t.amount, 0)
-                    .toLocaleString('en-IN')}
+                <p className="text-teal-250 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <MdAccountBalanceWallet className="w-4 h-4" /> Wallet Balance
+                </p>
+                <h2 className="text-3xl font-extrabold text-white">
+                  ₹{walletBalance.toLocaleString('en-IN')}
                 </h2>
-                <p className="text-[10px] text-gray-400 mt-2 font-medium">Charged on your next service booking</p>
+                <p className="text-[10px] text-teal-100 mt-2 font-medium">Use for quick checkouts and refunds</p>
               </div>
             </div>
 
@@ -206,32 +205,22 @@ const Wallet = () => {
           </div>
 
           {/* Analytics Cards */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+          <div className="grid grid-cols-1 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Total Spent</p>
+                  <p className="text-xs text-gray-400 mt-0.5 font-medium">All booking expenses through platform</p>
+                </div>
               </div>
-              <p className="text-gray-500 text-xs font-medium">Total Spent</p>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-xl font-black text-gray-900 font-mono">
                 ₹{transactions
                   .filter(t => ['payment', 'withdrawal', 'platform_fee', 'convenience_fee', 'gst', 'worker_payment', 'cash_collected'].includes(t.type))
-                  .reduce((sum, t) => sum + t.amount, 0)
-                  .toLocaleString('en-IN')}
-              </p>
-            </div>
-
-            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-              <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <p className="text-gray-500 text-xs font-medium">Total Penalty</p>
-              <p className="text-lg font-bold text-orange-600">
-                ₹{transactions
-                  .filter(t => ['penalty', 'fine', 'cancellation_fee', 'debit'].includes(t.type))
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toLocaleString('en-IN')}
               </p>
@@ -265,13 +254,14 @@ const Wallet = () => {
 
                   if (['credit', 'refund', 'topup', 'referral', 'cashback', 'cash_collected'].includes(item.type)) {
                     // User requested cash_collected in GREEN
-                    typeStyle = { color: 'text-green-600', bg: 'bg-green-50', icon: '↓', sign: '' };
+                    const signToUse = ['credit', 'refund', 'topup', 'referral', 'cashback'].includes(item.type) ? '+' : '';
+                    typeStyle = { color: 'text-green-600', bg: 'bg-green-50', icon: '↓', sign: signToUse };
                     // Note: removed '+' sign for cash_collected to be neutral or just distinct? 
                     // Usually 'cash_collected' means user GAVE money. 
                     // But user wants it green.
-                  } else if (['payment', 'withdrawal'].includes(item.type)) {
+                  } else if (['payment', 'withdrawal', 'debit'].includes(item.type)) {
                     typeStyle = { color: 'text-red-600', bg: 'bg-red-50', icon: '↑', sign: '-' };
-                  } else if (['penalty', 'fine', 'cancellation_fee', 'debit'].includes(item.type)) {
+                  } else if (['penalty', 'fine', 'cancellation_fee'].includes(item.type)) {
                     typeStyle = { color: 'text-orange-600', bg: 'bg-orange-50', icon: '!', sign: '-' };
                   }
 
@@ -296,7 +286,7 @@ const Wallet = () => {
                             <p className="text-xs text-gray-500">{formattedDate}</p>
                             {item.type && (
                               <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${typeStyle.bg} ${typeStyle.color}`}>
-                                {item.type}
+                                {item.type === 'refund' ? 'refunded' : item.type}
                               </span>
                             )}
                           </div>

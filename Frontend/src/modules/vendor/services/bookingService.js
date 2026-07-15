@@ -203,13 +203,8 @@ export const payWorker = async (bookingId) => {
  */
 export const getPendingAlerts = async () => {
   try {
-    // TODO: Replace with actual API call
-    // const response = await fetch(`${API_BASE_URL}/bookings/pending`);
-    // return await response.json();
-
-    // Mock implementation
-    const pending = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
-    return pending;
+    const response = await api.get('/vendors/bookings/pending');
+    return response.data;
   } catch (error) {
     console.error('Error fetching pending alerts:', error);
     throw error;

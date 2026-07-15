@@ -153,7 +153,7 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
             {/* Bill Details */}
             <div className="space-y-4">
               {(() => {
-                const amountAlreadyPaid = (booking.paymentMethod === 'online' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'SUCCESS') 
+                const amountAlreadyPaid = (booking.paymentStatus === 'paid' || booking.paymentStatus === 'SUCCESS' || booking.paymentStatus === 'success') 
                   ? ((booking.basePrice || 0) + (booking.tax || 0)) 
                   : 0;
                 const netAmountPayable = Math.max(0, finalTotal - amountAlreadyPaid);

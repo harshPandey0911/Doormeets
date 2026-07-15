@@ -110,7 +110,7 @@ export const downloadInvoice = (booking, companyDetails) => {
   const compStateCode = getStateCode(companyDetails.companyState);
 
   // Fetch SAC Code from booking's category
-  const sacCodeVal = booking.categoryId?.sacCode || null;
+  const sacCodeVal = booking.categoryId?.sacCode || companyDetails.sacCode || null;
 
   // Render HTML for Invoice
   const invoiceHtml = `
@@ -170,10 +170,17 @@ export const downloadInvoice = (booking, companyDetails) => {
               <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
             </div>
 
-            <div>
+            <div style="margin-bottom: 12px;">
               <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Place of Supply</span>
               <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
             </div>
+
+            ${booking.userGstNumber ? `
+            <div>
+              <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Customer GSTIN</span>
+              <span style="font-size: 12px; font-weight: bold; color: #111;">${booking.userGstNumber}</span>
+            </div>
+            ` : ''}
           </td>
           <td style="width: 50%; vertical-align: top; padding: 20px 0 20px 20px;">
             <div style="color: #000; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px;">Delivery Service Provider</div>

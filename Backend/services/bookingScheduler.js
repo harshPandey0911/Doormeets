@@ -172,7 +172,8 @@ class BookingScheduler {
                     bookingId: booking._id.toString(),
                     bookingNumber: booking.bookingNumber,
                     status: 'pending_admin',
-                    message: 'Booking request sent to admin for manual assignment.'
+                    message: `No vendor available for Booking #${booking.bookingNumber}. Manual assignment required.`,
+                    playSound: true
                   });
                   this.io.to(`user_${booking.userId}`).emit('booking_updated', {
                     bookingId: booking._id,
@@ -235,7 +236,7 @@ class BookingScheduler {
                     bookingId: booking._id.toString(),
                     bookingNumber: booking.bookingNumber,
                     status: 'pending_admin',
-                    message: 'Booking request sent to admin for manual assignment.',
+                    message: `No vendor available for Booking #${booking.bookingNumber}. Manual assignment required.`,
                     playSound: true
                   });
                   this.io.to(`user_${booking.userId}`).emit('booking_updated', {

@@ -109,8 +109,8 @@ const createBooking = async (req, res) => {
       totalServiceValue = service.basePrice || 500;
     }
 
-    // Check for Pending Penalty
-    const pendingPenalty = user.wallet?.penalty || 0;
+    // Check for Pending Penalty (Disabled)
+    const pendingPenalty = 0;
 
     // --- VENDOR SEARCH LOGIC ---
     const { findNearbyVendors, geocodeAddress } = require('../../services/locationService');
@@ -1133,6 +1133,77 @@ const cancelBooking = async (req, res) => {
       });
     }
 
+    // Check if the booking is paid (online, success, paid, completed)
+    const isPaidBooking = ['success', 'completed', 'paid'].includes(booking.paymentStatus?.toLowerCase());
+    if (isPaidBooking) {
+      booking.cancelRequestStatus = 'pending';
+      booking.cancelRequestedBy = 'user';
+      booking.cancelRequestReason = cancellationReason || 'User requested cancellation after payment';
+      booking.cancelRequestAt = new Date();
+      await booking.save();
+
+      console.log(`[CancelRequest] User ${userId} requested cancellation for paid booking ${booking.bookingNumber}`);
+
+      // Notify admins
+      try {
+        const Admin = require('../../models/Admin');
+        const City = require('../../models/City');
+        const { createNotification } = require('../notificationControllers/notificationController');
+
+        const city = booking.address?.city || '';
+        const cityDoc = await City.findOne({ name: new RegExp(`^${city}$`, 'i') });
+        let adminQuery = { role: { $in: ['admin', 'super_admin', 'super-admin'] } };
+        if (cityDoc) {
+          adminQuery = {
+            $or: [
+              { role: { $in: ['admin', 'super_admin', 'super-admin'] } },
+              { role: 'CITY_ADMIN', assignedCities: cityDoc._id }
+            ]
+          };
+        }
+
+        const admins = await Admin.find(adminQuery);
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        const msg = `User has requested cancellation for Paid Booking #${booking.bookingNumber}. Reason: ${cancellationReason || 'User requested cancellation after payment'}`;
+
+        for (const admin of admins) {
+          await createNotification({
+            adminId: admin._id,
+            type: 'booking_escalation',
+            title: 'Cancellation Request (User)',
+            message: msg,
+            relatedId: booking._id,
+            relatedType: 'booking',
+            pushData: {
+              type: 'booking_escalation',
+              bookingId: booking._id.toString(),
+              link: `/admin/bookings/${booking._id}`
+            }
+          });
+
+          if (io) {
+            const payload = {
+              bookingId: booking._id,
+              bookingNumber: booking.bookingNumber,
+              message: msg,
+              severity: 'MEDIUM'
+            };
+            io.to(`admin_${admin._id.toString()}`).emit('booking_escalation', payload);
+            io.to('all_admins').emit('booking_escalation', payload);
+          }
+        }
+      } catch (notifErr) {
+        console.error('Error notifying admins about user cancellation request:', notifErr);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Paid bookings cannot be cancelled directly. Cancellation request submitted to admin.',
+        data: booking
+      });
+    }
+
     // Cancellation window check: strictly 3 minutes from booking creation
     // EXCEPTION: If no vendor has been assigned yet (pending_admin, searching, etc.),
     // user can always cancel freely — no vendor has committed to the job.
@@ -1168,58 +1239,28 @@ const cancelBooking = async (req, res) => {
     }
 
     const hasStartedJourney = !!booking.journeyStartedAt;
-    const isPaid = booking.paymentStatus === PAYMENT_STATUS.SUCCESS;
+    const isPaid = ['success', 'completed', 'paid'].includes(booking.paymentStatus?.toLowerCase());
     const isWalletOrOnline = ['wallet', 'razorpay', 'upi', 'card'].includes(booking.paymentMethod);
     const isCash = booking.paymentMethod === 'cash';
 
-    if (hasStartedJourney) {
-      // SCENARIO: Worker/Vendor already started journey
-
-      const hasReached = !!booking.visitedAt || booking.status === 'visited';
-
-      if (hasReached) {
-        // Professional Reached -> Full Visiting Charges
-        cancellationFee = booking.visitingCharges || 49;
-      } else {
-        // Before Arrival (Journey Started) -> Dynamic Penalty
-        cancellationFee = settingsPenalty;
-      }
-
-      if (isPaid && isWalletOrOnline) {
-        // User paid upfront -> Refund (Total - Fee)
-        refundAmount = Math.max(0, booking.finalAmount - cancellationFee);
-        refundMessage = `Booking cancelled after ${hasReached ? 'professional arrival' : 'journey start'}. Refund of ₹${refundAmount} initiated (Cancellation Fee: ₹${cancellationFee} deducted).`;
-      } else {
-        // User hasn't paid (e.g. COD or pending) -> Add Penalty to Wallet for Next Booking
-        refundAmount = 0;
-        refundMessage = `Booking cancelled after ${hasReached ? 'professional arrival' : 'journey start'}. A cancellation fee of ₹${cancellationFee} has been added to your account and will be charged on your next booking.`;
-
-        // We will add this to user.wallet.penalty below
-      }
+    cancellationFee = 0;
+    if (isPaid && isWalletOrOnline) {
+      refundAmount = booking.finalAmount;
+      refundMessage = `Booking cancelled successfully. Full refund of ₹${refundAmount} initiated to your wallet.`;
     } else {
-      // SCENARIO: Cancelled before journey start
-      // Policy: Full Refund
-      cancellationFee = 0;
-
-      if (isPaid && isWalletOrOnline) {
-        refundAmount = booking.finalAmount;
-        refundMessage = `Booking cancelled successfully. Full refund of ₹${refundAmount} initiated to your wallet.`;
-      } else {
-        refundAmount = 0;
-        refundMessage = 'Booking cancelled successfully.';
-      }
+      refundAmount = 0;
+      refundMessage = 'Booking cancelled successfully.';
     }
 
     // Update User Wallet
-    if (refundAmount > 0 || (cancellationFee > 0 && !isPaid)) {
+    if (refundAmount > 0) {
       const User = require('../../models/User');
       const Transaction = require('../../models/Transaction');
 
       const user = await User.findById(userId);
-
-      // 1. Process Refund
-      if (refundAmount > 0) {
+      if (user) {
         user.wallet.balance = (user.wallet.balance || 0) + refundAmount;
+        await user.save();
 
         await Transaction.create({
           userId: user._id,
@@ -1234,21 +1275,6 @@ const cancelBooking = async (req, res) => {
 
         booking.paymentStatus = PAYMENT_STATUS.REFUNDED;
       }
-
-      // 2. Process Cancellation Fee (Add to Penalty Bucket if Unpaid)
-      if (cancellationFee > 0 && !isPaid) {
-        // Use wallet.penalty bucket
-        user.wallet.penalty = (user.wallet.penalty || 0) + cancellationFee;
-        // Do NOT create a 'debit' transaction yet, as money hasn't left. 
-        // Or create a 'penalty_added' transaction?
-        // User didn't ask for transaction record logic, just functionality.
-        // We will skip transaction for penalty addition to keep it simple, 
-        // as the actual CHARGE happens on next booking creation.
-
-        console.log(`[CancelBooking] Added penalty of ₹${cancellationFee} to user ${userId}. Total Penalty: ${user.wallet.penalty}`);
-      }
-
-      await user.save();
     }
 
     // Update booking status

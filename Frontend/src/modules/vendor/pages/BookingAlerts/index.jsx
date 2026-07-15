@@ -6,7 +6,7 @@ import Header from '../../components/layout/Header';
 import { vendorTheme as themeColors } from '../../../../theme';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import { vendorDashboardService } from '../../services/dashboardService';
-import { acceptBooking, rejectBooking, getBookings } from '../../services/bookingService';
+import { acceptBooking, rejectBooking, getPendingAlerts } from '../../services/bookingService';
 import { useSocket } from '../../../../context/SocketContext';
 
 import PendingJobCard from '../../components/bookings/PendingJobCard';
@@ -32,20 +32,15 @@ const BookingAlerts = () => {
           setGlobalConfig(localConfig);
         }
 
-        const response = await getBookings();
+        const response = await getPendingAlerts();
 
         if (response.success && response.data) {
-          let bookings = [];
-          const vendorData = JSON.parse(localStorage.getItem('vendorData') || '{}');
-          const currentVendorId = String(vendorData._id || vendorData.id || '');
-
-          bookings = response.data.filter(b => {
-            const status = b.status?.toLowerCase();
-            const isRelevantStatus = status === 'searching' || status === 'requested';
-            const bVendorId = b.vendorId?._id || b.vendorId;
-            const isAssignedToMe = !bVendorId || String(bVendorId) === currentVendorId;
-            return isRelevantStatus && isAssignedToMe;
-          });
+          const bookings = response.data.map(b => ({
+            ...b,
+            _id: b.bookingId,
+            id: b.bookingId,
+            status: 'searching'
+          }));
 
           // Merge logic: Keep if in API OR if added recently (last 2 mins)
           const mergedPending = [];

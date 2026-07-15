@@ -603,6 +603,40 @@ const approveCancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No pending cancellation request for this booking' });
     }
 
+    const isPaid = ['success', 'completed', 'paid'].includes(booking.paymentStatus?.toLowerCase());
+    if (isPaid && booking.finalAmount > 0) {
+      try {
+        const User = require('../../models/User');
+        const Transaction = require('../../models/Transaction');
+        
+        const refundAmount = booking.finalAmount;
+
+        const userDoc = await User.findById(booking.userId);
+        if (userDoc) {
+          userDoc.wallet.balance = (userDoc.wallet.balance || 0) + refundAmount;
+          await userDoc.save();
+
+          // Create refund transaction
+          await Transaction.create({
+            userId: booking.userId,
+            type: 'refund',
+            amount: refundAmount,
+            status: 'completed',
+            paymentMethod: 'wallet',
+            description: `Refund of ₹${refundAmount} for booking #${booking.bookingNumber} (cancellation request approved)`,
+            bookingId: booking._id,
+            balanceAfter: userDoc.wallet.balance
+          });
+          
+          booking.paymentStatus = 'refunded';
+          booking.penalty = 0;
+          console.log(`[AdminApproveCancel] Refunded ₹${refundAmount} to user ${booking.userId} wallet.`);
+        }
+      } catch (refundErr) {
+        console.error('[AdminApproveCancel] Error refunding upfront payment to wallet:', refundErr);
+      }
+    }
+
     // Process actual cancellation
     booking.status = 'cancelled';
     booking.cancelledAt = new Date();

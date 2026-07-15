@@ -385,7 +385,7 @@ const sendBookingCompletionEmails = async (booking) => {
       const companyEmail = settings?.companyEmail || '';
       const invoicePrefix = settings?.invoicePrefix || 'INV';
       
-      let sacCode = settings?.sacCode || '998599';
+      let sacCode = null;
       if (booking.categoryId) {
         try {
           const Category = require('../models/Category');
@@ -396,6 +396,9 @@ const sendBookingCompletionEmails = async (booking) => {
         } catch (err) {
           console.error('[Invoice Email] Error fetching category SAC code:', err);
         }
+      }
+      if (!sacCode && settings?.sacCode) {
+        sacCode = settings.sacCode;
       }
 
       // Fetch VendorBill
