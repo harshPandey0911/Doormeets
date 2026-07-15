@@ -7,6 +7,7 @@ import api from '../../../../services/api';
 import { apiCache } from '../../../../utils/apiCache';
 import { getPlans } from '../../services/planService';
 import bookingService from '../../../../services/bookingService';
+import { walletService } from '../../../../services/walletService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { motion } from 'framer-motion';
 import {
@@ -121,6 +122,13 @@ const Account = () => {
       // 3. My Bookings — prefetch if not cached
       if (!apiCache.getStale('user:bookings:')) {
         bookingService.getUserBookings({}).catch(() => {});
+      }
+
+      // 4. Wallet Transactions — prefetch if not cached
+      if (!apiCache.getStale('user:wallet:transactions')) {
+        walletService.getTransactions()
+          .then(res => { if (res.success) apiCache.set('user:wallet:transactions', res.data || [], 30); })
+          .catch(() => {});
       }
     };
 
