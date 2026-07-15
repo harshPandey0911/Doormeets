@@ -41,13 +41,6 @@ import { apiCache } from '../../../../utils/apiCache';
 import { configService } from '../../../../services/configService';
 import { downloadInvoice } from '../../utils/invoiceGenerator';
 
-const toAssetUrl = (url) => {
-  if (!url) return '';
-  const clean = url.replace('/api/upload', '/upload');
-  if (clean.startsWith('http')) return clean;
-  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/api$/, '');
-  return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
-};
 
 const BookingDetails = () => {
   const { id } = useParams();
@@ -1657,16 +1650,6 @@ const BookingDetails = () => {
                   className="w-full py-3 bg-[#B33A35] text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
                 >
                   {paying ? 'Processing...' : (booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0) ? `⚡ Pay COD Advance (₹${booking.codAdvanceAmount})` : '⚡ Pay Booking Bill'}
-                </button>
-              )}
-
-              {/* Cancellation Option */}
-              {['pending', 'pending_admin', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
-                <button
-                  onClick={handleCancelBooking}
-                  className="w-full py-3 border border-red-500/30 text-red-500 hover:bg-red-500/5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
-                >
-                  Cancel Booking
                 </button>
               )}
 

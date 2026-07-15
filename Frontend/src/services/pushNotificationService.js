@@ -4,6 +4,7 @@
  */
 
 import { messaging, getToken, onMessage } from '../firebase';
+import api from './api';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
@@ -151,37 +152,26 @@ async function registerFCMToken(userType = 'user', forceUpdate = false) {
     }
 
     // Get auth token
-    const authToken = localStorage.getItem(authTokenKey);
+    const authToken = sessionStorage.getItem(authTokenKey) || localStorage.getItem(authTokenKey);
     if (!authToken) {
       // console.log(`[FCM] ❌ No auth token found for ${userType} (${authTokenKey}), skipping registration`);
       return null;
     }
 
     // Save to backend
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-    // console.log(`[FCM] Saving to backend: ${baseUrl}${endpoint}`);
+    // console.log(`[FCM] Saving to backend: ${endpoint}`);
 
-    const response = await fetch(`${baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-      },
-      body: JSON.stringify({
-        token: token,
-        platform: 'web'
-      })
+    const response = await api.post(endpoint, {
+      token: token,
+      platform: 'web'
     });
 
-    // console.log(`[FCM] Backend response status: ${response.status}`);
-
-    if (response.ok) {
+    if (response.status >= 200 && response.status < 300) {
       localStorage.setItem(storageKey, token);
       // console.log('[FCM] ✅ FCM token registered with backend successfully!');
       return token;
     } else {
-      const error = await response.json();
-      // console.error('[FCM] ❌ Failed to register token with backend:', error);
+      // console.error('[FCM] ❌ Failed to register token with backend');
       return null;
     }
   } catch (error) {
@@ -225,22 +215,15 @@ async function removeFCMToken(userType = 'user') {
         authTokenKey = 'accessToken';
     }
 
-    const authToken = localStorage.getItem(authTokenKey);
+    const authToken = sessionStorage.getItem(authTokenKey) || localStorage.getItem(authTokenKey);
     // If we have an auth token, try to remove from backend
     if (authToken) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
       // Call remove endpoint with specific token
-      await fetch(`${baseUrl}${endpoint}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
+      await api.delete(endpoint, {
+        data: {
           token: tokenToRemove,
           platform: platform
-        })
+        }
       });
       console.log(`[FCM] ✅ Token removed from backend`);
     }
