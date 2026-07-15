@@ -1422,7 +1422,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const selectedCat = categories.find(cat => (cat.id || cat._id) === formData.categoryId);
   const selectedTemplate = selectedCat ? templates.find(t => (t._id === selectedCat.templateId || t.id === selectedCat.templateId || t.code === selectedCat.template)) : null;
   const isNormalService = selectedTemplate ? selectedTemplate.code === 'NORMAL_SERVICE' : true; // default to true if template not loaded
-  const isPricingMatrixEnabled = selectedTemplate ? (selectedTemplate.code === 'NORMAL_SERVICE' || selectedTemplate.code === 'MINUTE_BASED') : true;
+  const isPricingMatrixEnabled = selectedTemplate ? (selectedTemplate.code !== 'IMAGE_CONSULTANT' && selectedTemplate.code !== 'SERVICE_PAGE') : true;
 
   const getSteps = () => {
     const baseSteps = [
