@@ -112,6 +112,7 @@ const BottomNav = React.memo(() => {
           WebkitBackdropFilter: 'blur(20px)',
           boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.15)',
           borderTop: '1px solid var(--border)',
+          paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 24px))',
         }}
       >
         <div ref={navRef} className="flex items-center justify-between max-w-md mx-auto relative gap-1.5">
