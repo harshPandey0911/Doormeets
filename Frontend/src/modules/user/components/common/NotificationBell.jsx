@@ -4,6 +4,9 @@ import { FiBell } from 'react-icons/fi';
 import { gsap } from 'gsap';
 import { themeColors } from '../../../../theme';
 import api from '../../../../services/api';
+import { apiCache } from '../../../../utils/apiCache';
+
+const NOTIF_CACHE_KEY = 'user:notifications:unread';
 
 const NotificationBell = ({ notificationCount = 0 }) => {
   const navigate = useNavigate();
@@ -18,19 +21,37 @@ const NotificationBell = ({ notificationCount = 0 }) => {
     }
   }, [notificationCount]);
 
-  // Fetch unread count on mount
+  // Fetch unread count (SWR: stale count shown instantly, background refresh if expired)
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
         const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-        if (!token) return; // Not logged in, count 0
+        if (!token) return;
 
+        // SWR: show stale count immediately
+        const stale = apiCache.getStale(NOTIF_CACHE_KEY);
+        if (stale !== null && typeof stale === 'number') {
+          setCount(stale);
+          // If expired, refresh silently in background
+          if (apiCache.isExpired(NOTIF_CACHE_KEY)) {
+            api.get('/notifications/user').then(res => {
+              if (res.data?.success && typeof res.data.unreadCount === 'number') {
+                apiCache.set(NOTIF_CACHE_KEY, res.data.unreadCount, 30);
+                setCount(res.data.unreadCount); // update only the badge count
+              }
+            }).catch(() => {});
+          }
+          return;
+        }
+
+        // First load — fetch normally
         const res = await api.get('/notifications/user');
-        if (res.data.success && typeof res.data.unreadCount === 'number') {
+        if (res.data?.success && typeof res.data.unreadCount === 'number') {
+          apiCache.set(NOTIF_CACHE_KEY, res.data.unreadCount, 30);
           setCount(res.data.unreadCount);
         }
       } catch (error) {
-        // Silent fail (e.g. 401 not logged in)
+        // Silent fail
       }
     };
 

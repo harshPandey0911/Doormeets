@@ -14,6 +14,7 @@ import { useCart } from '../../../../context/CartContext';
 import { publicCatalogService } from '../../../../services/catalogService';
 import { useTheme } from '../../../../context/ThemeContext';
 import api from '../../../../services/api';
+import { apiCache } from '../../../../utils/apiCache';
 
 const getServiceDummyImage = (title) => {
   const t = (title || '').toLowerCase();
@@ -64,6 +65,7 @@ const PremiumCategoryPage = () => {
   const { currentCity } = useCity();
   const { isDark } = useTheme();
   const { cartCount, cartItems, addToCart, updateItem, removeItem } = useCart();
+  const socket = useSocket();
 
   // Redirect painting category to the painting consultation flow
   useEffect(() => {
@@ -75,11 +77,67 @@ const PremiumCategoryPage = () => {
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(location.state?.category || null);
-  const [subCategories, setSubCategories] = useState([]);
-  const [services, setServices] = useState([]);
+  const [subCategories, setSubCategories] = useState(() => {
+    const activeCategoryId = location.state?.category?.id || location.state?.category?._id;
+    if (!activeCategoryId) return [];
+    const cacheKey = `public_subcats_categoryId=${activeCategoryId}`;
+    const cached = apiCache.get(cacheKey);
+    return (cached && cached.success && Array.isArray(cached.subCategories)) ? cached.subCategories : [];
+  });
+  const [services, setServices] = useState(() => {
+    const activeCategoryId = location.state?.category?.id || location.state?.category?._id;
+    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+    if (!activeCategoryId) return [];
+    const queryParams = new URLSearchParams();
+    queryParams.append('categoryId', activeCategoryId);
+    if (cityId) queryParams.append('cityId', cityId);
+    const cacheKey = `public:services:${queryParams.toString()}`;
+    const cached = apiCache.get(cacheKey);
+    return (cached && cached.success && Array.isArray(cached.services)) ? cached.services.map((service, index) => ({
+      id: service.id || service._id || `service-${index}`,
+      title: service.title,
+      description: service.description || 'Premium service with trusted experts.',
+      image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
+      rating: service.rating || 4.8,
+      reviews: service.reviewCount || 120,
+      price: service.discountPrice || service.basePrice || service.price || 0,
+      originalPrice: service.basePrice || null,
+      features: service.features || [],
+      brandId: service.brandId,
+      subCategoryId: (() => {
+        const val = service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id));
+        if (!val) return 'other';
+        if (typeof val === 'object') {
+          return String(val._id || val.id || val);
+        }
+        return String(val);
+      })(),
+      vendorId: service.vendorId,
+      variants: service.variants || [],
+      packages: service.packages || [],
+      serviceGroups: service.serviceGroups || [],
+      serviceType: service.serviceType || 'package_base',
+      workflow: service.workflow || null
+    })) : [];
+  });
 
   // Loading states
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    const activeCategoryId = location.state?.category?.id || location.state?.category?._id;
+    const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
+    if (!activeCategoryId) return true;
+
+    const subKey = `public_subcats_categoryId=${activeCategoryId}`;
+    const queryParams = new URLSearchParams();
+    queryParams.append('categoryId', activeCategoryId);
+    if (cityId) queryParams.append('cityId', cityId);
+    const srvKey = `public:services:${queryParams.toString()}`;
+
+    const hasSubCached = apiCache.get(subKey);
+    const hasSrvCached = apiCache.get(srvKey);
+
+    return !(hasSubCached && hasSrvCached);
+  });
 
   // Variants popup states
   const [showVariantPopup, setShowVariantPopup] = useState(false);
@@ -184,63 +242,97 @@ const PremiumCategoryPage = () => {
   }, [cityId, slug]);
 
   // Load Subcategories and Services in Category
-  useEffect(() => {
+  const loadCategoryData = useCallback(async () => {
     if (!activeCategoryId) return;
+    try {
+      const subKey = `public_subcats_categoryId=${activeCategoryId}`;
+      const queryParams = new URLSearchParams();
+      queryParams.append('categoryId', activeCategoryId);
+      if (cityId) queryParams.append('cityId', cityId);
+      const srvKey = `public:services:${queryParams.toString()}`;
 
-    const loadCategoryData = async () => {
-      try {
+      const hasSubCached = apiCache.get(subKey);
+      const hasSrvCached = apiCache.get(srvKey);
+
+      if (!(hasSubCached && hasSrvCached)) {
         setLoading(true);
-        // Load subcategories
-        const subRes = await publicCatalogService.getSubCategories({ categoryId: activeCategoryId });
-        const subs = subRes?.success && Array.isArray(subRes.subCategories) ? subRes.subCategories : [];
-        setSubCategories(subs);
-
-        // Load all services inside category
-        const serviceRes = await publicCatalogService.getServices({
-          categoryId: activeCategoryId,
-          cityId
-        });
-
-        if (serviceRes?.success && Array.isArray(serviceRes.services)) {
-          const mappedServices = serviceRes.services.map((service, index) => ({
-            id: service.id || service._id || `service-${index}`,
-            title: service.title,
-            description: service.description || 'Premium service with trusted experts.',
-            image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
-            rating: service.rating || 4.8,
-            reviews: service.reviewCount || 120,
-            price: service.discountPrice || service.basePrice || service.price || 0,
-            originalPrice: service.basePrice || null,
-            features: service.features || [],
-            brandId: service.brandId,
-            subCategoryId: (() => {
-              const val = service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id));
-              if (!val) return 'other';
-              if (typeof val === 'object') {
-                return String(val._id || val.id || val);
-              }
-              return String(val);
-            })(),
-            vendorId: service.vendorId,
-            variants: service.variants || [],
-            packages: service.packages || [],
-            serviceGroups: service.serviceGroups || [],
-            serviceType: service.serviceType || 'package_base',
-            workflow: service.workflow || null
-          }));
-          setServices(mappedServices);
-        } else {
-          setServices([]);
-        }
-      } catch (err) {
-        console.error("Error loading category details:", err);
-      } finally {
-        setLoading(false);
       }
+      // Load subcategories
+      const subRes = await publicCatalogService.getSubCategories({ categoryId: activeCategoryId });
+      const subs = subRes?.success && Array.isArray(subRes.subCategories) ? subRes.subCategories : [];
+      setSubCategories(subs);
+
+      // Load all services inside category
+      const serviceRes = await publicCatalogService.getServices({
+        categoryId: activeCategoryId,
+        cityId
+      });
+
+      if (serviceRes?.success && Array.isArray(serviceRes.services)) {
+        const mappedServices = serviceRes.services.map((service, index) => ({
+          id: service.id || service._id || `service-${index}`,
+          title: service.title,
+          description: service.description || 'Premium service with trusted experts.',
+          image: toAssetUrl(service.icon || service.image) || getServiceDummyImage(service.title),
+          rating: service.rating || 4.8,
+          reviews: service.reviewCount || 120,
+          price: service.discountPrice || service.basePrice || service.price || 0,
+          originalPrice: service.basePrice || null,
+          features: service.features || [],
+          brandId: service.brandId,
+          subCategoryId: (() => {
+            const val = service.subCategoryId || (service.subCategory && (service.subCategory._id || service.subCategory.id));
+            if (!val) return 'other';
+            if (typeof val === 'object') {
+              return String(val._id || val.id || val);
+            }
+            return String(val);
+          })(),
+          vendorId: service.vendorId,
+          variants: service.variants || [],
+          packages: service.packages || [],
+          serviceGroups: service.serviceGroups || [],
+          serviceType: service.serviceType || 'package_base',
+          workflow: service.workflow || null
+        }));
+        setServices(mappedServices);
+      } else {
+        setServices([]);
+      }
+    } catch (err) {
+      console.error("Error loading category details:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeCategoryId, cityId]);
+
+  useEffect(() => {
+    loadCategoryData();
+  }, [loadCategoryData]);
+
+  // Real-time socket sync
+  useEffect(() => {
+    if (!socket) return;
+    const handleSocketUpdate = () => {
+      // Invalidate category cache keys
+      if (activeCategoryId) {
+        apiCache.invalidatePrefix(`public_subcats_categoryId=${activeCategoryId}`);
+        const queryParams = new URLSearchParams();
+        queryParams.append('categoryId', activeCategoryId);
+        if (cityId) queryParams.append('cityId', cityId);
+        apiCache.invalidate(`public:services:${queryParams.toString()}`);
+      }
+      loadCategoryData();
     };
 
-    loadCategoryData();
-  }, [activeCategoryId, cityId]);
+    socket.on('booking_updated', handleSocketUpdate);
+    socket.on('notification', handleSocketUpdate);
+
+    return () => {
+      socket.off('booking_updated', handleSocketUpdate);
+      socket.off('notification', handleSocketUpdate);
+    };
+  }, [socket, activeCategoryId, cityId, loadCategoryData]);
 
   // Auto scroll to subcategory target from notification redirection link query params
   useEffect(() => {

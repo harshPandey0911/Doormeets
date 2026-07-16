@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiClock, FiMapPin, FiCheckCircle, FiXCircle, FiLoader, FiCalendar, FiChevronRight, FiStar } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -8,6 +8,8 @@ import NotificationBell from '../../components/common/NotificationBell';
 import { motion } from 'framer-motion';
 import { bookingService } from '../../../../services/bookingService';
 import api from '../../../../services/api';
+import { apiCache } from '../../../../utils/apiCache';
+import { useSocket } from '../../../../context/SocketContext';
 
 const toAssetUrl = (url) => {
   if (!url) return '';
@@ -48,38 +50,82 @@ const getBookingImage = (booking) => {
 const MyBookings = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const socket = useSocket();
+  const [bookings, setBookings] = useState(() => {
+    const queryParams = new URLSearchParams();
+    const cacheKey = `user:bookings:${queryParams.toString()}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached && cached.success && Array.isArray(cached.data)) {
+      return [...cached.data].sort((a, b) => 
+        new Date(b.createdAt || b.scheduledDate) - new Date(a.createdAt || a.scheduledDate)
+      );
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => {
+    const queryParams = new URLSearchParams();
+    const cacheKey = `user:bookings:${queryParams.toString()}`;
+    const cached = apiCache.get(cacheKey);
+    return !cached;
+  });
   const [filter, setFilter] = useState('all'); // all, confirmed, in-progress, completed, cancelled
+  const socketDebounceRef = useRef(null); // debounce rapid socket events
+
+  const loadBookings = useCallback(async () => {
+    try {
+      const params = {};
+      if (filter !== 'all') {
+        params.status = filter;
+      }
+      
+      const queryParams = new URLSearchParams();
+      if (params.status) queryParams.append('status', params.status);
+      const cacheKey = `user:bookings:${queryParams.toString()}`;
+      const hasCached = apiCache.get(cacheKey);
+
+      if (!hasCached) {
+        setLoading(true);
+      }
+      
+      // Fetch Service Bookings
+      const response = await bookingService.getUserBookings(params);
+      let serviceBookings = response.success ? (response.data || []) : [];
+
+      // Sort by date
+      const sorted = serviceBookings.sort((a, b) => 
+        new Date(b.createdAt || b.scheduledDate) - new Date(a.createdAt || a.scheduledDate)
+      );
+
+      setBookings(sorted);
+
+      // Pre-fetch: top 3 immediately (user most likely to view recent bookings)
+      sorted.slice(0, 3).forEach((b) => {
+        const bId = b._id || b.id;
+        if (bId) bookingService.getById(bId).catch(() => {});
+      });
+
+      // Pre-fetch: remaining bookings with staggered delay (avoid server overload)
+      sorted.slice(3).forEach((b, idx) => {
+        const bId = b._id || b.id;
+        if (!bId) return;
+        // Check if already cached before fetching
+        const alreadyCached = apiCache.getStale(`user:booking:${bId}`);
+        if (!alreadyCached) {
+          setTimeout(() => {
+            bookingService.getById(bId).catch(() => {});
+          }, (idx + 1) * 300); // 300ms stagger per booking
+        }
+      });
+
+    } catch (error) {
+      toast.error('Failed to load bookings. Please try again.');
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
 
   useEffect(() => {
-    const loadBookings = async () => {
-      try {
-        setLoading(true);
-        const params = {};
-        if (filter !== 'all') {
-          params.status = filter;
-        }
-        
-        // Fetch Service Bookings
-        const response = await bookingService.getUserBookings(params);
-        let serviceBookings = response.success ? (response.data || []) : [];
-
-        // Sort by date
-        const sorted = serviceBookings.sort((a, b) => 
-          new Date(b.createdAt || b.scheduledDate) - new Date(a.createdAt || a.scheduledDate)
-        );
-
-        setBookings(sorted);
-
-      } catch (error) {
-        toast.error('Failed to load bookings. Please try again.');
-        setBookings([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadBookings();
 
     // Listen for real-time updates
@@ -88,7 +134,31 @@ const MyBookings = () => {
     return () => {
       window.removeEventListener('userBookingsUpdated', loadBookings);
     };
-  }, [filter]);
+  }, [loadBookings]);
+
+  // Listen for WebSockets status changes to trigger silent refresh
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSocketUpdate = () => {
+      // Debounce: collapse rapid socket events (booking_updated + notification) into one call
+      if (socketDebounceRef.current) clearTimeout(socketDebounceRef.current);
+      socketDebounceRef.current = setTimeout(() => {
+        // Only invalidate list cache keys (e.g. user:bookings:), NOT detail keys (user:booking:{id})
+        apiCache.invalidateListKeys('user:bookings:');
+        loadBookings();
+      }, 2000);
+    };
+
+    socket.on('booking_updated', handleSocketUpdate);
+    socket.on('notification', handleSocketUpdate);
+
+    return () => {
+      socket.off('booking_updated', handleSocketUpdate);
+      socket.off('notification', handleSocketUpdate);
+      if (socketDebounceRef.current) clearTimeout(socketDebounceRef.current);
+    };
+  }, [socket, loadBookings]);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -214,7 +284,7 @@ const MyBookings = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-4 py-4 w-full">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent px-4 py-4 w-full">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -341,6 +411,13 @@ const MyBookings = () => {
                       }
                     }}
                     onClick={() => handleBookingClick(booking)}
+                    onMouseEnter={() => {
+                      // Hover pre-fetch: ensure this booking's data is cached before user clicks
+                      const bId = booking._id || booking.id;
+                      if (bId && !apiCache.getStale(`user:booking:${bId}`)) {
+                        bookingService.getById(bId).catch(() => {});
+                      }
+                    }}
                     className="group flex gap-3.5 bg-card-bg rounded-[20px] p-4 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
                   >
                     {/* Booking Image */}

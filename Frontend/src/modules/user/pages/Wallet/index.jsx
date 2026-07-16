@@ -9,15 +9,15 @@ import { bookingService } from '../../../../services/bookingService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import NotificationBell from '../../components/common/NotificationBell';
 import { themeColors } from '../../../../theme';
+import { apiCache } from '../../../../utils/apiCache';
+
+const TX_CACHE_KEY = 'user:wallet:transactions';
 
 const Wallet = () => {
   const navigate = useNavigate();
   const [walletBalance, setWalletBalance] = useState(0);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [transactions, setTransactions] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [loyaltyHistory, setLoyaltyHistory] = useState([]);
-  const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Voucher Redemption states
@@ -28,19 +28,30 @@ const Wallet = () => {
     const loadWalletData = async () => {
       try {
         setLoading(true);
-        const [balanceResponse, transactionsResponse, bookingsResponse] = await Promise.all([
+        const [balanceResponse, transactionsResponse] = await Promise.all([
           walletService.getBalance(),
-          walletService.getTransactions(),
-          bookingService.getUserBookings({ limit: 100 }).catch(() => ({ success: false, data: [] }))
+          walletService.getTransactions()
         ]);
 
         if (balanceResponse.success) {
           setWalletBalance(balanceResponse.data.balance || 0);
           setLoyaltyPoints(balanceResponse.data.loyaltyPoints || 0);
+
+          // Update profile cache with fresh wallet values
+          const profile = apiCache.getStale('user:profile');
+          if (profile) {
+            profile.walletBalance = balanceResponse.data.balance || 0;
+            profile.loyaltyPoints = balanceResponse.data.loyaltyPoints || 0;
+            apiCache.set('user:profile', profile, 60);
+          }
         }
 
         if (transactionsResponse.success) {
-          setTransactions(transactionsResponse.data || []);
+          const freshTx = transactionsResponse.data || [];
+          setTransactions(freshTx);
+          setHasMore(freshTx.length === 10);
+          setPage(1); // reset to page 1 on fresh load
+          apiCache.set(TX_CACHE_KEY, freshTx, 30); // Cache transactions 30s
         }
 
         if (bookingsResponse && bookingsResponse.success) {
@@ -104,6 +115,27 @@ const Wallet = () => {
     loadWalletData();
   }, []);
 
+  const loadMoreTransactions = async () => {
+    if (fetchingMore || !hasMore) return;
+    setFetchingMore(true);
+    try {
+      const nextPage = page + 1;
+      const response = await walletService.getTransactions({ page: nextPage, limit: 10 });
+      if (response.success) {
+        const nextTx = response.data || [];
+        setTransactions(prev => [...prev, ...nextTx]);
+        setPage(nextPage);
+        setHasMore(nextTx.length === 10);
+      } else {
+        toast.error('Failed to load more transactions');
+      }
+    } catch (err) {
+      toast.error('Failed to load more transactions');
+    } finally {
+      setFetchingMore(false);
+    }
+  };
+
   const handleRedeemVoucher = async (e) => {
     e.preventDefault();
     if (!voucherCode.trim()) {
@@ -120,7 +152,7 @@ const Wallet = () => {
       if (response.success && response.data?.type === 'wallet') {
         toast.success(response.message || `₹${response.data.value} added to your wallet balance!`);
         setVoucherCode('');
-        
+
         // Reload wallet balance and transactions
         const [balanceResponse, transactionsResponse] = await Promise.all([
           walletService.getBalance(),
@@ -220,7 +252,7 @@ const Wallet = () => {
             </div>
 
             {/* Loyalty Points Card */}
-            <div 
+            <div
               onClick={() => setShowLoyaltyModal(true)}
               className="bg-gradient-to-r from-teal-900 to-emerald-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.99] transition-all group"
             >
@@ -368,6 +400,26 @@ const Wallet = () => {
                   );
                 })
               )}
+
+              {/* Load More Button */}
+              {hasMore && transactions.length > 0 && (
+                <div className="pt-2 text-center">
+                  <button
+                    onClick={loadMoreTransactions}
+                    disabled={fetchingMore}
+                    className="w-full py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-100 hover:border-gray-200 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {fetchingMore ? (
+                      <>
+                        <FiLoader className="w-4 h-4 animate-spin text-gray-500" />
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <span>Load More Transactions</span>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -386,7 +438,7 @@ const Wallet = () => {
                   <p className="text-xs text-emerald-250 mt-0.5">Current Balance: <strong className="text-white text-sm">{loyaltyPoints}</strong> points</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowLoyaltyModal(false)}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center"
               >
@@ -421,7 +473,7 @@ const Wallet = () => {
                     });
 
                     return (
-                      <div 
+                      <div
                         key={item.id}
                         className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-start gap-3 hover:border-gray-250 transition-colors"
                       >

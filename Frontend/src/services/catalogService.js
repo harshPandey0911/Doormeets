@@ -377,7 +377,7 @@ export const publicCatalogService = {
 
     const response = await api.get(`/public/services${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 0); // Disable cache for instant updates
+      apiCache.set(cacheKey, response.data, 60); // Enable cache for 60 seconds to prevent navigation refetches
     }
     return response.data;
   },
@@ -401,7 +401,7 @@ export const publicCatalogService = {
 
     const response = await api.get(`/public/brands/slug/${slug}${queryString}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 0); // Disabling cache for instant real-time updates
+      apiCache.set(cacheKey, response.data, 60); // Enable cache for 60 seconds to prevent navigation refetches
     }
     return response.data;
   },
@@ -415,7 +415,7 @@ export const publicCatalogService = {
     const query = cityId ? `?cityId=${cityId}` : '';
     const response = await api.get(`/public/home-content${query}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 0); // Disabling cache for instant real-time updates
+      apiCache.set(cacheKey, response.data, 120); // Enable cache for 120 seconds to prevent navigation refetches
     }
     return response.data;
   },
@@ -439,7 +439,7 @@ export const publicCatalogService = {
 
     const response = await api.get(`/public/home-data${queryString}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 0); // Disabling cache for instant real-time updates
+      apiCache.set(cacheKey, response.data, 120); // Enable cache for 120 seconds to prevent navigation refetches
     }
     return response.data;
   },

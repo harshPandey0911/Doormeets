@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
 import { userAuthService } from '../../../../services/authService';
 import flutterBridge from '../../../../utils/flutterBridge';
+import { apiCache } from '../../../../utils/apiCache';
 
 import { z } from "zod";
 
@@ -17,16 +18,50 @@ const profileSchema = z.object({
 
 const UpdateProfile = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    profilePhoto: '', // URL
+
+  // Initialize form data instantly from cache or localStorage (no delay/empty fields)
+  const [formData, setFormData] = useState(() => {
+    // 1. Check cached profile first
+    const cached = apiCache.getStale('user:profile');
+    if (cached) {
+      return {
+        name: cached.name || '',
+        email: cached.email || '',
+        phone: cached.phone || '',
+        profilePhoto: cached.profilePhoto || '',
+      };
+    }
+    // 2. Fallback to localStorage
+    try {
+      const stored = localStorage.getItem('userData');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return {
+          name: u.name || '',
+          email: u.email || '',
+          phone: u.phone || '',
+          profilePhoto: u.profilePhoto || '',
+        };
+      }
+    } catch {}
+    return { name: '', email: '', phone: '', profilePhoto: '' };
   });
+
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Set isLoading to false if we have cached data to avoid disabling fields on load
+  const [isLoading, setIsLoading] = useState(() => {
+    const cached = apiCache.getStale('user:profile');
+    if (cached) return false;
+    try {
+      const stored = localStorage.getItem('userData');
+      return !stored;
+    } catch {}
+    return true;
+  });
+
   const [isSaving, setIsSaving] = useState(false);
   const [isFlutter, setIsFlutter] = useState(flutterBridge.isFlutter);
   const [showSourceSheet, setShowSourceSheet] = useState(false);
@@ -59,30 +94,42 @@ const UpdateProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // First check localStorage
-        const storedUserData = localStorage.getItem('userData');
-        if (storedUserData) {
-          const userData = JSON.parse(storedUserData);
+        // SWR: Skip fetch if cache still fresh
+        const cached = apiCache.get('user:profile');
+        if (cached) {
           setFormData({
-            name: userData.name || '',
-            email: userData.email || '',
-            phone: userData.phone || '',
-            profilePhoto: userData.profilePhoto || '',
+            name: cached.name || '',
+            email: cached.email || '',
+            phone: cached.phone || '',
+            profilePhoto: cached.profilePhoto || '',
           });
+          setIsLoading(false);
+          return;
         }
 
         // Fetch fresh data from API
         const response = await userAuthService.getProfile();
         if (response.success && response.user) {
           const user = response.user;
-          setFormData({
+          const freshProfile = {
             name: user.name || '',
             email: user.email || '',
             phone: user.phone || '',
             profilePhoto: user.profilePhoto || '',
+            walletBalance: user.wallet?.balance ?? 0,
+            plans: user.plans,
+            addresses: user.addresses || []
+          };
+          apiCache.set('user:profile', freshProfile, 60);
+          setFormData({
+            name: freshProfile.name,
+            email: freshProfile.email,
+            phone: freshProfile.phone,
+            profilePhoto: freshProfile.profilePhoto,
           });
 
-          // Update localStorage with fresh data including photo
+          // Update localStorage with fresh data
+          const storedUserData = localStorage.getItem('userData');
           if (storedUserData) {
             const updatedLocal = { ...JSON.parse(storedUserData), ...user };
             localStorage.setItem('userData', JSON.stringify(updatedLocal));

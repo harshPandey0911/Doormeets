@@ -3,20 +3,54 @@ import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiStar, FiUser, FiBriefcase, FiCalendar, FiMessageSquare, FiLoader } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import bookingService from '../../../../services/bookingService';
+import { apiCache } from '../../../../utils/apiCache';
+
+const RATINGS_CACHE_KEY = 'user:ratings:page1';
 
 const MyRating = () => {
   const navigate = useNavigate();
-  const [ratings, setRatings] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize from cache instantly — no spinner on revisit
+  const [ratings, setRatings] = useState(() => {
+    const cached = apiCache.getStale(RATINGS_CACHE_KEY);
+    return cached?.data || [];
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    const cached = apiCache.getStale(RATINGS_CACHE_KEY);
+    return !cached?.data?.length;
+  });
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
   const fetchRatings = async (page = 1) => {
     try {
+      if (page === 1) {
+        // SWR: show stale instantly, refresh in background if expired
+        const stale = apiCache.getStale(RATINGS_CACHE_KEY);
+        if (stale) {
+          setRatings(stale.data || []);
+          if (stale.pagination) setPagination(stale.pagination);
+          if (!apiCache.isExpired(RATINGS_CACHE_KEY)) {
+            setIsLoading(false);
+            return; // Cache still valid, skip fetch
+          }
+          // Expired — silent background refresh
+          setIsLoading(false);
+          const res = await bookingService.getRatings({ page, limit: 10 });
+          if (res.success) {
+            setRatings(res.data);
+            setPagination(res.pagination);
+            apiCache.set(RATINGS_CACHE_KEY, res, 60);
+          }
+          return;
+        }
+      }
       setIsLoading(true);
       const response = await bookingService.getRatings({ page, limit: 10 });
       if (response.success) {
-        setRatings(page === 1 ? response.data : [...ratings, ...response.data]);
+        const newRatings = page === 1 ? response.data : [...ratings, ...response.data];
+        setRatings(newRatings);
         setPagination(response.pagination);
+        if (page === 1) apiCache.set(RATINGS_CACHE_KEY, response, 60);
       } else {
         toast.error(response.message || 'Failed to fetch ratings');
       }

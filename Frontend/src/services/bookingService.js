@@ -1,4 +1,5 @@
 import api from './api';
+import { apiCache } from '../utils/apiCache';
 
 /**
  * Booking Service
@@ -10,10 +11,12 @@ export const bookingService = {
   create: async (bookingData) => {
     console.log('[BookingService] Creating booking with payload:', JSON.stringify(bookingData, null, 2));
     const response = await api.post('/users/bookings', bookingData);
+    // Invalidate bookings cache on creation
+    apiCache.clear();
     return response.data;
   },
 
-  // Get user bookings with filters
+  // Get user bookings with filters (SWR: stale data shown instantly, background refresh if expired)
   getUserBookings: async (params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.status) queryParams.append('status', params.status);
@@ -22,20 +25,61 @@ export const bookingService = {
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
 
-    const response = await api.get(`/users/bookings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
+    const cacheKey = `user:bookings:${queryParams.toString()}`;
+    const url = `/users/bookings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    // SWR: return stale data immediately if available
+    const stale = apiCache.getStale(cacheKey);
+    if (stale) {
+      // If TTL expired, silently refresh in background (no loader, no component change)
+      if (apiCache.isExpired(cacheKey)) {
+        api.get(url).then(res => {
+          if (res.data?.success) apiCache.set(cacheKey, res.data, 15);
+        }).catch(() => {});
+      }
+      return stale;
+    }
+
+    // First load — no cache at all, fetch normally
+    const response = await api.get(url);
+    if (response.data?.success) {
+      apiCache.set(cacheKey, response.data, 15);
+    }
     return response.data;
   },
 
-  // Get unique past services for Order Again section (highly optimized)
+  // Get unique past services (SWR)
   getPastServices: async () => {
+    const cacheKey = 'user:bookings:past-services';
+    const stale = apiCache.getStale(cacheKey);
+    if (stale) {
+      if (apiCache.isExpired(cacheKey)) {
+        api.get('/users/bookings/past-services').then(res => {
+          if (res.data?.success) apiCache.set(cacheKey, res.data, 30);
+        }).catch(() => {});
+      }
+      return stale;
+    }
     const response = await api.get('/users/bookings/past-services');
+    if (response.data?.success) apiCache.set(cacheKey, response.data, 30);
     return response.data;
   },
 
 
-  // Get booking details by ID
+  // Get booking details by ID (SWR)
   getById: async (id) => {
+    const cacheKey = `user:booking:${id}`;
+    const stale = apiCache.getStale(cacheKey);
+    if (stale) {
+      if (apiCache.isExpired(cacheKey)) {
+        api.get(`/users/bookings/${id}`).then(res => {
+          if (res.data?.success) apiCache.set(cacheKey, res.data, 15);
+        }).catch(() => {});
+      }
+      return stale;
+    }
     const response = await api.get(`/users/bookings/${id}`);
+    if (response.data?.success) apiCache.set(cacheKey, response.data, 15);
     return response.data;
   },
 
