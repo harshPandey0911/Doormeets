@@ -77,7 +77,10 @@ exports.updateSettings = async (req, res, next) => {
       paintingRates,
       propertyLayouts,
       paintingPageConfig,
-      aboutPageConfig
+      aboutPageConfig,
+      shopReferralRewardShopOwner,
+      shopReferralRewardVendor,
+      shopReferralQrCodeUrl
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -131,7 +134,10 @@ exports.updateSettings = async (req, res, next) => {
         paintingRates: paintingRates !== undefined ? paintingRates : undefined,
         propertyLayouts: propertyLayouts !== undefined ? propertyLayouts : undefined,
         paintingPageConfig: paintingPageConfig !== undefined ? paintingPageConfig : undefined,
-        aboutPageConfig: aboutPageConfig !== undefined ? aboutPageConfig : undefined
+        aboutPageConfig: aboutPageConfig !== undefined ? aboutPageConfig : undefined,
+        shopReferralRewardShopOwner: shopReferralRewardShopOwner !== undefined ? Number(shopReferralRewardShopOwner) : 100,
+        shopReferralRewardVendor: shopReferralRewardVendor !== undefined ? Number(shopReferralRewardVendor) : 50,
+        shopReferralQrCodeUrl: shopReferralQrCodeUrl !== undefined ? shopReferralQrCodeUrl : ''
       });
     } else {
       // Update fields if provided
@@ -207,6 +213,9 @@ exports.updateSettings = async (req, res, next) => {
       if (propertyLayouts !== undefined) settings.propertyLayouts = propertyLayouts;
       if (paintingPageConfig !== undefined) settings.paintingPageConfig = paintingPageConfig;
       if (aboutPageConfig !== undefined) settings.aboutPageConfig = aboutPageConfig;
+      if (shopReferralRewardShopOwner !== undefined) settings.shopReferralRewardShopOwner = Number(shopReferralRewardShopOwner);
+      if (shopReferralRewardVendor !== undefined) settings.shopReferralRewardVendor = Number(shopReferralRewardVendor);
+      if (shopReferralQrCodeUrl !== undefined) settings.shopReferralQrCodeUrl = shopReferralQrCodeUrl;
 
       await settings.save();
     }
