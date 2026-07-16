@@ -56,7 +56,7 @@ const createOrUpdateBill = async (req, res) => {
     // 1. ORIGINAL SERVICE (from booking)
     // ═══════════════════════════════════════
     const isPlanBooking = booking.paymentMethod === 'plan_benefit';
-    const basePriceRaw = booking.basePrice || 0;
+    const basePriceRaw = Math.max(0, (booking.basePrice || 0) - (booking.discount || 0));
     const originalGST = isPlanBooking ? 0 : (booking.tax > 0 ? parseFloat(booking.tax.toFixed(2)) : parseFloat((basePriceRaw * (serviceGstPct / 100)).toFixed(2)));
     const originalServiceBaseForBill = isPlanBooking ? 0 : (booking.tax > 0 ? basePriceRaw : parseFloat((basePriceRaw - originalGST).toFixed(2)));
     const originalServiceBaseForEarnings = originalServiceBaseForBill;

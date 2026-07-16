@@ -6,9 +6,12 @@ async function run() {
   console.log("Connected to MongoDB");
 
   const Booking = require('../models/Booking');
-  const booking = await Booking.findById('6a58b8223c91fe398321d4c1').lean();
+  const bookings = await Booking.find().sort({ createdAt: -1 }).limit(5).lean();
 
-  console.log("Booking:", JSON.stringify(booking, null, 2));
+  console.log("Latest 5 bookings:");
+  bookings.forEach(b => {
+    console.log(`ID: ${b._id} | Number: ${b.bookingNumber} | BasePrice: ${b.basePrice} | Discount: ${b.discount} | Final: ${b.finalAmount}`);
+  });
 
   await mongoose.connection.close();
 }

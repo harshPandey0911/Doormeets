@@ -5,10 +5,9 @@ async function run() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/doormeets');
   console.log("Connected to MongoDB");
 
-  const Booking = require('../models/Booking');
-  const booking = await Booking.findById('6a58b8223c91fe398321d4c1').lean();
-
-  console.log("Booking:", JSON.stringify(booking, null, 2));
+  const collections = await mongoose.connection.db.listCollections().toArray();
+  console.log("Collections list:");
+  console.log(collections.map(c => c.name));
 
   await mongoose.connection.close();
 }

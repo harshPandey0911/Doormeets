@@ -5,10 +5,11 @@ async function run() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/doormeets');
   console.log("Connected to MongoDB");
 
-  const Booking = require('../models/Booking');
-  const booking = await Booking.findById('6a58b8223c91fe398321d4c1').lean();
+  const PricingConfig = require('../models/PricingConfig');
+  const pricings = await PricingConfig.find({ serviceId: '6a58a3a8f5060e5d99eb7a10' }).lean();
 
-  console.log("Booking:", JSON.stringify(booking, null, 2));
+  console.log("PricingConfigs for nice cut:");
+  console.log(JSON.stringify(pricings, null, 2));
 
   await mongoose.connection.close();
 }

@@ -802,7 +802,7 @@ const PremiumServiceDetailPage = () => {
     }
     cartData.price = finalPrice;
     cartData.unitPrice = finalPrice;
-    const baseOriginalPrice = Number(service.originalPrice || service.basePrice || service.price || 0);
+    const baseOriginalPrice = Number(service.originalPrice || (calculatedPrice > 0 ? (service.basePrice || service.price || 0) : 0));
     cartData.originalPrice = baseOriginalPrice > 0 ? (baseOriginalPrice + variantExtraTotal) : finalPrice;
     if (cartData.card) {
       cartData.card.price = finalPrice;

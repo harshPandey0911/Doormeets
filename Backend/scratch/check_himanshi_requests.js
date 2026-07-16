@@ -5,10 +5,10 @@ async function run() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/doormeets');
   console.log("Connected to MongoDB");
 
-  const Booking = require('../models/Booking');
-  const booking = await Booking.findById('6a58b8223c91fe398321d4c1').lean();
+  const BookingRequest = require('../models/BookingRequest');
+  const requests = await BookingRequest.find({ vendorId: '6a58854997fe01d30a582b90' }).lean();
 
-  console.log("Booking:", JSON.stringify(booking, null, 2));
+  console.log("Booking requests for Himanshi in DB:", requests);
 
   await mongoose.connection.close();
 }

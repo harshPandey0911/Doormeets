@@ -141,7 +141,7 @@ export const SocketProvider = ({ children }) => {
       },
       transports: ['polling', 'websocket'], // Try polling first for reliability
       path: '/socket.io/',
-      secure: true,
+      secure: socketBaseUrl.startsWith('https'),
       rejectUnauthorized: false,
       reconnection: true,
       reconnectionAttempts: 10,
