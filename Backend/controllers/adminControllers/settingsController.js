@@ -76,7 +76,8 @@ exports.updateSettings = async (req, res, next) => {
       instantBookingVendorShare,
       paintingRates,
       propertyLayouts,
-      paintingPageConfig
+      paintingPageConfig,
+      aboutPageConfig
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -129,7 +130,8 @@ exports.updateSettings = async (req, res, next) => {
         instantBookingVendorShare: instantBookingVendorShare !== undefined ? Number(instantBookingVendorShare) : 50,
         paintingRates: paintingRates !== undefined ? paintingRates : undefined,
         propertyLayouts: propertyLayouts !== undefined ? propertyLayouts : undefined,
-        paintingPageConfig: paintingPageConfig !== undefined ? paintingPageConfig : undefined
+        paintingPageConfig: paintingPageConfig !== undefined ? paintingPageConfig : undefined,
+        aboutPageConfig: aboutPageConfig !== undefined ? aboutPageConfig : undefined
       });
     } else {
       // Update fields if provided
@@ -204,6 +206,7 @@ exports.updateSettings = async (req, res, next) => {
       if (paintingRates !== undefined) settings.paintingRates = paintingRates;
       if (propertyLayouts !== undefined) settings.propertyLayouts = propertyLayouts;
       if (paintingPageConfig !== undefined) settings.paintingPageConfig = paintingPageConfig;
+      if (aboutPageConfig !== undefined) settings.aboutPageConfig = aboutPageConfig;
 
       await settings.save();
     }
@@ -267,11 +270,11 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig aboutPageConfig');
 
     // Default if not found (fallback values)
     if (!settings) {
-      settings = { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18, referralRewardReferrer: 100, referralRewardReferee: 100, maxWalletUsagePercentage: 30 };
+      settings = { visitedCharges: 29, serviceGstPercentage: 18, partsGstPercentage: 18, referralRewardReferrer: 100, referralRewardReferee: 100, maxWalletUsagePercentage: 30, aboutPageConfig: { title: 'Welcome to Doormeets', subtitle: 'Your trusted partner for premium home and personal care services.', happyCustomers: '10K+', servicePartners: '500+', appRating: '4.8', mission: 'Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.' } };
     }
 
     res.status(200).json({

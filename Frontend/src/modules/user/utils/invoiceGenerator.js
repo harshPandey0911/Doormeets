@@ -159,7 +159,7 @@ export const downloadInvoice = (booking, companyDetails) => {
               <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Delivery Address</span>
               <span style="font-size: 12px; color: #444; line-height: 1.4; display: block;">
                 ${addr1}<br/>
-                ${addr2 ? addr2 + '<br/>' : ''}
+                ${addr2 && addr2.trim().toLowerCase() !== `${cityVal}, ${stateVal}`.trim().toLowerCase() && addr2.trim().toLowerCase() !== `${cityVal}`.trim().toLowerCase() ? addr2 + '<br/>' : ''}
                 ${cityVal}, ${stateVal} - ${pinVal}<br/>
                 ${landVal ? 'Landmark: ' + landVal : ''}
               </span>
@@ -167,16 +167,16 @@ export const downloadInvoice = (booking, companyDetails) => {
 
             <div style="margin-bottom: 12px;">
               <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">State Name & Code</span>
-              <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
+              <span style="font-size: 12px; color: #111;">${stateVal} (${custStateCode})</span>
             </div>
 
             <div style="margin-bottom: 12px;">
               <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Place of Supply</span>
-              <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
+              <span style="font-size: 12px; color: #111;">${stateVal} (${custStateCode})</span>
             </div>
 
             ${booking.userGstNumber ? `
-            <div>
+            <div style="margin-top: 12px; border-top: 1px dashed #eee; pt: 8px;">
               <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Customer GSTIN</span>
               <span style="font-size: 12px; font-weight: bold; color: #111;">${booking.userGstNumber}</span>
             </div>

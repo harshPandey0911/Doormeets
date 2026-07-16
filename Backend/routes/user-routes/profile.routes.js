@@ -4,6 +4,7 @@ const { body } = require('express-validator');
 const { authenticate } = require('../../middleware/authMiddleware');
 const { isUser } = require('../../middleware/roleMiddleware');
 const { getProfile, updateProfile, getCheckoutData, getReferralDetails } = require('../../controllers/userControllers/userProfileController');
+const { deleteUserAccount } = require('../../controllers/adminControllers/deletedAccountsController');
 
 // Validation rules
 const updateProfileValidation = [
@@ -16,6 +17,7 @@ router.get('/profile', authenticate, isUser, getProfile);
 router.get('/checkout-data', authenticate, isUser, getCheckoutData);
 router.get('/profile/referral/details', authenticate, isUser, getReferralDetails);
 router.put('/profile', authenticate, isUser, updateProfileValidation, updateProfile);
+router.delete('/profile', authenticate, isUser, deleteUserAccount);
 
 module.exports = router;
 

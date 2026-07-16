@@ -13,7 +13,7 @@ const getVendorWorkers = async (req, res) => {
     const { status, page = 1, limit = 20 } = req.query;
 
     // Build query
-    const query = { vendorId };
+    const query = { vendorId, isDeleted: { $ne: true } };
     if (status) {
       query.status = status;
     }
@@ -300,9 +300,10 @@ const removeWorker = async (req, res) => {
       });
     }
 
-    // Remove worker (soft delete by setting status to inactive)
+    // Remove worker (soft delete)
     worker.status = WORKER_STATUS.INACTIVE;
-    worker.vendorId = null; // Unassign from vendor
+    worker.isDeleted = true;
+    worker.deletedAt = new Date();
     await worker.save();
 
     res.status(200).json({

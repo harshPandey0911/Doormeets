@@ -142,11 +142,19 @@ const ManageAddresses = () => {
         ...addressData,
         lat: locationObj.lat,
         lng: locationObj.lng,
-        isDefault: addresses.length === 0 // Make first address default
+        isDefault: editingAddress ? editingAddress.isDefault : addresses.length === 0
       };
 
-      // ENFORCE SINGLE ADDRESS: Replace existing if adding new
-      const updatedAddresses = [newAddress];
+      let updatedAddresses;
+      if (editingAddress) {
+        updatedAddresses = addresses.map(addr => 
+          (addr._id || addr.id) === (editingAddress._id || editingAddress.id)
+            ? { ...addr, ...newAddress }
+            : addr
+        );
+      } else {
+        updatedAddresses = [...addresses, newAddress];
+      }
 
       // Call API
       toast.loading('Saving address...');
@@ -162,6 +170,7 @@ const ManageAddresses = () => {
       }
 
     } catch (error) {
+      console.error('[Save Address Error]:', error);
       toast.dismiss();
       toast.error('Something went wrong');
     }
@@ -226,16 +235,14 @@ const ManageAddresses = () => {
 
         {/* Saved Addresses Section */}
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-secondary-text uppercase tracking-wider">Saved Address</h2>
-          {addresses.length === 0 && (
-            <button
-              onClick={handleAddAddress}
-              className="flex items-center gap-1.5 text-sm font-bold text-purple-600"
-            >
-              <FiPlus className="w-4 h-4" />
-              Add Address
-            </button>
-          )}
+          <h2 className="text-sm font-bold text-secondary-text uppercase tracking-wider">Saved Addresses</h2>
+          <button
+            onClick={handleAddAddress}
+            className="flex items-center gap-1.5 text-sm font-bold text-purple-600 cursor-pointer"
+          >
+            <FiPlus className="w-4 h-4" />
+            Add Address
+          </button>
         </div>
 
         {/* Loading State */}

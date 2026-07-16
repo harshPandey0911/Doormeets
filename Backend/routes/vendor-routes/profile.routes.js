@@ -25,6 +25,8 @@ router.put('/address', authenticate, isVendor, updateAddressValidation, updateAd
 router.put('/profile/location', authenticate, isVendor, updateLocation);
 router.put('/status', authenticate, isVendor, updateStatus);
 router.post('/profile/sos', authenticate, isVendor, triggerVendorSOS);
+const { deleteVendorAccount } = require('../../controllers/adminControllers/deletedAccountsController');
+router.delete('/profile', authenticate, isVendor, deleteVendorAccount);
 
 module.exports = router;
 

@@ -428,6 +428,40 @@ const settingsSchema = new mongoose.Schema({
       bottomBarSubtitle: { type: String, default: 'Book a consultation today and receive a personalized quotation.' },
       bottomBarButtonLabel: { type: String, default: 'Confirm & Book Consultation' }
     }
+  },
+  aboutPageConfig: {
+    title: { type: String, default: 'Welcome to Doormeets' },
+    subtitle: { type: String, default: 'Your trusted partner for premium home and personal care services.' },
+    happyCustomers: { type: String, default: '10K+' },
+    servicePartners: { type: String, default: '500+' },
+    appRating: { type: String, default: '4.8' },
+    mission: { type: String, default: 'Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.' },
+    logoUrl: { type: String, default: '' },
+    features: {
+      type: [{
+        title: String,
+        description: String,
+        iconName: String
+      }],
+      default: [
+        { title: 'Expert Providers', description: 'Verified professionals for all your needs', iconName: 'FiUsers' },
+        { title: 'Safe & Secure', description: 'Your safety is our top priority', iconName: 'FiShield' },
+        { title: 'On-Time Service', description: 'Punctual delivery at your convenience', iconName: 'FiClock' },
+        { title: 'Quality Assured', description: 'Service with 100% satisfaction guarantee', iconName: 'FiAward' }
+      ]
+    },
+    steps: {
+      type: [{
+        title: String,
+        desc: String,
+        iconName: String
+      }],
+      default: [
+        { title: 'Book Details', desc: 'Select service & schedule time', iconName: 'FiSmartphone' },
+        { title: 'Get Matched', desc: 'We assign a top-rated pro', iconName: 'FiUsers' },
+        { title: 'Relax', desc: 'Enjoy high-quality service', iconName: 'FiSmile' }
+      ]
+    }
   }
 }, { timestamps: true });
 

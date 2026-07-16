@@ -148,8 +148,16 @@ const userSchema = new mongoose.Schema({
   loginSessionId: {
     type: String,
     default: null
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
-
 }, {
   timestamps: true
 });

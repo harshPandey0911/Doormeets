@@ -67,6 +67,15 @@ const workerSchema = new mongoose.Schema({
       type: Number,
       default: 0
     }
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiArrowLeft, FiX, FiSearch, FiMapPin, FiHome } from 'react-icons/fi';
+import { FiArrowLeft, FiX, FiSearch, FiMapPin, FiHome, FiBriefcase, FiBookmark } from 'react-icons/fi';
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import { themeColors } from '../../../../../theme';
 import LocationPicker from './LocationPicker';
+import { userAuthService } from '../../../../../services/authService';
 
 const libraries = ['places', 'geometry'];
 
@@ -19,11 +20,26 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
     libraries
   });
 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
+
+      // Fetch saved addresses
+      const fetchSaved = async () => {
+        try {
+          const response = await userAuthService.getProfile();
+          if (response.success && response.user?.addresses) {
+            setSavedAddresses(response.user.addresses);
+          }
+        } catch (error) {
+          console.error('Failed to load saved addresses in modal:', error);
+        }
+      };
+      fetchSaved();
     } else {
       document.body.style.overflow = '';
       document.body.style.position = '';
@@ -187,6 +203,72 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
                 </div>
               )}
             </div>
+
+            {/* Saved Addresses List */}
+            {savedAddresses.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-[10px] font-black uppercase tracking-widest mb-2.5 ml-1" style={{ color: 'var(--text-muted)' }}>
+                  Choose from Saved Addresses
+                </label>
+                <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                  {savedAddresses.map((addr) => (
+                    <div
+                      key={addr._id || addr.id}
+                      onClick={() => {
+                        const selectedLoc = {
+                          lat: addr.lat,
+                          lng: addr.lng,
+                          address: addr.addressLine1,
+                          components: [],
+                          type: addr.type,
+                          city: addr.city,
+                          state: addr.state,
+                          pincode: addr.pincode
+                        };
+                        setSelectedLocation(selectedLoc);
+                        setMapAddress(addr.addressLine1);
+                        setSearchQuery(addr.addressLine1);
+                        if (onHouseNumberChange) {
+                          onHouseNumberChange(addr.addressLine2 || '');
+                        }
+                        // Click auto-saves and triggers flow
+                        onSave(addr.addressLine2 || '', selectedLoc);
+                      }}
+                      className="flex items-start gap-3 p-3 rounded-xl border hover:border-teal-500/50 hover:bg-teal-50/5 active:scale-[0.99] transition-all cursor-pointer text-left"
+                      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: 'rgba(0, 166, 166, 0.05)' }}>
+                        {addr.type === 'work' ? (
+                          <FiBriefcase className="w-4 h-4 text-teal-600" style={{ color: themeColors.button }} />
+                        ) : addr.type === 'other' ? (
+                          <FiBookmark className="w-4 h-4 text-teal-600" style={{ color: themeColors.button }} />
+                        ) : (
+                          <FiHome className="w-4 h-4 text-teal-600" style={{ color: themeColors.button }} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded text-teal-700 bg-teal-50" style={{ color: themeColors.button, backgroundColor: 'rgba(0, 166, 166, 0.05)' }}>
+                            {addr.type || 'Home'}
+                          </span>
+                          {addr.isDefault && (
+                            <span className="text-[9px] font-bold uppercase text-green-700 bg-green-50 px-1 py-0.5 rounded">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                          {addr.addressLine2 ? `${addr.addressLine2}, ` : ''}{addr.addressLine1}
+                        </p>
+                        <p className="text-[10px] truncate" style={{ color: 'var(--text-secondary)' }}>
+                          {addr.city}, {addr.state} - {addr.pincode}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* House/Flat Number - NEW */}
             <div className="mb-6">

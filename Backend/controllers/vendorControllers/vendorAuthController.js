@@ -29,10 +29,10 @@ const sendOTP = async (req, res) => {
     }
 
     // Check existing vendor/worker status to prevent OTP if restricted
-    let actor = await Vendor.findOne({ phone: cleanPhone });
+    let actor = await Vendor.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
     let isWorker = false;
     if (!actor) {
-      actor = await Worker.findOne({ phone: cleanPhone });
+      actor = await Worker.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
       if (actor) {
         isWorker = true;
       }
@@ -116,7 +116,7 @@ const verifyLogin = async (req, res) => {
 
     // 2. Check if vendor exists (using sanitized phone)
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const vendor = await Vendor.findOne({ phone: cleanPhone });
+    const vendor = await Vendor.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
 
     if (vendor) {
       // EXISTING VENDOR
@@ -178,7 +178,7 @@ const verifyLogin = async (req, res) => {
 
     } else {
       // Check if worker exists
-      const workerDoc = await Worker.findOne({ phone: cleanPhone });
+      const workerDoc = await Worker.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
       if (workerDoc) {
         if (workerDoc.status === 'inactive' || workerDoc.status === 'suspended') {
           return res.status(403).json({ success: false, message: 'Account suspended or inactive. Please contact your vendor.' });
@@ -416,7 +416,7 @@ const login = async (req, res) => {
     }
 
     // Find vendor
-    const vendor = await Vendor.findOne({ phone });
+    const vendor = await Vendor.findOne({ phone, isDeleted: { $ne: true } });
     if (!vendor) {
       return res.status(404).json({
         success: false,
@@ -549,7 +549,7 @@ const refreshToken = async (req, res) => {
     // Handle both vendor and worker tokens (workers login via vendor login page)
     if (decoded.role === USER_ROLES.WORKER) {
       // Worker token refresh
-      const workerDoc = await Worker.findById(decoded.userId);
+      const workerDoc = await Worker.findOne({ _id: decoded.userId, isDeleted: { $ne: true } });
       if (!workerDoc) {
         return res.status(404).json({
           success: false,
@@ -578,7 +578,7 @@ const refreshToken = async (req, res) => {
     }
 
     // Vendor token refresh (default)
-    const vendor = await Vendor.findById(decoded.userId);
+    const vendor = await Vendor.findOne({ _id: decoded.userId, isDeleted: { $ne: true } });
     if (!vendor) {
       return res.status(404).json({
         success: false,

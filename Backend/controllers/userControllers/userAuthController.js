@@ -87,7 +87,7 @@ const verifyLogin = async (req, res) => {
     }
 
     // 2. Check if user exists
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ phone, isDeleted: { $ne: true } });
 
     if (user) {
       // EXISTING USER -> LOGIN
@@ -341,7 +341,7 @@ const login = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ phone, isDeleted: { $ne: true } });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -445,7 +445,7 @@ const refreshToken = async (req, res) => {
     }
 
     // Check if user exists
-    const user = await User.findById(decoded.userId);
+    const user = await User.findOne({ _id: decoded.userId, isDeleted: { $ne: true } });
     if (!user) {
       return res.status(404).json({
         success: false,

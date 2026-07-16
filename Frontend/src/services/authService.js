@@ -118,6 +118,12 @@ export const userAuthService = {
   getReferralDetails: async () => {
     const response = await api.get('/users/profile/referral/details');
     return response.data;
+  },
+
+  // Delete Profile
+  deleteProfile: async () => {
+    const response = await api.delete('/users/profile');
+    return response.data;
   }
 };
 
@@ -205,6 +211,12 @@ export const vendorAuthService = {
     if (response.data.vendor) {
       localStorage.setItem('vendorData', JSON.stringify(response.data.vendor));
     }
+    return response.data;
+  },
+
+  // Delete Profile
+  deleteProfile: async () => {
+    const response = await api.delete('/vendors/profile');
     return response.data;
   }
 };

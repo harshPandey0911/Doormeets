@@ -254,6 +254,7 @@ app.use('/api/admin/settlements', require('./routes/admin-routes/settlementManag
 app.use('/api/admin/admins', require('./routes/admin-routes/adminManagement.routes'));
 app.use('/api/admin/promos', require('./routes/admin-routes/promo.routes'));
 app.use('/api/admin/vouchers', require('./routes/admin-routes/voucher.routes'));
+app.use('/api/admin', require('./routes/admin-routes/deletedAccounts.routes'));
 app.use('/api/admin/notifications', require('./routes/admin-routes/adminNotification.routes'));
 
 // Shop Owner routes

@@ -530,7 +530,7 @@ const Checkout = () => {
           addressLine2: houseNumber,
           city: addressDetails?.city || getAddressComponent('locality') || getAddressComponent('administrative_area_level_2') || 'City',
           state: addressDetails?.state || getAddressComponent('administrative_area_level_1') || 'State',
-          pincode: addressDetails?.pincode || getAddressComponent('postal_code') || '000000',
+          pincode: addressDetails?.pincode || getAddressComponent('postal_code') || addressDetails?.addressLine1?.match(/\b\d{6}\b/)?.[0] || address?.match(/\b\d{6}\b/)?.[0] || '000000',
           lat: addressDetails?.lat,
           lng: addressDetails?.lng
         },
@@ -778,7 +778,7 @@ const Checkout = () => {
         addressLine2: houseNumber,
         city: addressDetails?.city || getAddressComponent('locality') || getAddressComponent('administrative_area_level_2') || 'City',
         state: addressDetails?.state || getAddressComponent('administrative_area_level_1') || 'State',
-        pincode: addressDetails?.pincode || getAddressComponent('postal_code') || '123456',
+        pincode: addressDetails?.pincode || getAddressComponent('postal_code') || addressDetails?.addressLine1?.match(/\b\d{6}\b/)?.[0] || address?.match(/\b\d{6}\b/)?.[0] || '123456',
 
         landmark: addressDetails?.landmark || '',
         lat: addressDetails?.lat || null,
@@ -1122,7 +1122,7 @@ const Checkout = () => {
           addressLine2: savedHouseNumber,
           city: getComp('locality') || getComp('administrative_area_level_2') || 'City',
           state: getComp('administrative_area_level_1') || 'State',
-          pincode: getComp('postal_code') || '000000',
+          pincode: getComp('postal_code') || locationObj.address?.match(/\b\d{6}\b/)?.[0] || '000000',
           lat: locationObj.lat,
           lng: locationObj.lng,
           isDefault: true
@@ -1130,9 +1130,20 @@ const Checkout = () => {
 
         const response = await userAuthService.getProfile();
         if (response.success && response.user) {
-          const updatedAddresses = [newAddress]; // Always replace with single address
-          await userAuthService.updateProfile({ addresses: updatedAddresses });
-          toast.success('Address updated in profile!');
+          const currentAddresses = response.user.addresses || [];
+          const exists = currentAddresses.some(addr => 
+            (addr.lat === newAddress.lat && addr.lng === newAddress.lng) ||
+            (addr.addressLine1?.toLowerCase() === newAddress.addressLine1?.toLowerCase() &&
+             addr.addressLine2?.toLowerCase() === newAddress.addressLine2?.toLowerCase())
+          );
+          
+          if (!exists) {
+            // Set all existing defaults to false
+            const updated = currentAddresses.map(a => ({ ...a, isDefault: false }));
+            const updatedAddresses = [...updated, newAddress];
+            await userAuthService.updateProfile({ addresses: updatedAddresses });
+            toast.success('New address saved to profile!');
+          }
         }
       } catch (e) {
         console.error('Failed to save address to profile', e);

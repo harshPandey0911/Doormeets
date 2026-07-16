@@ -14,7 +14,7 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid phone number.' });
     }
 
-    const existing = await ShopOwner.findOne({ phone: cleanPhone });
+    const existing = await ShopOwner.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
     if (existing) {
       return res.status(400).json({ success: false, message: 'Phone number already registered.' });
     }
@@ -73,7 +73,7 @@ const login = async (req, res) => {
     const { phone, password } = req.body;
 
     const cleanPhone = phone ? phone.replace(/\D/g, '').slice(-10) : '';
-    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone }).select('+password');
+    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone, isDeleted: { $ne: true } }).select('+password');
 
     if (!shopOwner) {
       return res.status(400).json({ success: false, message: 'Invalid phone or password.' });
@@ -120,7 +120,7 @@ const login = async (req, res) => {
  */
 const getProfile = async (req, res) => {
   try {
-    const shopOwner = await ShopOwner.findById(req.user.id);
+    const shopOwner = await ShopOwner.findOne({ _id: req.user.id, isDeleted: { $ne: true } });
     if (!shopOwner) {
       return res.status(404).json({ success: false, message: 'Shop owner not found.' });
     }
@@ -143,7 +143,7 @@ const forgotPasswordSendOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid phone number.' });
     }
 
-    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone });
+    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
     if (!shopOwner) {
       return res.status(404).json({ success: false, message: 'No registered account found with this phone number.' });
     }
@@ -171,7 +171,7 @@ const forgotPasswordReset = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
     }
 
-    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone });
+    const shopOwner = await ShopOwner.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
     if (!shopOwner) {
       return res.status(404).json({ success: false, message: 'Account not found.' });
     }

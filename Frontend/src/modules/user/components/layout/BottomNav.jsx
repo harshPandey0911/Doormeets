@@ -105,7 +105,7 @@ const BottomNav = React.memo(() => {
       }}
     >
       <div
-        className="w-full pb-3 pt-2 px-4 rounded-t-[24px]"
+        className="w-full pb-6 pt-3 px-4 rounded-t-[24px]"
         style={{
           background: 'var(--background)',
           backdropFilter: 'blur(20px)',

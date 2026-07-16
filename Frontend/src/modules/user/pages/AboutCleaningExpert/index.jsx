@@ -1,15 +1,52 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiUsers, FiShield, FiClock, FiAward, FiGlobe, FiSmile, FiSmartphone } from 'react-icons/fi';
+import { FiArrowLeft, FiGlobe } from 'react-icons/fi';
+import * as FiIcons from 'react-icons/fi';
 import { gsap } from 'gsap';
 import Logo from '../../../../components/common/Logo';
+import { configService } from '../../../../services/configService';
 
 const AboutDoormeets = () => {
   const navigate = useNavigate();
   const containerRef = useRef(null);
+  
+  const [aboutConfig, setAboutConfig] = useState({
+    title: 'Welcome to Doormeets',
+    subtitle: 'Your trusted partner for premium home and personal care services.',
+    happyCustomers: '10K+',
+    servicePartners: '500+',
+    appRating: '4.8',
+    mission: 'Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.',
+    logoUrl: '',
+    features: [
+      { title: 'Expert Providers', description: 'Verified professionals for all your needs', iconName: 'FiUsers' },
+      { title: 'Safe & Secure', description: 'Your safety is our top priority', iconName: 'FiShield' },
+      { title: 'On-Time Service', description: 'Punctual delivery at your convenience', iconName: 'FiClock' },
+      { title: 'Quality Assured', description: 'Service with 100% satisfaction guarantee', iconName: 'FiAward' }
+    ],
+    steps: [
+      { title: 'Book Details', desc: 'Select service & schedule time', iconName: 'FiSmartphone' },
+      { title: 'Get Matched', desc: 'We assign a top-rated pro', iconName: 'FiUsers' },
+      { title: 'Relax', desc: 'Enjoy high-quality service', iconName: 'FiSmile' }
+    ]
+  });
 
   useEffect(() => {
-    // Simple entrance animation
+    const fetchSettings = async () => {
+      try {
+        const res = await configService.getSettings();
+        if (res && res.aboutPageConfig) {
+          setAboutConfig(res.aboutPageConfig);
+        }
+      } catch (err) {
+        console.error('Failed to load dynamic about page config', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    // Entrance animation
     const ctx = gsap.context(() => {
       gsap.from('.animate-item', {
         y: 20,
@@ -23,7 +60,7 @@ const AboutDoormeets = () => {
     return () => ctx.revert();
   }, []);
 
-  // Gradient Definition for re-use in inline styles
+  // Gradient Definition for inline styles
   const doormeetsGradient = 'linear-gradient(135deg, #B33A35 0%, #9E2E2A 100%)';
   const doormeetsTextGradient = {
     background: doormeetsGradient,
@@ -31,34 +68,20 @@ const AboutDoormeets = () => {
     WebkitTextFillColor: 'transparent',
   };
 
-  const features = [
-    {
-      icon: FiUsers,
-      title: 'Expert Providers',
-      description: 'Verified professionals for all your needs'
-    },
-    {
-      icon: FiShield,
-      title: 'Safe & Secure',
-      description: 'Your safety is our top priority'
-    },
-    {
-      icon: FiClock,
-      title: 'On-Time Service',
-      description: 'Punctual delivery at your convenience'
-    },
-    {
-      icon: FiAward,
-      title: 'Quality Assured',
-      description: 'Service with 100% satisfaction guarantee'
-    }
+  const stats = [
+    { number: aboutConfig.happyCustomers || '10K+', label: 'Happy Customers' },
+    { number: aboutConfig.servicePartners || '500+', label: 'Service Partners' },
+    { number: aboutConfig.appRating || '4.8', label: 'App Rating' },
   ];
 
-  const stats = [
-    { number: '10K+', label: 'Happy Customers' },
-    { number: '500+', label: 'Service Partners' },
-    { number: '4.8', label: 'App Rating' },
-  ];
+  // Helper to render icon dynamically by string name
+  const renderDynamicIcon = (iconName, className, styleProps = {}) => {
+    const IconComponent = FiIcons[iconName];
+    if (IconComponent) {
+      return <IconComponent className={className} style={styleProps} />;
+    }
+    return <FiIcons.FiCheckCircle className={className} style={styleProps} />;
+  };
 
   return (
     <div ref={containerRef} className="min-h-screen bg-light-bg pb-10">
@@ -96,17 +119,29 @@ const AboutDoormeets = () => {
                 animation: 'spin 4s linear infinite',
               }}
             />
-            {/* White Background */}
-            <div className="absolute inset-0 bg-white rounded-full shadow-lg flex items-center justify-center">
-              <Logo className="w-16 h-16 object-contain" />
+            {/* Logo Wrapper */}
+            <div className="absolute inset-0 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden">
+              {aboutConfig.logoUrl ? (
+                <img src={aboutConfig.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+              ) : (
+                <Logo className="w-16 h-16 object-contain" />
+              )}
             </div>
           </div>
 
           <h1 className="text-3xl font-semibold text-dark-text tracking-tight mb-2">
-            Welcome to <span style={doormeetsTextGradient}>Doormeets</span>
+            {aboutConfig.title?.includes('Doormeets') ? (
+              <>
+                {aboutConfig.title.split('Doormeets')[0]}
+                <span style={doormeetsTextGradient}>Doormeets</span>
+                {aboutConfig.title.split('Doormeets')[1]}
+              </>
+            ) : (
+              aboutConfig.title || 'Welcome to Doormeets'
+            )}
           </h1>
           <p className="text-secondary-text max-w-xs mx-auto leading-relaxed text-sm">
-            Your trusted partner for premium home and personal care services.
+            {aboutConfig.subtitle}
           </p>
         </div>
 
@@ -132,7 +167,7 @@ const AboutDoormeets = () => {
             </div>
             <h3 className="text-lg font-semibold text-dark-text mb-3">Our Mission</h3>
             <p className="text-sm text-secondary-text leading-relaxed relative z-10 font-medium">
-              Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.
+              {aboutConfig.mission}
             </p>
           </div>
         </div>
@@ -141,14 +176,14 @@ const AboutDoormeets = () => {
         <div className="animate-item">
           <h3 className="text-lg font-semibold text-dark-text mb-4 px-1">Why Choose Doormeets?</h3>
           <div className="grid grid-cols-2 gap-3">
-            {features.map((feature, index) => (
+            {(aboutConfig.features || []).map((feature, index) => (
               <div
                 key={index}
                 className="bg-card-bg rounded-2xl p-4 shadow-sm border border-border-color hover:shadow-md transition-shadow group"
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300"
                   style={{ background: 'linear-gradient(135deg, rgba(255, 159, 69, 0.1), rgba(255, 184, 108, 0.1))' }}>
-                  <feature.icon className="w-5 h-5" style={{ stroke: 'url(#doormeets-about-gradient)' }} />
+                  {renderDynamicIcon(feature.iconName, "w-5 h-5", { stroke: 'url(#doormeets-about-gradient)' })}
                 </div>
                 <h4 className="text-sm font-semibold text-dark-text mb-1">{feature.title}</h4>
                 <p className="text-xs text-secondary-text leading-relaxed">{feature.description}</p>
@@ -161,19 +196,18 @@ const AboutDoormeets = () => {
         <div className="animate-item">
           <h3 className="text-lg font-semibold text-dark-text mb-4 px-1">How We Work</h3>
           <div className="bg-card-bg rounded-2xl p-1 shadow-sm border border-border-color">
-            {[
-              { title: 'Book Details', desc: 'Select service & schedule time', icon: FiSmartphone },
-              { title: 'Get Matched', desc: 'We assign a top-rated pro', icon: FiUsers },
-              { title: 'Relax', desc: 'Enjoy high-quality service', icon: FiSmile },
-            ].map((step, i) => (
+            {(aboutConfig.steps || []).map((step, i) => (
               <div key={i} className="flex items-center p-4 border-b last:border-0 border-border-color relative">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-4 shadow-sm text-white font-semibold text-lg relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#B33A35] to-[#9E2E2A]" />
                   <span className="relative z-10">{i + 1}</span>
                 </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-dark-text">{step.title}</h4>
-                  <p className="text-xs text-secondary-text">{step.desc}</p>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-dark-text flex items-center gap-2">
+                    {step.title}
+                    {renderDynamicIcon(step.iconName, "w-3.5 h-3.5 opacity-60 text-dark-text")}
+                  </h4>
+                  <p className="text-xs text-secondary-text mt-0.5">{step.desc}</p>
                 </div>
               </div>
             ))}

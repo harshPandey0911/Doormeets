@@ -5,6 +5,7 @@ import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiP
 import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus } from '../../services/settingsService';
 import { cityService } from '../../services/cityService';
 import CityManagement from '../Cities';
+import DeletedAccountsDashboard from '../DeletedAccounts';
 import { toast } from 'react-hot-toast';
 
 const AdminSettings = () => {
@@ -66,6 +67,29 @@ const AdminSettings = () => {
     supportWhatsapp: ''
   });
   const [supportLoading, setSupportLoading] = useState(false);
+
+  // About Page Settings State
+  const [aboutSettings, setAboutSettings] = useState({
+    title: 'Welcome to Doormeets',
+    subtitle: 'Your trusted partner for premium home and personal care services.',
+    happyCustomers: '10K+',
+    servicePartners: '500+',
+    appRating: '4.8',
+    mission: 'Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.',
+    logoUrl: '',
+    features: [
+      { title: 'Expert Providers', description: 'Verified professionals for all your needs', iconName: 'FiUsers' },
+      { title: 'Safe & Secure', description: 'Your safety is our top priority', iconName: 'FiShield' },
+      { title: 'On-Time Service', description: 'Punctual delivery at your convenience', iconName: 'FiClock' },
+      { title: 'Quality Assured', description: 'Service with 100% satisfaction guarantee', iconName: 'FiAward' }
+    ],
+    steps: [
+      { title: 'Book Details', desc: 'Select service & schedule time', iconName: 'FiSmartphone' },
+      { title: 'Get Matched', desc: 'We assign a top-rated pro', iconName: 'FiUsers' },
+      { title: 'Relax', desc: 'Enjoy high-quality service', iconName: 'FiSmile' }
+    ]
+  });
+  const [aboutLoading, setAboutLoading] = useState(false);
 
   const [profile, setProfile] = useState({
     name: '',
@@ -174,7 +198,29 @@ const AdminSettings = () => {
             supportPhone: res.settings.supportPhone || '',
             supportWhatsapp: res.settings.supportWhatsapp || ''
           });
-
+          // Load about settings
+          if (res.settings.aboutPageConfig) {
+            setAboutSettings({
+              title: res.settings.aboutPageConfig.title || 'Welcome to Doormeets',
+              subtitle: res.settings.aboutPageConfig.subtitle || 'Your trusted partner for premium home and personal care services.',
+              happyCustomers: res.settings.aboutPageConfig.happyCustomers || '10K+',
+              servicePartners: res.settings.aboutPageConfig.servicePartners || '500+',
+              appRating: res.settings.aboutPageConfig.appRating || '4.8',
+              mission: res.settings.aboutPageConfig.mission || 'Doormeets is dedicated to revolutionizing how you experience home services. We connect you with top-tier professionals to deliver safe, reliable, and high-quality services right at your doorstep. We believe in making life simpler, one service at a time.',
+              logoUrl: res.settings.aboutPageConfig.logoUrl || '',
+              features: res.settings.aboutPageConfig.features || [
+                { title: 'Expert Providers', description: 'Verified professionals for all your needs', iconName: 'FiUsers' },
+                { title: 'Safe & Secure', description: 'Your safety is our top priority', iconName: 'FiShield' },
+                { title: 'On-Time Service', description: 'Punctual delivery at your convenience', iconName: 'FiClock' },
+                { title: 'Quality Assured', description: 'Service with 100% satisfaction guarantee', iconName: 'FiAward' }
+              ],
+              steps: res.settings.aboutPageConfig.steps || [
+                { title: 'Book Details', desc: 'Select service & schedule time', iconName: 'FiSmartphone' },
+                { title: 'Get Matched', desc: 'We assign a top-rated pro', iconName: 'FiUsers' },
+                { title: 'Relax', desc: 'Enjoy high-quality service', iconName: 'FiSmile' }
+              ]
+            });
+          }
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -334,6 +380,26 @@ const AdminSettings = () => {
       toast.error('Failed to update support settings');
     } finally {
       setSupportLoading(false);
+    }
+  };
+
+  // Handle about settings change
+  const handleAboutChange = (e) => {
+    const { name, value } = e.target;
+    setAboutSettings(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Save about settings
+  const handleAboutSave = async (e) => {
+    e.preventDefault();
+    setAboutLoading(true);
+    try {
+      await updateSettings({ aboutPageConfig: aboutSettings });
+      toast.success('About page settings updated');
+    } catch (error) {
+      toast.error('Failed to update about page settings');
+    } finally {
+      setAboutLoading(false);
     }
   };
 
@@ -514,6 +580,29 @@ const AdminSettings = () => {
         </div>
       )}
 
+      {/* About Page Settings Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('about')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-pink-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-pink-100 transition-colors">
+            <FiFileText className="w-6 h-6 text-pink-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">About Page</h3>
+          <p className="text-sm text-gray-500">Configure dynamically the "Welcome to Doormeets" about section texts and stats</p>
+        </div>
+      )}
+
+      {/* Deleted Accounts Dashboard Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('deleted')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
+            <FiTrash2 className="w-6 h-6 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Deleted Accounts</h3>
+          <p className="text-sm text-gray-500">View deleted Users, Vendors, Workers, and Shop Owners and inspect their history</p>
+        </div>
+      )}
 
       {/* SOS Alerts Settings Card */}
       <div onClick={() => navigate('/admin/sos-alerts')}
@@ -945,11 +1034,186 @@ const AdminSettings = () => {
           )
         }
 
+        {/* About Page Settings View */}
+        {
+          activeView === 'about' && (
+            <motion.div key="about" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
+              className="max-w-3xl mx-auto bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-pink-100 rounded-lg">
+                  <FiFileText className="w-5 h-5 text-pink-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800">About Page Config</h2>
+                  <p className="text-xs text-gray-500">Customize the 'Welcome to Doormeets' screen contents</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleAboutSave} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Hero Title</label>
+                  <input type="text" name="title" value={aboutSettings.title} onChange={handleAboutChange} required
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all font-bold text-gray-800" />
+                  <p className="text-[10px] text-gray-400 mt-1">Hint: Use the word "Doormeets" inside to apply the signature red gradient styling</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Hero Subtitle</label>
+                  <input type="text" name="subtitle" value={aboutSettings.subtitle} onChange={handleAboutChange} required
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-gray-700" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Custom Logo Image URL (Optional)</label>
+                  <input type="text" name="logoUrl" value={aboutSettings.logoUrl || ''} onChange={handleAboutChange}
+                    placeholder="e.g. https://domain.com/logo.png (leave blank for default app logo)"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm text-gray-800" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Happy Customers Stat</label>
+                    <input type="text" name="happyCustomers" value={aboutSettings.happyCustomers} onChange={handleAboutChange} required
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all font-mono font-bold text-center" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Service Partners Stat</label>
+                    <input type="text" name="servicePartners" value={aboutSettings.servicePartners} onChange={handleAboutChange} required
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all font-mono font-bold text-center" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">App Rating Stat</label>
+                    <input type="text" name="appRating" value={aboutSettings.appRating} onChange={handleAboutChange} required
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all font-mono font-bold text-center" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Our Mission Statement</label>
+                  <textarea name="mission" value={aboutSettings.mission} onChange={handleAboutChange} required rows="4"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm text-gray-600 leading-relaxed resize-none" />
+                </div>
+
+                {/* Dynamic Features Configuration */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Why Choose Us Features (4 items)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {aboutSettings.features?.map((feat, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                        <span className="text-xs font-bold text-pink-600 uppercase">Feature #{idx + 1}</span>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Title</label>
+                          <input type="text" 
+                            value={feat.title} 
+                            onChange={(e) => {
+                              const newFeats = [...aboutSettings.features];
+                              newFeats[idx].title = e.target.value;
+                              setAboutSettings(prev => ({ ...prev, features: newFeats }));
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none focus:border-pink-500 text-gray-800 font-medium" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Description</label>
+                          <input type="text" 
+                            value={feat.description} 
+                            onChange={(e) => {
+                              const newFeats = [...aboutSettings.features];
+                              newFeats[idx].description = e.target.value;
+                              setAboutSettings(prev => ({ ...prev, features: newFeats }));
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none focus:border-pink-500 text-gray-700" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Feather Icon Name</label>
+                          <input type="text" 
+                            value={feat.iconName} 
+                            placeholder="e.g. FiUsers, FiShield, FiClock, FiAward"
+                            onChange={(e) => {
+                              const newFeats = [...aboutSettings.features];
+                              newFeats[idx].iconName = e.target.value;
+                              setAboutSettings(prev => ({ ...prev, features: newFeats }));
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none focus:border-pink-500 font-mono text-pink-600 font-bold" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Dynamic How We Work Steps Configuration */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">How We Work Steps (3 items)</h3>
+                  <div className="space-y-3">
+                    {aboutSettings.steps?.map((step, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50 border border-gray-200 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="col-span-3 -mb-1 flex justify-between">
+                          <span className="text-xs font-bold text-pink-600 uppercase">Step #{idx + 1}</span>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Step Title</label>
+                          <input type="text" 
+                            value={step.title} 
+                            onChange={(e) => {
+                              const newSteps = [...aboutSettings.steps];
+                              newSteps[idx].title = e.target.value;
+                              setAboutSettings(prev => ({ ...prev, steps: newSteps }));
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none focus:border-pink-500 text-gray-800 font-medium" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Description</label>
+                          <input type="text" 
+                            value={step.desc} 
+                            onChange={(e) => {
+                              const newSteps = [...aboutSettings.steps];
+                              newSteps[idx].desc = e.target.value;
+                              setAboutSettings(prev => ({ ...prev, steps: newSteps }));
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none focus:border-pink-500 text-gray-700" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-400 uppercase mb-1">Feather Icon Name</label>
+                          <input type="text" 
+                            value={step.iconName} 
+                            placeholder="e.g. FiSmartphone, FiUsers, FiSmile"
+                            onChange={(e) => {
+                              const newSteps = [...aboutSettings.steps];
+                              newSteps[idx].iconName = e.target.value;
+                              setAboutSettings(prev => ({ ...prev, steps: newSteps }));
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none focus:border-pink-500 font-mono text-pink-600 font-bold" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-50">
+                  <button type="submit" disabled={aboutLoading}
+                    className="px-8 py-3 bg-pink-600 text-white rounded-xl font-semibold hover:bg-pink-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-pink-100 transition-all">
+                    {aboutLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-5 h-5" />}
+                    Save Config
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )
+        }
+
         {/* City Management View */}
         {
           activeView === 'cities' && (
             <motion.div key="cities" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
               <CityManagement />
+            </motion.div>
+          )
+        }
+
+        {/* Deleted Accounts Dashboard View */}
+        {
+          activeView === 'deleted' && (
+            <motion.div key="deleted" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+              <DeletedAccountsDashboard />
             </motion.div>
           )
         }

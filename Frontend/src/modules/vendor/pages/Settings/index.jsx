@@ -98,17 +98,30 @@ const Settings = () => {
     }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      // Clear all vendor data
-      localStorage.removeItem('vendorProfile');
-      localStorage.removeItem('vendorSettings');
-      localStorage.removeItem('vendorWorkers');
-      localStorage.removeItem('vendorAcceptedBookings');
-      localStorage.removeItem('vendorWallet');
-      localStorage.removeItem('vendorTransactions');
-      // Navigate to home
-      navigate('/');
+      const toastId = toast.loading('Deleting your account...');
+      try {
+        await vendorAuthService.deleteProfile();
+        toast.success('Account deleted successfully', { id: toastId });
+
+        // Clear all vendor data
+        localStorage.removeItem('vendorProfile');
+        localStorage.removeItem('vendorSettings');
+        localStorage.removeItem('vendorWorkers');
+        localStorage.removeItem('vendorAcceptedBookings');
+        localStorage.removeItem('vendorWallet');
+        localStorage.removeItem('vendorTransactions');
+        localStorage.removeItem('vendorAccessToken');
+        localStorage.removeItem('vendorRefreshToken');
+        localStorage.removeItem('vendorData');
+
+        // Navigate to login
+        navigate('/vendor/login');
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to delete account. Please try again later.', { id: toastId });
+      }
     }
   };
 
