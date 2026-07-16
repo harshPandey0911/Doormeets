@@ -146,7 +146,8 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity, filterTemplateId }) => 
         mappedCategories = categoriesRes.categories.map(cat => ({
           id: getStrId(cat.id || cat._id) || "",
           title: cat.title,
-          slug: cat.slug
+          slug: cat.slug,
+          templateId: cat.templateId ? getStrId(cat.templateId) : null
         }));
       }
 

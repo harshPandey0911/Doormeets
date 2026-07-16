@@ -7,6 +7,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [inviteLinkText, setInviteLinkText] = useState('');
 
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -18,6 +19,9 @@ const Dashboard = () => {
       });
       if (response.data.success) {
         setData(response.data.data);
+        if (response.data.data?.inviteLink) {
+          setInviteLinkText(response.data.data.inviteLink);
+        }
       } else {
         setError('Failed to fetch dashboard data.');
       }
@@ -34,31 +38,30 @@ const Dashboard = () => {
   }, []);
 
   const handleCopy = () => {
-    if (data?.inviteLink) {
-      navigator.clipboard.writeText(data.inviteLink);
+    if (inviteLinkText) {
+      navigator.clipboard.writeText(inviteLinkText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   const handleShare = async () => {
-    if (!data?.inviteLink) return;
+    if (!inviteLinkText) return;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join Doormeets as Vendor',
           text: 'Hey, register on Doormeets using my referral link and start receiving customer bookings!',
-          url: data.inviteLink
+          url: inviteLinkText
         });
       } catch (err) {
-        // Share sheet cancelled or failed
         if (err.name !== 'AbortError') {
           console.error('Error sharing link:', err);
         }
       }
     } else {
-      const text = `Join Doormeets as Vendor! Register using my link to get customer bookings: ${data.inviteLink}`;
+      const text = `Join Doormeets as Vendor! Register using my link to get customer bookings: ${inviteLinkText}`;
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
       window.open(whatsappUrl, '_blank');
     }
@@ -148,8 +151,8 @@ const Dashboard = () => {
             <div className="flex space-x-2">
               <input
                 type="text"
-                readOnly
-                value={data?.inviteLink || ''}
+                value={inviteLinkText}
+                onChange={(e) => setInviteLinkText(e.target.value)}
                 className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none text-gray-600 truncate"
               />
               <button

@@ -12,7 +12,7 @@ const getAllBrands = async (req, res) => {
     const { status, categoryId, cityId } = req.query;
 
     // Build query
-    const query = {};
+    const query = { status: { $ne: 'deleted' } };
     if (status) query.status = status;
     if (categoryId) query.categoryIds = categoryId;
     if (cityId) {
@@ -24,7 +24,7 @@ const getAllBrands = async (req, res) => {
     }
 
     const brands = await Brand.find(query)
-      // .populate('categoryIds', 'title slug')
+      .populate('categoryIds', 'title slug status')
       .select('-__v')
       .sort({ order: 1, createdAt: -1 })
       .lean();
@@ -46,14 +46,20 @@ const getAllBrands = async (req, res) => {
       return obj;
     };
 
+    // Filter out brands that have no active categories
+    const activeBrands = brands.filter(brand => {
+      const validCats = (Array.isArray(brand.categoryIds) ? brand.categoryIds : []).filter(c => c && c.status !== 'deleted');
+      return validCats.length > 0;
+    });
+
     res.status(200).json({
       success: true,
-      count: brands.length,
-      brands: brands.map(brand => {
+      count: activeBrands.length,
+      brands: activeBrands.map(brand => {
         // Ensure categoryIds is an array of populated objects (or at least handle if populated correctly)
         // If populate worked, cat will be an object. If not, it might be an ID string/OID.
 
-        const validCats = (Array.isArray(brand.categoryIds) ? brand.categoryIds : []).filter(c => c);
+        const validCats = (Array.isArray(brand.categoryIds) ? brand.categoryIds : []).filter(c => c && c.status !== 'deleted');
 
         const catIds = validCats.map(cat => {
           if (cat._id) return cat._id.toString();

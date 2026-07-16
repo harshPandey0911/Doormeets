@@ -7,7 +7,7 @@ const AddVendor = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [professionId, setProfessionId] = useState('');
+  const [selectedProfessions, setSelectedProfessions] = useState([]);
   const [professions, setProfessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -29,8 +29,16 @@ const AddVendor = () => {
     fetchProfessions();
   }, []);
 
+  const handleRemoveProfession = (id) => {
+    setSelectedProfessions(selectedProfessions.filter(p => p._id !== id));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (selectedProfessions.length === 0) {
+      setError('Please select at least one profession.');
+      return;
+    }
     setLoading(true);
     setError('');
     setSuccess(false);
@@ -39,7 +47,12 @@ const AddVendor = () => {
       const token = localStorage.getItem('shopAccessToken');
       const response = await axios.post(
         `${API_URL}/shop/vendors/add`,
-        { name, phone, professionId },
+        { 
+          name, 
+          phone, 
+          professionIds: selectedProfessions.map(p => p._id),
+          professionId: selectedProfessions[0]?._id // backwards compatibility
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -47,7 +60,7 @@ const AddVendor = () => {
         setSuccess(true);
         setName('');
         setPhone('');
-        setProfessionId('');
+        setSelectedProfessions([]);
       } else {
         setError(response.data.message || 'Failed to onboard vendor.');
       }
@@ -125,28 +138,59 @@ const AddVendor = () => {
             </div>
           </div>
 
-          {/* Profession Dropdown */}
+          {/* Profession Dropdown / Multiple Select */}
           <div>
-            <label htmlFor="profession" className="block text-sm font-bold text-gray-700 mb-2">
-              Profession / Primary Skill
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              Profession / Skills (Select multiple)
             </label>
+            
+            {/* Selected Badges */}
+            {selectedProfessions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {selectedProfessions.map((prof) => (
+                  <span
+                    key={prof._id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full border border-blue-100"
+                  >
+                    {prof.name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveProfession(prof._id)}
+                      className="w-4.5 h-4.5 flex items-center justify-center rounded-full hover:bg-blue-200/60 text-blue-500 font-extrabold hover:text-blue-700 transition-colors cursor-pointer text-sm"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             <div className="relative rounded-2xl shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                 <MdBuild className="w-5 h-5" />
               </div>
               <select
                 id="profession"
-                required
-                value={professionId}
-                onChange={(e) => setProfessionId(e.target.value)}
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && !selectedProfessions.some(p => p._id === val)) {
+                    const prof = professions.find(p => p._id === val);
+                    if (prof) {
+                      setSelectedProfessions([...selectedProfessions, prof]);
+                    }
+                  }
+                }}
                 className="block w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer"
               >
                 <option value="">Select a profession...</option>
-                {professions.map((prof) => (
-                  <option key={prof._id} value={prof._id}>
-                    {prof.name}
-                  </option>
-                ))}
+                {professions
+                  .filter(prof => !selectedProfessions.some(p => p._id === prof._id))
+                  .map((prof) => (
+                    <option key={prof._id} value={prof._id}>
+                      {prof.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

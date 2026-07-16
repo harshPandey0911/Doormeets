@@ -25,10 +25,19 @@ exports.createSubCategory = async (req, res) => {
 
 exports.getAllSubCategories = async (req, res) => {
   try {
-    const subCategories = await SubCategory.find()
-      .populate('categoryId', 'title slug')
+    const query = {};
+    if (req.query.categoryId) {
+      query.categoryId = req.query.categoryId;
+    }
+
+    const subCategories = await SubCategory.find(query)
+      .populate('categoryId', 'title slug status')
       .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: subCategories });
+
+    // Filter out subcategories where parent category is deleted/soft-deleted or not found
+    const filteredSubCategories = subCategories.filter(sc => sc.categoryId && sc.categoryId.status !== 'deleted');
+
+    res.status(200).json({ success: true, data: filteredSubCategories });
   } catch (error) {
     console.error('Get subcategories error:', error);
     res.status(500).json({ success: false, message: 'Server error' });

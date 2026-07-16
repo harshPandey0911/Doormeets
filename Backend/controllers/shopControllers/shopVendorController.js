@@ -23,12 +23,25 @@ const addVendor = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Vendor with this phone number is already registered.' });
     }
 
-    // Process categories based on Profession
+    // Process categories based on Profession(s)
     let finalCategories = [];
-    if (professionId) {
-      const professionData = await Profession.findById(professionId);
-      if (professionData && professionData.categories && professionData.categories.length > 0) {
-        finalCategories = professionData.categories.map(c => c.toString());
+    const professionIdsToProcess = [];
+    if (req.body.professionIds && Array.isArray(req.body.professionIds)) {
+      professionIdsToProcess.push(...req.body.professionIds);
+    } else if (professionId) {
+      professionIdsToProcess.push(professionId);
+    }
+
+    if (professionIdsToProcess.length > 0) {
+      const professionDataList = await Profession.find({ _id: { $in: professionIdsToProcess } });
+      for (const professionData of professionDataList) {
+        if (professionData && professionData.categories && professionData.categories.length > 0) {
+          professionData.categories.forEach(c => {
+            if (!finalCategories.includes(c.toString())) {
+              finalCategories.push(c.toString());
+            }
+          });
+        }
       }
     }
 
@@ -58,7 +71,7 @@ const addVendor = async (req, res) => {
     const vendor = await Vendor.create({
       name,
       phone: cleanPhone,
-      professions: professionId ? [professionId] : [],
+      professions: professionIdsToProcess,
       categories: finalCategories,
       approvalStatus: 'pending',
       referredByShopOwner: req.user.id,

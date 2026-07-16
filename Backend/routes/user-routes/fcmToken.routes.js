@@ -20,7 +20,7 @@ const MAX_TOKENS = 10; // Maximum tokens per platform
 router.post('/save', authenticate, async (req, res) => {
   try {
     const { token, platform = 'web' } = req.body;
-    const userId = req.user._id;
+    const userId = req.userId || req.user._id || req.user.id;
 
     if (!token) {
       return res.status(400).json({ success: false, error: 'Token is required' });
@@ -97,7 +97,7 @@ router.post('/save', authenticate, async (req, res) => {
 router.delete('/remove', authenticate, async (req, res) => {
   try {
     const { token, platform = 'web' } = req.body;
-    const userId = req.user._id;
+    const userId = req.userId || req.user._id || req.user.id;
 
     if (!token) {
       return res.status(400).json({ success: false, error: 'Token is required' });
@@ -131,7 +131,7 @@ router.delete('/remove', authenticate, async (req, res) => {
  */
 router.delete('/remove-all', authenticate, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.userId || req.user._id || req.user.id;
     const { platform = 'web' } = req.body;
 
     // Clear only the specified platform's tokens
@@ -160,7 +160,7 @@ router.delete('/remove-all', authenticate, async (req, res) => {
  */
 router.post('/test', authenticate, async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.userId || req.user._id || req.user.id;
     const user = await User.findById(userId);
 
     if (!user) {
