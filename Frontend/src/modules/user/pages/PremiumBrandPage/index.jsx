@@ -14,6 +14,7 @@ import { bookingService } from '../../../../services/bookingService';
 import { toast } from 'react-hot-toast';
 import api from '../../../../services/api';
 import { apiCache } from '../../../../utils/apiCache';
+import { useSocket } from '../../../../context/SocketContext';
 
 const pastelPalettes = [
   { bg: '#FEFBE8', border: '#FEF08A', text: '#854D0E', darkBg: '#59522B', darkBorder: '#7A703C', darkText: '#FEF08A' }, // Yellow

@@ -15,6 +15,7 @@ import { publicCatalogService } from '../../../../services/catalogService';
 import { useTheme } from '../../../../context/ThemeContext';
 import api from '../../../../services/api';
 import { apiCache } from '../../../../utils/apiCache';
+import { useSocket } from '../../../../context/SocketContext';
 
 const getServiceDummyImage = (title) => {
   const t = (title || '').toLowerCase();
