@@ -465,6 +465,45 @@ const acceptBooking = async (req, res) => {
       calculatedVendorShare = parseFloat((calculatedVendorShare + vendorInstantMarkupShare).toFixed(2));
     }
 
+    // Wallet deduction for accepting booking
+    const Vendor = require('../../models/Vendor');
+    const vendorDoc = await Vendor.findById(vendorId);
+    if (!vendorDoc) {
+      return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
+    }
+
+    const acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+    if (acceptanceFee > 0) {
+      const vendorEarnings = vendorDoc.wallet?.earnings || 0;
+      if (vendorEarnings < acceptanceFee) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient wallet balance. You need at least ₹${acceptanceFee} in your wallet to accept this booking.`
+        });
+      }
+
+      const balanceBefore = vendorEarnings;
+      const balanceAfter = balanceBefore - acceptanceFee;
+
+      vendorDoc.wallet = vendorDoc.wallet || {};
+      vendorDoc.wallet.earnings = Number(balanceAfter.toFixed(2));
+      await vendorDoc.save();
+
+      // Create transaction log
+      const Transaction = require('../../models/Transaction');
+      await Transaction.create({
+        vendorId: vendorId,
+        bookingId: booking._id,
+        type: 'booking_acceptance',
+        amount: acceptanceFee,
+        status: 'completed',
+        paymentMethod: 'wallet',
+        description: `Deduction for accepting booking #${booking.bookingNumber}`,
+        balanceBefore,
+        balanceAfter
+      });
+    }
+
     // Update booking properties
     booking.vendorId = vendorId;
     booking.acceptedAt = new Date();
@@ -520,7 +559,6 @@ const acceptBooking = async (req, res) => {
     // Booking successfully accepted by THIS vendor
 
     // Update vendor availability to ON_JOB / RESERVED depending on bookingType
-    const Vendor = require('../../models/Vendor');
     if (booking.bookingType === 'instant') {
       await Vendor.findByIdAndUpdate(vendorId, {
         availability: 'ON_JOB',

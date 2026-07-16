@@ -1211,7 +1211,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         codEnabled: config.codEnabled ?? true,
         codAdvanceAmount: config.codAdvanceAmount ?? 0,
         vendorPayoutBase: config.vendorPayoutBase ?? 0,
-        vendorPayoutExtra: config.vendorPayoutExtra ?? 0
+        vendorPayoutExtra: config.vendorPayoutExtra ?? 0,
+        vendorAcceptanceFee: config.vendorAcceptanceFee ?? 0
       });
     } else {
       setEditingPricingConfigIdx(null);
@@ -1237,7 +1238,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         codEnabled: true,
         codAdvanceAmount: 0,
         vendorPayoutBase: 0,
-        vendorPayoutExtra: 0
+        vendorPayoutExtra: 0,
+        vendorAcceptanceFee: 0
       });
     }
     setIsPricingModalOpen(true);
@@ -1364,7 +1366,8 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       vendorTdsPercentage: 0,
       commissionPercentage: Number(globalSettings?.commissionPercentage ?? 25),
       codEnabled: pricingForm.codEnabled !== false,
-      codAdvanceAmount: Number(pricingForm.codAdvanceAmount || 0)
+      codAdvanceAmount: Number(pricingForm.codAdvanceAmount || 0),
+      vendorAcceptanceFee: Number(pricingForm.vendorAcceptanceFee || 0)
     };
 
     if (currentService) {
@@ -3161,6 +3164,26 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                               className="h-4 w-4 accent-green-600"
                             />
                             <label htmlFor="configIsActiveToggle" className="text-xs font-bold text-gray-600">Active configuration</label>
+                          </div>
+                        </div>
+
+                        {/* Vendor Wallet Acceptance Fee Section */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-3 mt-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-red-600 uppercase mb-1">Deduction on Acceptance (₹) *</label>
+                            <input
+                              type="number"
+                              min="0"
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-bold text-red-700 outline-none focus:ring-2 focus:ring-red-400"
+                              value={pricingForm.vendorAcceptanceFee === 0 ? '' : pricingForm.vendorAcceptanceFee}
+                              onChange={e => {
+                                const val = parseFloat(e.target.value);
+                                setPricingForm({ ...pricingForm, vendorAcceptanceFee: isNaN(val) ? 0 : Math.max(0, val) });
+                              }}
+                              placeholder="e.g. 20"
+                              required
+                            />
+                            <p className="text-[9px] text-gray-400 mt-1 font-semibold">Deducted from vendor wallet upon accepting booking.</p>
                           </div>
                         </div>
 

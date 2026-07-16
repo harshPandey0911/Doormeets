@@ -129,6 +129,19 @@ const AddressManagement = () => {
       });
     }
 
+    // Robust text-parsing fallback for city if Google Places API is not loaded/fails
+    if (!city) {
+      const addrString = ((selectedLocation && selectedLocation.address) || address || searchQuery || '').toLowerCase();
+      if (addrString.includes('indore')) city = 'Indore';
+      else if (addrString.includes('ujjain')) city = 'Ujjain';
+      else if (addrString.includes('bhopal')) city = 'Bhopal';
+      else if (addrString.includes('dewas')) city = 'Dewas';
+      else city = 'Indore'; // Default fallback city
+    }
+    if (!state) {
+      state = 'Madhya Pradesh';
+    }
+
     // We can also re-use existing logic from updateProfile controller which expects an object
     // consistent with what EditProfile sends.
     const addrData = {
@@ -137,9 +150,9 @@ const AddressManagement = () => {
       addressLine2: addressLine2,
       city: city,
       state: state,
-      pincode: pincode,
-      lat: selectedLocation ? selectedLocation.lat : 22.7196,
-      lng: selectedLocation ? selectedLocation.lng : 75.8577
+      pincode: pincode || '452001',
+      lat: selectedLocation ? (selectedLocation.lat || 22.7196) : 22.7196,
+      lng: selectedLocation ? (selectedLocation.lng || 75.8577) : 75.8577
     };
 
     try {

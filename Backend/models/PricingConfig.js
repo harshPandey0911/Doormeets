@@ -147,6 +147,12 @@ const pricingConfigSchema = new mongoose.Schema({
     type: Number,
     default: 0, // Fixed ₹ advance for COD (0 = no advance required)
     min: 0
+  },
+  // Wallet deduction amount when vendor accepts booking
+  vendorAcceptanceFee: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, {
   timestamps: true
