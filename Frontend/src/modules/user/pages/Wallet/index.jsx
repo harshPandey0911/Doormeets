@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiChevronRight, FiLoader } from 'react-icons/fi';
+import { FiArrowLeft, FiChevronRight, FiLoader, FiX, FiGift, FiPlus, FiMinus, FiRotateCcw } from 'react-icons/fi';
 import { MdAccountBalanceWallet } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 import { walletService } from '../../../../services/walletService';
 import { voucherService } from '../../../../services/voucherService';
+import { bookingService } from '../../../../services/bookingService';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import NotificationBell from '../../components/common/NotificationBell';
 import { themeColors } from '../../../../theme';
@@ -14,6 +15,9 @@ const Wallet = () => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [transactions, setTransactions] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [loyaltyHistory, setLoyaltyHistory] = useState([]);
+  const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Voucher Redemption states
@@ -24,9 +28,10 @@ const Wallet = () => {
     const loadWalletData = async () => {
       try {
         setLoading(true);
-        const [balanceResponse, transactionsResponse] = await Promise.all([
+        const [balanceResponse, transactionsResponse, bookingsResponse] = await Promise.all([
           walletService.getBalance(),
-          walletService.getTransactions()
+          walletService.getTransactions(),
+          bookingService.getUserBookings({ limit: 100 }).catch(() => ({ success: false, data: [] }))
         ]);
 
         if (balanceResponse.success) {
@@ -37,8 +42,60 @@ const Wallet = () => {
         if (transactionsResponse.success) {
           setTransactions(transactionsResponse.data || []);
         }
+
+        if (bookingsResponse && bookingsResponse.success) {
+          const userBookings = bookingsResponse.data || [];
+          setBookings(userBookings);
+
+          // Construct Loyalty History Ledger
+          const history = [];
+          userBookings.forEach(booking => {
+            // 1. Earned Loyalty Points upon booking completion
+            if (booking.loyaltyPointsEarned > 0) {
+              history.push({
+                id: `earn-${booking._id || booking.id}`,
+                type: 'earn',
+                amount: booking.loyaltyPointsEarned,
+                description: `Earned from completing booking #${booking.bookingNumber}`,
+                date: booking.completedAt || booking.updatedAt || booking.createdAt,
+                bookingNumber: booking.bookingNumber,
+                serviceName: booking.serviceName
+              });
+            }
+
+            // 2. Redeemed Loyalty Points during checkout
+            if (booking.loyaltyPointsRedeemed > 0) {
+              history.push({
+                id: `redeem-${booking._id || booking.id}`,
+                type: 'redeem',
+                amount: booking.loyaltyPointsRedeemed,
+                description: `Redeemed at checkout for booking #${booking.bookingNumber}`,
+                date: booking.createdAt,
+                bookingNumber: booking.bookingNumber,
+                serviceName: booking.serviceName
+              });
+            }
+
+            // 3. Refunded Loyalty Points on cancellation
+            if (booking.loyaltyPointsRefunded && booking.loyaltyPointsRedeemed > 0) {
+              history.push({
+                id: `refund-${booking._id || booking.id}`,
+                type: 'refund',
+                amount: booking.loyaltyPointsRedeemed,
+                description: `Refunded for cancelled booking #${booking.bookingNumber}`,
+                date: booking.updatedAt || booking.createdAt,
+                bookingNumber: booking.bookingNumber,
+                serviceName: booking.serviceName
+              });
+            }
+          });
+
+          // Sort by date descending
+          history.sort((a, b) => new Date(b.date) - new Date(a.date));
+          setLoyaltyHistory(history);
+        }
       } catch (error) {
-        toast.error('Failed to load wallet data');
+        toast.error('Failed to load wallet and loyalty details');
       } finally {
         setLoading(false);
       }
@@ -163,16 +220,22 @@ const Wallet = () => {
             </div>
 
             {/* Loyalty Points Card */}
-            <div className="bg-gradient-to-r from-teal-900 to-emerald-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-12 -mt-12"></div>
+            <div 
+              onClick={() => setShowLoyaltyModal(true)}
+              className="bg-gradient-to-r from-teal-900 to-emerald-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.99] transition-all group"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform"></div>
               <div className="relative z-10">
                 <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <span>🎁</span> Loyalty Points
                 </p>
-                <h2 className="text-3xl font-extrabold text-emerald-100">
+                <h2 className="text-3xl font-extrabold text-emerald-100 flex items-baseline gap-2">
                   {loyaltyPoints.toLocaleString('en-IN')} <span className="text-sm font-normal text-emerald-300">points</span>
                 </h2>
-                <p className="text-[10px] text-emerald-200 mt-2 font-medium">1 point = ₹1 discount at checkout</p>
+                <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/10">
+                  <span className="text-[10px] text-emerald-200 font-medium">1 point = ₹1 discount at checkout</span>
+                  <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-emerald-100 font-bold group-hover:bg-white/20 transition-colors">History →</span>
+                </div>
               </div>
             </div>
           </div>
@@ -256,10 +319,7 @@ const Wallet = () => {
                     // User requested cash_collected in GREEN
                     const signToUse = ['credit', 'refund', 'topup', 'referral', 'cashback'].includes(item.type) ? '+' : '';
                     typeStyle = { color: 'text-green-600', bg: 'bg-green-50', icon: '↓', sign: signToUse };
-                    // Note: removed '+' sign for cash_collected to be neutral or just distinct? 
-                    // Usually 'cash_collected' means user GAVE money. 
-                    // But user wants it green.
-                  } else if (['payment', 'withdrawal', 'debit'].includes(item.type)) {
+                  } else if (['payment', 'debit', 'withdrawal'].includes(item.type)) {
                     typeStyle = { color: 'text-red-600', bg: 'bg-red-50', icon: '↑', sign: '-' };
                   } else if (['penalty', 'fine', 'cancellation_fee'].includes(item.type)) {
                     typeStyle = { color: 'text-orange-600', bg: 'bg-orange-50', icon: '!', sign: '-' };
@@ -312,6 +372,104 @@ const Wallet = () => {
           </div>
         </main>
       </div>
+
+      {/* Loyalty Points History Modal */}
+      {showLoyaltyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[85vh] animate-slideUp">
+            {/* Modal Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-teal-900 to-emerald-800 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎁</span>
+                <div>
+                  <h3 className="font-extrabold text-lg leading-tight">Loyalty Points History</h3>
+                  <p className="text-xs text-emerald-250 mt-0.5">Current Balance: <strong className="text-white text-sm">{loyaltyPoints}</strong> points</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowLoyaltyModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center"
+              >
+                <FiX className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {loyaltyHistory.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FiGift className="w-8 h-8 text-emerald-600" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-800">No loyalty history found</p>
+                  <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">Complete services to earn loyalty points which can be redeemed at checkout.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {loyaltyHistory.map((item) => {
+                    const isCredit = item.type === 'earn' || item.type === 'refund';
+                    const amountSign = isCredit ? '+' : '-';
+                    const amountColor = isCredit ? 'text-green-600' : 'text-amber-600';
+                    const badgeBg = isCredit ? 'bg-green-50' : 'bg-amber-50';
+
+                    const itemDate = new Date(item.date).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+
+                    return (
+                      <div 
+                        key={item.id}
+                        className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-start gap-3 hover:border-gray-250 transition-colors"
+                      >
+                        <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center ${badgeBg} ${amountColor}`}>
+                          {item.type === 'earn' && <FiPlus className="w-4 h-4" />}
+                          {item.type === 'redeem' && <FiMinus className="w-4 h-4" />}
+                          {item.type === 'refund' && <FiRotateCcw className="w-4 h-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-900 leading-snug">
+                            {item.description}
+                          </p>
+                          {item.serviceName && (
+                            <p className="text-xs text-gray-600 mt-1 font-medium italic">
+                              Service: {item.serviceName}
+                            </p>
+                          )}
+                          <p className="text-[10px] text-gray-400 mt-1 font-medium">
+                            {itemDate}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`text-base font-extrabold ${amountColor}`}>
+                            {amountSign}{item.amount}
+                          </p>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${badgeBg} ${amountColor}`}>
+                            {item.type}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setShowLoyaltyModal(false)}
+                className="px-5 py-2.5 bg-black hover:bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all"
+              >
+                Close Ledger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

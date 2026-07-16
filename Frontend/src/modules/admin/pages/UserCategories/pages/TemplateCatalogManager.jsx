@@ -112,14 +112,10 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
     { id: "categories", label: "Categories", icon: FiGrid },
     { id: "subcategories", label: "Subcategories", icon: FiList },
     { id: "brands", label: "Brands", icon: FiTag },
-    { id: "services", label: "Services", icon: FiSliders },
-    { id: "pricing", label: "Price Matrix", icon: FiDollarSign }
+    { id: "services", label: "Services", icon: FiSliders }
   ].filter(tab => {
     if (template.code === "IMAGE_CONSULTANT") {
-      return tab.id !== "brands" && tab.id !== "subcategories" && tab.id !== "pricing";
-    }
-    if (template.code === "SERVICE_PAGE") {
-      return tab.id !== "pricing";
+      return tab.id !== "brands" && tab.id !== "subcategories";
     }
     return true;
   });

@@ -416,10 +416,17 @@ export default function BookingDetails() {
                 <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
               </div>
 
-              <div>
+              <div style="margin-bottom: 12px;">
                 <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Place of Supply</span>
                 <span style="font-size: 12px; color: #111;">${stateVal} ${custStateCode}</span>
               </div>
+
+              ${booking.userGstNumber ? `
+              <div>
+                <span style="color: #666; display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Customer GSTIN</span>
+                <span style="font-size: 12px; font-weight: bold; color: #111;">${booking.userGstNumber}</span>
+              </div>
+              ` : ''}
             </td>
             <td style="width: 50%; vertical-align: top; padding: 15px 0 15px 20px;">
               <div style="color: #000; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px;">DELIVERY SERVICE PROVIDER</div>
