@@ -197,6 +197,30 @@ const ManageAddresses = () => {
     }
   };
 
+  const handleSetDefault = async (addressId) => {
+    try {
+      const updatedAddresses = addresses.map(addr => ({
+        ...addr,
+        isDefault: (addr._id || addr.id) === addressId
+      }));
+
+      toast.loading('Setting default address...');
+      const response = await userAuthService.updateProfile({ addresses: updatedAddresses });
+      toast.dismiss();
+
+      if (response.success) {
+        setAddresses(response.user.addresses || updatedAddresses);
+        setShowMenu(null);
+        toast.success('Default address updated!');
+      } else {
+        toast.error('Failed to update default address');
+      }
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Something went wrong');
+    }
+  };
+
   const handleMenuToggle = (addressId) => {
     setShowMenu(showMenu === addressId ? null : addressId);
   };
@@ -293,6 +317,15 @@ const ManageAddresses = () => {
                     <FiTrash2 className="w-4 h-4" />
                     <span className="text-sm">Delete</span>
                   </button>
+                  {!address.isDefault && (
+                    <button
+                      onClick={() => handleSetDefault(address._id || address.id)}
+                      className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-800/10 transition-colors text-left text-teal-600 cursor-pointer font-semibold border-t border-border-color"
+                    >
+                      <FiMapPin className="w-4 h-4" />
+                      <span className="text-sm">Set Default</span>
+                    </button>
+                  )}
                 </div>
               )}
 

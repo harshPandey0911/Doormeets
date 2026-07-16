@@ -41,6 +41,7 @@ import QuoteApproval from '../PaintingConsultation/QuoteApproval';
 import { getMyConsultations } from '../../services/paintingConsultationService';
 import { apiCache } from '../../../../utils/apiCache';
 import { useSocket } from '../../../../context/SocketContext';
+import { userAuthService } from '../../../../services/authService';
 
 
 
@@ -278,6 +279,39 @@ const Home = () => {
     // Register FCM token for user to receive push notifications
     registerFCMToken('user', true).catch(err => {/* Silent fail */ });
   }, []);
+
+  // Sync profile default address on mount
+  useEffect(() => {
+    const syncProfileAddress = async () => {
+      try {
+        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        if (!token) return;
+        
+        const response = await userAuthService.getProfile();
+        if (response.success && response.user?.addresses?.length > 0) {
+          const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
+          const formatted = `${defaultAddr.addressLine2 ? defaultAddr.addressLine2 + ', ' : ''}${defaultAddr.addressLine1}`;
+          
+          setAddress(formatted);
+          localStorage.setItem('currentAddress', formatted);
+          
+          if (defaultAddr.lat && defaultAddr.lng) {
+            localStorage.setItem('user_lat', defaultAddr.lat);
+            localStorage.setItem('user_lng', defaultAddr.lng);
+          }
+          
+          if (defaultAddr.city) {
+            setDetectedCityName(defaultAddr.city);
+            localStorage.setItem('currentCity', defaultAddr.city);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync profile address on home:', err);
+      }
+    };
+    
+    syncProfileAddress();
+  }, [cities]);
 
   const [categories, setCategories] = useState(() => {
     const cityId = currentCity?._id || currentCity?.id || localStorage.getItem('selectedCityId');
