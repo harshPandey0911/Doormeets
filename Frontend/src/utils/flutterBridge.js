@@ -123,7 +123,7 @@ class FlutterBridge {
           },
           {
             enableHighAccuracy: false,
-            timeout: 30000,
+            timeout: 5000,
             maximumAge: 300000
           }
         );

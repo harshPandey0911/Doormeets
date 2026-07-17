@@ -23,7 +23,9 @@ const {
   getPendingBookings,
   reconfirmBooking,
   cancelAcceptedBooking,
-  requestCancelBooking
+  requestCancelBooking,
+  acceptReschedule,
+  rejectReschedule
 } = require('../../controllers/bookingControllers/vendorBookingController');
 
 // Validation rules
@@ -57,6 +59,8 @@ router.post('/:id/accept', authenticate, isVendor, acceptBooking);
 router.post('/:id/reject', authenticate, isVendor, rejectBookingValidation, rejectBooking);
 router.post('/:id/cancel-accepted', authenticate, isVendor, cancelAcceptedBooking);
 router.post('/:id/request-cancel', authenticate, isVendor, requestCancelBooking);
+router.post('/:id/reschedule/accept', authenticate, isVendor, acceptReschedule);
+router.post('/:id/reschedule/reject', authenticate, isVendor, rejectReschedule);
 router.post('/:id/assign-worker', authenticate, isVendor, assignWorkerValidation, assignWorker);
 router.put('/:id/status', authenticate, isVendor, updateStatusValidation, updateBookingStatus);
 router.post('/:id/notes', authenticate, isVendor, addNotesValidation, addVendorNotes);
