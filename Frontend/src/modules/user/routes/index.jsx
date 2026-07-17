@@ -159,8 +159,13 @@ const UserRoutes = () => {
   const isBookingDetailsPage = location.pathname.match(/^\/user\/booking\/[a-zA-Z0-9]+(\/track)?$/);
   const isBookingConfirmationPage = location.pathname.includes('/booking-confirmation');
 
-  // Check if we are on public pages
   const isPublicPage = location.pathname.includes('/login') || location.pathname.includes('/signup') || location.pathname === '/user' || location.pathname === '/user/';
+
+  const hasSeenWelcome = localStorage.getItem('hasSeenWelcome') === 'true';
+  const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+  if ((location.pathname === '/user' || location.pathname === '/user/') && hasSeenWelcome) {
+    return <Navigate to={token ? "/user/home" : "/user/login"} replace />;
+  }
 
   return (
     <ThemeProvider>

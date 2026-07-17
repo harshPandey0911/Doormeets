@@ -72,7 +72,7 @@ const Checkout = () => {
   const [selectedTime, setSelectedTime] = useState(null);
   const [visitedFee, setVisitedFee] = useState(0);
   const [gstPercentage, setGstPercentage] = useState(18);
-  const [bookingType, setBookingType] = useState('instant'); // 'instant' | 'scheduled'
+  const [bookingType, setBookingType] = useState('scheduled'); // 'instant' | 'scheduled'
 
   // Dynamic Builder States
   const [dynamicFieldsConfig, setDynamicFieldsConfig] = useState([]);
@@ -2258,6 +2258,13 @@ const Checkout = () => {
               <span>🕒</span> Booking Schedule
             </h3>
             <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
+              <button
+                onClick={() => setBookingType('scheduled')}
+                className="flex-1 py-2 text-xs font-normal rounded-lg transition-all flex items-center justify-center gap-1.5"
+                style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
+              >
+                <span>📅</span> Slot Booking
+              </button>
               {isInstantBookingEnabled && (
                 <button
                   onClick={() => setBookingType('instant')}
@@ -2274,13 +2281,6 @@ const Checkout = () => {
                   )}
                 </button>
               )}
-              <button
-                onClick={() => setBookingType('scheduled')}
-                className="flex-1 py-2 text-xs font-normal rounded-lg transition-all flex items-center justify-center gap-1.5"
-                style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
-              >
-                <span>📅</span> Slot Booking
-              </button>
             </div>
             {bookingType === 'scheduled' && (
               <p className="text-[10px] text-center font-medium mt-1 mb-1" style={{ color: 'var(--text-muted)' }}>
@@ -2524,6 +2524,13 @@ const Checkout = () => {
         {/* Booking Type Toggle */}
         <div className="px-4 pt-3 pb-0">
           <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
+            <button
+              onClick={() => setBookingType('scheduled')}
+              className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
+              style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
+            >
+              <span>📅</span> Slot Booking
+            </button>
             {isInstantBookingEnabled && (
               <button
                 onClick={() => setBookingType('instant')}
@@ -2540,13 +2547,6 @@ const Checkout = () => {
                 )}
               </button>
             )}
-            <button
-              onClick={() => setBookingType('scheduled')}
-              className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
-              style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
-            >
-              <span>📅</span> Slot Booking
-            </button>
           </div>
           {bookingType === 'scheduled' && (
             <p className="text-[10px] text-center font-medium mt-1 mb-1" style={{ color: 'var(--text-muted)' }}>

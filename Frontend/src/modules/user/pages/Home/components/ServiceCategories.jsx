@@ -109,66 +109,43 @@ const ServiceCategories = React.memo(({
         )}
       </div>
 
-      {/* Horizontal scroll carousel with arrow buttons */}
+      {/* Grid Layout */}
       <div className="relative" style={{ overflow: 'visible' }}>
-        <div className="relative group">
-          {showLeftArrow && (
-            <ScrollArrowButton
-              direction="left"
-              onClick={() => scrollByOneCard(-1)}
-              className="left-0 md:-left-4 top-[40%] -translate-y-1/2"
-            />
-          )}
-
-          {showRightArrow && (
-            <ScrollArrowButton
-              direction="right"
-              onClick={() => scrollByOneCard(1)}
-              className="right-0 md:-right-4 top-[40%] -translate-y-1/2"
-            />
-          )}
-
-          {/* Scrollable Row */}
-          <div
-            ref={containerRef}
-            onScroll={handleScroll}
-            className="flex gap-3 overflow-x-auto pb-2 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
-          >
-            {displayCategories.map((category, index) => (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-3 gap-y-5 pb-2">
+          {displayCategories.map((category, index) => (
+            <div
+              key={category.id || index}
+              onClick={() => onCategoryClick?.(category)}
+              className="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-full"
+            >
+              {/* Image card */}
               <div
-                key={category.id || index}
-                onClick={() => onCategoryClick?.(category)}
-                className="snap-start shrink-0 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-[calc((100vw-48px)/3)] md:w-[160px]"
+                className="w-full aspect-square rounded-[14px] overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200 category-image-card"
+                style={{ backgroundColor: category.colorScheme.bg }}
               >
-                {/* Image card */}
-                <div
-                  className="w-full aspect-square rounded-[14px] overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200 category-image-card"
-                  style={{ backgroundColor: category.colorScheme.bg }}
-                >
-                  {category.icon ? (
-                    <DynamicIcon
-                      icon={category.icon}
-                      alt={category.title}
-                      className="w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <svg className="w-8 h-8" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                {/* Name below image */}
-                <span
-                  className="text-[11px] font-medium text-center leading-snug line-clamp-2 w-full px-1"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {category.title}
-                </span>
+                {category.icon ? (
+                  <DynamicIcon
+                    icon={category.icon}
+                    alt={category.title}
+                    className="w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <svg className="w-8 h-8" fill="none" stroke={category.colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+              {/* Name below image */}
+              <span
+                className="text-[11px] font-medium text-center leading-snug line-clamp-2 w-full px-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {category.title}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
       

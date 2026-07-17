@@ -49,12 +49,18 @@ const Welcome = () => {
   }, [isDesktop]);
 
   React.useEffect(() => {
-    if (isDesktop) {
-      navigate('/user/home', { replace: true });
+    const hasSeen = localStorage.getItem('hasSeenWelcome') === 'true';
+    if (isDesktop || hasSeen) {
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      if (token) {
+        navigate('/user/home', { replace: true });
+      } else {
+        navigate('/user/login', { replace: true });
+      }
     }
   }, [isDesktop, navigate]);
 
-  if (isDesktop) {
+  if (isDesktop || localStorage.getItem('hasSeenWelcome') === 'true') {
     return null;
   }
 
@@ -63,11 +69,13 @@ const Welcome = () => {
       setDirection(1);
       setCurrentIndex((prev) => prev + 1);
     } else {
+      localStorage.setItem('hasSeenWelcome', 'true');
       navigate('/user/login');
     }
   };
 
   const handleSkip = () => {
+    localStorage.setItem('hasSeenWelcome', 'true');
     navigate('/user/login');
   };
 
