@@ -1135,66 +1135,17 @@ const BookingDetails = () => {
           {/* Location & Time Section */}
           <section className="space-y-4">
             {/* Map Preview - Improved overlay for better usability */}
-            {booking.address && (
-              <>
-                <div className="group relative rounded-3xl overflow-hidden shadow-sm border border-gray-200 bg-gray-100 h-48">
-                  {(() => {
-                    let mapQuery = '';
-                    if (typeof booking.address === 'object' && booking.address.lat && booking.address.lng) {
-                      mapQuery = `${booking.address.lat},${booking.address.lng}`;
-                    } else {
-                      const addrStr = typeof booking.address === 'string'
-                        ? booking.address
-                        : `${booking.address?.addressLine1 || ''}, ${booking.address?.city || ''}`;
-                      mapQuery = encodeURIComponent(addrStr);
-                    }
-                    return (
-                      <iframe
-                        className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity"
-                        frameBorder="0"
-                        style={{ border: 0, pointerEvents: 'none' }}
-                        src={`https://maps.google.com/maps?q=${mapQuery}&z=15&output=embed`}
-                        allowFullScreen
-                        tabIndex="-1"
-                        title="Location"
-                      />
-                    )
-                  })()}
-
-                  {/* Floating Info */}
-                  <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
-                    <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl shadow-sm border border-white/50 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
-                      <span className="text-xs font-bold text-gray-700">Destination</span>
-                    </div>
-                  </div>
-
-                  {/* Track Button Overlay - Only clickable when journey started */}
-                  {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-transparent pointer-events-none">
-                      <div
-                        className="pointer-events-auto bg-white text-gray-900 px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all border border-gray-100 cursor-pointer"
-                        onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
-                      >
-                        <FiMapPin className="w-4 h-4 text-red-500" /> View Live Location
-                      </div>
-                    </div>
-                  )}
+            {/* Dedicated Track Button - Only visible when journey started */}
+            {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
+              <button
+                onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
+                className="w-full py-4 bg-linear-to-r from-gray-900 to-gray-800 text-white rounded-2xl font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"
+              >
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <FiMapPin className="w-4 h-4 text-white" />
                 </div>
-
-                {/* Dedicated Track Button - Only visible when journey started */}
-                {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
-                  <button
-                    onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
-                    className="w-full py-4 bg-linear-to-r from-gray-900 to-gray-800 text-white rounded-2xl font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                      <FiMapPin className="w-4 h-4 text-white" />
-                    </div>
-                    Track Service Agent
-                  </button>
-                )}
-              </>
+                Track Service Agent
+              </button>
             )}
 
             <div className="bg-card-bg rounded-3xl p-5 shadow-sm border border-border-color">

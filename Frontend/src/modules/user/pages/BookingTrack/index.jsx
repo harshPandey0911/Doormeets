@@ -63,6 +63,22 @@ const BookingTrack = () => {
   const [paying, setPaying] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const bottomCardRef = useRef(null);
+
+  // Fit both rider + destination into visible area above the bottom card
+  const fitRouteInView = (mapInstance, origin, destination) => {
+    if (!mapInstance || !origin || !destination || !window.google) return;
+    const bottomCardHeight = bottomCardRef.current?.offsetHeight || 300;
+    const bounds = new window.google.maps.LatLngBounds();
+    bounds.extend(new window.google.maps.LatLng(origin));
+    bounds.extend(new window.google.maps.LatLng(destination));
+    mapInstance.fitBounds(bounds, {
+      top: 80,
+      right: 40,
+      bottom: bottomCardHeight + 20,
+      left: 40
+    });
+  };
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -468,9 +484,8 @@ const BookingTrack = () => {
             fullRoutePathRef.current = result.routes[0].overview_path;
             setRoutePath(result.routes[0].overview_path);
 
-            // Center on rider
-            map.setCenter(currentLocation);
-            map.setZoom(15);
+            // Fit both rider & destination into the visible area above the bottom card
+            fitRouteInView(map, currentLocation, coords);
           }
         }
       );
@@ -602,15 +617,15 @@ const BookingTrack = () => {
   const provider = booking?.workerId || booking?.assignedTo || booking?.vendorId || {};
 
   return (
-    <div className="h-screen flex flex-col relative bg-white overflow-hidden">
+    <div className="h-screen flex flex-col relative bg-white overflow-hidden font-['Inter']">
       {/* Top Floating Header */}
       {/* Top Floating Header - Always Visible */}
-      <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
+      <div className="absolute top-3 left-3 right-3 z-20 flex justify-between items-start pointer-events-none">
         <button
           onClick={() => navigate(`/user/booking/${id}`)}
-          className="pointer-events-auto bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg text-gray-700 hover:bg-white transition-all active:scale-95"
+          className="pointer-events-auto bg-white/90 backdrop-blur-md p-2.5 rounded-full shadow-lg text-gray-700 hover:bg-white transition-all active:scale-95"
         >
-          <FiArrowLeft className="w-6 h-6" />
+          <FiArrowLeft className="w-4 h-4" />
         </button>
       </div>
 
@@ -728,61 +743,62 @@ const BookingTrack = () => {
         {/* Full Screen Toggle */}
         <button
           onClick={() => setIsFullScreen(!isFullScreen)}
-          className="absolute top-24 right-4 p-4 rounded-full shadow-2xl transition-all active:scale-90 z-20 bg-white text-gray-700 hover:bg-gray-50"
-          style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
+          className="absolute top-16 right-3 p-2.5 rounded-full shadow-xl transition-all active:scale-90 z-20 bg-white text-gray-700 hover:bg-gray-50"
+          style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.15)' }}
         >
-          {isFullScreen ? <FiMinimize className="w-6 h-6" /> : <FiMaximize className="w-6 h-6" />}
+          {isFullScreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
         </button>
 
         {/* Recenter Button */}
         <button
           onClick={() => {
             setIsAutoCenter(true);
-            if (map && currentLocation) {
+            if (map && currentLocation && coords) {
+              fitRouteInView(map, currentLocation, coords);
+            } else if (map && currentLocation) {
               map.panTo(currentLocation);
-              map.setZoom(16);
+              map.setZoom(15);
             }
           }}
-          className={`absolute top-40 right-4 p-4 rounded-full shadow-2xl transition-all active:scale-90 z-20 ${isAutoCenter ? 'bg-teal-600 text-white animate-pulse' : 'bg-white text-gray-700'}`}
-          style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
+          className={`absolute top-28 right-3 p-2.5 rounded-full shadow-xl transition-all active:scale-90 z-20 ${isAutoCenter ? 'bg-teal-600 text-white animate-pulse' : 'bg-white text-gray-700'}`}
+          style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.15)' }}
         >
-          <FiCrosshair className="w-6 h-6" />
+          <FiCrosshair className="w-4 h-4" />
         </button>
 
         {/* Recenter Button */}
 
       </div>
 
-      {/* Bottom Status Card */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 p-6 pb-8 transition-transform duration-300 ${isFullScreen ? 'translate-y-full' : ''}`}>
-        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+      {/* Bottom Status Card - Compact */}
+      <div ref={bottomCardRef} className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 px-5 pt-3 pb-6 transition-transform duration-300 ${isFullScreen ? 'translate-y-full' : ''}`}>
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3"></div>
 
-        <div className="flex items-center justify-between mb-6">
+        {/* Status Row */}
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-sm font-medium text-teal-600 mb-1 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></span>
+            <p className="text-xs font-medium text-teal-600 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-pulse"></span>
               {duration ? `Arriving in ${duration}` : 'Calculating time...'}
             </p>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">On the way</h2>
+            <h2 className="text-lg font-black text-gray-900 tracking-tight leading-tight">On the way</h2>
           </div>
           {distance && (
             <div className="text-right">
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Distance</p>
-              <p className="text-xl font-bold text-gray-800">
-                {distance}
-              </p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Distance</p>
+              <p className="text-base font-bold text-gray-800">{distance}</p>
             </div>
           )}
         </div>
 
-        {/* Address Info */}
-        <div className="bg-gray-50 rounded-2xl p-4 flex items-start gap-4 mb-4 border border-gray-100">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md text-teal-600 border border-gray-100 shrink-0">
-            <FiMapPin className="w-5 h-5" />
+        {/* Address Info - Compact */}
+        <div className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-3 mb-3 border border-gray-100">
+          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-teal-600 border border-gray-100 shrink-0">
+            <FiMapPin className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 mb-0.5">Your Location</h3>
-            <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
+            <h3 className="font-bold text-gray-900 text-xs">Your Location</h3>
+            <p className="text-xs text-gray-500 line-clamp-1 leading-snug">
               {(() => {
                 const addr = booking?.address;
                 if (!addr) return 'Loading destination...';
@@ -793,39 +809,37 @@ const BookingTrack = () => {
           </div>
         </div>
 
-        {/* Arrival OTP - New Premium Display */}
+        {/* Arrival OTP - Compact */}
         {(booking?.visitOtp || booking?.arrivalOTP) && ['confirmed', 'assigned', 'journey_started'].includes(booking?.status?.toLowerCase()) && (
-          <div className="mb-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-3 shadow-lg">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10 blur-xl"></div>
+          <div className="mb-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 px-3 py-2.5 shadow-lg">
             <div className="relative z-10 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shrink-0">
-                  <FiKey className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shrink-0">
+                  <FiKey className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">Start Code</p>
-                  <p className="text-2xl font-black text-white tracking-[0.2em] leading-none mt-0.5">
+                  <p className="text-xl font-black text-white tracking-[0.2em] leading-none mt-0.5">
                     {booking?.visitOtp || booking?.arrivalOTP}
                   </p>
                 </div>
               </div>
-
-              <div className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex flex-col items-center justify-center min-w-[100px]">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)] mb-1"></div>
+              <div className="bg-white/10 px-2 py-1 rounded-lg border border-white/10 flex flex-col items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse mb-0.5"></div>
                 <p className="text-[9px] text-blue-50 font-medium text-center leading-tight">Waiting for<br />arrival</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Professional Arrived Notification */}
+        {/* Professional Arrived - Compact */}
         {booking?.status?.toLowerCase() === 'visited' && !(booking.arrivalOTP || booking.visitOtp) && (
-          <div className="mb-4 relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-700 p-4 shadow-lg flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shrink-0">
-              <FiCheckCircle className="w-5 h-5 text-white" />
+          <div className="mb-3 relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-500 to-emerald-700 px-3 py-2.5 shadow-lg flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shrink-0">
+              <FiCheckCircle className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Professional Arrived</h3>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">Professional Arrived</h3>
               <p className="text-[10px] text-teal-50">Expert is starting the work now.</p>
             </div>
           </div>
@@ -833,93 +847,49 @@ const BookingTrack = () => {
 
         {/* Waiting for Vendor to initiate Payment */}
         {!booking?.customerConfirmationOTP && booking?.status?.toLowerCase() === 'work_done' && !booking?.cashCollected && (
-          <div className="bg-white rounded-2xl p-4 shadow-lg border border-teal-100 mb-4 flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-teal-50 rounded-full -translate-y-10 translate-x-10 blur-2xl"></div>
-            <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 border border-teal-100">
-              <FiLoader className="w-5 h-5 text-teal-600 animate-spin" />
+          <div className="bg-white rounded-xl px-3 py-2.5 shadow-lg border border-teal-100 mb-3 flex items-center gap-3 relative overflow-hidden">
+            <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 border border-teal-100">
+              <FiLoader className="w-4 h-4 text-teal-600 animate-spin" />
             </div>
             <div className="relative z-10">
-              <h3 className="font-bold text-gray-900 text-sm">Finalizing Bill</h3>
+              <h3 className="font-bold text-gray-900 text-xs">Finalizing Bill</h3>
               <p className="text-[10px] text-gray-500">Professional is finalizing payment details. Please wait...</p>
             </div>
           </div>
         )}
 
-        {/* Final Payment Card - Show when work is done AND bill is finalized (OTP exists) */}
+        {/* Final Payment Card */}
         {(booking?.customerConfirmationOTP || booking?.paymentStatus === 'success') && booking?.status?.toLowerCase() === 'work_done' && !booking?.cashCollected && (
           <div
             onClick={() => setShowPaymentModal(true)}
-            className={`mb-4 relative overflow-hidden rounded-2xl p-5 shadow-lg cursor-pointer active:scale-[0.98] transition-all ${booking?.paymentStatus === 'success'
+            className={`mb-3 relative overflow-hidden rounded-xl px-3 py-3 shadow-lg cursor-pointer active:scale-[0.98] transition-all ${booking?.paymentStatus === 'success'
               ? 'bg-gradient-to-br from-green-500 via-green-600 to-emerald-700'
               : 'bg-gradient-to-br from-orange-500 via-orange-600 to-red-600'
               }`}>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 blur-2xl"></div>
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="flex items-center gap-3 w-full mb-5">
-                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                  {booking?.paymentStatus === 'success' ? (
-                    <FiCheckCircle className="w-5 h-5 text-white" />
-                  ) : (
-                    <FiDollarSign className="w-5 h-5 text-white" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
-                    {booking?.paymentStatus === 'success' ? 'Payment Received' : 'Final Payment'}
-                  </p>
-                  <p className="text-white text-xs font-medium">
-                    {booking?.paymentStatus === 'success' ? 'Verified Successfully' : `Service amount: ₹${(booking?.finalAmount || 0).toLocaleString()}`}
-                  </p>
-                </div>
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shrink-0">
+                {booking?.paymentStatus === 'success' ? (
+                  <FiCheckCircle className="w-4 h-4 text-white" />
+                ) : (
+                  <FiDollarSign className="w-4 h-4 text-white" />
+                )}
               </div>
-
-              {booking?.paymentStatus !== 'success' ? (
-                <>
-                  <button
-                    onClick={handleOnlinePayment}
-                    className="w-full py-4 bg-white text-orange-600 rounded-xl font-black text-sm shadow-xl hover:bg-orange-50 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <FiDollarSign className="w-4 h-4" />
-                    Pay Online Now
-                  </button>
-
-                  <div className="mt-6 flex flex-col items-center w-full">
-                    <p className="text-[9px] font-black text-white/60 uppercase tracking-[0.3em] mb-3">Payment Verification OTP</p>
-                    <div className="flex justify-center gap-2.5">
-                      {String(booking?.customerConfirmationOTP || booking?.paymentOtp || '0000').split('').map((digit, idx) => (
-                        <div
-                          key={idx}
-                          className="w-10 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-md"
-                        >
-                          <span className="text-xl font-black text-white">{digit}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="mt-4 text-[9px] text-white/70 text-center font-medium bg-black/10 px-4 py-1.5 rounded-full">
-                      Share with professional to confirm cash payment
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <div className="w-full py-4 bg-white/10 backdrop-blur-md text-white rounded-xl font-bold text-sm border border-white/20 flex items-center justify-center gap-2">
-                  <FiCheckCircle className="w-4 h-4 text-green-200" />
-                  Booking Completed
-                </div>
-              )}
-
-              {booking?.paymentStatus !== 'success' && (
-                <p className="mt-4 text-[10px] text-white/70 text-center font-medium">
-                  Professional will mark as completed after cash collection.
+              <div>
+                <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                  {booking?.paymentStatus === 'success' ? 'Payment Received' : 'Final Payment'}
                 </p>
-              )}
+                <p className="text-white text-xs font-medium">
+                  {booking?.paymentStatus === 'success' ? 'Verified Successfully' : `₹${(booking?.finalAmount || 0).toLocaleString()} — Tap to pay`}
+                </p>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Agent Info */}
+        {/* Agent Info - Compact */}
         {(provider?._id || provider?.id) && (
-          <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4 mb-4 border border-gray-100">
-            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center border-2 border-white shadow-md overflow-hidden relative shrink-0">
+          <div className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-3 border border-gray-100">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border-2 border-white shadow-md overflow-hidden relative shrink-0">
               {(provider.profileImage || provider.profilePhoto) ? (
                 <>
                   <img
@@ -928,30 +898,29 @@ const BookingTrack = () => {
                     className="w-full h-full object-cover"
                     onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.querySelector('.fallback-icon').style.display = 'block'; }}
                   />
-                  <FiUser className="w-7 h-7 text-gray-400 fallback-icon hidden absolute" />
+                  <FiUser className="w-5 h-5 text-gray-400 fallback-icon hidden absolute" />
                 </>
               ) : (
-                <FiUser className="w-7 h-7 text-gray-400" />
+                <FiUser className="w-5 h-5 text-gray-400" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-gray-900 line-clamp-1 text-lg">
+              <h3 className="font-bold text-gray-900 line-clamp-1 text-sm">
                 {provider.name || 'Service Partner'}
               </h3>
               <div className="flex items-center gap-1 text-yellow-500">
-                <FiStar className="w-3.5 h-3.5 fill-current" />
-                <span className="text-sm font-bold text-gray-700">4.8</span>
-                <span className="text-xs text-gray-400">• Verified Professional</span>
+                <FiStar className="w-3 h-3 fill-current" />
+                <span className="text-xs font-bold text-gray-700">4.8</span>
+                <span className="text-[10px] text-gray-400">• Verified Professional</span>
               </div>
             </div>
 
-            {/* Call Button */}
             {provider.phone && (
               <a
                 href={`tel:${provider.phone}`}
-                className="w-12 h-12 bg-green-100 text-green-700 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-sm"
+                className="w-10 h-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-sm"
               >
-                <FiPhone className="w-5 h-5" />
+                <FiPhone className="w-4 h-4" />
               </a>
             )}
           </div>

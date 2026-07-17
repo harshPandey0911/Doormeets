@@ -7,6 +7,7 @@ import { register } from '../services/authService';
 import api from '../../../services/api';
 import LogoLoader from '../../../components/common/LogoLoader';
 import Logo from '../../../components/common/Logo';
+import loginIllustration from '../../../assets/images/loginpage.png';
 
 const VendorSignup = () => {
   const navigate = useNavigate();
@@ -86,125 +87,137 @@ const VendorSignup = () => {
     }
   };
 
-  const brandColor = themeColors.brand?.teal || '#9634f7';
+  const brandColor = '#B33A35';
 
   return (
-    <div className="min-h-screen flex flex-col pt-8 pb-8 px-4 sm:px-6 lg:px-8 relative bg-white">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#FF9F45] opacity-[0.05] rounded-full blur-3xl animate-floating" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#FF9F45] opacity-[0.03] rounded-full blur-3xl animate-floating" style={{ animationDelay: '2s' }} />
-      </div>
+    <div className="min-h-[100dvh] bg-[#F4F5F8] md:bg-gray-100 flex flex-col justify-start md:justify-center md:py-12 md:px-6 lg:px-8 relative overflow-x-hidden font-['Montserrat']">
+      <div className="w-full max-w-md mx-auto bg-white md:rounded-3xl md:shadow-2xl md:border md:border-gray-100 overflow-hidden flex flex-col min-h-[100dvh] md:min-h-0 relative animate-fade-in">
+        
+        {/* Top Section: Header Banner with Illustration */}
+        <div className="w-full bg-[#F4F5F8] py-4 px-6 relative flex items-center justify-center select-none border-b border-gray-100">
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-6 relative z-10 animate-fade-in">
-        <Logo className="h-10 w-auto mx-auto transform hover:scale-110 transition-transform duration-500" />
-        <h2 className="mt-2 text-2xl font-bold text-gray-900 tracking-tight">
-          Vendor Registration
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 animate-stagger-1 animate-fade-in">
-          Join Doormeets to grow your business
-        </p>
-      </div>
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-white py-8 px-4 shadow-2xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 relative overflow-hidden animate-slide-in-bottom">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FF9F45] via-[#FFB86C] to-[#FF9F45]" />
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4 animate-stagger-1 animate-fade-in">
-              <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#FF9F45] transition-colors">
-                    <FiUser className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
-                    style={{ '--tw-ring-color': brandColor }}
-                    placeholder="Your Name"
-                  />
-                </div>
-              </div>
-
-              <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 border-r pr-2 flex items-center pointer-events-none">
-                    <span className="text-gray-500 text-sm font-bold">+91</span>
-                  </div>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
-                    className="block w-full pl-14 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400"
-                    style={{ '--tw-ring-color': brandColor }}
-                    placeholder="9876543210"
-                  />
-                </div>
-              </div>
-
-              <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Profession</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none group-focus-within:text-[#FF9F45] transition-colors">
-                    <FiBriefcase className="text-gray-400" />
-                  </div>
-                  <select
-                    name="professionId"
-                    required
-                    value={formData.professionId}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-offset-2 transition-all duration-300 outline-none hover:border-gray-400 appearance-none bg-white"
-                    style={{ '--tw-ring-color': brandColor }}
-                    disabled={loadingProfessions}
-                  >
-                    <option value="" disabled>Select your profession</option>
-                    {professions.map(prof => (
-                      <option key={prof._id} value={prof._id}>{prof.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="animate-stagger-3 animate-fade-in pt-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white transition-all transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
-                style={{
-                  backgroundColor: brandColor,
-                  boxShadow: `0 10px 15px -3px ${brandColor}4D`
-                }}
-              >
-                <span className="absolute inset-0 w-full h-full bg-white/10 group-hover:translate-x-full transition-transform duration-700 -translate-x-full" />
-                {isLoading ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <LogoLoader fullScreen={false} inline={true} size="w-5 h-5" />
-                  </div>
-                ) : (
-                  <span className="flex items-center relative z-10">
-                    Register
-                    <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                )}
-              </button>
-            </div>
-          </form>
+          {/* Illustration */}
+          <img
+            src={loginIllustration}
+            alt="Signup Illustration"
+            className="mx-auto mt-2 h-[140px] w-auto object-contain"
+          />
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600 animate-fade-in animate-stagger-4">
-          Already registered?{' '}
-          <Link to="/vendor/login" className="font-semibold hover:text-[#FFB86C] transition-colors" style={{ color: brandColor }}>
-            Login here
-          </Link>
-        </p>
+        {/* Bottom Section: Form Fields */}
+        <div className="flex-1 bg-white px-7 py-4 flex flex-col justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+              Vendor Registration
+            </h2>
+            <p className="mt-1 text-xs text-gray-500 font-normal">
+              Join Doormeets to grow your business
+            </p>
+
+            <div className="mt-4">
+              <form onSubmit={handleSubmit} className="space-y-3 animate-fade-in">
+                {/* Full Name */}
+                <div>
+                  <label htmlFor="name" className="block text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                    Full Name
+                  </label>
+                  <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                      <FiUser />
+                    </div>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="block w-full pl-10 pr-4 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                      placeholder="Your Name"
+                    />
+                  </div>
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label htmlFor="phone" className="block text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                    Phone Number
+                  </label>
+                  <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="text-gray-500 font-medium text-sm border-r border-gray-200 pr-3">+91</span>
+                    </div>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                      className="block w-full pl-16 pr-4 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                      placeholder="98765 43210"
+                    />
+                  </div>
+                </div>
+
+                {/* Profession dropdown */}
+                <div>
+                  <label htmlFor="professionId" className="block text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                    Profession
+                  </label>
+                  <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                      <FiBriefcase />
+                    </div>
+                    <select
+                      id="professionId"
+                      name="professionId"
+                      required
+                      value={formData.professionId}
+                      onChange={handleInputChange}
+                      className="block w-full pl-10 pr-10 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0 appearance-none bg-white"
+                      disabled={loadingProfessions}
+                    >
+                      <option value="" disabled>Select your profession</option>
+                      {professions.map(prof => (
+                        <option key={prof._id} value={prof._id}>{prof.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3 mt-1.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
+                >
+                  {isLoading ? (
+                    <LogoLoader fullScreen={false} inline={true} size="w-5 h-5" />
+                  ) : (
+                    <>
+                      <span>Register</span>
+                      <FiArrowRight />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Footer Navigation */}
+          <div className="mt-3">
+            <p className="text-center text-xs text-gray-500 font-medium">
+              Already registered?{' '}
+              <Link to="/vendor/login" className="text-[#B33A35] hover:text-[#9E2E2A] font-semibold transition-colors">
+                Login here
+              </Link>
+            </p>
+            <p className="mt-2 text-center text-[10px] text-gray-400 font-normal">
+              &copy; {new Date().getFullYear()} Doormeets. All rights reserved.
+            </p>
+          </div>
+        </div>
+
       </div>
     </div>
   );

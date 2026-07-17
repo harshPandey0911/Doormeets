@@ -109,8 +109,7 @@ api.interceptors.response.use(
       try {
         // Determine correct refresh endpoint based on current path
         let refreshEndpoint = '/users/auth/refresh-token'; // Default to user
-        if (role === 'vendor') refreshEndpoint = '/vendors/auth/refresh-token';
-        else if (role === 'worker') refreshEndpoint = '/workers/auth/refresh-token';
+        if (role === 'vendor' || role === 'worker') refreshEndpoint = '/vendors/auth/refresh-token';
         else if (role === 'admin') refreshEndpoint = '/admin/auth/refresh-token';
 
         // Try to refresh the token

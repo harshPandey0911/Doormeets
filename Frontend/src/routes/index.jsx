@@ -7,7 +7,11 @@ import VendorRoutes from '../modules/vendor/routes';
 import WorkerRoutes from '../modules/vendor/routes/WorkerRoutes';
 import AdminRoutes from '../modules/admin/routes';
 import ShopRoutes from '../modules/shop/routes';
+import loginIllustration from '../assets/images/loginpage.png';
 
+// Preload login/signup illustration to prevent loading delay
+const img = new Image();
+img.src = loginIllustration;
 
 const AppRoutes = () => {
   return (
