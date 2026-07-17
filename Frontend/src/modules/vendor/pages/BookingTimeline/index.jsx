@@ -408,7 +408,7 @@ const BookingTimeline = () => {
         }
 
         if (booking?.isSelfJob && currentStage === 7) {
-          return () => navigate(`/vendor/booking/${id}/billing`);
+          return () => navigate(`/vendor/booking/${id}`);
         }
 
         if (!booking?.isSelfJob && currentStage === 7) {

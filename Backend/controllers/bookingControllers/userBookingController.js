@@ -1072,7 +1072,7 @@ const getBookingById = async (req, res) => {
     const VendorBill = require('../../models/VendorBill');
     const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-    // Convert to object to attach bill
+    // Booking is already a plain object due to .lean()
     const bookingData = booking;
     if (bill) {
       bookingData.bill = bill;

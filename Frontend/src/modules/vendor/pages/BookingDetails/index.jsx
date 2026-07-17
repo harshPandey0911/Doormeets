@@ -25,7 +25,7 @@ import VisitVerificationModal from '../../components/common/VisitVerificationMod
 import WorkCompletionModal from '../../components/common/WorkCompletionModal';
 // import BillingModal from '../../components/bookings/BillingModal'; // Consumed by page now
 import vendorWalletService from '../../../../services/vendorWalletService';
-import { vendorCatalogService } from '../../../../services/catalogService';
+import { vendorCatalogService, publicCatalogService } from '../../../../services/catalogService';
 import { toast } from 'react-hot-toast';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 import { useLocationTracking } from '../../../../hooks/useLocationTracking';
@@ -122,6 +122,8 @@ export default function BookingDetails() {
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [existingBill, setExistingBill] = useState(null);
   const [addonLoading, setAddonLoading] = useState(false);
+  const [activeAddonTab, setActiveAddonTab] = useState('services'); // 'services' or 'addons'
+  const [categoryServices, setCategoryServices] = useState([]);
 
   const [companyDetails, setCompanyDetails] = useState({
     companyName: 'Doormeeets',
@@ -145,10 +147,11 @@ export default function BookingDetails() {
       const loadAddonData = async () => {
         try {
           setAddonLoading(true);
-          const [servicesRes, partsRes, billRes] = await Promise.all([
+          const [servicesRes, partsRes, billRes, catServicesRes] = await Promise.all([
             vendorBillService.getServiceCatalog().catch(() => ({ success: false })),
             vendorBillService.getPartsCatalog().catch(() => ({ success: false })),
-            vendorBillService.getBill(id).catch(() => ({ success: false }))
+            vendorBillService.getBill(id).catch(() => ({ success: false })),
+            booking?.categoryId ? publicCatalogService.getServices({ categoryId: booking.categoryId?._id || booking.categoryId }).catch(() => ({ success: false })) : Promise.resolve({ success: true, data: [] })
           ]);
 
           const services = (servicesRes?.services || []).map(s => ({
@@ -162,6 +165,45 @@ export default function BookingDetails() {
             isPart: true
           }));
           setAddonCatalog([...services, ...parts]);
+
+          if (catServicesRes && catServicesRes.success && catServicesRes.services) {
+            let mappedCatServices = [];
+            catServicesRes.services.forEach(s => {
+              if (s.packages && s.packages.length > 0) {
+                // Package based service - add each package
+                s.packages.forEach(pkg => {
+                  mappedCatServices.push({
+                    _id: s.id + '_' + pkg.title.replace(/\s+/g, '-'), // Fake unique ID
+                    name: pkg.title,
+                    price: pkg.price || pkg.originalPrice || 0,
+                    isPart: false,
+                    isCategoryService: true
+                  });
+                });
+              } else if (s.variants && s.variants.length > 0) {
+                // Has variants
+                s.variants.forEach(v => {
+                  mappedCatServices.push({
+                    _id: s.id + '_' + v._id,
+                    name: s.title + ' - ' + v.name,
+                    price: v.extraPrice || v.price || s.basePrice || 0,
+                    isPart: false,
+                    isCategoryService: true
+                  });
+                });
+              } else {
+                // Normal service
+                mappedCatServices.push({
+                  _id: s.id,
+                  name: s.title || s.name,
+                  price: s.basePrice || s.price || 0,
+                  isPart: false,
+                  isCategoryService: true
+                });
+              }
+            });
+            setCategoryServices(mappedCatServices);
+          }
 
           if (billRes && billRes.success && billRes.bill) {
             setExistingBill(billRes.bill);
@@ -203,11 +245,18 @@ export default function BookingDetails() {
   const handleSaveAddons = async () => {
     try {
       setAddonLoading(true);
-      const services = selectedAddons.filter(a => !a.isPart);
+      const services = selectedAddons.filter(a => !a.isPart).map(s => {
+        const isValidId = /^[0-9a-fA-F]{24}$/.test(s.catalogId);
+        if (!isValidId) {
+          const { catalogId, ...rest } = s;
+          return rest;
+        }
+        return s;
+      });
       const parts = selectedAddons.filter(a => a.isPart);
 
       const res = await vendorBillService.createOrUpdateBill(id, {
-        services,
+        services: services,
         parts: [...(existingBill?.parts || []).filter(p => !p.catalogId), ...parts],
         customItems: existingBill?.customItems || [],
         transportCharges: existingBill?.transportCharges || 0,
@@ -226,6 +275,33 @@ export default function BookingDetails() {
       toast.error("Failed to save add-on services");
     } finally {
       setAddonLoading(false);
+    }
+  };
+
+  const handleRemoveService = async (serviceToRemove) => {
+    try {
+      toast.loading("Removing service...");
+      const updatedServices = services.filter(s => s._id !== serviceToRemove._id && s.name !== serviceToRemove.name);
+      
+      const res = await vendorBillService.createOrUpdateBill(id, {
+        services: updatedServices,
+        parts: existingBill?.parts || [],
+        customItems: existingBill?.customItems || [],
+        transportCharges: existingBill?.transportCharges || 0,
+        applyPartsGST: existingBill?.applyPartsGST !== undefined ? existingBill?.applyPartsGST : true
+      });
+
+      toast.dismiss();
+      if (res.success) {
+        toast.success("Service removed successfully!");
+        loadBooking();
+      } else {
+        toast.error(res.message || "Failed to remove service");
+      }
+    } catch (err) {
+      toast.dismiss();
+      console.error("Failed to remove service:", err);
+      toast.error("Failed to remove service");
     }
   };
 
@@ -264,13 +340,20 @@ export default function BookingDetails() {
     }));
   };
 
-  const filteredCatalog = addonCatalog.filter(s => {
-    const catIdMatch = String(s.categoryId?._id || s.categoryId || '') === String(booking?.categoryId || '');
-    const catNameMatch = String(s.categoryId?.title || '').toLowerCase() === String(booking?.serviceCategory || '').toLowerCase();
-    const isCategoryMatch = catIdMatch || catNameMatch;
-    const isSearchMatch = s.name.toLowerCase().includes(addonSearch.toLowerCase());
-    return isCategoryMatch && isSearchMatch;
-  });
+  const getFilteredList = () => {
+    if (activeAddonTab === 'services') {
+      return categoryServices.filter(s => s.name.toLowerCase().includes(addonSearch.toLowerCase()));
+    } else {
+      return addonCatalog.filter(s => {
+        const catIdMatch = String(s.categoryId?._id || s.categoryId || '') === String(booking?.categoryId || '');
+        const catNameMatch = String(s.categoryId?.title || '').toLowerCase() === String(booking?.serviceCategory || '').toLowerCase();
+        const isCategoryMatch = catIdMatch || catNameMatch;
+        const isSearchMatch = s.name.toLowerCase().includes(addonSearch.toLowerCase());
+        return isCategoryMatch && isSearchMatch;
+      });
+    }
+  };
+  const filteredListToRender = getFilteredList();
 
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -990,15 +1073,8 @@ export default function BookingDetails() {
 
 
 
-  // Handle cash collection button click
   const handleCollectCashClick = () => {
-    // If OTP already sent, open modal. Otherwise navigate to full billing page.
-    if (booking?.customerConfirmationOTP || booking?.paymentOtp) {
-      setIsCashModalOpen(true);
-    } else {
-      // Navigate to the full page billing flow
-      navigate(isWorker ? `/worker/booking/${booking.id || id}/billing` : `/vendor/booking/${booking.id || id}/billing`);
-    }
+    setIsCashModalOpen(true);
   };
 
   const handleCashCollectionConfirm = async (amount, extras, code) => {
@@ -1183,7 +1259,7 @@ export default function BookingDetails() {
           setActionLoading(true);
           try {
             // 1. Collect addon cash
-            await api.post(`/bookings/${id}/self/addon-payment/collect-cash`);
+            await api.post(`/vendors/bookings/${id}/self/addon-payment/collect-cash`);
             
             // 2. Complete job
             await completeSelfJob(id, { workPhotos: photos || [] });
@@ -1204,7 +1280,7 @@ export default function BookingDetails() {
       await completeSelfJob(id, { workPhotos: photos || [] });
       toast.success('Work marked done');
       setIsWorkDoneModalOpen(false);
-      window.location.reload();
+      loadBooking();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to complete job');
     } finally {
@@ -1686,8 +1762,19 @@ export default function BookingDetails() {
                 </div>
 
                 {services.map((s, i) => (
-                  <div key={i} className="flex justify-between text-gray-600">
-                    <span>{s.name} x {s.quantity}</span>
+                  <div key={i} className="flex justify-between items-center text-gray-600 group">
+                    <div className="flex items-center gap-2">
+                      {!['completed', 'cancelled', 'work_done'].includes(booking.status) && (
+                        <button 
+                          onClick={() => handleRemoveService(s)}
+                          className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Remove service"
+                        >
+                          <FiX className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <span>{s.name} x {s.quantity}</span>
+                    </div>
                     <span className="font-mono">₹{(s.total || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
                   </div>
                 ))}
@@ -2131,13 +2218,13 @@ export default function BookingDetails() {
 
               <div className="flex flex-col gap-3 w-full">
                 <button
-                  onClick={() => navigate(isWorker ? `/worker/booking/${booking.id || id}/billing` : `/vendor/booking/${booking.id || id}/billing`)}
+                  onClick={() => setIsCashModalOpen(true)}
                   disabled={loading}
                   className="w-full py-4 rounded-xl font-bold bg-blue-600 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
                   style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }}
                 >
                   <FiDollarSign className="w-5 h-5" />
-                  {booking.paymentMethod === 'plan_benefit' ? 'Prepare/Edit Final Bill' : 'Prepare Bill & Collect Cash'}
+                  {booking.paymentMethod === 'plan_benefit' ? 'Prepare/Edit Final Bill' : 'Collect Cash'}
                 </button>
 
                 {(booking?.customerConfirmationOTP || booking?.paymentOtp) && (
@@ -2205,6 +2292,31 @@ export default function BookingDetails() {
               <FiCheckCircle className="w-5 h-5" />
               Pay Worker
             </button>
+          </div>
+        )}
+
+        {/* Cash Collection Approval Button */}
+        {booking.status === 'work_done' && booking.paymentMethod === 'pay_at_home' && booking.paymentStatus === 'pending' && (
+          <div className="bg-amber-50 rounded-2xl mb-4 overflow-hidden shadow-sm border border-amber-200 relative">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 shadow-inner">
+                  <FiCheckCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Cash Collection</h3>
+                  <p className="text-xs text-amber-700 font-medium tracking-wide">User requested to pay by cash</p>
+                </div>
+              </div>
+              <button
+                onClick={handleConfirmCash}
+                disabled={loading}
+                className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 hover:brightness-105 bg-amber-600 shadow-md"
+              >
+                <FiCheckCircle className="w-5 h-5" />
+                Confirm Cash Collected
+              </button>
+            </div>
           </div>
         )}
 
@@ -2525,6 +2637,30 @@ export default function BookingDetails() {
                 </button>
               </div>
 
+              {/* Tabs */}
+              <div className="flex px-4 pt-4 pb-2 border-b border-gray-100 gap-2">
+                <button
+                  onClick={() => setActiveAddonTab('services')}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                    activeAddonTab === 'services' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Services
+                </button>
+                <button
+                  onClick={() => setActiveAddonTab('addons')}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${
+                    activeAddonTab === 'addons' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Add-ons
+                </button>
+              </div>
+
               <div className="p-4 border-b border-gray-100">
                 <input
                   type="text"
@@ -2536,14 +2672,14 @@ export default function BookingDetails() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[250px]">
-                {addonLoading && addonCatalog.length === 0 ? (
-                  <div className="text-center py-12 text-sm text-gray-500 font-medium">Loading catalog services...</div>
-                ) : filteredCatalog.length === 0 ? (
+                {addonLoading ? (
+                  <div className="text-center py-12 text-sm text-gray-500 font-medium">Loading services...</div>
+                ) : filteredListToRender.length === 0 ? (
                   <div className="text-center py-12 text-sm text-gray-500 font-medium">
-                    No services found under "{booking?.serviceCategory}" category
+                    No items found matching your search.
                   </div>
                 ) : (
-                  filteredCatalog.map(item => {
+                  filteredListToRender.map(item => {
                     const selected = selectedAddons.find(a => a.catalogId === item._id);
                     return (
                       <div

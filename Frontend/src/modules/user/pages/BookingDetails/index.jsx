@@ -42,6 +42,14 @@ import { configService } from '../../../../services/configService';
 import { downloadInvoice } from '../../utils/invoiceGenerator';
 
 
+const toAssetUrl = (url) => {
+  if (!url) return '';
+  const clean = url.replace('/api/upload', '/upload');
+  if (clean.startsWith('http')) return clean;
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/api$/, '');
+  return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
+};
+
 const BookingDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -542,7 +550,8 @@ const BookingDetails = () => {
       toast.dismiss();
 
       if (response.success) {
-        toast.success('Booking confirmed!');
+        toast.success('Payment method selected!');
+        setShowPaymentModal(false);
         loadBooking();
       } else {
         toast.error(response.message || 'Failed to confirm booking');
@@ -692,9 +701,7 @@ const BookingDetails = () => {
   // Final Total
   const hasBill = !!bill;
   const finalTotal = bill?.grandTotal || (booking.finalAmount || booking.totalAmount || 0);
-  const isAddonPending = (booking.paymentStatus === 'success' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed') && 
-    (booking.finalAmount > booking.totalAmount) && 
-    (booking.extraCharges && booking.extraCharges.length > 0);
+  const isAddonPending = (booking.finalAmount || 0) > (booking.totalAmount || 0) && services.length > 0;
 
   // --------------------------------------
 
@@ -1048,8 +1055,8 @@ const BookingDetails = () => {
               </div>
             )}
 
-          {/* Payment Card - Show when work is done AND bill is finalized (OTP exists), paid, or if online payment is pending */}
-          {(((booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online') && booking.paymentStatus?.toLowerCase() === 'pending') || booking.customerConfirmationOTP || booking.paymentStatus === 'success') && !booking.cashCollected && !['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
+          {/* Payment Card - Show when work is done AND bill is finalized (OTP exists), paid, if online payment is pending, or if an addon is pending */}
+          {(((booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online') && booking.paymentStatus?.toLowerCase() === 'pending') || booking.customerConfirmationOTP || booking.paymentStatus === 'success' || isAddonPending) && !booking.cashCollected && !['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
             <div
               onClick={() => { if (booking.customerConfirmationOTP) setShowPaymentModal(true); }}
               className={`relative overflow-hidden rounded-3xl shadow-sm border border-border-color p-4 bg-white dark:bg-zinc-900 ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}
@@ -1289,8 +1296,8 @@ const BookingDetails = () => {
             </div>
           </section>
 
-          {/* Payment Summary - Only show if payment is completed/collected OR if a payment request is active (Work Done) */}
-          {(['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
+          {/* Payment Summary - Only show if payment is completed/collected, if a payment request is active (Work Done), or if a bill exists (e.g. addons added) */}
+          {(hasBill || ['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
             <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
               <div className="p-5">
                 <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border-color">
@@ -1576,7 +1583,17 @@ const BookingDetails = () => {
                   {isAddonPending ? `Pay Addon ₹${(booking.finalAmount - booking.totalAmount).toFixed(2)} Online` : 'Pay Online (Razorpay/UPI)'}
                 </button>
 
-                {!isAddonPending && !['online', 'razorpay'].includes(booking.paymentMethod) && (
+                {isAddonPending ? (
+                  <button
+                    onClick={() => {
+                      toast.success("You selected Cash. Please hand over the extra amount to the professional.");
+                    }}
+                    className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
+                  >
+                    <FiHome className="w-5 h-5" />
+                    Pay Cash to Professional
+                  </button>
+                ) : !['online', 'razorpay'].includes(booking.paymentMethod) && (
                   <button
                     onClick={handlePayAtHome}
                     className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
@@ -1732,6 +1749,7 @@ const BookingDetails = () => {
           onClose={() => setShowPaymentModal(false)}
           booking={booking}
           onPayOnline={handleOnlinePayment}
+          onPayCash={handlePayAtHome}
         />
 
         <ConfirmDialog

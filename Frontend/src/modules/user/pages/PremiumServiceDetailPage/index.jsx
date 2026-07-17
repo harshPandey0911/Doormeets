@@ -39,7 +39,7 @@ const PremiumServiceDetailPage = () => {
   const { slug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { addToCart, updateItem, removeItem, cartCount, cartItems = [] } = useCart();
+  const { addToCart, updateItem, removeItem, clearCart, cartCount, cartItems = [] } = useCart();
 
   const [service, setService] = useState(location.state?.service || null);
   const brand = location.state?.brand || null;
@@ -169,6 +169,15 @@ const PremiumServiceDetailPage = () => {
 
   const handleIncreaseSubItem = async (subItem) => {
     // Only add the individual item to cart directly
+
+    // If there are packages or other services in the cart, clear them to keep individual services mutually exclusive
+    const hasPackagesOrOther = cartItems.some(item => 
+      String(getCartItemServiceId(item)) !== String(service?._id || service?.id) || 
+      item.title.includes('Package') || item.title.includes(service?.title)
+    );
+    if (hasPackagesOrOther) {
+      await clearCart();
+    }
 
     const existing = cartItems.find(entry => entry.title === subItem.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
     if (existing) {
@@ -645,6 +654,15 @@ const PremiumServiceDetailPage = () => {
     }
     cartData.dynamicFields = dynamicFieldsPayload;
 
+    // Clear cart if there are individual services or other services to keep packages mutually exclusive
+    const hasIndividualsOrOther = cartItems.some(item => 
+      String(getCartItemServiceId(item)) !== String(service?._id || service?.id) || 
+      !item.title.includes(pkg.title)
+    );
+    if (hasIndividualsOrOther) {
+      await clearCart();
+    }
+
     const response = await addToCart(cartData);
     if (response?.success) {
       toast.success(`${pkg.title} added to cart!`);
@@ -793,6 +811,12 @@ const PremiumServiceDetailPage = () => {
       cartData.card.originalPrice = cartData.originalPrice;
     }
     cartData.dynamicFields = dynamicFieldsPayload;
+
+    // Clear cart if there are other services to keep main booking exclusive
+    const hasOther = cartItems.some(item => String(getCartItemServiceId(item)) !== String(service?._id || service?.id));
+    if (hasOther) {
+      await clearCart();
+    }
 
     const response = await addToCart(cartData);
     if (response?.success) {

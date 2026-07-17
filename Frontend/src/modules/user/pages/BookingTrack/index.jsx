@@ -63,6 +63,15 @@ const BookingTrack = () => {
   const [paying, setPaying] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [addonCashSelected, setAddonCashSelected] = useState(false);
+
+  const pendingAddons = useMemo(() => {
+    if (!booking) return [];
+    if (booking?.status?.toLowerCase() === 'work_done') return [];
+    if (!booking?.bill?.services) return [];
+    if ((booking.finalAmount || 0) <= (booking.totalAmount || 0)) return [];
+    return booking.bill.services.filter(s => !s.isOriginal);
+  }, [booking]);
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -841,6 +850,71 @@ const BookingTrack = () => {
             <div className="relative z-10">
               <h3 className="font-bold text-gray-900 text-sm">Finalizing Bill</h3>
               <p className="text-[10px] text-gray-500">Professional is finalizing payment details. Please wait...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Add-on Payment Card - Show before work is done if addons exist */}
+        {pendingAddons.length > 0 && (
+          <div className="mb-4 relative overflow-hidden rounded-2xl p-5 shadow-lg bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 blur-2xl"></div>
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="flex items-start gap-3 w-full mb-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shrink-0">
+                  <FiDollarSign className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                    Extra Add-on Added
+                  </p>
+                  <p className="text-white text-xs font-medium mb-2">
+                    Professional added extra services.
+                  </p>
+                  
+                  <div className="bg-white/10 rounded-lg p-2 mb-2 w-full">
+                    {pendingAddons.map((addon, idx) => (
+                      <div key={idx} className="flex justify-between text-[11px] text-white/90 font-medium py-0.5">
+                        <span className="truncate pr-2 flex-1">{addon.name}</span>
+                        <span className="shrink-0">₹{addon.total}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm text-white font-black pt-2 mt-2 border-t border-white/20">
+                      <span>Total Extra</span>
+                      <span>₹{(booking.finalAmount - booking.totalAmount).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {!addonCashSelected ? (
+                <div className="flex gap-2 w-full mt-1">
+                  <button
+                    onClick={() => {
+                      setAddonCashSelected(true);
+                      toast.success("You selected Cash. Please hand over the amount to the professional.", { duration: 4000 });
+                    }}
+                    className="flex-1 py-2.5 bg-white/20 text-white border border-white/30 rounded-xl font-bold text-[11px] shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5 hover:bg-white/30"
+                  >
+                    Pay Cash
+                  </button>
+                  <button
+                    onClick={handleOnlinePayment}
+                    className="flex-1 py-2.5 bg-white text-indigo-700 rounded-xl font-bold text-[11px] shadow-lg hover:bg-indigo-50 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    Pay Online
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full mt-1 bg-white/20 backdrop-blur-md px-3 py-2.5 rounded-xl border border-white/30 text-center">
+                  <p className="text-[11px] font-bold text-white flex items-center justify-center gap-1.5">
+                    <FiCheckCircle className="w-3.5 h-3.5" />
+                    Cash Payment Noted
+                  </p>
+                  <p className="text-[9px] text-white/80 mt-0.5">
+                    Please hand over ₹{(booking.finalAmount - booking.totalAmount).toFixed(2)} to the professional.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -790,22 +790,45 @@ const confirmPayAtHome = async (req, res) => {
       });
     }
 
+    const isWorkDone = booking.status === BOOKING_STATUS.WORK_DONE;
+
     // Update booking status — NO earnings set (VendorBill handles that later)
     booking.paymentMethod = 'pay_at_home';
     booking.paymentStatus = PAYMENT_STATUS.PENDING;
-    booking.status = BOOKING_STATUS.CONFIRMED;
+    if (!isWorkDone) {
+      booking.status = BOOKING_STATUS.CONFIRMED;
+    }
 
     await booking.save();
 
     // Notify Vendor that booking is confirmed
     await createNotification({
       vendorId: booking.vendorId,
-      type: 'booking_confirmed',
-      title: 'Booking Confirmed (Pay at Home)',
-      message: `Booking ${booking.bookingNumber} has been confirmed. Payment method: Pay at Home.`,
+      type: isWorkDone ? 'cash_requested' : 'booking_confirmed',
+      title: isWorkDone ? 'Cash Collection Requested' : 'Booking Confirmed (Pay at Home)',
+      message: isWorkDone 
+        ? `User wants to pay ₹${booking.finalAmount} by cash. Please collect and confirm receipt.` 
+        : `Booking ${booking.bookingNumber} has been confirmed. Payment method: Pay at Home.`,
       relatedId: booking._id,
       relatedType: 'booking'
     });
+
+    // Also emit socket event to vendor for real-time UI update
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io && booking.vendorId) {
+        io.to(`vendor_${booking.vendorId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          paymentMethod: booking.paymentMethod,
+          message: isWorkDone ? 'User requested to pay by cash.' : 'User confirmed pay at home.'
+        });
+      }
+    } catch (sockErr) {
+      console.error('Socket emission error:', sockErr);
+    }
 
     res.status(200).json({
       success: true,
@@ -962,6 +985,141 @@ const getBookingInvoices = async (req, res) => {
   }
 };
 
+/**
+ * Confirm Cash Collection by Vendor
+ */
+const confirmCashCollection = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { bookingId } = req.body;
+
+    const booking = await Booking.findOne({ _id: bookingId, vendorId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status !== BOOKING_STATUS.WORK_DONE) {
+      return res.status(400).json({ success: false, message: 'Booking is not in work_done state' });
+    }
+
+    if (booking.paymentStatus === PAYMENT_STATUS.SUCCESS) {
+      return res.status(400).json({ success: false, message: 'Payment already completed' });
+    }
+
+    // Mark as completed
+    booking.paymentMethod = 'cash';
+    booking.paymentStatus = PAYMENT_STATUS.SUCCESS;
+    booking.status = BOOKING_STATUS.COMPLETED;
+    booking.completedAt = new Date();
+
+    const Vendor = require('../../models/Vendor');
+    await Vendor.findByIdAndUpdate(booking.vendorId, { availability: 'AVAILABLE' });
+    await Vendor.updateWorkStatus(booking.vendorId);
+
+    await booking.save();
+
+    // Trigger Commission & Collection System
+    const { processBookingCompletion } = require('../../services/commissionService');
+    processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
+
+    const VendorBill = require('../../models/VendorBill');
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
+    const Transaction = require('../../models/Transaction');
+
+    try {
+      if (!booking.invoiceGenerated && booking.vendorId) {
+        const { generateVendorInvoice, generatePlatformInvoice } = require('../../services/invoiceService');
+        const transactionGroupId = `TXN-GRP-${booking.bookingNumber || booking._id}`;
+
+        const totalBase = bill ? (bill.totalServiceBase + bill.totalPartsBase) : (booking.basePrice || (booking.finalAmount / 1.18));
+        const platformFeeAmount = parseFloat((totalBase * 0.20).toFixed(2));
+        const vendorBaseAmount = parseFloat((totalBase - platformFeeAmount).toFixed(2));
+        let vendorEarning = bill ? bill.vendorTotalEarning : (booking.vendorShare || vendorBaseAmount);
+
+        const vendorInv = await generateVendorInvoice(booking._id, booking.vendorId, booking.userId, vendorEarning, transactionGroupId);
+        const platformInv = await generatePlatformInvoice(booking._id, booking.vendorId, booking.userId, parseFloat((totalBase - vendorEarning).toFixed(2)), transactionGroupId);
+
+        if (vendorInv) {
+          vendorEarning = vendorInv.baseAmount;
+        }
+
+        booking.invoiceGenerated = true;
+        await booking.save();
+
+        // Cash collection: Vendor keeps the cash, so we add DUES to their wallet
+        const duesAmount = booking.finalAmount - vendorEarning;
+        await Vendor.findByIdAndUpdate(booking.vendorId, {
+          $inc: {
+            'wallet.earnings': vendorEarning,
+            'wallet.dues': duesAmount
+          }
+        });
+
+        // Save Transaction ledger entry for dues
+        if (duesAmount > 0) {
+          await Transaction.create({
+            vendorId: booking.vendorId,
+            bookingId: booking._id,
+            amount: duesAmount,
+            type: 'dues_increase',
+            paymentMethod: 'system',
+            status: 'completed',
+            description: `Dues ₹${duesAmount} added for booking ${booking.bookingNumber} (Cash collected by vendor)`,
+            metadata: {
+              type: 'dues_increase',
+              billId: bill?._id?.toString(),
+              transactionGroupId
+            }
+          });
+        }
+
+        if (bill) {
+          bill.vendorTotalEarning = vendorEarning;
+          bill.companyRevenue = platformInv ? platformInv.baseAmount : platformFeeAmount;
+          bill.status = 'paid';
+          bill.paidAt = new Date();
+          await bill.save();
+        }
+      }
+    } catch (invoiceErr) {
+      console.error('[INVOICE FLOW ERROR] Invoice generation failed during cash collection:', invoiceErr);
+    }
+
+    const { createNotification } = require('../notificationControllers/notificationController');
+
+    // Notify user
+    await createNotification({
+      userId: booking.userId,
+      type: 'payment_success',
+      title: 'Payment Successful (Cash)',
+      message: `Your cash payment of ₹${booking.finalAmount} was successfully collected. Booking completed!`,
+      relatedId: booking._id,
+      relatedType: 'booking'
+    });
+
+    // Notify via Socket
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        io.to(`user_${booking.userId.toString()}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          message: 'Cash payment confirmed! Job completed.'
+        });
+      }
+    } catch (sockErr) {
+      console.error('Socket emission error:', sockErr);
+    }
+
+    res.status(200).json({ success: true, message: 'Cash collection confirmed successfully.' });
+  } catch (error) {
+    console.error('Confirm cash collection error:', error);
+    res.status(500).json({ success: false, message: 'Failed to confirm cash collection' });
+  }
+};
+
 module.exports = {
   createPaymentOrder,
   verifyPaymentWebhook,
@@ -969,6 +1127,7 @@ module.exports = {
   processRefund,
   getPaymentHistory,
   confirmPayAtHome,
+  confirmCashCollection,
   createPlanOrder,
   verifyPlanPayment,
   getUpgradeDetails,
