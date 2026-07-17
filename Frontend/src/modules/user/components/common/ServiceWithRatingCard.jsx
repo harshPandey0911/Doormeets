@@ -63,7 +63,7 @@ const ServiceWithRatingCard = memo(({
         )}
 
         <div className="flex items-baseline gap-2 mt-1">
-          <span className="text-[13px] md:text-[15px] font-extrabold" style={{ color: 'var(--text-primary)' }}>
+          <span className={`text-[13px] md:text-[15px] ${price && !isNaN(price.toString().replace(/[,]/g, '')) ? 'font-semibold' : 'font-normal'}`} style={{ color: 'var(--text-primary)' }}>
             {displayPrice}
           </span>
           {originalPrice && (

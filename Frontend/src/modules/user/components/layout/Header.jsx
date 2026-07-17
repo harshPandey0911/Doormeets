@@ -57,7 +57,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
         <div className="flex flex-col min-w-0">
           <div
             onClick={onLocationClick}
-            className="flex items-center gap-1 cursor-pointer select-none text-[13px] transition-colors capitalize font-medium"
+            className="flex items-center gap-1 cursor-pointer select-none text-[13px] transition-colors capitalize font-normal"
             style={{ color: 'var(--text-secondary)' }}
           >
             <span>{displayLocation}</span>
@@ -73,10 +73,10 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             </svg>
           </div>
           <h1
-            className="text-[15.5px] md:text-[21px] font-medium md:font-semibold leading-[1.2] tracking-tight mt-0.5 md:mt-1.5 max-w-[220px] md:max-w-none md:whitespace-nowrap"
+            className="text-[18px] md:text-[21px] font-medium md:font-semibold leading-[1.2] tracking-tight mt-0.5 md:mt-1.5 max-w-[220px] md:max-w-none md:whitespace-nowrap"
             style={{ color: 'var(--text-primary)' }}
           >
-            What you are looking for today
+            What you are looking <br className="block md:hidden" /> for today
           </h1>
         </div>
 

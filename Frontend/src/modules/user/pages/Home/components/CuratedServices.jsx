@@ -97,7 +97,7 @@ const CuratedServices = React.memo(({ services, onServiceClick, title, subtitle 
         </p>
       </div>
 
-      <div ref={cardsRef} className="flex gap-3 overflow-x-auto px-6 lg:px-4 pb-2 scrollbar-hide lg:flex lg:flex-wrap lg:justify-start lg:gap-6 lg:overflow-visible">
+      <div ref={cardsRef} className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide lg:flex lg:flex-wrap lg:justify-start lg:gap-6 lg:overflow-visible">
         {serviceList.map((service, index) => (
           <ServiceCard
             key={service.id || index}

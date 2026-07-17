@@ -825,7 +825,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[68px] md:pt-[80px] space-y-6 md:space-y-10 max-w-[1600px] mx-auto w-full px-0 md:px-12">
+        <main className="pt-[86px] md:pt-[80px] space-y-6 md:space-y-10 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
