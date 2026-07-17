@@ -100,6 +100,7 @@ const BookingDetails = () => {
   });
 
   const [cancellationTimeLeft, setCancellationTimeLeft] = useState(true);
+  const [cancelCountdown, setCancelCountdown] = useState(null);
 
   const handleDownloadInvoice = async () => {
     downloadInvoice(booking, companyDetails);
@@ -107,22 +108,41 @@ const BookingDetails = () => {
 
   // Cancellation window real-time timer check
   useEffect(() => {
-    if (!booking || !booking.vendorId || !booking.acceptedAt) {
-      setCancellationTimeLeft(true);
-      return;
-    }
+    if (!booking) return;
 
     const checkTime = () => {
-      const acceptedTime = new Date(booking.acceptedAt).getTime();
-      const elapsedMs = Date.now() - acceptedTime;
-      const allowed = elapsedMs <= 2 * 60 * 1000; // 2 minutes
-      setCancellationTimeLeft(allowed);
+      if (booking.bookingType === 'scheduled') {
+        const createdTime = new Date(booking.createdAt).getTime();
+        const elapsedMs = Date.now() - createdTime;
+        const remainingMs = (3 * 60 * 1000) - elapsedMs;
+        if (remainingMs > 0) {
+          setCancelCountdown(Math.ceil(remainingMs / 1000));
+        } else {
+          setCancelCountdown(0);
+        }
+      } else {
+        if (!booking.vendorId || !booking.acceptedAt) {
+          setCancellationTimeLeft(true);
+        } else {
+          const acceptedTime = new Date(booking.acceptedAt).getTime();
+          const elapsedMs = Date.now() - acceptedTime;
+          const allowed = elapsedMs <= 3 * 60 * 1000; // 3 minutes
+          setCancellationTimeLeft(allowed);
+        }
+      }
     };
 
     checkTime();
-    const interval = setInterval(checkTime, 5000); // Check every 5 seconds
+    const interval = setInterval(checkTime, 1000); // Check every second for countdown
     return () => clearInterval(interval);
   }, [booking]);
+
+  const formatTime = (seconds) => {
+    if (seconds == null) return '';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   const socket = useAppNotifications();
 
@@ -1608,22 +1628,42 @@ const BookingDetails = () => {
             {/* Cancel */}
             {!['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && (
               <div className="col-span-2 space-y-2">
-                <button
-                  disabled={booking.vendorId && !cancellationTimeLeft}
-                  onClick={handleCancelBooking}
-                  className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors ${(booking.vendorId && !cancellationTimeLeft)
-                      ? 'bg-divider text-secondary-text border border-border-color cursor-not-allowed'
-                      : 'text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
-                    }`}
-                >
-                  Cancel Booking
-                </button>
-                {booking.vendorId && (
-                  <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
-                    {cancellationTimeLeft
-                      ? '⚠️ Cancellation only allowed within 3 minutes of acceptance'
-                      : '🚫 Cancellation window expired (exceeded 3 mins)'}
-                  </p>
+                {booking.bookingType === 'scheduled' ? (
+                  cancelCountdown > 0 ? (
+                    <button
+                      onClick={handleCancelBooking}
+                      className="w-full py-4 rounded-2xl font-bold text-sm transition-colors text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95"
+                    >
+                      Cancel Booking ({formatTime(cancelCountdown)})
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
+                      className="w-full py-4 rounded-2xl font-bold text-sm transition-colors text-brand bg-brand/10 border border-brand/20 hover:bg-brand/20 active:scale-95"
+                    >
+                      Reschedule Booking
+                    </button>
+                  )
+                ) : (
+                  <>
+                    <button
+                      disabled={booking.vendorId && !cancellationTimeLeft}
+                      onClick={handleCancelBooking}
+                      className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors ${(booking.vendorId && !cancellationTimeLeft)
+                          ? 'bg-divider text-secondary-text border border-border-color cursor-not-allowed'
+                          : 'text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
+                        }`}
+                    >
+                      Cancel Booking
+                    </button>
+                    {booking.vendorId && (
+                      <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
+                        {cancellationTimeLeft
+                          ? '⚠️ Cancellation only allowed within 3 minutes of acceptance'
+                          : '🚫 Cancellation window expired (exceeded 3 mins)'}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -1653,10 +1693,10 @@ const BookingDetails = () => {
                 </button>
               )}
 
-              {/* Reschedule Option */}
-              {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && (
+              {/* Reschedule Option (Hidden for scheduled bookings here since it's above) */}
+              {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType !== 'scheduled' && (
                 <button
-                  onClick={() => navigate(`/user/reschedule-booking/${booking._id}`)}
+                  onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
                   className="w-full py-3 border border-border-color text-dark-text hover:bg-divider text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
                 >
                   Reschedule Slot

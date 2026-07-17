@@ -20,6 +20,13 @@ const Wallet = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [fetchingMore, setFetchingMore] = useState(false);
+  const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
+  const [loyaltyHistory, setLoyaltyHistory] = useState([]);
+  const [bookings, setBookings] = useState([]);
+
   // Voucher Redemption states
   const [voucherCode, setVoucherCode] = useState('');
   const [claiming, setClaiming] = useState(false);
@@ -28,9 +35,10 @@ const Wallet = () => {
     const loadWalletData = async () => {
       try {
         setLoading(true);
-        const [balanceResponse, transactionsResponse] = await Promise.all([
+        const [balanceResponse, transactionsResponse, bookingsResponse] = await Promise.all([
           walletService.getBalance(),
-          walletService.getTransactions()
+          walletService.getTransactions(),
+          bookingService.getUserBookings()
         ]);
 
         if (balanceResponse.success) {

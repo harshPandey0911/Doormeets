@@ -168,15 +168,7 @@ const PremiumServiceDetailPage = () => {
   const [activeCategoryModal, setActiveCategoryModal] = useState(null);
 
   const handleIncreaseSubItem = async (subItem) => {
-    // Sync with local page selections
-    const groupId = activeCategoryModal?._id?.toString();
-    if (groupId) {
-      const updatedSelections = { ...customSelectedItems };
-      updatedSelections[groupId] = [subItem._id?.toString()];
-      setCustomSelectedItems(updatedSelections);
-      setIsCustomizing(true);
-      setSelectedPackage(null);
-    }
+    // Only add the individual item to cart directly
 
     const existing = cartItems.find(entry => entry.title === subItem.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
     if (existing) {
@@ -204,13 +196,6 @@ const PremiumServiceDetailPage = () => {
     const newCount = (existing.serviceCount || 1) - 1;
     if (newCount <= 0) {
       await removeItem(existing._id || existing.id);
-      // Remove or set to skip locally
-      const groupId = activeCategoryModal?._id?.toString();
-      if (groupId) {
-        const updatedSelections = { ...customSelectedItems };
-        updatedSelections[groupId] = ['skip'];
-        setCustomSelectedItems(updatedSelections);
-      }
     } else {
       await updateItem(existing._id || existing.id, newCount);
     }
@@ -301,8 +286,7 @@ const PremiumServiceDetailPage = () => {
 
   useEffect(() => {
     if ((service?.serviceType === 'package_base' || service?.serviceType === 'subscription_base') && service?.packages?.length > 0) {
-      const popular = service.packages.find(p => p.isPopular);
-      setSelectedPackage(popular || service.packages[0]);
+      // Intentionally not auto-selecting a package so the user doesn't see a price before they choose
     }
     if (service?.serviceType === 'minute_base') {
       setSelectedDuration(Number(service.minimumMinutes) || 30);
@@ -1867,20 +1851,39 @@ const PremiumServiceDetailPage = () => {
           </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t px-4 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-2 backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-          <div>
-            <div className="text-[10px] font-normal tracking-[0.05em]" style={{ color: 'var(--text-muted)' }}>
-              Price {service.serviceType === 'minute_base' && `(${selectedDuration} Mins)`}
-              {selectedVariants.length > 0 && ` + ${selectedVariants.length} add-on${selectedVariants.length > 1 ? 's' : ''}`}
+      {/* Mobile Sticky Bottom Bar */}
+      {(cartItems.length > 0 || finalPrice > 0) && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t px-4 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-2 backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+          {cartItems.length > 0 ? (
+            <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+              <div>
+                <div className="text-[10px] font-normal tracking-[0.05em]" style={{ color: 'var(--text-muted)' }}>
+                  {cartItems.length} item{cartItems.length > 1 ? 's' : ''} in cart
+                </div>
+                <div className="text-xl font-bold mt-0.5" style={{ color: '#B33A35' }}>
+                  ₹{cartItems.reduce((acc, item) => acc + Number(item.price || 0), 0)}
+                </div>
+              </div>
+              <button type="button" onClick={() => navigate('/user/cart')} className="rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02] flex items-center gap-1.5">
+                View Cart <FiShoppingBag className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <PriceTag price={finalPrice} originalPrice={service.originalPrice} className="mt-0.5" />
-          </div>
-          <button type="button" onClick={handleAdd} className="rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]">
-            {service.serviceType === 'image_base' ? 'Add Selected' : (variants.length > 0 ? 'Select & Add' : 'Add to cart')}
-          </button>
+          ) : (
+            <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+              <div>
+                <div className="text-[10px] font-normal tracking-[0.05em]" style={{ color: 'var(--text-muted)' }}>
+                  Price {service.serviceType === 'minute_base' && `(${selectedDuration} Mins)`}
+                  {selectedVariants.length > 0 && ` + ${selectedVariants.length} add-on${selectedVariants.length > 1 ? 's' : ''}`}
+                </div>
+                <PriceTag price={finalPrice} originalPrice={service.originalPrice} className="mt-0.5" />
+              </div>
+              <button type="button" onClick={handleAdd} className="rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]">
+                {service.serviceType === 'image_base' ? 'Add Selected' : (variants.length > 0 ? 'Select & Add' : 'Add to cart')}
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
       </div>
 
       <div className="hidden lg:block w-full max-w-[1280px] mx-auto px-6 pt-28 pb-6 font-sans">

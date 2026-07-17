@@ -295,6 +295,24 @@ const bookingSchema = new mongoose.Schema({
     date: { type: String }, // redundant but kept for frontend convenience format
     time: { type: String }  // redundant but kept for frontend convenience format
   },
+  rescheduleRequest: {
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected', null],
+      default: null
+    },
+    newScheduledDate: { type: Date, default: null },
+    newScheduledTime: { type: String, default: null },
+    newTimeSlot: {
+      start: { type: String },
+      end: { type: String }
+    },
+    requestedAt: { type: Date, default: null }
+  },
+  hasBeenRescheduled: {
+    type: Boolean,
+    default: false
+  },
 
   // ==========================================
   // 7. STATUS & TRACKING

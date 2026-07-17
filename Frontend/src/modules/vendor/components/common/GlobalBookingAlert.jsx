@@ -4,14 +4,17 @@ import { toast } from 'react-hot-toast';
 import { BookingAlertModal } from '../bookings';
 import { acceptBooking, rejectBooking, assignWorker } from '../../services/bookingService';
 import { playAlertRing, stopAlertRing } from '../../../../utils/notificationSound';
-import { FiMapPin } from 'react-icons/fi';
+import { FiMapPin, FiClock } from 'react-icons/fi';
+import useAppNotifications from '../../../../hooks/useAppNotifications';
 
 export default function GlobalBookingAlert() {
   const [activeAlertBookings, setActiveAlertBookings] = useState([]);
   const [activeWorkerAlerts, setActiveWorkerAlerts] = useState([]);
+  const [activeRescheduleAlerts, setActiveRescheduleAlerts] = useState([]);
   const ignoredBookingIds = useRef(new Set());
   const navigate = useNavigate();
   const location = useLocation();
+  const socket = useAppNotifications();
 
   const [maxSearchTime, setMaxSearchTime] = useState(1);
 
@@ -162,17 +165,30 @@ export default function GlobalBookingAlert() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!socket) return;
+    const handleRescheduleRequest = (data) => {
+      setActiveRescheduleAlerts(prev => {
+        const bId = String(data.bookingId);
+        if (prev.find(b => String(b.bookingId) === bId)) return prev;
+        return [data, ...prev];
+      });
+    };
+    socket.on('reschedule_request', handleRescheduleRequest);
+    return () => socket.off('reschedule_request', handleRescheduleRequest);
+  }, [socket]);
+
   const [activeConsultationAlerts, setActiveConsultationAlerts] = useState([]);
 
   // Effect to manage sound based on pending bookings
   useEffect(() => {
-    if (activeAlertBookings.length > 0 || activeConsultationAlerts.length > 0 || activeWorkerAlerts.length > 0) {
+    if (activeAlertBookings.length > 0 || activeConsultationAlerts.length > 0 || activeWorkerAlerts.length > 0 || activeRescheduleAlerts.length > 0) {
       playAlertRing(true); // Always loop for vendor/worker until actioned
     } else {
       stopAlertRing();
     }
     return () => stopAlertRing();
-  }, [activeAlertBookings.length, activeConsultationAlerts.length, activeWorkerAlerts.length]);
+  }, [activeAlertBookings.length, activeConsultationAlerts.length, activeWorkerAlerts.length, activeRescheduleAlerts.length]);
 
   const handleAcceptConsultation = async (id) => {
     try {
@@ -395,6 +411,74 @@ export default function GlobalBookingAlert() {
                 className="px-4 py-3 border-2 border-gray-200 text-gray-500 font-semibold rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
               >
                 Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Reschedule Alert Modal Overlay */}
+      {activeRescheduleAlerts.map((reschedule) => (
+        <div key={reschedule.bookingId} className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border-2 border-brand animate-bounce-short">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center text-brand">
+                <FiClock className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="bg-brand/10 text-brand text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">Reschedule Request</span>
+                <h3 className="text-lg font-bold text-gray-900 mt-1 flex items-center gap-1.5">
+                  Action Required
+                </h3>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-6 border border-gray-100 text-sm">
+              <div className="text-center text-gray-600 font-medium">
+                {reschedule.message}
+              </div>
+              <div className="flex justify-between items-center border-t border-gray-200 pt-2">
+                <span className="text-gray-400 font-medium">Old Time</span>
+                <span className="font-bold text-red-500 line-through">{reschedule.oldScheduledTime}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-medium">New Time</span>
+                <span className="font-bold text-green-600">{reschedule.newScheduledTime}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const api = (await import('../../../../services/api')).default;
+                    await api.post(`/vendor/bookings/${reschedule.bookingId}/reschedule/accept`);
+                    toast.success('Reschedule accepted!');
+                    setActiveRescheduleAlerts(prev => prev.filter(a => String(a.bookingId) !== String(reschedule.bookingId)));
+                    window.dispatchEvent(new Event('vendorJobsUpdated'));
+                  } catch (e) {
+                    toast.error('Failed to accept reschedule');
+                  }
+                }}
+                className="flex-1 py-3 bg-brand hover:bg-brand-light active:scale-95 text-white font-bold rounded-xl transition-all shadow-md"
+              >
+                Accept New Time
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const api = (await import('../../../../services/api')).default;
+                    await api.post(`/vendor/bookings/${reschedule.bookingId}/reschedule/reject`);
+                    toast.success('Reschedule rejected. Job unassigned.');
+                    setActiveRescheduleAlerts(prev => prev.filter(a => String(a.bookingId) !== String(reschedule.bookingId)));
+                    window.dispatchEvent(new Event('vendorJobsUpdated'));
+                  } catch (e) {
+                    toast.error('Failed to reject reschedule');
+                  }
+                }}
+                className="px-4 py-3 border-2 border-gray-200 text-gray-500 font-semibold rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+              >
+                Reject & Unassign
               </button>
             </div>
           </div>

@@ -652,7 +652,7 @@ const acceptBooking = async (req, res) => {
       ? `Your booking ${booking.bookingNumber} is accepted! ${req.user.businessName || req.user.name} has accepted the job and will assign a worker soon.`
       : `Your booking ${booking.bookingNumber} is confirmed! ${req.user.businessName || req.user.name} will arrive at scheduled time.`;
 
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'booking_accepted',
       title: isAcceptedOnly ? 'Booking Accepted!' : 'Booking Confirmed!',
@@ -762,7 +762,7 @@ const rejectBooking = async (req, res) => {
       booking.cancellationReason = 'All vendors rejected the request. Awaiting admin review.';
 
       // Notify user that no vendors accepted and routed to admin
-      await createNotification({
+      createNotification({
         userId: booking.userId,
         type: 'booking_request',
         title: 'Booking Routing Update',
@@ -1038,7 +1038,7 @@ const assignWorker = async (req, res) => {
       await Vendor.findByIdAndUpdate(vendorId, { workStatus: 'busy' });
 
       // Notify User
-      await createNotification({
+      createNotification({
         userId: booking.userId,
         type: 'worker_assigned',
         title: 'Service Provider Assigned',
@@ -1113,7 +1113,7 @@ const assignWorker = async (req, res) => {
     await Vendor.updateWorkStatus(vendorId);
 
     // Send notification to user
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'worker_assigned',
       title: 'Service Provider Assigned',
@@ -1130,7 +1130,7 @@ const assignWorker = async (req, res) => {
     });
 
     // Send notification to worker
-    await createNotification({
+    createNotification({
       workerId,
       type: 'booking_created',
       title: 'New Job Assigned',
@@ -1274,7 +1274,7 @@ const updateBookingStatus = async (req, res) => {
 
     // Send notification
     if (status === BOOKING_STATUS.COMPLETED) {
-      await createNotification({
+      createNotification({
         userId: booking.userId,
         type: 'booking_completed',
         title: 'Booking Completed',
@@ -1473,7 +1473,7 @@ const startSelfJob = async (req, res) => {
 
     // Notify user
     const { createNotification } = require('../notificationControllers/notificationController');
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'worker_started',
       title: 'Vendor Started Journey',
@@ -1547,7 +1547,7 @@ const vendorReachedLocation = async (req, res) => {
 
     // Notify user
     const { createNotification } = require('../notificationControllers/notificationController');
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'vendor_reached',
       title: 'Vendor has Reached!',
@@ -1619,9 +1619,9 @@ const verifySelfVisit = async (req, res) => {
       }
     }
 
-    // Notify user
+    // Notify user asynchronously (do not block response)
     const { createNotification } = require('../notificationControllers/notificationController');
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'visit_verified',
       title: 'Visit Verified',
@@ -1783,7 +1783,8 @@ const completeSelfJob = async (req, res) => {
       // ═══════════════════════════════════════════
 
       const visitingCharges = Number(booking.visitingCharges) || 0;
-      grandTotal = parseFloat((totalServiceBase + totalPartsBase + totalGST + visitingCharges).toFixed(2));
+      const instantMarkup = booking.bookingType === 'instant' ? (parseFloat(booking.instantMarkupCharged) || 0) : 0;
+      grandTotal = parseFloat((totalServiceBase + totalPartsBase + totalGST + visitingCharges + instantMarkup).toFixed(2));
 
       // ═══════════════════════════════════════════
       // STEP 5: REVENUE SPLIT (internal only)
@@ -1902,7 +1903,7 @@ const completeSelfJob = async (req, res) => {
     const { createNotification } = require('../notificationControllers/notificationController');
 
     // 1. Notify user that work is completed
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'work_completed',
       title: 'Work Completed',
@@ -1918,7 +1919,7 @@ const completeSelfJob = async (req, res) => {
     });
 
     // 2. Notify user with Final Bill and OTP (The missing piece)
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'work_done',
       title: 'Billing Ready',
@@ -2136,7 +2137,7 @@ const collectSelfCash = async (req, res) => {
 
     // ── Notify user ──
     const { createNotification } = require('../notificationControllers/notificationController');
-    await createNotification({
+    createNotification({
       userId: booking.userId,
       type: 'payment_received',
       title: 'Payment Received (Cash)',
@@ -2288,7 +2289,7 @@ const payWorker = async (req, res) => {
 
     // Notify Worker
     const { createNotification } = require('../notificationControllers/notificationController');
-    await createNotification({
+    createNotification({
       workerId: booking.workerId,
       type: 'payment_received',
       title: 'Payment Received',
@@ -2321,7 +2322,7 @@ const payWorker = async (req, res) => {
     }
 
     // Notify Vendor
-    await createNotification({
+    createNotification({
       vendorId: vendorId,
       type: 'payment_success',
       title: 'Worker Paid',
@@ -2548,7 +2549,7 @@ const reconfirmBooking = async (req, res) => {
 
       const io = req.app.get('io');
       for (const admin of admins) {
-        await createNotification({
+        createNotification({
           adminId: admin._id,
           type: 'booking_escalation',
           title: 'Booking Declined (High Risk)',
@@ -2626,7 +2627,7 @@ const requestCancelBooking = async (req, res) => {
 
       // Create one DB notification per admin
       for (const admin of admins) {
-        await createNotification({
+        createNotification({
           adminId: admin._id,
           type: 'booking_escalation',
           title: 'Cancellation Request (Vendor)',
@@ -2667,6 +2668,118 @@ const requestCancelBooking = async (req, res) => {
   }
 };
 
+const acceptReschedule = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+
+    const Booking = require('../../models/Booking');
+    const booking = await Booking.findOne({ _id: id, vendorId });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!booking.rescheduleRequest || booking.rescheduleRequest.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'No pending reschedule request found' });
+    }
+
+    // Apply reschedule
+    booking.scheduledDate = booking.rescheduleRequest.newScheduledDate;
+    booking.scheduledTime = booking.rescheduleRequest.newScheduledTime;
+    booking.timeSlot = booking.rescheduleRequest.newTimeSlot;
+    booking.hasBeenRescheduled = true;
+
+    // Clear request
+    booking.rescheduleRequest.status = 'accepted';
+    
+    await booking.save();
+
+    // Notify user
+    const { createNotification } = require('../notificationControllers/notificationController');
+    await createNotification({
+      userId: booking.userId,
+      type: 'reschedule_accepted',
+      title: 'Reschedule Accepted',
+      message: `Vendor has accepted your rescheduled time for booking ${booking.bookingNumber}.`,
+      relatedId: booking._id,
+      relatedType: 'booking'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Reschedule request accepted successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Accept reschedule error:', error);
+    res.status(500).json({ success: false, message: 'Failed to accept reschedule request' });
+  }
+};
+
+const rejectReschedule = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+
+    const Booking = require('../../models/Booking');
+    const booking = await Booking.findOne({ _id: id, vendorId });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!booking.rescheduleRequest || booking.rescheduleRequest.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'No pending reschedule request found' });
+    }
+
+    // Vendor rejected: Unassign vendor and change status to searching
+    booking.rescheduleRequest.status = 'rejected';
+    
+    // Unassign vendor
+    booking.vendorId = null;
+    booking.status = 'searching';
+    booking.workerId = null;
+    
+    // Apply reschedule since user wanted it
+    booking.scheduledDate = booking.rescheduleRequest.newScheduledDate;
+    booking.scheduledTime = booking.rescheduleRequest.newScheduledTime;
+    booking.timeSlot = booking.rescheduleRequest.newTimeSlot;
+    booking.hasBeenRescheduled = true;
+    
+    // Free vendor
+    const Vendor = require('../../models/Vendor');
+    await Vendor.findByIdAndUpdate(vendorId, {
+      availability: 'AVAILABLE',
+      workStatus: 'available',
+      availabilityStatus: 'ONLINE',
+      reservedFrom: null,
+      reservedBookingId: null
+    });
+
+    await booking.save();
+    
+    const { createNotification } = require('../notificationControllers/notificationController');
+    await createNotification({
+      userId: booking.userId,
+      type: 'reschedule_rejected',
+      title: 'Reschedule: Finding New Vendor',
+      message: `Your previously assigned vendor couldn't accommodate the new time. We are finding a new vendor for booking ${booking.bookingNumber}.`,
+      relatedId: booking._id,
+      relatedType: 'booking'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Reschedule request rejected. Vendor freed.',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Reject reschedule error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject reschedule request' });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   getBookingById,
@@ -2686,5 +2799,7 @@ module.exports = {
   getPendingBookings,
   reconfirmBooking,
   cancelAcceptedBooking,
-  requestCancelBooking
+  requestCancelBooking,
+  acceptReschedule,
+  rejectReschedule
 };

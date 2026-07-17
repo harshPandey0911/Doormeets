@@ -1470,41 +1470,100 @@ const rescheduleBooking = async (req, res) => {
       });
     }
 
-    // Update booking
-    booking.scheduledDate = new Date(scheduledDate);
-    booking.scheduledTime = scheduledTime;
-    booking.timeSlot = {
-      start: timeSlot.start,
-      end: timeSlot.end
-    };
+    if (booking.bookingType === 'scheduled' && booking.vendorId) {
+      // Slot booking with assigned vendor: send approval request
+      booking.rescheduleRequest = {
+        status: 'pending',
+        newScheduledDate: new Date(scheduledDate),
+        newScheduledTime: scheduledTime,
+        newTimeSlot: {
+          start: timeSlot.start,
+          end: timeSlot.end
+        },
+        requestedAt: new Date()
+      };
+      
+      await booking.save();
 
-    // Reset status to pending if it was confirmed
-    if (booking.status === BOOKING_STATUS.CONFIRMED) {
-      booking.status = BOOKING_STATUS.PENDING;
-    }
-
-    await booking.save();
-
-    // Send notification to vendor
-    await createNotification({
-      vendorId: booking.vendorId,
-      type: 'booking_created', // Keeping type as is for now
-      title: 'Booking Rescheduled',
-      message: `Booking ${booking.bookingNumber} has been rescheduled.`,
-      relatedId: booking._id,
-      relatedType: 'booking',
-      pushData: {
-        type: 'booking_rescheduled',
-        bookingId: booking._id.toString(),
-        link: `/vendor/bookings/${booking._id}`
+      // Emit socket event to vendor
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        if (io) {
+          io.to(`vendor_${booking.vendorId.toString()}`).emit('reschedule_request', {
+            bookingId: booking._id,
+            bookingNumber: booking.bookingNumber,
+            oldScheduledDate: booking.scheduledDate,
+            oldScheduledTime: booking.scheduledTime,
+            newScheduledDate: scheduledDate,
+            newScheduledTime: scheduledTime,
+            message: `User has requested to reschedule booking ${booking.bookingNumber}`
+          });
+        }
+      } catch (err) {
+        console.error('[Reschedule] Socket emission failed:', err);
       }
-    });
 
-    res.status(200).json({
-      success: true,
-      message: 'Booking rescheduled successfully',
-      data: booking
-    });
+      // Send notification to vendor
+      await createNotification({
+        vendorId: booking.vendorId,
+        type: 'reschedule_request',
+        title: 'Booking Reschedule Request',
+        message: `User wants to reschedule booking ${booking.bookingNumber} to ${scheduledTime}. Please accept or reject.`,
+        relatedId: booking._id,
+        relatedType: 'booking',
+        pushData: {
+          type: 'booking_rescheduled',
+          bookingId: booking._id.toString(),
+          link: `/vendor/bookings/${booking._id}`
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Reschedule request sent to vendor for approval',
+        data: booking
+      });
+    } else {
+      // Direct update
+      booking.scheduledDate = new Date(scheduledDate);
+      booking.scheduledTime = scheduledTime;
+      booking.timeSlot = {
+        start: timeSlot.start,
+        end: timeSlot.end
+      };
+      booking.hasBeenRescheduled = true;
+
+      // Reset status to pending if it was confirmed
+      if (booking.status === BOOKING_STATUS.CONFIRMED) {
+        booking.status = BOOKING_STATUS.PENDING;
+      }
+
+      await booking.save();
+
+      if (booking.vendorId) {
+        // Send notification to vendor
+        await createNotification({
+          vendorId: booking.vendorId,
+          type: 'booking_created', // Keeping type as is for now
+          title: 'Booking Rescheduled',
+          message: `Booking ${booking.bookingNumber} has been rescheduled.`,
+          relatedId: booking._id,
+          relatedType: 'booking',
+          pushData: {
+            type: 'booking_rescheduled',
+            bookingId: booking._id.toString(),
+            link: `/vendor/bookings/${booking._id}`
+          }
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Booking rescheduled successfully',
+        data: booking
+      });
+    }
   } catch (error) {
     console.error('Reschedule booking error:', error);
     res.status(500).json({
