@@ -6,7 +6,7 @@ const ScrollArrowButton = ({ direction, onClick, className = '' }) => {
   return (
     <button
       onClick={onClick}
-      className={`absolute z-20 w-8 h-8 md:w-10 md:h-10 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-center border overflow-hidden group active:scale-95 transition-transform ${className}`}
+      className={`absolute z-20 hidden md:flex w-8 h-8 md:w-10 md:h-10 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.15)] items-center justify-center border overflow-hidden group active:scale-95 transition-transform ${className}`}
       style={{
         backgroundColor: 'var(--surface)',
         borderColor: 'var(--border)',

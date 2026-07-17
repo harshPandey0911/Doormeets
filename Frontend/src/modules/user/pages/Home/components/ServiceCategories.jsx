@@ -138,18 +138,18 @@ const ServiceCategories = React.memo(({
               <div
                 key={category.id || index}
                 onClick={() => onCategoryClick?.(category)}
-                className="snap-start shrink-0 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-[130px] md:w-[160px]"
+                className="snap-start shrink-0 flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-[calc((100vw-48px)/3)] md:w-[160px]"
               >
                 {/* Image card */}
                 <div
-                  className="w-full aspect-square rounded-[20px] overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200"
+                  className="w-full aspect-square rounded-[14px] overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200 category-image-card"
                   style={{ backgroundColor: category.colorScheme.bg }}
                 >
                   {category.icon ? (
                     <DynamicIcon
                       icon={category.icon}
                       alt={category.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -171,6 +171,13 @@ const ServiceCategories = React.memo(({
           </div>
         </div>
       </div>
+      
+      <style>{`
+        .category-image-card img {
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: crisp-edges;
+        }
+      `}</style>
     </div >
   );
 });

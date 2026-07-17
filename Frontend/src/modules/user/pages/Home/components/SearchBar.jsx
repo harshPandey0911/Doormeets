@@ -65,10 +65,10 @@ const SearchBar = ({ onInputClick }) => {
           >
             {/* Placeholder text with typing animation */}
             <span
-              className="text-[14.5px] tracking-wide font-normal flex items-center whitespace-nowrap overflow-hidden w-full"
+              className="text-sm tracking-normal font-normal flex items-center whitespace-nowrap overflow-hidden w-full"
               style={{ color: 'var(--text-muted)' }}
             >
-              Search for&nbsp;<span className="font-medium" style={{ color: 'var(--text-secondary)' }}>'{displayedText}'</span>
+              Search for&nbsp;<span className="font-normal" style={{ color: 'var(--text-secondary)' }}>'{displayedText}'</span>
               <span className="animate-pulse ml-0.5 font-light" style={{ color: 'var(--text-muted)' }}>|</span>
             </span>
           </div>
