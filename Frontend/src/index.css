@@ -102,10 +102,10 @@
   --color-orange-700: var(--primary-hover);
   --color-orange-800: var(--primary-hover);
   --color-orange-900: var(--primary-hover);
-  /* Map font weights to look identical in boldness to Poppins */
-  --font-weight-medium:   600;
-  --font-weight-semibold: 700;
-  --font-weight-bold:     800;
+  /* Map font weights to standard values */
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
   --font-weight-black:    900;
 }
 
@@ -376,7 +376,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif !important;
-  font-weight: 600 !important;
+  font-weight: 600;
   letter-spacing: 0.01em !important;
 }
 

@@ -27,7 +27,6 @@ const Profile = () => {
     { id: 8, label: 'Settings', icon: FiSettings, path: '/worker/settings' },
     { id: 9, label: 'About Doormeets', icon: null, customIcon: 'S', path: '/worker/about-cleaning-expert' },
   ] : [
-    { id: 2, label: 'Wallet', icon: FaWallet, path: '/vendor/wallet' },
     { id: 5, label: 'My Ratings', icon: FiStar, path: '/vendor/my-ratings' },
     { id: 14, label: 'Painting Consultations', icon: FiBriefcase, path: '/vendor/painting-consultations' },
     { id: 10, label: 'Categories', icon: FiGrid, path: '/vendor/categories' },
@@ -218,34 +217,34 @@ const Profile = () => {
       <main className="px-4 pt-4 pb-6">
         {/* Profile Header Card with Phone & Email (Light Orange Theme) */}
         <div
-          className="rounded-[2rem] p-4 mb-4 shadow-xl relative overflow-hidden border border-white/60"
+          className="rounded-3xl p-3 mb-3.5 shadow-xl relative overflow-hidden border border-white/60"
           style={{
             background: 'linear-gradient(135deg, #FFF5EB 0%, #FFEBD6 100%)',
-            boxShadow: '0 15px 30px rgba(255, 159, 69, 0.12)',
+            boxShadow: '0 12px 24px rgba(255, 159, 69, 0.1)',
           }}
         >
           {/* Decorative Patterns */}
           <div
-            className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20"
+            className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20"
             style={{
               background: `radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%)`,
-              transform: 'translate(30px, -30px)',
+              transform: 'translate(20px, -20px)',
             }}
           />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Profile Photo - Circle with Rating Below */}
               <div className="flex flex-col items-center flex-shrink-0">
                 <div
-                  className="rounded-full flex items-center justify-center overflow-hidden mb-1.5 transition-transform duration-500 hover:rotate-6"
+                  className="rounded-full flex items-center justify-center overflow-hidden mb-1 transition-transform duration-500 hover:rotate-6"
                   style={{
                     background: 'rgba(255, 255, 255, 0.6)',
                     backdropFilter: 'blur(10px)',
-                    boxShadow: '0 8px 16px rgba(255, 159, 69, 0.15), inset 0 2px 6px rgba(255, 255, 255, 0.8)',
-                    border: '3px solid white',
-                    width: '70px',
-                    height: '70px',
+                    boxShadow: '0 6px 12px rgba(255, 159, 69, 0.12), inset 0 2px 4px rgba(255, 255, 255, 0.8)',
+                    border: '2px solid white',
+                    width: '60px',
+                    height: '60px',
                   }}
                 >
                   {profile.photo ? (
@@ -255,36 +254,36 @@ const Profile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <FiUser className="w-8 h-8 text-orange-500" />
+                    <FiUser className="w-7 h-7 text-orange-500" />
                   )}
                 </div>
                 {/* Star Rating Below Photo */}
                 {profile.rating > 0 && (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/50 backdrop-blur-md border border-white/50">
-                    <FiStar className="w-3 h-3 text-amber-500 fill-amber-500" />
-                    <span className="text-[10px] font-black text-orange-900">{profile.rating.toFixed(1)}</span>
+                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/50 backdrop-blur-md border border-white/50">
+                    <FiStar className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                    <span className="text-[9px] font-black text-orange-900">{profile.rating.toFixed(1)}</span>
                   </div>
                 )}
               </div>
 
               {/* Name and Info */}
               <div className="flex-1 min-w-0 flex flex-col">
-                <h2 className="text-xl font-black text-orange-950 mb-0 break-words tracking-tight leading-tight">{profile.name}</h2>
-                <p className="text-orange-900/70 text-[10px] mb-2 font-bold break-words tracking-wide uppercase">{profile.businessName}</p>
+                <h2 className="text-base font-bold text-orange-950 mb-0 break-words tracking-tight leading-tight">{profile.name}</h2>
+                <p className="text-orange-900/70 text-[9px] mb-1 font-bold break-words tracking-wide uppercase">{profile.businessName}</p>
 
                 {/* Phone and Email */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-lg bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
-                      <FiPhone className="w-3 h-3 text-orange-800" />
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="p-0.5 rounded bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
+                      <FiPhone className="w-2.5 h-2.5 text-orange-800" />
                     </div>
-                    <span className="text-xs text-orange-950 font-bold tracking-tight">{profile.phone}</span>
+                    <span className="text-[11px] text-orange-950 font-bold tracking-tight">{profile.phone}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-lg bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
-                      <FiMail className="w-3 h-3 text-orange-800" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="p-0.5 rounded bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
+                      <FiMail className="w-2.5 h-2.5 text-orange-800" />
                     </div>
-                    <span className="text-xs text-orange-950 font-bold tracking-tight truncate max-w-[150px]">{profile.email}</span>
+                    <span className="text-[11px] text-orange-950 font-bold tracking-tight truncate max-w-[140px]">{profile.email}</span>
                   </div>
                 </div>
               </div>
@@ -292,9 +291,9 @@ const Profile = () => {
               {/* Navigate Button */}
               <button
                 onClick={() => navigate(isWorker ? '/worker/profile/details' : '/vendor/profile/details')}
-                className="p-3.5 rounded-2xl flex-shrink-0 transition-all duration-500 active:scale-90 group bg-white shadow-lg"
+                className="p-2.5 rounded-xl flex-shrink-0 transition-all duration-500 active:scale-90 group bg-white shadow"
               >
-                <FiArrowRight className="w-5 h-5 text-orange-600 group-hover:translate-x-1 transition-transform" />
+                <FiArrowRight className="w-4 h-4 text-orange-600 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
           </div>
@@ -302,12 +301,12 @@ const Profile = () => {
 
         {/* Three Cards Section - Horizontal */}
         {!isWorker && (
-          <div className="mb-5">
-            <div className="grid grid-cols-3 gap-3">
+          <div className="mb-4">
+            <div className="grid grid-cols-3 gap-2.5">
               {/* Active Jobs */}
               <button
                 onClick={() => navigate('/vendor/jobs')}
-                className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
+                className="flex flex-col items-center justify-center p-2.5 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
                   border: '1.5px solid rgba(0, 166, 166, 0.15)',
@@ -324,13 +323,13 @@ const Profile = () => {
                 }}
               >
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center mb-1.5"
                   style={{
                     backgroundColor: hexToRgba(themeColors.button, 0.12),
                     boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
                   }}
                 >
-                  <FiBriefcase className="w-5 h-5" style={{ color: themeColors.button }} />
+                  <FiBriefcase className="w-4 h-4" style={{ color: themeColors.button }} />
                 </div>
                 <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
                   Active Jobs
@@ -340,7 +339,7 @@ const Profile = () => {
               {/* Wallet */}
               <button
                 onClick={() => navigate('/vendor/wallet')}
-                className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
+                className="flex flex-col items-center justify-center p-2.5 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
                   boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
                   border: '1.5px solid rgba(0, 166, 166, 0.15)',
@@ -357,13 +356,13 @@ const Profile = () => {
                 }}
               >
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center mb-1.5"
                   style={{
                     backgroundColor: hexToRgba(themeColors.button, 0.12),
                     boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
                   }}
                 >
-                  <FaWallet className="w-5 h-5" style={{ color: themeColors.button }} />
+                  <FaWallet className="w-4 h-4" style={{ color: themeColors.button }} />
                 </div>
                 <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
                   Wallet
@@ -373,7 +372,7 @@ const Profile = () => {
               {/* Workers */}
               <button
                 onClick={() => navigate('/vendor/workers')}
-                className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
+                className="flex flex-col items-center justify-center p-2.5 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
                   boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
                   border: '1.5px solid rgba(0, 166, 166, 0.15)',
@@ -390,13 +389,13 @@ const Profile = () => {
                 }}
               >
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center mb-1.5"
                   style={{
                     backgroundColor: hexToRgba(themeColors.button, 0.12),
                     boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
                   }}
                 >
-                  <FiUser className="w-5 h-5" style={{ color: themeColors.button }} />
+                  <FiUser className="w-4 h-4" style={{ color: themeColors.button }} />
                 </div>
                 <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
                   Workers
@@ -455,7 +454,7 @@ const Profile = () => {
             type="button"
             disabled={sosTriggering}
             onClick={handleSOSClick}
-            className="w-full font-black py-4 rounded-xl active:scale-98 transition-all text-white flex items-center justify-center gap-2 uppercase tracking-wider text-sm animate-pulse"
+            className="w-full font-semibold py-3.5 rounded-xl active:scale-98 transition-all text-white flex items-center justify-center gap-2 text-sm"
             style={{
               backgroundColor: '#DC2626',
               boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)',
