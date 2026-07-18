@@ -141,7 +141,7 @@ const PremiumHome = () => {
               />
             ))}
           </div>
-          {filteredCategories.length === 0 ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No categories available right now.</div> : null}
+          {filteredCategories.length === 0 ? <div className="rounded-md border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No categories available right now.</div> : null}
         </section>
 
         <section className="px-4 pt-8 md:px-6">
@@ -155,8 +155,8 @@ const PremiumHome = () => {
           <div className="flex gap-3 overflow-x-auto pb-2">
             {brands.map((brand, index) => (
               <div key={brand.id || index} className="shrink-0">
-                <button type="button" onClick={() => navigate(`/user/brand/${brand.slug || brand.title.toLowerCase()}`, { state: { vendor: brand } })} className="rounded-3xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-transform hover:-translate-y-1">
-                  <div className="mb-2 flex h-16 w-24 items-center justify-center rounded-2xl bg-linear-to-br from-purple-50 to-white overflow-hidden">
+                 <button type="button" onClick={() => navigate(`/user/brand/${brand.slug || brand.title.toLowerCase()}`, { state: { vendor: brand } })} className="rounded-md border border-gray-100 bg-white p-3 text-left shadow-sm transition-transform hover:-translate-y-1">
+                  <div className="mb-2 flex h-16 w-24 items-center justify-center rounded-md bg-linear-to-br from-purple-50 to-white overflow-hidden">
                     {brand.image ? <img src={brand.image} alt={brand.title} className="h-10 w-10 object-contain" /> : <span className="text-xl font-black text-purple-700">{brand.title[0]}</span>}
                   </div>
                   <div className="text-sm font-bold text-gray-900">{brand.title}</div>
@@ -165,7 +165,7 @@ const PremiumHome = () => {
               </div>
             ))}
           </div>
-          {brands.length === 0 ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No brands available right now.</div> : null}
+          {brands.length === 0 ? <div className="rounded-md border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No brands available right now.</div> : null}
         </section>
 
         <section className="px-4 pt-8 md:px-6">
@@ -187,7 +187,7 @@ const PremiumHome = () => {
               />
             ))}
           </div>
-          {filteredServices.length === 0 ? <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No services available right now.</div> : null}
+          {filteredServices.length === 0 ? <div className="rounded-md border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500">No services available right now.</div> : null}
         </section>
       </main>
     </div>

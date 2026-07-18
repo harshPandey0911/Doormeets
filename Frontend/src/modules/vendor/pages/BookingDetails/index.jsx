@@ -2635,9 +2635,9 @@ export default function BookingDetails() {
               !['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && (
                 <button
                   onClick={handleCancelBooking}
-                  className="w-full py-4 rounded-xl font-bold text-red-600 border-2 border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
+                  className="w-full py-2.5 rounded-lg font-bold text-xs text-red-600 border border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
                 >
-                  <FiXCircle className="w-5 h-5 text-red-500 animate-pulse" />
+                  <FiXCircle className="w-4 h-4 text-red-500 animate-pulse" />
                   {canCancel ? 'Cancel Booking (Direct)' : 'Request Cancellation'}
                 </button>
               )
@@ -2653,10 +2653,10 @@ export default function BookingDetails() {
             )}
 
             {(booking.status === 'confirmed' || booking.status === 'accepted' || (booking.assignedTo && booking.workerResponse === 'rejected')) && (
-              <div className="flex gap-3">
+              <div className="flex gap-2.5 mt-2.5">
                 <button
                   onClick={handleAssignToSelf}
-                  className="flex-1 py-4 rounded-xl font-semibold border-2 transition-all active:scale-95"
+                  className="flex-1 py-2.5 rounded-lg font-semibold text-xs border transition-all active:scale-95"
                   style={{
                     borderColor: themeColors.button,
                     color: themeColors.button,
@@ -2667,10 +2667,10 @@ export default function BookingDetails() {
                 </button>
                 <button
                   onClick={handleAssignWorker}
-                  className="flex-1 py-4 rounded-xl font-semibold text-white transition-all active:scale-95 px-4"
+                  className="flex-1 py-2.5 rounded-lg font-semibold text-xs text-white transition-all active:scale-95 px-4"
                   style={{
                     background: themeColors.button,
-                    boxShadow: `0 4px 12px ${themeColors.button}40`,
+                    boxShadow: `0 4px 12px ${themeColors.button}30`,
                   }}
                 >
                   {booking.workerResponse === 'rejected' ? 'Reassign' : 'Assign'}

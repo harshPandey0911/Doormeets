@@ -41,7 +41,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
     <motion.article
       whileHover={{ y: -2 }}
       onClick={() => onOpen?.(service)}
-      className="rounded-xl border p-4 shadow-[0_4px_20px_rgba(17,24,39,0.02)] transition-all cursor-pointer flex justify-between items-center gap-4"
+      className="rounded-md border p-4 shadow-[0_4px_20px_rgba(17,24,39,0.02)] transition-all cursor-pointer flex justify-between items-center gap-4"
       style={{
         backgroundColor: 'var(--surface)',
         borderColor: 'var(--border)'
@@ -144,8 +144,8 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
       </div>
 
       {/* Right side image + absolute button */}
-      <div className="relative w-24 h-24 shrink-0 rounded-xl overflow-visible">
-        <div className="w-full h-full rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border" style={{ borderColor: 'var(--border)' }}>
+      <div className="relative w-24 h-24 shrink-0 rounded-md overflow-visible">
+        <div className="w-full h-full rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 border" style={{ borderColor: 'var(--border)' }}>
           {service.image || service.icon || service.iconUrl ? (
             <img src={toAssetUrl(service.image || service.icon || service.iconUrl)} alt={service.title} className="h-full w-full object-cover" />
           ) : (

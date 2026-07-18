@@ -98,66 +98,66 @@ const Earnings = () => {
         )}
 
         {/* Top Totals Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm relative overflow-hidden group">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="bg-white/80 backdrop-blur-md rounded-xl p-2.5 border border-white/40 shadow-sm relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-16 h-16 bg-teal-500 rounded-full mix-blend-multiply filter blur-2xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-teal-50 rounded-lg text-teal-600">
-                <FiCalendar className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="p-1 bg-teal-50 rounded-lg text-teal-600">
+                <FiCalendar className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-black uppercase tracking-wider text-gray-500">Today</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Today</p>
             </div>
-            <p className="text-2xl font-black text-gray-900">₹{totals.today.toLocaleString()}</p>
+            <p className="text-base font-normal text-gray-900">₹{totals.today.toLocaleString()}</p>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm relative overflow-hidden group">
+          <div className="bg-white/80 backdrop-blur-md rounded-xl p-2.5 border border-white/40 shadow-sm relative overflow-hidden group">
              <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600">
-                <FiTrendingUp className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="p-1 bg-blue-50 rounded-lg text-blue-600">
+                <FiTrendingUp className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-black uppercase tracking-wider text-gray-500">This Week</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">This Week</p>
             </div>
-            <p className="text-2xl font-black text-gray-900">₹{totals.week.toLocaleString()}</p>
+            <p className="text-base font-normal text-gray-900">₹{totals.week.toLocaleString()}</p>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-white/40 shadow-sm relative overflow-hidden group">
+          <div className="bg-white/80 backdrop-blur-md rounded-xl p-2.5 border border-white/40 shadow-sm relative overflow-hidden group">
              <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-purple-50 rounded-lg text-purple-600">
-                <FiPieChart className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="p-1 bg-purple-50 rounded-lg text-purple-600">
+                <FiPieChart className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-black uppercase tracking-wider text-gray-500">This Month</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">This Month</p>
             </div>
-            <p className="text-2xl font-black text-gray-900">₹{totals.month.toLocaleString()}</p>
+            <p className="text-base font-normal text-gray-900">₹{totals.month.toLocaleString()}</p>
           </div>
 
-          <div className="bg-gradient-to-br from-[#001947] to-[#003b77] rounded-2xl p-4 shadow-lg relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full mix-blend-overlay filter blur-2xl opacity-10"></div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-white/20 rounded-lg text-white">
-                <FaWallet className="w-4 h-4" />
+          <div className="bg-white/80 backdrop-blur-md rounded-xl p-2.5 border border-white/40 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500 rounded-full mix-blend-multiply filter blur-2xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="p-1 bg-indigo-50 rounded-lg text-indigo-600">
+                <FaWallet className="w-3.5 h-3.5" />
               </div>
-              <p className="text-xs font-black uppercase tracking-wider text-gray-300">All Time</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">All Time</p>
             </div>
-            <p className="text-2xl font-black text-white">₹{totals.total.toLocaleString()}</p>
+            <p className="text-base font-normal text-gray-900">₹{totals.total.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Charts Section */}
         <div className="bg-white rounded-[2rem] p-5 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Revenue Growth</h3>
-            <div className="flex bg-gray-100 rounded-xl p-1">
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Revenue Growth</h3>
+            <div className="flex bg-gray-100 rounded-xl p-0.5 shrink-0">
               {['daily', 'weekly', 'monthly'].map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase rounded-lg transition-all ${
+                  className={`px-2 py-1 text-[8.5px] font-bold uppercase rounded-lg transition-all ${
                     period === p ? 'bg-white text-[#00a6a6] shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  {p.replace('ly', '')}
+                  {p}
                 </button>
               ))}
             </div>
@@ -196,7 +196,7 @@ const Earnings = () => {
         {/* Breakdown Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest px-1">Breakdown</h3>
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest px-1">Breakdown</h3>
             <select 
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -216,8 +216,8 @@ const Earnings = () => {
                   <FiDollarSign className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase text-green-700 opacity-70">Earnings</p>
-                  <p className="text-lg font-black text-green-700">+₹{breakdown.totalEarnings.toLocaleString()}</p>
+                  <p className="text-[10px] font-bold uppercase text-green-700 opacity-70">Earnings</p>
+                  <p className="text-lg font-bold text-green-700">+₹{breakdown.totalEarnings.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -228,8 +228,8 @@ const Earnings = () => {
                   <FiGift className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase text-amber-700 opacity-70">Bonuses</p>
-                  <p className="text-lg font-black text-amber-700">+₹{breakdown.totalBonuses.toLocaleString()}</p>
+                  <p className="text-[10px] font-bold uppercase text-amber-700 opacity-70">Bonuses</p>
+                  <p className="text-lg font-bold text-amber-700">+₹{breakdown.totalBonuses.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -240,8 +240,8 @@ const Earnings = () => {
                   <FiAlertCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase text-red-700 opacity-70">Deductions</p>
-                  <p className="text-lg font-black text-red-700">-₹{breakdown.totalDeductions.toLocaleString()}</p>
+                  <p className="text-[10px] font-bold uppercase text-red-700 opacity-70">Deductions</p>
+                  <p className="text-lg font-bold text-red-700">-₹{breakdown.totalDeductions.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -251,7 +251,7 @@ const Earnings = () => {
         {/* Recent Transactions List */}
         <div>
            <div className="flex items-center justify-between mb-4 px-1">
-            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Recent Activity</h3>
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest">Recent Activity</h3>
             <button onClick={() => navigate('/vendor/wallet')} className="text-xs font-bold text-teal-600">View Wallet</button>
           </div>
           
@@ -268,14 +268,14 @@ const Earnings = () => {
                       {item.isDeduction ? <FiTrendingUp className="w-4 h-4 rotate-180" /> : <FiTrendingUp className="w-4 h-4" />}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-800 capitalize">{item.description || item.type.replace('_', ' ')}</p>
+                      <p className="text-sm font-normal text-gray-800 capitalize">{item.description || item.type.replace('_', ' ')}</p>
                       <p className="text-[10px] font-medium text-gray-400">
                         {new Date(item.date).toLocaleDateString()} • {new Date(item.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`text-base font-black ${item.isDeduction ? 'text-red-500' : 'text-green-500'}`}>
+                    <p className={`text-base font-normal ${item.isDeduction ? 'text-red-500' : 'text-green-500'}`}>
                       {item.isDeduction ? '-' : '+'}₹{item.amount.toLocaleString()}
                     </p>
                   </div>

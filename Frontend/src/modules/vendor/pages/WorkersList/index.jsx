@@ -99,7 +99,7 @@ const WorkersList = () => {
               placeholder="Search workers by name or phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all font-medium"
+              className="w-full pl-10 pr-4 py-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all font-normal"
             />
           </div>
         </div>
