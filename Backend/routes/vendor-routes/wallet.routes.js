@@ -13,7 +13,9 @@ const { getActivePackages } = require('../../controllers/adminControllers/credit
 const { 
   purchaseCredits, 
   verifyCreditsPurchase, 
-  getCreditHistory 
+  getCreditHistory,
+  requestWithdrawal,
+  getWithdrawals
 } = require('../../controllers/vendorControllers/vendorWalletController');
 
 // Earnings Analytics Route
@@ -24,5 +26,13 @@ router.get('/credits/packages', authenticate, isVendor, getActivePackages);
 router.post('/credits/purchase', authenticate, isVendor, purchaseCredits);
 router.post('/credits/verify', authenticate, isVendor, verifyCreditsPurchase);
 router.get('/credits/history', authenticate, isVendor, getCreditHistory);
+
+// Withdrawal Routes
+const { body } = require('express-validator');
+router.post('/withdraw', authenticate, isVendor, [
+  body('amount').isFloat({ min: 1 }).withMessage('Valid amount is required'),
+  body('bankDetails').optional().isObject()
+], requestWithdrawal);
+router.get('/wallet/withdrawals', authenticate, isVendor, getWithdrawals);
 
 module.exports = router;

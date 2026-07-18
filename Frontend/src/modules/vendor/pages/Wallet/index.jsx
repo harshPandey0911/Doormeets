@@ -236,6 +236,38 @@ const Wallet = () => {
           </div>
         </div>
 
+        {/* Available Earnings */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-emerald-100">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-gray-800 font-bold text-lg">Available Earnings</h2>
+          </div>
+          
+          <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <p className="text-xs text-emerald-600 font-semibold uppercase">Withdrawable Balance</p>
+                <h3 className="text-2xl font-black text-emerald-700">₹{(wallet.earnings || 0).toLocaleString()}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                <FiDollarSign className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+            
+            {wallet.earnings > 0 ? (
+              <button
+                onClick={() => navigate('/vendor/wallet/withdraw')}
+                className="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                Withdraw Funds
+              </button>
+            ) : (
+              <div className="text-emerald-600 text-[11px] font-semibold text-center border-t border-emerald-100/50 pt-2 mt-1">
+                Complete online jobs to earn withdrawable funds!
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Filter Buttons */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
           {[
