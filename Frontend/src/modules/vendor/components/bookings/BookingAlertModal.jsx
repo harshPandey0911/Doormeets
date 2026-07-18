@@ -198,6 +198,12 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
               <span className="text-[10px] font-bold text-gray-400">Customer:</span>
               <span className="text-[10px] font-black text-gray-800 uppercase">{booking.customerName}</span>
             </div>
+            {booking.deductionAmount > 0 && (
+              <div className="flex items-center gap-2 mt-2 bg-red-50 p-2 rounded-lg border border-red-100">
+                <span className="text-[10px] font-bold text-red-500">Deduction on Acceptance:</span>
+                <span className="text-[12px] font-black text-red-600">{booking.deductionAmount} Credits</span>
+              </div>
+            )}
           </div>
         </div>
 

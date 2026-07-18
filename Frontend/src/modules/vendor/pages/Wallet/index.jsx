@@ -1,44 +1,46 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiDollarSign, FiArrowUp, FiArrowDown, FiArrowRight, FiClock, FiCheckCircle, FiAlertCircle, FiSend, FiAward } from 'react-icons/fi';
+import { FiDollarSign, FiArrowDown, FiArrowRight, FiCheckCircle, FiClock, FiPlusCircle, FiArrowUp, FiSend, FiAlertCircle, FiAward, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import vendorWalletService from '../../../../services/vendorWalletService';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 const Wallet = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [wallet, setWallet] = useState({
-    balance: 0,
+    credits: 0,
     dues: 0,
-    earnings: 0,
-    amountDue: 0,
     totalCashCollected: 0,
     totalSettled: 0,
     totalWithdrawn: 0,
-    pendingSettlements: 0,
-    cashLimit: 10000
   });
   const [transactions, setTransactions] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [expandedTxn, setExpandedTxn] = useState(null);
+  
+  // Mock Data for Bar Chart
+  const barChartData = [
+    { day: 'M', amount: 120, height: '40%' },
+    { day: 'T', amount: 250, height: '70%' },
+    { day: 'W', amount: 80, height: '30%' },
+    { day: 'T', amount: 350, height: '100%' },
+    { day: 'F', amount: 150, height: '50%' },
+    { day: 'S', amount: 200, height: '60%' },
+    { day: 'S', amount: 300, height: '85%' },
+  ];
 
   useLayoutEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const root = document.getElementById('root');
     const bgStyle = themeColors.backgroundGradient;
-
-    if (html) html.style.background = bgStyle;
-    if (body) body.style.background = bgStyle;
-    if (root) root.style.background = bgStyle;
-
+    document.documentElement.style.background = bgStyle;
+    document.body.style.background = bgStyle;
     return () => {
-      if (html) html.style.background = '';
-      if (body) body.style.background = '';
-      if (root) root.style.background = '';
+      document.documentElement.style.background = '';
+      document.body.style.background = '';
     };
   }, []);
 
@@ -46,36 +48,48 @@ const Wallet = () => {
     loadWalletData();
   }, []);
 
+  useEffect(() => {
+    fetchTransactions();
+  }, [filter]);
+
+  const fetchTransactions = async () => {
+    try {
+      const typeParam = filter === 'all' ? undefined : filter;
+      const res = await vendorWalletService.getTransactions({ type: typeParam });
+      if (res.success) {
+        setTransactions(res.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch transactions', error);
+    }
+  };
+
   const loadWalletData = async () => {
     try {
       setLoading(true);
-      const [walletRes, txnRes] = await Promise.all([
-        vendorWalletService.getWallet(),
-        vendorWalletService.getTransactions({ limit: 50 })
-      ]);
+      const walletRes = await vendorWalletService.getWallet();
 
       if (walletRes.success) {
-        setWallet(walletRes.data);
-      }
-
-      if (txnRes.success) {
-        setTransactions(txnRes.data || []);
+        setWallet({
+          credits: walletRes.data.vendor?.wallet?.credits || 0, // Assume backend returns this if populated properly
+          dues: walletRes.data.dues || 0,
+          earnings: walletRes.data.earnings || 0, // Fallback if backend hasn't moved entirely to credits
+          totalCashCollected: walletRes.data.totalCashCollected || 0,
+          totalSettled: walletRes.data.totalSettled || 0,
+          totalWithdrawn: walletRes.data.totalWithdrawn || 0
+        });
       }
     } catch (error) {
-      console.error('Error loading wallet:', error);
       toast.error('Failed to load wallet data');
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredTransactions = transactions.filter(txn => {
-    if (filter === 'all') return true;
-    if (filter === 'incentive') {
-      return txn.type === 'credit';
-    }
-    return txn.type === filter;
-  });
+  if (loading) return <LogoLoader />;
+
+  // Display value for credits (fallback to earnings / 10 if credits not yet initialized)
+  const displayCredits = wallet.credits || (wallet.earnings ? Math.floor(wallet.earnings / 10) : 0);
 
   const getTransactionIcon = (txn) => {
     const isIncentive = txn.type === 'credit';
@@ -128,139 +142,99 @@ const Wallet = () => {
     });
   };
 
-  if (loading) {
-    return <LogoLoader />;
-  }
-
   return (
     <div className="min-h-screen pb-24" style={{ background: themeColors.backgroundGradient }}>
-      <Header title="Wallet & Ledger" />
+      <Header title="Wallet" />
 
-      <main className="px-4 py-6">
-        {/* Earnings Card (Light Green) */}
-        <div className="rounded-2xl p-6 shadow-lg border border-green-100 relative overflow-hidden mb-4 bg-green-50/80">
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-green-600 text-sm font-semibold mb-1">Available Earnings</p>
-                <p className="text-3xl font-extrabold text-green-900 mb-4">₹{wallet.earnings?.toLocaleString() || 0}</p>
-              </div>
-              <div className="bg-green-100/80 p-2 rounded-lg">
-                <FiDollarSign className="w-6 h-6 text-green-600" />
-              </div>
+      <main className="px-4 py-6 space-y-6">
+        
+        {/* Earnings Chart Section */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-gray-800 font-bold text-lg">This Month's Earnings</h2>
+              <p className="text-gray-500 text-sm">{new Date().toLocaleString('en-US', { month: 'long' })} (1 - 31)</p>
             </div>
+            <div className="text-right">
+              <h2 className="text-2xl font-black text-gray-900">{Math.floor(displayCredits + (wallet.totalCashCollected / 10)).toLocaleString()} <span className="text-sm font-bold text-gray-500">Credits</span></h2>
+            </div>
+          </div>
 
-            <button
-              onClick={() => navigate('/vendor/wallet/withdraw')}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 active:scale-95 transition-all shadow-md"
-            >
-              Request Withdrawal
-            </button>
+          {/* Simple CSS Bar Chart */}
+          <div className="flex items-end justify-between h-32 mt-4 px-2">
+            {barChartData.map((data, idx) => (
+              <div key={idx} className="flex flex-col items-center gap-2">
+                <div className="w-8 bg-blue-100 rounded-t-md relative group flex flex-col justify-end h-full">
+                  <div 
+                    className="w-full bg-blue-600 rounded-t-md transition-all duration-500" 
+                    style={{ height: data.height }}
+                  ></div>
+                  {/* Tooltip */}
+                  <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] py-1 px-2 rounded font-bold transition-opacity whitespace-nowrap">
+                    ₹{data.amount}
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-gray-400">{data.day}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Dues Card (Light Red) */}
-        <div className="rounded-2xl p-6 shadow-lg border border-red-100 relative overflow-hidden mb-6 bg-red-50/80">
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-red-600 text-sm font-semibold">Amount Due to Admin</p>
-                  {wallet.dues > 0 && <FiAlertCircle className="w-4 h-4 text-red-500 animate-pulse" />}
-                </div>
-                <p className="text-3xl font-extrabold text-red-900 mb-4">₹{wallet.dues?.toLocaleString() || 0}</p>
+        {/* Credits History / Balance */}
+        <div 
+          onClick={() => navigate('/vendor/wallet/credit-history')}
+          className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg text-white cursor-pointer hover:shadow-xl transition-all relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+          
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <p className="text-blue-100 font-semibold mb-1 text-sm uppercase tracking-wider">Credits Balance</p>
+              <div className="flex items-baseline gap-1">
+                <h2 className="text-4xl font-black">{displayCredits}</h2>
+                <span className="text-blue-200 font-medium">Credits</span>
               </div>
-              <div className="bg-red-100/80 p-2 rounded-lg">
-                <FiArrowDown className="w-6 h-6 text-red-600" />
+              <p className="text-xs text-blue-200 mt-1">1 Credit = ₹10</p>
+            </div>
+            
+            <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm">
+              <FiArrowRight className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        {/* Amount Due to Admin (COD) */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-100">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-gray-800 font-bold text-lg">Pending to Admin</h2>
+          </div>
+          
+          <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <p className="text-xs text-red-600 font-semibold uppercase">Total Dues (COD)</p>
+                <h3 className="text-2xl font-black text-red-700">₹{wallet.dues.toLocaleString()}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <FiArrowDown className="w-5 h-5 text-red-600" />
               </div>
             </div>
-
+            
             {wallet.dues > 0 ? (
               <button
                 onClick={() => navigate('/vendor/wallet/settle')}
-                className="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-red-700 active:scale-95 transition-all shadow-md"
+                className="w-full bg-red-600 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-red-700 transition-colors shadow-sm"
               >
-                Pay Now
+                Pay Dues Now
               </button>
             ) : (
-              <div className="w-full bg-red-100/40 text-red-600 py-3 rounded-xl font-bold text-sm text-center border border-red-200/30">
-                No Dues Pending
+              <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-lg text-sm font-bold">
+                <FiCheckCircle />
+                No pending dues
               </div>
             )}
           </div>
         </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {/* Cash Collected */}
-          <div className="bg-white rounded-2xl p-4 shadow-lg border border-red-100">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 rounded-lg bg-red-50">
-                <FiArrowDown className="w-4 h-4 text-red-500" />
-              </div>
-              <p className="text-xs text-gray-600 font-semibold">Cash Collected</p>
-            </div>
-            <p className="text-xl font-bold text-red-600">
-              ₹{wallet.totalCashCollected?.toLocaleString() || 0}
-            </p>
-          </div>
-
-          {/* Total Settled */}
-          <div className="bg-white rounded-2xl p-4 shadow-lg border border-green-100">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 rounded-lg bg-green-50">
-                <FiArrowUp className="w-4 h-4 text-green-500" />
-              </div>
-              <p className="text-xs text-gray-600 font-semibold">Total Settled</p>
-            </div>
-            <p className="text-xl font-bold text-green-600">
-              ₹{wallet.totalSettled?.toLocaleString() || 0}
-            </p>
-          </div>
-        </div>
-
-        {/* Blocked Status Notice */}
-        {wallet.isBlocked && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <FiX className="w-5 h-5 text-red-600 mt-0.5" />
-              <div>
-                <p className="font-bold text-red-800">Account Blocked</p>
-                <p className="text-sm text-red-600 mb-2">
-                  {wallet.blockReason || 'Your account is blocked due to excessive dues.'}
-                </p>
-                <button
-                  onClick={() => navigate('/vendor/wallet/settle')}
-                  className="text-xs font-bold uppercase tracking-wider text-white bg-red-600 px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition-all"
-                >
-                  Pay Now to Unblock
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Cash Limit Indicator */}
-        <div className="bg-white rounded-2xl p-4 shadow-lg mb-6 border border-blue-50">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-gray-700">Cash Collection Limit</p>
-            <p className="text-xs font-medium text-gray-500">
-              ₹{(wallet.dues || 0).toLocaleString()} / ₹{(wallet.cashLimit || 10000).toLocaleString()}
-            </p>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-500 ${(wallet.dues / (wallet.cashLimit || 10000)) > 0.8 ? 'bg-red-500' : 'bg-blue-500'
-                }`}
-              style={{ width: `${Math.min(100, (wallet.dues / (wallet.cashLimit || 10000)) * 100)}%` }}
-            />
-          </div>
-          <p className="text-[10px] text-gray-400 mt-2">
-            * Your account will be auto-blocked if you exceed the ₹{(wallet.cashLimit || 10000).toLocaleString()} limit.
-          </p>
-        </div>
-
-
 
         {/* Filter Buttons */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -270,7 +244,6 @@ const Wallet = () => {
             { id: 'settlement', label: 'Settlements' },
             { id: 'withdrawal', label: 'Withdrawals' },
             { id: 'incentive', label: 'Incentives' },
-            { id: 'tds_deduction', label: 'TDS' },
           ].map((filterOption) => (
             <button
               key={filterOption.id}
@@ -298,7 +271,7 @@ const Wallet = () => {
         {/* Transactions/Ledger */}
         <div>
           <h3 className="font-bold text-gray-800 mb-4">Transaction History</h3>
-          {filteredTransactions.length === 0 ? (
+          {transactions.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center shadow-md">
               <FiDollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <p className="text-gray-600 font-semibold mb-2">No transactions yet</p>
@@ -306,12 +279,13 @@ const Wallet = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredTransactions.map((txn) => {
+              {transactions.map((txn) => {
                 const isIncentive = txn.type === 'credit';
                 return (
                   <div
                     key={txn._id}
-                    className="bg-white rounded-xl p-4 shadow-md border-l-4"
+                    onClick={() => setExpandedTxn(expandedTxn === txn._id ? null : txn._id)}
+                    className="bg-white rounded-xl p-4 shadow-md border-l-4 cursor-pointer hover:bg-gray-50 transition-colors"
                     style={{
                       borderLeftColor:
                         txn.type === 'cash_collected' ? '#DC2626' :
@@ -347,7 +321,7 @@ const Wallet = () => {
                             ? 'text-red-600'
                             : 'text-green-600'
                             }`}>
-                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}₹{Math.abs(txn.amount).toLocaleString()}
+                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}{Math.floor(Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-xs">Credits</span>
                           </p>
                         </div>
 
@@ -362,7 +336,24 @@ const Wallet = () => {
                           </span>
                         </div>
                       </div>
+                      <div className="text-gray-400">
+                        {expandedTxn === txn._id ? <FiChevronUp /> : <FiChevronDown />}
+                      </div>
                     </div>
+
+                    {/* Expanded Content */}
+                    {expandedTxn === txn._id && txn.bookingId && (
+                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                        <p className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2">Booking Details</p>
+                        <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                          <p className="text-sm"><span className="text-gray-500">Booking ID:</span> <span className="font-semibold text-gray-900">{txn.bookingId.bookingNumber}</span></p>
+                          <p className="text-sm"><span className="text-gray-500">Service:</span> <span className="font-semibold text-gray-900">{txn.bookingId.serviceName}</span></p>
+                          {txn.bookingId.scheduledDate && (
+                            <p className="text-sm"><span className="text-gray-500">Scheduled Date:</span> <span className="font-semibold text-gray-900">{formatDate(txn.bookingId.scheduledDate)}</span></p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -370,16 +361,7 @@ const Wallet = () => {
           )}
         </div>
 
-        {/* View Settlements Link */}
-        <button
-          onClick={() => navigate('/vendor/wallet/settlements')}
-          className="w-full mt-6 py-3 rounded-xl font-semibold text-gray-700 bg-white border border-gray-200 flex items-center justify-center gap-2 transition-all active:scale-95"
-        >
-          View Settlement History
-          <FiArrowRight className="w-4 h-4" />
-        </button>
       </main>
-
       <BottomNav />
     </div>
   );

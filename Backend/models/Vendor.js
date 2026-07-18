@@ -212,6 +212,10 @@ const vendorSchema = new mongoose.Schema({
     }
   },
   wallet: {
+    credits: {
+      type: Number,
+      default: 0 // New Credits System (1 Credit = Rs 10)
+    },
     dues: {
       type: Number,
       default: 0 // Amount owed TO admin (from cash collection)

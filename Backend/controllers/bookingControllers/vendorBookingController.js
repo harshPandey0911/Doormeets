@@ -465,7 +465,7 @@ const acceptBooking = async (req, res) => {
       calculatedVendorShare = parseFloat((calculatedVendorShare + vendorInstantMarkupShare).toFixed(2));
     }
 
-    // Wallet deduction for accepting booking
+    // Wallet deduction for accepting booking (Credits System)
     const Vendor = require('../../models/Vendor');
     const vendorDoc = await Vendor.findById(vendorId);
     if (!vendorDoc) {
@@ -473,34 +473,33 @@ const acceptBooking = async (req, res) => {
     }
 
     const acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
-    if (acceptanceFee > 0) {
-      const vendorEarnings = vendorDoc.wallet?.earnings || 0;
-      if (vendorEarnings < acceptanceFee) {
+    const requiredCredits = acceptanceFee > 0 ? (acceptanceFee / 10) : 0; // 1 Credit = 10 Rs
+
+    if (requiredCredits > 0) {
+      const vendorCredits = vendorDoc.wallet?.credits || 0;
+      if (vendorCredits < requiredCredits) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient wallet balance. You need at least ₹${acceptanceFee} in your wallet to accept this booking.`
+          message: `Insufficient balance. You need ${requiredCredits} Credits to accept this lead.`
         });
       }
 
-      const balanceBefore = vendorEarnings;
-      const balanceAfter = balanceBefore - acceptanceFee;
+      const balanceBefore = vendorCredits;
+      const balanceAfter = balanceBefore - requiredCredits;
 
       vendorDoc.wallet = vendorDoc.wallet || {};
-      vendorDoc.wallet.earnings = Number(balanceAfter.toFixed(2));
+      vendorDoc.wallet.credits = Number(balanceAfter.toFixed(2));
       await vendorDoc.save();
 
-      // Create transaction log
-      const Transaction = require('../../models/Transaction');
-      await Transaction.create({
+      // Create Credit Transaction log
+      const CreditTransaction = require('../../models/CreditTransaction');
+      await CreditTransaction.create({
         vendorId: vendorId,
         bookingId: booking._id,
-        type: 'booking_acceptance',
-        amount: acceptanceFee,
-        status: 'completed',
-        paymentMethod: 'wallet',
-        description: `Deduction for accepting booking #${booking.bookingNumber}`,
-        balanceBefore,
-        balanceAfter
+        type: 'lead_deduct',
+        amount: requiredCredits,
+        description: `Lead bought - ${requiredCredits} Credits for booking #${booking.bookingNumber}`,
+        referenceId: booking._id
       });
     }
 

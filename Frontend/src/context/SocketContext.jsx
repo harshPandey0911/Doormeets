@@ -279,6 +279,7 @@ export const SocketProvider = ({ children }) => {
           },
           price: data.price,
           vendorEarnings: data.vendorEarnings,
+          deductionAmount: data.deductionAmount,
           serviceCategory: data.serviceCategory,
           brandName: data.brandName,
           brandIcon: data.brandIcon,
