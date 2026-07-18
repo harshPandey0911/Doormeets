@@ -67,7 +67,7 @@ const getProfile = async (req, res) => {
         businessName: vendor.businessName || null,
         email: vendor.email,
         phone: vendor.phone,
-        service: vendor.service,
+        service: vendor.service && vendor.service.length > 0 ? vendor.service : (vendor.categories || []),
         skills: vendor.skills || [],
         address: vendor.address || null,
         rating: rating > 0 ? parseFloat(rating.toFixed(1)) : 0,
