@@ -3,20 +3,20 @@ import { FiGrid, FiFileText, FiAlertCircle, FiCheckCircle, FiTrendingUp, FiCheck
 
 export const DashboardStatCard = ({ title, value, description, icon: Icon, colorClass, trend }) => {
   return (
-    <div className="bg-white border border-gray-150 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-      <div className="flex justify-between items-center mb-2">
-        <div className={`p-2 rounded-xl ${colorClass}`}>
-          <Icon className="w-4 h-4" />
+    <div className="bg-white border border-gray-150 rounded-xl p-2.5 shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
+      <div className="flex justify-between items-center mb-1">
+        <div className={`p-1.5 rounded-lg ${colorClass}`}>
+          <Icon className="w-3.5 h-3.5" />
         </div>
         {trend && (
-          <span className="text-[9px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">
+          <span className="text-[8px] font-bold bg-gray-150 text-gray-500 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
             {trend}
           </span>
         )}
       </div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{title}</p>
-      <h3 className="text-xl font-black text-gray-900 mt-0.5">{value}</h3>
-      <p className="text-[10px] font-semibold text-gray-400 mt-1 leading-normal truncate">{description}</p>
+      <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">{title}</p>
+      <h3 className="text-base font-bold text-gray-900 mt-0.5">{value}</h3>
+      <p className="text-[9px] font-medium text-gray-400 mt-0.5 leading-normal truncate">{description}</p>
     </div>
   );
 };

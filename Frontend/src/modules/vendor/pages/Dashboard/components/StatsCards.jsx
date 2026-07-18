@@ -53,7 +53,7 @@ const StatsCards = memo(({ stats }) => {
             <div
               key={index}
               onClick={card.onClick}
-              className="rounded-2xl p-4 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-300"
+              className="rounded-2xl p-3 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-300 min-h-[82px] flex flex-col justify-between"
               style={{
                 background: card.gradient,
                 border: `1.5px solid ${card.accent}15`,
@@ -62,44 +62,47 @@ const StatsCards = memo(({ stats }) => {
             >
               {/* Decorative Pattern */}
               <div
-                className="absolute top-0 right-0 w-16 h-16 rounded-full opacity-10"
+                className="absolute top-0 right-0 w-12 h-12 rounded-full opacity-10"
                 style={{
                   background: `radial-gradient(circle, ${card.accent} 0%, transparent 70%)`,
                   transform: 'translate(10px, -10px)',
                 }}
               />
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">
-                      {card.title}
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900 leading-tight">
-                      {card.value}
-                    </p>
-                  </div>
-                  <div
-                    className="p-1.5 rounded-xl flex-shrink-0 flex items-center justify-center"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.7)',
-                      backdropFilter: 'blur(8px)',
-                      border: `1px solid ${card.accent}25`,
-                      width: '40px',
-                      height: '40px'
-                    }}
-                  >
-                    {isAnimated ? (
-                      <img 
-                        src={card.icon} 
-                        alt={card.title} 
-                        className="w-8 h-8 object-contain"
-                        style={{ mixBlendMode: 'multiply' }}
-                      />
-                    ) : (
-                      <IconComponent className="w-5 h-5" style={{ color: card.accent }} />
-                    )}
-                  </div>
-                </div>
+
+              {/* Icon - Positioned Absolutely at Top-Right */}
+              <div
+                className="absolute right-2 top-2 p-1 rounded-xl flex items-center justify-center"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.7)',
+                  backdropFilter: 'blur(8px)',
+                  border: `1px solid ${card.accent}25`,
+                  width: '32px',
+                  height: '32px'
+                }}
+              >
+                {isAnimated ? (
+                  <img 
+                    src={card.icon} 
+                    alt={card.title} 
+                    className="w-6 h-6 object-contain"
+                    style={{ mixBlendMode: 'multiply' }}
+                  />
+                ) : (
+                  <IconComponent className="w-4 h-4" style={{ color: card.accent }} />
+                )}
+              </div>
+
+              {/* Text Info */}
+              <div className="relative z-10 pr-6 mt-1">
+                <p className="text-[8px] text-gray-500 font-bold mb-0.5 uppercase tracking-normal truncate">
+                  {card.title}
+                </p>
+                <p className={`font-bold text-gray-900 leading-tight truncate ${
+                  String(card.value).length > 8 ? 'text-base' :
+                  String(card.value).length > 5 ? 'text-lg' : 'text-xl'
+                }`}>
+                  {card.value}
+                </p>
               </div>
             </div>
           );

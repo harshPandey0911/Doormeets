@@ -1130,7 +1130,8 @@ export default function BookingDetails() {
       return true;
     }
 
-    if (booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid' || booking?.paymentStatus === 'completed') {
+    const pStatus = booking?.paymentStatus?.toLowerCase() || '';
+    if (pStatus === 'success' || pStatus === 'paid' || pStatus === 'completed') {
       return false;
     }
 
@@ -1478,7 +1479,7 @@ export default function BookingDetails() {
         )}
 
         {/* Payment Warning Banner */}
-        {booking.paymentMethod === 'online' && (booking.paymentStatus !== 'SUCCESS' && booking.paymentStatus !== 'paid' && booking.paymentStatus?.toLowerCase() !== 'completed') && booking.status?.toLowerCase() !== 'cancelled' && (
+        {booking.paymentMethod === 'online' && !['success', 'paid', 'completed'].includes(booking.paymentStatus?.toLowerCase() || '') && booking.status?.toLowerCase() !== 'cancelled' && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex items-center gap-2 animate-pulse">
             <FiAlertCircle className="w-4 h-4 shrink-0 text-red-500" />
             <span>PAYMENT PENDING: Customer chose Online payment but has not paid yet. Please verify payment before starting work.</span>
@@ -1509,14 +1510,14 @@ export default function BookingDetails() {
             {!booking.hasSubmittedBid ? (
               <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-6 mb-6 shadow-xl text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 blur-2xl"></div>
-                <h3 className="text-xl font-black mb-2">Submit Your Quote</h3>
+                <h3 className="text-xl font-bold mb-2">Submit Your Quote</h3>
                 <p className="text-sm text-purple-100 mb-6 font-medium">
                   This category requires bidding. Enter your best price to get hired.
                 </p>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-purple-200 mb-1">Your Price (₹)</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-purple-200 mb-1">Your Price (₹)</label>
                     <div className="relative">
                       <FiDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300" />
                       <input
@@ -1528,7 +1529,7 @@ export default function BookingDetails() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-purple-200 mb-1">Notes to Customer (Optional)</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-purple-200 mb-1">Notes to Customer (Optional)</label>
                     <textarea
                       placeholder="e.g. Price includes delivery"
                       className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-4 text-white font-medium placeholder:text-white/40 focus:bg-white/20 focus:border-white/40 outline-none transition-all min-h-[100px]"
@@ -1550,7 +1551,7 @@ export default function BookingDetails() {
                         toast.error(err.response?.data?.message || 'Failed to submit bid');
                       }
                     }}
-                    className="w-full py-4 bg-white text-indigo-700 rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                    className="w-full py-4 bg-white text-indigo-700 rounded-2xl font-bold uppercase tracking-widest shadow-lg active:scale-95 transition-all"
                   >
                     Send Quote
                   </button>
@@ -1561,11 +1562,11 @@ export default function BookingDetails() {
                 <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-4">
                   <FiCheckCircle className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-black text-gray-900 mb-1">Quote Sent!</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-1">Quote Sent!</h3>
                 <p className="text-sm text-gray-500 mb-4">You have already submitted your best price. Waiting for customer choice.</p>
                 <div className="bg-indigo-50 px-6 py-3 rounded-2xl">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Your Quote</span>
-                  <span className="text-3xl font-black text-indigo-600">₹{booking.myBid?.price}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 block mb-1">Your Quote</span>
+                  <span className="text-3xl font-bold text-indigo-600">₹{booking.myBid?.price}</span>
                 </div>
               </div>
             )}
@@ -1581,13 +1582,13 @@ export default function BookingDetails() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Service Type</p>
-              <p className="text-xl font-bold" style={{ color: themeColors.button }}>
+              <p className="text-base font-semibold text-gray-800">
                 {booking.serviceType}
               </p>
             </div>
-            <div className="flex flex-col items-end gap-1">
+             <div className="flex flex-col items-end gap-1 shrink-0">
               <div
-                className="px-3 py-1 rounded-full text-sm font-semibold"
+                className="w-24 py-1 rounded-full text-xs font-semibold flex items-center justify-center text-center"
                 style={{
                   background: `${themeColors.button}15`,
                   color: themeColors.button,
@@ -1596,7 +1597,7 @@ export default function BookingDetails() {
                 {booking.status}
               </div>
               {booking.assignedTo?.name === 'You (Self)' && (
-                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md border border-green-100 uppercase tracking-wider">
+                <span className="w-24 py-1 rounded-full text-[9px] font-bold text-green-600 bg-green-50 border border-green-100 uppercase tracking-wider flex items-center justify-center text-center">
                   Personal Job
                 </span>
               )}
@@ -1799,7 +1800,7 @@ export default function BookingDetails() {
                         {brandIcon ? (
                           <img src={brandIcon} alt={brandName} className="w-6 h-6 object-contain" />
                         ) : (
-                          <span className="text-base font-black text-slate-400">{brandName.charAt(0)}</span>
+                          <span className="text-base font-bold text-slate-400">{brandName.charAt(0)}</span>
                         )}
                       </div>
                       <div>
@@ -1899,7 +1900,7 @@ export default function BookingDetails() {
 
                     <div className="flex justify-between text-gray-800 pt-2.5 mt-1 border-t-2 border-gray-200 text-sm">
                       <span className="font-bold">Grand Total</span>
-                      <span className="font-black text-base" style={{ color: themeColors.button }}>₹{(booking.finalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-bold text-base" style={{ color: themeColors.button }}>₹{(booking.finalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 )}
@@ -1945,7 +1946,7 @@ export default function BookingDetails() {
           >
             <div>
               <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mb-0.5">TOTAL INVOICE AMOUNT</p>
-              <h2 className="text-xl font-black text-gray-900">₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+              <h2 className="text-xl font-bold text-gray-900">₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
             </div>
             <div className="flex items-center gap-2">
               {isPlanBenefit && (
@@ -2010,7 +2011,7 @@ export default function BookingDetails() {
                 {/* Grand Total Row */}
                 <div className="pt-2.5 mt-1 border-t-2 border-gray-200 flex justify-between items-center text-xs">
                   <span className="font-bold text-gray-800">Grand Total</span>
-                  <span className="font-black text-sm" style={{ color: themeColors.button }}>
+                  <span className="font-bold text-sm" style={{ color: themeColors.button }}>
                     ₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -2404,16 +2405,16 @@ export default function BookingDetails() {
               {/* Top Accent Gradient */}
               <div className={`h-2 bg-gradient-to-r ${booking.paymentMethod === 'plan_benefit' ? 'from-emerald-400 to-teal-600' : 'from-orange-400 to-orange-600'}`} />
 
-              <div className="p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${booking.paymentMethod === 'plan_benefit' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-500'}`}>
-                    <FiCreditCard className="w-6 h-6" />
+              <div className="p-3.5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-inner ${booking.paymentMethod === 'plan_benefit' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-500'}`}>
+                    <FiCreditCard className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight">
+                    <h3 className="text-sm font-bold text-gray-800 leading-tight">
                       {booking.paymentMethod === 'plan_benefit' ? 'Prepare Final Bill' : 'Collect Payment'}
                     </h3>
-                    <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">
+                    <p className="text-[10px] text-gray-500 font-semibold tracking-wide uppercase">
                       {booking.paymentMethod === 'plan_benefit' ? 'Add extra charges if any' : 'Step 1: Finish Settlement'}
                     </p>
                   </div>
@@ -2421,26 +2422,26 @@ export default function BookingDetails() {
 
                 {booking.paymentMethod === 'plan_benefit' ? (
                   /* Plan Benefit UI */
-                  <div className="bg-emerald-50/50 rounded-2xl p-4 mb-6 border border-emerald-100/50">
-                    <div className="flex items-center gap-3 mb-3">
-                      <FiCheckCircle className="w-5 h-5 text-emerald-600" />
-                      <span className="font-bold text-emerald-800">Base Service Covered by Plan</span>
+                  <div className="bg-emerald-50/20 rounded-xl p-3 mb-3.5 border border-emerald-100/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FiCheckCircle className="w-4 h-4 text-emerald-600" />
+                      <span className="font-bold text-xs text-emerald-800">Base Service Covered by Plan</span>
                     </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">
+                    <p className="text-xs text-gray-650 leading-relaxed">
                       The base service fee is covered by customer's membership. You can add extra charges for parts or additional work.
                     </p>
                   </div>
                 ) : (
                   /* Normal Cash Collection UI */
-                  <div className="bg-orange-50/50 rounded-2xl p-4 mb-6 border border-orange-100/50">
+                  <div className="bg-orange-50/20 rounded-xl p-3 mb-3.5 border border-orange-100/30">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs text-gray-600">
                         {booking.paymentMethod === 'pay_at_home' && booking.paymentStatus === 'partially_paid'
                           ? 'Remaining Amount to Collect'
                           : 'Amount to Collect'
                         }
                       </span>
-                      <span className="text-2xl font-black text-orange-600">
+                      <span className="text-xl font-bold text-orange-600">
                         ₹{(() => {
                           const total = booking.finalAmount || parseFloat(booking.price) || 0;
                           if (booking.paymentMethod === 'pay_at_home' && booking.paymentStatus === 'partially_paid') {
@@ -2451,12 +2452,12 @@ export default function BookingDetails() {
                       </span>
                     </div>
                     {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
-                      <div className="flex justify-between items-center mt-2 text-xs text-green-600 font-semibold border-t border-dashed border-orange-200/50 pt-2">
+                      <div className="flex justify-between items-center mt-2 text-[10px] text-green-600 font-semibold border-t border-dashed border-orange-200/20 pt-2">
                         <span>Paid COD Advance</span>
                         <span>₹{booking.codAdvanceAmount.toLocaleString()}</span>
                       </div>
                     )}
-                    <div className="mt-3 flex items-start gap-2 text-[11px] text-orange-700/80 leading-relaxed">
+                    <div className="mt-2 flex items-start gap-1.5 text-[10px] text-orange-700/80 leading-relaxed">
                       <FiClock className="w-3 h-3 mt-0.5" />
                       <span>
                         {booking.paymentMethod === 'pay_at_home' && booking.paymentStatus === 'partially_paid'
@@ -2468,14 +2469,17 @@ export default function BookingDetails() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-3 w-full">
+                <div className="flex flex-col gap-2 w-full">
                   <button
                     onClick={() => setIsCashModalOpen(true)}
                     disabled={loading}
-                    className="w-full py-4 rounded-xl font-bold bg-blue-600 text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
-                    style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)' }}
+                    className="w-full py-2.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md text-xs"
+                    style={{
+                      background: 'linear-gradient(135deg, #E85D3F 0%, #d44d31 100%)',
+                      boxShadow: '0 4px 12px rgba(232, 93, 63, 0.2)'
+                    }}
                   >
-                    <FiDollarSign className="w-5 h-5" />
+                    <FiDollarSign className="w-4 h-4" />
                     {booking.paymentMethod === 'plan_benefit' ? 'Prepare/Edit Final Bill' : 'Collect Cash'}
                   </button>
 
@@ -2496,7 +2500,7 @@ export default function BookingDetails() {
           )}
 
           {/* Online Payment Done State */}
-          {(booking?.paymentStatus === 'SUCCESS' || booking?.paymentStatus === 'paid' || booking?.paymentStatus === 'completed') && booking?.status !== 'completed' && (
+          {['success', 'paid', 'completed'].includes(booking?.paymentStatus?.toLowerCase() || '') && booking?.status !== 'completed' && (
             <div className="bg-white rounded-2xl mb-4 overflow-hidden shadow-lg border-none relative group"
               style={{ boxShadow: '0 10px 30px -5px rgba(16, 185, 129, 0.2)' }}
             >
@@ -2868,7 +2872,7 @@ export default function BookingDetails() {
             >
               <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
                 <div>
-                  <h3 className="text-lg font-black text-gray-900">Add Extra Services</h3>
+                  <h3 className="text-lg font-bold text-gray-900">Add Extra Services</h3>
                   <p className="text-xs text-gray-500 font-medium mt-0.5">Category: {booking?.serviceCategory}</p>
                 </div>
                 <button
@@ -2935,7 +2939,7 @@ export default function BookingDetails() {
                                 {item.isPart ? 'Material / Part' : 'Addon Service'}
                               </span>
                             </div>
-                            <p className="text-xs font-black text-blue-600">₹{item.price}</p>
+                            <p className="text-xs font-bold text-blue-600">₹{item.price}</p>
                           </div>
 
                           <div className="flex items-center gap-2">

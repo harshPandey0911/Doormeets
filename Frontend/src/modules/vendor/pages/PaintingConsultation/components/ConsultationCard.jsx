@@ -85,19 +85,19 @@ const ConsultationCard = ({ consultation, onAccept, onDecline, onGenerateQuote }
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
-      whileHover={{ y: -4, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02)' }}
+      whileHover={{ y: -2, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02)' }}
       transition={{ duration: 0.3 }}
-      className="bg-white border border-gray-150 rounded-2xl overflow-visible flex flex-col h-full shadow-sm relative"
+      className="bg-white border border-gray-150 rounded-xl overflow-visible flex flex-col h-full shadow-sm relative"
     >
-      <div className="p-4 flex flex-col h-full space-y-3.5">
+      <div className="p-3 flex flex-col h-full space-y-2.5">
         {/* Header: Status and relative timestamp */}
         <div className="flex justify-between items-start">
-          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getBadgeStyle(consultation)}`}>
+          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${getBadgeStyle(consultation)}`}>
             {getBadgeLabel(consultation)}
           </span>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1.5">
-              <FiClock className="w-3.5 h-3.5" /> 
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-gray-400 flex items-center gap-1">
+              <FiClock className="w-3 h-3" /> 
               {relativeTime(consultation.createdAt)}
             </span>
             
@@ -107,26 +107,26 @@ const ConsultationCard = ({ consultation, onAccept, onDecline, onGenerateQuote }
                 onClick={() => setShowMenu(!showMenu)}
                 className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-700 transition-colors"
               >
-                <FiMoreVertical className="w-4 h-4" />
+                <FiMoreVertical className="w-3.5 h-3.5" />
               </button>
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
-                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-150 rounded-2xl shadow-xl py-2 z-50 animate-fade-in">
+                  <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-150 rounded-xl shadow-lg py-1.5 z-50 animate-fade-in">
                     <button 
                       onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleCopyPhone(e); }}
-                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
-                      <FiCopy className="w-4 h-4" /> Copy Phone
+                      <FiCopy className="w-3.5 h-3.5" /> Copy Phone
                     </button>
                     <a 
                       href={`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setShowMenu(false)}
-                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
-                      <FiMap className="w-4 h-4" /> View Map
+                      <FiMap className="w-3.5 h-3.5" /> View Map
                     </a>
                   </div>
                 </>
@@ -137,70 +137,69 @@ const ConsultationCard = ({ consultation, onAccept, onDecline, onGenerateQuote }
 
         {/* Customer Header */}
         <div>
-          <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+          <h3 className="text-base font-semibold text-gray-900 tracking-tight">
             {customerName}
           </h3>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mt-0.5">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
             {consultation.propertyType || 'Residential'}
           </p>
         </div>
 
         {/* Location Info */}
-        <div className="flex items-start gap-2 text-sm text-gray-600 font-semibold">
-          <FiMapPin className="w-4 h-4 text-[#E85D3F] mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-1.5 text-xs text-gray-600 font-semibold">
+          <FiMapPin className="w-3.5 h-3.5 text-[#E85D3F] mt-0.5 flex-shrink-0" />
           <span className="leading-tight">{city}</span>
         </div>
 
         {/* Dynamic Property Chips */}
-        <div className="flex flex-wrap gap-1.5">
-          <span className="text-[10px] font-bold bg-gray-50 border border-gray-150 text-gray-600 px-2.5 py-1 rounded-full flex items-center gap-1">
+        <div className="flex flex-wrap gap-1">
+          <span className="text-[9px] font-semibold bg-gray-50 border border-gray-150 text-gray-600 px-2 py-0.5 rounded-full flex items-center gap-1">
             Painting
           </span>
           {consultation.wizardData?.paintBrand && (
-            <span className="text-[10px] font-bold bg-gray-50 border border-gray-150 text-gray-600 px-2.5 py-1 rounded-full">
+            <span className="text-[9px] font-semibold bg-gray-50 border border-gray-150 text-gray-600 px-2 py-0.5 rounded-full">
               {consultation.wizardData.paintBrand.replace(/_/g, ' ')}
             </span>
           )}
           {consultation.wizardData?.rooms?.length > 0 && (
-            <span className="text-[10px] font-black bg-[#E85D3F]/5 border border-[#E85D3F]/10 text-[#E85D3F] px-2.5 py-1 rounded-full">
+            <span className="text-[9px] font-bold bg-[#E85D3F]/5 border border-[#E85D3F]/10 text-[#E85D3F] px-2 py-0.5 rounded-full">
               {consultation.wizardData.rooms.length} Room(s)
             </span>
           )}
         </div>
 
         {/* Detailed Client Stats Panel */}
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1.5 flex-1">
-          <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-gray-400 uppercase">Phone</span>
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-2.5 space-y-1 flex-1">
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="font-semibold text-gray-400 uppercase">Phone</span>
             <button 
               onClick={handleCopyPhone}
-              className="font-bold text-gray-800 hover:text-[#E85D3F] flex items-center gap-1 transition-colors cursor-pointer"
+              className="font-semibold text-gray-800 hover:text-[#E85D3F] flex items-center gap-1 transition-colors cursor-pointer"
             >
-              <FiPhone className="w-3.5 h-3.5" />
+              <FiPhone className="w-3 h-3" />
               <span>{customerPhone}</span>
-              {copied ? <FiCheck className="w-3 h-3 text-emerald-500" /> : <FiCopy className="w-3 h-3 text-gray-400" />}
+              {copied ? <FiCheck className="w-2.5 h-2.5 text-emerald-500" /> : <FiCopy className="w-2.5 h-2.5 text-gray-400" />}
             </button>
           </div>
-          <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-gray-400 uppercase">Property</span>
-            <span className="font-bold text-gray-800">{consultation.propertyType}</span>
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="font-semibold text-gray-400 uppercase">Property</span>
+            <span className="font-semibold text-gray-800">{consultation.propertyType}</span>
           </div>
         </div>
 
-
         {/* Context CTAs */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-1.5 pt-1.5">
           {consultation.status === 'PENDING' && (
             <>
               <button 
                 onClick={() => onAccept && onAccept(consultation._id)}
-                className="flex-1 bg-[#E85D3F] hover:bg-[#E85D3F]/90 text-white font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-[#E85D3F]/20 active:scale-95 cursor-pointer"
+                className="flex-1 bg-[#E85D3F] hover:bg-[#E85D3F]/90 text-white font-bold py-2 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all shadow-md shadow-[#E85D3F]/20 active:scale-95 cursor-pointer"
               >
                 Accept Request
               </button>
               <button
                 onClick={() => onDecline && onDecline(consultation._id)}
-                className="px-3 py-2.5 border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                className="px-2 py-2 border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
               >
                 Decline
               </button>
@@ -210,7 +209,7 @@ const ConsultationCard = ({ consultation, onAccept, onDecline, onGenerateQuote }
           {consultation.status === 'ACCEPTED_BY_VENDOR' && (
             <button 
               onClick={() => onGenerateQuote && onGenerateQuote(consultation)}
-              className="flex-1 bg-[#E85D3F] hover:bg-[#E85D3F]/90 text-white font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-[#E85D3F]/20 active:scale-95 cursor-pointer text-center"
+              className="flex-1 bg-[#E85D3F] hover:bg-[#E85D3F]/90 text-white font-bold py-2 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all shadow-md shadow-[#E85D3F]/20 active:scale-95 cursor-pointer text-center"
             >
               {consultation.quotationId?.status === 'REVISION_REQUESTED' ? 'Revise Quote' :
                consultation.quotationId?.status === 'DRAFT' ? 'Resume Draft' :
@@ -222,7 +221,7 @@ const ConsultationCard = ({ consultation, onAccept, onDecline, onGenerateQuote }
           {consultation.status === 'QUOTE_GENERATED' && (
             <button 
               disabled
-              className="flex-1 bg-gray-100 text-gray-400 font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider cursor-not-allowed text-center"
+              className="flex-1 bg-gray-100 text-gray-400 font-bold py-2 px-2.5 rounded-xl text-[10px] uppercase tracking-wider cursor-not-allowed text-center"
             >
               Quote Sent (Waiting)
             </button>
@@ -230,7 +229,7 @@ const ConsultationCard = ({ consultation, onAccept, onDecline, onGenerateQuote }
 
           {consultation.status === 'QUOTE_ACCEPTED' && (
             <button 
-              className="flex-1 bg-[#10B981] hover:bg-[#10B981]/90 text-white font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-[#10B981]/20 active:scale-95 cursor-pointer text-center"
+              className="flex-1 bg-[#10B981] hover:bg-[#10B981]/90 text-white font-bold py-2 px-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-all shadow-md shadow-[#10B981]/20 active:scale-95 cursor-pointer text-center"
             >
               Quote Accepted! (Start Job)
             </button>

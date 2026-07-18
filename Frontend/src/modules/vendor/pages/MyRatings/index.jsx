@@ -82,25 +82,25 @@ const MyRatings = () => {
       <main className="px-4 py-6 space-y-6">
         {/* Overall Rating Stats */}
         {stats && (
-          <div className="bg-white rounded-[32px] p-6 shadow-xl shadow-gray-200/50 border border-white">
-            <div className="grid grid-cols-5 gap-6">
+          <div className="bg-white rounded-2xl p-4 shadow-md shadow-gray-200/40 border border-white">
+            <div className="grid grid-cols-5 gap-4">
               <div className="col-span-2 flex flex-col items-center justify-center border-r border-gray-100">
-                <h2 className="text-5xl font-black text-gray-900 mb-2">
+                <h2 className="text-4xl font-bold text-gray-900 mb-1">
                   {stats.averageRating?.toFixed(1) || '0.0'}
                 </h2>
-                <div className="flex gap-1 mb-2">
+                <div className="flex gap-0.5 mb-1.5">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <FiStar
                       key={s}
-                      className={`w-4 h-4 ${s <= Math.round(stats.averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
+                      className={`w-3.5 h-3.5 ${s <= Math.round(stats.averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                     />
                   ))}
                 </div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
                   {stats.totalReviews} Reviews
                 </p>
               </div>
-              <div className="col-span-3 space-y-2 py-2">
+              <div className="col-span-3 space-y-1.5 py-1">
                 <RatingBar star={5} count={stats.star5} total={stats.totalReviews} />
                 <RatingBar star={4} count={stats.star4} total={stats.totalReviews} />
                 <RatingBar star={3} count={stats.star3} total={stats.totalReviews} />
@@ -112,67 +112,64 @@ const MyRatings = () => {
         )}
 
         {/* Reviews List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h3 className="text-lg font-black text-gray-900">Recent Feedback</h3>
-            <button className="p-2 bg-white rounded-xl shadow-sm border border-gray-100">
-              <FiFilter className="w-4 h-4 text-gray-600" />
-            </button>
+        <div className="space-y-3.5">
+          <div className="px-2">
+            <h3 className="text-base font-semibold text-gray-950">Recent Feedback</h3>
           </div>
 
           {ratings.length > 0 ? (
             ratings.map((rating, idx) => (
-              <div key={idx} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-50 space-y-4">
+              <div key={idx} className="bg-white rounded-2xl p-3.5 shadow-sm border border-gray-50 space-y-3">
                 <div className="flex justify-between items-start">
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center overflow-hidden border border-teal-100/50">
+                  <div className="flex gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center overflow-hidden border border-teal-100/50 shrink-0">
                       {rating.userId?.profilePhoto ? (
                         <img src={rating.userId.profilePhoto} alt={rating.userId.name} className="w-full h-full object-cover" />
                       ) : (
-                        <FiUser className="w-6 h-6 text-teal-400" />
+                        <FiUser className="w-5 h-5 text-teal-400" />
                       )}
                     </div>
                     <div>
-                      <h4 className="font-black text-gray-900">{rating.userId?.name || 'Customer'}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <h4 className="text-sm font-semibold text-gray-900 leading-snug">{rating.userId?.name || 'Customer'}</h4>
+                      <div className="flex items-center gap-1.5 mt-0.5">
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((s) => (
                             <FiStar
                               key={s}
-                              className={`w-3 h-3 ${s <= rating.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
+                              className={`w-2.5 h-2.5 ${s <= rating.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`}
                             />
                           ))}
                         </div>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">{formatDate(rating.reviewedAt)}</span>
+                        <span className="text-[9px] font-medium text-gray-400 uppercase">{formatDate(rating.reviewedAt)}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-                    <span className="text-[10px] font-black text-gray-500 uppercase">{rating.serviceId?.title || rating.serviceName}</span>
+                  <div className="bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100 shrink-0">
+                    <span className="text-[9px] font-semibold text-gray-500 uppercase">{rating.serviceId?.title || rating.serviceName}</span>
                   </div>
                 </div>
 
                 {rating.review && (
-                  <p className="text-gray-600 text-sm leading-relaxed font-medium pl-2 border-l-4 border-teal-500/20">
+                  <p className="text-gray-600 text-xs leading-relaxed font-medium pl-1.5 border-l-2 border-teal-500/20">
                     "{rating.review}"
                   </p>
                 )}
 
                 {rating.reviewImages && rating.reviewImages.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                     {rating.reviewImages.map((img, i) => (
-                      <img key={i} src={img} className="w-20 h-20 rounded-2xl object-cover shrink-0 border border-gray-100" alt="Review" />
+                      <img key={i} src={img} className="w-16 h-16 rounded-xl object-cover shrink-0 border border-gray-100" alt="Review" />
                     ))}
                   </div>
                 )}
 
                 {rating.workerId && (
-                  <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Service by:</span>
-                      <span className="text-[11px] font-black text-teal-600">{rating.workerId.name}</span>
+                  <div className="pt-2 border-t border-gray-50 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-medium text-gray-400 uppercase">Service by:</span>
+                      <span className="text-[10px] font-semibold text-teal-600">{rating.workerId.name}</span>
                     </div>
-                    <span className="text-[10px] font-bold text-gray-300">#{rating.bookingNumber}</span>
+                    <span className="text-[9px] font-medium text-gray-300">#{rating.bookingNumber}</span>
                   </div>
                 )}
               </div>
@@ -182,7 +179,7 @@ const MyRatings = () => {
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FiMessageSquare className="w-8 h-8 text-gray-200" />
               </div>
-              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No ratings yet</p>
+              <p className="text-gray-400 font-semibold uppercase tracking-widest text-xs">No ratings yet</p>
             </div>
           )}
 
@@ -190,7 +187,7 @@ const MyRatings = () => {
           {pagination.total > ratings.length && (
             <button
               onClick={() => fetchRatings(pagination.page + 1)}
-              className="w-full py-4 bg-white rounded-2xl border-2 border-gray-100 text-gray-600 font-black flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+              className="w-full py-4 bg-white rounded-2xl border-2 border-gray-100 text-gray-600 font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
             >
               {isLoading ? <FiLoader className="animate-spin" /> : 'Load More Reviews'}
             </button>

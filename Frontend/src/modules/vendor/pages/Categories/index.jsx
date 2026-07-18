@@ -286,18 +286,18 @@ const Categories = () => {
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => { setIsModalOpen(false); setForm({ categoryName: '', reason: '' }); }}
-                  className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-semibold rounded-2xl hover:bg-gray-200 transition text-sm"
+                  className="w-full sm:flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-2xl hover:bg-gray-200 transition text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-3.5 text-white font-semibold rounded-2xl transition text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="w-full sm:flex-1 py-3 text-white font-semibold rounded-2xl transition text-sm flex items-center justify-center gap-1.5 disabled:opacity-60"
                   style={{ background: `linear-gradient(135deg, ${themeColors.button}, ${themeColors.button}cc)` }}
                 >
                   {isSubmitting ? (

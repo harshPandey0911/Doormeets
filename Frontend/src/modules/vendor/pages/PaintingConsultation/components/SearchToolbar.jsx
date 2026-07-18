@@ -44,7 +44,7 @@ const SearchToolbar = ({
             <select
               value={brandFilter}
               onChange={(e) => onBrandFilterChange(e.target.value)}
-              className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 hover:border-gray-300 focus:border-[#E85D3F] focus:ring-4 focus:ring-[#E85D3F]/10 rounded-2xl text-xs font-bold text-gray-700 uppercase tracking-wider outline-none appearance-none cursor-pointer"
+              className="w-full pl-4 pr-4 py-3 bg-white border border-gray-200 hover:border-gray-300 focus:border-[#E85D3F] focus:ring-4 focus:ring-[#E85D3F]/10 rounded-2xl text-xs font-bold text-gray-700 uppercase tracking-wider outline-none appearance-none cursor-pointer"
             >
               <option value="ALL">All Brands</option>
               {brands.map((b) => (
@@ -53,26 +53,20 @@ const SearchToolbar = ({
                 </option>
               ))}
             </select>
-            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
-              <FiSliders className="w-3.5 h-3.5" />
-            </div>
           </div>
-
+ 
           {/* Sort Selector Dropdown */}
           <div className="relative flex-1 sm:flex-none sm:w-48">
             <select
               value={sortOption}
               onChange={(e) => onSortChange(e.target.value)}
-              className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 hover:border-gray-300 focus:border-[#E85D3F] focus:ring-4 focus:ring-[#E85D3F]/10 rounded-2xl text-xs font-bold text-gray-700 uppercase tracking-wider outline-none appearance-none cursor-pointer"
+              className="w-full pl-4 pr-4 py-3 bg-white border border-gray-200 hover:border-gray-300 focus:border-[#E85D3F] focus:ring-4 focus:ring-[#E85D3F]/10 rounded-2xl text-xs font-bold text-gray-700 uppercase tracking-wider outline-none appearance-none cursor-pointer"
             >
               <option value="NEWEST">Newest First</option>
               <option value="OLDEST">Oldest First</option>
               <option value="AREA_DESC">Area: High to Low</option>
               <option value="AREA_ASC">Area: Low to High</option>
             </select>
-            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
-              <FiSliders className="w-3.5 h-3.5" />
-            </div>
           </div>
         </div>
       </div>

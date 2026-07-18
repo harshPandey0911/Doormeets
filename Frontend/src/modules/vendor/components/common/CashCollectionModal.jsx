@@ -43,9 +43,13 @@ const CashCollectionModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      // Safety check: close if already paid
       const pStatus = booking?.paymentStatus?.toLowerCase() || '';
-      if (pStatus === 'success' || pStatus === 'paid') {
+      const isOnline = booking?.paymentMethod === 'online' || booking?.paymentMethod === 'Qr online';
+      if (booking?.cashCollected || pStatus === 'collected_by_vendor') {
+        onClose();
+        return;
+      }
+      if ((pStatus === 'success' || pStatus === 'paid') && !isOnline) {
         onClose();
         return;
       }

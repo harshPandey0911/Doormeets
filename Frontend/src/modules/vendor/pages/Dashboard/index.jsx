@@ -885,88 +885,79 @@ const Dashboard = memo(() => {
             <div className="grid grid-cols-2 gap-2.5">
               {/* Completed Jobs Card */}
               <div
-                className="rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:shadow-md group"
+                className="rounded-xl p-2.5 relative overflow-hidden transition-all duration-300 hover:shadow-md group flex flex-col justify-between min-h-[72px]"
                 style={{
                   background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
                   border: '1px solid rgba(16, 185, 129, 0.1)',
                 }}
               >
-                <div className="relative z-10 flex flex-col h-full justify-between">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="p-1.5 rounded-lg bg-white shadow-sm border border-green-100 group-hover:scale-105 transition-transform duration-300">
-                      <FiCheckCircle className="w-4 h-4 text-green-600" />
+                <div className="relative z-10 flex flex-col h-full justify-between space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="p-1 rounded-lg bg-white shadow-sm border border-green-100 group-hover:scale-105 transition-transform duration-300">
+                      <FiCheckCircle className="w-3.5 h-3.5 text-green-600" />
                     </div>
-                    <span className="text-[8px] font-black text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                    <span className="text-[7.5px] font-black text-green-700 bg-green-100 px-1.5 py-0.2 rounded-full uppercase tracking-normal">
                       Target Met
                     </span>
                   </div>
                   <div>
-                    <p className="text-lg font-black text-green-900 leading-tight">
+                    <p className="text-base font-bold text-green-900 leading-tight">
                       {stats.completedJobs}
                     </p>
-                    <p className="text-[9px] font-bold text-green-700 uppercase tracking-tight opacity-70">
+                    <p className="text-[8px] font-bold text-green-700 uppercase tracking-tight opacity-70 truncate">
                       Completed Jobs (30 Days)
                     </p>
                   </div>
                 </div>
                 {/* Decorative blob */}
-                <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-green-500/5 rounded-full blur-2xl" />
+                <div className="absolute -bottom-6 -right-6 w-12 h-12 bg-green-500/5 rounded-full blur-2xl" />
               </div>
 
               {/* Rating Card */}
               <div
-                className="rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:shadow-md group"
+                className="rounded-xl p-2.5 relative overflow-hidden transition-all duration-300 hover:shadow-md group flex flex-col justify-between min-h-[72px]"
                 style={{
                   background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
                   border: '1px solid rgba(245, 158, 11, 0.1)',
                 }}
               >
-                <div className="relative z-10 flex flex-col h-full justify-between">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="p-1.5 rounded-lg bg-white shadow-sm border border-amber-100 group-hover:scale-105 transition-transform duration-300">
-                      <FiTrendingUp className="w-4 h-4 text-amber-600" />
+                <div className="relative z-10 flex flex-col h-full justify-between space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="p-1 rounded-lg bg-white shadow-sm border border-amber-100 group-hover:scale-105 transition-transform duration-300">
+                      <FiTrendingUp className="w-3.5 h-3.5 text-amber-600" />
                     </div>
                     <div className="flex items-center gap-0.5 text-amber-600">
                       {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`text-[7px] ${i < Math.round(stats.rating || 0) ? 'opacity-100' : 'opacity-30'}`}>★</span>
+                        <span key={i} className={`text-[6px] ${i < Math.round(stats.rating || 0) ? 'opacity-100' : 'opacity-30'}`}>★</span>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-lg font-black text-amber-900 leading-tight">
+                    <p className="text-base font-bold text-amber-900 leading-tight">
                       {stats.rating > 0 ? stats.rating.toFixed(1) : 'N/A'}
                     </p>
-                    <p className="text-[9px] font-bold text-amber-700 uppercase tracking-tight opacity-70">
+                    <p className="text-[8px] font-bold text-amber-700 uppercase tracking-tight opacity-70 truncate">
                       Average Rating
                     </p>
                   </div>
                 </div>
                 {/* Decorative blob */}
-                <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-amber-500/5 rounded-full blur-2xl" />
+                <div className="absolute -bottom-6 -right-6 w-12 h-12 bg-amber-500/5 rounded-full blur-2xl" />
               </div>
             </div>
           </div>
 
           {/* Recent Jobs - List View */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Active Jobs</h2>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-base font-bold text-gray-800">Active Jobs</h2>
               {recentJobs.length > 0 && (
                 <button
                   onClick={() => navigate('/vendor/jobs')}
-                  className="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-300 active:scale-95"
+                  className="px-3 py-1.5 rounded-xl font-semibold text-xs transition-all duration-300 active:scale-95 text-white"
                   style={{
                     background: `linear-gradient(135deg, ${themeColors.button} 0%, ${themeColors.button}dd 100%)`,
-                    color: '#FFFFFF',
-                    boxShadow: `0 4px 12px ${hexToRgba(themeColors.button, 0.3)}, 0 2px 6px ${hexToRgba(themeColors.button, 0.2)}`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = `0 6px 16px ${hexToRgba(themeColors.button, 0.4)}, 0 3px 8px ${hexToRgba(themeColors.button, 0.3)}`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = `0 4px 12px ${hexToRgba(themeColors.button, 0.3)}, 0 2px 6px ${hexToRgba(themeColors.button, 0.2)}`;
+                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
                   }}
                 >
                   View All
@@ -974,92 +965,54 @@ const Dashboard = memo(() => {
               )}
             </div>
             {recentJobs.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {recentJobs.map((job, index) => {
-                  // Alternating colors
-                  const isDarkRed = index % 2 === 0;
-                  const accentColor = isDarkRed ? '#B33A35' : '#D56C67';
+                  const getStatusStyle = (status) => {
+                    const s = String(status || '').toLowerCase();
+                    if (s === 'completed' || s === 'work_done') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+                    if (s === 'cancelled' || s === 'rejected') return 'bg-red-50 text-red-700 border-red-100';
+                    return 'bg-amber-50 text-amber-700 border-amber-100';
+                  };
 
                   return (
                     <div
                       key={job.id}
                       onClick={() => navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`)}
-                      className="bg-white rounded-xl shadow-lg cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
-                      style={{
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.08)',
-                        border: '1px solid rgba(0, 0, 0, 0.1)',
-                      }}
+                      className="bg-white rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
                     >
-                      {/* Left accent border */}
-                      <div
-                        className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl"
-                        style={{
-                          background: `linear-gradient(180deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
-                        }}
-                      />
-
-                      {/* Compact Content - All in one row */}
-                      <div className="px-3 py-2.5">
-                        <div className="flex items-center gap-3">
+                      {/* Compact Content */}
+                      <div className="p-2.5">
+                        <div className="flex items-center gap-2.5">
                           {/* Profile Image Circle */}
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-                            style={{
-                              border: `2.5px solid ${accentColor}40`,
-                              boxShadow: `0 2px 8px ${hexToRgba(accentColor, 0.25)}, inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
-                              background: `linear-gradient(135deg, ${accentColor}20 0%, ${accentColor}10 100%)`,
-                            }}
-                          >
-                            <FiUser className="w-5 h-5" style={{ color: accentColor }} />
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-50 border border-gray-100">
+                            <FiUser className="w-3.5 h-3.5 text-gray-400" />
                           </div>
 
                           {/* Main Content */}
-                          <div className="flex-1 min-w-0">
-                            {/* Name and Service in one line */}
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <p className="text-sm font-bold text-gray-800 truncate">{job.customerName}</p>
-                              <span
-                                className="text-xs font-bold px-2 py-0.5 rounded-lg flex-shrink-0"
-                                style={{
-                                  background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
-                                  color: '#FFFFFF',
-                                  boxShadow: `0 2px 5px ${hexToRgba(accentColor, 0.3)}`,
-                                }}
-                              >
+                          <div className="flex-1 min-w-0 space-y-1">
+                            {/* Name and Service tag */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-xs font-semibold text-gray-900 truncate">{job.customerName}</p>
+                              <span className="text-[9px] font-semibold px-1.5 py-0.2 bg-gray-50 border border-gray-100 text-gray-500 rounded">
                                 {job.serviceType || 'Service'}
                               </span>
                             </div>
 
-                            {/* Address, Time, Status in one line */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <div
-                                className="flex items-center gap-1 px-2 py-0.5 rounded"
-                                style={{
-                                  background: 'rgba(0, 166, 166, 0.1)',
-                                  border: '1px solid rgba(0, 166, 166, 0.2)',
-                                }}
-                              >
-                                <FiMapPin className="w-3 h-3" style={{ color: themeColors.button }} />
-                                <span className="text-xs font-semibold text-gray-700 truncate max-w-[100px]">{job.location}</span>
+                            {/* Address and Time */}
+                            <div className="flex items-center gap-2 flex-wrap text-[10px] text-gray-550 font-medium">
+                              <div className="flex items-center gap-0.5 truncate max-w-[120px]">
+                                <FiMapPin className="w-3 h-3 text-gray-400 shrink-0" />
+                                <span>{job.location}</span>
                               </div>
-                              <div
-                                className="flex items-center gap-1 px-2 py-0.5 rounded"
-                                style={{
-                                  background: 'rgba(245, 158, 11, 0.1)',
-                                  border: '1px solid rgba(245, 158, 11, 0.2)',
-                                }}
-                              >
-                                <FiClock className="w-3 h-3" style={{ color: '#F59E0B' }} />
-                                <span className="text-xs font-semibold text-gray-700">{job.time}</span>
+                              <div className="flex items-center gap-0.5">
+                                <FiClock className="w-3 h-3 text-gray-400 shrink-0" />
+                                <span>{job.time}</span>
                               </div>
-                              <span
-                                className="text-xs font-bold px-2 py-0.5 rounded-full"
-                                style={{
-                                  background: `${accentColor}15`,
-                                  color: accentColor,
-                                  border: `1px solid ${accentColor}30`,
-                                }}
-                              >
+                            </div>
+
+                            {/* Status tag */}
+                            <div className="flex items-center mt-0.5">
+                              <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${getStatusStyle(job.status)}`}>
                                 {getStatusLabel(job.status)}
                               </span>
                             </div>
@@ -1071,21 +1024,9 @@ const Dashboard = memo(() => {
                               e.stopPropagation();
                               navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`);
                             }}
-                            className="p-2 rounded-lg flex-shrink-0 transition-all duration-300 active:scale-95"
-                            style={{
-                              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
-                              boxShadow: `0 3px 10px ${hexToRgba(accentColor, 0.3)}, 0 2px 5px ${hexToRgba(accentColor, 0.2)}`,
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'scale(1.1)';
-                              e.currentTarget.style.boxShadow = `0 5px 14px ${hexToRgba(accentColor, 0.4)}, 0 3px 7px ${hexToRgba(accentColor, 0.3)}`;
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'scale(1)';
-                              e.currentTarget.style.boxShadow = `0 3px 10px ${hexToRgba(accentColor, 0.3)}, 0 2px 5px ${hexToRgba(accentColor, 0.2)}`;
-                            }}
+                            className="p-1 rounded-full bg-gray-50 text-gray-400 hover:text-gray-800 hover:bg-gray-100 border border-gray-150 transition-colors shrink-0"
                           >
-                            <FiArrowRight className="w-4 h-4" style={{ color: '#FFFFFF' }} />
+                            <FiChevronRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
