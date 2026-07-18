@@ -21,7 +21,7 @@ const getAllVendors = async (req, res) => {
     } = req.query;
 
     // Build query
-    const query = {};
+    const query = { isDeleted: { $ne: true } };
 
     // CITY ADMIN FILTER
     const adminFilter = await getVendorQueryFilter(req.user);
@@ -522,7 +522,7 @@ const getAllVendorBookings = async (req, res) => {
 const getVendorPaymentsSummary = async (req, res) => {
   try {
     // Return vendors with their wallet balances and earnings
-    const query = { 'wallet.balance': { $exists: true } };
+    const query = { 'wallet.balance': { $exists: true }, isDeleted: { $ne: true } };
 
     // CITY ADMIN FILTER
     const adminFilter = await getVendorQueryFilter(req.user);

@@ -34,9 +34,15 @@ const DeletedAccountsDashboard = () => {
     fetchData();
   }, []);
 
-  const handleViewHistory = async (role, id) => {
+  const handleViewHistory = async (tabName, id) => {
+    let role = tabName;
+    if (tabName === 'users') role = 'user';
+    if (tabName === 'vendors') role = 'vendor';
+    if (tabName === 'workers') role = 'worker';
+    if (tabName === 'shopOwners') role = 'shopOwner';
+
     setHistoryLoading(true);
-    setSelectedAccount({ role, id });
+    setSelectedAccount({ role: tabName, id });
     setHistoryData(null);
     try {
       const response = await api.get(`/admin/deleted-accounts/${role}/${id}/history`);
