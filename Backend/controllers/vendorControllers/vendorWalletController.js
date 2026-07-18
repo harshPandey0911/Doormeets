@@ -76,6 +76,7 @@ const getWallet = async (req, res) => {
       data: {
         dues,
         earnings,
+        credits: vendor.wallet?.credits || 0,
         amountDue: dues, // Clarification for frontend but 'dues' is self-explanatory
         balance: earnings - dues, // Net position for reference (optional)
         totalWithdrawn,
@@ -85,7 +86,8 @@ const getWallet = async (req, res) => {
         cashLimit: vendor.wallet?.cashLimit || 10000,
         vendor: {
           name: vendor.name,
-          businessName: vendor.businessName
+          businessName: vendor.businessName,
+          wallet: vendor.wallet
         }
       }
     });

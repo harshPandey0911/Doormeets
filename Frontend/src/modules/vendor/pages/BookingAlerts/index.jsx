@@ -182,7 +182,7 @@ const BookingAlerts = () => {
       window.dispatchEvent(new Event('vendorJobsUpdated'));
     } catch (error) {
       console.error('Accept error:', error);
-      toast.error('Failed to accept booking');
+      toast.error(error.response?.data?.message || 'Failed to accept booking');
     } finally {
       setLoadingAction({ id: null, type: null });
     }

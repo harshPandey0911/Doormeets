@@ -123,7 +123,7 @@ const BookingAlert = () => {
       navigate(`/vendor/booking/${id}/assign-worker`, { replace: true });
     } catch (error) {
       console.error('Error accepting:', error);
-      toast.error('Failed to accept booking.');
+      toast.error(error.response?.data?.message || 'Failed to accept booking.');
       navigate('/vendor/dashboard', { replace: true });
     }
   };

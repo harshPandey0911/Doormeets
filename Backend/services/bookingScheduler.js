@@ -280,6 +280,32 @@ class BookingScheduler {
       const serviceName = populatedBooking.serviceId?.title || populatedBooking.serviceName;
       const customerName = populatedBooking.userId?.name || 'Customer';
 
+      // Calculate required credits based on PricingConfig
+      let requiredCredits = 0;
+      try {
+        const PricingConfig = require('../models/PricingConfig');
+        if (populatedBooking.serviceId) {
+          const serviceIdStr = populatedBooking.serviceId._id ? populatedBooking.serviceId._id.toString() : populatedBooking.serviceId.toString();
+          const pricings = await PricingConfig.find({ serviceId: serviceIdStr });
+          let pricing = null;
+          if (pricings.length > 0) {
+            if (populatedBooking.cityId) {
+              pricing = pricings.find(p => p.cityId && String(p.cityId) === String(populatedBooking.cityId));
+            }
+            if (!pricing && populatedBooking.brandId) {
+              pricing = pricings.find(p => p.brandId && String(p.brandId) === String(populatedBooking.brandId));
+            }
+            if (!pricing) {
+              pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+            }
+          }
+          const acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+          requiredCredits = acceptanceFee > 0 ? (acceptanceFee / 10) : 0;
+        }
+      } catch (priceErr) {
+        console.error('[BookingScheduler] Error calculating required credits:', priceErr);
+      }
+
       // Send all vendor notifications in parallel
       await Promise.all(
         vendors.map(async (v) => {
@@ -300,6 +326,7 @@ class BookingScheduler {
               expiresAt: new Date(Date.now() + (WAVE_CONFIG[booking.currentWave]?.duration || 60000)).toISOString(),
               status: populatedBooking.status,
               serviceType: populatedBooking.serviceType || 'service',
+              requiredCredits,
               playSound: true,
               message: `New booking request within ${v.distance?.toFixed(1) || '?'}km!`
             });
@@ -321,7 +348,8 @@ class BookingScheduler {
               scheduledTime: populatedBooking.scheduledTime,
               location: populatedBooking.address,
               price: populatedBooking.finalAmount,
-              distance: v.distance
+              distance: v.distance,
+              requiredCredits
             },
             pushData: {
               type: 'new_booking',

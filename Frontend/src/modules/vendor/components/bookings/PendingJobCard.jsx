@@ -154,6 +154,12 @@ const PendingJobCard = ({ booking, onAccept, onReject, onClick, loadingAction, s
             ₹{booking.price || booking.vendorEarnings || booking.finalAmount || 0}
           </div>
         </div>
+        {(booking.deductionAmount > 0 || booking.requiredCredits > 0) && (
+          <div className="flex items-center gap-1 mt-2 bg-red-50 p-1.5 rounded-lg border border-red-100">
+            <span className="text-[10px] font-bold text-red-500 uppercase">Lead Fee:</span>
+            <span className="text-[11px] font-black text-red-600">{booking.requiredCredits || booking.deductionAmount} Credits</span>
+          </div>
+        )}
         <div className="flex gap-2 mt-3">
           <button
             disabled={!!loadingAction}

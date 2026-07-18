@@ -71,7 +71,7 @@ const Wallet = () => {
 
       if (walletRes.success) {
         setWallet({
-          credits: walletRes.data.vendor?.wallet?.credits || 0, // Assume backend returns this if populated properly
+          credits: walletRes.data.credits !== undefined ? walletRes.data.credits : (walletRes.data.vendor?.wallet?.credits || 0),
           dues: walletRes.data.dues || 0,
           earnings: walletRes.data.earnings || 0, // Fallback if backend hasn't moved entirely to credits
           totalCashCollected: walletRes.data.totalCashCollected || 0,
@@ -89,7 +89,7 @@ const Wallet = () => {
   if (loading) return <LogoLoader />;
 
   // Display value for credits (fallback to earnings / 10 if credits not yet initialized)
-  const displayCredits = wallet.credits || (wallet.earnings ? Math.floor(wallet.earnings / 10) : 0);
+  const displayCredits = wallet.credits !== undefined && wallet.credits !== null ? wallet.credits : (wallet.earnings ? Math.floor(wallet.earnings / 10) : 0);
 
   const getTransactionIcon = (txn) => {
     const isIncentive = txn.type === 'credit';
