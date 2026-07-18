@@ -3,14 +3,16 @@ import { FiStar } from 'react-icons/fi';
 
 const ReviewCard = ({ booking, onWriteReview }) => {
   // Logic to determine if card should be shown
-  // Show if status is work_done/completed OR if there is already a rating
-  const isCompleted = ['work_done', 'completed', 'COMPLETED'].includes(booking.status);
-  const isPaid = ['success', 'paid', 'collected_by_vendor'].includes(booking.paymentStatus?.toLowerCase());
+  // Show ONLY when booking is truly completed (not just work_done) AND payment is confirmed
+  const isCompleted = ['completed', 'COMPLETED'].includes(booking.status);
+  const isPaid = ['success', 'paid', 'collected_by_vendor', 'paid_online'].includes(booking.paymentStatus?.toLowerCase());
   const hasRating = !!booking.rating;
 
+  // Show if already rated, OR only if fully completed + fully paid
   if (!hasRating && (!isCompleted || !isPaid)) {
     return null;
   }
+
 
   return (
     <div className="bg-card-bg rounded-3xl overflow-hidden shadow-lg border border-border-color relative group mb-6">

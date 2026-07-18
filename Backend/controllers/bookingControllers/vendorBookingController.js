@@ -192,7 +192,7 @@ const getBookingById = async (req, res) => {
     const existingBid = await Bid.findOne({ bookingId: id, vendorId });
 
     const bookingData = booking.toObject();
-    const phoneRevealedStatuses = ['visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
+    const phoneRevealedStatuses = ['journey_started', 'visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
     const canSeePhone = phoneRevealedStatuses.includes(booking.status) && (isWorkerRole || (booking.vendorId && booking.vendorId._id.toString() === vendorId.toString()));
 
     if (!canSeePhone) {

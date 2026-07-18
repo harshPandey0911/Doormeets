@@ -24,6 +24,8 @@ import {
   FiX,
   FiUser,
   FiChevronRight,
+  FiChevronDown,
+  FiChevronUp,
   FiSearch,
   FiHome,
   FiAlertCircle,
@@ -71,6 +73,9 @@ const BookingDetails = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [isOrderSummaryExpanded, setIsOrderSummaryExpanded] = useState(true);
+  const [isLocationExpanded, setIsLocationExpanded] = useState(true);
+  const [isPaymentSummaryExpanded, setIsPaymentSummaryExpanded] = useState(true);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -699,7 +704,7 @@ const BookingDetails = () => {
   // --------------------------------------
 
   return (
-    <div className="min-h-screen pb-32 relative bg-light-bg text-dark-text">
+    <div className="min-h-screen pb-32 relative bg-light-bg text-dark-text font-['Inter']">
       {/* Clean Theme Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0"
@@ -744,63 +749,31 @@ const BookingDetails = () => {
           <div className="space-y-6">
 
 
-          {/* Visual Progress Stepper */}
-          {['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) ? (
+          {/* Cancelled/Rejected status message */}
+          {['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
             <div className="bg-red-50 rounded-2xl p-4 border border-red-100 flex items-center gap-3 text-red-700">
               <FiXCircle className="w-5 h-5 shrink-0" />
               <p className="font-medium text-sm">This booking has been {booking.status.toLowerCase()}.</p>
             </div>
-          ) : (
-            <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color">
-              <div className="flex justify-between relative z-10">
-                {/* Step 1: Booked */}
-                <div className="flex flex-col items-center gap-2 w-1/4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['pending', 'requested', 'searching', 'bidding', 'accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
-                    }`}>
-                    <FiCheckCircle className="w-4 h-4" />
-                  </div>
-                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Booked</p>
-                </div>
+          )}
 
-                {/* Step 2: Assigned */}
-                <div className="flex flex-col items-center gap-2 w-1/4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
-                    }`}>
-                    2
+          {/* Visual Progress Stepper */}
+          {!['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
+            <div className="bg-card-bg rounded-3xl px-6 py-5 shadow-sm border border-border-color overflow-hidden">
+              <div className="flex justify-between relative">
+                {[
+                  { label: 'Booked', icon: <FiCheckCircle className="w-4 h-4" />, active: true },
+                  { label: 'Assigned', icon: '2', active: ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase()) },
+                  { label: 'Started', icon: '3', active: ['journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase()) },
+                  { label: 'Done', icon: '4', active: ['work_done', 'completed'].includes(booking.status?.toLowerCase()) },
+                ].map((step, idx) => (
+                  <div key={idx} className="flex flex-col items-center gap-1.5 flex-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step.active ? 'bg-[#B33A35] text-white shadow-md' : 'bg-divider text-secondary-text'}`}>
+                      {step.icon}
+                    </div>
+                    <p className={`text-[9px] font-bold uppercase tracking-widest text-center transition-colors ${step.active ? 'text-[#B33A35]' : 'text-secondary-text'}`}>{step.label}</p>
                   </div>
-                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Assigned</p>
-                </div>
-
-                {/* Step 3: In Progress */}
-                <div className="flex flex-col items-center gap-2 w-1/4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
-                    }`}>
-                    3
-                  </div>
-                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Started</p>
-                </div>
-
-                {/* Step 4: Done */}
-                <div className="flex flex-col items-center gap-2 w-1/4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${['work_done', 'completed'].includes(booking.status?.toLowerCase())
-                    ? 'bg-[#B33A35] text-white shadow-lg shadow-orange-100' : 'bg-divider text-secondary-text'
-                    }`}>
-                    4
-                  </div>
-                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-wide text-center">Done</p>
-                </div>
-              </div>
-              {/* Connect lines */}
-              <div className="absolute top-18 left-[15%] right-[15%] h-0.5 bg-divider z-0">
-                <div className="h-full bg-[#B33A35] transition-all duration-1000" style={{
-                  width:
-                    ['work_done', 'completed'].includes(booking.status?.toLowerCase()) ? '100%' :
-                      ['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? '66%' :
-                        ['accepted', 'confirmed', 'assigned'].includes(booking.status?.toLowerCase()) ? '33%' : '0%'
-                }}></div>
+                ))}
               </div>
             </div>
           )}
@@ -820,7 +793,6 @@ const BookingDetails = () => {
           {!booking.workerId && !booking.assignedTo && ['requested', 'searching', 'bidding'].includes(booking.status?.toLowerCase()) && (
             <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
-
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-sm">
@@ -833,13 +805,11 @@ const BookingDetails = () => {
                     </p>
                   </div>
                 </div>
-
                 <p className="text-sm text-secondary-text mb-4 leading-relaxed font-medium">
                   {booking.status?.toLowerCase() === 'bidding'
                     ? "Vendors are now submitting their best prices for your request. View the quotes below and pick the best one!"
                     : "We've sent your request to all verified experts in your area. You'll be notified automatically as soon as someone accepts."}
                 </p>
-
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-xs text-secondary-text bg-light-bg rounded-xl p-3 border border-border-color">
                     <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping"></span>
@@ -857,27 +827,26 @@ const BookingDetails = () => {
                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Quotes Received</h3>
                 <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">LIVE</span>
               </div>
-
               <BidsList bookingId={id} onAccept={() => loadBooking()} />
             </div>
           )}
 
-          {/* Service Partner Card */}
+          {/* Service Partner Card — Enhanced */}
           {(booking.workerId || booking.assignedTo || booking.vendorId) && ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done'].includes(booking.status?.toLowerCase()) && (
-            <div className="bg-card-bg rounded-3xl p-5 shadow-sm border border-border-color transition-all">
-              <div className="flex justify-between items-start mb-4">
+            <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+              {/* Top bar */}
+              <div className="px-5 pt-4 pb-3 flex justify-between items-center border-b border-border-color">
                 {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? (
                   <div className="flex items-center gap-2">
-                    <span className="flex h-3 w-3 relative">
+                    <span className="flex h-2.5 w-2.5 relative">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                     </span>
                     <p className="text-xs font-bold text-green-600 tracking-wider">LIVE TRACKING ACTIVE</p>
                   </div>
                 ) : (
                   <p className="text-xs font-bold text-secondary-text tracking-wider uppercase">Your Professional</p>
                 )}
-
                 <button
                   onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
                   className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
@@ -886,27 +855,28 @@ const BookingDetails = () => {
                 </button>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full p-1 bg-divider shrink-0">
-                  <div className="w-full h-full rounded-full overflow-hidden relative bg-card-bg">
-                    {(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto) ? (
-                      <>
-                        <img
-                          src={toAssetUrl(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto)}
-                          alt="Professional"
-                          className="w-full h-full object-cover"
-                          onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.querySelector('.fallback-icon').style.display = 'block'; }}
-                        />
-                        <FiUser className="w-8 h-8 text-secondary-text absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 fallback-icon hidden" />
-                      </>
-                    ) : (
-                      <FiUser className="w-8 h-8 text-secondary-text absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                    )}
-                  </div>
+              {/* Provider Info */}
+              <div className="px-5 py-4 flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-divider border border-border-color shrink-0">
+                  {(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto) ? (
+                    <>
+                      <img
+                        src={toAssetUrl(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto)}
+                        alt="Professional"
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.querySelector('.fallback-icon').style.display = 'block'; }}
+                      />
+                      <FiUser className="w-7 h-7 text-secondary-text m-auto mt-3 fallback-icon hidden" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FiUser className="w-7 h-7 text-secondary-text" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-dark-text text-lg truncate">
+                  <h3 className="font-bold text-dark-text text-base truncate">
                     {booking.workerId?.name || booking.assignedTo?.name || booking.vendorId?.name || 'Service Partner'}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
@@ -922,53 +892,67 @@ const BookingDetails = () => {
                   </div>
                 </div>
 
-                {/* Quick Call Action */}
-                {(booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone) && (
-                  <a
-                    href={`tel:${booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone}`}
-                    className="w-10 h-10 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center hover:bg-green-500/20 transition-colors active:scale-95 border border-green-500/20"
-                  >
-                    <FiPhone className="w-5 h-5" />
-                  </a>
-                )}
+                {/* Call Button */}
+                {(() => {
+                  const currentStatus = (booking.status || '').toLowerCase().replace(/_/g, ' ').trim();
+                  const journeyActive = ['journey started', 'journey_started', 'journey', 'visited', 'in progress', 'in_progress', 'work done', 'work_done'].includes(currentStatus);
+                  const vendorPhone = booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone;
+                  if (journeyActive && vendorPhone) {
+                    return (
+                      <a
+                        href={`tel:${vendorPhone}`}
+                        className="w-10 h-10 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center hover:bg-green-500/20 transition-colors active:scale-95 border border-green-500/20"
+                      >
+                        <FiPhone className="w-5 h-5" />
+                      </a>
+                    );
+                  }
+                  const carePhone = supportInfo.phone || '+919999999999';
+                  return (
+                    <a
+                      href={`tel:${carePhone}`}
+                      className="flex flex-col items-center gap-0.5 w-12 h-12 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center hover:bg-amber-500/20 transition-colors active:scale-95 border border-amber-500/20"
+                      title="Customer Care"
+                    >
+                      <FiPhone className="w-4 h-4" />
+                      <span className="text-[8px] font-bold uppercase tracking-wide leading-none">Care</span>
+                    </a>
+                  );
+                })()}
               </div>
             </div>
           )}
 
-          {/* Arrival OTP Card - Show during early stages until verified */}
+          {/* Arrival OTP Card - Show during early stages until verified (Highly Compact & Non-Colorful) */}
           {(booking.arrivalOTP || booking.visitOtp) && ['confirmed', 'assigned', 'journey_started'].includes(booking.status?.toLowerCase()) && (
-            <div className="relative overflow-hidden rounded-3xl shadow-lg border border-blue-100 mb-6 active:scale-[0.99] transition-all">
-              {/* Animated gradient background */}
-              <div className="absolute inset-0 bg-linear-to-br from-blue-600 via-indigo-600 to-violet-700 opacity-95"></div>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15)_0%,transparent_50%)]"></div>
-
-              <div className="relative z-10 p-6 flex flex-col items-center">
-                <div className="flex items-center gap-3 w-full mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                    <FiMapPin className="w-6 h-6 text-white" />
+            <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 mb-4 shadow-sm">
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2.5 w-full mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-100 shrink-0">
+                    <FiMapPin className="w-5 h-5 text-teal-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white tracking-tight">Verification OTP</h3>
-                    <p className="text-xs text-blue-100 font-medium">Share when professional reaches</p>
+                    <h3 className="text-sm font-bold text-gray-800 tracking-tight">Verification OTP</h3>
+                    <p className="text-[10px] text-gray-400 font-medium">Share when professional reaches</p>
                   </div>
                 </div>
 
                 {/* OTP Display */}
-                <div className="flex justify-center gap-3 mb-5">
+                <div className="flex justify-center gap-2 mb-3">
                   {String(booking.arrivalOTP || booking.visitOtp).split('').map((digit, idx) => (
                     <div
                       key={idx}
-                      className="w-14 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/40 shadow-xl"
+                      className="w-10 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-200 shadow-xs"
                     >
-                      <span className="text-3xl font-black text-white drop-shadow-md">{digit}</span>
+                      <span className="text-xl font-extrabold text-teal-600">{digit}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="w-full bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20">
-                  <div className="flex items-center justify-center gap-2 text-white text-sm">
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]"></span>
-                    <p className="font-medium">Waiting for professional to reach your location</p>
+                <div className="w-full bg-gray-50 rounded-lg py-2 px-3 border border-gray-100">
+                  <div className="flex items-center justify-center gap-1.5 text-gray-500 text-xs">
+                    <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse"></span>
+                    <p className="font-semibold text-[10px]">Waiting for professional to reach your location</p>
                   </div>
                 </div>
               </div>
@@ -977,15 +961,14 @@ const BookingDetails = () => {
 
           {/* Professional Arrived Notification - Only after OTP verified */}
           {booking?.status?.toLowerCase() === 'visited' && (
-            <div className="relative overflow-hidden rounded-3xl shadow-lg mb-6 active:scale-[0.98] transition-all">
-              <div className="absolute inset-0 bg-linear-to-br from-teal-500 via-teal-600 to-emerald-700 opacity-95"></div>
-              <div className="relative z-10 p-6 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 shrink-0">
-                  <FiCheckCircle className="w-6 h-6 text-white" />
+            <div className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-emerald-50 active:scale-[0.98] transition-all">
+              <div className="p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center border border-emerald-200 shrink-0">
+                  <FiCheckCircle className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">Professional Arrived</h3>
-                  <p className="text-sm text-teal-50 font-medium">Expert is at your location and starting the work.</p>
+                  <h3 className="text-base font-bold text-emerald-800 tracking-tight">Professional Arrived</h3>
+                  <p className="text-sm text-emerald-600 font-medium">Expert is at your location and starting the work.</p>
                 </div>
               </div>
             </div>
@@ -1148,116 +1131,235 @@ const BookingDetails = () => {
               </button>
             )}
 
-            <div className="bg-card-bg rounded-3xl p-5 shadow-sm border border-border-color">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20">
-                  <FiMapPin className="w-5 h-5 text-teal-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Service Address</p>
-                  <p className="text-sm font-medium text-dark-text leading-relaxed">{getAddressString(booking.address)}</p>
-                </div>
+            <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+              <div
+                onClick={() => setIsLocationExpanded(!isLocationExpanded)}
+                className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
+              >
+                <h3 className="font-semibold text-dark-text">Location & Schedule</h3>
+                {isLocationExpanded ? (
+                  <FiChevronUp className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <FiChevronDown className="w-5 h-5 text-gray-400" />
+                )}
               </div>
-              <div className="w-full h-px bg-divider mb-4"></div>
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
-                  <FiCalendar className="w-5 h-5 text-indigo-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Slot</p>
-                  <p className="text-sm font-medium text-dark-text">
-                    {formatDate(booking.scheduledDate)}
-                  </p>
-                  <p className="text-sm text-secondary-text">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Service Details */}
-          <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
-            <div className="px-5 py-4 border-b border-border-color bg-light-bg/50">
-              <h3 className="font-semibold text-dark-text">Order Summary</h3>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {/* 1. Service Category */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20 overflow-hidden">
-                  {booking.categoryIcon ? (
-                    <img src={booking.categoryIcon} alt="" className="w-6 h-6 object-contain" />
-                  ) : (
-                    <FiPackage className="w-5 h-5 text-teal-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-secondary-text uppercase tracking-widest">Service Category</p>
-                  <p className="text-sm font-semibold text-dark-text">{booking.serviceCategory || booking.serviceName || 'Service'}</p>
-                </div>
-              </div>
-
-              {/* 2. Brand */}
-              {(() => {
-                const brandName = booking.brandName || booking.bookedItems?.[0]?.brandName;
-                const brandIcon = booking.brandIcon || booking.bookedItems?.[0]?.brandIcon;
-                if (!brandName) return null;
-                return (
-                  <div className="flex items-center gap-3 pt-3 border-t border-dashed border-border-color">
-                    <div className="w-10 h-10 rounded-xl bg-divider flex items-center justify-center shrink-0 border border-border-color overflow-hidden">
-                      {brandIcon ? (
-                        <img src={brandIcon} alt={brandName} className="w-7 h-7 object-contain" />
-                      ) : (
-                        <span className="text-lg font-black text-secondary-text">{brandName.charAt(0)}</span>
-                      )}
+              {isLocationExpanded && (
+                <div className="p-5 space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20">
+                      <FiMapPin className="w-5 h-5 text-teal-500" />
                     </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-secondary-text uppercase tracking-widest">Brand</p>
-                      <p className="text-sm font-semibold text-dark-text">{brandName}</p>
+                    <div className="flex-1">
+                      <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Service Address</p>
+                      <p className="text-sm font-medium text-dark-text leading-relaxed">{getAddressString(booking.address)}</p>
                     </div>
                   </div>
-                );
-              })()}
-
-              {/* 3. Service Cards */}
-              {booking.bookedItems && booking.bookedItems.length > 0 && (
-                <div className="pt-3 border-t border-dashed border-border-color space-y-2">
-                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-widest mb-2">Services Booked</p>
-                  {booking.bookedItems.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-start bg-light-bg rounded-xl p-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-teal-600 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">×{item.quantity}</span>
-                          <span className="text-sm font-semibold text-dark-text truncate">{item.card?.title || 'Service'}</span>
-                        </div>
-                        {item.card?.subtitle && <p className="text-xs text-secondary-text mt-0.5 ml-8 line-clamp-1">{item.card.subtitle}</p>}
-                        {item.card?.duration && <p className="text-xs text-secondary-text mt-0.5 ml-8">⏱ {item.card.duration}</p>}
-                      </div>
-                      <span className="text-sm font-bold text-dark-text ml-3 shrink-0">₹{((item.card?.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</span>
+                  <div className="w-full h-px bg-divider"></div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
+                      <FiCalendar className="w-5 h-5 text-indigo-500" />
                     </div>
-                  ))}
+                    <div className="flex-1">
+                      <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Slot</p>
+                      <p className="text-sm font-medium text-dark-text">{formatDate(booking.scheduledDate)}</p>
+                      <p className="text-sm text-secondary-text">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </section>
 
+
+
+          {/* Service Details (Order Summary Dropdown with dynamic Badges) - Only show if Payment Summary is NOT visible */}
+          {!(['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
+            <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+            <div 
+              onClick={() => setIsOrderSummaryExpanded(!isOrderSummaryExpanded)}
+              className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
+            >
+              <h3 className="font-semibold text-dark-text">Order Summary</h3>
+              <div className="flex items-center gap-2">
+                {booking.bookingType === 'instant' ? (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-xs">
+                    ⚡ Instant
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-xs">
+                    📅 Scheduled
+                  </span>
+                )}
+                {isOrderSummaryExpanded ? (
+                  <FiChevronUp className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <FiChevronDown className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+
+            {isOrderSummaryExpanded && (
+              <div className="p-5 space-y-4 animate-in fade-in duration-200">
+                {/* 1. Service Category */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20 overflow-hidden">
+                    {booking.categoryIcon ? (
+                      <img src={booking.categoryIcon} alt="" className="w-6 h-6 object-contain" />
+                    ) : (
+                      <FiPackage className="w-5 h-5 text-teal-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-secondary-text uppercase tracking-widest">Service Category</p>
+                    <p className="text-sm font-semibold text-dark-text">{booking.serviceCategory || booking.serviceName || 'Service'}</p>
+                  </div>
+                </div>
+
+                {/* 2. Brand */}
+                {(() => {
+                  const brandName = booking.brandName || booking.bookedItems?.[0]?.brandName;
+                  const brandIcon = booking.brandIcon || booking.bookedItems?.[0]?.brandIcon;
+                  if (!brandName) return null;
+                  return (
+                    <div className="flex items-center gap-3 pt-3 border-t border-dashed border-border-color">
+                      <div className="w-10 h-10 rounded-xl bg-divider flex items-center justify-center shrink-0 border border-border-color overflow-hidden">
+                        {brandIcon ? (
+                          <img src={brandIcon} alt={brandName} className="w-7 h-7 object-contain" />
+                        ) : (
+                          <span className="text-lg font-black text-secondary-text">{brandName.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold text-secondary-text uppercase tracking-widest">Brand</p>
+                        <p className="text-sm font-semibold text-dark-text">{brandName}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 3. Service Cards */}
+                {booking.bookedItems && booking.bookedItems.length > 0 && (
+                  <div className="pt-3 border-t border-dashed border-border-color space-y-2">
+                    <p className="text-[10px] font-bold text-secondary-text uppercase tracking-widest mb-2">Services Booked</p>
+                    {booking.bookedItems.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-start bg-light-bg rounded-xl p-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-teal-600 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">×{item.quantity}</span>
+                            <span className="text-sm font-semibold text-dark-text truncate">{item.card?.title || 'Service'}</span>
+                          </div>
+                          {item.card?.subtitle && <p className="text-xs text-secondary-text mt-0.5 ml-8 line-clamp-1">{item.card.subtitle}</p>}
+                          {item.card?.duration && <p className="text-xs text-secondary-text mt-0.5 ml-8">⏱ {item.card.duration}</p>}
+                        </div>
+                        <span className="text-sm font-bold text-dark-text ml-3 shrink-0">₹{((item.card?.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 4. Detailed Pricing & Billing Info (Always show in dropdown) */}
+                <div className="pt-4 border-t border-dashed border-border-color space-y-2 text-xs">
+                  <p className="text-[10px] font-bold text-secondary-text uppercase tracking-widest mb-2">Billing Breakdown</p>
+                  
+                  <div className="flex justify-between text-secondary-text">
+                    <span>Base Amount</span>
+                    <span className="font-semibold text-dark-text">₹{(booking.basePrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+
+                  {/* Instant Booking Fee Markup */}
+                  {(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup) > 0 && (
+                    <div className="flex justify-between text-secondary-text">
+                      <span>Instant Booking Fee</span>
+                      <span className="font-semibold text-dark-text">₹{(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+
+                  {booking.paymentMethod === 'plan_benefit' ? (
+                    <div className="flex justify-between text-secondary-text">
+                      <span>Visiting Charges</span>
+                      <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
+                    </div>
+                  ) : (() => {
+                    const baseAmt = Number(booking.basePrice || 0);
+                    const instantFee = Number(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup || 0);
+                    const taxAmt = Number(booking.tax || ((booking.cgst || 0) + (booking.sgst || 0)) || 0);
+                    const discountAmt = Number(booking.discount || 0);
+                    const grandTotal = Number(booking.finalAmount || 0);
+                    
+                    // Direct database key or mathematically derived remainder
+                    const directValue = Number(booking.visitingCharges || booking.visitationFee || booking.visitingFee || booking.visitationCharges || 0);
+                    const derivedValue = grandTotal - (baseAmt + instantFee + taxAmt - discountAmt);
+                    const finalVisitingCharges = directValue > 0 ? directValue : (derivedValue > 0 ? derivedValue : 0);
+
+                    if (finalVisitingCharges > 0) {
+                      return (
+                        <div className="flex justify-between text-secondary-text">
+                          <span>Visiting Charges</span>
+                          <span className="font-semibold text-dark-text">₹{finalVisitingCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {(booking.tax || booking.cgst || booking.sgst) > 0 && (
+                    <div className="flex justify-between text-secondary-text">
+                      <span>Taxes & GST</span>
+                      <span className="font-semibold text-dark-text">₹{(booking.tax || ((booking.cgst || 0) + (booking.sgst || 0))).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+
+                  {booking.discount > 0 && (
+                    <div className="flex justify-between text-emerald-600 font-medium">
+                      <span>Discount Coupon</span>
+                      <span>-₹{(booking.discount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-secondary-text pt-1 border-t border-gray-100">
+                    <span>Payment Method</span>
+                    <span className="font-bold text-dark-text uppercase text-[10px] tracking-wider">
+                      {booking.paymentMethod === 'plan_benefit' ? 'Membership Benefit (Free)' : (booking.paymentMethod || 'Online')}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-dark-text pt-2.5 mt-1 border-t-2 border-border-color text-sm">
+                    <span className="font-bold">Grand Total</span>
+                    <span className="font-black text-brand text-base">₹{(booking.finalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+          )}
+
           {/* Payment Summary - Only show if payment is completed/collected OR if a payment request is active (Work Done) */}
           {(['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
             <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border-color">
-                  <div className={`p-2 rounded-lg ${booking.paymentMethod === 'plan_benefit' ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'}`}>
+              <div
+                onClick={() => setIsPaymentSummaryExpanded(!isPaymentSummaryExpanded)}
+                className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-lg ${booking.paymentMethod === 'plan_benefit' ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'}`}>
                     {booking.paymentMethod === 'plan_benefit' ? (
-                      <FiAward className="w-5 h-5" />
+                      <FiAward className="w-4 h-4" />
                     ) : (
-                      <FiDollarSign className="w-5 h-5" />
+                      <FiDollarSign className="w-4 h-4" />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-dark-text">
-                      {booking.paymentMethod === 'plan_benefit' ? 'Membership Benefit' : 'Payment Summary'}
-                    </h3>
-                  </div>
+                  <h3 className="font-semibold text-dark-text">
+                    {booking.paymentMethod === 'plan_benefit' ? 'Membership Benefit' : 'Payment Summary'}
+                  </h3>
                 </div>
+                {isPaymentSummaryExpanded ? (
+                  <FiChevronUp className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <FiChevronDown className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+              {isPaymentSummaryExpanded && (
+              <div className="p-5">
 
                 <div className="space-y-3 text-sm">
                   {hasBill ? (
@@ -1473,6 +1575,7 @@ const BookingDetails = () => {
                   )}
                 </div>
               </div>
+              )}
 
               {/* Payment Status Footer */}
               <div className="bg-light-bg px-5 py-3 border-t border-border-color flex justify-between items-center">

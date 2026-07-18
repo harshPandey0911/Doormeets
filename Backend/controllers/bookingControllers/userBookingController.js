@@ -1051,7 +1051,7 @@ const getBookingById = async (req, res) => {
     const showVendorNameToUser = globalSettings ? globalSettings.showVendorNameToUser !== false : true;
     const showVendorPhoneToUser = globalSettings ? globalSettings.showVendorPhoneToUser !== false : true;
 
-    const phoneRevealedStatuses = ['visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
+    const phoneRevealedStatuses = ['journey_started', 'visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];
     const canSeePhone = phoneRevealedStatuses.includes(booking.status) && showVendorPhoneToUser;
     
     if (booking.vendorId) {

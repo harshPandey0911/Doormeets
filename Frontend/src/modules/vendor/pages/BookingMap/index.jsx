@@ -536,12 +536,12 @@ const BookingMap = () => {
     <div className="h-screen flex flex-col relative bg-white overflow-hidden">
       {/* Top Floating Header */}
       {/* Top Floating Header - Always Visible */}
-      <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-start pointer-events-none">
+      <div className="absolute top-3 left-3 right-3 z-20 flex justify-between items-start pointer-events-none">
         <button
           onClick={() => navigate(-1)}
-          className="pointer-events-auto bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg text-gray-700 hover:bg-white transition-all active:scale-95"
+          className="pointer-events-auto bg-white/90 backdrop-blur-md p-2.5 rounded-full shadow-lg text-gray-700 hover:bg-white transition-all active:scale-95"
         >
-          <FiArrowLeft className="w-6 h-6" />
+          <FiArrowLeft className="w-4 h-4" />
         </button>
       </div>
 
@@ -681,10 +681,10 @@ const BookingMap = () => {
         {/* Full Screen Toggle Button */}
         <button
           onClick={() => setIsFullScreen(!isFullScreen)}
-          className="absolute top-24 right-4 p-4 rounded-full shadow-2xl transition-all active:scale-90 z-50 bg-white text-gray-700 hover:bg-gray-50"
-          style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
+          className="absolute top-16 right-3 p-2.5 rounded-full shadow-xl transition-all active:scale-90 z-50 bg-white text-gray-700 hover:bg-gray-50"
+          style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.15)' }}
         >
-          {isFullScreen ? <FiMinimize className="w-6 h-6" /> : <FiMaximize className="w-6 h-6" />}
+          {isFullScreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
         </button>
 
         {/* Recenter Button */}
@@ -701,10 +701,10 @@ const BookingMap = () => {
               }
             }
           }}
-          className={`absolute top-40 right-4 p-4 rounded-full shadow-2xl transition-all active:scale-90 z-50 ${isAutoCenter ? 'bg-teal-600 text-white animate-pulse' : 'bg-white text-gray-700'}`}
-          style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
+          className={`absolute top-28 right-3 p-2.5 rounded-full shadow-xl transition-all active:scale-90 z-50 ${isAutoCenter ? 'bg-teal-600 text-white animate-pulse' : 'bg-white text-gray-700'}`}
+          style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.15)' }}
         >
-          <FiCrosshair className="w-6 h-6" />
+          <FiCrosshair className="w-4 h-4" />
         </button>
 
         {/* DEBUG: Simulation Button */}
@@ -719,35 +719,35 @@ const BookingMap = () => {
         )}
       </div>
 
-      {/* Modern Bottom Card */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 p-6 pb-8 transition-transform duration-300 ${isFullScreen ? 'translate-y-full' : ''}`}>
-        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+      {/* Modern Bottom Card - Compact */}
+      <div className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 px-5 pt-3 pb-5 transition-transform duration-300 ${isFullScreen ? 'translate-y-full' : ''}`}>
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3"></div>
 
         {/* Time & Distance Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-sm font-medium text-teal-600 mb-1 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></span>
+            <p className="text-xs font-medium text-teal-600 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-pulse"></span>
               {duration ? `Trip time: ${duration}` : 'Calculating path...'}
             </p>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Job Location</h2>
+            <h2 className="text-lg font-black text-gray-900 tracking-tight leading-tight">Job Location</h2>
           </div>
           {distance && (
             <div className="text-right">
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Distance</p>
-              <p className="text-xl font-bold text-gray-800">{distance}</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Distance</p>
+              <p className="text-base font-bold text-gray-800">{distance}</p>
             </div>
           )}
         </div>
 
-        {/* Address Section */}
-        <div className="bg-gray-50 rounded-2xl p-4 flex items-start gap-4 mb-4 border border-gray-100">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-teal-600 border border-gray-100 shrink-0">
-            <FiMapPin className="w-5 h-5" />
+        {/* Address Section - Compact */}
+        <div className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-3 mb-3 border border-gray-100">
+          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-teal-600 border border-gray-100 shrink-0">
+            <FiMapPin className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 mb-0.5 truncate">Address</h3>
-            <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
+            <h3 className="font-bold text-gray-900 text-xs">Address</h3>
+            <p className="text-xs text-gray-500 line-clamp-1 leading-snug">
               {(() => {
                 const addr = booking?.address;
                 if (!addr) return 'Address loading...';
@@ -758,20 +758,20 @@ const BookingMap = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
+        {/* Action Buttons - Compact */}
+        <div className="flex gap-2">
           {booking?.status === 'journey_started' && (
             <button
               onClick={() => setIsReachedModalOpen(true)}
-              className="px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30 transition-all active:scale-95"
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-1 shadow-lg shadow-orange-500/30 transition-all active:scale-95 text-xs"
             >
-              <FiCheckCircle className="w-5 h-5" /> Reached
+              <FiCheckCircle className="w-3.5 h-3.5" /> Reached
             </button>
           )}
 
           {(booking?.userId?.phone || booking?.customerPhone) && (
-            <a href={`tel:${booking.userId?.phone || booking.customerPhone}`} className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-teal-600/30 transition-all active:scale-95">
-              <FiPhone className="w-5 h-5" /> Call
+            <a href={`tel:${booking.userId?.phone || booking.customerPhone}`} className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-1 shadow-lg shadow-teal-600/30 transition-all active:scale-95 text-xs">
+              <FiPhone className="w-3.5 h-3.5" /> Call
             </a>
           )}
           <button
@@ -781,9 +781,9 @@ const BookingMap = () => {
               const dest = coords ? `${coords.lat},${coords.lng}` : encodeURIComponent(addressStr);
               window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
             }}
-            className="w-14 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl flex items-center justify-center transition-all active:scale-95"
+            className="w-10 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center transition-all active:scale-95"
           >
-            <FiNavigation className="w-6 h-6" />
+            <FiNavigation className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect } from 'react';
 import api from '../../../../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
-import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle, FiPlus, FiTrash2, FiFileText } from 'react-icons/fi';
+import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle, FiPlus, FiTrash2, FiFileText, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
@@ -29,6 +29,7 @@ import { vendorCatalogService } from '../../../../services/catalogService';
 import { toast } from 'react-hot-toast';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 import { useLocationTracking } from '../../../../hooks/useLocationTracking';
+import { configService } from '../../../../services/configService';
 
 const getStateCode = (stateName) => {
   if (!stateName) return '00';
@@ -105,7 +106,7 @@ export default function BookingDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isWorker = localStorage.getItem('role') === 'worker' || window.location.pathname.startsWith('/worker');
-  const [booking, setBooking] = useState(null);
+   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isPayWorkerModalOpen, setIsPayWorkerModalOpen] = useState(false);
   const [paySubmitting, setPaySubmitting] = useState(false);
@@ -115,6 +116,14 @@ export default function BookingDetails() {
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
   const [isReachedModalOpen, setIsReachedModalOpen] = useState(false);
   const [reachedLoading, setReachedLoading] = useState(false);
+
+  // Accordion Expand/Collapse states
+  const [isOrderSummaryExpanded, setIsOrderSummaryExpanded] = useState(false);
+  const [isCustomerInfoExpanded, setIsCustomerInfoExpanded] = useState(false);
+  const [isLocationExpanded, setIsLocationExpanded] = useState(false);
+  const [isPreferredTimeExpanded, setIsPreferredTimeExpanded] = useState(false);
+  const [isPaymentSummaryExpanded, setIsPaymentSummaryExpanded] = useState(false);
+  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
 
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
   const [addonSearch, setAddonSearch] = useState('');
@@ -139,6 +148,15 @@ export default function BookingDetails() {
     vendorSgstPercentage: 2.5,
     sacCode: '998599'
   });
+
+  const [supportPhone, setSupportPhone] = useState('');
+
+  // Fetch public support phone from admin settings
+  useEffect(() => {
+    configService.getSettings().then(res => {
+      if (res?.settings?.supportPhone) setSupportPhone(res.settings.supportPhone);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (isAddonModalOpen) {
@@ -1060,10 +1078,13 @@ export default function BookingDetails() {
 
   const handleCallUser = () => {
     const phone = booking.user?.phone || booking.customerPhone;
-    if (phone) {
-      window.location.href = `tel:${phone}`;
+    const isPhoneHidden = !phone || phone === 'Hidden' || phone === 'Phone hidden';
+    if (isPhoneHidden) {
+      // Call customer care when real phone is hidden (journey not started yet)
+      const carePhone = supportPhone || '+919999999999';
+      window.location.href = `tel:${carePhone}`;
     } else {
-      alert('Phone number not available');
+      window.location.href = `tel:${phone}`;
     }
   };
 
@@ -1287,6 +1308,86 @@ export default function BookingDetails() {
   const hasBill = !!bill;
   const isAddonPending = booking && (booking.paymentStatus === 'success' || booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed') && (booking.finalAmount > booking.totalAmount);
 
+  // --- Bidding / Journey / Timeline derived fields ---
+  const isSelfJob = booking?.isSelfJob === true || (booking?.assignedAt && !booking?.workerId);
+  const statusMap = {
+    'requested': 1,
+    'searching': 1,
+    'confirmed': 2,
+    'assigned': 3,
+    'journey_started': 4,
+    'visited': 5,
+    'in_progress': 5,
+    'work_done': 7,
+    'completed': 8,
+  };
+  const isActuallyPaid = booking?.isWorkerPaid || booking?.workerPaymentStatus === 'PAID' || booking?.workerPaymentStatus === 'SUCCESS';
+  const isSettled = booking?.finalSettlementStatus === 'DONE';
+
+  let currentStage = statusMap[booking?.status] || 2;
+  if (booking?.status === 'completed') {
+    if (!isSelfJob) {
+      currentStage = 11;
+    } else {
+      if (isSettled) currentStage = 11;
+      else currentStage = 9;
+    }
+  }
+
+  const timelineStages = [
+    {
+      id: 1,
+      title: 'Booking Requested',
+      icon: FiClock,
+      description: 'Booking request received',
+      timestamp: booking?.createdAt
+    },
+    {
+      id: 2,
+      title: (booking?.isBidding && booking?.status === 'bidding') ? 'User Comparing Quotes' : 'Booking Accepted',
+      icon: (booking?.isBidding && booking?.status === 'bidding') ? FiClock : FiCheck,
+      description: (booking?.isBidding && booking?.status === 'bidding')
+        ? 'User is comparing quotes. Waiting for choices.'
+        : 'You accepted the booking',
+      timestamp: booking?.acceptedAt
+    },
+    {
+      id: 3,
+      title: 'Assigned',
+      icon: FiUser,
+      description: booking?.assignedTo ? `Assigned to ${booking.assignedTo.name}` : 'Waiting for worker assignment',
+      timestamp: booking?.assignedAt
+    },
+    {
+      id: 4,
+      title: 'Journey Started',
+      icon: FiMapPin,
+      description: booking?.isSelfJob ? 'You started journey' : (booking?.assignedTo ? 'Worker started journey' : 'Waiting for journey start'),
+      timestamp: booking?.startedAt
+    },
+    {
+      id: 5,
+      title: 'Visited Site',
+      icon: FiMapPin,
+      description: 'Arrived at location',
+      timestamp: booking?.arrivedAt || booking?.visitedAt
+    },
+    {
+      id: 6,
+      title: 'Work Done',
+      icon: FiTool,
+      description: 'Service work completed',
+      timestamp: booking?.workDoneAt
+    },
+    {
+      id: 7,
+      title: booking?.isSelfJob ? 'Payment Collected' : 'Work Approved',
+      icon: FiCheckCircle,
+      description: 'Payment processed and work approved',
+      timestamp: booking?.completedAt
+    }
+  ];
+
   return (
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
       <Header title="Booking Details" />
@@ -1428,145 +1529,172 @@ export default function BookingDetails() {
         </div>
 
         {/* User Info Card */}
-        <div
-          className="bg-white rounded-xl p-4 mb-4 shadow-md"
-          style={{
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: `${themeColors.icon}15` }}
-              >
-                <FiUser className="w-6 h-6" style={{ color: themeColors.icon }} />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800">{booking.user?.name || booking.customerName || 'Customer'}</p>
-                <p className="text-sm text-gray-600">{booking.user?.phone || booking.customerPhone || 'Phone hidden'}</p>
-              </div>
-            </div>
-            <button
-              onClick={handleCallUser}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              style={{ backgroundColor: `${themeColors.button}15` }}
-            >
-              <FiPhone className="w-5 h-5" style={{ color: themeColors.button }} />
-            </button>
+        <div className="bg-white rounded-xl shadow-md mb-4 overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
+          <div
+            onClick={() => setIsCustomerInfoExpanded(!isCustomerInfoExpanded)}
+            className="p-4 bg-gray-50/50 flex items-center justify-between cursor-pointer border-b border-gray-100"
+          >
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+              <FiUser className="w-4 h-4" style={{ color: themeColors.icon }} />
+              Customer Information
+            </h3>
+            {isCustomerInfoExpanded ? (
+              <FiChevronUp className="w-4 h-4 text-gray-400" />
+            ) : (
+              <FiChevronDown className="w-4 h-4 text-gray-400" />
+            )}
           </div>
-        </div>
-
-        {/* Address Card with Map */}
-        <div
-          className="bg-white rounded-xl p-4 mb-4 shadow-md"
-          style={{
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <div className="flex items-start gap-3 mb-3">
-            <FiMapPin className="w-5 h-5 mt-0.5" style={{ color: themeColors.icon }} />
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-1">Address</p>
-              <p className="font-semibold text-gray-800">{booking.location.address}</p>
-              <p className="text-sm text-gray-500 mt-1">{booking.location.distance} away</p>
-            </div>
-          </div>
-
-          {/* Map Embed */}
-          <div className="w-full h-48 rounded-lg overflow-hidden mb-3 bg-gray-200 relative group cursor-pointer" onClick={() => navigate(isWorker ? `/worker/booking/${booking.id}/map` : `/vendor/booking/${booking.id}/map`)}>
-            {(() => {
-              const hasCoordinates = booking.location.lat && booking.location.lng && booking.location.lat !== 0 && booking.location.lng !== 0;
-              const mapQuery = hasCoordinates
-                ? `${booking.location.lat},${booking.location.lng}`
-                : encodeURIComponent(booking.location.address);
-
-              return (
-                <>
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    style={{ border: 0, pointerEvents: 'none' }}
-                    src={`https://maps.google.com/maps?q=${mapQuery}&z=15&output=embed`}
-                    allowFullScreen
-                    tabIndex="-1"
-                  ></iframe>
-                  {/* Overlay to intercept clicks */}
-                  <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 transition-colors flex items-center justify-center">
-                    <span className="bg-white/90 px-3 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                      View Full Map
-                    </span>
+          {isCustomerInfoExpanded && (
+            <div className="p-4">
+              {/* Customer Contact row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: `${themeColors.icon}15` }}
+                  >
+                    <FiUser className="w-5 h-5" style={{ color: themeColors.icon }} />
                   </div>
-                </>
-              );
-            })()}
-          </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">{booking.user?.name || booking.customerName || 'Customer'}</p>
+                    {(() => {
+                      const phone = booking.user?.phone || booking.customerPhone;
+                      const isHidden = !phone || phone === 'Hidden' || phone === 'Phone hidden';
+                      return (
+                        <p className="text-sm text-gray-600">
+                          {isHidden ? (
+                            <span className="text-xs text-amber-600 font-medium">📞 Available after journey starts</span>
+                          ) : phone}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <button
+                  onClick={handleCallUser}
+                  className="flex flex-col items-center gap-0.5 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  style={{ backgroundColor: `${themeColors.button}15` }}
+                >
+                  <FiPhone className="w-5 h-5" style={{ color: themeColors.button }} />
+                  {(() => {
+                    const phone = booking.user?.phone || booking.customerPhone;
+                    const isHidden = !phone || phone === 'Hidden' || phone === 'Phone hidden';
+                    return isHidden ? (
+                      <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wide leading-none">Care</span>
+                    ) : null;
+                  })()}
+                </button>
+              </div>
 
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={() => navigate(isWorker ? `/worker/booking/${booking.id || id}/map` : `/vendor/booking/${booking.id || id}/map`)}
-              className="flex-1 py-3.5 rounded-xl font-bold border-2 flex items-center justify-center gap-2 transition-all active:scale-95 bg-white"
-              style={{
-                borderColor: themeColors.button,
-                color: themeColors.button,
-              }}
-            >
-              <FiMapPin className="w-5 h-5" />
-              View Map
-            </button>
-            <button
-              onClick={() => {
-                const hasCoords = booking.location.lat && booking.location.lng;
-                const dest = hasCoords
-                  ? `${booking.location.lat},${booking.location.lng}`
-                  : encodeURIComponent(booking.location.address);
-                // Open directly to trigger app intent
-                window.location.href = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
-              }}
-              className="flex-1 py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-200"
-              style={{
-                background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
-              }}
-            >
-              <FiNavigation className="w-5 h-5" />
-              Get Directions
-            </button>
-          </div>
+              {/* Address Divider */}
+              <div className="w-full h-px bg-gray-100 my-4"></div>
+
+              {/* Address details */}
+              <div className="flex items-start gap-3 mb-3">
+                <FiMapPin className="w-5 h-5 mt-0.5" style={{ color: themeColors.icon }} />
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600 mb-1">Address</p>
+                  <p className="font-semibold text-gray-800">{booking.location.address}</p>
+                  <p className="text-sm text-gray-500 mt-1">{booking.location.distance} away</p>
+                </div>
+              </div>
+
+              {/* Map Embed */}
+              <div className="w-full h-48 rounded-lg overflow-hidden mb-3 bg-gray-200 relative group cursor-pointer" onClick={() => navigate(isWorker ? `/worker/booking/${booking.id}/map` : `/vendor/booking/${booking.id}/map`)}>
+                {(() => {
+                  const hasCoordinates = booking.location.lat && booking.location.lng && booking.location.lat !== 0 && booking.location.lng !== 0;
+                  const mapQuery = hasCoordinates
+                    ? `${booking.location.lat},${booking.location.lng}`
+                    : encodeURIComponent(booking.location.address);
+
+                  return (
+                    <>
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        frameBorder="0"
+                        style={{ border: 0, pointerEvents: 'none' }}
+                        src={`https://maps.google.com/maps?q=${mapQuery}&z=15&output=embed`}
+                        allowFullScreen
+                        tabIndex="-1"
+                      ></iframe>
+                      <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                        <span className="bg-white/90 px-3 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                          View Full Map
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Maps Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => navigate(isWorker ? `/worker/booking/${booking.id || id}/map` : `/vendor/booking/${booking.id || id}/map`)}
+                  className="flex-1 py-3 rounded-xl font-bold border flex items-center justify-center gap-2 transition-all active:scale-95 bg-white text-sm"
+                  style={{
+                    borderColor: themeColors.button,
+                    color: themeColors.button,
+                  }}
+                >
+                  <FiMapPin className="w-4 h-4" />
+                  View Map
+                </button>
+                <button
+                  onClick={() => {
+                    const hasCoords = booking.location.lat && booking.location.lng;
+                    const dest = hasCoords
+                      ? `${booking.location.lat},${booking.location.lng}`
+                      : encodeURIComponent(booking.location.address);
+                    window.location.href = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+                  }}
+                  className="flex-1 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm text-sm"
+                  style={{
+                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                  }}
+                >
+                  <FiNavigation className="w-4 h-4" />
+                  Directions
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Service Description */}
-        {/* Service Description */}
-        {(() => {
-          const genericDesc = 'No description provided';
-          const mainDesc = booking.description === genericDesc ? null : booking.description;
-          const serviceDesc = booking.serviceId?.description;
-          const itemDesc = booking.items?.[0]?.card?.description;
 
-          const displayDesc = mainDesc || serviceDesc || itemDesc;
-
-          if (!displayDesc) return null;
-
-          return (
-            <div
-              className="bg-white rounded-xl p-4 mb-4 shadow-md"
-              style={{
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              }}
-            >
-              <p className="text-sm text-gray-600 mb-2">Service Description</p>
-              <p className="text-gray-800">{displayDesc}</p>
-            </div>
-          );
-        })()}
 
         {/* Booked Items Details */}
         {booking.items && booking.items.length > 0 && (
           <div
-            className="bg-white rounded-xl p-4 mb-4 shadow-md"
+            className="bg-white rounded-xl mb-4 shadow-md overflow-hidden"
             style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
           >
-            <p className="text-sm font-bold text-gray-700 mb-4">Order Summary</p>
+            <div
+              onClick={() => setIsOrderSummaryExpanded(!isOrderSummaryExpanded)}
+              className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100 cursor-pointer active:bg-gray-100 transition-colors"
+            >
+              <p className="text-sm font-bold text-gray-700">Order Summary</p>
+              <div className="flex items-center gap-2">
+                {booking.bookingType === 'instant' ? (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-xs">
+                    ⚡ Instant
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-xs">
+                    📅 Scheduled
+                  </span>
+                )}
+                {isOrderSummaryExpanded ? (
+                  <FiChevronUp className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <FiChevronDown className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+            </div>
+
+            {isOrderSummaryExpanded && (
+              <div className="p-4">
 
             {/* Service Category */}
             <div className="flex items-center gap-3 mb-3">
@@ -1628,99 +1756,188 @@ export default function BookingDetails() {
                   </div>
                 </div>
               ))}
-              <div className="flex justify-between items-center pt-2 border-t border-gray-100 mt-1">
-                <p className="text-sm font-semibold text-gray-700">Total Base Price</p>
-                <p className="text-base font-bold" style={{ color: themeColors.button }}>₹{(booking.basePrice || 0).toFixed(2)}</p>
-              </div>
             </div>
+
+            {/* Billing Breakdown - Only show if Payment Invoice Card is NOT visible */}
+            {!(['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
+              <div className="pt-4 border-t border-dashed border-gray-100 space-y-2 text-xs mt-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Billing Breakdown</p>
+
+                <div className="flex justify-between text-gray-500">
+                  <span>Base Amount</span>
+                  <span className="font-semibold text-gray-800">₹{(booking.basePrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+
+                {(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup) > 0 && (
+                  <div className="flex justify-between text-gray-500">
+                    <span>Instant Booking Fee</span>
+                    <span className="font-semibold text-gray-800">₹{(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+
+                {booking.paymentMethod === 'plan_benefit' ? (
+                  <div className="flex justify-between text-gray-500">
+                    <span>Visiting Charges</span>
+                    <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
+                  </div>
+                ) : (() => {
+                  const baseAmt = Number(booking.basePrice || 0);
+                  const instantFee = Number(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup || 0);
+                  const taxAmt = Number(booking.tax || 0);
+                  const discountAmt = Number(booking.discount || 0);
+                  const grandTotal = Number(booking.finalAmount || 0);
+                  const directValue = Number(booking.visitingCharges || booking.visitationFee || booking.visitingFee || 0);
+                  const derivedValue = grandTotal - (baseAmt + instantFee + taxAmt - discountAmt);
+                  const finalVisitingCharges = directValue > 0 ? directValue : (derivedValue > 0 ? derivedValue : 0);
+                  if (finalVisitingCharges > 0) {
+                    return (
+                      <div className="flex justify-between text-gray-500">
+                        <span>Visiting Charges</span>
+                        <span className="font-semibold text-gray-800">₹{finalVisitingCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {(booking.tax || booking.cgst || booking.sgst) > 0 && (
+                  <div className="flex justify-between text-gray-500">
+                    <span>Taxes & GST</span>
+                    <span className="font-semibold text-gray-800">₹{(booking.tax || ((booking.cgst || 0) + (booking.sgst || 0))).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+
+                {booking.discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-medium">
+                    <span>Discount</span>
+                    <span>-₹{(booking.discount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100">
+                  <span>Payment Method</span>
+                  <span className="font-bold text-gray-800 uppercase text-[10px] tracking-wider">
+                    {booking.paymentMethod === 'plan_benefit' ? 'Membership Benefit' : (booking.paymentMethod || 'Online')}
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-gray-800 pt-2.5 mt-1 border-t-2 border-gray-200 text-sm">
+                  <span className="font-bold">Grand Total</span>
+                  <span className="font-black text-base" style={{ color: themeColors.button }}>₹{(booking.finalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            )}
+            </div>
+          )}
           </div>
         )}
 
         {/* Time Slot */}
-        <div
-          className="bg-white rounded-xl p-4 mb-4 shadow-md"
-          style={{
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <FiClock className="w-5 h-5" style={{ color: themeColors.icon }} />
-            <div>
-              <p className="text-sm text-gray-600">Preferred Time</p>
-              <p className="font-semibold text-gray-800">{booking.timeSlot.date}</p>
-              <p className="text-sm text-gray-600">{booking.timeSlot.time}</p>
-            </div>
+        <div className="bg-white rounded-xl shadow-md mb-4 overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
+          <div
+            onClick={() => setIsPreferredTimeExpanded(!isPreferredTimeExpanded)}
+            className="p-4 bg-gray-50/50 flex items-center justify-between cursor-pointer border-b border-gray-100"
+          >
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+              <FiClock className="w-4 h-4" style={{ color: themeColors.icon }} />
+              Preferred Time
+            </h3>
+            {isPreferredTimeExpanded ? (
+              <FiChevronUp className="w-4 h-4 text-gray-400" />
+            ) : (
+              <FiChevronDown className="w-4 h-4 text-gray-400" />
+            )}
           </div>
+          {isPreferredTimeExpanded && (
+            <div className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${themeColors.icon}15` }}>
+                <FiClock className="w-5 h-5" style={{ color: themeColors.icon }} />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800">{booking.timeSlot.date}</p>
+                <p className="text-sm text-gray-600">{booking.timeSlot.time}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Payment Invoice Card - Light Header Style */}
-        <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 mb-6">
-          <div className="bg-slate-50 px-6 py-6 text-center border-b border-gray-100">
-            <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest mb-1">TOTAL INVOICE AMOUNT</p>
-            <h2 className="text-4xl font-black text-gray-900">₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
-            {isPlanBenefit && (
-              <span className="inline-block mt-2 bg-amber-500/10 text-amber-700 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">
-                Plan Benefit Applied
-              </span>
-            )}
+        <div className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 mb-4">
+          <div
+            onClick={() => setIsPaymentSummaryExpanded(!isPaymentSummaryExpanded)}
+            className="bg-slate-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between cursor-pointer active:bg-gray-100 transition-colors"
+          >
+            <div>
+              <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mb-0.5">TOTAL INVOICE AMOUNT</p>
+              <h2 className="text-xl font-black text-gray-900">₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              {isPlanBenefit && (
+                <span className="bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide">
+                  Plan Covered
+                </span>
+              )}
+              {isPaymentSummaryExpanded ? (
+                <FiChevronUp className="w-4 h-4 text-gray-400" />
+              ) : (
+                <FiChevronDown className="w-4 h-4 text-gray-400" />
+              )}
+            </div>
           </div>
 
-          <div className="p-6 space-y-6 text-sm">
-            {/* Services Section */}
-            <div>
-              <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs"><FiTool /></span>
-                Services
-              </h4>
-              <div className="space-y-2 pl-2">
-                <div className="flex justify-between text-gray-600">
-                  <span>Original Booking : {booking.serviceType || 'Service'}</span>
+          {isPaymentSummaryExpanded && (
+            <div className="p-4 space-y-4 text-sm">
+              {/* Services Section */}
+              <div>
+                <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100">
+                  <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px]"><FiTool /></span>
+                  Services
+                </h4>
+                <div className="space-y-2.5 pl-1">
+                  <div className="flex justify-between items-start text-gray-600 text-xs">
+                    <div>
+                      <span className="font-semibold text-gray-800">{booking.serviceCategory || booking.serviceType || 'Service'}</span>
+                      <p className="text-[9px] text-gray-400 font-medium mt-0.5">Taxes included</p>
+                    </div>
                   {isPlanBenefit ? (
-                    <div className="flex items-center gap-2">
-                      <span className="line-through text-gray-400 text-xs">₹{(originalBase + originalGST).toFixed(2)}</span>
-                      <span className="text-emerald-600 font-bold text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">FREE</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="line-through text-gray-400 text-xs font-mono">₹{(originalBase + originalGST).toFixed(2)}</span>
+                      <span className="text-emerald-600 font-bold text-[9px] bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100">FREE</span>
                     </div>
                   ) : (
-                    <span className="font-medium text-gray-900">₹{(originalBase + originalGST).toFixed(2)}</span>
+                    <span className="font-semibold text-gray-900 font-mono">₹{(originalBase + originalGST).toFixed(2)}</span>
                   )}
                 </div>
 
                 {services.map((s, i) => (
-                  <div key={i} className="flex justify-between text-gray-600">
-                    <span>{s.name} x {s.quantity}</span>
-                    <span className="font-mono">₹{(s.total || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
+                  <div key={i} className="flex justify-between items-start text-gray-600 text-xs">
+                    <div>
+                      <span className="font-semibold text-gray-800">{s.name} x {s.quantity}</span>
+                      <p className="text-[9px] text-gray-400 font-medium mt-0.5">Taxes included</p>
+                    </div>
+                    <span className="font-mono text-gray-900">₹{(s.total || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
                   </div>
                 ))}
-
-                {/* Service GST — only show when there is actual GST */}
-                {(originalGST + extraServiceGST) > 0 && (
-                  <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
-                    <span>Service GST (18%)</span>
-                    <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
-                  </div>
-                )}
-
-                {/* Service Subtotal */}
-                <div className="flex justify-between font-bold text-gray-800 pt-1">
-                  <span>Total Service</span>
-                  <span>₹{(originalBase + extraServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
-                </div>
               </div>
             </div>
 
             {/* Instant Booking Fee */}
             {instantMarkup > 0 && (
-              <div>
-                <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
-                  <span className="w-6 h-6 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center text-xs">⚡</span>
-                  Instant Booking
-                </h4>
-                <div className="flex justify-between pl-2 font-bold text-gray-800">
-                  <span>Instant Booking Fee</span>
-                  <span>₹{instantMarkup.toFixed(2)}</span>
+              <div className="pt-2 border-t border-dashed border-gray-100 text-xs">
+                <div className="flex justify-between text-gray-600">
+                  <span className="flex items-center gap-1">⚡ Instant Booking Fee</span>
+                  <span className="font-bold text-gray-900 font-mono">₹{instantMarkup.toFixed(2)}</span>
                 </div>
               </div>
             )}
+
+            {/* Grand Total Row */}
+            <div className="pt-2.5 mt-1 border-t-2 border-gray-200 flex justify-between items-center text-xs">
+              <span className="font-bold text-gray-800">Grand Total</span>
+              <span className="font-black text-sm" style={{ color: themeColors.button }}>
+                ₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
 
             {/* Parts Section */}
             {(parts.length > 0 || customItems.length > 0) && (
@@ -1789,59 +2006,107 @@ export default function BookingDetails() {
               </div>
             )}
           </div>
+          )}
 
-          {/* Vendor Earnings Footer */}
-          {!['cancelled', 'rejected'].includes(booking?.status?.toLowerCase()) && !isWorker ? (
-            <div className="bg-emerald-50 px-6 py-4 border-t border-emerald-100">
-              <div className="space-y-2 mb-3 text-sm">
-                <div className="flex justify-between items-center text-emerald-700">
-                  <span>Service Profit / Share</span>
-                  <span className="font-bold">₹{parseFloat(booking?.bookingType === 'instant' ? ((bill?.vendorServiceEarning || booking?.vendorShare || 500) - (bill?.vendorInstantMarkupEarning || 50)) : (bill?.vendorServiceEarning || booking?.vendorShare || 500)).toFixed(2)}</span>
-                </div>
-                {booking?.bookingType === 'instant' && (
-                  <div className="flex justify-between items-center text-emerald-700">
-                    <span>⚡ Instant Booking Profit / Share</span>
-                    <span className="font-bold">₹{parseFloat(bill?.vendorInstantMarkupEarning || 50).toFixed(2)}</span>
-                  </div>
-                )}
-                {(parts.length > 0 || customItems.length > 0 || (bill?.vendorPartsEarning || 0) > 0) && (
-                  <div className="flex justify-between items-center text-emerald-700">
-                    <span>Parts Earnings</span>
-                    <span className="font-bold">₹{(bill?.vendorPartsEarning || 0).toFixed(2)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-emerald-200/50">
-                <span className="text-emerald-800 font-bold text-xs uppercase tracking-wider">
-                  {(booking?.status === 'completed' || booking?.cashCollected)
-                    ? 'Total Profit Received'
-                    : 'Estimated Profit'}
-                </span>
-                <span className="text-emerald-700 font-black text-xl">
-                  ₹{(bill?.vendorTotalEarning || booking?.vendorShare || ((parseFloat(booking?.basePrice) || 0) * 0.8)).toFixed(2)}
-                </span>
-              </div>
-
-              {(booking?.status === 'completed' || booking?.cashCollected) && (
-                <div className="mt-2.5 p-2 bg-emerald-100/50 rounded-lg text-[11px] text-emerald-800 text-center font-bold">
-                  ✓ ₹{(bill?.vendorTotalEarning || booking?.vendorShare || 0).toFixed(2)} credited to your wallet balance for this service.
-                </div>
-              )}
-            </div>
-          ) : null}
+          {/* Vendor Earnings Footer Removed per User Request */}
         </div>
 
-        {['completed', 'work_done'].includes(booking.status?.toLowerCase()) && !isAddonPending && (
-          <div className="mb-6">
-            <button
-              onClick={handleDownloadInvoice}
-              className="w-full py-4 rounded-2xl font-bold text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
-            >
-              <FiFileText className="w-5 h-5" />
-              Download Partner Invoice (PDF)
-            </button>
+        {/* Booking Timeline - Dropdown Accordion */}
+        <div className="bg-white rounded-xl shadow-md mb-4 overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
+          <div
+            onClick={() => setIsTimelineExpanded(!isTimelineExpanded)}
+            className="p-4 bg-gray-50/50 flex items-center justify-between cursor-pointer border-b border-gray-100 active:bg-gray-100 transition-colors"
+          >
+            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+              <FiClock className="w-4 h-4" style={{ color: themeColors.icon }} />
+              Booking Timeline
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Status: {booking?.status}
+              </span>
+              {isTimelineExpanded ? (
+                <FiChevronUp className="w-4 h-4 text-gray-400" />
+              ) : (
+                <FiChevronDown className="w-4 h-4 text-gray-400" />
+              )}
+            </div>
           </div>
-        )}
+
+          {isTimelineExpanded && (
+            <div className="p-5">
+              <div className="relative">
+                {timelineStages.map((stage, index) => {
+                  const IconComponent = stage.icon;
+                  const isCompleted = stage.id < currentStage;
+                  const isCurrent = stage.id === currentStage;
+                  const isPending = stage.id > currentStage;
+
+                  // Render stage if it has a timestamp or is current or completed in history
+                  // For a cleaner look in the dropdown, we show all stages but highlight appropriately
+                  return (
+                    <div key={stage.id} className="relative pb-6 last:pb-0">
+                      {/* Vertical line link */}
+                      {index < timelineStages.length - 1 && (
+                        <div
+                          className="absolute left-5 top-9 w-0.5 h-full -translate-x-1/2"
+                          style={{
+                            background: isCompleted ? themeColors.button : '#E5E7EB',
+                          }}
+                        />
+                      )}
+
+                      {/* Stage Node */}
+                      <div className="flex items-start gap-4">
+                        {/* Icon Node */}
+                        <div
+                          className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isCompleted || isCurrent ? 'bg-white' : 'bg-gray-50'
+                          }`}
+                          style={{
+                            border: `2px solid ${isCompleted || isCurrent ? themeColors.button : '#E5E7EB'}`,
+                            boxShadow: isCurrent ? `0 0 0 3px ${themeColors.button}15` : 'none',
+                          }}
+                        >
+                          {isCompleted ? (
+                            <FiCheck className="w-4 h-4" style={{ color: themeColors.button }} />
+                          ) : (
+                            <IconComponent
+                              className="w-4 h-4"
+                              style={{
+                                color: isCurrent ? themeColors.button : '#9CA3AF',
+                              }}
+                            />
+                          )}
+                        </div>
+
+                        {/* Content details */}
+                        <div className="flex-1 pt-0.5">
+                          <h4
+                            className={`text-sm font-bold ${
+                              isCompleted || isCurrent ? 'text-gray-800' : 'text-gray-400'
+                            }`}
+                          >
+                            {stage.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-0.5">{stage.description}</p>
+                          
+                          {/* Completed Timestamp */}
+                          {stage.timestamp && (
+                            <p className="text-[10px] text-gray-400 font-mono mt-1">
+                              {new Date(stage.timestamp).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
 
         {/* Work Photos (after completion) */}
         {booking.workPhotos && booking.workPhotos.length > 0 && booking.assignedTo?.name !== 'You (Self)' && (
@@ -2275,17 +2540,7 @@ export default function BookingDetails() {
             )
           )}
 
-          <button
-            onClick={handleViewTimeline}
-            className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all active:scale-95"
-            style={{
-              background: themeColors.button,
-              boxShadow: `0 4px 12px ${themeColors.button}40`,
-            }}
-          >
-            View Timeline
-            <FiArrowRight className="w-5 h-5" />
-          </button>
+
 
           {booking.status === 'awaiting_payment' && ['online', 'razorpay'].includes(booking.paymentMethod) && !booking.assignedTo && (
             <div className="w-full p-4 rounded-xl text-center text-amber-700 bg-amber-50 border border-amber-200 font-semibold text-sm">
