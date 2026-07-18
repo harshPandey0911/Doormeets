@@ -113,6 +113,7 @@ export default function BookingDetails() {
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
   const [isWorkDoneModalOpen, setIsWorkDoneModalOpen] = useState(false);
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otpAction, setOtpAction] = useState('cash');
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
   const [isReachedModalOpen, setIsReachedModalOpen] = useState(false);
   const [reachedLoading, setReachedLoading] = useState(false);
@@ -1068,23 +1069,12 @@ export default function BookingDetails() {
     setConfirmDialog({
       isOpen: true,
       title: 'Final Settlement',
-      message: 'Mark final settlement as done? This will allow you to complete the booking.',
+      message: 'Mark final settlement as done? We will ask for the OTP provided to the user to complete the booking.',
       type: 'warning',
       onConfirm: async () => {
-        setLoading(true);
-        try {
-          await updateBookingStatus(id, booking.status, {
-            finalSettlementStatus: 'DONE'
-          });
-          window.dispatchEvent(new Event('vendorJobsUpdated'));
-          toast.success('Final settlement marked as done!');
-          loadBooking();
-        } catch (error) {
-          console.error('Error updating settlement:', error);
-          toast.error('Failed to update settlement. Please try again.');
-        } finally {
-          setLoading(false);
-        }
+        setConfirmDialog({ isOpen: false });
+        setOtpAction('settlement');
+        setIsOtpModalOpen(true);
       }
     });
   };
@@ -1092,6 +1082,7 @@ export default function BookingDetails() {
 
 
   const handleCollectCashClick = () => {
+    setOtpAction('cash');
     setIsCashModalOpen(true);
   };
 
@@ -1865,12 +1856,19 @@ export default function BookingDetails() {
                       const grandTotal = Number(booking.finalAmount || 0);
                       const directValue = Number(booking.visitingCharges || booking.visitationFee || booking.visitingFee || 0);
                       const derivedValue = grandTotal - (baseAmt + instantFee + taxAmt - discountAmt);
-                      const finalVisitingCharges = directValue > 0 ? directValue : (derivedValue > 0 ? derivedValue : 0);
-                      if (finalVisitingCharges > 0) {
+                      
+                      if (directValue > 0) {
                         return (
                           <div className="flex justify-between text-gray-500">
                             <span>Visiting Charges</span>
-                            <span className="font-semibold text-gray-800">₹{finalVisitingCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <span className="font-semibold text-gray-800">₹{directValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        );
+                      } else if (derivedValue > 0.01) {
+                        return (
+                          <div className="flex justify-between text-gray-500">
+                            <span>Additional Charges</span>
+                            <span className="font-semibold text-gray-800">₹{derivedValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                           </div>
                         );
                       }
@@ -2791,11 +2789,23 @@ export default function BookingDetails() {
         onClose={() => setIsOtpModalOpen(false)}
         onVerify={async (otp) => {
           try {
-            const amount = booking.finalAmount || 0;
-            const extras = booking.workDoneDetails?.items || [];
-            await handleCashCollectionConfirm(amount, extras, otp);
+            if (otpAction === 'settlement') {
+              setLoading(true);
+              await updateBookingStatus(id, 'completed', { finalSettlementStatus: 'DONE', otp });
+              window.dispatchEvent(new Event('vendorJobsUpdated'));
+              toast.success('Final settlement marked as done!');
+              setIsOtpModalOpen(false);
+              loadBooking();
+            } else {
+              const amount = booking.finalAmount || 0;
+              const extras = booking.workDoneDetails?.items || [];
+              await handleCashCollectionConfirm(amount, extras, otp);
+            }
           } catch (err) {
             console.error("OTP verification error:", err);
+            toast.error(err.response?.data?.message || err.message || 'Invalid OTP');
+          } finally {
+            if (otpAction === 'settlement') setLoading(false);
           }
         }}
         loading={loading}

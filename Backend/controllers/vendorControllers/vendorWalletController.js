@@ -814,7 +814,8 @@ const getWithdrawals = async (req, res) => {
  */
 const getEarningsAnalytics = async (req, res) => {
   try {
-    const vendorId = req.user.id;
+    const mongoose = require('mongoose');
+    const vendorId = new mongoose.Types.ObjectId(req.user.id);
     const { period = 'monthly', filter = 'all' } = req.query; // period for chart grouping
 
     // Time ranges
@@ -914,18 +915,23 @@ const getEarningsAnalytics = async (req, res) => {
     if (period === 'weekly') groupFormat = '%Y-%W';
     else if (period === 'monthly') groupFormat = '%Y-%m';
 
+    const chartMatch = {
+      vendorId: vendorId,
+      type: { $in: earningTypes },
+      status: 'completed'
+    };
+    if (filter !== 'all') {
+      chartMatch.createdAt = dateFilter;
+    }
+
     const chartData = await Transaction.aggregate([
       {
-        $match: {
-          vendorId: vendorId,
-          type: { $in: earningTypes },
-          status: 'completed'
-        }
+        $match: chartMatch
       },
       {
         $group: {
           _id: {
-            $dateToString: { format: groupFormat, date: '$createdAt' }
+            $dateToString: { format: groupFormat, date: '$createdAt', timezone: '+05:30' }
           },
           amount: { $sum: '$amount' }
         }

@@ -1255,7 +1255,13 @@ const updateBookingStatus = async (req, res) => {
       }
 
       if (status === BOOKING_STATUS.COMPLETED) {
+        if (booking.status === BOOKING_STATUS.WORK_DONE && booking.paymentOtp) {
+          if (!req.body.otp || req.body.otp !== booking.paymentOtp) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing OTP for completion' });
+          }
+        }
         booking.completedAt = new Date();
+        booking.paymentOtp = undefined;
       }
     }
 

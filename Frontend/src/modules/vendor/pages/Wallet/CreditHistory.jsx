@@ -42,13 +42,13 @@ const CreditHistory = () => {
   };
 
   const getTransactionColor = (type, amount) => {
-    if (type === 'purchase' || amount > 0) return 'text-green-600';
-    return 'text-red-600';
+    if (type === 'lead_deduct' || type === 'penalty' || amount < 0) return 'text-red-600';
+    return 'text-green-600';
   };
 
   const getTransactionSign = (type, amount) => {
-    if (type === 'purchase' || amount > 0) return '+';
-    return '-';
+    if (type === 'lead_deduct' || type === 'penalty' || amount < 0) return '-';
+    return '+';
   };
 
   return (
@@ -108,8 +108,8 @@ const CreditHistory = () => {
                       })}
                     </p>
                   </div>
-                  <div className={`font-black text-lg ${getTransactionColor(item.type, item.amount)}`}>
-                    {getTransactionSign(item.type, item.amount)} {Math.abs(item.amount)}
+                  <div className={`font-black text-lg whitespace-nowrap flex-shrink-0 ml-3 text-right ${getTransactionColor(item.type, item.amount)}`}>
+                    {getTransactionSign(item.type, item.amount)}{Math.abs(item.amount)}
                   </div>
                 </div>
               ))}

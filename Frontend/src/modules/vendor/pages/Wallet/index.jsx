@@ -6,6 +6,7 @@ import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import vendorWalletService from '../../../../services/vendorWalletService';
+import api from '../../../../services/api';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
@@ -23,16 +24,7 @@ const Wallet = () => {
   const [filter, setFilter] = useState('all');
   const [expandedTxn, setExpandedTxn] = useState(null);
   
-  // Mock Data for Bar Chart
-  const barChartData = [
-    { day: 'M', amount: 120, height: '40%' },
-    { day: 'T', amount: 250, height: '70%' },
-    { day: 'W', amount: 80, height: '30%' },
-    { day: 'T', amount: 350, height: '100%' },
-    { day: 'F', amount: 150, height: '50%' },
-    { day: 'S', amount: 200, height: '60%' },
-    { day: 'S', amount: 300, height: '85%' },
-  ];
+  const [barChartData, setBarChartData] = useState([]);
 
   useLayoutEffect(() => {
     const bgStyle = themeColors.backgroundGradient;
@@ -55,10 +47,36 @@ const Wallet = () => {
   const fetchTransactions = async () => {
     try {
       const typeParam = filter === 'all' ? undefined : filter;
-      const res = await vendorWalletService.getTransactions({ type: typeParam });
-      if (res.success) {
-        setTransactions(res.data || []);
+      let allTxns = [];
+      
+      // Fetch normal transactions (cash, settlement, withdrawal, etc)
+      if (filter !== 'credits_history') {
+        const res = await vendorWalletService.getTransactions({ type: typeParam });
+        if (res.success && res.data) {
+          allTxns = [...allTxns, ...res.data];
+        }
       }
+      
+      // Fetch credit transactions (lead deduct, purchase)
+      if (filter === 'all' || filter === 'credits_history') {
+        const creditRes = await api.get('/vendors/credits/history');
+        if (creditRes.data.success && creditRes.data.data) {
+          const formattedCredits = creditRes.data.data.map(c => ({
+            _id: c._id,
+            type: c.type === 'purchase' ? 'credit_purchase' : (c.type === 'lead_deduct' ? 'credit_deduct' : 'credit_txn'),
+            amount: c.amount,
+            status: 'completed',
+            createdAt: c.createdAt,
+            description: c.description
+          }));
+          allTxns = [...allTxns, ...formattedCredits];
+        }
+      }
+      
+      // Sort combined by date descending
+      allTxns.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setTransactions(allTxns);
     } catch (error) {
       console.error('Failed to fetch transactions', error);
     }
@@ -67,26 +85,76 @@ const Wallet = () => {
   const loadWalletData = async () => {
     try {
       setLoading(true);
-      const walletRes = await vendorWalletService.getWallet();
+      const [walletRes, analyticsRes] = await Promise.all([
+        vendorWalletService.getWallet(),
+        vendorWalletService.getEarningsAnalytics({ period: 'daily', filter: 'week' }).catch((err) => {
+          console.error('Analytics Error:', err);
+          return null;
+        })
+      ]);
 
       if (walletRes.success) {
         setWallet({
           credits: walletRes.data.credits !== undefined ? walletRes.data.credits : (walletRes.data.vendor?.wallet?.credits || 0),
           dues: walletRes.data.dues || 0,
-          earnings: walletRes.data.earnings || 0, // Fallback if backend hasn't moved entirely to credits
+          earnings: walletRes.data.earnings || 0,
           totalCashCollected: walletRes.data.totalCashCollected || 0,
           totalSettled: walletRes.data.totalSettled || 0,
           totalWithdrawn: walletRes.data.totalWithdrawn || 0
         });
       }
+
+      if (analyticsRes?.success) {
+        const rawChartData = analyticsRes.data.chartData || [];
+        const maxCredits = Math.max(...rawChartData.map(d => Math.floor(d.amount / 10)), 1);
+        
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          // format to local YYYY-MM-DD
+          const dateStr = [
+            d.getFullYear(),
+            String(d.getMonth() + 1).padStart(2, '0'),
+            String(d.getDate()).padStart(2, '0')
+          ].join('-');
+          
+          const found = rawChartData.find(item => item.date === dateStr);
+          const amountInRupees = found ? found.amount : 0;
+          const credits = Math.floor(amountInRupees / 10);
+          const dayInitial = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+          
+          last7Days.push({
+            day: dayInitial,
+            amount: credits,
+            height: credits > 0 ? `${Math.max((credits / maxCredits) * 100, 5)}%` : '0%'
+          });
+        }
+        setBarChartData(last7Days);
+      } else {
+        // Fallback empty week
+        const emptyWeek = Array(7).fill(0).map((_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          return {
+            day: d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
+            amount: 0,
+            height: '0%'
+          };
+        });
+        setBarChartData(emptyWeek);
+      }
     } catch (error) {
+      console.error('loadWalletData error:', error);
       toast.error('Failed to load wallet data');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <LogoLoader />;
+  if (loading) {
+    return <LogoLoader />;
+  }
 
   // Display value for credits (fallback to earnings / 10 if credits not yet initialized)
   const displayCredits = wallet.credits !== undefined && wallet.credits !== null ? wallet.credits : (wallet.earnings ? Math.floor(wallet.earnings / 10) : 0);
@@ -107,6 +175,10 @@ const Wallet = () => {
         return <FiDollarSign className="w-5 h-5 text-purple-500" />;
       case 'tds_deduction':
         return <FiAlertCircle className="w-5 h-5 text-amber-500" />;
+      case 'credit_purchase':
+        return <FiPlusCircle className="w-5 h-5 text-blue-500" />;
+      case 'credit_deduct':
+        return <FiClock className="w-5 h-5 text-orange-500" />;
       default:
         return <FiDollarSign className="w-5 h-5 text-gray-500" />;
     }
@@ -128,6 +200,10 @@ const Wallet = () => {
         return 'Withdrawal Payout';
       case 'tds_deduction':
         return 'TDS Deduction';
+      case 'credit_purchase':
+        return 'Credits Purchased';
+      case 'credit_deduct':
+        return 'Lead Deduction';
       default:
         return txn.type;
     }
@@ -152,8 +228,8 @@ const Wallet = () => {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-gray-800 font-bold text-lg">This Month's Earnings</h2>
-              <p className="text-gray-500 text-sm">{new Date().toLocaleString('en-US', { month: 'long' })} (1 - 31)</p>
+              <h2 className="text-gray-800 font-bold text-lg">This Week's Earnings</h2>
+              <p className="text-gray-500 text-sm">Last 7 Days</p>
             </div>
             <div className="text-right">
               <h2 className="text-2xl font-black text-gray-900">{Math.floor(displayCredits + (wallet.totalCashCollected / 10)).toLocaleString()} <span className="text-sm font-bold text-gray-500">Credits</span></h2>
@@ -163,7 +239,7 @@ const Wallet = () => {
           {/* Simple CSS Bar Chart */}
           <div className="flex items-end justify-between h-32 mt-4 px-2">
             {barChartData.map((data, idx) => (
-              <div key={idx} className="flex flex-col items-center gap-2">
+              <div key={idx} className="flex flex-col items-center gap-2 h-full">
                 <div className="w-8 bg-blue-100 rounded-t-md relative group flex flex-col justify-end h-full">
                   <div 
                     className="w-full bg-blue-600 rounded-t-md transition-all duration-500" 
@@ -171,7 +247,7 @@ const Wallet = () => {
                   ></div>
                   {/* Tooltip */}
                   <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] py-1 px-2 rounded font-bold transition-opacity whitespace-nowrap">
-                    ₹{data.amount}
+                    {data.amount} Credits
                   </div>
                 </div>
                 <span className="text-xs font-semibold text-gray-400">{data.day}</span>
@@ -246,7 +322,9 @@ const Wallet = () => {
             <div className="flex justify-between items-center mb-3">
               <div>
                 <p className="text-xs text-emerald-600 font-semibold uppercase">Withdrawable Balance</p>
-                <h3 className="text-2xl font-black text-emerald-700">₹{(wallet.earnings || 0).toLocaleString()}</h3>
+                <h3 className="text-2xl font-black text-emerald-700">
+                  {Math.floor((wallet.earnings || 0) / 10).toLocaleString()} <span className="text-sm font-bold opacity-80">Credits</span>
+                </h3>
               </div>
               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
                 <FiDollarSign className="w-5 h-5 text-emerald-600" />
@@ -275,6 +353,7 @@ const Wallet = () => {
             { id: 'cash_collected', label: 'Cash Collected' },
             { id: 'settlement', label: 'Settlements' },
             { id: 'withdrawal', label: 'Withdrawals' },
+            { id: 'credits_history', label: 'Credits' },
             { id: 'incentive', label: 'Incentives' },
           ].map((filterOption) => (
             <button
@@ -349,7 +428,7 @@ const Wallet = () => {
                           <p className="font-bold text-gray-900 text-sm">
                             {getTransactionLabel(txn)}
                           </p>
-                          <p className={`text-lg font-bold ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type)
+                          <p className={`text-lg font-bold whitespace-nowrap flex-shrink-0 ml-2 text-right ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type)
                             ? 'text-red-600'
                             : 'text-green-600'
                             }`}>

@@ -248,14 +248,27 @@ const createOrUpdateBill = async (req, res) => {
     // Add extra services vendor earnings (using catalog vendorPayoutBase if configured)
     let extraServicesEarning = 0;
     if (services && Array.isArray(services)) {
+      const PricingConfig = require('../../models/PricingConfig');
       for (const item of services) {
         let catalogItem = null;
+        let itemPricing = null;
         if (item.catalogId) {
           catalogItem = await VendorServiceCatalog.findById(item.catalogId);
+          if (!catalogItem) {
+            // It might be a regular Service
+            const pricings = await PricingConfig.find({ serviceId: item.catalogId });
+            if (pricings.length > 0) {
+              if (booking.cityId) itemPricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+              if (!itemPricing && booking.brandId) itemPricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+              if (!itemPricing) itemPricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+            }
+          }
         }
         const qty = Number(item.quantity) || 1;
         if (catalogItem && catalogItem.vendorPayoutBase !== undefined && catalogItem.vendorPayoutBase > 0) {
           extraServicesEarning += catalogItem.vendorPayoutBase * qty;
+        } else if (itemPricing && itemPricing.vendorPayoutBase !== undefined && itemPricing.vendorPayoutBase !== null) {
+          extraServicesEarning += itemPricing.vendorPayoutBase * qty;
         } else {
           const unitPrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
           extraServicesEarning += parseFloat(((unitPrice * qty) * (serviceSplitPct / 100)).toFixed(2));

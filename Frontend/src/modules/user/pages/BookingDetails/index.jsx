@@ -579,7 +579,13 @@ const BookingDetails = () => {
         toast.error(response.message || 'Failed to submit review');
       }
     } catch (error) {
-      toast.error('Failed to submit review');
+      if (error?.response?.data?.message === 'Booking already reviewed') {
+        toast.success('Your feedback was already recorded!');
+        setShowRatingModal(false);
+        loadBooking();
+      } else {
+        toast.error('Failed to submit review');
+      }
     }
   };
 
@@ -1295,13 +1301,19 @@ const BookingDetails = () => {
                         // Direct database key or mathematically derived remainder
                         const directValue = Number(booking.visitingCharges || booking.visitationFee || booking.visitingFee || booking.visitationCharges || 0);
                         const derivedValue = grandTotal - (baseAmt + instantFee + taxAmt - discountAmt);
-                        const finalVisitingCharges = directValue > 0 ? directValue : (derivedValue > 0 ? derivedValue : 0);
-
-                        if (finalVisitingCharges > 0) {
+                        
+                        if (directValue > 0) {
                           return (
                             <div className="flex justify-between text-secondary-text">
                               <span>Visiting Charges</span>
-                              <span className="font-semibold text-dark-text">₹{finalVisitingCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                              <span className="font-semibold text-dark-text">₹{directValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          );
+                        } else if (derivedValue > 0.01) {
+                          return (
+                            <div className="flex justify-between text-secondary-text">
+                              <span>Additional Charges</span>
+                              <span className="font-semibold text-dark-text">₹{derivedValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                           );
                         }

@@ -25,7 +25,15 @@ const vendorWalletService = {
    * Get transaction history/ledger
    */
   getTransactions: async (params = {}) => {
-    const response = await api.get('/vendors/wallet/transactions', { params });
+    const response = await api.get('/vendors/transactions', { params });
+    return response.data;
+  },
+
+  /**
+   * Get earnings analytics for charts and breakdown
+   */
+  getEarningsAnalytics: async (params = {}) => {
+    const response = await api.get('/vendors/earnings/analytics', { params });
     return response.data;
   },
 

@@ -80,35 +80,38 @@ api.interceptors.response.use(
     // If error is 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
+        console.log('API: isRefreshing is true, pushing to failedQueue', originalRequest.url);
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then(token => {
+            console.log('API: Promise resolved from failedQueue', originalRequest.url);
             originalRequest.headers.Authorization = `Bearer ${token}`;
             return api(originalRequest);
           })
           .catch(err => {
+            console.error('API: Promise rejected from failedQueue', originalRequest.url);
             return Promise.reject(err);
           });
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
+      console.log('API: isRefreshing set to true for url', originalRequest.url);
 
       const { access, refresh, role } = getTokenKeys(originalRequest.url);
       const refreshToken = sessionStorage.getItem(refresh) || localStorage.getItem(refresh);
 
       if (!refreshToken) {
-        // No refresh token — do NOT auto-logout.
-        // Silently reject; user will stay on page.
+        console.log('API: No refresh token found, setting isRefreshing = false and rejecting');
         isRefreshing = false;
         return Promise.reject(error);
       }
 
       try {
-        // Determine correct refresh endpoint based on current path
-        let refreshEndpoint = '/users/auth/refresh-token'; // Default to user
+        console.log('API: Attempting to refresh token');
+        let refreshEndpoint = '/users/auth/refresh-token';
         if (role === 'vendor' || role === 'worker') refreshEndpoint = '/vendors/auth/refresh-token';
         else if (role === 'admin') refreshEndpoint = '/admin/auth/refresh-token';
 
