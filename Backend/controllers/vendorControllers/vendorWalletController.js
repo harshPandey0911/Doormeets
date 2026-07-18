@@ -964,6 +964,141 @@ const getEarningsAnalytics = async (req, res) => {
   }
 };
 
+// ---------------- CREDITS SYSTEM ----------------
+
+const CreditPackage = require('../../models/CreditPackage');
+const CreditTransaction = require('../../models/CreditTransaction');
+const { createOrder, verifyPayment } = require('../../services/razorpayService');
+
+/**
+ * Purchase Credits (Create Razorpay Order)
+ */
+const purchaseCredits = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { packageId } = req.body;
+
+    if (!packageId) {
+      return res.status(400).json({ success: false, message: 'Package ID is required' });
+    }
+
+    const pkg = await CreditPackage.findById(packageId);
+    if (!pkg || !pkg.isActive) {
+      return res.status(404).json({ success: false, message: 'Credit package not found or inactive' });
+    }
+
+    const Settings = require('../../models/Settings');
+    const settings = await Settings.findOne();
+    const gst = settings && settings.platformGST !== undefined ? settings.platformGST : 18;
+    const totalPrice = pkg.price + (pkg.price * gst / 100);
+
+    // Create Razorpay order
+    const orderResult = await createOrder(
+      totalPrice,
+      'INR',
+      `CR_${Date.now()}_${vendorId.toString().slice(-6)}`,
+      {
+        vendorId: vendorId.toString(),
+        packageId: packageId.toString(),
+        type: 'credit_purchase',
+        gst: gst.toString(),
+        basePrice: pkg.price.toString()
+      }
+    );
+
+    if (!orderResult.success) {
+      return res.status(500).json({ success: false, message: 'Failed to create payment order' });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        orderId: orderResult.orderId,
+        amount: orderResult.amount / 100, // converted back to INR
+        currency: orderResult.currency,
+        key: process.env.RAZORPAY_KEY_ID,
+        packageDetails: pkg
+      }
+    });
+  } catch (error) {
+    console.error('Purchase credits error:', error);
+    res.status(500).json({ success: false, message: 'Failed to initiate purchase' });
+  }
+};
+
+/**
+ * Verify Credits Purchase (Razorpay callback)
+ */
+const verifyCreditsPurchase = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, packageId } = req.body;
+
+    const isValid = verifyPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    }
+
+    const vendor = await Vendor.findById(vendorId);
+    const pkg = await CreditPackage.findById(packageId);
+
+    if (!vendor || !pkg) {
+      return res.status(404).json({ success: false, message: 'Vendor or Package not found' });
+    }
+
+    // Add credits to wallet
+    vendor.wallet.credits = (vendor.wallet.credits || 0) + pkg.creditsAmount;
+    await vendor.save();
+
+    // Log transaction
+    await CreditTransaction.create({
+      vendorId: vendor._id,
+      type: 'purchase',
+      amount: pkg.creditsAmount,
+      description: `Purchased ${pkg.creditsAmount} credits`,
+      paymentDetails: {
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id,
+        packageId: pkg._id
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${pkg.creditsAmount} credits added successfully!`,
+      data: { credits: vendor.wallet.credits }
+    });
+  } catch (error) {
+    console.error('Verify credits purchase error:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify purchase' });
+  }
+};
+
+/**
+ * Get Credit History
+ */
+const getCreditHistory = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { type } = req.query; // 'purchase', 'expenses', etc.
+
+    let query = { vendorId };
+    if (type === 'recharge') query.type = 'purchase';
+    else if (type === 'expenses') query.type = 'lead_deduct';
+    else if (type === 'penalties') query.type = 'penalty';
+
+    const history = await CreditTransaction.find(query).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: history
+    });
+  } catch (error) {
+    console.error('Get credit history error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch history' });
+  }
+};
+
 module.exports = {
   getWallet,
   getTransactions,
@@ -974,5 +1109,8 @@ module.exports = {
   payWorker,
   requestWithdrawal,
   getWithdrawals,
-  getEarningsAnalytics
+  getEarningsAnalytics,
+  purchaseCredits,
+  verifyCreditsPurchase,
+  getCreditHistory
 };

@@ -247,7 +247,7 @@ export default function GlobalBookingAlert() {
               window.dispatchEvent(new Event('vendorJobsUpdated'));
               window.dispatchEvent(new Event('vendorStatsUpdated'));
             } catch (e) {
-              toast.error('Failed to claim job');
+              toast.error(e.response?.data?.message || 'Failed to claim job');
             }
           }}
           onAssign={async (id) => {
@@ -268,7 +268,7 @@ export default function GlobalBookingAlert() {
               toast.success('Job claimed! Redirecting to assign...');
               navigate(`/vendor/booking/${id}/assign-worker`);
             } catch (e) {
-              toast.error('Failed to claim job');
+              toast.error(e.response?.data?.message || 'Failed to claim job');
             }
           }}
           onReject={async (id) => {

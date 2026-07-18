@@ -6,6 +6,7 @@ import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAl
 import { cityService } from '../../services/cityService';
 import CityManagement from '../Cities';
 import DeletedAccountsDashboard from '../DeletedAccounts';
+import CreditPackages from './CreditPackages';
 import { toast } from 'react-hot-toast';
 
 const AdminSettings = () => {
@@ -601,6 +602,18 @@ const AdminSettings = () => {
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">Deleted Accounts</h3>
           <p className="text-sm text-gray-500">View deleted Users, Vendors, Workers, and Shop Owners and inspect their history</p>
+        </div>
+      )}
+
+      {/* Credit Packages Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('credits')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+            <FiDollarSign className="w-6 h-6 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Credit Packages</h3>
+          <p className="text-sm text-gray-500">Manage vendor credit packages for buying leads</p>
         </div>
       )}
 
@@ -1373,6 +1386,13 @@ const AdminSettings = () => {
             </motion.div>
           )
         }
+
+        {/* Credit Packages View */}
+        {activeView === 'credits' && isSuperAdmin && (
+          <motion.div key="credits" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+            <CreditPackages />
+          </motion.div>
+        )}
 
       </AnimatePresence >
 

@@ -54,6 +54,8 @@ const AddEditWorker = lazyLoad(() => import('../pages/AddEditWorker'));
 const AssignWorker = lazyLoad(() => import('../pages/AssignWorker'));
 const Earnings = lazyLoad(() => import('../pages/Earnings'));
 const Wallet = lazyLoad(() => import('../pages/Wallet'));
+const CreditHistory = lazyLoad(() => import('../pages/Wallet/CreditHistory'));
+const CreditPurchase = lazyLoad(() => import('../pages/Wallet/CreditPurchase'));
 const WithdrawalRequest = lazyLoad(() => import('../pages/WithdrawalRequest'));
 const Profile = lazyLoad(() => import('../pages/Profile'));
 const ProfileDetails = lazyLoad(() => import('../pages/Profile/ProfileDetails'));
@@ -129,6 +131,8 @@ const VendorRoutes = () => {
               <Route path="/booking/:id/assign-worker" element={<ProtectedRoute userType="vendor"><AssignWorker /></ProtectedRoute>} />
               <Route path="/earnings" element={<ProtectedRoute userType="vendor"><Earnings /></ProtectedRoute>} />
               <Route path="/wallet" element={<ProtectedRoute userType="vendor"><Wallet /></ProtectedRoute>} />
+              <Route path="/wallet/credit-history" element={<ProtectedRoute userType="vendor"><CreditHistory /></ProtectedRoute>} />
+              <Route path="/wallet/credit-purchase" element={<ProtectedRoute userType="vendor"><CreditPurchase /></ProtectedRoute>} />
               <Route path="/wallet/withdraw" element={<ProtectedRoute userType="vendor"><WithdrawalRequest /></ProtectedRoute>} />
               <Route path="/wallet/settle" element={<ProtectedRoute userType="vendor"><SettlementRequest /></ProtectedRoute>} />
               <Route path="/wallet/settlements" element={<ProtectedRoute userType="vendor"><SettlementHistory /></ProtectedRoute>} />

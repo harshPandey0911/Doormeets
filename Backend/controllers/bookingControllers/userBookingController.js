@@ -826,6 +826,30 @@ const createBooking = async (req, res) => {
           }
         }
 
+        // Calculate vendor deduction amount
+        let deductionAmount = 0;
+        try {
+          const PricingConfig = require('../../models/PricingConfig');
+          const pricings = await PricingConfig.find({ serviceId: bookingForBackground.serviceId });
+          if (pricings.length > 0) {
+            let pricing = null;
+            if (bookingForBackground.cityId) {
+              pricing = pricings.find(p => p.cityId && String(p.cityId) === String(bookingForBackground.cityId));
+            }
+            if (!pricing && bookingForBackground.brandId) {
+              pricing = pricings.find(p => p.brandId && String(p.brandId) === String(bookingForBackground.brandId));
+            }
+            if (!pricing) {
+              pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+            }
+            if (pricing && pricing.vendorAcceptanceFee) {
+              deductionAmount = Number(pricing.vendorAcceptanceFee) / 10;
+            }
+          }
+        } catch (err) {
+          console.error('[CreateBooking] Error calculating deductionAmount:', err);
+        }
+
         // Send notifications to initial wave vendors ONLY
         // 1. Emit Socket.IO event FIRST (Instant & Reliable)
         const { getIO } = require('../../sockets');
@@ -853,6 +877,7 @@ const createBooking = async (req, res) => {
               status: bookingForBackground.status,
               serviceType: bookingForBackground.serviceType || 'service',
               playSound: true,
+              deductionAmount: deductionAmount,
               message: `New booking request within ${vendor.distance?.toFixed(1) || '?'}km!`
             });
           });

@@ -66,12 +66,12 @@ const LiveBookingCard = ({ hasBottomNav }) => {
 
   const fetchActiveBooking = async () => {
     try {
-      // Fetch bookings with active statuses
-      // We manually fetch latest and check status on client or assume API supports status filter array
-      // For now, getting all 'active' look-alikes by assuming 'current' sort order or specific API behaviour
-      // Re-using getUserBookings with a broad status or custom logic if needed. 
-      // Actually, relying on getUserBookings default which excludes 'SEARCHING'. 
-      // We'll filter client side for the *most relevant* active one.
+      // Check if user is logged in before polling
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
       const res = await userBookingService.getUserBookings({ limit: 5 });
       if (res.success && res.data.length > 0) {
@@ -87,6 +87,11 @@ const LiveBookingCard = ({ hasBottomNav }) => {
       }
     } catch (error) {
       // Failed to fetch active booking
+      if (error.response?.status === 401) {
+        // Token is dead, remove it to prevent 401 spam
+        localStorage.removeItem('accessToken');
+        sessionStorage.removeItem('accessToken');
+      }
     } finally {
       setLoading(false);
     }
