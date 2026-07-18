@@ -3,7 +3,7 @@ import { FiCheckCircle, FiShield, FiAlertCircle, FiPackage, FiX, FiInfo } from '
 import { motion, AnimatePresence } from 'framer-motion';
 import { configService } from '../../../../services/configService';
 
-const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => {
+const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline, onPayCash }) => {
   const [isOnlinePaymentEnabled, setIsOnlinePaymentEnabled] = useState(true);
   const [configLoading, setConfigLoading] = useState(true);
 
@@ -303,10 +303,18 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline }) => 
                   )}
 
                   {!isCashPayment && (
-                    <div className="relative py-2 text-center">
-                      <span className="bg-card-bg px-2 text-[10px] font-bold text-secondary-text relative z-10 uppercase tracking-wider">OR</span>
-                      <div className="absolute top-1/2 left-0 right-0 h-px bg-border-color z-0"></div>
-                    </div>
+                    <>
+                      <div className="relative py-2 text-center">
+                        <span className="bg-card-bg px-2 text-[10px] font-bold text-secondary-text relative z-10 uppercase tracking-wider">OR</span>
+                        <div className="absolute top-1/2 left-0 right-0 h-px bg-border-color z-0"></div>
+                      </div>
+                      <button
+                        onClick={onPayCash}
+                        className="w-full py-3.5 rounded-xl bg-light-bg text-secondary-text border border-border-color font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-card-bg"
+                      >
+                        Pay by Cash
+                      </button>
+                    </>
                   )}
 
                   {/* Cash Code */}

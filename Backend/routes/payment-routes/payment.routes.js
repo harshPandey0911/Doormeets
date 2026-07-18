@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isUser } = require('../../middleware/roleMiddleware');
+const { isUser, isVendor } = require('../../middleware/roleMiddleware');
 const {
   createPaymentOrder,
   verifyPaymentWebhook,
@@ -10,6 +10,7 @@ const {
   processRefund,
   getPaymentHistory,
   confirmPayAtHome,
+  confirmCashCollection,
   createPlanOrder,
   verifyPlanPayment,
   getUpgradeDetails
@@ -41,6 +42,7 @@ router.post('/verify', authenticate, isUser, verifyPaymentValidation, verifyPaym
 router.post('/wallet', authenticate, isUser, walletPaymentValidation, processWalletPayment);
 router.post('/refund', authenticate, isUser, refundValidation, processRefund);
 router.post('/pay-at-home', authenticate, isUser, walletPaymentValidation, confirmPayAtHome);
+router.post('/confirm-cash', authenticate, isVendor, walletPaymentValidation, confirmCashCollection);
 router.get('/history', authenticate, isUser, getPaymentHistory);
 router.post('/plan/create-order', authenticate, isUser, createPlanOrder);
 router.post('/plan/verify', authenticate, isUser, verifyPlanPayment);

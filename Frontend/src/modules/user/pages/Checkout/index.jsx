@@ -18,6 +18,7 @@ import { userAuthService } from '../../../../services/authService';
 import { promoService } from '../../../../services/promoService';
 import { voucherService } from '../../../../services/voucherService';
 import { useCart } from '../../../../context/CartContext';
+import { useSocket } from '../../../../context/SocketContext';
 import LiveBookingCard from '../../components/booking/LiveBookingCard';
 
 const toAssetUrl = (url) => {
@@ -34,8 +35,10 @@ const Checkout = () => {
   const category = location.state?.category || null;
   const plan = location.state?.plan || null;
   const { fetchCart: fetchCartGlobal, clearCart: clearCartGlobal, removeCategoryItems: removeCategoryGlobal } = useCart();
+  const socket = useSocket();
 
   const [cartItems, setCartItems] = useState([]);
+  const [fetchError, setFetchError] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
   const [address, setAddress] = useState('');
@@ -223,6 +226,7 @@ const Checkout = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setFetchError(false);
 
         if (plan) {
           setCartItems([{
@@ -270,6 +274,9 @@ const Checkout = () => {
                 pincode: defaultAddr.pincode
               });
             }
+          } else {
+            setFetchError(true);
+            toast.error(response.message || 'Failed to load checkout data');
           }
         } else {
           const response = await userAuthService.getCheckoutData();
@@ -350,10 +357,15 @@ const Checkout = () => {
                 }
               }
             }
+          } else {
+            setFetchError(true);
+            toast.error(response.message || 'Failed to load checkout data');
           }
         }
       } catch (error) {
         console.error('Failed to load checkout data', error);
+        setFetchError(true);
+        toast.error('Network error. Failed to load checkout data.');
       } finally {
         setLoading(false);
       }
@@ -363,10 +375,12 @@ const Checkout = () => {
   }, [category, plan]);
 
   useEffect(() => {
-    if (!loading && cartItems.length === 0 && currentStep === 'details' && !searchingVendors && !showVendorModal) {
+    // Only redirect if there's no fetch error and cart is genuinely empty
+    if (!loading && !fetchError && cartItems.length === 0 && currentStep === 'details' && !searchingVendors && !showVendorModal) {
+      toast.error('Your cart is empty. Please add items before checking out.');
       navigate('/user/home', { replace: true });
     }
-  }, [loading, cartItems.length, currentStep, searchingVendors, showVendorModal, navigate]);
+  }, [loading, fetchError, cartItems.length, currentStep, searchingVendors, showVendorModal, navigate]);
 
   const loadCart = async () => {
     try {

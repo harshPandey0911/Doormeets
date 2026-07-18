@@ -72,7 +72,6 @@ const Training = lazyLoad(() => import('../pages/Training'));
 const MCQTest = lazyLoad(() => import('../pages/Training/MCQTest'));
 const TrainingResult = lazyLoad(() => import('../pages/Training/TrainingResult'));
 
-const BillingPage = lazyLoad(() => import('../pages/BillingPage'));
 const SupportList = lazyLoad(() => import('../pages/Support/index'));
 const TicketDetails = lazyLoad(() => import('../pages/Support/TicketDetails'));
 const MyServices = lazyLoad(() => import('../pages/MyServices'));
@@ -122,7 +121,6 @@ const VendorRoutes = () => {
               <Route path="/booking-alert/:id" element={<ProtectedRoute userType="vendor"><BookingAlert /></ProtectedRoute>} />
               <Route path="/booking/:id" element={<ProtectedRoute userType="vendor"><BookingDetails /></ProtectedRoute>} />
               <Route path="/booking/:id/map" element={<ProtectedRoute userType="vendor"><BookingMap /></ProtectedRoute>} />
-              <Route path="/booking/:id/billing" element={<ProtectedRoute userType="vendor"><BillingPage /></ProtectedRoute>} />
               <Route path="/booking/:id/timeline" element={<ProtectedRoute userType="vendor"><BookingTimeline /></ProtectedRoute>} />
               <Route path="/jobs" element={<ProtectedRoute userType="vendor"><ActiveJobs /></ProtectedRoute>} />
               <Route path="/workers" element={<ProtectedRoute userType="vendor"><WorkersList /></ProtectedRoute>} />
