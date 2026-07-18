@@ -120,7 +120,7 @@ const ServiceCategories = React.memo(({
             >
               {/* Image card */}
               <div
-                className="w-full aspect-square rounded-[14px] overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200 category-image-card"
+                className="w-full aspect-square rounded-md overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200 category-image-card"
                 style={{ backgroundColor: category.colorScheme.bg }}
               >
                 {category.icon ? (

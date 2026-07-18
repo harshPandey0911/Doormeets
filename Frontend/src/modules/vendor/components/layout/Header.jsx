@@ -118,18 +118,18 @@ const Header = memo(({
   return (
     <>
       <header
-        className="w-full bg-[#fdfbff] fixed top-0 left-0 right-0 z-50"
+        className="w-full bg-[#fefefe] fixed top-0 left-0 right-0 z-50"
         style={{
           borderBottom: '1.5px solid rgba(150, 52, 247, 0.15)',
         }}
       >
-        <div className="px-4 py-3 flex items-center justify-between">
+        <div className="px-4 py-3 flex items-center justify-between gap-2">
           {/* Left: Back button or Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
             {showBack ? (
               <motion.button
                 onClick={handleBack}
-                className="p-2 rounded-full hover:bg-white/30 transition-colors"
+                className="-ml-2 p-2 rounded-full hover:bg-white/30 transition-colors"
                 whileTap={{ scale: 0.95 }}
               >
                 <FiArrowLeft className="w-5 h-5" style={{ color: themeColors.button }} />
@@ -147,7 +147,7 @@ const Header = memo(({
                 <Logo className="h-12 w-auto" />
               </motion.div>
             )}
-            {showBack && <h1 className="text-lg font-bold text-gray-800">{title || 'Vendor'}</h1>}
+            {showBack && <h1 className="text-lg font-bold text-gray-800 whitespace-nowrap">{title || 'Vendor'}</h1>}
           </div>
 
           {/* Right: Search and Notifications */}
@@ -180,7 +180,7 @@ const Header = memo(({
                     )}
                   </motion.div>
                 </button>
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter w-14">
+                <span className="hidden min-[400px]:inline-block text-[9px] font-bold text-gray-500 uppercase tracking-tighter w-14">
                   {isOnline ? 'Go Offline' : 'Go Online'}
                 </span>
               </div>

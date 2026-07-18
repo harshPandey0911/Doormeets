@@ -35,12 +35,12 @@ const CategoryCard = memo(({ icon, title, onClick, hasSaleBadge = false, status 
       }}
     >
       <div
-        className="w-[64px] h-[64px] rounded-2xl flex items-center justify-center mb-2 relative border border-gray-100 flex-shrink-0 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-primary-100 group-hover:-translate-y-1 bg-white"
+        className="w-[64px] h-[64px] rounded-md flex items-center justify-center mb-2 relative border border-gray-100 flex-shrink-0 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-primary-100 group-hover:-translate-y-1 bg-white"
         style={{
           boxShadow: '0 8px 20px -6px rgba(0,0,0,0.05)',
         }}
       >
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div className="absolute inset-0 rounded-md bg-gradient-to-br from-primary-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         {icon || (
           <svg
             className="w-7 h-7 text-gray-400 transition-colors duration-300"

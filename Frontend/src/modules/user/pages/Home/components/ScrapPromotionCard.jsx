@@ -8,7 +8,7 @@ const ScrapPromotionCard = ({ onClick }) => {
     <motion.div
       whileHover={{ y: -5 }}
       whileTap={{ scale: 0.98 }}
-      className="mx-4 mt-6 overflow-hidden rounded-3xl relative cursor-pointer group shadow-xl"
+      className="mx-4 mt-6 overflow-hidden rounded-md relative cursor-pointer group shadow-xl"
       onClick={onClick}
     >
       {/* Background with Brand Mesh Gradient */}

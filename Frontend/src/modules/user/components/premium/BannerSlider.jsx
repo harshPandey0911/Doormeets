@@ -22,7 +22,7 @@ const BannerSlider = ({ banners = [], onCtaClick }) => {
           <SwiperSlide key={banner.id}>
             <motion.div
               whileHover={{ y: -2 }}
-              className="relative overflow-hidden rounded-[28px] border border-purple-100 bg-white shadow-[0_18px_60px_rgba(124,58,237,0.12)]"
+              className="relative overflow-hidden rounded-md border border-purple-100 bg-white shadow-[0_18px_60px_rgba(124,58,237,0.12)]"
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${banner.accent || 'from-purple-600 to-fuchsia-500'} opacity-85`} />
               <div className="absolute inset-0 bg-black/10" />

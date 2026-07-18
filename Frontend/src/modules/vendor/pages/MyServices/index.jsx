@@ -60,7 +60,15 @@ const MyServices = () => {
             <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">Total Expertise</p>
             <div className="flex items-center gap-2">
               <span className="text-xl font-semibold text-gray-900">{services.length}</span>
-              <span className="text-[9px] font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full">Categories</span>
+              <span 
+                className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: `${themeColors.button}15`,
+                  color: themeColors.button
+                }}
+              >
+                Categories
+              </span>
             </div>
           </div>
           <div className="bg-white/60 backdrop-blur-md rounded-2xl p-3 border border-white/40 shadow-sm">
@@ -88,15 +96,15 @@ const MyServices = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mb-4" style={{ borderColor: `${themeColors.button} transparent ${themeColors.button} ${themeColors.button}` }}></div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Portfolio...</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Loading Portfolio...</p>
           </div>
         ) : services.length === 0 ? (
           <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-12 text-center border border-white/40 shadow-xl">
             <div className="w-20 h-20 mx-auto mb-6 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-300">
               <FiBriefcase className="w-10 h-10" />
             </div>
-            <h3 className="text-xl font-black text-gray-800 mb-2">No Services Yet</h3>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Contact admin to get assigned categories</p>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No Services Yet</h3>
+            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Contact admin to get assigned categories</p>
           </div>
         ) : (
           <div className="space-y-3">

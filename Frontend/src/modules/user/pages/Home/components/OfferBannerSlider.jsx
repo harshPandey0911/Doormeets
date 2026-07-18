@@ -50,7 +50,7 @@ const OfferBannerSlider = ({ banners }) => {
           768: { slidesPerView: 1, spaceBetween: 0 },
           1024: { slidesPerView: 1, spaceBetween: 0 }
         }}
-        className="rounded-[20px] lg:rounded-[28px] overflow-hidden shadow-sm w-full offer-banner-swiper"
+        className="rounded-md overflow-hidden shadow-sm w-full offer-banner-swiper"
       >
         {banners.map((banner, index) => (
           <SwiperSlide 

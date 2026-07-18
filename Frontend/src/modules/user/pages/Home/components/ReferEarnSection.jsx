@@ -1,7 +1,7 @@
 import React from 'react';
 import { themeColors } from '../../../../../theme';
 
-const ReferEarnSection = ({ onReferClick, className = "rounded-2xl overflow-hidden shadow-lg mx-4 mt-2 bg-white" }) => {
+const ReferEarnSection = ({ onReferClick, className = "rounded-md overflow-hidden shadow-lg mx-4 mt-2 bg-white" }) => {
   return (
     <div
       className={className}

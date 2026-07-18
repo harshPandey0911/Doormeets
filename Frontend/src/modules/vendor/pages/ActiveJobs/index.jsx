@@ -145,7 +145,7 @@ const ActiveJobs = memo(() => {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
-      <Header title="Active Jobs" showSearch={true} />
+      <Header title="Active Jobs" showSearch={false} />
 
       <main className="px-4 py-6">
         {/* Search Bar */}
@@ -248,43 +248,27 @@ const ActiveJobs = memo(() => {
                     const isWorker = window.location.pathname.startsWith('/worker') || localStorage.getItem('role') === 'worker';
                     navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`);
                   }}
-                  className="rounded-xl p-3 shadow-md cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
-                  style={{
-                    background: 'linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%)',
-                    boxShadow: `0 4px 12px ${hexToRgba(statusColor, 0.08)}, 0 0 0 1px ${hexToRgba(statusColor, 0.15)}`,
-                    border: `1px solid ${hexToRgba(statusColor, 0.25)}`,
-                  }}
+                  className="bg-white rounded-xl p-3 border border-gray-100/80 shadow-sm hover:shadow-md cursor-pointer active:scale-98 transition-all duration-200 relative overflow-hidden"
                 >
-                  {/* Left border accent */}
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-                    style={{
-                      background: `linear-gradient(180deg, ${statusColor} 0%, ${statusColor}dd 100%)`,
-                    }}
-                  />
-
-                  <div className="relative z-10 pl-1">
+                  <div className="relative z-10">
                     {/* Header Section */}
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 mb-1.5">
                           <div
-                            className="p-1 rounded"
-                            style={{
-                              background: `${statusColor}15`,
-                            }}
+                            className="p-1 rounded bg-[#E85D3F]/10 text-[#E85D3F]"
                           >
-                            <FiBriefcase className="w-3.5 h-3.5" style={{ color: statusColor }} />
+                            <FiBriefcase className="w-3.5 h-3.5" />
                           </div>
                           <h3 className="font-bold text-gray-800 text-sm truncate">{job.serviceType}</h3>
                         </div>
                         <div className="ml-7 mb-1">
                           <span
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            className="text-[9px] font-semibold px-2 py-0.5 rounded-full capitalize border"
                             style={{
-                              background: `linear-gradient(135deg, ${statusColor} 0%, ${statusColor}dd 100%)`,
-                              color: '#FFFFFF',
-                              boxShadow: `0 1px 4px ${hexToRgba(statusColor, 0.2)}`,
+                              backgroundColor: `${statusColor}15`,
+                              color: statusColor,
+                              borderColor: `${statusColor}30`,
                             }}
                           >
                             {job.status.replace('_', ' ').toLowerCase()}
