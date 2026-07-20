@@ -201,9 +201,9 @@ const approveVendor = async (req, res) => {
         }
 
         // Credit Vendor
-        const vendorBalanceBefore = vendor.wallet?.earnings || 0;
-        vendor.wallet = vendor.wallet || { earnings: 0, dues: 0 };
-        vendor.wallet.earnings += vendorReward;
+        const vendorBalanceBefore = vendor.wallet?.credits || 0;
+        vendor.wallet = vendor.wallet || { credits: 0, dues: 0 };
+        vendor.wallet.credits += vendorReward / 10;
 
         // Create transaction for vendor
         await Transaction.create({
@@ -734,7 +734,7 @@ const getVendorIncentiveStats = async (req, res) => {
     const Review = require('../../models/Review');
 
     const vendors = await Vendor.find({ approvalStatus: VENDOR_STATUS.APPROVED, isActive: true })
-      .select('name businessName phone wallet.earnings wallet.dues')
+      .select('name businessName phone wallet.credits wallet.dues')
       .lean();
 
     const stats = await Promise.all(vendors.map(async (vendor) => {
@@ -769,7 +769,7 @@ const getVendorIncentiveStats = async (req, res) => {
         name: vendor.name,
         businessName: vendor.businessName,
         phone: vendor.phone,
-        earnings: vendor.wallet?.earnings || 0,
+        earnings: (vendor.wallet?.credits * 10) || 0,
         dues: vendor.wallet?.dues || 0,
         bookingsCount,
         averageRating

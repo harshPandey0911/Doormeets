@@ -396,7 +396,7 @@ const acceptBooking = async (req, res) => {
 
     const PricingConfig = require('../../models/PricingConfig');
     let pricing = null;
-    if (packageVendorPayout === 0 && booking.serviceId) {
+    if (booking.serviceId) {
       const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
       if (pricings.length > 0) {
         if (booking.cityId) {
@@ -465,31 +465,69 @@ const acceptBooking = async (req, res) => {
       calculatedVendorShare = parseFloat((calculatedVendorShare + vendorInstantMarkupShare).toFixed(2));
     }
 
-    // Wallet deduction for accepting booking (Credits System)
+    // Minimum Wallet Balance & Lead Deduction (Credits System)
     const Vendor = require('../../models/Vendor');
+    const Category = require('../../models/Category');
     const vendorDoc = await Vendor.findById(vendorId);
     if (!vendorDoc) {
       return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
     }
 
-    const acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
-    const requiredCredits = acceptanceFee > 0 ? (acceptanceFee / 10) : 0; // 1 Credit = 10 Rs
+    // 1. Minimum Wallet Balance Check
+    let minWalletBalanceRs = 0;
+    try {
+      const categoryDoc = await Category.findById(booking.categoryId).select('minWalletBalance').lean();
+      if (categoryDoc && categoryDoc.minWalletBalance > 0) {
+        minWalletBalanceRs = categoryDoc.minWalletBalance;
+      }
+    } catch (err) {
+      console.error('Error fetching category minWalletBalance:', err);
+    }
 
-    if (requiredCredits > 0) {
-      const vendorCredits = vendorDoc.wallet?.credits || 0;
-      if (vendorCredits < requiredCredits) {
+    const vendorCredits = vendorDoc.wallet?.credits || 0;
+    
+    // Check if vendor has minimum required balance to accept
+    if (minWalletBalanceRs > 0) {
+      const requiredMinCredits = minWalletBalanceRs / 10;
+      if (vendorCredits < requiredMinCredits) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient balance. You need ${requiredCredits} Credits to accept this lead.`
+          message: `Insufficient balance to accept. You need a minimum balance of ₹${minWalletBalanceRs} (${requiredMinCredits} Credits) in your wallet.`
+        });
+      }
+    }
+
+    // 2. Deduction Logic (Capped at minWalletBalance)
+    let acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+    
+    // Cap the deduction amount so it never exceeds the minimum wallet balance (if defined)
+    if (minWalletBalanceRs > 0 && acceptanceFee > minWalletBalanceRs) {
+      acceptanceFee = minWalletBalanceRs;
+    }
+
+    const requiredCreditsToDeduct = acceptanceFee > 0 ? (acceptanceFee / 10) : 0; // 1 Credit = 10 Rs
+
+    if (requiredCreditsToDeduct > 0) {
+      if (vendorCredits < requiredCreditsToDeduct) {
+        // Fallback check just in case, though minWalletBalance check usually covers this
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient balance. You need ${requiredCreditsToDeduct} Credits to accept this lead.`
         });
       }
 
-      const balanceBefore = vendorCredits;
-      const balanceAfter = balanceBefore - requiredCredits;
+      // Atomic update to ensure wallet never goes into minus, even on concurrent requests
+      const updateResult = await Vendor.updateOne(
+        { _id: vendorId, 'wallet.credits': { $gte: requiredCreditsToDeduct } },
+        { $inc: { 'wallet.credits': -requiredCreditsToDeduct } }
+      );
 
-      vendorDoc.wallet = vendorDoc.wallet || {};
-      vendorDoc.wallet.credits = Number(balanceAfter.toFixed(2));
-      await vendorDoc.save();
+      if (updateResult.modifiedCount === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient balance. You need ${requiredCreditsToDeduct} Credits to accept this lead.`
+        });
+      }
 
       // Create Credit Transaction log
       const CreditTransaction = require('../../models/CreditTransaction');
@@ -497,8 +535,8 @@ const acceptBooking = async (req, res) => {
         vendorId: vendorId,
         bookingId: booking._id,
         type: 'lead_deduct',
-        amount: requiredCredits,
-        description: `Lead bought - ${requiredCredits} Credits for booking #${booking.bookingNumber}`,
+        amount: requiredCreditsToDeduct,
+        description: `Lead bought - ${requiredCreditsToDeduct} Credits for booking #${booking.bookingNumber}`,
         referenceId: booking._id
       });
     }
@@ -2075,13 +2113,13 @@ const collectSelfCash = async (req, res) => {
       const currentDues = (vendorDoc.wallet.dues || 0) + grandTotal;
       const cashLimit = vendorDoc.wallet.cashLimit || 10000;
       // Net owed = dues − earnings (vendor keeps their share from cash)
-      const netOwed = currentDues - ((vendorDoc.wallet.earnings || 0) + vendorEarning);
+      const netOwed = currentDues - (((vendorDoc.wallet.credits * 10) || 0) + vendorEarning);
       const isBlocked = netOwed > cashLimit;
 
       const updateQuery = {
         $inc: {
           'wallet.dues': grandTotal,
-          'wallet.earnings': vendorEarning,
+          'wallet.credits': vendorEarning / 10,
           'wallet.totalCashCollected': grandTotal
         }
       };

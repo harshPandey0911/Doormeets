@@ -106,7 +106,7 @@ const Wallet = () => {
 
       if (analyticsRes?.success) {
         const rawChartData = analyticsRes.data.chartData || [];
-        const maxCredits = Math.max(...rawChartData.map(d => Math.floor(d.amount / 10)), 1);
+        const maxCredits = Math.max(...rawChartData.map(d => d.amount / 10), 1);
         
         const last7Days = [];
         for (let i = 6; i >= 0; i--) {
@@ -121,7 +121,7 @@ const Wallet = () => {
           
           const found = rawChartData.find(item => item.date === dateStr);
           const amountInRupees = found ? found.amount : 0;
-          const credits = Math.floor(amountInRupees / 10);
+          const credits = amountInRupees / 10;
           const dayInitial = d.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
           
           last7Days.push({
@@ -156,8 +156,9 @@ const Wallet = () => {
     return <LogoLoader />;
   }
 
-  // Display value for credits (fallback to earnings / 10 if credits not yet initialized)
-  const displayCredits = wallet.credits !== undefined && wallet.credits !== null ? wallet.credits : (wallet.earnings ? Math.floor(wallet.earnings / 10) : 0);
+  // Display value for credits (exact decimal without rounding error)
+  const rawCredits = wallet.credits !== undefined && wallet.credits !== null ? wallet.credits : (wallet.earnings ? (wallet.earnings / 10) : 0);
+  const displayCredits = Number.isInteger(rawCredits) ? rawCredits : parseFloat(rawCredits).toFixed(2);
 
   const getTransactionIcon = (txn) => {
     const isIncentive = txn.type === 'credit';
@@ -232,7 +233,7 @@ const Wallet = () => {
               <p className="text-gray-500 text-sm">Last 7 Days</p>
             </div>
             <div className="text-right">
-              <h2 className="text-2xl font-black text-gray-900">{Math.floor(displayCredits + (wallet.totalCashCollected / 10)).toLocaleString()} <span className="text-sm font-bold text-gray-500">Credits</span></h2>
+              <h2 className="text-2xl font-black text-gray-900">{(displayCredits + (wallet.totalCashCollected / 10)).toLocaleString()} <span className="text-sm font-bold text-gray-500">Credits</span></h2>
             </div>
           </div>
 
@@ -256,14 +257,10 @@ const Wallet = () => {
           </div>
         </div>
 
-        {/* Credits History / Balance */}
-        <div 
-          onClick={() => navigate('/vendor/wallet/credit-history')}
-          className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg text-white cursor-pointer hover:shadow-xl transition-all relative overflow-hidden"
-        >
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
           
-          <div className="flex justify-between items-center relative z-10">
+          <div className="flex justify-between items-start relative z-10">
             <div>
               <p className="text-blue-100 font-semibold mb-1 text-sm uppercase tracking-wider">Credits Balance</p>
               <div className="flex items-baseline gap-1">
@@ -273,10 +270,27 @@ const Wallet = () => {
               <p className="text-xs text-blue-200 mt-1">1 Credit = ₹10</p>
             </div>
             
-            <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm">
+            <div 
+              onClick={() => navigate('/vendor/wallet/credit-history')}
+              className="bg-white/20 p-3 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition"
+              title="View Credit History"
+            >
               <FiArrowRight className="w-6 h-6 text-white" />
             </div>
           </div>
+          
+          {rawCredits > 0 ? (
+            <button
+              onClick={() => navigate('/vendor/wallet/withdraw')}
+              className="mt-6 w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white py-2.5 rounded-lg font-bold text-sm transition-colors shadow-sm backdrop-blur-sm"
+            >
+              Withdraw Funds
+            </button>
+          ) : (
+            <div className="mt-6 text-blue-100 text-[11px] font-semibold text-center border-t border-white/20 pt-2">
+              Complete online jobs to earn withdrawable credits!
+            </div>
+          )}
         </div>
 
         {/* Amount Due to Admin (COD) */}
@@ -289,7 +303,10 @@ const Wallet = () => {
             <div className="flex justify-between items-center mb-3">
               <div>
                 <p className="text-xs text-red-600 font-semibold uppercase">Total Dues (COD)</p>
-                <h3 className="text-2xl font-black text-red-700">₹{wallet.dues.toLocaleString()}</h3>
+                <div className="flex items-baseline gap-1">
+                  <h3 className="text-2xl font-black text-red-700">{wallet.dues / 10}</h3>
+                  <span className="text-sm font-bold text-red-600">Credits</span>
+                </div>
               </div>
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
                 <FiArrowDown className="w-5 h-5 text-red-600" />
@@ -312,39 +329,6 @@ const Wallet = () => {
           </div>
         </div>
 
-        {/* Available Earnings */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-emerald-100">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-gray-800 font-bold text-lg">Available Earnings</h2>
-          </div>
-          
-          <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                <p className="text-xs text-emerald-600 font-semibold uppercase">Withdrawable Balance</p>
-                <h3 className="text-2xl font-black text-emerald-700">
-                  {Math.floor((wallet.earnings || 0) / 10).toLocaleString()} <span className="text-sm font-bold opacity-80">Credits</span>
-                </h3>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <FiDollarSign className="w-5 h-5 text-emerald-600" />
-              </div>
-            </div>
-            
-            {wallet.earnings > 0 ? (
-              <button
-                onClick={() => navigate('/vendor/wallet/withdraw')}
-                className="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm"
-              >
-                Withdraw Funds
-              </button>
-            ) : (
-              <div className="text-emerald-600 text-[11px] font-semibold text-center border-t border-emerald-100/50 pt-2 mt-1">
-                Complete online jobs to earn withdrawable funds!
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Filter Buttons */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -432,7 +416,7 @@ const Wallet = () => {
                             ? 'text-red-600'
                             : 'text-green-600'
                             }`}>
-                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}{Math.floor(Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-xs">Credits</span>
+                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}{(Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-xs">Credits</span>
                           </p>
                         </div>
 

@@ -60,7 +60,7 @@ const WithdrawalRequest = () => {
         getWithdrawalHistory(),
         vendorDashboardService.getDashboardStats()
       ]);
-      setWallet({ available: walletRes.earnings || 0 });
+      setWallet({ available: walletRes.credits || 0 });
       setHistory(historyRes || []);
       
       if (statsRes.success) {
@@ -96,9 +96,9 @@ const WithdrawalRequest = () => {
 
     const numAmount = parseInt(numValue) || 0;
     if (numAmount > wallet.available) {
-      setError('Amount cannot exceed available earnings');
-    } else if (numAmount < 100 && numValue !== '') {
-      setError('Minimum withdrawal amount is ₹100');
+      setError('Amount cannot exceed available credits');
+    } else if (numAmount < 10 && numValue !== '') {
+      setError('Minimum withdrawal amount is 10 Credits (₹100)');
     }
   };
 
@@ -148,7 +148,7 @@ const WithdrawalRequest = () => {
     try {
       setLoading(true);
       await requestWithdrawal({
-        amount: numAmount,
+        amount: numAmount * 10,
         bankDetails: bankAccount
       });
       toast.success('Request sent successfully!');
@@ -165,7 +165,8 @@ const WithdrawalRequest = () => {
   const commissionRate = vendorStats.commissionRate;
   const platformFeeRate = vendorStats.platformFeeRate;
 
-  const grossAmount = parseInt(amount) || 0;
+  const creditAmount = parseInt(amount) || 0;
+  const grossAmount = creditAmount * 10;
   const tdsAmount = Math.round(grossAmount * (tdsRate / 100));
   const netAmount = grossAmount - tdsAmount;
 
@@ -180,10 +181,10 @@ const WithdrawalRequest = () => {
           <div className="relative z-10 text-white flex flex-col items-center">
             <span className="text-white/80 text-[11px] font-bold uppercase tracking-[0.2em] mb-1">Total Redeemable</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-white/90">₹</span>
               <span className="text-5xl font-black text-white tracking-tight">
                 {wallet.available.toLocaleString()}
               </span>
+              <span className="text-2xl font-black text-white/90 ml-1">Credits</span>
             </div>
             <div className="mt-4 flex gap-2">
               <div className="px-3 py-1 bg-white/20 text-white rounded-full text-[10px] font-bold border border-white/30 flex items-center gap-1 backdrop-blur-sm">
@@ -216,13 +217,12 @@ const WithdrawalRequest = () => {
           </div>
 
           <div className="relative mb-4 group-focus-within:scale-[1.02] transition-transform duration-300">
-            <div className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 font-bold text-3xl">₹</div>
             <input
               type="text"
               value={amount}
               onChange={(e) => handleAmountChange(e.target.value)}
-              placeholder="0"
-              className={`w-full pl-10 pr-4 py-5 bg-white rounded-2xl border-2 border-dashed ${error ? 'border-red-300 bg-red-50 text-red-500' : 'border-emerald-300 focus:border-emerald-500'
+              placeholder="0 Credits"
+              className={`w-full px-4 py-5 bg-white rounded-2xl border-2 border-dashed ${error ? 'border-red-300 bg-red-50 text-red-500' : 'border-emerald-300 focus:border-emerald-500'
                 } text-4xl font-black text-center focus:outline-none transition-all shadow-sm focus:shadow-emerald-100/50 focus:shadow-lg text-gray-900 caret-emerald-500 placeholder:text-gray-200`}
             />
           </div>
@@ -448,7 +448,7 @@ const WithdrawalRequest = () => {
                       <FiClock className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="font-black text-sm text-gray-800">₹{item.amount.toLocaleString()}</p>
+                      <p className="font-black text-sm text-gray-800">{(item.amount / 10).toLocaleString()} Credits</p>
                       <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
                         {new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                       </p>

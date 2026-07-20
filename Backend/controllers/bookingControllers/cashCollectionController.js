@@ -419,7 +419,7 @@ exports.confirmCashCollection = async (req, res) => {
       const walletUpdate = {
         $inc: {
           'wallet.dues': grandTotal,
-          'wallet.earnings': vendorEarning,
+          'wallet.credits': vendorEarning / 10,
           'wallet.totalCashCollected': grandTotal
         }
       };
@@ -663,7 +663,7 @@ exports.verifyOnlinePayment = async (req, res) => {
         const vendorId = booking.vendorId;
         const Vendor = require('../../models/Vendor');
         await Vendor.findByIdAndUpdate(vendorId, {
-          $inc: { 'wallet.earnings': vendorEarning }
+          $inc: { 'wallet.credits': vendorEarning / 10 }
         });
         await Vendor.updateWorkStatus(vendorId);
 
@@ -842,7 +842,7 @@ exports.confirmManualOnlinePayment = async (req, res) => {
 
     const vendorId = booking.vendorId;
     await Vendor.findByIdAndUpdate(vendorId, {
-      $inc: { 'wallet.earnings': vendorEarning }
+      $inc: { 'wallet.credits': vendorEarning / 10 }
     });
     await Vendor.updateWorkStatus(vendorId);
 

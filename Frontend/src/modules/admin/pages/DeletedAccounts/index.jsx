@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUsers, FiUser, FiTruck, FiSmile, FiSearch, FiCalendar, FiClock, FiDollarSign, FiEye, FiX, FiActivity, FiTag, FiTrendingUp } from 'react-icons/fi';
+import { FiUsers, FiUser, FiTruck, FiSmile, FiSearch, FiCalendar, FiClock, FiDollarSign, FiEye, FiX, FiActivity, FiTag, FiTrendingUp, FiTrash2 } from 'react-icons/fi';
 import api from '../../../../services/api';
 import { toast } from 'react-hot-toast';
 
@@ -56,6 +56,31 @@ const DeletedAccountsDashboard = () => {
       toast.error('Error loading account history.');
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const handlePermanentDelete = async (tabName, id, name) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    let role = tabName;
+    if (tabName === 'users') role = 'user';
+    if (tabName === 'vendors') role = 'vendor';
+    if (tabName === 'workers') role = 'worker';
+    if (tabName === 'shopOwners') role = 'shopOwner';
+
+    try {
+      const response = await api.delete(`/admin/deleted-accounts/${role}/${id}`);
+      if (response.data.success) {
+        toast.success(response.data.message || 'Account permanently deleted');
+        fetchData(); // Refresh the list
+      } else {
+        toast.error(response.data.message || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Error permanently deleting account');
     }
   };
 
@@ -171,13 +196,22 @@ const DeletedAccountsDashboard = () => {
                   {account.businessName && <p><strong>Business:</strong> {account.businessName}</p>}
                 </div>
 
-                <button
-                  onClick={() => handleViewHistory(activeTab, account._id)}
-                  className="w-full py-2.5 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 border border-gray-100 hover:border-red-100 transition-all active:scale-[0.98]"
-                >
-                  <FiEye className="w-3.5 h-3.5" />
-                  Inspect History & Details
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleViewHistory(activeTab, account._id)}
+                    className="flex-1 py-2.5 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 border border-gray-100 hover:border-red-100 transition-all active:scale-[0.98]"
+                  >
+                    <FiEye className="w-3.5 h-3.5" />
+                    Inspect Details
+                  </button>
+                  <button
+                    onClick={() => handlePermanentDelete(activeTab, account._id, account.name)}
+                    className="px-3 py-2.5 bg-gray-50 hover:bg-red-600 text-gray-700 hover:text-white font-semibold rounded-xl text-xs flex items-center justify-center border border-gray-100 hover:border-red-600 transition-all active:scale-[0.98]"
+                    title="Permanently Delete"
+                  >
+                    <FiTrash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}

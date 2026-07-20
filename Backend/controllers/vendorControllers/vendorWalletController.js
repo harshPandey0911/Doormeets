@@ -25,7 +25,7 @@ const getWallet = async (req, res) => {
     }
 
     const dues = vendor.wallet?.dues || 0;
-    const earnings = vendor.wallet?.earnings || 0;
+    const earnings = (vendor.wallet?.credits * 10) || 0;
     const totalWithdrawn = vendor.wallet?.totalWithdrawn || 0;
 
     // Get pending settlements count
@@ -196,14 +196,14 @@ const recordCashCollection = async (req, res) => {
 
     // Atomic wallet update
     const currentDues = (vendor.wallet.dues || 0) + grandTotal;
-    const currentEarnings = (vendor.wallet.earnings || 0) + vendorEarning;
+    const currentEarnings = ((vendor.wallet.credits * 10) || 0) + vendorEarning;
     const cashLimit = vendor.wallet.cashLimit || 10000;
     const netOwed = currentDues - currentEarnings;
 
     const updateQuery = {
       $inc: {
         'wallet.dues': grandTotal,
-        'wallet.earnings': vendorEarning,
+        'wallet.credits': vendorEarning / 10,
         'wallet.totalCashCollected': grandTotal
       }
     };
@@ -440,7 +440,7 @@ const requestWithdrawal = async (req, res) => {
     const vendor = await Vendor.findById(vendorId);
     if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
 
-    const currentEarnings = vendor.wallet?.earnings || 0;
+    const currentEarnings = (vendor.wallet?.credits * 10) || 0;
 
     // Check pending withdrawals?
     const pendingWithdrawals = await Withdrawal.aggregate([
@@ -611,7 +611,7 @@ const getWalletSummary = async (req, res) => {
       success: true,
       data: {
         dues: vendor.wallet?.dues || 0,
-        earnings: vendor.wallet?.earnings || 0,
+        earnings: (vendor.wallet?.credits * 10) || 0,
         amountDue: vendor.wallet?.dues || 0,
         today: {
           amount: todayCollections[0]?.total || 0,
