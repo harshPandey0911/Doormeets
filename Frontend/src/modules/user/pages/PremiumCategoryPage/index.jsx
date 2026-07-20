@@ -748,7 +748,7 @@ const PremiumCategoryPage = () => {
                     className="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-full"
                   >
                     {/* Image Card */}
-                    <div className="w-full aspect-square rounded-2xl overflow-hidden relative shadow-sm border border-gray-150 dark:border-zinc-800/80 group-hover:scale-[1.02] transition-transform duration-200">
+                    <div className="w-full aspect-square rounded-md overflow-hidden relative shadow-sm group-hover:scale-[1.02] transition-transform duration-200">
                       <img src={subImage} alt={sub.title} className="w-full h-full object-cover" />
                     </div>
                     {/* Title Text Below Image */}
@@ -845,7 +845,7 @@ const PremiumCategoryPage = () => {
               };
 
               return (
-                <div key={comboItem.id || comboIdx} className="p-3.5 border rounded-[20px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                <div key={comboItem.id || comboIdx} className="p-3.5 border rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                   {/* Discount tag badge */}
                   <div className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
                     <span>🏷️</span>
@@ -1024,7 +1024,7 @@ const PremiumCategoryPage = () => {
           {/* Sticky Select a Service Box (Sticks right below fixed navbar) */}
           <div 
             ref={boxRef}
-            className="border rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
+            className="border rounded-md p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
             style={{ position: 'sticky', top: '88px', zIndex: 20, backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
           >
             <div className="flex items-center gap-3 mb-6">
@@ -1047,12 +1047,11 @@ const PremiumCategoryPage = () => {
                     className="flex flex-col items-center group cursor-pointer focus:outline-none"
                   >
                     <div 
-                      className={`w-[72px] h-[72px] rounded-[18px] overflow-hidden flex items-center justify-center transition-all duration-200 ${
+                      className={`w-[72px] h-[72px] rounded-md overflow-hidden flex items-center justify-center transition-all duration-200 ${
                         isActive 
                           ? 'ring-2 ring-slate-300 dark:ring-zinc-700 scale-105 shadow-md' 
-                          : 'border group-hover:shadow-sm active:scale-95'
+                          : 'group-hover:shadow-sm active:scale-95'
                       }`}
-                      style={!isActive ? { borderColor: 'var(--border)' } : {}}
                     >
                       <img src={subImage} alt={sub.title} className="w-full h-full object-cover" />
                     </div>
@@ -1077,7 +1076,7 @@ const PremiumCategoryPage = () => {
         <div className="col-span-8 flex flex-col gap-6 self-stretch">
           {/* Banner/Hero Image */}
           <div 
-            className="w-full rounded-2xl overflow-hidden shadow-sm"
+            className="w-full rounded-md overflow-hidden shadow-sm"
             style={{ height: `${titleHeight + boxHeight + 24}px` }}
           >
             <img
@@ -1671,7 +1670,7 @@ const PremiumCategoryPage = () => {
               onClick={() => setEditingPackage(null)}
             >
               <div 
-                className="w-full max-w-md rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl space-y-6 relative overflow-hidden border"
+                className="w-full max-w-md rounded-t-md md:rounded-md p-6 shadow-2xl space-y-6 relative overflow-hidden border"
                 style={{
                   backgroundColor: 'var(--background)',
                   borderColor: 'var(--border)'
@@ -1700,7 +1699,7 @@ const PremiumCategoryPage = () => {
                 </div>
 
                 {/* Groups list */}
-                <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-1">
+                <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide">
                   {editingPackage.parentService?.serviceGroups?.map((group) => {
                     const selectedId = customizedOptions[group._id || group.id];
                     return (
@@ -1716,7 +1715,7 @@ const PremiumCategoryPage = () => {
                             return (
                               <label
                                 key={item._id || item.id}
-                                className="flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer select-none"
+                                className="flex items-center justify-between p-3.5 rounded-md border transition-all cursor-pointer select-none"
                                 style={{
                                   backgroundColor: isSelected ? 'rgba(179, 58, 53, 0.03)' : 'var(--card-bg)',
                                   borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
@@ -1748,7 +1747,7 @@ const PremiumCategoryPage = () => {
 
                           {/* Exclude / Skip Option */}
                           <label
-                            className="flex items-center gap-3 p-3.5 rounded-2xl border border-dashed transition-all cursor-pointer select-none"
+                            className="flex items-center gap-3 p-3.5 rounded-md border border-dashed transition-all cursor-pointer select-none"
                             style={{
                               backgroundColor: selectedId === 'skip' ? 'rgba(239, 68, 68, 0.05)' : 'transparent',
                               borderColor: selectedId === 'skip' ? '#ef4444' : 'var(--border)',
@@ -1780,7 +1779,7 @@ const PremiumCategoryPage = () => {
                 <button
                   type="button"
                   onClick={handleSaveCustomizedPackage}
-                  className="w-full py-3.5 rounded-2xl font-bold text-white text-xs shadow-lg transition-transform hover:scale-[1.01]"
+                  className="w-full py-3.5 rounded-md font-bold text-white text-xs shadow-lg transition-transform hover:scale-[1.01]"
                   style={{ backgroundColor: '#B33A35' }}
                 >
                   Done Customize

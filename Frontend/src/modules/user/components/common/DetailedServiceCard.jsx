@@ -66,7 +66,7 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
       className="w-[110px] min-w-[110px] md:w-[calc((100%-4rem)/5)] md:min-w-[calc((100%-4rem)/5)] flex flex-col cursor-pointer group transition-all duration-300"
       onClick={onClick}
     >
-      <div className="w-full aspect-square rounded-[20px] bg-gray-50 overflow-hidden relative mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+      <div className="w-full aspect-square rounded-md bg-gray-50 overflow-hidden relative mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
         {discount && isPriceDisclosed && (
           <div className="absolute top-2 left-2 bg-green-600 text-white text-[9px] font-bold rounded-md px-1.5 py-0.5 z-10">
             {discount.toString().toUpperCase().includes('OFF') ? discount : `${discount}% OFF`}

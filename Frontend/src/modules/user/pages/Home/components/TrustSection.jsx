@@ -26,11 +26,11 @@ const TrustSection = ({ items = [] }) => {
                 delay: index * 0.08 
               }}
               onClick={() => hasLongDescription && setSelectedItem(item)}
-              className={`group flex flex-col items-center text-center gap-1 md:gap-4 py-3 px-2 md:p-6 rounded-[18px] md:rounded-[24px] border shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.035)] transition-shadow duration-300 w-[210px] shrink-0 md:w-full md:shrink md:h-full ${hasLongDescription ? 'cursor-pointer' : ''}`}
+              className={`group flex flex-col items-center text-center gap-1 md:gap-4 py-3 px-2 md:p-6 rounded-md md:rounded-lg border shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.035)] transition-shadow duration-300 w-[210px] shrink-0 md:w-full md:shrink md:h-full ${hasLongDescription ? 'cursor-pointer' : ''}`}
               style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
             >
               <div 
-                className="w-9 h-9 md:w-11 md:h-11 shrink-0 flex items-center justify-center rounded-xl md:rounded-2xl text-sm md:text-lg font-bold transition-transform duration-300 group-hover:scale-110"
+                className="w-9 h-9 md:w-11 md:h-11 shrink-0 flex items-center justify-center rounded-[4px] md:rounded-md text-sm md:text-lg font-bold transition-transform duration-300 group-hover:scale-110"
                 style={{ 
                   background: `linear-gradient(135deg, ${item.color ? `${item.color}18` : 'rgba(79, 70, 229, 0.1)'}, ${item.color ? `${item.color}05` : 'rgba(79, 70, 229, 0.02)'})`,
                   color: item.color || '#4f46e5',

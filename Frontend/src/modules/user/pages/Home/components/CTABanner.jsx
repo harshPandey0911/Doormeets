@@ -24,7 +24,7 @@ const CTABanner = ({ ctaBanner, onNavigate }) => {
     >
       <div
         onClick={handleBannerClick}
-        className="w-full min-h-[220px] md:min-h-[280px] rounded-[24px] relative overflow-hidden shadow-lg flex flex-col justify-end p-6 md:p-10 cursor-pointer group transition-all duration-300 hover:shadow-xl bg-black"
+        className="w-full min-h-[220px] md:min-h-[280px] rounded-md relative overflow-hidden shadow-lg flex flex-col justify-end p-6 md:p-10 cursor-pointer group transition-all duration-300 hover:shadow-xl bg-black"
         style={
           hasBgImage
             ? {
@@ -68,7 +68,7 @@ const CTABanner = ({ ctaBanner, onNavigate }) => {
 
           {/* Button */}
           {ctaBanner.buttonText && (
-            <button className="px-6 py-2.5 md:px-7 md:py-3 bg-white text-black text-[13px] md:text-sm font-extrabold rounded-[12px] shadow-md hover:scale-[1.02] active:scale-95 transition-all">
+            <button className="px-6 py-2.5 md:px-7 md:py-3 bg-white text-black text-[13px] md:text-sm font-extrabold rounded-md shadow-md hover:scale-[1.02] active:scale-95 transition-all">
               {ctaBanner.buttonText}
             </button>
           )}

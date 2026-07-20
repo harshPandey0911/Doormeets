@@ -115,7 +115,7 @@ const BottomNav = React.memo(() => {
           paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 24px))',
         }}
       >
-        <div ref={navRef} className="flex items-center justify-between max-w-md mx-auto relative gap-1.5">
+        <div ref={navRef} className="flex items-center justify-between w-full max-w-md mx-auto relative px-2">
           {navItems.map((item) => {
             const IconComponent = activeTab === item.id ? item.filledIcon : item.icon;
             const isActive = activeTab === item.id;

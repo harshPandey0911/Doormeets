@@ -11,7 +11,7 @@ const BottomCheckoutBar = ({ total, originalTotal, buttonText = 'Checkout', onCl
       }}
     >
       <div 
-        className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_8px_24px_rgba(17,24,39,0.06)]"
+        className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-md border px-3.5 py-2 shadow-[0_8px_24px_rgba(17,24,39,0.06)]"
         style={{
           backgroundColor: 'var(--card-bg)',
           borderColor: 'var(--border)'
@@ -30,7 +30,7 @@ const BottomCheckoutBar = ({ total, originalTotal, buttonText = 'Checkout', onCl
         <button 
           type="button" 
           onClick={onClick} 
-          className="rounded-xl px-4 py-2 text-xs font-bold shadow-md transition-transform hover:scale-[1.02] text-white"
+          className="rounded-md px-4 py-2 text-xs font-bold shadow-md transition-transform hover:scale-[1.02] text-white"
           style={{
             backgroundColor: 'var(--primary)'
           }}

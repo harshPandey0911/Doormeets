@@ -1188,7 +1188,7 @@ const PremiumServiceDetailPage = () => {
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
-                    className="relative rounded-xl overflow-hidden cursor-pointer select-none transition-all duration-200 hover:scale-[1.04] hover:shadow-md"
+                    className="relative rounded-md overflow-hidden cursor-pointer select-none transition-all duration-200 hover:scale-[1.04] hover:shadow-md"
                     style={{ minHeight: '76px', borderColor: 'var(--border)', border: '1px solid var(--border)' }}
                   >
                     <img
@@ -1207,14 +1207,14 @@ const PremiumServiceDetailPage = () => {
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
-                    className="flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all duration-200 hover:scale-[1.04] hover:shadow-md cursor-pointer select-none"
+                    className="flex flex-col items-center justify-center p-2 rounded-md border text-center transition-all duration-200 hover:scale-[1.04] hover:shadow-md cursor-pointer select-none"
                     style={{
                       backgroundColor: colors.bg,
                       borderColor: colors.border,
                       minHeight: '76px'
                     }}
                   >
-                    <div className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center mb-1 shadow-sm shrink-0">
+                    <div className="w-7 h-7 rounded-[4px] bg-white/90 flex items-center justify-center mb-1 shadow-sm shrink-0">
                       <span className="text-xs font-black" style={{ color: colors.text }}>
                         {group.title ? group.title[0].toUpperCase() : 'S'}
                       </span>
@@ -2096,7 +2096,7 @@ const PremiumServiceDetailPage = () => {
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
-                    className="flex items-center gap-4 rounded-2xl border transition-all duration-200 hover:scale-[1.02] cursor-pointer select-none overflow-hidden min-w-[220px]"
+                    className="flex items-center gap-4 rounded-md border transition-all duration-200 hover:scale-[1.02] cursor-pointer select-none overflow-hidden min-w-[220px]"
                     style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                   >
                     {group.iconUrl ? (
@@ -2104,7 +2104,7 @@ const PremiumServiceDetailPage = () => {
                         <img src={toAssetUrl(group.iconUrl)} alt={group.title} className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm shrink-0 ml-4" style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)' }}>
+                      <div className="w-10 h-10 rounded-md flex items-center justify-center shadow-sm shrink-0 ml-4" style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)' }}>
                         <span className="text-sm font-black" style={{ color: '#B33A35' }}>
                           {group.title ? group.title[0].toUpperCase() : 'S'}
                         </span>
@@ -2306,7 +2306,7 @@ const PremiumServiceDetailPage = () => {
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                className="w-full max-w-md md:max-w-lg rounded-t-[32px] md:rounded-[32px] p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto"
+                className="w-full max-w-md md:max-w-lg rounded-t-md md:rounded-md p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto"
                 style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
               >
                 <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
@@ -2332,7 +2332,7 @@ const PremiumServiceDetailPage = () => {
                         /* Image Card Layout */
                         <div
                           key={item._id}
-                          className="rounded-2xl border overflow-hidden flex transition-all select-none h-[90px] md:h-[110px]"
+                          className="rounded-md border overflow-hidden flex transition-all select-none h-[90px] md:h-[110px]"
                           style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                         >
                           {/* Left Image */}
@@ -2365,7 +2365,7 @@ const PremiumServiceDetailPage = () => {
                               ) : (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }}
-                                  className="text-[9px] md:text-[10px] font-bold px-3 md:px-4 py-1 md:py-1.5 rounded-full border transition-colors cursor-pointer"
+                                  className="text-[9px] md:text-[10px] font-bold px-3 md:px-4 py-1 md:py-1.5 rounded-[4px] border transition-colors cursor-pointer"
                                   style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35', borderColor: 'rgba(179, 58, 53, 0.2)' }}
                                 >
                                   Add +
@@ -2378,7 +2378,7 @@ const PremiumServiceDetailPage = () => {
                         /* Default Text Card Layout (no image) */
                         <div
                           key={item._id}
-                          className="p-4 rounded-2xl border flex justify-between items-start gap-4 transition-all select-none"
+                          className="p-4 rounded-md border flex justify-between items-start gap-4 transition-all select-none"
                           style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                         >
                           <div className="space-y-1 min-w-0 flex-1">
@@ -2405,7 +2405,7 @@ const PremiumServiceDetailPage = () => {
                             ) : (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }}
-                                className="text-[10px] font-bold px-4 py-1.5 rounded-full border transition-colors cursor-pointer"
+                                className="text-[10px] font-bold px-4 py-1.5 rounded-[4px] border transition-colors cursor-pointer"
                                 style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35', borderColor: 'rgba(179, 58, 53, 0.2)' }}
                               >
                                 Add +
