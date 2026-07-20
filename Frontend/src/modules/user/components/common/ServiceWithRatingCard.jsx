@@ -18,9 +18,9 @@ const ServiceWithRatingCard = memo(({
     : price || 'Contact for price';
 
   const cardContent = (
-    <div className="w-full h-full flex flex-col border rounded-[20px] p-3 shadow-[0_4px_12px_rgba(0,0,0,0.03)] group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+    <div className="w-full h-full flex flex-col border rounded-md p-3 shadow-[0_4px_12px_rgba(0,0,0,0.03)] group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
       {/* Image container */}
-      <div className="w-full aspect-[4/3] rounded-[12px] bg-gray-50 overflow-hidden relative mb-3">
+      <div className="w-full aspect-[4/3] rounded-[4px] bg-gray-50 overflow-hidden relative mb-3">
         {discount && (
           <div className="absolute top-2 left-2 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10">
             {discount.toString().toUpperCase().includes('OFF') ? discount : `${discount}% OFF`}

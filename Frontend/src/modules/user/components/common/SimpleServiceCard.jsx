@@ -7,7 +7,7 @@ const SimpleServiceCard = memo(({ image, title, onClick }) => {
       className="w-[110px] min-w-[110px] cursor-pointer flex flex-col group transition-all duration-300 active:scale-95"
       onClick={onClick}
     >
-      <div className="w-full aspect-square rounded-[20px] bg-gray-100 overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200">
+      <div className="w-full aspect-square rounded-md bg-gray-100 overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200">
         {image ? (
           <img
             src={optimizeCloudinaryUrl(image, { width: 320, quality: 'auto' })}

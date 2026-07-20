@@ -5,7 +5,7 @@ import { themeColors } from '../../../../theme';
 const ServiceCardWithAdd = memo(({ image, title, rating, reviews, price, onAddClick, onClick }) => {
   return (
     <div
-      className="min-w-[200px] bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 active:scale-95"
+      className="min-w-[200px] bg-white rounded-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 active:scale-95"
       style={{
         boxShadow: themeColors.cardShadow,
         border: themeColors.cardBorder

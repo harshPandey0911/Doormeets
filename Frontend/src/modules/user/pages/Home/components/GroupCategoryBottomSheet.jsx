@@ -80,7 +80,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
       >
       <div
         ref={sheetRef}
-        className="rounded-3xl shadow-2xl w-full max-w-xl transition-all duration-300"
+        className="rounded-md shadow-2xl w-full max-w-xl transition-all duration-300"
         style={{
           backgroundColor: 'var(--background, #ffffff)',
           transform: isOpen ? 'scale(1)' : 'scale(0.92)',
@@ -97,7 +97,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
           <div className="flex items-center gap-3">
             {category.icon && (
               <div
-                className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border"
+                className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0 border"
                 style={{ borderColor: 'var(--border, #E5E7EB)' }}
               >
                 <DynamicIcon
@@ -166,7 +166,7 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
                   >
                     {/* Card Image/Icon container */}
                     <div 
-                      className="w-full aspect-square rounded-2xl overflow-hidden relative shadow-sm border border-gray-100 dark:border-zinc-800/80 group-hover:scale-[1.02] transition-transform duration-200 flex items-center justify-center"
+                      className="w-full aspect-square rounded-md overflow-hidden relative shadow-sm border border-gray-100 dark:border-zinc-800/80 group-hover:scale-[1.02] transition-transform duration-200 flex items-center justify-center"
                       style={{
                         backgroundColor: mc.icon ? 'transparent' : color.bg,
                         borderColor: mc.icon ? 'var(--border, #E5E7EB)' : color.border,

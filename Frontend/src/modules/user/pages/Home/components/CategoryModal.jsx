@@ -127,7 +127,7 @@ const SubCategoryCard = ({ subCategory, onClick }) => (
     onClick={() => onClick(subCategory)}
     className="group flex flex-col items-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
   >
-    <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center mb-1.5 overflow-hidden relative group-hover:border-[#9634f7] group-hover:shadow-md transition-all">
+    <div className="w-14 h-14 rounded-md bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center mb-1.5 overflow-hidden relative group-hover:border-[#9634f7] group-hover:shadow-md transition-all">
       <div className="absolute inset-0 bg-gradient-to-tr from-[#9634f7] to-[#1fd8d1] opacity-0 group-hover:opacity-10 transition-opacity" />
       {subCategory.iconUrl ? (
         <img src={toAssetUrl(subCategory.iconUrl)} alt={subCategory.title} className="w-full h-full object-cover" />
@@ -148,7 +148,7 @@ const BrandCard = ({ brand, onClick, onInfoClick }) => (
     onClick={() => onClick(brand)}
     className="flex flex-col items-center cursor-pointer group active:scale-95 transition-all relative"
   >
-    <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-1.5 group-hover:bg-gray-100 transition-colors shadow-sm overflow-hidden border border-gray-100 relative">
+    <div className="w-14 h-14 bg-gray-50 rounded-md flex items-center justify-center mb-1.5 group-hover:bg-gray-100 transition-colors shadow-sm overflow-hidden border border-gray-100 relative">
       {brand.icon ? (
         <img
           src={toAssetUrl(brand.icon)}
@@ -467,7 +467,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
               }}
             >
               <div
-                className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl"
+                className="bg-white rounded-md w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 {isRedirecting ? (
@@ -476,7 +476,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6"
+                      className="w-20 h-20 bg-green-50 rounded-md flex items-center justify-center mb-6"
                     >
                       <FiCheck className="w-10 h-10 text-green-500" />
                     </motion.div>
@@ -532,7 +532,7 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 animate-pulse">
                         {[1, 2, 3, 4, 5, 6].map((i) => (
                           <div key={i} className="flex flex-col items-center">
-                            <div className="w-20 h-20 bg-gray-200 rounded-2xl mb-2"></div>
+                            <div className="w-20 h-20 bg-gray-200 rounded-md mb-2"></div>
                             <div className="h-3 w-16 bg-gray-200 rounded"></div>
                           </div>
                         ))}
