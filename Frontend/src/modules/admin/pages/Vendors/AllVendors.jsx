@@ -344,8 +344,15 @@ const AllVendors = () => {
                       <td className="px-4 py-3">
                         <div>
                           <p className="font-bold text-gray-800 text-xs">{vendor.businessName || 'N/A'}</p>
-                          <p className="text-[10px] text-blue-600 font-medium">
-                            {Array.isArray(vendor.service) ? vendor.service.join(', ') : (vendor.service || 'No service')}
+                          <p 
+                            className="text-[10px] text-blue-600 font-medium mt-0.5 line-clamp-2"
+                            title={Array.isArray(vendor.service) ? vendor.service.join(', ') : vendor.service}
+                          >
+                            {Array.isArray(vendor.service) 
+                              ? (vendor.service.length > 3 
+                                  ? `${vendor.service.slice(0, 3).join(', ')} + ${vendor.service.length - 3} more` 
+                                  : vendor.service.join(', ')) 
+                              : (vendor.service || 'No service')}
                           </p>
                         </div>
                       </td>
