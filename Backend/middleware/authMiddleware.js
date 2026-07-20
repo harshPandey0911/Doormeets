@@ -45,6 +45,9 @@ const authenticate = async (req, res, next) => {
     switch (decoded.role) {
       case USER_ROLES.USER:
         user = await User.findById(decoded.userId).select('-password').lean();
+        if (user && user.isDeleted) {
+          return res.status(401).json({ success: false, message: 'Account has been deleted.' });
+        }
         // SINGLE DEVICE LOGOUT Logic
         if (process.env.NODE_ENV === 'production' && user && user.loginSessionId && decoded.loginSessionId && user.loginSessionId !== decoded.loginSessionId) {
           return res.status(401).json({ success: false, message: 'Account logged in on another device. Please login again.' });
@@ -53,6 +56,12 @@ const authenticate = async (req, res, next) => {
       case USER_ROLES.VENDOR:
       case 'vendor':
         let userDoc = await Vendor.findById(decoded.userId).select('-password');
+        if (userDoc && userDoc.isDeleted) {
+          return res.status(401).json({
+            success: false,
+            message: 'Account has been deleted.'
+          });
+        }
         if (userDoc) {
           const now = new Date();
           const pv = userDoc.policeVerification || {};
@@ -101,6 +110,9 @@ const authenticate = async (req, res, next) => {
         break;
       case USER_ROLES.WORKER:
         user = await require('../models/Worker').findById(decoded.userId).select('-password').lean();
+        if (user && user.isDeleted) {
+          return res.status(401).json({ success: false, message: 'Account has been deleted.' });
+        }
         // SINGLE DEVICE LOGOUT Logic
         if (process.env.NODE_ENV === 'production' && user && user.loginSessionId && decoded.loginSessionId && user.loginSessionId !== decoded.loginSessionId) {
           return res.status(401).json({ success: false, message: 'Account logged in on another device. Please login again.' });
@@ -115,6 +127,9 @@ const authenticate = async (req, res, next) => {
       case USER_ROLES.SHOP_OWNER:
       case 'shop_owner':
         user = await ShopOwner.findById(decoded.userId).select('-password').lean();
+        if (user && user.isDeleted) {
+          return res.status(401).json({ success: false, message: 'Account has been deleted.' });
+        }
         break;
       default:
         console.error('Role mismatch in middleware:', decoded.role);
