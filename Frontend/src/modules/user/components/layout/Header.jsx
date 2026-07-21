@@ -57,13 +57,13 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
         <div className="flex flex-col min-w-0">
           <div
             onClick={onLocationClick}
-            className="flex items-center gap-1 cursor-pointer select-none text-[13px] transition-colors capitalize font-normal"
+            className="flex items-center gap-1 cursor-pointer select-none text-[11px] md:text-xs transition-colors capitalize font-medium opacity-90"
             style={{ color: 'var(--text-secondary)' }}
           >
             <span>{displayLocation}</span>
             <svg
               style={{ color: 'var(--text-muted)' }}
-              className="w-3.5 h-3.5"
+              className="w-3 h-3"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -73,10 +73,10 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             </svg>
           </div>
           <h1
-            className="text-[18px] md:text-[21px] font-medium md:font-semibold leading-[1.2] tracking-tight mt-0.5 md:mt-1.5 max-w-[220px] md:max-w-none md:whitespace-nowrap"
+            className="text-[15px] xs:text-[17px] sm:text-lg md:text-[22px] font-bold leading-tight tracking-tight mt-0.5 md:mt-1.5 whitespace-nowrap"
             style={{ color: 'var(--text-primary)' }}
           >
-            What you are looking <br className="block md:hidden" /> for today
+            What you are looking for today
           </h1>
         </div>
 
@@ -86,7 +86,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
         </div>
 
         {/* Right Side: Desktop Nav Menu + Theme Toggle + Notification Bell */}
-        <div className="flex items-center gap-3.5 shrink-0 pt-1">
+        <div className="flex items-center gap-1.5 md:gap-2.5 shrink-0 pt-1">
 
           {/* Desktop Horizontal Menu Bar - hidden on mobile */}
           <nav className="hidden lg:flex items-center gap-1 mr-2">

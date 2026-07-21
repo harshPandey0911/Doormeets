@@ -9,28 +9,27 @@ const TrustSection = ({ items = [] }) => {
 
   return (
     <div className="w-full px-3 md:px-5 mt-2 mb-6">
-      {/* Mobile: horizontal scroll | md+: grid */}
-      <div className="flex md:grid md:grid-cols-4 gap-2.5 md:gap-4 overflow-x-auto md:overflow-visible scrollbar-hide scroll-smooth pb-1 md:pb-0">
+      {/* Single box containing all dynamic items stacked vertically */}
+      <div 
+        className="rounded-md p-4 shadow-sm border space-y-1"
+        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+      >
         {items.map((item, index) => {
-          const hasLongDescription = item.description && item.description.length > 60;
+          const hasLongDescription = item.description && item.description.length > 80;
           return (
             <motion.div
               key={item.id || index}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              whileHover={{ y: -5, scale: 1.01 }}
               transition={{ 
-                type: "spring",
-                stiffness: 300,
-                damping: 20,
-                delay: index * 0.08 
+                duration: 0.3,
+                delay: index * 0.05 
               }}
               onClick={() => hasLongDescription && setSelectedItem(item)}
-              className={`group flex flex-col items-center text-center gap-1 md:gap-4 py-3 px-2 md:p-6 rounded-md md:rounded-lg border shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.035)] transition-shadow duration-300 w-[210px] shrink-0 md:w-full md:shrink md:h-full ${hasLongDescription ? 'cursor-pointer' : ''}`}
-              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+              className={`flex items-start gap-3.5 py-3 first:pt-1 last:pb-1 ${index < items.length - 1 ? 'border-b border-border-color' : ''} ${hasLongDescription ? 'cursor-pointer group' : ''}`}
             >
               <div 
-                className="w-9 h-9 md:w-11 md:h-11 shrink-0 flex items-center justify-center rounded-[4px] md:rounded-md text-sm md:text-lg font-bold transition-transform duration-300 group-hover:scale-110"
+                className="w-10 h-10 shrink-0 flex items-center justify-center rounded-md text-base font-bold mt-0.5"
                 style={{ 
                   background: `linear-gradient(135deg, ${item.color ? `${item.color}18` : 'rgba(79, 70, 229, 0.1)'}, ${item.color ? `${item.color}05` : 'rgba(79, 70, 229, 0.02)'})`,
                   color: item.color || '#4f46e5',
@@ -40,28 +39,24 @@ const TrustSection = ({ items = [] }) => {
                 {item.icon || '✓'}
               </div>
               
-              <div className="flex flex-col items-center min-w-0 w-full flex-1">
-                <span className="text-[11.5px] md:text-[14px] font-extrabold tracking-tight leading-snug" style={{ color: 'var(--text-primary)' }}>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs sm:text-sm font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                   {item.title}
-                </span>
+                </h4>
                 
                 {item.description && (
-                  <div className="flex flex-col items-center mt-1 w-full">
-                    <span className="text-[9.5px] md:text-[11px] leading-relaxed line-clamp-2 md:line-clamp-3 w-full font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {item.description}
-                    </span>
-                    
-                    {hasLongDescription && (
-                      <span
-                        className="inline-flex items-center gap-0.5 text-[#B33A35] dark:text-red-400 text-[9.5px] md:text-[10.5px] font-extrabold mt-1.5 hover:underline transition-all"
-                      >
-                        Read more
-                        <svg className="w-2.5 h-2.5 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-[11px] sm:text-xs leading-relaxed font-medium mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+                    {item.description}
+                  </p>
+                )}
+
+                {hasLongDescription && (
+                  <span className="inline-flex items-center gap-0.5 text-[#B33A35] dark:text-red-400 text-[10px] font-bold mt-1 group-hover:underline">
+                    Read more
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
                 )}
               </div>
             </motion.div>
@@ -79,7 +74,7 @@ const TrustSection = ({ items = [] }) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ type: 'spring', duration: 0.45, bounce: 0.2 }}
-                className="rounded-[32px] p-7 max-w-sm w-full border shadow-2xl relative overflow-hidden"
+                className="rounded-md p-7 max-w-sm w-full border shadow-2xl relative overflow-hidden"
                 style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
               >
                 {/* Top decorative gradient blur */}
@@ -97,7 +92,7 @@ const TrustSection = ({ items = [] }) => {
 
                 <div className="flex flex-col items-center text-center gap-4 mt-2 relative z-10">
                   <div 
-                    className="w-14 h-14 flex items-center justify-center rounded-2xl text-xl font-bold shadow-sm"
+                    className="w-14 h-14 flex items-center justify-center rounded-md text-xl font-bold shadow-sm"
                     style={{ 
                       background: `linear-gradient(135deg, ${selectedItem.color ? `${selectedItem.color}25` : 'rgba(79, 70, 229, 0.15)'}, ${selectedItem.color ? `${selectedItem.color}05` : 'rgba(79, 70, 229, 0.03)'})`,
                       color: selectedItem.color || '#4f46e5',

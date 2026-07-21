@@ -825,7 +825,7 @@ const Home = () => {
           />
         </motion.div>
  
-        <main className="pt-[86px] md:pt-[80px] space-y-6 md:space-y-10 max-w-[1600px] mx-auto w-full px-0 md:px-12">
+        <main className="pt-[66px] md:pt-[80px] space-y-4 md:space-y-10 max-w-[1600px] mx-auto w-full px-0 md:px-12">
           {!isLocationSupported ? (
             <div className="flex flex-col items-center justify-center pt-20 pb-10 px-6 text-center min-h-[60vh]">
               <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
@@ -852,7 +852,7 @@ const Home = () => {
           ) : (
             <>
               {/* Search Bar Section */}
-              <div className="mt-4 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
+              <div className="mt-1.5 px-3 md:px-5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto w-full flex md:hidden items-center">
                 <div className="w-full">
                   <SearchBar onInputClick={() => setIsSearchOpen(true)} />
                 </div>
@@ -1340,7 +1340,7 @@ const Home = () => {
 
       {comingSoonCategory && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-gray-100 flex flex-col items-center text-center">
+          <div className="bg-white rounded-md p-6 max-w-sm w-full shadow-2xl relative border border-gray-100 flex flex-col items-center text-center">
             <button 
               onClick={() => setComingSoonCategory(null)}
               className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1386,7 +1386,7 @@ const Home = () => {
                   toast.error(msg);
                 }
               }}
-              className={`w-full py-3.5 px-6 rounded-2xl font-bold shadow-md transition-all ${
+              className={`w-full py-3.5 px-6 rounded-md font-bold shadow-md transition-all ${
                 comingSoonCategory.isInterested 
                   ? 'bg-green-500 text-white cursor-default shadow-none'
                   : 'bg-[#B33A35] text-white hover:bg-[#9E2E2A] hover:shadow-lg'

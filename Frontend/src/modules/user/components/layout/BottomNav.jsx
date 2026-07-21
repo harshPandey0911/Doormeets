@@ -105,14 +105,14 @@ const BottomNav = React.memo(() => {
       }}
     >
       <div
-        className="w-full pb-6 pt-3 px-4 rounded-t-[24px]"
+        className="w-full pt-2 px-4 rounded-t-[20px]"
         style={{
           background: 'var(--background)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.15)',
           borderTop: '1px solid var(--border)',
-          paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 24px))',
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
         }}
       >
         <div ref={navRef} className="flex items-center justify-between w-full max-w-md mx-auto relative px-2">
