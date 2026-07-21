@@ -83,9 +83,9 @@ const CuratedServices = React.memo(({ services, onServiceClick, title, subtitle 
   }
 
   return (
-    <div ref={sectionRef} className="">
+    <div ref={sectionRef} className="mt-0.5 mb-3 md:mt-2 md:mb-6 px-3 md:px-5 w-full">
       {/* Title Section */}
-      <div ref={titleRef} className="px-4 mb-5" style={{ opacity: 1 }}>
+      <div ref={titleRef} className="px-0 mb-2.5 md:mb-4" style={{ opacity: 1 }}>
         <h2
           className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]"
           style={{ color: 'var(--text-primary)' }}
@@ -97,7 +97,7 @@ const CuratedServices = React.memo(({ services, onServiceClick, title, subtitle 
         </p>
       </div>
 
-      <div ref={cardsRef} className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide lg:flex lg:flex-wrap lg:justify-start lg:gap-6 lg:overflow-visible">
+      <div ref={cardsRef} className="flex gap-2.5 overflow-x-auto px-0 pb-2 scrollbar-hide lg:flex lg:flex-wrap lg:justify-start lg:gap-6 lg:overflow-visible">
         {serviceList.map((service, index) => (
           <ServiceCard
             key={service.id || index}

@@ -53,9 +53,9 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
   };
 
   return (
-    <div className="my-10 px-3 md:px-5 w-full">
+    <div className="my-3 md:my-6 px-3 md:px-5 w-full">
       {/* Header */}
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-2.5 md:mb-4 flex items-center gap-3">
         <h2 className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]" style={{ color: 'var(--text-primary)' }}>
           {title || "New & Noteworthy"}
         </h2>

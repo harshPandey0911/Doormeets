@@ -220,23 +220,22 @@ const Account = () => {
     }
   };
 
-  const MenuItem = ({ icon: Icon, label, onClick, color = "text-dark-text", badge }) => (
+  const MenuItem = ({ icon: Icon, label, onClick, color = "text-dark-text", badge, isLast = false }) => (
     <motion.button
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="w-full flex items-center justify-between p-3.5 bg-card-bg rounded-md border border-border-color shadow-sm hover:shadow-md transition-all group mb-2.5"
-      style={{ '--hover-border': `${themeColors.brand.teal}30` }}
+      className={`w-full flex items-center justify-between px-3 py-2.5 bg-card-bg hover:bg-gray-50/50 dark:hover:bg-zinc-800/40 transition-colors group cursor-pointer text-left ${!isLast ? 'border-b border-border-color' : ''}`}
     >
-      <div className="flex items-center gap-3">
-        <div className={`w-9 h-9 rounded-md flex items-center justify-center transition-colors`}
+      <div className="flex items-center gap-2.5">
+        <div className={`w-7.5 h-7.5 rounded-md flex items-center justify-center transition-colors shrink-0`}
           style={{
             backgroundColor: color === 'text-red-500' ? '#FEF2F2' : 'var(--divider)',
             color: color === 'text-red-500' ? '#EF4444' : 'var(--primary)'
           }}
         >
-          <Icon className={`w-4.5 h-4.5 ${color === 'text-red-500' ? 'text-red-500' : ''}`} />
+          <Icon className={`w-4 h-4 ${color === 'text-red-500' ? 'text-red-500' : ''}`} />
         </div>
-        <span className={`font-semibold text-sm ${color}`}>{label}</span>
+        <span className={`font-semibold text-xs sm:text-sm ${color}`}>{label}</span>
       </div>
       <div className="flex items-center gap-2">
         {badge && (
@@ -244,7 +243,7 @@ const Account = () => {
             {badge}
           </span>
         )}
-        <FiChevronRight className="w-4.5 h-4.5 text-gray-400 group-hover:text-teal-500 transition-colors" />
+        <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-teal-500 transition-colors" />
       </div>
     </motion.button>
   );
@@ -301,19 +300,19 @@ const Account = () => {
           {/* Elevated Profile Card */}
           <motion.div
             variants={itemVariants}
-            className="bg-card-bg rounded-md p-3.5 shadow-sm mb-3 relative overflow-hidden border border-border-color"
+            className="bg-card-bg rounded-md p-2.5 shadow-sm mb-2.5 relative overflow-hidden border border-border-color"
           >
             {/* Vivid Brand Accents */}
-            <div className="absolute top-0 right-0 w-36 h-36 rounded-full -mr-16 -mt-16 blur-3xl opacity-[0.2]"
+            <div className="absolute top-0 right-0 w-28 h-28 rounded-full -mr-12 -mt-12 blur-3xl opacity-[0.2]"
               style={{ backgroundColor: themeColors.brand.yellow }}
             ></div>
-            <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full -ml-20 -mb-20 blur-3xl opacity-[0.2]"
+            <div className="absolute bottom-0 left-0 w-28 h-28 rounded-full -ml-14 -mb-14 blur-3xl opacity-[0.2]"
               style={{ backgroundColor: themeColors.brand.teal }}
             ></div>
 
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2.5 relative z-10">
               <div className="relative">
-                <div className="w-14 h-14 rounded-md p-1 bg-card-bg border border-border-color shadow-sm">
+                <div className="w-11 h-11 rounded-md p-0.5 bg-card-bg border border-border-color shadow-sm">
                   {userProfile.profilePhoto ? (
                     <img
                       src={userProfile.profilePhoto}
@@ -321,7 +320,7 @@ const Account = () => {
                       className="w-full h-full rounded-md object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full rounded-md flex items-center justify-center text-white font-bold text-base"
+                    <div className="w-full h-full rounded-md flex items-center justify-center text-white font-bold text-xs"
                       style={{ background: themeColors.gradient }}>
                       {getInitials()}
                     </div>
@@ -329,24 +328,22 @@ const Account = () => {
                 </div>
                 <button
                   onClick={() => navigate('/user/update-profile')}
-                  className="absolute -bottom-1 -right-1 p-1 bg-gray-900 text-white rounded-md border-2 border-card-bg shadow-sm active:scale-95 transition-transform"
+                  className="absolute -bottom-1 -right-1 p-0.5 bg-gray-900 text-white rounded-md border border-card-bg shadow-sm active:scale-95 transition-transform"
                 >
-                  <FiEdit3 className="w-3 h-3" />
+                  <FiEdit3 className="w-2.5 h-2.5" />
                 </button>
               </div>
 
               <div className="flex-1 min-w-0">
-                <h2 className="text-base font-bold text-dark-text tracking-tight truncate mb-0.5">
+                <h2 className="text-sm font-bold text-dark-text tracking-tight truncate leading-tight mb-0.5">
                   {userProfile.name}
                 </h2>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <p className="text-[11px] text-secondary-text font-semibold uppercase tracking-widest">
-                    {userProfile.phone ? formatPhoneNumber(userProfile.phone) : 'No phone linked'}
-                  </p>
-                </div>
+                <p className="text-[10.5px] text-secondary-text font-semibold uppercase tracking-wider mb-1">
+                  {userProfile.phone ? formatPhoneNumber(userProfile.phone) : 'No phone linked'}
+                </p>
                 <button
                   onClick={() => navigate('/user/update-profile')}
-                  className="px-2.5 py-1 bg-light-bg hover:bg-border-color text-secondary-text border border-border-color text-[9px] font-bold uppercase tracking-wider rounded-md transition-colors"
+                  className="px-2 py-0.5 bg-light-bg hover:bg-border-color text-secondary-text border border-border-color text-[8.5px] font-bold uppercase tracking-wider rounded-md transition-colors"
                 >
                   Edit Profile
                 </button>
@@ -433,79 +430,86 @@ const Account = () => {
           {/* Activity */}
           <motion.div variants={itemVariants} className="mb-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Activity</h3>
-            <MenuItem
-              icon={FiClipboard}
-              label="My Bookings"
-              onClick={() => navigate('/user/my-bookings')}
-            />
-            <MenuItem
-              icon={FiFileText}
-              label="My Plans"
-              onClick={() => navigate('/user/my-plan')}
-            />
-            <MenuItem
-              icon={FiStar}
-              label="My Ratings"
-              onClick={() => navigate('/user/my-rating')}
-            />
+            <div className="bg-card-bg rounded-md border border-border-color shadow-sm overflow-hidden">
+              <MenuItem
+                icon={FiClipboard}
+                label="My Bookings"
+                onClick={() => navigate('/user/my-bookings')}
+              />
+              <MenuItem
+                icon={FiFileText}
+                label="My Plans"
+                onClick={() => navigate('/user/my-plan')}
+              />
+              <MenuItem
+                icon={FiStar}
+                label="My Ratings"
+                onClick={() => navigate('/user/my-rating')}
+                isLast={true}
+              />
+            </div>
           </motion.div>
 
           {/* Preferences */}
           <motion.div variants={itemVariants} className="mb-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Preferences</h3>
-            <MenuItem
-              icon={isDark ? FiSun : FiMoon}
-              label={isDark ? "Dark Mode" : "Light Mode"}
-              badge={isDark ? "Dark" : "Light"}
-              onClick={toggleTheme}
-            />
-            <MenuItem
-              icon={FiMapPin}
-              label="Manage Addresses"
-              onClick={() => navigate('/user/manage-addresses')}
-            />
-
-            <MenuItem
-              icon={FiSettings}
-              label="Settings"
-              onClick={() => navigate('/user/settings')}
-            />
+            <div className="bg-card-bg rounded-md border border-border-color shadow-sm overflow-hidden">
+              <MenuItem
+                icon={isDark ? FiSun : FiMoon}
+                label={isDark ? "Dark Mode" : "Light Mode"}
+                badge={isDark ? "Dark" : "Light"}
+                onClick={toggleTheme}
+              />
+              <MenuItem
+                icon={FiMapPin}
+                label="Manage Addresses"
+                onClick={() => navigate('/user/manage-addresses')}
+              />
+              <MenuItem
+                icon={FiSettings}
+                label="Settings"
+                onClick={() => navigate('/user/settings')}
+                isLast={true}
+              />
+            </div>
           </motion.div>
 
           {/* Support & Legal */}
           <motion.div variants={itemVariants} className="mb-6">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Support & More</h3>
-            <MenuItem
-              icon={FiHeadphones}
-              label="Help & Support"
-              onClick={() => navigate('/user/help-support')}
-            />
-            <MenuItem
-              icon={FiShield}
-              label="SOS Emergency Alert"
-              color="text-red-500"
-              onClick={handleSOSClick}
-            />
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/user/about-cleaning-expert')}
-              className="w-full flex items-center justify-between p-3.5 bg-card-bg rounded-md border border-border-color shadow-sm hover:shadow-md transition-all group mb-2.5"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-md flex items-center justify-center bg-gray-500/10 transition-colors group-hover:bg-opacity-80">
-                  <Logo className="w-7 h-7" iconOnly={true} />
+            <div className="bg-card-bg rounded-md border border-border-color shadow-sm overflow-hidden mb-4">
+              <MenuItem
+                icon={FiHeadphones}
+                label="Help & Support"
+                onClick={() => navigate('/user/help-support')}
+              />
+              <MenuItem
+                icon={FiShield}
+                label="SOS Emergency Alert"
+                color="text-red-500"
+                onClick={handleSOSClick}
+              />
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/user/about-cleaning-expert')}
+                className="w-full flex items-center justify-between px-3 py-2.5 bg-card-bg hover:bg-gray-50/50 dark:hover:bg-zinc-800/40 transition-colors group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7.5 h-7.5 rounded-md flex items-center justify-center bg-gray-500/10 transition-colors group-hover:bg-opacity-80 shrink-0">
+                    <Logo className="w-6 h-6" iconOnly={true} />
+                  </div>
+                  <span className="font-semibold text-xs sm:text-sm text-dark-text">About Doormeets</span>
                 </div>
-                <span className="font-semibold text-sm text-dark-text">About Doormeets</span>
-              </div>
-              <FiChevronRight className="w-4.5 h-4.5 text-gray-400 group-hover:text-teal-500 transition-colors" />
-            </motion.button>
+                <FiChevronRight className="w-4 h-4 text-gray-400 group-hover:text-teal-500 transition-colors" />
+              </motion.button>
+            </div>
             <div className="h-2"></div>
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 p-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold uppercase tracking-wider rounded-md shadow-lg transition-all mb-3"
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs font-bold uppercase tracking-wider rounded-md shadow-md transition-all mb-3"
             >
-              <FiLogOut className="w-4.5 h-4.5" />
+              <FiLogOut className="w-3.5 h-3.5" />
               <span>Log out</span>
             </motion.button>
           </motion.div>

@@ -48,9 +48,9 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
   };
 
   return (
-    <div className="my-10 px-3 md:px-5 w-full">
+    <div className="mt-5 mb-1 md:my-6 px-3 md:px-5 w-full">
       {/* Header row: title + "See all" inline on same line */}
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-2.5 md:mb-4 flex items-center gap-3">
         <h2 className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]" style={{ color: 'var(--text-primary)' }}>
           {title}
         </h2>
@@ -88,7 +88,7 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-2.5 sm:gap-4 overflow-x-auto pb-4 pr-6 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-2.5 sm:gap-4 overflow-x-auto pb-1 pr-6 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
           {serviceList.map((service) => (
             <div key={service.id} className="snap-start shrink-0">

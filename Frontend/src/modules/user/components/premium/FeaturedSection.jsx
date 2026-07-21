@@ -20,9 +20,9 @@ const FeaturedSection = ({ section }) => {
   };
 
   return (
-    <section className="px-5 w-full pt-1">
+    <section className="my-3 md:my-6 px-3 md:px-5 w-full">
       {/* Section Header */}
-      <div className="mb-4 flex items-end justify-between">
+      <div className="mb-2.5 md:mb-4 flex items-end justify-between">
         <div>
           <h2 className="text-[17px] font-semibold" style={{ color: 'var(--text-primary)' }}>{sectionTitle}</h2>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Top rated service partners</p>

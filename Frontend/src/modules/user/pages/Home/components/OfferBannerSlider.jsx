@@ -33,7 +33,7 @@ const OfferBannerSlider = ({ banners }) => {
   };
 
   return (
-    <div className="px-3 md:px-5 mt-0 md:mt-4 mb-4 w-full">
+    <div className="px-3 md:px-5 mt-0.5 mb-3 md:mt-2 md:mb-6 w-full">
       <Swiper
         modules={[Autoplay, Pagination]}
         spaceBetween={12}

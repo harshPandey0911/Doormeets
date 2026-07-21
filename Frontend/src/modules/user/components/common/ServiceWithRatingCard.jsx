@@ -53,11 +53,13 @@ const ServiceWithRatingCard = memo(({
         </h3>
 
         {rating && (
-          <div className="flex items-center gap-1 mb-1 text-[11px] md:text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-            <span className="text-yellow-500">★</span>
-            <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{rating}</span>
+          <div className="flex items-center gap-1 mb-1 text-[10px] sm:text-[11px] md:text-[12px] font-medium whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: 'var(--text-secondary)' }}>
+            <span className="text-yellow-500 shrink-0">★</span>
+            <span className="font-bold shrink-0" style={{ color: 'var(--text-primary)' }}>{rating}</span>
             {reviews && (
-              <span style={{ color: 'var(--text-muted)' }}>({reviews.toString().includes('reviews') ? reviews : `${reviews} reviews`})</span>
+              <span className="truncate" style={{ color: 'var(--text-muted)' }}>
+                ({reviews.toString().includes('reviews') ? reviews : `${reviews} reviews`})
+              </span>
             )}
           </div>
         )}

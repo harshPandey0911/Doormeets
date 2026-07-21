@@ -87,9 +87,9 @@ const ServiceCategories = React.memo(({
   };
 
   return (
-    <div className="px-3 md:px-5 w-full">
+    <div className="px-3 md:px-5 w-full my-2 md:my-6">
       {/* Title + Inline See All Button */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-2.5 md:mb-4">
         <h2
           className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]"
           style={{ color: 'var(--text-primary)' }}

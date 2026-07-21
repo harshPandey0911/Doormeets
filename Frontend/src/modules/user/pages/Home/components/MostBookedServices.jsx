@@ -52,9 +52,9 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
   };
 
   return (
-    <div className="my-10 px-3 md:px-5 w-full">
+    <div className="my-3 md:my-6 px-3 md:px-5 w-full">
       {/* Header */}
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-2.5 md:mb-4 flex items-center gap-3">
         <h2 className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]" style={{ color: 'var(--text-primary)' }}>
           {title || "Most booked services"}
         </h2>
@@ -129,13 +129,13 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
 
                 {/* Rating + Instant Badge */}
                 {service.rating && (
-                  <div className="flex items-center gap-1.5 mt-1 px-1 text-[11px] md:text-[12px] text-gray-500 font-medium">
-                    <span className="text-yellow-500">★</span>
-                    <span className="font-bold text-gray-700 dark:text-zinc-350">{service.rating}</span>
+                  <div className="flex items-center gap-1.5 mt-1 px-1 text-[10px] sm:text-[11px] md:text-[12px] text-gray-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                    <span className="text-yellow-500 shrink-0">★</span>
+                    <span className="font-bold text-gray-700 dark:text-zinc-350 shrink-0">{service.rating}</span>
                     {hasInstantBadge && (
                       <>
                         <span className="text-gray-300">•</span>
-                        <span className="text-gray-500 flex items-center gap-0.5">
+                        <span className="text-gray-500 flex items-center gap-0.5 shrink-0">
                           <span className="text-blue-500">⚡</span> Instant
                         </span>
                       </>
