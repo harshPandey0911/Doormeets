@@ -335,15 +335,14 @@ const PremiumServiceDetailPage = () => {
             return (
               <div
                 key={variant._id || idx}
-                className="shrink-0 w-[140px] xs:w-[148px] sm:w-[165px] rounded-md border p-2.5 flex flex-col justify-between transition-all select-none group shadow-xs"
+                className="shrink-0 w-[140px] xs:w-[148px] sm:w-[165px] md:w-[195px] lg:w-[220px] rounded-md border p-2.5 md:p-3.5 flex flex-col justify-between transition-all select-none group shadow-xs bg-white dark:bg-zinc-900"
                 style={{
-                  backgroundColor: 'var(--card-bg)',
                   borderColor: 'var(--border)'
                 }}
               >
                 <div>
                   {/* Top Card Image */}
-                  <div className="w-full h-[110px] sm:h-[125px] rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 relative mb-2">
+                  <div className="w-full h-[110px] sm:h-[125px] md:h-[145px] lg:h-[160px] rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 relative mb-2.5">
                     <img
                       src={variantImage}
                       alt={variant.title}
@@ -353,7 +352,7 @@ const PremiumServiceDetailPage = () => {
 
                   {/* Title */}
                   <h4
-                    className="font-semibold text-[12px] line-clamp-2 leading-[1.3] mb-2 min-h-[32px]"
+                    className="font-semibold text-[12px] md:text-[13.5px] lg:text-[14.5px] line-clamp-2 leading-[1.3] mb-2 min-h-[32px]"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {variant.title}
@@ -582,6 +581,18 @@ const PremiumServiceDetailPage = () => {
       toast.error('Geolocation is not supported by your browser');
     }
   };
+
+  // Scroll lock effect when modal overlays are active
+  useEffect(() => {
+    if (activeCategoryModal || activeItemDescModal || showVariantPopup) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [activeCategoryModal, activeItemDescModal, showVariantPopup]);
 
   const getCartItemServiceId = (item) => {
     if (!item) return null;
@@ -847,7 +858,7 @@ const PremiumServiceDetailPage = () => {
         const visibleItems = itemsList.slice(0, limit);
         const hasMore = itemsList.length > limit;
         return (
-          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full flex flex-col justify-start w-full">
+          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full flex flex-col justify-start w-full">
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <FiCheckCircle className="text-green-500 w-5 h-5 shrink-0" />
@@ -857,7 +868,7 @@ const PremiumServiceDetailPage = () => {
                 {visibleItems.map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-start p-3.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800 transition-all hover:bg-slate-50">
                     <FiCheckCircle className="text-emerald-500 w-4 h-4 shrink-0 mt-0.5" />
-                    <span className="text-xs font-semibold text-slate-650 dark:text-zinc-350 leading-relaxed">
+                    <span className="text-xs lg:text-[13.5px] font-semibold text-slate-650 dark:text-zinc-350 leading-relaxed">
                       {item}
                     </span>
                   </div>
@@ -882,7 +893,7 @@ const PremiumServiceDetailPage = () => {
       case 'process':
       case 'how_it_works':
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'How it works'}</h4>
@@ -892,11 +903,11 @@ const PremiumServiceDetailPage = () => {
                 const title = typeof step === 'object' ? step.title : step;
                 const desc = typeof step === 'object' ? step.desc : '';
                 return (
-                  <div key={idx} className="flex gap-3 items-start text-[10px]">
-                    <span className="text-[#B33A35] text-xs font-black shrink-0 mt-0.5">{idx + 1}.</span>
+                  <div key={idx} className="flex gap-3 items-start text-[10px] lg:text-[13px]">
+                    <span className="text-[#B33A35] text-xs lg:text-[13.5px] font-black shrink-0 mt-0.5">{idx + 1}.</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-slate-800 dark:text-zinc-200">{title}</div>
-                      {desc && <p className="text-gray-400 mt-0.5 leading-normal">{desc}</p>}
+                      {desc && <p className="text-gray-400 mt-0.5 leading-normal lg:text-[11.5px]">{desc}</p>}
                     </div>
                   </div>
                 );
@@ -906,24 +917,24 @@ const PremiumServiceDetailPage = () => {
         );
       case 'warranty':
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.duration || ''} Warranty</h4>
             </div>
-            <p className="text-[10px] text-gray-400 leading-relaxed font-normal">
+            <p className="text-[10px] lg:text-[12.5px] text-gray-400 leading-relaxed font-normal">
               {data.description}
             </p>
           </div>
         );
       case 'please_note':
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiInfo className="text-amber-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'Please Note'}</h4>
             </div>
-            <ul className="list-inside list-disc space-y-1 text-[10px] leading-relaxed font-normal text-gray-400">
+            <ul className="list-inside list-disc space-y-1.5 text-[10px] lg:text-[13px] leading-relaxed font-normal text-gray-400">
               {(data.notes || []).map((note, idx) => (
                 <li key={idx}>{note}</li>
               ))}
@@ -932,7 +943,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'reviews':
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2">
               <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">User feedback</h4>
@@ -941,10 +952,10 @@ const PremiumServiceDetailPage = () => {
               {(data.reviews || []).map((rev, idx) => (
                 <div key={idx} className="border-b last:border-0 pb-2 last:pb-0 text-[10px]">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-800 dark:text-zinc-200">{rev.userName || 'Anonymous'}</span>
-                    <span className="text-gray-400 text-[9px]">{rev.rating || 5}★</span>
+                    <span className="font-semibold text-slate-800 dark:text-zinc-200 lg:text-xs">{rev.userName || 'Anonymous'}</span>
+                    <span className="text-gray-400 text-[9px] lg:text-xs">{rev.rating || 5}★</span>
                   </div>
-                  <p className="text-gray-400 mt-1 leading-normal">{rev.comment}</p>
+                  <p className="text-gray-400 mt-1 leading-normal lg:text-xs">{rev.comment}</p>
                 </div>
               ))}
             </div>
@@ -972,7 +983,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'heading_text':
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.heading}</h4>
             <p className="text-[10px] text-gray-400 leading-relaxed font-normal whitespace-pre-line">{data.text}</p>
           </div>
@@ -982,7 +993,7 @@ const PremiumServiceDetailPage = () => {
         const total = imagesList.length;
         const visibleImages = imagesList.slice(0, 6);
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">Gallery</h4>
             <div className="grid grid-cols-3 gap-2">
               {visibleImages.map((img, imgIdx) => {
@@ -1012,7 +1023,7 @@ const PremiumServiceDetailPage = () => {
       }
       case 'faq':
         return (
-          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">FAQ</h4>
             <div className="space-y-3">
               {(data.faqs || []).map((faq, idx) => {
@@ -1047,7 +1058,7 @@ const PremiumServiceDetailPage = () => {
         );
       case 'rate_card':
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             <div className="flex items-center gap-2 mb-3">
               <FiFileText className="text-emerald-500 w-5 h-5 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'View Rate Card'}</h4>
@@ -1906,8 +1917,8 @@ const PremiumServiceDetailPage = () => {
           )}
         </div>
       )}
-      </div>
-
+    </div>
+      
       <div className="hidden lg:block w-full max-w-[1280px] mx-auto px-6 pt-28 pb-6 font-sans">
         {/* Top Navbar */}
         <div className="mb-6">
@@ -1923,7 +1934,7 @@ const PremiumServiceDetailPage = () => {
         <div className="grid grid-cols-12 gap-8 items-start mb-8 mt-8">
           {/* Left: Main Image/Video & Thumbnails */}
           <div className="col-span-8 space-y-4">
-            <div className="relative w-full aspect-[1.8/1] rounded-3xl overflow-hidden shadow-sm border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+            <div className="relative w-full aspect-[1.8/1] rounded-md md:rounded-lg overflow-hidden shadow-sm border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
               {serviceImages[activeImageIndex]?.type === 'video' ? (
                 <video
                   ref={videoRef}
@@ -2019,7 +2030,7 @@ const PremiumServiceDetailPage = () => {
             )}
 
             {/* CART Sidebar widget */}
-            <div className="border rounded-[28px] p-6 shadow-sm space-y-6 mt-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <div className="border rounded-md p-6 shadow-sm space-y-6 mt-4 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
               <h4 className="text-xs font-black uppercase tracking-wider border-b pb-3" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>Cart</h4>
               
               {cartItems.length > 0 ? (
@@ -2081,21 +2092,65 @@ const PremiumServiceDetailPage = () => {
 
         {/* Service Categories Section */}
         {service?.serviceType === 'package_base' && service?.serviceGroups?.length > 0 && (
-          <div className="grid grid-cols-12 gap-8 items-center py-6 border-y mb-8" style={{ borderColor: 'var(--border)' }}>
-            <div className="col-span-3">
-              <h2 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
-                Service Categories
-              </h2>
-            </div>
-            <div className="col-span-9 flex flex-wrap items-center gap-3 py-2">
+          <div className="py-6 border-y mb-8" style={{ borderColor: 'var(--border)' }}>
+            <h2 className="text-base font-extrabold mb-5" style={{ color: 'var(--text-primary)' }}>
+              Service Categories
+            </h2>
+            
+            {/* Desktop and Tablet grid view (Image on top, Title + Action at bottom) */}
+            <div className="hidden md:grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 py-2">
               {service.serviceGroups.map((group, idx) => {
-                const colors = cardColors[idx % cardColors.length];
+                const groupImage = toAssetUrl(group.iconUrl || service?.image || service?.icon || service?.bannerImage) || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400';
                 return (
                   <div
                     key={group._id || idx}
                     onClick={() => setActiveCategoryModal(group)}
-                    className="flex items-center gap-4 rounded-md border transition-all duration-200 hover:scale-[1.02] cursor-pointer select-none overflow-hidden min-w-[220px]"
-                    style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+                    className="flex flex-col justify-between rounded-md border p-2.5 flex-1 transition-all select-none group shadow-xs bg-white dark:bg-zinc-900 cursor-pointer hover:scale-[1.02]"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
+                    <div>
+                      {/* Top Card Image */}
+                      <div className="w-full aspect-[4/3] rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 relative mb-2.5">
+                        <img
+                          src={groupImage}
+                          alt={group.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+
+                      {/* Title */}
+                      <h4
+                        className="font-semibold text-[13px] line-clamp-2 leading-[1.3] mb-2 min-h-[34px]"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {group.title}
+                      </h4>
+                    </div>
+
+                    {/* Action button */}
+                    <div className="flex items-center justify-between pt-2 border-t w-full" style={{ borderColor: 'var(--border)' }}>
+                      <span className="text-[10px] text-gray-400 font-normal">Variants</span>
+                      <button
+                        type="button"
+                        className="px-2.5 py-0.5 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#B33A35] font-bold text-[11px] hover:border-[#B33A35] hover:bg-red-50/40 dark:hover:bg-red-950/20 transition-all cursor-pointer shadow-xs active:scale-95"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Mobile original horizontal list view */}
+            <div className="md:hidden flex flex-wrap items-center gap-3 py-2">
+              {service.serviceGroups.map((group, idx) => {
+                return (
+                  <div
+                    key={group._id || idx}
+                    onClick={() => setActiveCategoryModal(group)}
+                    className="flex items-center gap-4 rounded-md border transition-all duration-200 hover:scale-[1.02] cursor-pointer select-none overflow-hidden min-w-[220px] bg-white dark:bg-zinc-900"
+                    style={{ borderColor: 'var(--border)' }}
                   >
                     {group.iconUrl ? (
                       <div className="w-14 h-14 shrink-0 overflow-hidden">
@@ -2284,9 +2339,7 @@ const PremiumServiceDetailPage = () => {
         )}
       </div>
 
-
-
-      {/* Category Group details modal */}
+{/* Category Group details modal */}
       <AnimatePresence>
         {activeCategoryModal && (
           <>
@@ -2295,17 +2348,17 @@ const PremiumServiceDetailPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setActiveCategoryModal(null)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-pointer"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] cursor-pointer"
             />
             {/* Centered Modal / Sheet */}
-            <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4 pointer-events-none">
+            <div className="fixed inset-0 z-[9999] flex items-end justify-center md:items-center md:p-4 pointer-events-none">
               <motion.div
                 initial={{ y: '100%', opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                className="w-full max-w-md md:max-w-lg rounded-t-md md:rounded-md p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto"
-                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+                className="w-full max-w-md md:max-w-lg rounded-t-md md:rounded-md p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto bg-white dark:bg-zinc-900"
+                style={{ borderColor: 'var(--border)' }}
               >
                 <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
                   <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -2330,8 +2383,8 @@ const PremiumServiceDetailPage = () => {
                         /* Image Card Layout */
                         <div
                           key={item._id}
-                          className="rounded-md border overflow-hidden flex transition-all select-none h-[90px] md:h-[110px]"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+                          className="rounded-md border overflow-hidden flex transition-all select-none h-[90px] md:h-[110px] bg-white dark:bg-zinc-900"
+                          style={{ borderColor: 'var(--border)' }}
                         >
                           {/* Left Image */}
                           <div className="w-24 md:w-28 shrink-0 overflow-hidden h-[90px] md:h-[110px]">
@@ -2376,8 +2429,8 @@ const PremiumServiceDetailPage = () => {
                         /* Default Text Card Layout (no image) */
                         <div
                           key={item._id}
-                          className="p-4 rounded-md border flex justify-between items-start gap-4 transition-all select-none"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+                          className="p-4 rounded-md border flex justify-between items-start gap-4 transition-all select-none bg-white dark:bg-zinc-900"
+                          style={{ borderColor: 'var(--border)' }}
                         >
                           <div className="space-y-1 min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
@@ -2419,10 +2472,12 @@ const PremiumServiceDetailPage = () => {
             </div>
           </>
         )}
+      </AnimatePresence>
 
         {/* Package Customization Modal/Bottom Sheet */}
-        {isCustomizing && service?.serviceType === 'package_base' && selectedPackage && selectedPackage.allowUserEdit !== false && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
-          <>
+        <AnimatePresence>
+          {isCustomizing && service?.serviceType === 'package_base' && selectedPackage && selectedPackage.allowUserEdit !== false && selectedPackage.includedItems && selectedPackage.includedItems.length > 0 && (
+            <>
             {/* Backdrop */}
             <motion.div
               key="customise-backdrop"
@@ -2670,15 +2725,15 @@ const PremiumServiceDetailPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setActiveItemDescModal(null)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] cursor-pointer"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] cursor-pointer"
             />
             <motion.div
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed bottom-0 inset-x-0 md:inset-0 md:m-auto w-full md:max-w-sm h-fit max-h-[85vh] z-[999] shadow-2xl p-6 flex flex-col gap-4 border overflow-y-auto pointer-events-auto rounded-t-md md:rounded-md"
-              style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+              className="fixed bottom-0 inset-x-0 md:inset-0 md:m-auto w-full md:max-w-sm h-fit max-h-[85vh] z-[99999] shadow-2xl p-6 flex flex-col gap-4 border overflow-y-auto pointer-events-auto rounded-t-md md:rounded-md bg-white dark:bg-zinc-900"
+              style={{ borderColor: 'var(--border)' }}
             >
               <div className="flex justify-between items-center border-b pb-3 shrink-0" style={{ borderColor: 'var(--border)' }}>
                 <h3 className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>

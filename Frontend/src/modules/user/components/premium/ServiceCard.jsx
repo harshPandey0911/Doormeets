@@ -41,7 +41,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
     <motion.article
       whileHover={{ y: -2 }}
       onClick={() => onOpen?.(service)}
-      className="rounded-md border p-4 shadow-[0_4px_20px_rgba(17,24,39,0.02)] transition-all cursor-pointer flex justify-between items-center gap-4"
+      className="rounded-md border p-4 md:p-6 shadow-[0_4px_20px_rgba(17,24,39,0.02)] transition-all cursor-pointer flex justify-between items-center gap-4 md:gap-6 min-h-[110px] md:min-h-[160px]"
       style={{
         backgroundColor: 'var(--surface)',
         borderColor: 'var(--border)'
@@ -50,33 +50,33 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
       {/* Left side details */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <h3 className="text-sm font-semibold tracking-tight leading-snug line-clamp-1" style={{ color: 'var(--text-primary)' }}>
+          <h3 className="text-sm md:text-base font-semibold tracking-tight leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
             {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
           </h3>
 
-          <div className="flex items-center gap-1 mt-0.5 text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>
+          <div className="flex items-center gap-1 mt-0.5 md:mt-1.5 text-xs md:text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>
             <span className="flex items-center gap-0.5 font-semibold" style={{ color: 'var(--text-primary)' }}>
-              <FiStar className="w-3 h-3" style={{ fill: 'var(--text-secondary)', color: 'var(--text-secondary)' }} />
+              <FiStar className="w-3 h-3 md:w-3.5 md:h-3.5" style={{ fill: 'var(--text-secondary)', color: 'var(--text-secondary)' }} />
               {service.rating || 4.5}
             </span>
             <span>({service.reviews || '1.2k'} reviews)</span>
           </div>
 
-          <div className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+          <div className="mt-1.5 md:mt-2.5 flex items-baseline gap-1.5">
+            <span className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
               {service.variants && service.variants.length > 0 ? `Starting from ₹${service.price}` : `₹${service.price}`}
             </span>
             {service.originalPrice && (
-              <span className="text-xs line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
+              <span className="text-xs md:text-sm line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
             )}
           </div>
         </div>
 
         {/* Divider and description */}
         {service.description ? (
-          <div className="mt-2.5">
-            <div className="border-t w-full my-1.5" style={{ borderColor: 'var(--border)' }} />
-            <p className="text-[11px] leading-relaxed line-clamp-2 font-normal mb-2" style={{ color: 'var(--text-secondary)' }}>
+          <div className="mt-2.5 md:mt-3.5">
+            <div className="border-t w-full my-1.5 md:my-2" style={{ borderColor: 'var(--border)' }} />
+            <p className="text-[11px] md:text-xs leading-relaxed line-clamp-2 font-normal mb-2" style={{ color: 'var(--text-secondary)' }}>
               {service.description}
             </p>
           </div>
@@ -94,9 +94,9 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                     e.stopPropagation();
                     setShowVisitsModal(true);
                   }}
-                  className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold border border-indigo-100/50 dark:border-indigo-900/30 hover:bg-indigo-100/50 transition-all cursor-pointer"
+                  className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 text-[9px] md:text-[10px] font-bold border border-indigo-100/50 dark:border-indigo-900/30 hover:bg-indigo-100/50 transition-all cursor-pointer"
                 >
-                  <FiCalendar className="w-3 h-3" />
+                  <FiCalendar className="w-3 h-3 md:w-3.5 md:h-3.5" />
                   <span>{visits.length} Scheduled Visits</span>
                 </button>
 
@@ -113,7 +113,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex justify-between items-center border-b pb-2 dark:border-zinc-800">
-                        <span className="font-bold text-xs text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                        <span className="font-bold text-xs md:text-sm text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
                           <FiCalendar className="w-4 h-4 text-indigo-500" /> {visits.length} Scheduled Visits
                         </span>
                         <button
@@ -126,7 +126,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                       </div>
                       <div className="space-y-3 py-1">
                         {visits.map((v, i) => (
-                          <div key={i} className="flex gap-3 items-start p-2.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-md border border-slate-100 dark:border-zinc-800 text-[10px]">
+                          <div key={i} className="flex gap-3 items-start p-2.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-md border border-slate-100 dark:border-zinc-800 text-[10px] md:text-xs">
                             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
                             <div className="flex-1">
                               <div className="font-bold text-slate-800 dark:text-zinc-200">Visit {v.sequence}</div>
@@ -146,7 +146,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         </div>
 
       {/* Right side image + absolute button */}
-      <div className="relative w-24 h-24 shrink-0 rounded-md overflow-visible">
+      <div className="relative w-24 h-24 md:w-32 md:h-32 shrink-0 rounded-md overflow-visible">
         <div className="w-full h-full rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 border" style={{ borderColor: 'var(--border)' }}>
           {service.image || service.icon || service.iconUrl ? (
             <img src={toAssetUrl(service.image || service.icon || service.iconUrl)} alt={service.title} className="h-full w-full object-cover" />
@@ -161,24 +161,24 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             {quantity > 0 ? (
               <div 
                 onClick={(e) => e.stopPropagation()}
-                className="w-[72px] h-[28px] bg-white dark:bg-zinc-900 border border-violet-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs shadow-md flex items-center justify-between px-1.5"
+                className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-violet-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md flex items-center justify-between px-1.5"
               >
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDecrease(service);
                   }}
-                  className="w-5 h-5 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm"
+                  className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
                 >
                   -
                 </button>
-                <span className="font-extrabold text-[11px]">{quantity}</span>
+                <span className="font-extrabold text-[11px] md:text-xs">{quantity}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onIncrease(service);
                   }}
-                  className="w-5 h-5 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm"
+                  className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
                 >
                   +
                 </button>
@@ -189,11 +189,11 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                   e.stopPropagation();
                   onAdd(service);
                 }}
-                className="w-[72px] h-[28px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-0.5"
+                className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-0.5"
                 style={{ color: '#B33A35' }}
               >
                 <span>Add</span>
-                <span className="text-[10px] font-semibold">+</span>
+                <span className="text-[10px] md:text-xs font-semibold">+</span>
               </button>
             )}
           </div>

@@ -845,7 +845,7 @@ const PremiumCategoryPage = () => {
               };
 
               return (
-                <div key={comboItem.id || comboIdx} className="p-3.5 border rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                <div key={comboItem.id || comboIdx} className="p-3.5 border rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
                   {/* Discount tag badge */}
                   <div className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
                     <span>🏷️</span>
@@ -1024,8 +1024,8 @@ const PremiumCategoryPage = () => {
           {/* Sticky Select a Service Box (Sticks right below fixed navbar) */}
           <div 
             ref={boxRef}
-            className="border rounded-md p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
-            style={{ position: 'sticky', top: '88px', zIndex: 20, backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+            className="border rounded-md p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] bg-white dark:bg-zinc-900"
+            style={{ position: 'sticky', top: '88px', zIndex: 20, borderColor: 'var(--border)' }}
           >
             <div className="flex items-center gap-3 mb-6">
               <h3 className="text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Select a service</h3>
@@ -1230,7 +1230,7 @@ const PremiumCategoryPage = () => {
 
                         {/* Right Column: Rounded Cover Image with Absolute ADD Button */}
                         <div className="relative w-[120px] h-[120px] ml-6 flex-shrink-0 overflow-visible">
-                          <div className="w-full h-full rounded-2xl overflow-hidden border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                          <div className="w-full h-full rounded-md overflow-hidden border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                             <img 
                               src={comboItem.parentService?.image || activeCategory?.bannerImage || activeCategory?.icon || 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300'} 
                               alt={comboItem.title}
@@ -1342,19 +1342,8 @@ const PremiumCategoryPage = () => {
               className="col-span-4 space-y-6"
               style={{ position: 'sticky', top: '88px', alignSelf: 'start', height: 'fit-content' }}
             >
-              {/* Buy More Save More Card */}
-              <div className="border rounded-2xl p-4 shadow-sm flex items-center gap-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-                <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                  <span className="text-xl font-bold">%</span>
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>Buy more save more</h4>
-                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>15% off 2nd item onwards</p>
-                </div>
-              </div>
-
               {/* Safety Promise Card */}
-              <div className="border rounded-2xl p-5 shadow-sm space-y-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+              <div className="border rounded-md p-5 shadow-sm space-y-4 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
                 <h4 className="text-xs font-black uppercase tracking-wider border-b pb-2" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>Doormeets Promise</h4>
                 <ul className="space-y-3 text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
                   <li className="flex items-center gap-2">
@@ -1373,7 +1362,7 @@ const PremiumCategoryPage = () => {
               </div>
 
               {/* Sticky Cart Summary */}
-              <div className="border rounded-2xl p-5 shadow-sm space-y-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+              <div className="border rounded-md p-5 shadow-sm space-y-4 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
                 {cartCount > 0 ? (
                   <div className="space-y-4 text-left">
                     <h4 className="text-xs font-bold uppercase tracking-wider border-b pb-2" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>Cart</h4>
