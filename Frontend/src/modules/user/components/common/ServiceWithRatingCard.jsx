@@ -76,7 +76,7 @@ const ServiceWithRatingCard = memo(({
     </div>
   );
 
-  const containerClasses = "min-w-[calc((100vw-40px)/2)] w-[calc((100vw-40px)/2)] md:min-w-[230px] md:w-[230px] flex";
+  const containerClasses = "min-w-[130px] w-[130px] xs:min-w-[140px] xs:w-[140px] sm:min-w-[160px] sm:w-[160px] md:min-w-[230px] md:w-[230px] flex shrink-0";
 
   if (slug && !onClick) {
     return (

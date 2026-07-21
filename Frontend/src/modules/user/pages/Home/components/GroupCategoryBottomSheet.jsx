@@ -88,12 +88,12 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
           height: 'fit-content',
           maxHeight: '85vh',
           overflowY: 'auto',
-          paddingBottom: '16px',
+          paddingBottom: '0px',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pb-4 pt-1">
+        <div className="flex items-center justify-between px-4 pb-3 pt-3">
           <div className="flex items-center gap-3">
             {category.icon && (
               <div
@@ -138,10 +138,10 @@ const GroupCategoryBottomSheet = ({ isOpen, onClose, category, onCategoryClick }
         </div>
 
         {/* Divider */}
-        <div className="mx-5 mb-4 h-px" style={{ backgroundColor: 'var(--border, #F3F4F6)' }} />
+        <div className="mx-4 mb-3 h-px" style={{ backgroundColor: 'var(--border, #F3F4F6)' }} />
 
         {/* Mapped Category Grid */}
-        <div className="px-5 pb-8">
+        <div className="px-4 pb-4">
           {mappedCategories.length === 0 ? (
             <div className="text-center py-10">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">

@@ -88,7 +88,7 @@ const ServiceSectionWithRating = React.memo(({ title, subtitle, services, onSeeA
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-2.5 sm:gap-4 overflow-x-auto pb-4 pr-6 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
           {serviceList.map((service) => (
             <div key={service.id} className="snap-start shrink-0">

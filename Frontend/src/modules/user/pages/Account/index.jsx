@@ -10,6 +10,7 @@ import bookingService from '../../../../services/bookingService';
 import { walletService } from '../../../../services/walletService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { motion } from 'framer-motion';
+import { useTheme } from '../../../../context/ThemeContext';
 import {
   FiArrowLeft,
   FiUser,
@@ -28,7 +29,9 @@ import {
   FiGift,
   FiShield,
   FiZap,
-  FiCheckCircle
+  FiCheckCircle,
+  FiMoon,
+  FiSun
 } from 'react-icons/fi';
 import { MdAccountBalanceWallet } from 'react-icons/md';
 import NotificationBell from '../../components/common/NotificationBell';
@@ -38,6 +41,7 @@ const PROFILE_CACHE_KEY = 'user:profile';
 
 const Account = () => {
   const navigate = useNavigate();
+  const { toggleTheme, isDark } = useTheme();
 
   // Initialize instantly from localStorage (no loader on first render)
   const [userProfile, setUserProfile] = useState(() => {
@@ -449,6 +453,12 @@ const Account = () => {
           {/* Preferences */}
           <motion.div variants={itemVariants} className="mb-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Preferences</h3>
+            <MenuItem
+              icon={isDark ? FiSun : FiMoon}
+              label={isDark ? "Dark Mode" : "Light Mode"}
+              badge={isDark ? "Dark" : "Light"}
+              onClick={toggleTheme}
+            />
             <MenuItem
               icon={FiMapPin}
               label="Manage Addresses"

@@ -56,7 +56,7 @@ const PremiumBrandPage = () => {
     return (cached && cached.success && Array.isArray(cached.services)) ? cached.services.map((service, index) => ({
       id: service.id || service._id || `brand-service-${index}`,
       title: service.title,
-      description: service.description || 'Premium service by verified professionals.',
+      description: service.description || '',
       image: toAssetUrl(service.icon || service.image),
       rating: service.rating || 4.8,
       reviews: service.reviewCount || 120,
@@ -97,7 +97,7 @@ const PremiumBrandPage = () => {
         setServices(serviceRes.services.map((service, index) => ({
           id: service.id || service._id || `brand-service-${index}`,
           title: service.title,
-          description: service.description || 'Premium service by verified professionals.',
+          description: service.description || '',
           image: toAssetUrl(service.icon || service.image),
           rating: service.rating || 4.8,
           reviews: service.reviewCount || 120,

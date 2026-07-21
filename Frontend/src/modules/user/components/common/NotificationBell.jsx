@@ -63,7 +63,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
   return (
     <div
       ref={bellButtonRef}
-      className="relative rounded-full cursor-pointer group active:scale-95 transition-transform duration-300 z-50 shrink-0 w-9 h-9 md:w-[42px] md:h-[42px] flex items-center justify-center"
+      className="relative rounded-full cursor-pointer group active:scale-95 transition-transform duration-300 z-50 shrink-0 w-8 h-8 md:w-9 md:h-9 flex items-center justify-center"
       style={{
         margin: '2px'
       }}
@@ -112,7 +112,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
         style={{ backgroundColor: 'var(--card-bg)' }}
       >
         <div ref={bellRef} className="flex items-center justify-center">
-          <FiBell className="w-5 h-5 text-dark-text" />
+          <FiBell className="w-3.5 h-3.5 md:w-4 md:h-4 text-dark-text" />
         </div>
       </button>
 

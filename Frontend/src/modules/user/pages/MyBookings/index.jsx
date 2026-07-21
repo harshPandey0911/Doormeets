@@ -301,15 +301,13 @@ const MyBookings = () => {
               </button>
               <h1 className="text-xl font-bold text-dark-text tracking-tight">My Bookings</h1>
             </div>
-            <div className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color relative">
-              <NotificationBell />
-            </div>
+            <NotificationBell />
           </div>
         </header>
 
         {/* Filter Tabs */}
         <div className="bg-card-bg border-b border-border-color fixed top-[54px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
-          <div className="max-w-7xl mx-auto flex overflow-x-auto px-4 py-3 gap-2.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="max-w-7xl mx-auto flex overflow-x-auto px-4 py-1.5 gap-1.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: 'all', label: 'All Bookings' },
               { id: 'confirmed', label: 'Confirmed' },
@@ -320,8 +318,8 @@ const MyBookings = () => {
               <button
                 key={tab.id}
                 onClick={() => setFilter(tab.id)}
-                className={`px-4 py-2 rounded-md text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
-                  ? 'border-transparent text-white shadow-lg shadow-blue-500/25 active:scale-95'
+                className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
+                  ? 'border-transparent text-white shadow-md active:scale-95'
                   : 'bg-card-bg border-border-color text-secondary-text hover:bg-gray-800/20 hover:border-border-color'
                   }`}
                 style={filter === tab.id ? { backgroundColor: themeColors.button } : {}}
@@ -333,7 +331,7 @@ const MyBookings = () => {
         </div>
 
         {/* Bookings List */}
-        <main className="px-4 pt-[124px] pb-5 max-w-7xl mx-auto w-full">
+        <main className="px-4 pt-[102px] pb-5 max-w-7xl mx-auto w-full">
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (

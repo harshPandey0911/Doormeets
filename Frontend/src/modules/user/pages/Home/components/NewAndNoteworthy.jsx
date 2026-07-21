@@ -82,7 +82,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
         <div
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto pb-4 pr-8 scrollbar-hide snap-x snap-mandatory scroll-smooth"
+          className="flex gap-2 sm:gap-4 overflow-x-auto pb-4 pr-6 scrollbar-hide snap-x snap-mandatory scroll-smooth"
         >
           {serviceList.map((service, index) => {
             const hasLightningBadge = service.title?.toLowerCase().includes('ac') || 
@@ -92,7 +92,7 @@ const NewAndNoteworthy = React.memo(({ services, onServiceClick, onSeeAllClick, 
               <div 
                 key={service.id || index} 
                 onClick={() => onServiceClick?.(service)}
-                className="snap-start shrink-0 w-[150px] md:w-[220px] cursor-pointer flex flex-col group transition-all duration-300 active:scale-95 text-left"
+                className="snap-start shrink-0 w-[124px] xs:w-[136px] sm:w-[155px] md:w-[220px] cursor-pointer flex flex-col group transition-all duration-300 active:scale-95 text-left"
               >
                 {/* Image Box */}
                 <div className="w-full aspect-square rounded-md bg-gray-50 dark:bg-zinc-900 border overflow-hidden relative shadow-[0_2px_12px_rgba(0,0,0,0.02)] group-hover:scale-[1.01] transition-transform duration-200" style={{ borderColor: 'var(--border)' }}>

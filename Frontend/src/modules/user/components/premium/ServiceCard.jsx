@@ -73,11 +73,14 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
         </div>
 
         {/* Divider and description */}
-        <div className="mt-2.5">
-          <div className="border-t w-full my-1.5" style={{ borderColor: 'var(--border)' }} />
-          <p className="text-[11px] leading-relaxed line-clamp-2 font-normal mb-2" style={{ color: 'var(--text-secondary)' }}>
-            {service.description}
-          </p>
+        {service.description ? (
+          <div className="mt-2.5">
+            <div className="border-t w-full my-1.5" style={{ borderColor: 'var(--border)' }} />
+            <p className="text-[11px] leading-relaxed line-clamp-2 font-normal mb-2" style={{ color: 'var(--text-secondary)' }}>
+              {service.description}
+            </p>
+          </div>
+        ) : null}
 
           {/* Multi-Visit Schedule Timeline */}
           {service.serviceType === 'multi_visit' && service.workflow?.steps?.length > 0 && (() => {
@@ -141,7 +144,6 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             );
           })()}
         </div>
-      </div>
 
       {/* Right side image + absolute button */}
       <div className="relative w-24 h-24 shrink-0 rounded-md overflow-visible">

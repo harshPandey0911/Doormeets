@@ -324,66 +324,64 @@ const PremiumServiceDetailPage = () => {
   const renderVariantsList = () => {
     if (variants.length === 0) return null;
     return (
-      <div className="space-y-4 w-full px-0">
-        <div className="space-y-3.5">
+      <div className="w-full px-0 my-3">
+        <div className="flex gap-2.5 overflow-x-auto scrollbar-hide scroll-smooth pb-3 pt-1">
           {variants.map((variant, idx) => {
             const selectedEntry = selectedVariants.find(v => (v._id || v.title) === (variant._id || variant.title));
             const isSelected = !!selectedEntry;
             const qty = selectedEntry?.quantity || 0;
-             return (
+            const variantImage = toAssetUrl(variant.iconUrl || variant.image) || toAssetUrl(service?.image || service?.icon || service?.bannerImage) || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400';
+
+            return (
               <div
                 key={variant._id || idx}
-                className={`p-2 rounded-md flex items-center justify-between transition-all select-none border-2`}
+                className="shrink-0 w-[140px] xs:w-[148px] sm:w-[165px] rounded-md border p-2.5 flex flex-col justify-between transition-all select-none group shadow-xs"
                 style={{
-                  backgroundColor: isSelected ? 'rgba(179, 58, 53, 0.03)' : 'var(--card-bg)',
+                  backgroundColor: 'var(--card-bg)',
                   borderColor: 'var(--border)'
                 }}
               >
-                <div className="flex gap-3 items-center flex-1 pr-2 min-w-0">
-                  {variant.iconUrl ? (
-                    <div className="w-20 h-20 rounded-[4px] overflow-hidden bg-white shrink-0 border" style={{ borderColor: 'var(--border)' }}>
-                      <img src={toAssetUrl(variant.iconUrl)} alt={variant.title} className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 rounded-[4px] bg-gray-50 dark:bg-zinc-800 border shrink-0 flex items-center justify-center text-2xl shadow-sm" style={{ borderColor: 'var(--border)' }}>
-                      📦
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <h4 className="font-semibold text-[12px]" style={{ color: 'var(--text-primary)' }}>{variant.title}</h4>
-                    {variant.description && (
-                      <p className="text-[10px] leading-relaxed max-w-xl mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                        {variant.description}
-                      </p>
-                    )}
+                <div>
+                  {/* Top Card Image */}
+                  <div className="w-full h-[110px] sm:h-[125px] rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 relative mb-2">
+                    <img
+                      src={variantImage}
+                      alt={variant.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
                   </div>
+
+                  {/* Title */}
+                  <h4
+                    className="font-semibold text-[12px] line-clamp-2 leading-[1.3] mb-2 min-h-[32px]"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {variant.title}
+                  </h4>
                 </div>
 
-                <div className="flex flex-col items-end shrink-0 gap-2.5 ml-2">
-                  <div className="text-right">
-                    <div className="font-semibold text-[12px] text-[#B33A35] dark:text-[#D56C67]">
-                      ₹{(variant.extraPrice || 0) * (qty || 1)}
-                    </div>
-                    {qty > 1 && (
-                      <div className="text-[9px] text-gray-400 mt-0.5">₹{variant.extraPrice} × {qty}</div>
-                    )}
+                {/* Price + Add Action */}
+                <div className="flex items-center justify-between pt-1 border-t w-full" style={{ borderColor: 'var(--border)' }}>
+                  <div className="font-extrabold text-[13px]" style={{ color: 'var(--text-primary)' }}>
+                    ₹{(variant.extraPrice || 0) * (qty || 1)}
                   </div>
+
                   {isSelected ? (
-                    <div className="flex items-center gap-0 rounded-xl bg-[#B33A35] text-white shadow-sm overflow-hidden border border-[#B33A35]">
+                    <div className="flex items-center gap-0.5 rounded-md bg-white dark:bg-zinc-900 border border-[#B33A35] px-1 py-0.5 text-[#B33A35] shadow-xs">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, -1); }}
-                        className="w-7.5 h-7.5 flex items-center justify-center text-white text-xs font-semibold hover:bg-[#9E2E2A] transition-colors cursor-pointer"
+                        className="w-4.5 h-4.5 flex items-center justify-center font-bold text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer"
                       >
                         −
                       </button>
-                      <span className="w-7.5 h-7.5 flex items-center justify-center text-xs font-semibold text-white">
+                      <span className="font-bold text-xs min-w-[12px] text-center">
                         {qty}
                       </span>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
-                        className="w-7.5 h-7.5 flex items-center justify-center text-white text-xs font-semibold hover:bg-[#9E2E2A] transition-colors cursor-pointer"
+                        className="w-4.5 h-4.5 flex items-center justify-center font-bold text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer"
                       >
                         +
                       </button>
@@ -392,7 +390,7 @@ const PremiumServiceDetailPage = () => {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
-                      className="px-4 py-1.5 rounded-xl border-2 border-[#B33A35] text-[#B33A35] hover:bg-red-50/50 dark:hover:bg-red-950/20 text-xs font-semibold transition-all cursor-pointer"
+                      className="px-2.5 py-0.5 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#B33A35] font-bold text-[11px] hover:border-[#B33A35] hover:bg-red-50/40 dark:hover:bg-red-950/20 transition-all cursor-pointer shadow-xs active:scale-95"
                     >
                       Add
                     </button>
