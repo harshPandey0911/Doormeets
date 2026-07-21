@@ -588,10 +588,10 @@ const refreshToken = async (req, res) => {
     }
 
     // Check status
-    if (vendor.approvalStatus !== VENDOR_STATUS.APPROVED || !vendor.isActive) {
+    if (vendor.approvalStatus === 'suspended' || vendor.approvalStatus === 'rejected' || !vendor.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'Account is not approved or is inactive'
+        message: 'Account is suspended, rejected, or inactive'
       });
     }
 

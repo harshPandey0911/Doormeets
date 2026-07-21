@@ -288,7 +288,7 @@ const verifyPaymentWebhook = async (req, res) => {
 
         // Online payment: only earnings increase, NO dues (platform holds the money)
         await Vendor.findByIdAndUpdate(booking.vendorId, {
-          $inc: { 'wallet.earnings': vendorEarning }
+          $inc: { 'wallet.credits': vendorEarning / 10 }
         });
 
         // Earnings credit transaction
@@ -518,7 +518,7 @@ const processWalletPayment = async (req, res) => {
 
         // Increment vendor wallet by baseAmount ONLY
         await Vendor.findByIdAndUpdate(booking.vendorId, {
-          $inc: { 'wallet.earnings': vendorEarning }
+          $inc: { 'wallet.credits': vendorEarning / 10 }
         });
 
         // Save Transaction ledger entry
@@ -1050,7 +1050,7 @@ const confirmCashCollection = async (req, res) => {
         const duesAmount = booking.finalAmount - vendorEarning;
         await Vendor.findByIdAndUpdate(booking.vendorId, {
           $inc: {
-            'wallet.earnings': vendorEarning,
+            'wallet.credits': vendorEarning / 10,
             'wallet.dues': duesAmount
           }
         });

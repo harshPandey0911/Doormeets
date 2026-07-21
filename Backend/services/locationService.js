@@ -170,31 +170,8 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
 
     const baseQuery = _buildVendorQuery(filters);
 
-    // Dynamic Service-Wise Minimum Wallet Balance Check
-    const Category = require('../models/Category');
-    const searchServiceCategory = filters.service;
-    if (searchServiceCategory) {
-      try {
-        const categoryDoc = await Category.findOne({
-          $or: [
-            { title: { $regex: new RegExp(`^${searchServiceCategory.trim()}$`, 'i') } },
-            { slug: searchServiceCategory.toLowerCase().trim() }
-          ]
-        }).select('minWalletBalance').lean();
-
-        if (categoryDoc && categoryDoc.minWalletBalance > 0) {
-          console.log(`[LocationService] Service "${searchServiceCategory}" requires Minimum Wallet Balance of ₹${categoryDoc.minWalletBalance}`);
-          baseQuery.$expr = {
-            $and: [
-              baseQuery.$expr || { $literal: true },
-              { $gte: [ { $subtract: ["$wallet.earnings", "$wallet.dues"] }, categoryDoc.minWalletBalance ] }
-            ]
-          };
-        }
-      } catch (catErr) {
-        console.error('[LocationService] Category minWalletBalance check error:', catErr);
-      }
-    }
+    // Dynamic Service-Wise Minimum Wallet Balance Check (REMOVED)
+    // Requests now broadcast to everyone; balance check moved to accept phase.
 
     const totalApprovedVendors = await Vendor.countDocuments({ approvalStatus: 'APPROVED', isActive: true });
     console.log(`[LocationService] Total Approved/Active Vendors in DB: ${totalApprovedVendors}`);
@@ -358,31 +335,8 @@ const findVendorsByCity = async (city, filters = {}, newBookingEndTime = null) =
     const Vendor = require('../models/Vendor');
     const baseQuery = _buildVendorQuery({ ...filters, city });
 
-    // Dynamic Service-Wise Minimum Wallet Balance Check
-    const Category = require('../models/Category');
-    const searchServiceCategory = filters.service;
-    if (searchServiceCategory) {
-      try {
-        const categoryDoc = await Category.findOne({
-          $or: [
-            { title: { $regex: new RegExp(`^${searchServiceCategory.trim()}$`, 'i') } },
-            { slug: searchServiceCategory.toLowerCase().trim() }
-          ]
-        }).select('minWalletBalance').lean();
-
-        if (categoryDoc && categoryDoc.minWalletBalance > 0) {
-          console.log(`[LocationService] (City Search) Service "${searchServiceCategory}" requires Minimum Wallet Balance of ₹${categoryDoc.minWalletBalance}`);
-          baseQuery.$expr = {
-            $and: [
-              baseQuery.$expr || { $literal: true },
-              { $gte: [ { $subtract: ["$wallet.earnings", "$wallet.dues"] }, categoryDoc.minWalletBalance ] }
-            ]
-          };
-        }
-      } catch (catErr) {
-        console.error('[LocationService] Category minWalletBalance check error in city search:', catErr);
-      }
-    }
+    // Dynamic Service-Wise Minimum Wallet Balance Check (REMOVED)
+    // Requests now broadcast to everyone; balance check moved to accept phase.
 
     console.log(`[LocationService] City search query: ${JSON.stringify(baseQuery)}`);
     const vendors = await Vendor.find(baseQuery)

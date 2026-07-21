@@ -565,7 +565,7 @@ module.exports = {
       Object.assign(matchQuery, bookingFilter);
 
       const withdrawals = await Withdrawal.find(matchQuery)
-        .populate('vendorId', 'name businessName phone wallet.earnings')
+        .populate('vendorId', 'name businessName phone wallet.credits')
         .populate('workerId', 'name phone wallet.balance')
         .sort({ createdAt: 1 })
         .skip(skip)
@@ -659,10 +659,10 @@ module.exports = {
       const vendor = await Vendor.findById(withdrawal.vendorId);
       if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
 
-      if (vendor.wallet.earnings < withdrawal.amount) {
+      if ((vendor.wallet.credits * 10) < withdrawal.amount) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient earnings. Available: ₹${vendor.wallet.earnings}`
+          message: `Insufficient earnings. Available: ₹${vendor.wallet.credits * 10}`
         });
       }
 
@@ -680,7 +680,7 @@ module.exports = {
       const netAmount = grossAmount - commissionAmount - tdsAmount - platformFeeAmount;
 
       // Deduct full amount from vendor earnings (gross)
-      vendor.wallet.earnings -= grossAmount;
+      vendor.wallet.credits -= (grossAmount / 10);
       vendor.wallet.totalWithdrawn = (vendor.wallet.totalWithdrawn || 0) + grossAmount;
       await vendor.save();
 

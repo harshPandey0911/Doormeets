@@ -52,7 +52,7 @@ const PackageBased = () => {
   const [editingCombo, setEditingCombo] = useState(null);     // null | 'new' | combo object
 
   // Form states
-  const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '', sacCode: '' });
+  const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '', sacCode: '', minWalletBalance: 0 });
   const [subCatForm, setSubCatForm] = useState({ categoryId: '', title: '', description: '', iconUrl: '', imageUrl: '', videoUrl: '', status: 'active' });
   const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0, allowUserEdit: true, codEnabled: true, codAdvanceAmount: 0 });
 
@@ -121,10 +121,11 @@ const PackageBased = () => {
         status: cat.status || 'active',
         homeIconUrl: cat.homeIconUrl || '',
         homeBadge: cat.homeBadge || '',
-        sacCode: cat.sacCode || ''
+        sacCode: cat.sacCode || '',
+        minWalletBalance: cat.minWalletBalance || 0
       });
     } else {
-      setMainCatForm({ title: '', status: 'active', homeIconUrl: '', homeBadge: '', sacCode: '' });
+      setMainCatForm({ title: '', status: 'active', homeIconUrl: '', homeBadge: '', sacCode: '', minWalletBalance: 0 });
     }
     setEditingMainCat(cat || 'new');
   };
@@ -1030,6 +1031,18 @@ const PackageBased = () => {
                   className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
                   placeholder="e.g. 998599"
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Minimum Wallet Balance (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={mainCatForm.minWalletBalance}
+                  onChange={e => setMainCatForm({ ...mainCatForm, minWalletBalance: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none"
+                  placeholder="e.g. 200"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Minimum amount (in ₹) vendor needs to accept bookings.</p>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1">Icon / Image</label>

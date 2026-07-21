@@ -98,6 +98,41 @@ exports.getDeletedAccountHistory = async (req, res, next) => {
 };
 
 /**
+ * DELETE /api/admin/deleted-accounts/:role/:id
+ * Permanently delete an account from the database
+ */
+exports.permanentlyDeleteAccount = async (req, res, next) => {
+  try {
+    const { role, id } = req.params;
+    let deletedDoc = null;
+
+    if (role === 'user') {
+      deletedDoc = await User.findByIdAndDelete(id);
+    } else if (role === 'vendor') {
+      deletedDoc = await Vendor.findByIdAndDelete(id);
+    } else if (role === 'worker') {
+      deletedDoc = await Worker.findByIdAndDelete(id);
+    } else if (role === 'shopOwner') {
+      deletedDoc = await ShopOwner.findByIdAndDelete(id);
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid role parameter.' });
+    }
+
+    if (!deletedDoc) {
+      return res.status(404).json({ success: false, message: 'Account not found or already deleted.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account permanently deleted.`
+    });
+  } catch (error) {
+    console.error('Error permanently deleting account:', error);
+    res.status(500).json({ success: false, message: 'Failed to permanently delete account.' });
+  }
+};
+
+/**
  * DELETE /api/users/profile
  * Soft delete current user
  */
