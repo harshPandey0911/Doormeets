@@ -106,7 +106,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                     }}
                   >
                     <div 
-                      className="bg-white dark:bg-zinc-900 rounded-3xl p-5 w-full max-w-sm shadow-xl space-y-4 border dark:border-zinc-800"
+                      className="bg-white dark:bg-zinc-900 rounded-md p-5 w-full max-w-sm shadow-xl space-y-4 border dark:border-zinc-800"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex justify-between items-center border-b pb-2 dark:border-zinc-800">
@@ -123,7 +123,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                       </div>
                       <div className="space-y-3 py-1">
                         {visits.map((v, i) => (
-                          <div key={i} className="flex gap-3 items-start p-2.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800 text-[10px]">
+                          <div key={i} className="flex gap-3 items-start p-2.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-md border border-slate-100 dark:border-zinc-800 text-[10px]">
                             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
                             <div className="flex-1">
                               <div className="font-bold text-slate-800 dark:text-zinc-200">Visit {v.sequence}</div>

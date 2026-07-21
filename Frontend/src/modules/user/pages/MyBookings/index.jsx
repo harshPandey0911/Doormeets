@@ -284,7 +284,7 @@ const MyBookings = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent px-4 py-4 w-full">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent px-4 pt-3 pb-1.5 w-full">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -308,7 +308,7 @@ const MyBookings = () => {
         </header>
 
         {/* Filter Tabs */}
-        <div className="bg-card-bg border-b border-border-color fixed top-[72px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
+        <div className="bg-card-bg border-b border-border-color fixed top-[54px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
           <div className="max-w-7xl mx-auto flex overflow-x-auto px-4 py-3 gap-2.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: 'all', label: 'All Bookings' },
@@ -320,7 +320,7 @@ const MyBookings = () => {
               <button
                 key={tab.id}
                 onClick={() => setFilter(tab.id)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
+                className={`px-4 py-2 rounded-md text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
                   ? 'border-transparent text-white shadow-lg shadow-blue-500/25 active:scale-95'
                   : 'bg-card-bg border-border-color text-secondary-text hover:bg-gray-800/20 hover:border-border-color'
                   }`}
@@ -333,7 +333,7 @@ const MyBookings = () => {
         </div>
 
         {/* Bookings List */}
-        <main className="px-4 pt-[150px] pb-5 max-w-7xl mx-auto w-full">
+        <main className="px-4 pt-[124px] pb-5 max-w-7xl mx-auto w-full">
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
@@ -418,10 +418,10 @@ const MyBookings = () => {
                         bookingService.getById(bId).catch(() => {});
                       }
                     }}
-                    className="group flex gap-3.5 bg-card-bg rounded-[20px] p-4 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
+                    className="group flex gap-3 bg-card-bg rounded-md p-2.5 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
                   >
                     {/* Booking Image */}
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-border-color bg-card-bg flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 border border-border-color bg-card-bg flex items-center justify-center">
                       <img 
                         src={bookingImage} 
                         alt={booking.serviceName || 'Service'} 
@@ -483,7 +483,7 @@ const MyBookings = () => {
                     {/* Right Section: Status badge, Price & Chevron */}
                     <div className="flex flex-col justify-between items-end shrink-0 py-0.5">
                       {/* Status Badge */}
-                      <div className={`px-2 py-0.5 rounded-full border ring-1 ring-inset flex items-center gap-1 shadow-sm ${getStatusColor(booking.status)}`}>
+                      <div className={`px-2 py-0.5 rounded-[4px] border ring-1 ring-inset flex items-center gap-1 shadow-sm ${getStatusColor(booking.status)}`}>
                         <span className="text-[8px] font-semibold uppercase tracking-wide">
                           {getStatusLabel(booking.status)}
                         </span>

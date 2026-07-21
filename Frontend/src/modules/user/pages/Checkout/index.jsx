@@ -1698,7 +1698,7 @@ const Checkout = () => {
             const categoryName = item.categoryTitle || item.category;
 
             return (
-              <div key={item._id} className="border rounded-xl p-4 shadow-sm relative overflow-hidden" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+              <div key={item._id} className="border rounded-md p-4 shadow-sm relative overflow-hidden" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                 {/* Brand Header */}
                 {(brandName || categoryName) && (
                   <div className="flex items-center gap-2 mb-3 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
@@ -1732,7 +1732,7 @@ const Checkout = () => {
                   {!item.isPlan && (
                     <div className="flex flex-col items-end gap-2">
                       <div
-                        className="flex items-center rounded-xl border overflow-hidden"
+                        className="flex items-center rounded-md border overflow-hidden"
                         style={{ borderColor: 'var(--primary)' }}
                       >
                         <button
@@ -1800,7 +1800,7 @@ const Checkout = () => {
 
         {/* Dynamic Fields Section */}
         {dynamicFieldsConfig.length > 0 && (
-          <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+          <div className="border rounded-md p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
             <h3 className="text-sm font-normal mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               <span className="p-1 bg-indigo-50 text-indigo-600 rounded">
                 <FiSliders className="w-4 h-4" />
@@ -1967,7 +1967,7 @@ const Checkout = () => {
           </div>
         )}
 
-        <div className="border rounded-lg p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border rounded-md p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FiPhone className="w-5 h-5 text-gray-500" />
@@ -1987,7 +1987,7 @@ const Checkout = () => {
         </div>
 
         {/* Optional GST Number Input */}
-        <div className="border rounded-lg p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border rounded-md p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-2 mb-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>GST Number <span className="text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>(Optional – for GST invoice)</span></p>
@@ -1999,7 +1999,7 @@ const Checkout = () => {
             value={userGstNumber}
             onChange={(e) => setUserGstNumber(e.target.value.toUpperCase())}
             maxLength={15}
-            className="w-full px-3 py-2 rounded-lg border text-sm"
+            className="w-full px-3 py-2 rounded-md border text-sm"
             style={{ backgroundColor: 'var(--input-bg, #f9fafb)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
           />
           {userGstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(userGstNumber) && (
@@ -2008,7 +2008,7 @@ const Checkout = () => {
         </div>
 
         {/* Promo Code Application Panel */}
-        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border rounded-md p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-2 mb-3">
             <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
               <FiCheckCircle className="w-4 h-4" />
@@ -2017,7 +2017,7 @@ const Checkout = () => {
           </div>
 
           {appliedPromo ? (
-            <div className="bg-green-50 border border-green-100 rounded-xl p-3.5 flex items-center justify-between">
+            <div className="bg-green-50 border border-green-100 rounded-md p-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 bg-green-500 rounded-lg flex items-center justify-center text-white font-normal text-sm shrink-0">
                   %
@@ -2053,7 +2053,7 @@ const Checkout = () => {
                       setPromoError('');
                     }}
                     disabled={promoLoading}
-                    className="w-full px-3.5 py-2.5 border rounded-xl text-sm font-semibold placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all uppercase"
+                    className="w-full px-3.5 py-2.5 border rounded-md text-sm font-semibold placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all uppercase"
                     style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                   />
                 </div>
@@ -2061,7 +2061,7 @@ const Checkout = () => {
                   type="button"
                   onClick={handleApplyPromo}
                   disabled={promoLoading || !promoCode.trim()}
-                  className="px-5 py-2.5 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all shrink-0 active:scale-95"
+                  className="px-5 py-2.5 disabled:opacity-50 text-white rounded-md text-sm font-bold transition-all shrink-0 active:scale-95"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
                   {promoLoading ? 'Applying...' : 'Apply'}
@@ -2078,11 +2078,11 @@ const Checkout = () => {
         </div>
 
         {/* Wallet Balance Panel */}
-        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border rounded-md p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 bg-emerald-50 text-emerald-500 rounded-xl text-lg shrink-0">
+                <span className="p-2 bg-emerald-50 text-emerald-500 rounded-md text-lg shrink-0">
                   👛
                 </span>
                 <div>
@@ -2093,7 +2093,7 @@ const Checkout = () => {
                 </div>
               </div>
               {walletBalance > 0 && (
-                <span className="text-[10px] text-gray-400 font-bold bg-slate-50 border px-2.5 py-1 rounded-xl">
+                <span className="text-[10px] text-gray-400 font-bold bg-slate-50 border px-2.5 py-1 rounded-md">
                   Max Allowed: ₹{maxWalletRedeemable}
                 </span>
               )}
@@ -2127,7 +2127,7 @@ const Checkout = () => {
                           setWalletInputVal(val);
                         }
                       }}
-                      className="w-full pl-7 pr-12 py-2.5 border rounded-xl text-sm font-semibold placeholder:text-gray-400 focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                      className="w-full pl-7 pr-12 py-2.5 border rounded-md text-sm font-semibold placeholder:text-gray-400 focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                       style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                     />
                     <button
@@ -2151,7 +2151,7 @@ const Checkout = () => {
                 )}
               </div>
             ) : (
-              <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-dashed text-xs text-slate-400 font-semibold">
+              <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-md border border-dashed text-xs text-slate-400 font-semibold">
                 <span>Wallet is empty</span>
                 <span className="text-[10px] font-bold uppercase bg-gray-150 px-2 py-0.5 rounded">0 Balance</span>
               </div>
@@ -2160,10 +2160,10 @@ const Checkout = () => {
         </div>
 
         {/* Loyalty Points Panel */}
-        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border rounded-md p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <span className="p-2 bg-amber-50 text-amber-500 rounded-xl text-lg shrink-0">
+              <span className="p-2 bg-amber-50 text-amber-500 rounded-md text-lg shrink-0">
                 🎁
               </span>
               <div>
@@ -2194,7 +2194,7 @@ const Checkout = () => {
         </div>
 
         {/* Payment Method Selector */}
-        <div className="border rounded-xl p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border rounded-md p-5 mb-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">💰</span>
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Payment Method</h3>
@@ -2205,7 +2205,7 @@ const Checkout = () => {
               <button
                 type="button"
                 onClick={() => setPaymentMethod('online')}
-                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg border-2 transition-all w-full max-w-[160px] min-h-[80px] justify-center ${
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-md border-2 transition-all w-full max-w-[160px] min-h-[80px] justify-center ${
                   paymentMethod === 'online'
                     ? 'border-red-600 bg-transparent'
                     : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 bg-transparent'
@@ -2225,7 +2225,7 @@ const Checkout = () => {
               <button
                 type="button"
                 onClick={() => setPaymentMethod('pay_at_home')}
-                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-lg border-2 transition-all w-full max-w-[160px] min-h-[80px] justify-center ${
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-md border-2 transition-all w-full max-w-[160px] min-h-[80px] justify-center ${
                   paymentMethod === 'pay_at_home'
                     ? 'border-red-600 bg-transparent'
                     : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 bg-transparent'
@@ -2267,14 +2267,14 @@ const Checkout = () => {
         {/* RIGHT COLUMN: Sidebar (Sticky on Desktop) */}
         <div className="lg:sticky lg:top-24 space-y-6">
           {/* Booking Type Toggle (Desktop Sidebar View) */}
-          <div className="hidden lg:block border rounded-xl p-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+          <div className="hidden lg:block border rounded-md p-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               <span>🕒</span> Booking Schedule
             </h3>
-            <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
+            <div className="flex p-1 rounded-[4px] mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
               <button
                 onClick={() => setBookingType('scheduled')}
-                className="flex-1 py-2 text-xs font-normal rounded-lg transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 text-xs font-normal rounded-md transition-all flex items-center justify-center gap-1.5"
                 style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
               >
                 <span>📅</span> Slot Booking
@@ -2282,7 +2282,7 @@ const Checkout = () => {
               {isInstantBookingEnabled && (
                 <button
                   onClick={() => setBookingType('instant')}
-                  className="flex-1 py-2 text-xs font-normal rounded-lg transition-all flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 text-xs font-normal rounded-md transition-all flex items-center justify-center gap-1.5"
                   style={bookingType === 'instant'
                     ? { backgroundColor: '#fef9c3', color: '#854d0e', fontWeight: 600 }
                     : { color: 'var(--text-muted)' }}
@@ -2347,7 +2347,7 @@ const Checkout = () => {
               ) : (
                 <button
                   onClick={() => setShowAddressModal(true)}
-                  className="w-full py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-semibold transition-all"
+                  className="w-full py-2 bg-red-50 text-red-600 border border-red-200 rounded-md text-xs font-semibold transition-all"
                 >
                   + Add Delivery Address
                 </button>
@@ -2356,7 +2356,7 @@ const Checkout = () => {
           </div>
 
         {/* Payment Summary */}
-        <div className="border-2 rounded-2xl p-5 mb-6 shadow-sm overflow-hidden relative" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border-2 rounded-md p-5 mb-6 shadow-sm overflow-hidden relative" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           {/* Decorative Background for Header */}
           <div className="absolute top-0 left-0 right-0 h-1" style={{ background: themeColors.gradient }}></div>
 
@@ -2464,7 +2464,7 @@ const Checkout = () => {
         </div>
 
         {/* Important Note regarding Base Price */}
-        <div className="bg-blue-50/10 border border-blue-100/30 rounded-xl p-4 mb-4 flex items-start gap-4 shadow-sm">
+        <div className="bg-blue-50/10 border border-blue-100/30 rounded-md p-4 mb-4 flex items-start gap-4 shadow-sm">
           <div className="bg-blue-100/20 p-2 rounded-full shrink-0 mt-0.5">
             <FiInfo className="w-5 h-5 text-blue-600" />
           </div>
@@ -2478,7 +2478,7 @@ const Checkout = () => {
 
         {/* Free Plan Benefit Card */}
         {totalAmount === 0 && (
-          <div className="bg-linear-to-br from-green-50/10 to-emerald-100/10 border border-green-200/30 rounded-2xl p-5 mb-4 relative overflow-hidden">
+          <div className="bg-linear-to-br from-green-50/10 to-emerald-100/10 border border-green-200/30 rounded-md p-5 mb-4 relative overflow-hidden">
             <div className="flex items-start gap-4 z-10 relative">
               <div className="bg-green-500 rounded-full p-2 shadow-lg shadow-green-200 shrink-0">
                 <FiCheckCircle className="w-6 h-6 text-white" />
@@ -2495,7 +2495,7 @@ const Checkout = () => {
         )}
 
         {/* Cancellation Policy */}
-        <div className="border rounded-lg p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+        <div className="border rounded-md p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <h3 className="text-base font-normal mb-2" style={{ color: 'var(--text-primary)' }}>Cancellation policy</h3>
           <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
             Free cancellations if done more than 12 hrs before the service or if a professional isn't assigned. A fee will be charged otherwise.
@@ -2517,7 +2517,7 @@ const Checkout = () => {
                 (currentStep === 'payment' ? handlePayment : handleSearchVendors) :
                 handleProceed}
             disabled={searchingVendors}
-            className="w-full text-white py-4 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 shadow-lg shadow-teal-500/30"
+            className="w-full text-white py-4 rounded-md text-sm font-semibold transition-colors disabled:opacity-50 shadow-lg shadow-teal-500/30"
             style={{ backgroundColor: themeColors.button }}
           >
             {searchingVendors ? 'Searching for vendors...' :
@@ -2537,10 +2537,10 @@ const Checkout = () => {
 
         {/* Booking Type Toggle */}
         <div className="px-4 pt-3 pb-0">
-          <div className="flex p-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
+          <div className="flex p-1 rounded-[4px] mb-1" style={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)' }}>
             <button
               onClick={() => setBookingType('scheduled')}
-              className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-2 text-sm font-normal rounded-md transition-all flex items-center justify-center gap-2"
               style={bookingType === 'scheduled' ? { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
             >
               <span>📅</span> Slot Booking
@@ -2548,7 +2548,7 @@ const Checkout = () => {
             {isInstantBookingEnabled && (
               <button
                 onClick={() => setBookingType('instant')}
-                className="flex-1 py-2 text-sm font-normal rounded-lg transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-2 text-sm font-normal rounded-md transition-all flex items-center justify-center gap-2"
                 style={bookingType === 'instant'
                   ? { backgroundColor: '#fef9c3', color: '#854d0e', fontWeight: 600 }
                   : { color: 'var(--text-muted)' }}
@@ -2631,7 +2631,7 @@ const Checkout = () => {
           ) : (
             <div
               onClick={() => setShowAddressModal(true)}
-              className="flex items-center justify-between p-3 bg-red-50/10 border border-red-100/30 rounded-xl cursor-pointer active:scale-[0.98] transition-all"
+              className="flex items-center justify-between p-3 bg-red-50/10 border border-red-100/30 rounded-md cursor-pointer active:scale-[0.98] transition-all"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -2654,7 +2654,7 @@ const Checkout = () => {
                 (currentStep === 'payment' ? handlePayment : handleSearchVendors) :
                 handleProceed}
             disabled={searchingVendors}
-            className="w-full text-white py-3 rounded-lg text-base font-semibold transition-colors disabled:opacity-50 shadow-lg shadow-teal-500/30"
+            className="w-full text-white py-3 rounded-md text-base font-semibold transition-colors disabled:opacity-50 shadow-lg shadow-teal-500/30"
             style={{ backgroundColor: themeColors.button }}
           >
             {searchingVendors ? 'Searching for vendors...' :

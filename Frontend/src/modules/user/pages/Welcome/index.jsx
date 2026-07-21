@@ -55,7 +55,7 @@ const Welcome = () => {
       if (token) {
         navigate('/user/home', { replace: true });
       } else {
-        navigate('/user/login', { replace: true });
+        navigate(isDesktop ? '/user/home' : '/user/login', { replace: true });
       }
     }
   }, [isDesktop, navigate]);

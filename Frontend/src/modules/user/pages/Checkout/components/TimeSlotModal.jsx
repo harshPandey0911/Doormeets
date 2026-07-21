@@ -61,7 +61,7 @@ const TimeSlotModal = ({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Modal */}
         <div
-          className={`rounded-3xl w-full max-w-xl shadow-2xl transition-all duration-300 ${isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
+          className={`rounded-md w-full max-w-xl shadow-2xl transition-all duration-300 ${isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
             }`}
           style={{
             backgroundColor: 'var(--card-bg)',
@@ -117,7 +117,7 @@ const TimeSlotModal = ({
                   <button
                     key={index}
                     onClick={() => onDateSelect(date)}
-                    className="shrink-0 px-4 py-1.5 rounded-lg border-2 transition-all"
+                    className="shrink-0 px-4 py-1.5 rounded-md border-2 transition-all"
                     style={isSelected ? {
                       backgroundColor: `${themeColors.brand.teal}1A`,
                       borderColor: themeColors.button,
@@ -149,7 +149,7 @@ const TimeSlotModal = ({
             <div className="mb-4">
               <h3 className="text-base font-normal mb-3" style={{ color: 'var(--text-primary)' }}>Select start time of service</h3>
               {getTimeSlots().length === 0 ? (
-                <div className="text-center py-8 rounded-xl border-2 border-dashed" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                <div className="text-center py-8 rounded-md border-2 border-dashed" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
                   <p className="font-normal mb-1" style={{ color: 'var(--text-secondary)' }}>No time slots available</p>
                   <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Please select a different date</p>
                 </div>
@@ -169,7 +169,7 @@ const TimeSlotModal = ({
                       <button
                         key={index}
                         onClick={() => onTimeSelect(slot.value)}
-                        className="px-3 py-2.5 rounded-lg border-2 text-sm font-normal transition-all"
+                        className="px-3 py-2.5 rounded-md border-2 text-sm font-normal transition-all"
                         style={isSelected ? {
                           backgroundColor: `${themeColors.brand.teal}1A`,
                           borderColor: themeColors.button,
@@ -192,7 +192,7 @@ const TimeSlotModal = ({
             <button
               onClick={() => onSave(selectedDate, selectedTime)}
               disabled={!selectedDate || !selectedTime}
-              className="w-full py-3.5 rounded-lg text-base font-normal transition-colors mb-4"
+              className="w-full py-3.5 rounded-md text-base font-normal transition-colors mb-4"
               style={selectedDate && selectedTime ? {
                 backgroundColor: themeColors.button,
                 color: 'white'

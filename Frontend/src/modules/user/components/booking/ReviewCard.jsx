@@ -15,13 +15,13 @@ const ReviewCard = ({ booking, onWriteReview }) => {
 
 
   return (
-    <div className="bg-card-bg rounded-3xl overflow-hidden shadow-lg border border-border-color relative group mb-6">
+    <div className="bg-card-bg rounded-md overflow-hidden shadow-lg border border-border-color relative group mb-6">
       {/* Top Accent Gradient */}
       <div className="h-1.5 bg-gradient-to-r from-orange-400 to-orange-600" />
 
       <div className="p-6">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-brand/10 flex items-center justify-center text-brand shadow-inner border border-brand/20">
+          <div className="w-12 h-12 rounded-md bg-brand/10 flex items-center justify-center text-brand shadow-inner border border-brand/20">
             <FiStar className="w-6 h-6" />
           </div>
           <div>
@@ -33,7 +33,7 @@ const ReviewCard = ({ booking, onWriteReview }) => {
         {!hasRating ? (
           <button
             onClick={onWriteReview}
-            className="w-full py-3.5 text-white font-bold rounded-xl shadow-lg shadow-orange-200 active:scale-95 transition-all hover:brightness-105"
+            className="w-full py-3.5 text-white font-bold rounded-md shadow-lg shadow-orange-200 active:scale-95 transition-all hover:brightness-105"
             style={{
               background: 'linear-gradient(135deg, #F97316, #EA580C)'
             }}
@@ -41,7 +41,7 @@ const ReviewCard = ({ booking, onWriteReview }) => {
             Write a Review
           </button>
         ) : (
-          <div className="bg-light-bg rounded-2xl p-5 border border-border-color text-center">
+          <div className="bg-light-bg rounded-md p-5 border border-border-color text-center">
             <p className="text-xs font-bold text-brand uppercase tracking-widest mb-3">Your Rating</p>
             <div className="flex justify-center gap-2 mb-4">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -55,7 +55,7 @@ const ReviewCard = ({ booking, onWriteReview }) => {
               ))}
             </div>
             {(booking.rating?.review || booking.review) && (
-              <div className="bg-card-bg rounded-xl p-4 border border-border-color shadow-sm relative">
+              <div className="bg-card-bg rounded-md p-4 border border-border-color shadow-sm relative">
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card-bg border-t border-l border-border-color rotate-45 transform"></div>
                 <p className="text-dark-text italic font-medium leading-relaxed">
                   "{booking.rating?.review || booking.review}"

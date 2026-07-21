@@ -772,7 +772,7 @@ const BookingDetails = () => {
 
             {/* Visual Progress Stepper */}
             {!['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
-              <div className="bg-card-bg rounded-3xl px-6 py-5 shadow-sm border border-border-color overflow-hidden">
+              <div className="bg-card-bg rounded-md px-6 py-5 shadow-sm border border-border-color overflow-hidden">
                 <div className="flex justify-between relative">
                   {[
                     { label: 'Booked', icon: <FiCheckCircle className="w-4 h-4" />, active: true },
@@ -795,7 +795,7 @@ const BookingDetails = () => {
             <div className="flex items-center justify-center">
               <div
                 style={getStatusStyle(booking.status)}
-                className="px-4 py-2 rounded-full flex items-center gap-2 shadow-sm border"
+                className="px-4 py-2 rounded-md flex items-center gap-2 shadow-sm border"
               >
                 {getStatusIcon(booking.status)}
                 <span className="text-xs font-black uppercase tracking-wider">{getStatusLabel(booking.status)}</span>
@@ -804,11 +804,11 @@ const BookingDetails = () => {
 
             {/* Broadcast/Searching State Card */}
             {!booking.workerId && !booking.assignedTo && ['requested', 'searching', 'bidding'].includes(booking.status?.toLowerCase()) && (
-              <div className="bg-card-bg rounded-3xl p-6 shadow-sm border border-border-color relative overflow-hidden group">
+              <div className="bg-card-bg rounded-md p-6 shadow-sm border border-border-color relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-sm">
+                    <div className="w-12 h-12 rounded-md bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-sm">
                       <FiSearch className="w-6 h-6 text-amber-500 animate-pulse" />
                     </div>
                     <div>
@@ -824,7 +824,7 @@ const BookingDetails = () => {
                       : "We've sent your request to all verified experts in your area. You'll be notified automatically as soon as someone accepts."}
                   </p>
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-xs text-secondary-text bg-light-bg rounded-xl p-3 border border-border-color">
+                    <div className="flex items-center gap-2 text-xs text-secondary-text bg-light-bg rounded-md p-3 border border-border-color">
                       <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping"></span>
                       <span>Waiting for quotes from nearby partners...</span>
                     </div>
@@ -846,7 +846,7 @@ const BookingDetails = () => {
 
             {/* Service Partner Card — Enhanced */}
             {(booking.workerId || booking.assignedTo || booking.vendorId) && ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done'].includes(booking.status?.toLowerCase()) && (
-              <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+              <div className="bg-card-bg rounded-md shadow-sm border border-border-color overflow-hidden">
                 {/* Top bar */}
                 <div className="px-5 pt-4 pb-3 flex justify-between items-center border-b border-border-color">
                   {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? (
@@ -870,7 +870,7 @@ const BookingDetails = () => {
 
                 {/* Provider Info */}
                 <div className="px-5 py-4 flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-divider border border-border-color shrink-0">
+                  <div className="w-14 h-14 rounded-[4px] overflow-hidden bg-divider border border-border-color shrink-0">
                     {(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto) ? (
                       <>
                         <img
@@ -938,10 +938,10 @@ const BookingDetails = () => {
 
             {/* Arrival OTP Card - Show during early stages until verified (Highly Compact & Non-Colorful) */}
             {(booking.arrivalOTP || booking.visitOtp) && ['confirmed', 'assigned', 'journey_started'].includes(booking.status?.toLowerCase()) && (
-              <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 mb-4 shadow-sm">
+              <div className="relative overflow-hidden rounded-md border border-gray-100 bg-white p-4 mb-4 shadow-sm">
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-2.5 w-full mb-3">
-                    <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center border border-teal-100 shrink-0">
+                    <div className="w-9 h-9 rounded-md bg-teal-50 flex items-center justify-center border border-teal-100 shrink-0">
                       <FiMapPin className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
@@ -955,7 +955,7 @@ const BookingDetails = () => {
                     {String(booking.arrivalOTP || booking.visitOtp).split('').map((digit, idx) => (
                       <div
                         key={idx}
-                        className="w-10 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-200 shadow-xs"
+                        className="w-10 h-12 bg-gray-50 rounded-md flex items-center justify-center border border-gray-200 shadow-xs"
                       >
                         <span className="text-xl font-extrabold text-teal-600">{digit}</span>
                       </div>
@@ -974,9 +974,9 @@ const BookingDetails = () => {
 
             {/* Professional Arrived Notification - Only after OTP verified */}
             {booking?.status?.toLowerCase() === 'visited' && (
-              <div className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-emerald-50 active:scale-[0.98] transition-all">
+              <div className="relative overflow-hidden rounded-md border border-emerald-200 bg-emerald-50 active:scale-[0.98] transition-all">
                 <div className="p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center border border-emerald-200 shrink-0">
+                  <div className="w-12 h-12 rounded-md bg-emerald-100 flex items-center justify-center border border-emerald-200 shrink-0">
                     <FiCheckCircle className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
@@ -989,9 +989,9 @@ const BookingDetails = () => {
 
             {/* Waiting for Vendor to initiate Payment */}
             {!booking.customerConfirmationOTP && ['work_done'].includes(booking.status?.toLowerCase()) && !booking.cashCollected && (
-              <div className="bg-card-bg rounded-3xl p-6 shadow-lg border border-border-color mb-6 flex items-center gap-4 relative overflow-hidden">
+              <div className="bg-card-bg rounded-md p-6 shadow-lg border border-border-color mb-6 flex items-center gap-4 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand/5 rounded-full -translate-y-12 translate-x-12 blur-2xl"></div>
-                <div className="w-12 h-12 rounded-2xl bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20">
+                <div className="w-12 h-12 rounded-md bg-brand/10 flex items-center justify-center shrink-0 border border-brand/20">
                   <FiLoader className="w-6 h-6 text-brand animate-spin" />
                 </div>
                 <div className="relative z-10">
@@ -1005,13 +1005,13 @@ const BookingDetails = () => {
             {(booking.paymentStatus === 'plan_covered' || (booking.paymentMethod === 'plan_benefit' && booking.paymentStatus !== 'success')) &&
               ['visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase()) &&
               !booking.customerConfirmationOTP && (
-                <div className="relative overflow-hidden rounded-3xl shadow-lg border border-emerald-100 mb-6">
+                <div className="relative overflow-hidden rounded-md shadow-lg border border-emerald-100 mb-6">
                   <div className="absolute inset-0 bg-linear-to-br from-emerald-500 via-teal-600 to-green-700 opacity-95"></div>
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.15)_0%,transparent_50%)]"></div>
 
                   <div className="relative z-10 p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                      <div className="w-12 h-12 rounded-md bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
                         <FiCheckCircle className="w-6 h-6 text-white" />
                       </div>
                       <div>
@@ -1024,7 +1024,7 @@ const BookingDetails = () => {
                       </div>
                     </div>
 
-                    <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                    <div className="bg-white/15 backdrop-blur-sm rounded-md p-4 border border-white/20">
                       <div className="flex items-center gap-3 mb-2">
                         <FiCheckCircle className="w-5 h-5 text-emerald-200" />
                         <span className="font-bold text-white">Base Service Covered</span>
@@ -1048,10 +1048,10 @@ const BookingDetails = () => {
             {(((booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online') && booking.paymentStatus?.toLowerCase() === 'pending') || booking.customerConfirmationOTP || booking.paymentStatus === 'success' || isAddonPending) && !booking.cashCollected && !['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
               <div
                 onClick={() => { if (booking.customerConfirmationOTP) setShowPaymentModal(true); }}
-                className={`relative overflow-hidden rounded-3xl shadow-sm border border-border-color p-4 bg-white dark:bg-zinc-900 ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}
+                className={`relative overflow-hidden rounded-md shadow-sm border border-border-color p-4 bg-white dark:bg-zinc-900 ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${booking.paymentStatus === 'success'
+                  <div className={`w-10 h-10 rounded-md flex items-center justify-center border ${booking.paymentStatus === 'success'
                       ? 'bg-green-500/10 border-green-500/20 text-green-600'
                       : 'bg-teal-500/10 border-teal-500/20 text-teal-600'
                     }`}>
@@ -1076,7 +1076,7 @@ const BookingDetails = () => {
                   <>
                     <button
                       onClick={handleOnlinePayment}
-                      className="w-full py-3 mb-4 bg-brand text-white rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all hover:bg-brand-light flex items-center justify-center gap-2 group"
+                      className="w-full py-3 mb-4 bg-brand text-white rounded-md font-bold text-xs shadow-md active:scale-95 transition-all hover:bg-brand-light flex items-center justify-center gap-2 group"
                     >
                       <FiDollarSign className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                       Pay Online Now
@@ -1090,13 +1090,13 @@ const BookingDetails = () => {
                           {String(booking.customerConfirmationOTP).split('').map((digit, idx) => (
                             <div
                               key={idx}
-                              className="w-10 h-12 bg-light-bg rounded-lg flex items-center justify-center border border-border-color shadow-sm"
+                              className="w-10 h-12 bg-light-bg rounded-[4px] flex items-center justify-center border border-border-color shadow-sm"
                             >
                               <span className="text-xl font-bold text-dark-text">{digit}</span>
                             </div>
                           ))}
                         </div>
-                        <p className="text-[9px] text-secondary-text mt-2 font-medium bg-light-bg border border-border-color px-3 py-1 rounded-full">
+                        <p className="text-[9px] text-secondary-text mt-2 font-medium bg-light-bg border border-border-color px-3 py-1 rounded-[4px]">
                           Share this code with the professional ONLY after your satisfaction
                         </p>
                       </div>
@@ -1104,7 +1104,7 @@ const BookingDetails = () => {
                   </>
                 )}
 
-                <div className="bg-light-bg rounded-xl p-3.5 border border-border-color">
+                <div className="bg-light-bg rounded-md p-3.5 border border-border-color">
                   <div className="flex items-center gap-2.5 text-dark-text">
                     {booking.paymentStatus === 'success' ? (
                       <FiCheckCircle className="w-4.5 h-4.5 text-green-500" />
@@ -1134,7 +1134,7 @@ const BookingDetails = () => {
               {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
                 <button
                   onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
-                  className="w-full py-4 bg-linear-to-r from-gray-900 to-gray-800 text-white rounded-2xl font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"
+                  className="w-full py-4 bg-linear-to-r from-gray-900 to-gray-800 text-white rounded-md font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"
                 >
                   <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                     <FiMapPin className="w-4 h-4 text-white" />
@@ -1143,7 +1143,7 @@ const BookingDetails = () => {
                 </button>
               )}
 
-              <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+              <div className="bg-card-bg rounded-md shadow-sm border border-border-color overflow-hidden">
                 <div
                   onClick={() => setIsLocationExpanded(!isLocationExpanded)}
                   className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
@@ -1353,7 +1353,7 @@ const BookingDetails = () => {
 
             {/* Payment Summary - Only show if payment is completed/collected, if a payment request is active (Work Done), or if a bill exists (e.g. addons added) */}
             {(hasBill || ['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
-              <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+              <section className="bg-card-bg rounded-md shadow-sm border border-border-color overflow-hidden">
                 <div
                   onClick={() => setIsPaymentSummaryExpanded(!isPaymentSummaryExpanded)}
                   className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
@@ -1610,7 +1610,7 @@ const BookingDetails = () => {
                   <div className="bg-card-bg px-5 pb-5 pt-3 flex justify-center">
                     <button
                       onClick={handleDownloadInvoice}
-                      className="w-full py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
+                      className="w-full py-3 rounded-md font-bold text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
                     >
                       <FiFileText className="w-5 h-5" />
                       Download Tax Invoice (PDF)
@@ -1622,7 +1622,7 @@ const BookingDetails = () => {
 
             {/* Action Card for Awaiting Payment */}
             {(booking.status === 'awaiting_payment' || isAddonPending) && (
-              <div className="bg-card-bg rounded-3xl shadow-sm border border-border-color p-6 space-y-4">
+              <div className="bg-card-bg rounded-md shadow-sm border border-border-color p-6 space-y-4">
                 <div className="text-center mb-4">
                   <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-brand/20">
                     <FiDollarSign className="w-8 h-8 text-brand" />
@@ -1687,7 +1687,7 @@ const BookingDetails = () => {
                     toast.error('Support phone number not available');
                   }
                 }}
-                className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-2xl hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
+                className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-md hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
               >
                 <FiPhone className="w-6 h-6 text-secondary-text" />
                 <span className="text-sm font-bold">Call Support</span>
@@ -1701,7 +1701,7 @@ const BookingDetails = () => {
                   link.click();
                   document.body.removeChild(link);
                 }}
-                className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-2xl hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
+                className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-md hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
               >
                 <FiMail className="w-6 h-6 text-secondary-text" />
                 <span className="text-sm font-bold">Email Help</span>
@@ -1761,7 +1761,7 @@ const BookingDetails = () => {
           {/* RIGHT COLUMN: Summary and Actions (Sidebar) */}
           <div className="lg:sticky lg:top-24 space-y-6">
             {/* Booking Actions Sidebar panel */}
-            <div className="bg-card-bg rounded-3xl p-5 border border-border-color shadow-sm space-y-4">
+            <div className="bg-card-bg rounded-md p-5 border border-border-color shadow-sm space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-secondary-text">Booking Actions</h3>
 
               {/* Payment Action */}
@@ -1769,7 +1769,7 @@ const BookingDetails = () => {
                 <button
                   onClick={() => setShowPaymentModal(true)}
                   disabled={paying}
-                  className="w-full py-3 bg-[#B33A35] text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
+                  className="w-full py-3 bg-[#B33A35] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
                 >
                   {paying ? 'Processing...' : (booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0) ? `⚡ Pay COD Advance (₹${booking.codAdvanceAmount})` : '⚡ Pay Booking Bill'}
                 </button>
@@ -1779,7 +1779,7 @@ const BookingDetails = () => {
               {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType !== 'scheduled' && (
                 <button
                   onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
-                  className="w-full py-3 border border-border-color text-dark-text hover:bg-divider text-xs font-bold uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
+                  className="w-full py-3 border border-border-color text-dark-text hover:bg-divider text-xs font-bold uppercase tracking-widest rounded-md transition-all active:scale-[0.98]"
                 >
                   Reschedule Slot
                 </button>
@@ -1788,7 +1788,7 @@ const BookingDetails = () => {
               {/* Chat Support */}
               <button
                 onClick={() => navigate('/user/inbox', { state: { vendorId: booking.vendorId, bookingId: booking._id } })}
-                className="w-full py-3 bg-[#00A6A6] text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:opacity-95 transition-all active:scale-[0.98]"
+                className="w-full py-3 bg-[#00A6A6] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:opacity-95 transition-all active:scale-[0.98]"
               >
                 Chat Support
               </button>

@@ -333,7 +333,7 @@ const PremiumServiceDetailPage = () => {
              return (
               <div
                 key={variant._id || idx}
-                className={`p-2 rounded-2xl flex items-center justify-between transition-all select-none border-2`}
+                className={`p-2 rounded-md flex items-center justify-between transition-all select-none border-2`}
                 style={{
                   backgroundColor: isSelected ? 'rgba(179, 58, 53, 0.03)' : 'var(--card-bg)',
                   borderColor: 'var(--border)'
@@ -341,11 +341,11 @@ const PremiumServiceDetailPage = () => {
               >
                 <div className="flex gap-3 items-center flex-1 pr-2 min-w-0">
                   {variant.iconUrl ? (
-                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-white shrink-0 border" style={{ borderColor: 'var(--border)' }}>
+                    <div className="w-20 h-20 rounded-[4px] overflow-hidden bg-white shrink-0 border" style={{ borderColor: 'var(--border)' }}>
                       <img src={toAssetUrl(variant.iconUrl)} alt={variant.title} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="w-20 h-20 rounded-xl bg-gray-50 dark:bg-zinc-800 border shrink-0 flex items-center justify-center text-2xl shadow-sm" style={{ borderColor: 'var(--border)' }}>
+                    <div className="w-20 h-20 rounded-[4px] bg-gray-50 dark:bg-zinc-800 border shrink-0 flex items-center justify-center text-2xl shadow-sm" style={{ borderColor: 'var(--border)' }}>
                       📦
                     </div>
                   )}
@@ -954,17 +954,17 @@ const PremiumServiceDetailPage = () => {
         );
       case 'before_after':
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-3xl lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
             {data.title && <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title}</h4>}
             <div className="grid grid-cols-2 gap-4">
               {data.beforeImage && (
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                <div className="relative aspect-square rounded-md overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
                   <img src={toAssetUrl(data.beforeImage)} alt="Before" className="w-full h-full object-cover" />
                   <span className="absolute top-2 right-2 bg-black/70 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg backdrop-blur-xs">Before</span>
                 </div>
               )}
               {data.afterImage && (
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
+                <div className="relative aspect-square rounded-md overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
                   <img src={toAssetUrl(data.afterImage)} alt="After" className="w-full h-full object-cover" />
                   <span className="absolute top-2 right-2 bg-green-600/90 text-white text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg shadow-sm">After</span>
                 </div>
@@ -996,7 +996,7 @@ const PremiumServiceDetailPage = () => {
                       setLightboxImages(imagesList.map(toAssetUrl));
                       setLightboxIndex(imgIdx);
                     }}
-                    className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border cursor-pointer relative group"
+                    className="aspect-square rounded-md overflow-hidden bg-gray-100 border cursor-pointer relative group"
                     style={{ borderColor: 'var(--border)' }}
                   >
                     <img src={toAssetUrl(img)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -1763,7 +1763,7 @@ const PremiumServiceDetailPage = () => {
                         key={variant._id || idx}
                         type="button"
                         onClick={() => toggleVariant(variant)}
-                        className="flex flex-col items-center justify-between p-2 rounded-xl border text-center w-full min-h-[96px] shadow-[0_1px_4px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
+                        className="flex flex-col items-center justify-between p-2 rounded-md border text-center w-full min-h-[96px] shadow-[0_1px_4px_rgba(0,0,0,0.01)] transition-transform duration-200 hover:scale-[1.01] active:scale-95 cursor-pointer relative"
                         style={{
                           backgroundColor: color.bg,
                           borderColor: isSelected ? 'var(--primary)' : color.border,
@@ -1879,7 +1879,7 @@ const PremiumServiceDetailPage = () => {
       {(cartItems.length > 0 || finalPrice > 0) && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t px-4 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-2 backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
           {cartItems.length > 0 ? (
-            <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-md border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
               <div>
                 <div className="text-[10px] font-normal tracking-[0.05em]" style={{ color: 'var(--text-muted)' }}>
                   {cartItems.length} item{cartItems.length > 1 ? 's' : ''} in cart
@@ -1888,12 +1888,12 @@ const PremiumServiceDetailPage = () => {
                   ₹{cartItems.reduce((acc, item) => acc + Number(item.price || 0), 0)}
                 </div>
               </div>
-              <button type="button" onClick={() => navigate('/user/cart')} className="rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02] flex items-center gap-1.5">
+              <button type="button" onClick={() => navigate('/user/cart')} className="rounded-md bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02] flex items-center gap-1.5">
                 View Cart <FiShoppingBag className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
-            <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 rounded-md border px-3.5 py-2 shadow-[0_12px_30px_rgba(255,159,69,0.08)]" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
               <div>
                 <div className="text-[10px] font-normal tracking-[0.05em]" style={{ color: 'var(--text-muted)' }}>
                   Price {service.serviceType === 'minute_base' && `(${selectedDuration} Mins)`}
@@ -1901,7 +1901,7 @@ const PremiumServiceDetailPage = () => {
                 </div>
                 <PriceTag price={finalPrice} originalPrice={service.originalPrice} className="mt-0.5" />
               </div>
-              <button type="button" onClick={handleAdd} className="rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]">
+              <button type="button" onClick={handleAdd} className="rounded-md bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02]">
                 {service.serviceType === 'image_base' ? 'Add Selected' : (variants.length > 0 ? 'Select & Add' : 'Add to cart')}
               </button>
             </div>
@@ -2324,7 +2324,7 @@ const PremiumServiceDetailPage = () => {
                 {/* Items List */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Available Options:</h4>
-                  <div className="space-y-3 max-h-[305px] md:max-h-[365px] overflow-y-auto pr-1">
+                  <div className="space-y-3 max-h-[305px] md:max-h-[365px] overflow-y-auto pr-1 scrollbar-hide">
                     {activeCategoryModal.items?.map((item) => {
                       const cartItem = cartItems.find(entry => entry.title === item.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
                       const qty = cartItem ? (cartItem.serviceCount || 1) : 0;
@@ -2679,7 +2679,7 @@ const PremiumServiceDetailPage = () => {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed bottom-0 inset-x-0 md:inset-0 md:m-auto w-full md:max-w-sm h-fit max-h-[85vh] z-[999] shadow-2xl p-6 flex flex-col gap-4 border overflow-y-auto pointer-events-auto rounded-t-[32px] md:rounded-[32px]"
+              className="fixed bottom-0 inset-x-0 md:inset-0 md:m-auto w-full md:max-w-sm h-fit max-h-[85vh] z-[999] shadow-2xl p-6 flex flex-col gap-4 border overflow-y-auto pointer-events-auto rounded-t-md md:rounded-md"
               style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
             >
               <div className="flex justify-between items-center border-b pb-3 shrink-0" style={{ borderColor: 'var(--border)' }}>

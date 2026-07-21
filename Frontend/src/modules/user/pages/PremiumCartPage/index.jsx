@@ -113,7 +113,7 @@ const PremiumCartPage = () => {
         {/* Empty cart */}
         {!cartItems.length ? (
           <div
-            className="rounded-3xl border border-dashed p-12 text-center"
+            className="rounded-md border border-dashed p-12 text-center"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}
           >
             <div
@@ -131,7 +131,7 @@ const PremiumCartPage = () => {
             <button
               type="button"
               onClick={() => navigate('/user/home')}
-              className="px-6 py-3 rounded-2xl text-sm font-semibold text-white transition-all active:scale-95 hover:opacity-90"
+              className="px-6 py-3 rounded-md text-sm font-semibold text-white transition-all active:scale-95 hover:opacity-90"
               style={{ backgroundColor: 'var(--primary)' }}
             >
               Browse services
@@ -146,7 +146,7 @@ const PremiumCartPage = () => {
               {Object.entries(groupedItems).map(([category, items]) => (
                 <div
                   key={category}
-                  className="rounded-2xl border overflow-hidden"
+                  className="rounded-md border overflow-hidden"
                   style={{
                     backgroundColor: 'var(--card-bg)',
                     borderColor: 'var(--border)',
@@ -210,7 +210,7 @@ const PremiumCartPage = () => {
                               if (filteredFields.length === 0) return null;
                               return (
                                 <div 
-                                  className="mt-2 space-y-1 p-2 rounded-xl border"
+                                  className="mt-2 space-y-1 p-2 rounded-md border"
                                   style={{
                                     backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB',
                                     borderColor: isDark ? '#232733' : '#F1F5F9'
@@ -253,7 +253,7 @@ const PremiumCartPage = () => {
                               if (!visits.length) return null;
                               return (
                                 <div
-                                  className="mt-3 p-3 rounded-xl border"
+                                  className="mt-3 p-3 rounded-md border"
                                   style={{
                                     backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : '#F0F4FF',
                                     borderColor: isDark ? 'rgba(99,102,241,0.15)' : '#DBEAFE'
@@ -350,7 +350,7 @@ const PremiumCartPage = () => {
                           <div className="flex flex-col items-end gap-2 shrink-0">
                             {/* Quantity control */}
                             <div
-                              className="flex items-center rounded-xl border overflow-hidden"
+                              className="flex items-center rounded-md border overflow-hidden"
                               style={{
                                 borderColor: 'var(--primary)',
                               }}
@@ -409,7 +409,7 @@ const PremiumCartPage = () => {
             {/* RIGHT: Payment summary + Continue (sidebar on desktop, bottom on mobile) */}
             <div className="lg:sticky lg:top-24">
             <div
-              className="rounded-2xl border p-4 mb-6"
+              className="rounded-md border p-4 mb-6"
               style={{
                 backgroundColor: 'var(--card-bg)',
                 borderColor: 'var(--border)',
@@ -455,7 +455,7 @@ const PremiumCartPage = () => {
             <button
               type="button"
               onClick={handleCheckout}
-              className="w-full py-4 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] hover:opacity-90"
+              className="w-full py-4 rounded-md text-sm font-bold text-white transition-all active:scale-[0.98] hover:opacity-90"
               style={{ backgroundColor: 'var(--primary)' }}
             >
               Continue
