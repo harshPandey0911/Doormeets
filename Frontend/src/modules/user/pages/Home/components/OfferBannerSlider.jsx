@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
-const OfferBannerSlider = ({ banners }) => {
+const OfferBannerSlider = ({ banners, noPadding = false }) => {
   const navigate = useNavigate();
 
   if (!banners || banners.length === 0) return null;
@@ -22,7 +22,6 @@ const OfferBannerSlider = ({ banners }) => {
       } else if (cleanLink.includes('/')) {
         navigate('/' + cleanLink);
       } else {
-        // It's a simple category/service slug, route to category page
         if (cleanLink === 'painting' || cleanLink.toLowerCase() === 'painting') {
           navigate('/user/painting');
         } else {
@@ -33,7 +32,7 @@ const OfferBannerSlider = ({ banners }) => {
   };
 
   return (
-    <div className="px-3 md:px-5 mt-0.5 mb-3 md:mt-2 md:mb-6 w-full">
+    <div className={noPadding ? 'w-full h-full' : 'px-3 md:px-5 mt-0.5 mb-3 md:mt-2 md:mb-6 w-full'}>
       <Swiper
         modules={[Autoplay, Pagination]}
         spaceBetween={12}
@@ -50,49 +49,45 @@ const OfferBannerSlider = ({ banners }) => {
           768: { slidesPerView: 1, spaceBetween: 0 },
           1024: { slidesPerView: 1, spaceBetween: 0 }
         }}
-        className="rounded-md overflow-hidden shadow-sm w-full offer-banner-swiper"
+        className={`rounded-md overflow-hidden shadow-sm w-full offer-banner-swiper${noPadding ? ' offer-banner-sidebar' : ''}`}
       >
         {banners.map((banner, index) => (
-          <SwiperSlide 
+          <SwiperSlide
             key={banner._id || banner.id || index}
             className="relative h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
             onClick={() => handleBannerClick(banner)}
           >
             {banner.mediaType === 'video' ? (
               <>
-                {/* Desktop Video */}
-                <video 
-                  src={banner.imageUrl} 
-                  autoPlay 
-                  muted 
-                  loop 
-                  playsInline 
+                <video
+                  src={banner.imageUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
                   className="hidden md:block w-full h-full object-cover"
                 />
-                {/* Mobile Video */}
-                <video 
-                  src={banner.mobileImageUrl || banner.imageUrl} 
-                  autoPlay 
-                  muted 
-                  loop 
-                  playsInline 
+                <video
+                  src={banner.mobileImageUrl || banner.imageUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
                   className="block md:hidden w-full h-full object-cover"
                 />
               </>
             ) : (
               <>
-                {/* Desktop Image */}
-                <img 
-                  src={banner.imageUrl} 
-                  alt={banner.title} 
+                <img
+                  src={banner.imageUrl}
+                  alt={banner.title}
                   className="hidden md:block w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
                   style={{ imageRendering: '-webkit-optimize-contrast' }}
                   loading="lazy"
                 />
-                {/* Mobile Image */}
-                <img 
-                  src={banner.mobileImageUrl || banner.imageUrl} 
-                  alt={banner.title} 
+                <img
+                  src={banner.mobileImageUrl || banner.imageUrl}
+                  alt={banner.title}
                   className="block md:hidden w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
                   style={{ imageRendering: '-webkit-optimize-contrast' }}
                   loading="lazy"
@@ -102,7 +97,7 @@ const OfferBannerSlider = ({ banners }) => {
           </SwiperSlide>
         ))}
       </Swiper>
-      
+
       <style>{`
         .offer-banner-swiper {
           aspect-ratio: 2.5 / 1;
@@ -111,10 +106,19 @@ const OfferBannerSlider = ({ banners }) => {
           .offer-banner-swiper {
             aspect-ratio: 3.5 / 1;
           }
+          .offer-banner-sidebar {
+            aspect-ratio: unset !important;
+            height: 100%;
+            min-height: 200px;
+          }
         }
         @media (min-width: 1024px) {
           .offer-banner-swiper {
             aspect-ratio: 4.2 / 1;
+          }
+          .offer-banner-sidebar {
+            aspect-ratio: unset !important;
+            height: 100%;
           }
         }
         .offer-banner-swiper .swiper-pagination-bullet-active {

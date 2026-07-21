@@ -70,12 +70,16 @@ const MyBookings = () => {
   });
   const [filter, setFilter] = useState('all'); // all, confirmed, in-progress, completed, cancelled
   const socketDebounceRef = useRef(null); // debounce rapid socket events
+  const filterRef = useRef('all'); // track current filter to cancel stale responses
 
   const loadBookings = useCallback(async () => {
+    const currentFilter = filterRef.current;
+    let cancelled = false;
+
     try {
       const params = {};
-      if (filter !== 'all') {
-        params.status = filter;
+      if (currentFilter !== 'all') {
+        params.status = currentFilter;
       }
       
       const queryParams = new URLSearchParams();
@@ -89,7 +93,13 @@ const MyBookings = () => {
       
       // Fetch Service Bookings
       const response = await bookingService.getUserBookings(params);
-      let serviceBookings = response.success ? (response.data || []) : [];
+
+      // If filter changed while awaiting, discard this stale response
+      if (cancelled || filterRef.current !== currentFilter) return;
+
+      let serviceBookings = (response?.success && Array.isArray(response.data))
+        ? response.data
+        : [];
 
       // Sort by date
       const sorted = serviceBookings.sort((a, b) => 
@@ -118,14 +128,23 @@ const MyBookings = () => {
       });
 
     } catch (error) {
+      if (cancelled || filterRef.current !== currentFilter) return;
       toast.error('Failed to load bookings. Please try again.');
       setBookings([]);
     } finally {
-      setLoading(false);
+      if (!cancelled && filterRef.current === currentFilter) {
+        setLoading(false);
+      }
     }
-  }, [filter]);
 
+    return () => { cancelled = true; };
+  }, []);
+
+  // When filter changes: update filterRef, clear stale bookings, and reload
   useEffect(() => {
+    filterRef.current = filter;
+    setBookings([]);
+    setLoading(true);
     loadBookings();
 
     // Listen for real-time updates
@@ -134,7 +153,7 @@ const MyBookings = () => {
     return () => {
       window.removeEventListener('userBookingsUpdated', loadBookings);
     };
-  }, [loadBookings]);
+  }, [filter, loadBookings]);
 
   // Listen for WebSockets status changes to trigger silent refresh
   useEffect(() => {
@@ -284,8 +303,8 @@ const MyBookings = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent px-4 pt-3 pb-1.5 w-full">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent px-4 md:px-6 lg:px-8 pt-3 pb-1.5 w-full">
+          <div className="max-w-[1360px] mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
@@ -295,19 +314,19 @@ const MyBookings = () => {
                     navigate('/user/home');
                   }
                 }}
-                className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color cursor-pointer text-dark-text"
+                className="w-10 h-10 md:w-11 md:h-11 bg-white dark:bg-zinc-900 rounded-xl flex items-center justify-center shadow-sm border border-border-color cursor-pointer text-dark-text"
               >
                 <FiArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-bold text-dark-text tracking-tight">My Bookings</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-dark-text tracking-tight">My Bookings</h1>
             </div>
             <NotificationBell />
           </div>
         </header>
 
         {/* Filter Tabs */}
-        <div className="bg-card-bg border-b border-border-color fixed top-[54px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
-          <div className="max-w-7xl mx-auto flex overflow-x-auto px-4 py-1.5 gap-1.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="bg-white dark:bg-zinc-900 border-b border-border-color fixed top-[54px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
+          <div className="max-w-[1360px] mx-auto flex overflow-x-auto px-4 md:px-6 lg:px-8 py-1.5 md:py-2 gap-1.5 md:gap-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: 'all', label: 'All Bookings' },
               { id: 'confirmed', label: 'Confirmed' },
@@ -318,9 +337,9 @@ const MyBookings = () => {
               <button
                 key={tab.id}
                 onClick={() => setFilter(tab.id)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
+                className={`px-3 md:px-5 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
                   ? 'border-transparent text-white shadow-md active:scale-95'
-                  : 'bg-card-bg border-border-color text-secondary-text hover:bg-gray-800/20 hover:border-border-color'
+                  : 'bg-white dark:bg-zinc-900 border-border-color text-secondary-text hover:bg-gray-100 hover:border-border-color'
                   }`}
                 style={filter === tab.id ? { backgroundColor: themeColors.button } : {}}
               >
@@ -331,11 +350,11 @@ const MyBookings = () => {
         </div>
 
         {/* Bookings List */}
-        <main className="px-4 pt-[102px] pb-5 max-w-7xl mx-auto w-full">
+        <main className="px-4 md:px-6 lg:px-8 pt-[102px] md:pt-[110px] pb-5 max-w-[1360px] mx-auto w-full">
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-card-bg rounded-2xl p-5 border border-border-color shadow-sm animate-pulse">
+                  <div key={i} className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-border-color shadow-sm animate-pulse">
                     <div className="flex justify-between mb-4 border-b border-divider pb-4">
                       <div className="space-y-2">
                         <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded"></div>
@@ -371,7 +390,7 @@ const MyBookings = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-24 text-center px-6"
             >
-              <div className="w-20 h-20 bg-card-bg rounded-full flex items-center justify-center mb-6 border border-border-color shadow-sm">
+              <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center mb-6 border border-border-color shadow-sm">
                 <FiClock className="w-8 h-8 text-secondary-text" />
               </div>
               <h3 className="text-dark-text text-lg font-bold mb-2">No Bookings Found</h3>
@@ -392,7 +411,7 @@ const MyBookings = () => {
                   transition: { staggerChildren: 0.1 }
                 }
               }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+              className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 content-start items-start"
             >
               {bookings.map((booking) => {
                 const bookingImage = getBookingImage(booking) || getBookingDummyImage(booking.serviceName);
@@ -416,10 +435,10 @@ const MyBookings = () => {
                         bookingService.getById(bId).catch(() => {});
                       }
                     }}
-                    className="group flex gap-3 bg-card-bg rounded-md p-2.5 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
+                    className="group flex gap-3 md:gap-4 bg-white dark:bg-zinc-900 rounded-md p-2.5 md:p-4 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
                   >
                     {/* Booking Image */}
-                    <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 border border-border-color bg-card-bg flex items-center justify-center">
+                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-md overflow-hidden shrink-0 border border-border-color bg-white dark:bg-zinc-900 flex items-center justify-center">
                       <img 
                         src={bookingImage} 
                         alt={booking.serviceName || 'Service'} 
@@ -443,13 +462,13 @@ const MyBookings = () => {
                         </div>
  
                         {/* Booking Title */}
-                        <h3 className="text-sm font-semibold text-dark-text leading-tight truncate group-hover:text-brand transition-colors">
+                        <h3 className="text-sm md:text-base font-semibold text-dark-text leading-tight truncate group-hover:text-brand transition-colors">
                           {booking.serviceName || 'Service Request'}
                         </h3>
  
                         {/* Rating block matching mockup */}
-                        <div className="flex items-center gap-1 text-[11px] text-secondary-text font-medium leading-none">
-                          <FiStar className="text-amber-500 fill-amber-500 w-3 h-3" />
+                        <div className="flex items-center gap-1 text-[11px] md:text-xs text-secondary-text font-medium leading-none">
+                          <FiStar className="text-amber-500 fill-amber-500 w-3 h-3 md:w-3.5 md:h-3.5" />
                           <span>{booking.rating || booking.bookedItems?.[0]?.rating || '4.5'}</span>
                           <span className="text-secondary-text opacity-70 font-normal">({booking.review ? 'Reviewed' : '1.2k reviews'})</span>
                         </div>
@@ -481,20 +500,20 @@ const MyBookings = () => {
                     {/* Right Section: Status badge, Price & Chevron */}
                     <div className="flex flex-col justify-between items-end shrink-0 py-0.5">
                       {/* Status Badge */}
-                      <div className={`px-2 py-0.5 rounded-[4px] border ring-1 ring-inset flex items-center gap-1 shadow-sm ${getStatusColor(booking.status)}`}>
-                        <span className="text-[8px] font-semibold uppercase tracking-wide">
+                      <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-[4px] border ring-1 ring-inset flex items-center gap-1 shadow-sm ${getStatusColor(booking.status)}`}>
+                        <span className="text-[8px] md:text-[10px] font-semibold uppercase tracking-wide">
                           {getStatusLabel(booking.status)}
                         </span>
                       </div>
  
                       {/* Pricing and Arrow */}
-                      <div className="flex items-center gap-1.5 mt-2">
+                      <div className="flex items-center gap-2 mt-2">
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-dark-text">
+                           <p className="text-sm md:text-base font-semibold text-dark-text">
                             ₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}
                           </p>
                         </div>
-                        <FiChevronRight className="w-4 h-4 text-secondary-text group-hover:text-brand transition-colors" />
+                        <FiChevronRight className="w-5 h-5 text-secondary-text group-hover:text-brand transition-colors" />
                       </div>
                     </div>
                   </motion.div>

@@ -343,47 +343,6 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                     </section>
                   )}
 
-                  {/* Trending Services */}
-                  {trendingServices.length > 0 && (
-                    <section>
-                      <h4 className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
-                        Popular Searches
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {trendingServices.map((service) => (
-                          <div
-                            key={service.id}
-                            onClick={() => handleResultClick(service)}
-                            className="flex items-center gap-3 p-3.5 rounded-2xl active:scale-[0.98] transition-all cursor-pointer border group"
-                            style={{
-                              backgroundColor: 'var(--surface)',
-                              borderColor: 'var(--border)',
-                            }}
-                          >
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden bg-gray-50 border shrink-0">
-                              {service.imageUrl || service.icon ? (
-                                <img
-                                  src={toAssetUrl(service.imageUrl || service.icon)}
-                                  alt=""
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                />
-                              ) : (
-                                <FiTrendingUp className="w-5 h-5 text-gray-400" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-medium text-xs truncate" style={{ color: 'var(--text-primary)' }}>
-                                {service.title}
-                              </h5>
-                              <p className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                                {service.category || 'Service'}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
 
                   {/* Browse Categories */}
                   {categories.length > 0 && (
@@ -391,25 +350,66 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                       <h4 className="text-xs font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
                         Browse Categories
                       </h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {categories.slice(0, 6).map((cat) => (
-                          <div
-                            key={cat.id}
-                            onClick={() => onCategoryClick(cat)}
-                            className="flex flex-col items-center justify-center p-4 rounded-2xl active:scale-[0.98] transition-all cursor-pointer border hover:border-gray-300 dark:hover:border-gray-700 text-center"
-                            style={{
-                              backgroundColor: 'var(--surface)',
-                              borderColor: 'var(--border)',
-                            }}
-                          >
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center border mb-2">
-                              <img src={toAssetUrl(cat.icon)} alt="" className="w-8 h-8 object-contain" />
+                      <div className="max-w-4xl grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                        {categories
+                          .filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)
+                          .slice(0, 6)
+                          .map((cat, index) => {
+                            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                          const cardColors = isDark ? [
+                            { bg: 'rgba(253,230,0,0.08)', text: '#FDE68A' },
+                            { bg: 'rgba(168,85,247,0.08)', text: '#C084FC' },
+                            { bg: 'rgba(244,63,94,0.08)', text: '#FDA4AF' },
+                            { bg: 'rgba(239,68,68,0.08)', text: '#FCA5A5' },
+                            { bg: 'rgba(34,197,94,0.08)', text: '#86EFAC' },
+                            { bg: 'rgba(14,165,233,0.08)', text: '#7DD3FC' },
+                          ] : [
+                            { bg: '#FEFBE8', text: '#854D0E' },
+                            { bg: '#FAE8FF', text: '#86198F' },
+                            { bg: '#FFE4E6', text: '#9F1239' },
+                            { bg: '#FFF1F2', text: '#991B1B' },
+                            { bg: '#F0FDF4', text: '#166534' },
+                            { bg: '#E0F2FE', text: '#075985' },
+                          ];
+                          const colorScheme = cardColors[index % cardColors.length];
+                          return (
+                            <div
+                              key={cat.id || index}
+                              onClick={() => onCategoryClick(cat)}
+                              className="flex flex-col items-center gap-2 p-3 rounded-2xl active:scale-[0.98] transition-all cursor-pointer border hover:border-gray-300 dark:hover:border-gray-700 text-center w-full"
+                              style={{
+                                backgroundColor: 'var(--surface)',
+                                borderColor: 'var(--border)',
+                              }}
+                            >
+                              <div
+                                className="w-full aspect-square rounded-xl overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                                style={{ backgroundColor: colorScheme.bg }}
+                              >
+                                {cat.icon || cat.image ? (
+                                  <img
+                                    src={toAssetUrl(cat.icon || cat.image)}
+                                    alt={cat.title}
+                                    className="w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
+                                    onError={e => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <svg className="w-8 h-8" fill="none" stroke={colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <span
+                                className="text-[11px] font-semibold text-center leading-snug line-clamp-1 w-full px-1"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
+                                {cat.title}
+                              </span>
                             </div>
-                            <span className="text-[11px] font-medium truncate w-full" style={{ color: 'var(--text-primary)' }}>
-                              {cat.title}
-                            </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </section>
                   )}

@@ -897,17 +897,18 @@ const Home = () => {
                   case 'banners':
                     return (
                       homeContent?.isBannersVisible !== false && (
-                        <OfferBannerSlider 
-                          key="banners"
-                          banners={homeContent?.banners && homeContent.banners.length > 0 
-                            ? homeContent.banners.map(b => ({
-                                ...b,
-                                imageUrl: toAssetUrl(b.imageUrl),
-                                link: b.link || b.slug || ''
-                              }))
-                            : offerBanners
-                          } 
-                        />
+                        <div key="banners" className="md:hidden">
+                          <OfferBannerSlider
+                            banners={homeContent?.banners && homeContent.banners.length > 0
+                              ? homeContent.banners.map(b => ({
+                                  ...b,
+                                  imageUrl: toAssetUrl(b.imageUrl),
+                                  link: b.link || b.slug || ''
+                                }))
+                              : offerBanners
+                            }
+                          />
+                        </div>
                       )
                     );
                   case 'promos':
@@ -926,26 +927,123 @@ const Home = () => {
                     return (
                       homeContent?.isCategoriesVisible !== false && (
                         <React.Fragment key="categories">
-                          {/* Service Categories */}
-                          <motion.section 
-                            variants={itemVariants} 
+                          {/* Service Categories + Banner side-by-side on desktop/tablet */}
+                          <motion.section
+                            variants={itemVariants}
                             className="relative overflow-hidden"
                             style={{ backgroundColor: 'var(--background)' }}
                           >
-                            <ServiceCategories
-                              categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)}
-                              onCategoryClick={handleCategoryClick}
-                              title="Categories"
-                              subtitle="Premium Home Services"
-                              showSeeAll={false}
-                              onSeeAllClick={() => navigate('/user/categories')}
-                            />
+                            {/* Mobile: categories full-width (unchanged) */}
+                            <div className="block md:hidden">
+                              <ServiceCategories
+                                categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)}
+                                onCategoryClick={handleCategoryClick}
+                                title="Categories"
+                                subtitle="Premium Home Services"
+                                showSeeAll={false}
+                                onSeeAllClick={() => navigate('/user/categories')}
+                              />
+                            </div>
+
+                            {/* Desktop/Tablet: heading above both columns */}
+                            <div className="hidden md:flex items-center gap-3 px-5 mb-4 mt-6">
+                              <h2
+                                className="text-[22px] font-extrabold tracking-tight leading-[1.2]"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
+                                Categories
+                              </h2>
+                            </div>
+
+                            {/* Desktop/Tablet: 2-column — categories left, banner right */}
+                            <div className="hidden md:flex gap-4 px-5 pb-6 items-start">
+                              {/* Left: Categories capped at 3 per row, max width to keep cards small */}
+                              <div className="w-[480px] lg:w-[520px] shrink-0">
+                                <div className="grid grid-cols-3 gap-x-4 gap-y-5">
+                                  {categories
+                                    .filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)
+                                    .map((category, index) => {
+                                      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                      const cardColors = isDark ? [
+                                        { bg: 'rgba(253,230,0,0.08)', text: '#FDE68A' },
+                                        { bg: 'rgba(168,85,247,0.08)', text: '#C084FC' },
+                                        { bg: 'rgba(244,63,94,0.08)', text: '#FDA4AF' },
+                                        { bg: 'rgba(239,68,68,0.08)', text: '#FCA5A5' },
+                                        { bg: 'rgba(34,197,94,0.08)', text: '#86EFAC' },
+                                        { bg: 'rgba(14,165,233,0.08)', text: '#7DD3FC' },
+                                        { bg: 'rgba(99,102,241,0.08)', text: '#A5B4FC' },
+                                        { bg: 'rgba(245,158,11,0.08)', text: '#FCD34D' },
+                                        { bg: 'rgba(59,130,246,0.08)', text: '#93C5FD' },
+                                      ] : [
+                                        { bg: '#FEFBE8', text: '#854D0E' },
+                                        { bg: '#FAE8FF', text: '#86198F' },
+                                        { bg: '#FFE4E6', text: '#9F1239' },
+                                        { bg: '#FFF1F2', text: '#991B1B' },
+                                        { bg: '#F0FDF4', text: '#166534' },
+                                        { bg: '#E0F2FE', text: '#075985' },
+                                        { bg: '#EEF2FF', text: '#3730A3' },
+                                        { bg: '#FEF3C7', text: '#92400E' },
+                                        { bg: '#EFF6FF', text: '#1E40AF' },
+                                      ];
+                                      const colorScheme = cardColors[index % cardColors.length];
+                                      return (
+                                        <div
+                                          key={category.id || index}
+                                          onClick={() => handleCategoryClick(category)}
+                                          className="flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-all duration-200 group w-full"
+                                        >
+                                          <div
+                                            className="w-full aspect-square rounded-md overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.06)] group-hover:scale-[1.02] transition-transform duration-200"
+                                            style={{ backgroundColor: colorScheme.bg }}
+                                          >
+                                            {category.icon || category.image ? (
+                                              <img
+                                                src={toAssetUrl(category.icon || category.image)}
+                                                alt={category.title}
+                                                className="w-full h-full object-cover contrast-[1.02] brightness-[1.01]"
+                                                onError={e => { e.target.style.display = 'none'; }}
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                <svg className="w-10 h-10" fill="none" stroke={colorScheme.text} viewBox="0 0 24 24" strokeWidth="2.2">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <span
+                                            className="text-[12px] font-medium text-center leading-snug line-clamp-2 w-full px-1"
+                                            style={{ color: 'var(--text-primary)' }}
+                                          >
+                                            {category.title}
+                                          </span>
+                                        </div>
+                                      );
+                                    })
+                                  }
+                                </div>
+                              </div>
+
+                              {/* Right: Banner */}
+                              {homeContent?.banners && homeContent.banners.length > 0 && (
+                                <div className="flex-1 min-w-0">
+                                  <OfferBannerSlider
+                                    noPadding
+                                    banners={homeContent.banners.map(b => ({
+                                      ...b,
+                                      imageUrl: toAssetUrl(b.imageUrl),
+                                      link: b.link || b.slug || ''
+                                    }))}
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </motion.section>
-          
+
                           {/* Products & Materials Section */}
                           {categories.some(c => c.categoryType === 'product') && (
-                            <motion.section 
-                              variants={itemVariants} 
+                            <motion.section
+                              variants={itemVariants}
                               className="relative overflow-hidden"
                               style={{ backgroundColor: 'var(--background)' }}
                             >

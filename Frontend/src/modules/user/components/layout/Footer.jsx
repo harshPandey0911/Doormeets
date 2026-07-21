@@ -31,25 +31,25 @@ const Footer = () => {
   }
 
   return (
-    <footer className="hidden md:block border-t pt-8 md:pt-16 pb-8 lg:pb-12 mt-6 md:mt-20 relative overflow-hidden group" style={{ backgroundColor: 'var(--card-bg)', borderTopColor: 'var(--border)' }}>
+    <footer className="hidden md:block border-t pt-8 md:pt-16 pb-8 lg:pb-12 mt-6 md:mt-20 relative overflow-hidden group w-full bg-transparent" style={{ borderTopColor: 'var(--border)' }}>
       {/* Decorative Background Elements */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl -mr-32 -mt-32 transition-colors group-hover:bg-teal-500/10" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -ml-32 -mb-32 transition-colors group-hover:bg-orange-500/10" />
 
-      <div className="max-w-[1600px] mx-auto px-6 md:px-12 relative z-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 mb-16">
+      <div className="w-full max-w-[1600px] mx-auto px-3 md:px-15 relative z-10">
+        <div className="flex flex-col md:flex-row justify-between gap-12 mb-16">
           {/* Column 1: Brand Info */}
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-xs">
             <Link to="/user" className="inline-block transform hover:scale-[1.01] transition-transform duration-300">
               <Logo className="h-8 w-auto" />
             </Link>
-            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               {settings?.companyName || 'DoorMeets'} is your one-stop destination for all home services. From electrical repairs to premium salon services, we bring the experts to your doorstep.
             </p>
           </div>
 
           {/* Column 2: For customers */}
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-[180px]">
             <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>For customers</h3>
             <ul className="space-y-3">
               <li>
@@ -58,8 +58,8 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/user/help-support" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
-                  Help & Support
+                <Link to="/user/contact" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
+                  Contact Us
                 </Link>
               </li>
               <li>
@@ -68,32 +68,15 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/user/contact" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
-                  Contact Us
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: For professionals */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>For professionals</h3>
-            <ul className="space-y-3">
-              <li>
-                <Link to="/vendor/signup" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
-                  Register as Vendor
-                </Link>
-              </li>
-              <li>
-                <Link to="/worker/signup" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
-                  Register as Worker
+                <Link to="/user/help-support" className="hover:text-[#B33A35] text-sm transition-colors duration-200" style={{ color: 'var(--text-secondary)' }}>
+                  Help & Support
                 </Link>
               </li>
             </ul>
           </div>
 
           {/* Column 4: Social links & Store buttons */}
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-[200px]">
             <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Social links</h3>
             <div className="flex items-center gap-3">
               {[

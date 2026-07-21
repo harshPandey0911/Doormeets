@@ -136,14 +136,14 @@ const Notifications = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-light-bg text-dark-text">
+    <div className="min-h-screen pb-20 bg-white dark:bg-zinc-950 text-dark-text">
       {/* Header */}
-      <div className="backdrop-blur-xl bg-card-bg/40 sticky top-0 z-50 border-b border-border-color w-full">
+      <div className="backdrop-blur-xl bg-white/40 sticky top-0 z-50 border-b border-border-color w-full">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-1.5 hover:bg-light-bg rounded-full transition-colors text-dark-text"
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-dark-text"
             >
               <FiArrowLeft className="w-5 h-5" />
             </button>
@@ -167,7 +167,7 @@ const Notifications = () => {
               onClick={() => setFilter(filterOption.id)}
               className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all border ${filter === filterOption.id
                 ? 'text-white border-transparent'
-                : 'bg-card-bg text-secondary-text border-border-color'
+                : 'bg-white dark:bg-zinc-900 text-secondary-text border-border-color'
                 }`}
               style={
                 filter === filterOption.id
@@ -206,7 +206,7 @@ const Notifications = () => {
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-card-bg rounded-2xl p-4 shadow-sm border border-border-color animate-pulse">
+              <div key={i} className="bg-white dark:bg-zinc-900 rounded-2xl p-4 shadow-sm border border-border-color animate-pulse">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 shrink-0"></div>
                   <div className="flex-1 space-y-3 py-1">
@@ -224,7 +224,7 @@ const Notifications = () => {
             ))}
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="bg-card-bg rounded-xl p-8 text-center shadow-md border border-border-color">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-8 text-center shadow-md border border-border-color">
             <FiBell className="w-16 h-16 mx-auto mb-4 text-secondary-text" />
             <p className="text-dark-text font-semibold mb-2">No notifications</p>
             <p className="text-sm text-secondary-text">You're all caught up!</p>
@@ -234,7 +234,7 @@ const Notifications = () => {
             {filteredNotifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`bg-card-bg rounded-xl p-4 shadow-sm border border-border-color transition-all relative group ${!notif.read ? 'border-l-4' : ''
+                className={`bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm border border-border-color transition-all relative group ${!notif.read ? 'border-l-4' : ''
                   }`}
                 style={{
                   borderLeftColor: !notif.read ? getNotificationColor(notif.type) : 'transparent',

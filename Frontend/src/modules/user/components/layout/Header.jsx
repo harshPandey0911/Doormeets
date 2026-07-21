@@ -15,10 +15,6 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
   const { toggleTheme, isDark } = useTheme();
 
   const menuItems = [
-    { id: 'home', label: 'Home', icon: FiHome, path: '/user/home' },
-    { id: 'about', label: 'About Us', icon: FiInfo, path: '/user/about' },
-    { id: 'contact', label: 'Contact Us', icon: FiMessageSquare, path: '/user/contact' },
-    { id: 'bookings', label: 'Bookings', icon: FiCalendar, path: '/user/my-bookings' },
     { id: 'cart', label: 'Cart', icon: FiShoppingCart, path: '/user/cart', isCart: true },
     { id: 'account', label: 'Account', icon: FiUser, path: '/user/account' },
   ];
@@ -72,15 +68,15 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
         </div>
 
         {/* Middle Search Bar on Desktop */}
-        <div className="hidden md:block flex-1 max-w-2xl mx-8 self-center">
+        <div className="hidden md:block flex-1 max-w-4xl mx-4 md:mx-6 lg:mx-8 self-center">
           <SearchBar onInputClick={onSearchClick} />
         </div>
 
         {/* Right Side: Desktop Nav Menu + Theme Toggle + Notification Bell */}
         <div className="flex items-center gap-1.5 md:gap-2.5 shrink-0 pt-1">
 
-          {/* Desktop Horizontal Menu Bar - hidden on mobile */}
-          <nav className="hidden lg:flex items-center gap-1 mr-2">
+          {/* Desktop/Tablet Horizontal Menu Bar - hidden on mobile */}
+          <nav className="hidden md:flex items-center gap-2.5 mr-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = locationPath.pathname === item.path ||
@@ -89,18 +85,18 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
                 <button
                   key={item.id}
                   onClick={() => navigate(item.path)}
-                  className="relative flex items-center gap-1.5 px-3 py-2 text-sm font-bold transition-all duration-200 active:scale-95 border-b-2"
+                  title={item.label}
+                  className="relative w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 border cursor-pointer"
                   style={{
-                    backgroundColor: 'transparent',
+                    backgroundColor: 'var(--surface)',
+                    borderColor: isActive ? 'var(--primary)' : 'var(--border)',
                     color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                    borderColor: isActive ? 'var(--primary)' : 'transparent',
-                    borderRadius: '0px'
+                    boxShadow: 'var(--shadow)',
                   }}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <Icon className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5" />
                   {item.isCart && cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 border-white">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] md:text-[10px] font-bold rounded-full min-w-[16px] md:min-w-[18px] h-[16px] md:h-[18px] flex items-center justify-center border-2 border-white dark:border-zinc-900">
                       {cartCount > 9 ? '9+' : cartCount}
                     </span>
                   )}

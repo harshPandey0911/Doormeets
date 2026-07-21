@@ -82,22 +82,19 @@ const PremiumCartPage = () => {
 
   return (
     <div
-      className="min-h-screen pb-28 sm:pb-40"
-      style={{ backgroundColor: 'var(--background)' }}
+      className="min-h-screen pb-28 sm:pb-40 bg-white dark:bg-zinc-950"
     >
       {/* Header */}
       <div
-        className="sticky top-0 z-30 border-b"
+        className="sticky top-0 z-30 border-b bg-white dark:bg-zinc-950"
         style={{
-          backgroundColor: 'var(--background)',
           borderColor: 'var(--border)',
         }}
       >
         <div className="max-w-7xl mx-auto px-3 py-2.5 sm:px-4 sm:py-4 flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-1.5 sm:p-2 rounded-full transition-all active:scale-95"
-            style={{ backgroundColor: 'var(--card-bg)' }}
+            className="p-1.5 sm:p-2 rounded-full transition-all active:scale-95 bg-white dark:bg-zinc-900"
           >
             <FiArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: 'var(--text-primary)' }} />
           </button>
@@ -113,8 +110,8 @@ const PremiumCartPage = () => {
         {/* Empty cart */}
         {!cartItems.length ? (
           <div
-            className="rounded-md border border-dashed p-8 sm:p-12 text-center"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}
+            className="rounded-md border border-dashed p-8 sm:p-12 text-center bg-white dark:bg-zinc-900"
+            style={{ borderColor: 'var(--border)' }}
           >
             <div
               className="mx-auto mb-3 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
@@ -146,9 +143,8 @@ const PremiumCartPage = () => {
               {Object.entries(groupedItems).map(([category, items]) => (
                 <div
                   key={category}
-                  className="rounded-md border overflow-hidden"
+                  className="rounded-md border overflow-hidden bg-white dark:bg-zinc-900"
                   style={{
-                    backgroundColor: 'var(--card-bg)',
                     borderColor: 'var(--border)',
                   }}
                 >
@@ -409,9 +405,8 @@ const PremiumCartPage = () => {
             {/* RIGHT: Payment summary + Continue (sidebar on desktop, bottom on mobile) */}
             <div className="lg:sticky lg:top-24">
             <div
-              className="rounded-md border p-3 sm:p-4 mb-3 sm:mb-6"
+              className="rounded-md border p-3 sm:p-4 mb-3 sm:mb-6 bg-white dark:bg-zinc-900"
               style={{
-                backgroundColor: 'var(--card-bg)',
                 borderColor: 'var(--border)',
               }}
             >
