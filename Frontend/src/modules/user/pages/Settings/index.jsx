@@ -110,54 +110,7 @@ const Settings = () => {
           </p>
         </div>
 
-        {/* Notifications & Reminders Section */}
-        <div className="mb-6">
-          <h2 className="text-base font-bold text-dark-text tracking-tight mb-4">Notifications & reminders</h2>
- 
-          <div className="bg-card-bg rounded-xl border border-border-color overflow-hidden">
-            {/* Push Notifications */}
-            <div className="flex items-center justify-between p-4 border-b border-border-color">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 159, 69, 0.1)' }}>
-                  <FiBell className="w-5 h-5" style={{ color: themeColors.button }} />
-                </div>
-                <span className="text-sm font-medium text-dark-text">Push Notifications</span>
-              </div>
-              <button
-                onClick={() => handleToggle('push')}
-                className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${notifications.push ? 'bg-green-700' : 'bg-gray-300'
-                  }`}
-                style={notifications.push ? { backgroundColor: '#15803d' } : {}}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${notifications.push ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                />
-              </button>
-            </div>
 
-            {/* Email */}
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 159, 69, 0.1)' }}>
-                  <FiMail className="w-5 h-5" style={{ color: themeColors.button }} />
-                </div>
-                <span className="text-sm font-medium text-dark-text">Email</span>
-              </div>
-              <button
-                onClick={() => handleToggle('email')}
-                className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${notifications.email ? 'bg-green-700' : 'bg-gray-300'
-                  }`}
-                style={notifications.email ? { backgroundColor: '#15803d' } : {}}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${notifications.email ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* Account Actions Section */}
         <div className="mb-6">
@@ -172,9 +125,9 @@ const Settings = () => {
                   toast.success('Logged out successfully');
                 }
               }}
-              className="w-full bg-card-bg rounded-xl border border-border-color p-4 flex items-center gap-3 hover:bg-gray-800/10 active:scale-[0.98] transition-all cursor-pointer"
+              className="w-full bg-card-bg rounded-md border border-border-color p-4 flex items-center gap-3 hover:bg-gray-800/10 active:scale-[0.98] transition-all cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500/10">
+              <div className="w-8 h-8 rounded-md flex items-center justify-center bg-red-500/10">
                 <FiLogOut className="w-5 h-5 text-red-500" />
               </div>
               <span className="text-sm font-medium text-red-600">Log Out</span>
@@ -200,9 +153,9 @@ const Settings = () => {
                   }
                 }
               }}
-              className="w-full bg-card-bg rounded-xl border border-border-color p-4 flex items-center gap-3 hover:bg-gray-800/10 active:scale-[0.98] transition-all cursor-pointer"
+              className="w-full bg-card-bg rounded-md border border-border-color p-4 flex items-center gap-3 hover:bg-gray-800/10 active:scale-[0.98] transition-all cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-500/10">
+              <div className="w-8 h-8 rounded-md flex items-center justify-center bg-gray-500/10">
                 <FiTrash2 className="w-5 h-5 text-gray-500" />
               </div>
               <div className="text-left">
@@ -217,17 +170,16 @@ const Settings = () => {
         <div className="space-y-4 mb-6">
           <button
             onClick={handlePrivacyClick}
-            className="w-full bg-card-bg rounded-xl border border-border-color p-4 flex items-center justify-between hover:bg-gray-800/10 active:scale-[0.98] transition-all cursor-pointer"
+            className="w-full bg-card-bg rounded-md border border-border-color p-4 flex items-center justify-between hover:bg-gray-800/10 active:scale-[0.98] transition-all cursor-pointer"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 159, 69, 0.1)' }}>
+              <div className="w-8 h-8 rounded-md flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 159, 69, 0.1)' }}>
                 <FiShield className="w-5 h-5" style={{ color: themeColors.button }} />
               </div>
               <span className="text-sm font-medium text-dark-text">Privacy & data</span>
             </div>
             <FiChevronRight className="w-5 h-5 text-secondary-text" />
           </button>
-
         </div>
       </main>
 

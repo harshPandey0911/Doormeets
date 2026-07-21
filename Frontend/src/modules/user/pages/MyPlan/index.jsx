@@ -130,10 +130,10 @@ const MyPlan = () => {
         </div>
       </header>
 
-      <main className="px-4 py-12 max-w-7xl mx-auto">
-        <div className="mb-12 bg-card-bg/40 backdrop-blur-sm p-8 rounded-[2.5rem] border border-border-color shadow-sm">
-          <h2 className="text-2xl font-semibold text-dark-text mb-3 tracking-tight">Pick Your Membership</h2>
-          <p className="text-secondary-text font-normal text-sm max-w-2xl leading-relaxed">
+      <main className="px-4 py-8 max-w-7xl mx-auto">
+        <div className="mb-8 bg-card-bg/40 backdrop-blur-sm p-6 sm:p-8 rounded-md border border-border-color shadow-sm">
+          <h2 className="text-xl sm:text-2xl font-semibold text-dark-text mb-2 tracking-tight">Pick Your Membership</h2>
+          <p className="text-secondary-text font-normal text-xs sm:text-sm max-w-2xl leading-relaxed">
             Choose a plan that fits your home. Higher plans automatically include benefits from the tiers below them.
           </p>
         </div>
@@ -143,7 +143,7 @@ const MyPlan = () => {
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-8">
             {plans.map((plan) => {
               const style = getCardStyle(plan.name || '');
               const currentPlan = user?.plans;
@@ -162,16 +162,16 @@ const MyPlan = () => {
                 <div
                   key={plan._id}
                   onClick={() => navigate(`/user/my-plan/${plan._id}`)}
-                  className={`relative cursor-pointer rounded-3xl border shadow-sm transition-all flex flex-col overflow-hidden ${style.container}`}
+                  className={`relative cursor-pointer rounded-md border shadow-sm transition-all flex flex-col overflow-hidden ${style.container}`}
                 >
-                  <div className="p-8 pb-8 flex-1 relative">
+                  <div className="p-6 sm:p-8 pb-6 flex-1 relative">
                     {/* Top Row: Name and Status */}
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex flex-col">
-                        <h3 className="text-2xl font-semibold tracking-tight">{plan.name}</h3>
+                        <h3 className="text-xl sm:text-2xl font-semibold tracking-tight">{plan.name}</h3>
                         {plan.tagline && (
                           <div className={`mt-2 flex items-center`}>
-                             <span className={`inline-block px-2.5 py-1 rounded-lg text-[9px] font-medium uppercase tracking-[0.15em] shadow-sm border ${
+                             <span className={`inline-block px-2.5 py-1 rounded-md text-[9px] font-medium uppercase tracking-[0.15em] shadow-sm border ${
                                plan.name.toLowerCase().includes('platinum') 
                                ? 'bg-white/10 border-white/20 text-white' 
                                : 'bg-primary-50 border-primary-100 text-primary-600'
@@ -182,25 +182,25 @@ const MyPlan = () => {
                         )}
                       </div>
                       {isCurrent && (
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-widest ${style.badge}`}>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest ${style.badge}`}>
                           Active
                         </span>
                       )}
                     </div>
 
                     {/* Price and Duration */}
-                    <div className="flex items-baseline mb-8">
-                      <span className={`text-3xl font-semibold ${style.price}`}>₹{plan.price}</span>
+                    <div className="flex items-baseline mb-6 sm:mb-8">
+                      <span className={`text-2xl sm:text-3xl font-semibold ${style.price}`}>₹{plan.price}</span>
                       <span className="text-xs font-normal opacity-40 ml-2">/ {plan.duration || '1'} Months</span>
                     </div>
 
                     {/* Benefits Section */}
-                    <div className="space-y-6">
-                      <ul className="space-y-3.5">
+                    <div className="space-y-4 sm:space-y-6">
+                      <ul className="space-y-3">
                         {(plan.freeCategories || []).map((cat, idx) => (
                           <li key={`cat-${idx}`} className="flex items-start gap-3">
-                            <FiZap className="w-4 h-4 mt-1 shrink-0 text-amber-500 fill-amber-500" />
-                            <span className="text-[13px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Free {cat.title || cat.name}</span>
+                            <FiZap className="w-4 h-4 mt-0.5 shrink-0 text-amber-500 fill-amber-500" />
+                            <span className="text-[12px] sm:text-[13px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Free {cat.title || cat.name}</span>
                           </li>
                         ))}
                         {((() => {
@@ -216,11 +216,11 @@ const MyPlan = () => {
                             const catTitle = svc.categoryId?.title || 'Service';
                             return (
                               <li key={`svc-${idx}`} className="flex items-start gap-3">
-                                <FiZap className="w-4 h-4 mt-1 shrink-0 text-amber-500 fill-amber-500" />
+                                <FiZap className="w-4 h-4 mt-0.5 shrink-0 text-amber-500 fill-amber-500" />
                                 <div className="flex flex-col gap-0.5">
                                   <div className="flex items-center gap-2">
                                     <span className="text-[10px] font-semibold uppercase text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">{catTitle}</span>
-                                    <span className="text-[13px] font-semibold text-rose-600">Free {svc.title || svc.name}</span>
+                                    <span className="text-[12px] sm:text-[13px] font-semibold text-rose-600">Free {svc.title || svc.name}</span>
                                   </div>
                                 </div>
                               </li>
@@ -238,7 +238,7 @@ const MyPlan = () => {
                           if (!prevName) return null;
 
                           return (
-                            <div className="mt-6 mb-2 p-3 bg-white/40 rounded-xl border border-dashed border-current opacity-80 flex items-center gap-2">
+                            <div className="mt-4 mb-2 p-2.5 bg-white/40 rounded-md border border-dashed border-current opacity-80 flex items-center gap-2">
                               <FiGift className="w-4 h-4" />
                               <p className="text-[10px] font-semibold uppercase tracking-wider">
                                 Benefits from <span className="underline decoration-2">{prevName}</span> Tier Included
@@ -267,14 +267,14 @@ const MyPlan = () => {
                             const catTitle = bs.categoryId?.title || svc.categoryId?.title || 'Service';
                             
                             return (
-                              <li key={idx} className="flex items-start gap-3 p-3 bg-amber-50/70 rounded-xl border border-amber-100 shadow-sm">
-                                <div className="mt-1 w-5 h-5 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center shrink-0">
+                              <li key={idx} className="flex items-start gap-2.5 p-2.5 bg-amber-50/70 rounded-md border border-amber-100 shadow-sm">
+                                <div className="mt-0.5 w-4.5 h-4.5 bg-amber-100 text-amber-600 rounded-md flex items-center justify-center shrink-0">
                                   <FiStar className="w-3 h-3 fill-amber-600" />
                                 </div>
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col gap-0.5">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[10px] font-semibold uppercase text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">{catTitle}</span>
-                                    <span className="text-[12px] font-semibold text-amber-800">Free {svc.title}</span>
+                                    <span className="text-[11px] sm:text-[12px] font-semibold text-amber-800">Free {svc.title}</span>
                                   </div>
                                   <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#854D0E] opacity-50 ml-1">Inherited from previous plan</span>
                                 </div>
@@ -287,14 +287,14 @@ const MyPlan = () => {
                   </div>
 
                   {/* Action Button */}
-                  <div className="px-8 pb-8 mt-auto">
+                  <div className="px-6 sm:px-8 pb-6 sm:pb-8 mt-auto">
                     {plan.description && (
-                      <div className={`mb-8 p-4 rounded-2xl border-l-[4px] shadow-sm flex items-start gap-4 transition-all duration-300 transform group-hover:scale-[1.02] ${
+                      <div className={`mb-6 p-3.5 sm:p-4 rounded-md border-l-[4px] shadow-sm flex items-start gap-3 transition-all duration-300 transform group-hover:scale-[1.01] ${
                         plan.name.toLowerCase().includes('platinum') 
                           ? 'bg-white/5 border-emerald-400' 
                           : 'bg-card-bg/60 border-primary-500 backdrop-blur-md'
                       }`}>
-                         <p className={`text-[12px] font-normal leading-relaxed ${
+                         <p className={`text-[11px] sm:text-[12px] font-normal leading-relaxed ${
                             plan.name.toLowerCase().includes('platinum') 
                               ? 'text-slate-300' 
                               : 'text-secondary-text'
@@ -308,12 +308,12 @@ const MyPlan = () => {
                         e.stopPropagation();
                         navigate(`/user/my-plan/${plan._id}`);
                       }}
-                      className={`w-full py-4 px-6 rounded-2xl font-semibold text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 transform hover:translate-y-[-2px] ${style.button} ${isDisabled && !isCurrent ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                      className={`w-full py-3 sm:py-3.5 px-5 rounded-md font-semibold text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 transform hover:translate-y-[-1px] ${style.button} ${isDisabled && !isCurrent ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                     >
                       {buttonText}
                     </button>
                     {isCurrent && (
-                       <p className="text-center text-[10px] font-semibold uppercase tracking-widest opacity-30 mt-3">Membership In Good Standing</p>
+                       <p className="text-center text-[10px] font-semibold uppercase tracking-widest opacity-30 mt-2.5">Membership In Good Standing</p>
                     )}
                   </div>
                 </div>
@@ -323,9 +323,9 @@ const MyPlan = () => {
         )}
 
         {plans.length === 0 && !loading && (
-          <div className="text-center py-24 bg-card-bg rounded-3xl border border-dashed border-border-color shadow-inner">
-            <FiStar className="h-12 w-12 text-secondary-text mx-auto mb-4" />
-            <p className="text-secondary-text font-normal text-sm">No subscription plans found at this time.</p>
+          <div className="text-center py-16 sm:py-24 bg-card-bg rounded-md border border-dashed border-border-color shadow-inner">
+            <FiStar className="h-10 w-10 sm:h-12 sm:w-12 text-secondary-text mx-auto mb-3" />
+            <p className="text-secondary-text font-normal text-xs sm:text-sm">No subscription plans found at this time.</p>
           </div>
         )}
       </main>

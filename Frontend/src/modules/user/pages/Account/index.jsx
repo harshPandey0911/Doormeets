@@ -220,19 +220,19 @@ const Account = () => {
     <motion.button
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="w-full flex items-center justify-between p-4 bg-card-bg rounded-2xl border border-border-color shadow-sm hover:shadow-md transition-all group mb-3"
+      className="w-full flex items-center justify-between p-3.5 bg-card-bg rounded-md border border-border-color shadow-sm hover:shadow-md transition-all group mb-2.5"
       style={{ '--hover-border': `${themeColors.brand.teal}30` }}
     >
-      <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors`}
+      <div className="flex items-center gap-3">
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center transition-colors`}
           style={{
             backgroundColor: color === 'text-red-500' ? '#FEF2F2' : 'var(--divider)',
             color: color === 'text-red-500' ? '#EF4444' : 'var(--primary)'
           }}
         >
-          <Icon className={`w-5 h-5 ${color === 'text-red-500' ? 'text-red-500' : ''}`} />
+          <Icon className={`w-4.5 h-4.5 ${color === 'text-red-500' ? 'text-red-500' : ''}`} />
         </div>
-        <span className={`font-semibold ${color}`}>{label}</span>
+        <span className={`font-semibold text-sm ${color}`}>{label}</span>
       </div>
       <div className="flex items-center gap-2">
         {badge && (
@@ -240,7 +240,7 @@ const Account = () => {
             {badge}
           </span>
         )}
-        <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-teal-500 transition-colors" />
+        <FiChevronRight className="w-4.5 h-4.5 text-gray-400 group-hover:text-teal-500 transition-colors" />
       </div>
     </motion.button>
   );
@@ -272,13 +272,13 @@ const Account = () => {
       </div>
 
       <div className="relative z-10">
-        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-5 py-5 w-full">
+        <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-transparent border-b border-border-color px-4 py-4 w-full">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => navigate(-1)}
-                className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color"
+                className="w-9 h-9 bg-card-bg rounded-md flex items-center justify-center shadow-sm border border-border-color"
               >
                 <FiArrowLeft className="w-5 h-5 text-dark-text" />
               </motion.button>
@@ -292,12 +292,12 @@ const Account = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="px-4 pt-[96px] max-w-7xl md:max-w-4xl mx-auto w-full"
+          className="px-4 pt-[84px] max-w-7xl md:max-w-4xl mx-auto w-full"
         >
           {/* Elevated Profile Card */}
           <motion.div
             variants={itemVariants}
-            className="bg-card-bg rounded-[24px] p-3.5 shadow-sm mb-4 relative overflow-hidden border border-border-color"
+            className="bg-card-bg rounded-md p-3.5 shadow-sm mb-3 relative overflow-hidden border border-border-color"
           >
             {/* Vivid Brand Accents */}
             <div className="absolute top-0 right-0 w-36 h-36 rounded-full -mr-16 -mt-16 blur-3xl opacity-[0.2]"
@@ -309,15 +309,15 @@ const Account = () => {
 
             <div className="flex items-center gap-3 relative z-10">
               <div className="relative">
-                <div className="w-16 h-16 rounded-xl p-1 bg-card-bg border border-border-color shadow-md">
+                <div className="w-14 h-14 rounded-md p-1 bg-card-bg border border-border-color shadow-sm">
                   {userProfile.profilePhoto ? (
                     <img
                       src={userProfile.profilePhoto}
                       alt={userProfile.name}
-                      className="w-full h-full rounded-[10px] object-cover"
+                      className="w-full h-full rounded-md object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full rounded-[10px] flex items-center justify-center text-white font-bold text-lg"
+                    <div className="w-full h-full rounded-md flex items-center justify-center text-white font-bold text-base"
                       style={{ background: themeColors.gradient }}>
                       {getInitials()}
                     </div>
@@ -325,7 +325,7 @@ const Account = () => {
                 </div>
                 <button
                   onClick={() => navigate('/user/update-profile')}
-                  className="absolute -bottom-1 -right-1 p-1 bg-gray-900 text-white rounded-[6px] border-2 border-card-bg shadow-md active:scale-95 transition-transform"
+                  className="absolute -bottom-1 -right-1 p-1 bg-gray-900 text-white rounded-md border-2 border-card-bg shadow-sm active:scale-95 transition-transform"
                 >
                   <FiEdit3 className="w-3 h-3" />
                 </button>
@@ -342,7 +342,7 @@ const Account = () => {
                 </div>
                 <button
                   onClick={() => navigate('/user/update-profile')}
-                  className="px-3 py-1 bg-light-bg hover:bg-border-color text-secondary-text border border-border-color text-[9px] font-bold uppercase tracking-wider rounded-lg transition-colors"
+                  className="px-2.5 py-1 bg-light-bg hover:bg-border-color text-secondary-text border border-border-color text-[9px] font-bold uppercase tracking-wider rounded-md transition-colors"
                 >
                   Edit Profile
                 </button>
@@ -355,7 +355,7 @@ const Account = () => {
             <motion.div
               variants={itemVariants}
               onClick={() => navigate('/user/my-plan')}
-              className="relative overflow-hidden mb-6 rounded-[28px] p-6 text-white cursor-pointer group transition-all"
+              className="relative overflow-hidden mb-4 rounded-md p-5 text-white cursor-pointer group transition-all"
               style={{
                 background: `linear-gradient(135deg, ${themeColors.brand.teal} -10%, ${themeColors.brand.orange} 120%)`,
                 boxShadow: `0 20px 40px -12px ${themeColors.brand.teal}40`
@@ -371,54 +371,54 @@ const Account = () => {
                     <FiShield className="w-4 h-4 text-white/80" />
                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">Membership Status</span>
                   </div>
-                  <h3 className="text-2xl font-bold mb-1">{userProfile.plans.name}</h3>
-                  <div className="flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full w-fit mt-3 border border-white/10">
+                  <h3 className="text-xl font-bold mb-1">{userProfile.plans.name}</h3>
+                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-white/10 backdrop-blur-md rounded-full w-fit mt-2 border border-white/10">
                     <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
                     <span className="text-[10px] font-bold uppercase tracking-wider">Expires: {new Date(userProfile.plans.expiry).toLocaleDateString()}</span>
                   </div>
                 </div>
 
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover:rotate-12 transition-transform duration-500">
-                  <FiZap className="w-8 h-8 fill-white text-white drop-shadow-lg" />
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-md flex items-center justify-center border border-white/20 shadow-inner group-hover:rotate-12 transition-transform duration-500">
+                  <FiZap className="w-6 h-6 fill-white text-white drop-shadow-lg" />
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center relative z-10">
+              <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center relative z-10">
                 <span className="text-xs font-bold text-white/80">Manage Benefits</span>
-                <FiChevronRight className="w-5 h-5 opacity-70 group-hover:translate-x-1 transition-transform" />
+                <FiChevronRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
               </div>
             </motion.div>
           )}
 
           {/* Quick Actions Grid */}
-          <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 mb-4">
+          <motion.div variants={itemVariants} className="grid grid-cols-2 gap-2 mb-2.5">
             <button
               onClick={() => navigate('/user/wallet')}
-              className="bg-card-bg p-3.5 rounded-[20px] border border-border-color shadow-sm hover:shadow-md transition-all text-left group"
+              className="bg-card-bg py-2 px-2.5 rounded-md border border-border-color shadow-sm hover:shadow-md transition-all text-left group"
             >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"
+              <div className="w-6 h-6 rounded-md flex items-center justify-center mb-1 group-hover:scale-110 transition-transform"
                 style={{ backgroundColor: `${themeColors.brand.teal}15`, color: themeColors.brand.teal }}
               >
-                <MdAccountBalanceWallet className="w-4.5 h-4.5" />
+                <MdAccountBalanceWallet className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[10px] text-secondary-text font-bold uppercase tracking-wider">Balance</span>
-              <p className={`text-base font-bold mt-0.5 ${userProfile.walletBalance < 0 ? 'text-red-500' : 'text-dark-text'}`}>
+              <span className="text-[9px] text-secondary-text font-bold uppercase tracking-wider block">Balance</span>
+              <p className={`text-xs sm:text-sm font-bold leading-tight mt-0.5 ${userProfile.walletBalance < 0 ? 'text-red-500' : 'text-dark-text'}`}>
                 ₹{Math.abs(userProfile.walletBalance || 0).toLocaleString('en-IN')}
-                {userProfile.walletBalance < 0 && <span className="text-[10px] font-normal ml-1">(Penalty)</span>}
+                {userProfile.walletBalance < 0 && <span className="text-[9px] font-normal ml-1">(Penalty)</span>}
               </p>
             </button>
             <button
               onClick={() => navigate('/user/rewards')}
-              className="bg-gray-900 p-3.5 rounded-[20px] shadow-md hover:shadow-lg transition-all text-left relative overflow-hidden group"
+              className="bg-gray-900 py-2 px-2.5 rounded-md shadow-md hover:shadow-lg transition-all text-left relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black opacity-50"></div>
               <div className="relative z-10 h-full flex flex-col justify-between">
-                <div className="w-8 h-8 bg-white/10 text-yellow-400 rounded-xl flex items-center justify-center mb-2 backdrop-blur-sm group-hover:scale-110 transition-transform">
-                  <FiGift className="w-4.5 h-4.5" />
+                <div className="w-6 h-6 bg-white/10 text-yellow-400 rounded-md flex items-center justify-center mb-1 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                  <FiGift className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">Rewards</span>
-                  <p className="text-base font-bold text-white mt-0.5">Refer & Earn</p>
+                  <span className="text-[9px] text-white/60 font-bold uppercase tracking-wider block">Rewards</span>
+                  <p className="text-xs sm:text-sm font-bold text-white leading-tight mt-0.5">Refer & Earn</p>
                 </div>
               </div>
             </button>
@@ -427,8 +427,8 @@ const Account = () => {
           {/* Menu Groups */}
 
           {/* Activity */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-2">Activity</h3>
+          <motion.div variants={itemVariants} className="mb-4">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Activity</h3>
             <MenuItem
               icon={FiClipboard}
               label="My Bookings"
@@ -447,8 +447,8 @@ const Account = () => {
           </motion.div>
 
           {/* Preferences */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-2">Preferences</h3>
+          <motion.div variants={itemVariants} className="mb-4">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Preferences</h3>
             <MenuItem
               icon={FiMapPin}
               label="Manage Addresses"
@@ -463,8 +463,8 @@ const Account = () => {
           </motion.div>
 
           {/* Support & Legal */}
-          <motion.div variants={itemVariants} className="mb-8">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-2">Support & More</h3>
+          <motion.div variants={itemVariants} className="mb-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Support & More</h3>
             <MenuItem
               icon={FiHeadphones}
               label="Help & Support"
@@ -479,23 +479,23 @@ const Account = () => {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate('/user/about-cleaning-expert')}
-              className="w-full flex items-center justify-between p-4 bg-card-bg rounded-2xl border border-border-color shadow-sm hover:shadow-md transition-all group mb-3"
+              className="w-full flex items-center justify-between p-3.5 bg-card-bg rounded-md border border-border-color shadow-sm hover:shadow-md transition-all group mb-2.5"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-500/10 transition-colors group-hover:bg-opacity-80">
-                  <Logo className="w-8 h-8" iconOnly={true} />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-md flex items-center justify-center bg-gray-500/10 transition-colors group-hover:bg-opacity-80">
+                  <Logo className="w-7 h-7" iconOnly={true} />
                 </div>
-                <span className="font-semibold text-dark-text">About Doormeets</span>
+                <span className="font-semibold text-sm text-dark-text">About Doormeets</span>
               </div>
-              <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-teal-500 transition-colors" />
+              <FiChevronRight className="w-4.5 h-4.5 text-gray-400 group-hover:text-teal-500 transition-colors" />
             </motion.button>
-            <div className="h-4"></div>
+            <div className="h-2"></div>
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 p-4 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-bold uppercase tracking-wider rounded-2xl shadow-lg transition-all mb-3"
+              className="w-full flex items-center justify-center gap-2 p-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold uppercase tracking-wider rounded-md shadow-lg transition-all mb-3"
             >
-              <FiLogOut className="w-5 h-5" />
+              <FiLogOut className="w-4.5 h-4.5" />
               <span>Log out</span>
             </motion.button>
           </motion.div>

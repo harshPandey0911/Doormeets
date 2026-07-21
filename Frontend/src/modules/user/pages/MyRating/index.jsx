@@ -103,11 +103,11 @@ const MyRating = () => {
             {ratings.map((rating, idx) => (
               <div
                 key={rating._id || idx}
-                className="bg-card-bg rounded-3xl p-5 shadow-sm border border-border-color space-y-4 hover:shadow-md transition-shadow"
+                className="bg-card-bg rounded-md p-5 shadow-sm border border-border-color space-y-4 hover:shadow-md transition-shadow"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center overflow-hidden border border-orange-500/20">
+                    <div className="w-12 h-12 rounded-md bg-orange-500/10 flex items-center justify-center overflow-hidden border border-orange-500/20">
                       {rating.vendorId?.profilePhoto ? (
                         <img src={rating.vendorId.profilePhoto} alt={rating.vendorId.name} className="w-full h-full object-cover" />
                       ) : (
@@ -143,7 +143,7 @@ const MyRating = () => {
                 {rating.reviewImages && rating.reviewImages.length > 0 && (
                   <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                     {rating.reviewImages.map((img, i) => (
-                      <img key={i} src={img} className="w-20 h-20 rounded-2xl object-cover shrink-0 border border-border-color" alt="Review" />
+                      <img key={i} src={img} className="w-20 h-20 rounded-md object-cover shrink-0 border border-border-color" alt="Review" />
                     ))}
                   </div>
                 )}
@@ -167,24 +167,24 @@ const MyRating = () => {
             {pagination.total > ratings.length && (
               <button
                 onClick={() => fetchRatings(pagination.page + 1)}
-                className="w-full py-4 bg-card-bg rounded-2xl border-2 border-border-color text-secondary-text font-bold flex items-center justify-center gap-2 hover:bg-gray-800/10 transition-colors cursor-pointer"
+                className="w-full py-3.5 bg-card-bg rounded-md border border-border-color text-secondary-text font-bold flex items-center justify-center gap-2 hover:bg-gray-800/10 transition-colors cursor-pointer"
               >
                 {isLoading ? <FiLoader className="animate-spin" /> : 'Load More Reviews'}
               </button>
             )}
           </div>
         ) : (
-          <div className="bg-card-bg rounded-[32px] p-8 text-center shadow-md border border-dashed border-border-color py-16">
-            <div className="w-20 h-20 rounded-full bg-card-bg border border-border-color flex items-center justify-center mb-6 mx-auto">
-              <FiStar className="w-12 h-12 text-secondary-text" />
+          <div className="bg-card-bg rounded-md p-6 sm:p-8 text-center shadow-md border border-dashed border-border-color py-12 sm:py-16">
+            <div className="w-16 h-16 rounded-full bg-card-bg border border-border-color flex items-center justify-center mb-4 mx-auto">
+              <FiStar className="w-10 h-10 text-secondary-text" />
             </div>
             <h3 className="text-lg font-bold text-dark-text mb-2">No Reviews Yet</h3>
-            <p className="text-secondary-text text-sm font-medium">
+            <p className="text-secondary-text text-xs sm:text-sm font-medium max-w-sm mx-auto">
               You haven't reviewed any services yet. After completing a booking, you can rate your experience!
             </p>
             <button
-              onClick={() => navigate('/user/bookings')}
-              className="mt-6 px-8 py-3 bg-[#B33A35] text-white rounded-2xl font-bold text-sm shadow-lg shadow-orange-950/20 active:scale-95 transition-all cursor-pointer"
+              onClick={() => navigate('/user/my-bookings')}
+              className="mt-5 px-6 py-2.5 bg-[#B33A35] text-white rounded-md font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
             >
               Go to My Bookings
             </button>

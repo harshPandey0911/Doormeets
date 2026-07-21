@@ -146,7 +146,7 @@ const AboutDoormeets = () => {
         </div>
 
         {/* Stats Row */}
-        <div className="animate-item flex justify-between bg-card-bg rounded-2xl p-6 shadow-sm border border-border-color divide-x divide-border-color">
+        <div className="animate-item flex justify-between bg-card-bg rounded-md p-5 shadow-sm border border-border-color divide-x divide-border-color">
           {stats.map((stat, idx) => (
             <div key={idx} className="flex-1 text-center px-2">
               <div className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-[#B33A35] to-[#9E2E2A]">
@@ -161,11 +161,11 @@ const AboutDoormeets = () => {
 
         {/* Mission Statement */}
         <div className="animate-item">
-          <div className="bg-gradient-to-br from-[#B33A35]/5 to-[#9E2E2A]/5 rounded-2xl p-6 border border-[#B33A35]/10 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#B33A35]/5 to-[#9E2E2A]/5 rounded-md p-5 border border-[#B33A35]/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5">
               <FiGlobe className="w-24 h-24 text-dark-text" />
             </div>
-            <h3 className="text-lg font-semibold text-dark-text mb-3">Our Mission</h3>
+            <h3 className="text-lg font-semibold text-dark-text mb-2.5">Our Mission</h3>
             <p className="text-sm text-secondary-text leading-relaxed relative z-10 font-medium">
               {aboutConfig.mission}
             </p>
@@ -174,16 +174,16 @@ const AboutDoormeets = () => {
 
         {/* Why Choose Us Grid */}
         <div className="animate-item">
-          <h3 className="text-lg font-semibold text-dark-text mb-4 px-1">Why Choose Doormeets?</h3>
+          <h3 className="text-lg font-semibold text-dark-text mb-3 px-1">Why Choose Doormeets?</h3>
           <div className="grid grid-cols-2 gap-3">
             {(aboutConfig.features || []).map((feature, index) => (
               <div
                 key={index}
-                className="bg-card-bg rounded-2xl p-4 shadow-sm border border-border-color hover:shadow-md transition-shadow group"
+                className="bg-card-bg rounded-md p-3.5 shadow-sm border border-border-color hover:shadow-md transition-shadow group"
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300"
+                <div className="w-9 h-9 rounded-md flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform duration-300"
                   style={{ background: 'linear-gradient(135deg, rgba(255, 159, 69, 0.1), rgba(255, 184, 108, 0.1))' }}>
-                  {renderDynamicIcon(feature.iconName, "w-5 h-5", { stroke: 'url(#doormeets-about-gradient)' })}
+                  {renderDynamicIcon(feature.iconName, "w-4.5 h-4.5", { stroke: 'url(#doormeets-about-gradient)' })}
                 </div>
                 <h4 className="text-sm font-semibold text-dark-text mb-1">{feature.title}</h4>
                 <p className="text-xs text-secondary-text leading-relaxed">{feature.description}</p>
@@ -194,11 +194,11 @@ const AboutDoormeets = () => {
 
         {/* How It Works */}
         <div className="animate-item">
-          <h3 className="text-lg font-semibold text-dark-text mb-4 px-1">How We Work</h3>
-          <div className="bg-card-bg rounded-2xl p-1 shadow-sm border border-border-color">
+          <h3 className="text-lg font-semibold text-dark-text mb-3 px-1">How We Work</h3>
+          <div className="bg-card-bg rounded-md p-1 shadow-sm border border-border-color">
             {(aboutConfig.steps || []).map((step, i) => (
-              <div key={i} className="flex items-center p-4 border-b last:border-0 border-border-color relative">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 mr-4 shadow-sm text-white font-semibold text-lg relative overflow-hidden">
+              <div key={i} className="flex items-center p-3.5 border-b last:border-0 border-border-color relative">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 mr-3.5 shadow-sm text-white font-semibold text-base relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#B33A35] to-[#9E2E2A]" />
                   <span className="relative z-10">{i + 1}</span>
                 </div>

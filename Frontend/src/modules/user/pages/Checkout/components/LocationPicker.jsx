@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { FiCrosshair } from 'react-icons/fi';
 import flutterBridge from '../../../../../utils/flutterBridge';
 import { toast } from 'react-hot-toast';
@@ -16,9 +16,21 @@ const defaultCenter = {
   lng: 77.2090
 };
 
+const getValidLatLng = (pos) => {
+  if (!pos || typeof pos !== 'object') return null;
+  const rawLat = pos.lat ?? pos.latitude;
+  const rawLng = pos.lng ?? pos.longitude;
+  if (rawLat === undefined || rawLat === null || rawLng === undefined || rawLng === null) return null;
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
+  if (isNaN(lat) || !isFinite(lat) || isNaN(lng) || !isFinite(lng)) return null;
+  return { lat, lng };
+};
+
 const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
   const [map, setMap] = useState(null);
-  const [marker, setMarker] = useState(initialPosition || defaultCenter);
+  const validInitial = getValidLatLng(initialPosition);
+  const [marker, setMarker] = useState(validInitial || defaultCenter);
   const [autocomplete, setAutocomplete] = useState(null);
   const [loading, setLoading] = useState(false);
   const loadingRef = React.useRef(false);
@@ -31,10 +43,11 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
 
   // Update marker when initialPosition changes (from external selection)
   useEffect(() => {
-    if (initialPosition) {
-      setMarker(initialPosition);
+    const validPos = getValidLatLng(initialPosition);
+    if (validPos) {
+      setMarker(validPos);
       if (map) {
-        map.panTo(initialPosition);
+        map.panTo(validPos);
         map.setZoom(15);
       }
     }
@@ -42,25 +55,27 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
 
   // Get user's current location on mount
   useEffect(() => {
-    if (!initialPosition && isLoaded) {
+    const validPos = getValidLatLng(initialPosition);
+    if (!validPos && isLoaded) {
       handleCurrentLocation();
     }
-  }, [isLoaded]);
+  }, [isLoaded, initialPosition]);
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = async (position) => {
-    if (!window.google) return;
+    const validPos = getValidLatLng(position);
+    if (!window.google || !validPos) return;
 
     setLoading(true);
     const geocoder = new window.google.maps.Geocoder();
 
-    geocoder.geocode({ location: position }, (results, status) => {
+    geocoder.geocode({ location: validPos }, (results, status) => {
       setLoading(false);
       if (status === 'OK' && results[0]) {
         if (onLocationSelect) {
           onLocationSelect({
-            lat: position.lat,
-            lng: position.lng,
+            lat: validPos.lat,
+            lng: validPos.lng,
             address: results[0].formatted_address,
             components: results[0].address_components
           });
@@ -71,34 +86,41 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
 
   // Handle map click
   const onMapClick = useCallback((e) => {
+    if (!e || !e.latLng) return;
     const newPos = {
       lat: e.latLng.lat(),
       lng: e.latLng.lng()
     };
-    setMarker(newPos);
-    reverseGeocode(newPos);
+    const validPos = getValidLatLng(newPos);
+    if (validPos) {
+      setMarker(validPos);
+      reverseGeocode(validPos);
+    }
   }, []);
 
   // Handle autocomplete place selection
   const onPlaceChanged = () => {
     if (autocomplete !== null) {
       const place = autocomplete.getPlace();
-      if (place.geometry) {
+      if (place && place.geometry && place.geometry.location) {
         const newPos = {
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng()
         };
-        setMarker(newPos);
-        if (map) {
-          map.panTo(newPos);
-          map.setZoom(15);
-        }
-        if (onLocationSelect) {
-          onLocationSelect({
-            lat: newPos.lat,
-            lng: newPos.lng,
-            address: place.formatted_address
-          });
+        const validPos = getValidLatLng(newPos);
+        if (validPos) {
+          setMarker(validPos);
+          if (map) {
+            map.panTo(validPos);
+            map.setZoom(15);
+          }
+          if (onLocationSelect) {
+            onLocationSelect({
+              lat: validPos.lat,
+              lng: validPos.lng,
+              address: place.formatted_address
+            });
+          }
         }
       }
     }
@@ -123,17 +145,21 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
       setLoading(false);
       loadingRef.current = false;
       
-      const newPos = {
-        lat: pos.latitude,
-        lng: pos.longitude
-      };
+      const newPos = getValidLatLng({
+        lat: pos?.latitude,
+        lng: pos?.longitude
+      });
       
-      setMarker(newPos);
-      if (map) {
-        map.panTo(newPos);
-        map.setZoom(17);
+      if (newPos) {
+        setMarker(newPos);
+        if (map) {
+          map.panTo(newPos);
+          map.setZoom(17);
+        }
+        reverseGeocode(newPos);
+      } else {
+        toast.error("Unable to retrieve valid GPS coordinates.");
       }
-      reverseGeocode(newPos);
     } catch (error) {
       clearTimeout(slowLocationTimer);
       setLoading(false);
@@ -144,9 +170,9 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
       window.dispatchEvent(new CustomEvent('requestLocationPrompt'));
       
       let errorMessage = 'Unable to get location.';
-      if (error.code === 1) errorMessage = 'Location permission denied.';
-      else if (error.code === 2) errorMessage = 'GPS is turned off.';
-      else if (error.code === 3) errorMessage = 'Location request timed out.';
+      if (error?.code === 1) errorMessage = 'Location permission denied.';
+      else if (error?.code === 2) errorMessage = 'GPS is turned off.';
+      else if (error?.code === 3) errorMessage = 'Location request timed out.';
 
       toast.error(`${errorMessage} Please select manually on the map.`);
     }
@@ -164,12 +190,15 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
     </div>;
   }
 
+  const currentCenter = getValidLatLng(marker) || defaultCenter;
+  const currentMarkerPosition = getValidLatLng(marker);
+
   return (
     <div className="w-full">
       <div className="relative h-64 bg-gray-200">
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
-          center={marker}
+          center={currentCenter}
           zoom={15}
           onClick={onMapClick}
           onLoad={setMap}
@@ -183,7 +212,7 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
             zoomControl: false
           }}
         >
-          {marker && <Marker position={marker} />}
+          {currentMarkerPosition && <Marker position={currentMarkerPosition} />}
         </GoogleMap>
 
         {/* Pin Instruction Overlay */}
@@ -192,7 +221,6 @@ const LocationPicker = ({ onLocationSelect, initialPosition = null }) => {
         </div>
 
         {/* Locate Me Button */}
-        {/* Locate Me Button - Now on right */}
         <button
           onClick={handleCurrentLocation}
           className="absolute bottom-16 right-4 p-3 bg-white rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all z-10"

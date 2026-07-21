@@ -199,7 +199,7 @@ const HelpSupport = () => {
               placeholder="Search for help..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none transition-all"
             />
           </div>
         </div>
@@ -229,10 +229,10 @@ const HelpSupport = () => {
                   target={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? '_blank' : undefined}
                   rel={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? 'noopener noreferrer' : undefined}
                   onClick={!href ? action.action : undefined}
-                  className="bg-card-bg rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-98 border border-border-color flex items-center gap-4 w-full cursor-pointer"
+                  className="bg-card-bg rounded-md p-4 shadow-sm hover:shadow-md transition-all active:scale-98 border border-border-color flex items-center gap-4 w-full cursor-pointer"
                 >
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+                    className="w-12 h-12 rounded-md flex items-center justify-center shrink-0"
                     style={{ backgroundColor: `${action.color}15` }}
                   >
                     <action.icon className="w-6 h-6" style={{ color: action.color }} />
@@ -251,7 +251,7 @@ const HelpSupport = () => {
         {/* Submit a Request Button */}
         <button
           onClick={() => setShowContactForm(true)}
-          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-950/20 hover:shadow-xl transition-all active:scale-98 mb-6 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-md p-3.5 font-bold shadow-md hover:shadow-lg transition-all active:scale-98 mb-6 flex items-center justify-center gap-2 cursor-pointer"
         >
           <FiSend className="w-5 h-5" />
           Submit a Request
@@ -266,12 +266,12 @@ const HelpSupport = () => {
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id === selectedCategory ? null : category.id)}
-                  className="w-full bg-card-bg rounded-xl p-4 shadow-sm hover:shadow-md transition-all border border-border-color cursor-pointer"
+                  className="w-full bg-card-bg rounded-md p-4 shadow-sm hover:shadow-md transition-all border border-border-color cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center"
+                        className="w-10 h-10 rounded-md flex items-center justify-center"
                         style={{ backgroundColor: `${category.color}15` }}
                       >
                         <category.icon className="w-5 h-5" style={{ color: category.color }} />
@@ -310,7 +310,7 @@ const HelpSupport = () => {
               Search Results ({filteredQuestions.length})
             </h2>
             {filteredQuestions.length === 0 ? (
-              <div className="bg-card-bg border border-border-color rounded-xl p-8 text-center">
+              <div className="bg-card-bg border border-border-color rounded-md p-8 text-center">
                 <FiAlertCircle className="w-12 h-12 text-secondary-text mx-auto mb-3" />
                 <p className="text-secondary-text">No results found for "{searchQuery}"</p>
                 <p className="text-sm text-secondary-text opacity-70 mt-2">Try different keywords or contact support</p>
@@ -318,7 +318,7 @@ const HelpSupport = () => {
             ) : (
               <div className="space-y-3">
                 {filteredQuestions.map((item, idx) => (
-                  <div key={idx} className="bg-card-bg rounded-xl p-4 shadow-sm border border-border-color">
+                  <div key={idx} className="bg-card-bg rounded-md p-4 shadow-sm border border-border-color">
                     <div className="flex items-start gap-2 mb-2">
                       <span
                         className="text-xs font-semibold px-2 py-1 rounded-full"
@@ -346,8 +346,8 @@ const HelpSupport = () => {
       {/* Contact Form Modal */}
       {showContactForm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-card-bg border border-border-color rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-card-bg border-b border-border-color px-6 py-4 rounded-t-3xl">
+          <div className="bg-card-bg border border-border-color rounded-md w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-card-bg border-b border-border-color px-6 py-4 rounded-t-md">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-dark-text">Submit a Request</h2>
                 <button
@@ -366,7 +366,7 @@ const HelpSupport = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
+                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
                   placeholder="Your name"
                 />
               </div>
@@ -377,7 +377,7 @@ const HelpSupport = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
+                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
                   placeholder="your.email@example.com"
                 />
               </div>
@@ -388,7 +388,7 @@ const HelpSupport = () => {
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
+                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none"
                   placeholder="Brief description of your issue"
                 />
               </div>
@@ -399,14 +399,14 @@ const HelpSupport = () => {
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   rows={6}
-                  className="w-full px-4 py-3 rounded-xl border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-orange-500 focus:ring-2 focus:ring-orange-950/20 outline-none resize-none"
                   placeholder="Describe your issue in detail..."
                 />
               </div>
  
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-4 font-bold shadow-lg shadow-orange-950/20 hover:shadow-xl transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-md p-3.5 font-bold shadow-md hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <FiSend className="w-5 h-5" />
                 Submit Request

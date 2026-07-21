@@ -111,40 +111,9 @@ const NotificationBell = ({ notificationCount = 0 }) => {
         className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden transition-colors duration-200"
         style={{ backgroundColor: 'var(--card-bg)' }}
       >
-        <svg width="0" height="0" className="absolute">
-          <linearGradient id="doormeets-bell-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={themeColors.brand.teal} />
-            <stop offset="50%" stopColor={themeColors.brand.yellow} />
-            <stop offset="100%" stopColor={themeColors.brand.orange} />
-          </linearGradient>
-        </svg>
-
-        <svg
-          ref={bellRef}
-          className="w-[18px] h-[18px] md:w-5.5 md:h-5.5 transition-all duration-300"
-          viewBox="0 0 24 24"
-          fill="none"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            stroke: 'var(--text-primary)',
-            color: 'transparent',
-          }}
-        >
-          {/* Top Loop */}
-          <path d="M12 3a2 2 0 00-2 2h4a2 2 0 00-2-2z" />
-          {/* Bell Body */}
-          <path d="M12 5a4.5 4.5 0 00-4.5 4.5v3.5c0 1.2-1 2.2-1.5 2.5h12s-1.5-1-1.5-2.5v-3.5A4.5 4.5 0 0012 5z" />
-          {/* Clapper */}
-          <path d="M10 17.5a2 2 0 004 0" />
-          {/* Left waves */}
-          <path d="M4 8a5.5 5.5 0 000 8" />
-          <path d="M2 5.5a9.5 9.5 0 000 13" />
-          {/* Right waves */}
-          <path d="M20 8a5.5 5.5 0 010 8" />
-          <path d="M22 5.5a9.5 9.5 0 010 13" />
-        </svg>
+        <div ref={bellRef} className="flex items-center justify-center">
+          <FiBell className="w-5 h-5 text-dark-text" />
+        </div>
       </button>
 
       {/* 4. Active Badge (Moved outside for robustness and to prevent clipping) */}

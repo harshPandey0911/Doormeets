@@ -153,30 +153,30 @@ const PlanDetails = () => {
           if (!previousPlan) return null;
 
           return (
-            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 mb-6 text-white shadow-lg shadow-orange-500/20 relative overflow-hidden group animate-fade-in">
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-md p-6 sm:p-8 mb-6 text-white shadow-lg shadow-orange-500/20 relative overflow-hidden group animate-fade-in">
               <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/20 transition-all duration-700"></div>
               
-              <div className="flex items-center gap-4 mb-4 relative z-10">
-                <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30">
-                  <FiGift className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3.5 mb-4 relative z-10">
+                <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-md border border-white/30">
+                  <FiGift className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black leading-tight uppercase tracking-wide">Extra Perks from Previous Tier</h3>
-                  <p className="text-[11px] text-amber-50 font-black uppercase tracking-widest opacity-80 mt-1">Tier Booster Active</p>
+                  <h3 className="text-lg sm:text-xl font-black leading-tight uppercase tracking-wide">Extra Perks from Previous Tier</h3>
+                  <p className="text-[10px] sm:text-[11px] text-amber-50 font-black uppercase tracking-widest opacity-80 mt-0.5">Tier Booster Active</p>
                 </div>
               </div>
 
-              <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20">
-                <p className="text-sm font-medium leading-relaxed">
+              <div className="relative z-10 bg-white/10 backdrop-blur-sm rounded-md p-4 sm:p-5 border border-white/20">
+                <p className="text-xs sm:text-sm font-medium leading-relaxed">
                   As a <span className="font-black underline decoration-2 underline-offset-4">{plan.name} Member</span>, you automatically enjoy 
                   <span className="font-black"> extra benefits</span> from the <span className="bg-white text-orange-600 px-2 py-0.5 rounded-md inline-block font-black mx-1">{previousPlan}</span> 
                   tier in addition to your premium services.
                 </p>
-                <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                <div className="mt-4 pt-3.5 border-t border-white/10 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-tighter opacity-70">Legacy Support Included</span>
                   <div className="flex -space-x-2">
                     {[1,2,3].map(i => (
-                      <div key={i} className="w-6 h-6 rounded-full border-2 border-orange-500 bg-white/20 flex items-center justify-center">
+                      <div key={i} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-orange-500 bg-white/20 flex items-center justify-center">
                         <FiCheck className="w-3 h-3" />
                       </div>
                     ))}
@@ -189,13 +189,13 @@ const PlanDetails = () => {
 
         {/* Unlimited Categories Section */}
         {plan.freeCategories && plan.freeCategories.length > 0 && (
-          <div className="bg-gradient-to-br from-primary-50 to-white rounded-3xl p-8 mb-6 border border-primary-100 shadow-sm">
+          <div className="bg-gradient-to-br from-primary-50 to-white rounded-md p-6 sm:p-8 mb-6 border border-primary-100 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-primary-100 text-primary-600 rounded-xl">
+              <div className="p-2 bg-primary-100 text-primary-600 rounded-md">
                 <FiZap className="w-5 h-5 fill-primary-600" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-gray-900 leading-none">Unlimited Service Categories</h3>
+                <h3 className="text-base sm:text-lg font-black text-gray-900 leading-none">Unlimited Service Categories</h3>
                 <p className="text-xs text-primary-600 font-bold uppercase tracking-wider mt-1">Full coverage on all services within these categories</p>
               </div>
             </div>
@@ -203,7 +203,7 @@ const PlanDetails = () => {
             <div className="space-y-6">
               <div className="flex flex-wrap gap-2">
                 {plan.freeCategories.map((cat, idx) => (
-                  <span key={idx} className="bg-white border border-primary-100 text-primary-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2">
+                  <span key={idx} className="bg-white border border-primary-100 text-primary-700 px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold shadow-sm flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-primary-500 rounded-full"></div>
                     {cat.title}
                   </span>
@@ -211,7 +211,7 @@ const PlanDetails = () => {
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-white/50 rounded-2xl border border-dashed border-primary-200">
+            <div className="mt-5 p-3.5 bg-white/50 rounded-md border border-dashed border-primary-200">
               <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
                 * All service types (Installation, Repair, Service) are 100% free for the categories listed above.
               </p>
@@ -221,18 +221,18 @@ const PlanDetails = () => {
 
         {/* 1. Plan Inclusive Benefits (Rose Section) */}
         {plan.freeServices && plan.freeServices.length > 0 && (
-          <div className="bg-gradient-to-br from-rose-50 to-white rounded-3xl p-8 mb-6 border border-rose-100 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="p-2.5 bg-rose-100 text-rose-600 rounded-2xl shadow-sm">
+          <div className="bg-gradient-to-br from-rose-50 to-white rounded-md p-6 sm:p-8 mb-6 border border-rose-100 shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="p-2 bg-rose-100 text-rose-600 rounded-md shadow-sm">
                 <FiCheckCircle className="w-5 h-5 fill-rose-600" />
               </div>
               <div>
-                <h3 className="text-xl font-black text-slate-900 leading-none">{plan.name} Inclusive Benefits</h3>
-                <p className="text-[10px] text-rose-600 font-bold uppercase tracking-widest mt-1.5 antialiased">Special benefits included with your tier</p>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-none">{plan.name} Inclusive Benefits</h3>
+                <p className="text-[10px] text-rose-600 font-bold uppercase tracking-widest mt-1 antialiased">Special benefits included with your tier</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-3.5">
               {(() => {
                 const groups = new Map();
                 (plan.freeServices || []).forEach(svc => {
@@ -242,23 +242,23 @@ const PlanDetails = () => {
                   if (!groups.has(key)) groups.set(key, svc);
                 });
                 return Array.from(groups.values()).map((svc, idx) => (
-                  <div key={`free-${idx}`} className="group relative flex items-center justify-between p-5 bg-white border border-rose-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-black text-sm">
-                        <FiCheck className="w-6 h-6" />
+                  <div key={`free-${idx}`} className="group relative flex items-center justify-between p-4 bg-white border border-rose-100 rounded-md shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-md flex items-center justify-center font-black text-sm">
+                        <FiCheck className="w-5 h-5" />
                       </div>
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md uppercase tracking-wider">{svc.categoryId?.title || 'Service'}</span>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[9px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{svc.categoryId?.title || 'Service'}</span>
                         </div>
-                        <span className="text-slate-900 font-bold text-[15px]">{svc.title} (All Brands)</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-100 px-1.5 py-0.5 rounded text-glow-rose">Membership Exclusive</span>
+                        <span className="text-slate-900 font-bold text-xs sm:text-sm">{svc.title} (All Brands)</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-rose-400 text-[9px] font-black uppercase tracking-widest border border-rose-100 px-1.5 py-0.5 rounded text-glow-rose">Membership Exclusive</span>
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.1em] bg-rose-50 px-3 py-1 rounded-full border border-rose-100">Free Benefit</span>
+                      <span className="text-[9px] font-black text-rose-500 uppercase tracking-[0.1em] bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100">Free Benefit</span>
                     </div>
                   </div>
                 ));
@@ -269,18 +269,18 @@ const PlanDetails = () => {
 
         {/* 2. Complimentary Membership Perks (Emerald Section) */}
         {plan.bonusServices && plan.bonusServices.length > 0 && (
-          <div className="bg-gradient-to-br from-emerald-50 to-white rounded-3xl p-8 mb-6 border border-emerald-100 shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-2xl shadow-sm">
+          <div className="bg-gradient-to-br from-emerald-50 to-white rounded-md p-6 sm:p-8 mb-6 border border-emerald-100 shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="p-2 bg-emerald-100 text-emerald-600 rounded-md shadow-sm">
                 <FiStar className="w-5 h-5 fill-emerald-600" />
               </div>
               <div>
-                <h3 className="text-xl font-black text-slate-900 leading-none">Complimentary Membership Perks</h3>
-                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1.5 antialiased">Automatic benefits from previous tier inheritance</p>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 leading-none">Complimentary Membership Perks</h3>
+                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1 antialiased">Automatic benefits from previous tier inheritance</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-3.5">
               {(() => {
                 const groups = new Map();
                 (plan.bonusServices || []).forEach(bs => {
@@ -296,23 +296,23 @@ const PlanDetails = () => {
                   const svc = bs.serviceId;
                   const catTitle = bs.categoryId?.title || svc?.categoryId?.title || 'Service';
                   return (
-                    <div key={`bonus-${idx}`} className="group relative flex items-center justify-between p-5 bg-white border border-emerald-100/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-black text-sm">
-                          <FiStar className="w-5 h-5 fill-emerald-600" />
+                    <div key={`bonus-${idx}`} className="group relative flex items-center justify-between p-4 bg-white border border-emerald-100/50 rounded-md shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-md flex items-center justify-center font-black text-sm">
+                          <FiStar className="w-4 h-4 fill-emerald-600" />
                         </div>
                         <div className="flex flex-col">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-wider">{catTitle}</span>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[9px] font-black text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{catTitle}</span>
                           </div>
-                          <span className="text-slate-900 font-bold text-[15px]">{svc.title} (All Brands)</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-100 px-1.5 py-0.5 rounded">Special Benefit</span>
+                          <span className="text-slate-900 font-bold text-xs sm:text-sm">{svc.title} (All Brands)</span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-100 px-1.5 py-0.5 rounded">Special Benefit</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.1em] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Free Access</span>
+                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.1em] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Free Access</span>
                       </div>
                     </div>
                   );
@@ -320,10 +320,10 @@ const PlanDetails = () => {
               })()}
             </div>
 
-            <div className="mt-8 p-5 bg-white/40 rounded-2xl border border-dashed border-emerald-200/60 backdrop-blur-sm shadow-inner">
-              <div className="flex gap-3">
+            <div className="mt-6 p-4 bg-white/40 rounded-md border border-dashed border-emerald-200/60 backdrop-blur-sm shadow-inner">
+              <div className="flex gap-2.5">
                 <FiZap className="text-emerald-500 w-4 h-4 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-emerald-800/60 leading-relaxed font-bold italic">
+                <p className="text-[10px] sm:text-[11px] text-emerald-800/60 leading-relaxed font-bold italic">
                   * Enjoy living at its best! These services are offered as a part of your {plan.name} Membership.
                 </p>
               </div>
@@ -333,55 +333,55 @@ const PlanDetails = () => {
 
         {/* Status Card (Only if Current Plan) */}
         {isCurrent && (
-          <div className="bg-slate-900 rounded-3xl p-8 mb-6 text-white shadow-2xl relative overflow-hidden group">
+          <div className="bg-slate-900 rounded-md p-6 sm:p-8 mb-6 text-white shadow-xl relative overflow-hidden group">
             {/* Background pattern */}
             <div className="absolute -right-10 -bottom-10 opacity-10 group-hover:scale-110 transition-transform duration-700">
               <FiZap className="w-48 h-48" />
             </div>
 
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-bold mb-5 flex items-center gap-2">
               <FiShield className="text-emerald-400" />
               Active Subscription Details
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
-                  <FiCalendar className="w-5 h-5 text-emerald-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 bg-white/10 rounded-md flex items-center justify-center border border-white/10">
+                  <FiCalendar className="w-4.5 h-4.5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-white/50 text-xs font-bold uppercase tracking-wider mb-0.5">Expires On</p>
-                  <p className="text-lg font-black">{formatDate(currentPlan.expiry)}</p>
+                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-0.5">Expires On</p>
+                  <p className="text-base font-black">{formatDate(currentPlan.expiry)}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
-                  <FiCreditCard className="w-5 h-5 text-emerald-400" />
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 bg-white/10 rounded-md flex items-center justify-center border border-white/10">
+                  <FiCreditCard className="w-4.5 h-4.5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-white/50 text-xs font-bold uppercase tracking-wider mb-0.5">Amount Paid</p>
-                  <p className="text-lg font-black">₹{currentPlan.price}</p>
+                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-0.5">Amount Paid</p>
+                  <p className="text-base font-black">₹{currentPlan.price}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
-                  <FiClock className="w-5 h-5 text-emerald-400" />
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 bg-white/10 rounded-md flex items-center justify-center border border-white/10">
+                  <FiClock className="w-4.5 h-4.5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-white/50 text-xs font-bold uppercase tracking-wider mb-0.5">Renewal</p>
-                  <p className="text-lg font-black italic">Auto-renew OFF</p>
+                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-0.5">Renewal</p>
+                  <p className="text-base font-black italic">Auto-renew OFF</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
-                  <FiInfo className="w-5 h-5 text-emerald-400" />
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 bg-white/10 rounded-md flex items-center justify-center border border-white/10">
+                  <FiInfo className="w-4.5 h-4.5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-white/50 text-xs font-bold uppercase tracking-wider mb-0.5">Status</p>
-                  <p className="text-lg font-black text-emerald-400 uppercase tracking-widest">Active Member</p>
+                  <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-0.5">Status</p>
+                  <p className="text-base font-black text-emerald-400 uppercase tracking-widest">Active Member</p>
                 </div>
               </div>
             </div>
@@ -405,19 +405,19 @@ const PlanDetails = () => {
                   }
                 });
               }}
-              className={`w-full py-5 rounded-2xl font-black text-white shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group transform hover:-translate-y-1 ${theme.bg}`}
-              style={{ boxShadow: `0 20px 25px -5px ${theme.bg}4D` }}
+              className={`w-full py-3.5 sm:py-4 rounded-md font-black text-white text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 group transform hover:-translate-y-0.5 ${theme.bg}`}
+              style={{ boxShadow: `0 10px 20px -5px ${theme.bg}4D` }}
             >
               <FiZap className="fill-white group-hover:scale-125 transition-transform" />
               {isUpgrade ? 'Upgrade My Membership' : 'Subscribe Now'}
             </button>
           ) : isCurrent ? (
-            <div className="bg-emerald-50 text-emerald-700 p-5 rounded-2xl border border-emerald-100 flex items-center justify-center gap-3 font-bold shadow-inner">
-              <FiCheckCircle className="w-6 h-6" />
+            <div className="bg-emerald-50 text-emerald-700 p-4 rounded-md border border-emerald-100 flex items-center justify-center gap-3 text-xs sm:text-sm font-bold shadow-inner">
+              <FiCheckCircle className="w-5 h-5" />
               You are currently enjoying this plan
             </div>
           ) : (
-            <div className="bg-gray-100 text-gray-500 p-5 rounded-2xl border border-gray-200 flex items-center justify-center gap-3 font-bold italic">
+            <div className="bg-gray-100 text-gray-500 p-4 rounded-md border border-gray-200 flex items-center justify-center gap-3 text-xs sm:text-sm font-bold italic">
               <FiInfo />
               Select a higher plan to upgrade
             </div>
@@ -425,14 +425,14 @@ const PlanDetails = () => {
         </div>
 
         {/* Extra Info */}
-        <div className="mt-12 space-y-4">
-          <div className="flex items-start gap-3 p-4 bg-orange-50/50 rounded-2xl border border-orange-100 select-none">
-            <FiShield className="text-orange-500 w-5 h-5 mt-0.5" />
-            <p className="text-xs text-orange-800 leading-relaxed font-medium">
+        <div className="mt-8 space-y-3">
+          <div className="flex items-start gap-3 p-3.5 bg-orange-50/50 rounded-md border border-orange-100 select-none">
+            <FiShield className="text-orange-500 w-4 h-4 mt-0.5 shrink-0" />
+            <p className="text-[11px] text-orange-800 leading-relaxed font-medium">
               Payment is 100% secure. You can cancel your subscription at any time from your settings. Benefits are applied instantly after payment completion.
             </p>
           </div>
-          <p className="text-center text-gray-300 text-[10px] uppercase font-bold tracking-widest pb-10">
+          <p className="text-center text-gray-400 text-[10px] uppercase font-bold tracking-widest pb-8">
             Doormeets Subscription • Secure & Trusted
           </p>
         </div>

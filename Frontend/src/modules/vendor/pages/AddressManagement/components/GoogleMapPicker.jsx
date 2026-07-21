@@ -13,9 +13,21 @@ const defaultCenter = {
   lng: 77.2090
 };
 
+const getValidLatLng = (pos) => {
+  if (!pos || typeof pos !== 'object') return null;
+  const rawLat = pos.lat ?? pos.latitude;
+  const rawLng = pos.lng ?? pos.longitude;
+  if (rawLat === undefined || rawLat === null || rawLng === undefined || rawLng === null) return null;
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
+  if (isNaN(lat) || !isFinite(lat) || isNaN(lng) || !isFinite(lng)) return null;
+  return { lat, lng };
+};
+
 const GoogleMapPicker = ({ onLocationSelect, initialPosition = null }) => {
   const [map, setMap] = useState(null);
-  const [marker, setMarker] = useState(initialPosition || defaultCenter);
+  const validInitial = getValidLatLng(initialPosition);
+  const [marker, setMarker] = useState(validInitial || defaultCenter);
   const [loading, setLoading] = useState(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
@@ -26,10 +38,11 @@ const GoogleMapPicker = ({ onLocationSelect, initialPosition = null }) => {
 
   // Update marker when initialPosition changes
   useEffect(() => {
-    if (initialPosition) {
-      setMarker(initialPosition);
+    const validPos = getValidLatLng(initialPosition);
+    if (validPos) {
+      setMarker(validPos);
       if (map) {
-        map.panTo(initialPosition);
+        map.panTo(validPos);
         map.setZoom(15);
       }
     }
@@ -37,40 +50,44 @@ const GoogleMapPicker = ({ onLocationSelect, initialPosition = null }) => {
 
   // Get user's current location on mount
   useEffect(() => {
-    if (!initialPosition && navigator.geolocation && isLoaded) {
+    const validPos = getValidLatLng(initialPosition);
+    if (!validPos && navigator.geolocation && isLoaded) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const newPos = {
+          const newPos = getValidLatLng({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude
-          };
-          setMarker(newPos);
-          if (map) {
-            map.panTo(newPos);
+          });
+          if (newPos) {
+            setMarker(newPos);
+            if (map) {
+              map.panTo(newPos);
+            }
+            reverseGeocode(newPos);
           }
-          reverseGeocode(newPos);
         },
         (error) => {
           console.error('Error getting location:', error);
         }
       );
     }
-  }, [isLoaded, map]);
+  }, [isLoaded, map, initialPosition]);
 
   // Reverse geocode to get address from coordinates
   const reverseGeocode = async (position) => {
-    if (!window.google) return;
+    const validPos = getValidLatLng(position);
+    if (!window.google || !validPos) return;
 
     setLoading(true);
     const geocoder = new window.google.maps.Geocoder();
 
-    geocoder.geocode({ location: position }, (results, status) => {
+    geocoder.geocode({ location: validPos }, (results, status) => {
       setLoading(false);
       if (status === 'OK' && results[0]) {
         if (onLocationSelect) {
           onLocationSelect({
-            lat: position.lat,
-            lng: position.lng,
+            lat: validPos.lat,
+            lng: validPos.lng,
             address: results[0].formatted_address
           });
         }
@@ -80,12 +97,15 @@ const GoogleMapPicker = ({ onLocationSelect, initialPosition = null }) => {
 
   // Handle map click
   const onMapClick = useCallback((e) => {
-    const newPos = {
+    if (!e || !e.latLng) return;
+    const newPos = getValidLatLng({
       lat: e.latLng.lat(),
       lng: e.latLng.lng()
-    };
-    setMarker(newPos);
-    reverseGeocode(newPos);
+    });
+    if (newPos) {
+      setMarker(newPos);
+      reverseGeocode(newPos);
+    }
   }, []);
 
   // Handle current location button
@@ -93,16 +113,18 @@ const GoogleMapPicker = ({ onLocationSelect, initialPosition = null }) => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const newPos = {
+          const newPos = getValidLatLng({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude
-          };
-          setMarker(newPos);
-          if (map) {
-            map.panTo(newPos);
-            map.setZoom(15);
+          });
+          if (newPos) {
+            setMarker(newPos);
+            if (map) {
+              map.panTo(newPos);
+              map.setZoom(15);
+            }
+            reverseGeocode(newPos);
           }
-          reverseGeocode(newPos);
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -124,12 +146,15 @@ const GoogleMapPicker = ({ onLocationSelect, initialPosition = null }) => {
     </div>;
   }
 
+  const currentCenter = getValidLatLng(marker) || defaultCenter;
+  const currentMarkerPosition = getValidLatLng(marker);
+
   return (
     <div className="w-full">
       <div className="relative bg-gray-200">
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
-          center={marker}
+          center={currentCenter}
           zoom={15}
           onClick={onMapClick}
           onLoad={setMap}
@@ -141,7 +166,7 @@ const GoogleMapPicker = ({ onLocationSelect, initialPosition = null }) => {
             rotateControl: false
           }}
         >
-          {marker && <Marker position={marker} />}
+          {currentMarkerPosition && <Marker position={currentMarkerPosition} />}
         </GoogleMap>
 
         {/* Pin Instruction Overlay */}

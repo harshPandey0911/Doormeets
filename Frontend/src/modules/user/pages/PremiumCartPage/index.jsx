@@ -82,7 +82,7 @@ const PremiumCartPage = () => {
 
   return (
     <div
-      className="min-h-screen pb-40"
+      className="min-h-screen pb-28 sm:pb-40"
       style={{ backgroundColor: 'var(--background)' }}
     >
       {/* Header */}
@@ -93,45 +93,45 @@ const PremiumCartPage = () => {
           borderColor: 'var(--border)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 py-2.5 sm:px-4 sm:py-4 flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-full transition-all active:scale-95"
+            className="p-1.5 sm:p-2 rounded-full transition-all active:scale-95"
             style={{ backgroundColor: 'var(--card-bg)' }}
           >
-            <FiArrowLeft className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
+            <FiArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: 'var(--text-primary)' }} />
           </button>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             My cart
           </h1>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pt-4 pb-6">
+      <div className="max-w-7xl mx-auto px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6">
 
 
         {/* Empty cart */}
         {!cartItems.length ? (
           <div
-            className="rounded-md border border-dashed p-12 text-center"
+            className="rounded-md border border-dashed p-8 sm:p-12 text-center"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card-bg)' }}
           >
             <div
-              className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center"
+              className="mx-auto mb-3 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
               style={{ backgroundColor: 'var(--divider)' }}
             >
-              <FiShoppingBag className="w-7 h-7" style={{ color: 'var(--text-muted)' }} />
+              <FiShoppingBag className="w-5 h-5 sm:w-7 sm:h-7" style={{ color: 'var(--text-muted)' }} />
             </div>
-            <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+            <p className="text-sm sm:text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
               Your cart is empty
             </p>
-            <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs sm:text-sm mb-4 sm:mb-5" style={{ color: 'var(--text-secondary)' }}>
               Add a service from home, category or brand page.
             </p>
             <button
               type="button"
               onClick={() => navigate('/user/home')}
-              className="px-6 py-3 rounded-md text-sm font-semibold text-white transition-all active:scale-95 hover:opacity-90"
+              className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-md text-xs sm:text-sm font-semibold text-white transition-all active:scale-95 hover:opacity-90"
               style={{ backgroundColor: 'var(--primary)' }}
             >
               Browse services
@@ -142,7 +142,7 @@ const PremiumCartPage = () => {
             {/* LEFT: Cart items */}
             <div>
             {/* Cart items grouped by category */}
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
               {Object.entries(groupedItems).map(([category, items]) => (
                 <div
                   key={category}
@@ -154,12 +154,12 @@ const PremiumCartPage = () => {
                 >
                   {/* Category header */}
                   <div
-                    className="px-4 py-3 flex items-center gap-2 border-b"
+                    className="px-3 py-2 sm:px-4 sm:py-3 flex items-center gap-2 border-b"
                     style={{ borderColor: 'var(--border)' }}
                   >
-                    <FiPackage className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+                    <FiPackage className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: 'var(--primary)' }} />
                     <p
-                      className="text-[10px] font-bold uppercase tracking-widest"
+                      className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest"
                       style={{ color: 'var(--text-muted)' }}
                     >
                       {category}
@@ -169,30 +169,30 @@ const PremiumCartPage = () => {
                   {/* Items */}
                   <div className="divide-y" style={{ borderColor: 'var(--divider)' }}>
                     {items.map((item, idx) => (
-                      <div key={item._id || item.id} className="px-4 py-4">
-                        <div className="flex items-start justify-between gap-3">
+                      <div key={item._id || item.id} className="px-3 py-2.5 sm:px-4 sm:py-4">
+                        <div className="flex items-start justify-between gap-2.5 sm:gap-3">
                           {/* Left: info */}
                           <div className="flex-1 min-w-0">
                             <p
-                              className="text-sm font-semibold leading-snug line-clamp-2"
+                              className="text-xs sm:text-sm font-semibold leading-snug line-clamp-2"
                               style={{ color: 'var(--text-primary)' }}
                             >
                               {item.card?.title || item.title}
                             </p>
 
                             {/* Rating */}
-                            <div className="flex items-center gap-1 mt-1">
+                            <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
                               <FiStar
-                                className="w-3 h-3"
+                                className="w-2.5 h-2.5 sm:w-3 sm:h-3"
                                 style={{ color: '#F59E0B', fill: '#F59E0B' }}
                               />
                               <span
-                                className="text-xs font-semibold"
+                                className="text-[11px] sm:text-xs font-semibold"
                                 style={{ color: '#F59E0B' }}
                               >
                                 {item.rating || 4.5}
                               </span>
-                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                              <span className="text-[11px] sm:text-xs" style={{ color: 'var(--text-muted)' }}>
                                 ({item.reviews || '1.2k'} reviews)
                               </span>
                             </div>
@@ -210,7 +210,7 @@ const PremiumCartPage = () => {
                               if (filteredFields.length === 0) return null;
                               return (
                                 <div 
-                                  className="mt-2 space-y-1 p-2 rounded-md border"
+                                  className="mt-1.5 p-1.5 sm:mt-2 sm:p-2 rounded-md border space-y-0.5 sm:space-y-1"
                                   style={{
                                     backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB',
                                     borderColor: isDark ? '#232733' : '#F1F5F9'
@@ -219,7 +219,7 @@ const PremiumCartPage = () => {
                                   {filteredFields.map((field, fIdx) => (
                                     <p 
                                       key={fIdx} 
-                                      className="text-[11px] leading-tight"
+                                      className="text-[10px] sm:text-[11px] leading-tight"
                                       style={{ color: isDark ? '#CBD5E1' : '#6B7280' }}
                                     >
                                       <span className="font-semibold" style={{ color: isDark ? '#F8FAFC' : '#374151' }}>{field.label}:</span> {field.value}
@@ -230,16 +230,16 @@ const PremiumCartPage = () => {
                             })()}
 
                             {/* Price */}
-                            <div className="flex items-baseline gap-1.5 mt-2">
+                            <div className="flex items-baseline gap-1.5 mt-1.5 sm:mt-2">
                               <span
-                                className="text-sm font-bold"
+                                className="text-xs sm:text-sm font-bold"
                                 style={{ color: 'var(--text-primary)' }}
                               >
                                 ₹{(item.unitPrice || (item.price / (item.serviceCount || 1))) * (item.serviceCount || 1)}
                               </span>
                               {item.originalPrice && (
                                 <span
-                                  className="text-xs line-through"
+                                  className="text-[11px] sm:text-xs line-through"
                                   style={{ color: 'var(--text-muted)' }}
                                 >
                                   ₹{item.originalPrice * (item.serviceCount || 1)}
@@ -253,16 +253,16 @@ const PremiumCartPage = () => {
                               if (!visits.length) return null;
                               return (
                                 <div
-                                  className="mt-3 p-3 rounded-md border"
+                                  className="mt-2.5 p-2 sm:mt-3 sm:p-3 rounded-md border"
                                   style={{
                                     backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : '#F0F4FF',
                                     borderColor: isDark ? 'rgba(99,102,241,0.15)' : '#DBEAFE'
                                   }}
                                 >
-                                  <div className="flex items-center gap-1.5 mb-2.5">
-                                    <FiCalendar className="w-3.5 h-3.5" style={{ color: isDark ? '#818CF8' : '#6366F1' }} />
+                                  <div className="flex items-center gap-1.5 mb-2 sm:mb-2.5">
+                                    <FiCalendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: isDark ? '#818CF8' : '#6366F1' }} />
                                     <span
-                                      className="text-[11px] font-bold uppercase tracking-wider"
+                                      className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider"
                                       style={{ color: isDark ? '#818CF8' : '#6366F1' }}
                                     >
                                       Visit Schedule
@@ -270,14 +270,14 @@ const PremiumCartPage = () => {
                                   </div>
                                   <div className="relative">
                                     {visits.map((visit, vIdx) => (
-                                      <div key={vIdx} className="flex items-start gap-2.5 relative" style={{ paddingBottom: vIdx < visits.length - 1 ? '12px' : '0' }}>
+                                      <div key={vIdx} className="flex items-start gap-2 sm:gap-2.5 relative" style={{ paddingBottom: vIdx < visits.length - 1 ? '10px' : '0' }}>
                                         {/* Timeline line */}
                                         {vIdx < visits.length - 1 && (
                                           <div
                                             className="absolute"
                                             style={{
                                               left: '7px',
-                                              top: '16px',
+                                              top: '14px',
                                               bottom: '0',
                                               width: '2px',
                                               backgroundColor: isDark ? 'rgba(99,102,241,0.2)' : '#C7D2FE',
@@ -287,7 +287,7 @@ const PremiumCartPage = () => {
                                         )}
                                         {/* Timeline dot */}
                                         <div
-                                          className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5"
+                                          className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center mt-0.5"
                                           style={{
                                             backgroundColor: visit.isToday
                                               ? (isDark ? '#34D399' : '#10B981')
@@ -297,20 +297,20 @@ const PremiumCartPage = () => {
                                               : '0 0 0 3px rgba(99,102,241,0.1)'
                                           }}
                                         >
-                                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                          <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white" />
                                         </div>
                                         {/* Visit info */}
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-1.5 flex-wrap">
                                             <span
-                                              className="text-[11px] font-bold"
+                                              className="text-[10px] sm:text-[11px] font-bold"
                                               style={{ color: isDark ? '#F1F5F9' : '#1E293B' }}
                                             >
                                               Visit {visit.sequence}
                                             </span>
                                             {visit.isToday && (
                                               <span
-                                                className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full"
+                                                className="text-[8px] sm:text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full"
                                                 style={{
                                                   backgroundColor: isDark ? 'rgba(52,211,153,0.15)' : '#D1FAE5',
                                                   color: isDark ? '#34D399' : '#059669'
@@ -321,7 +321,7 @@ const PremiumCartPage = () => {
                                             )}
                                             {!visit.isToday && (
                                               <span
-                                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                                                className="text-[8px] sm:text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
                                                 style={{
                                                   backgroundColor: isDark ? 'rgba(129,140,248,0.12)' : '#EEF2FF',
                                                   color: isDark ? '#A5B4FC' : '#6366F1'
@@ -332,7 +332,7 @@ const PremiumCartPage = () => {
                                             )}
                                           </div>
                                           <p
-                                            className="text-[10px] mt-0.5 leading-tight"
+                                            className="text-[9px] sm:text-[10px] mt-0.5 leading-tight"
                                             style={{ color: isDark ? '#94A3B8' : '#64748B' }}
                                           >
                                             {visit.title} — <span className="font-semibold" style={{ color: isDark ? '#CBD5E1' : '#334155' }}>{formatDate(visit.date)}</span>
@@ -347,7 +347,7 @@ const PremiumCartPage = () => {
                           </div>
 
                           {/* Right: qty + remove */}
-                          <div className="flex flex-col items-end gap-2 shrink-0">
+                          <div className="flex flex-col items-end gap-1.5 sm:gap-2 shrink-0">
                             {/* Quantity control */}
                             <div
                               className="flex items-center rounded-md border overflow-hidden"
@@ -364,13 +364,13 @@ const PremiumCartPage = () => {
                                     updateItem(item._id || item.id, (item.serviceCount || 1) - 1);
                                   }
                                 }}
-                                className="w-8 h-8 flex items-center justify-center transition-all active:scale-90"
+                                className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-all active:scale-90"
                                 style={{ color: 'var(--primary)' }}
                               >
-                                <FiMinus className="w-3.5 h-3.5" />
+                                <FiMinus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               </button>
                               <span
-                                className="w-8 text-center text-sm font-bold"
+                                className="w-6 sm:w-8 text-center text-xs sm:text-sm font-bold"
                                 style={{ color: 'var(--text-primary)' }}
                               >
                                 {item.serviceCount || 1}
@@ -380,10 +380,10 @@ const PremiumCartPage = () => {
                                 onClick={() =>
                                   updateItem(item._id || item.id, (item.serviceCount || 1) + 1)
                                 }
-                                className="w-8 h-8 flex items-center justify-center transition-all active:scale-90"
+                                className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-all active:scale-90"
                                 style={{ color: 'var(--primary)' }}
                               >
-                                <FiPlus className="w-3.5 h-3.5" />
+                                <FiPlus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               </button>
                             </div>
 
@@ -391,7 +391,7 @@ const PremiumCartPage = () => {
                             <button
                               type="button"
                               onClick={() => removeItem(item._id || item.id)}
-                              className="text-xs font-semibold transition-all"
+                              className="text-[11px] sm:text-xs font-semibold transition-all"
                               style={{ color: 'var(--primary)' }}
                             >
                               Remove
@@ -409,42 +409,42 @@ const PremiumCartPage = () => {
             {/* RIGHT: Payment summary + Continue (sidebar on desktop, bottom on mobile) */}
             <div className="lg:sticky lg:top-24">
             <div
-              className="rounded-md border p-4 mb-6"
+              className="rounded-md border p-3 sm:p-4 mb-3 sm:mb-6"
               style={{
                 backgroundColor: 'var(--card-bg)',
                 borderColor: 'var(--border)',
               }}
             >
-              <h2 className="text-base font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="text-sm sm:text-base font-bold mb-2 sm:mb-3" style={{ color: 'var(--text-primary)' }}>
                 Payment summary
               </h2>
-              <div className="space-y-2.5">
+              <div className="space-y-2 sm:space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
                     Price ({itemCount} {itemCount === 1 ? 'item' : 'items'})
                   </span>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  <span className="text-xs sm:text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                     ₹{originalTotal}
                   </span>
                 </div>
                 {savings > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
                       Discount
                     </span>
-                    <span className="text-sm font-medium text-green-600">
+                    <span className="text-xs sm:text-sm font-medium text-green-600">
                       -₹{savings}
                     </span>
                   </div>
                 )}
                 <div
-                  className="border-t pt-2.5 flex items-center justify-between"
+                  className="border-t pt-2 sm:pt-2.5 flex items-center justify-between"
                   style={{ borderColor: 'var(--border)' }}
                 >
-                  <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  <span className="text-xs sm:text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                     Total amount
                   </span>
-                  <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                  <span className="text-sm sm:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
                     ₹{total}
                   </span>
                 </div>
@@ -455,7 +455,7 @@ const PremiumCartPage = () => {
             <button
               type="button"
               onClick={handleCheckout}
-              className="w-full py-4 rounded-md text-sm font-bold text-white transition-all active:scale-[0.98] hover:opacity-90"
+              className="w-full py-2.5 sm:py-3.5 rounded-lg text-sm font-bold text-white transition-all active:scale-[0.98] hover:opacity-90"
               style={{ backgroundColor: 'var(--primary)' }}
             >
               Continue
