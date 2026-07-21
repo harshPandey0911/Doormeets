@@ -63,7 +63,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
   return (
     <div
       ref={bellButtonRef}
-      className="relative rounded-full cursor-pointer group active:scale-95 transition-transform duration-300 z-50 shrink-0 w-8 h-8 md:w-9 md:h-9 flex items-center justify-center"
+      className="relative rounded-full cursor-pointer group active:scale-95 transition-transform duration-300 z-50 shrink-0 w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 flex items-center justify-center"
       style={{
         margin: '2px'
       }}
@@ -102,17 +102,16 @@ const NotificationBell = ({ notificationCount = 0 }) => {
     >
       {/* 1. Subtle Circular Border */}
       <div
-        className="absolute inset-0 rounded-full z-0 border transition-colors duration-200"
-        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+        className="absolute inset-0 rounded-full z-0 border transition-colors duration-200 bg-white dark:bg-zinc-900"
+        style={{ borderColor: 'var(--border)' }}
       />
 
       {/* 2. Inner Button */}
       <button
-        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden transition-colors duration-200"
-        style={{ backgroundColor: 'var(--card-bg)' }}
+        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden transition-colors duration-200 bg-white dark:bg-zinc-900"
       >
         <div ref={bellRef} className="flex items-center justify-center">
-          <FiBell className="w-3.5 h-3.5 md:w-4 md:h-4 text-dark-text" />
+          <FiBell className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5 text-dark-text" />
         </div>
       </button>
 

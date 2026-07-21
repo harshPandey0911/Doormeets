@@ -18,7 +18,7 @@ const ServiceWithRatingCard = memo(({
     : price || 'Contact for price';
 
   const cardContent = (
-    <div className="w-full h-full flex flex-col border rounded-md p-3 shadow-[0_4px_12px_rgba(0,0,0,0.03)] group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+    <div className="w-full h-full flex flex-col border rounded-md p-3 shadow-[0_4px_12px_rgba(0,0,0,0.03)] group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
       {/* Image container */}
       <div className="w-full aspect-[4/3] rounded-[4px] bg-gray-50 overflow-hidden relative mb-3">
         {discount && (
@@ -64,12 +64,12 @@ const ServiceWithRatingCard = memo(({
           </div>
         )}
 
-        <div className="flex items-baseline gap-2 mt-1">
-          <span className={`text-[13px] md:text-[15px] ${price && !isNaN(price.toString().replace(/[,]/g, '')) ? 'font-semibold' : 'font-normal'}`} style={{ color: 'var(--text-primary)' }}>
+        <div className="flex items-baseline gap-2 mt-1 h-5 overflow-hidden">
+          <span className={`text-[11.5px] xs:text-[12.5px] md:text-[14px] truncate whitespace-nowrap ${price && !isNaN(price.toString().replace(/[,]/g, '')) ? 'font-semibold' : 'font-normal'}`} style={{ color: 'var(--text-primary)' }}>
             {displayPrice}
           </span>
           {originalPrice && (
-            <span className="text-[11px] md:text-[13px] text-gray-400 line-through">
+            <span className="text-[10px] md:text-[12px] text-gray-400 line-through shrink-0">
               ₹{originalPrice}
             </span>
           )}

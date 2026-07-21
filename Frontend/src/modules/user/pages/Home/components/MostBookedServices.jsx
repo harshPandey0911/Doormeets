@@ -144,12 +144,12 @@ const MostBookedServices = React.memo(({ services, onServiceClick, onAddClick, o
                 )}
 
                 {/* Price Row */}
-                <div className="flex items-baseline gap-2 mt-1.5 px-1">
-                  <span className="text-[13px] md:text-[15px] font-extrabold" style={{ color: 'var(--text-primary)' }}>
+                <div className="flex items-baseline gap-2 mt-1.5 px-1 h-5 overflow-hidden">
+                  <span className="text-[11.5px] xs:text-[12.5px] md:text-[15px] font-extrabold truncate whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>
                     {displayPrice}
                   </span>
                   {service.originalPrice && (
-                    <span className="text-[11px] md:text-[13px] text-gray-400 line-through">
+                    <span className="text-[10px] md:text-[13px] text-gray-400 line-through shrink-0">
                       ₹{service.originalPrice}
                     </span>
                   )}

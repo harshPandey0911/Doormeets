@@ -11,8 +11,8 @@ const TrustSection = ({ items = [] }) => {
     <div className="w-full px-3 md:px-5 mt-2 mb-6">
       {/* Single box containing all dynamic items stacked vertically */}
       <div 
-        className="rounded-md p-4 shadow-sm border space-y-1"
-        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+        className="rounded-md p-4 shadow-sm border space-y-1 bg-white dark:bg-zinc-900"
+        style={{ borderColor: 'var(--border)' }}
       >
         {items.map((item, index) => {
           const hasLongDescription = item.description && item.description.length > 80;
@@ -29,7 +29,7 @@ const TrustSection = ({ items = [] }) => {
               className={`flex items-start gap-3.5 py-3 first:pt-1 last:pb-1 ${index < items.length - 1 ? 'border-b border-border-color' : ''} ${hasLongDescription ? 'cursor-pointer group' : ''}`}
             >
               <div 
-                className="w-10 h-10 shrink-0 flex items-center justify-center rounded-md text-base font-bold mt-0.5"
+                className="w-10 h-10 md:w-12 md:h-12 shrink-0 flex items-center justify-center rounded-md text-base md:text-lg font-bold mt-0.5"
                 style={{ 
                   background: `linear-gradient(135deg, ${item.color ? `${item.color}18` : 'rgba(79, 70, 229, 0.1)'}, ${item.color ? `${item.color}05` : 'rgba(79, 70, 229, 0.02)'})`,
                   color: item.color || '#4f46e5',
@@ -40,20 +40,20 @@ const TrustSection = ({ items = [] }) => {
               </div>
               
               <div className="flex-1 min-w-0">
-                <h4 className="text-xs sm:text-sm font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                <h4 className="text-xs sm:text-sm md:text-base font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                   {item.title}
                 </h4>
                 
                 {item.description && (
-                  <p className="text-[11px] sm:text-xs leading-relaxed font-medium mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="text-[11px] sm:text-xs md:text-sm leading-relaxed font-medium mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
                     {item.description}
                   </p>
                 )}
 
                 {hasLongDescription && (
-                  <span className="inline-flex items-center gap-0.5 text-[#B33A35] dark:text-red-400 text-[10px] font-bold mt-1 group-hover:underline">
+                  <span className="inline-flex items-center gap-0.5 text-[#B33A35] dark:text-red-400 text-[10px] md:text-xs font-bold mt-1 group-hover:underline">
                     Read more
-                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <svg className="w-2.5 h-2.5 md:w-3 md:h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </span>

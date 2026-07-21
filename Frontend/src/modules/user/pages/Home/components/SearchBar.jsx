@@ -57,9 +57,8 @@ const SearchBar = ({ onInputClick }) => {
 
           {/* Simulated Input */}
           <div
-            className="w-full pl-11 pr-4 py-3 rounded-md border transition-all duration-300 flex items-center h-[46px] overflow-hidden"
+            className="w-full pl-11 pr-4 py-3 rounded-md border transition-all duration-300 flex items-center h-[46px] overflow-hidden bg-white dark:bg-zinc-900"
             style={{
-              backgroundColor: 'var(--card-bg)',
               borderColor: 'var(--border)'
             }}
           >

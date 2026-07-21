@@ -206,20 +206,22 @@ const Wallet = () => {
 
       <div className="relative z-10">
         {/* Modern Glassmorphism Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/[0.03] px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/[0.02]"
-            >
-              <FiArrowLeft className="w-5 h-5 text-black" />
-            </button>
-            <h1 className="text-xl font-extrabold text-black tracking-tight">Wallet</h1>
+        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/[0.03] px-4 py-4 w-full">
+          <div className="max-w-[1360px] mx-auto px-0 md:px-4 lg:px-8 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(-1)}
+                className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/[0.02]"
+              >
+                <FiArrowLeft className="w-5 h-5 text-black" />
+              </button>
+              <h1 className="text-xl md:text-2xl font-extrabold text-black tracking-tight">Wallet</h1>
+            </div>
+            <NotificationBell />
           </div>
-          <NotificationBell />
         </header>
 
-        <main className="px-4 py-6">
+        <main className="max-w-[1360px] mx-auto px-4 md:px-8 lg:px-12 py-6 md:py-10">
           {/* Referral Banner */}
           <div className="bg-gray-100 rounded-xl p-4 mb-4 relative overflow-hidden">
             <div className="relative z-10">

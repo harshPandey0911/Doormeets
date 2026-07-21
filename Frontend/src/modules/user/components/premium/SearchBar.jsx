@@ -11,9 +11,8 @@ const SearchBar = ({ value, onChange, onSubmit, placeholder = 'Search services, 
       className="w-full"
     >
       <label
-        className="flex items-center gap-3 rounded-md border px-4 py-3 shadow-sm transition-all"
+        className="flex items-center gap-3 rounded-md border px-4 py-3 shadow-sm transition-all bg-white dark:bg-zinc-900"
         style={{
-          backgroundColor: 'var(--card-bg)',
           borderColor: 'var(--border)',
           color: 'var(--text-primary)',
           boxShadow: 'var(--shadow)',

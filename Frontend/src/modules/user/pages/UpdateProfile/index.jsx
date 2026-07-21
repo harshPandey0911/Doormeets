@@ -279,8 +279,8 @@ const UpdateProfile = () => {
   return (
     <div className="min-h-screen bg-light-bg pb-20">
       {/* Header */}
-      <header className="bg-transparent border-b border-border-color sticky top-0 z-30">
-        <div className="px-4 pt-4 pb-3">
+      <header className="bg-transparent border-b border-border-color sticky top-0 z-30 backdrop-blur-xl">
+        <div className="max-w-[1360px] mx-auto px-4 md:px-8 lg:px-12 py-3.5">
           <div className="flex items-center gap-3">
             <button
               onClick={handleBack}
@@ -288,14 +288,15 @@ const UpdateProfile = () => {
             >
               <FiArrowLeft className="w-5 h-5 text-dark-text" />
             </button>
-            <h1 className="text-xl font-bold text-dark-text">Update Profile</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-dark-text tracking-tight">Update Profile</h1>
           </div>
         </div>
       </header>
 
-      <main className="px-4 py-4">
-        {/* Profile Form */}
-        <div className="space-y-4">
+      <main className="max-w-[1360px] mx-auto px-4 md:px-8 lg:px-12 py-6 md:py-10">
+        {/* Profile Form Card Wrapper */}
+        <div className="max-w-2xl mx-auto md:bg-card-bg md:border md:border-border-color md:rounded-2xl md:p-8 md:shadow-sm">
+          <div className="space-y-5">
           {/* Profile Photo */}
           <div className="flex flex-col items-center justify-center mb-6">
             <div className="relative group">
@@ -454,7 +455,8 @@ const UpdateProfile = () => {
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Photo Source Selection - Mobile Styled Bottom Sheet */}
       <AnimatePresence>

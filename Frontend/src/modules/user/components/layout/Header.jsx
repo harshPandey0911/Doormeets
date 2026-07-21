@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiHome, FiCalendar, FiShoppingCart, FiUser, FiInfo, FiMessageSquare } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiShoppingCart, FiUser, FiInfo, FiMessageSquare, FiChevronDown } from 'react-icons/fi';
 import { useCart } from '../../../../context/CartContext';
 import NotificationBell from '../common/NotificationBell';
 import api from '../../../../services/api';
@@ -57,20 +57,11 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
         <div className="flex flex-col min-w-0">
           <div
             onClick={onLocationClick}
-            className="flex items-center gap-1 cursor-pointer select-none text-[11px] md:text-xs transition-colors capitalize font-medium opacity-90"
+            className="flex items-center gap-1 cursor-pointer select-none text-[11px] md:text-sm lg:text-[15px] transition-colors capitalize font-medium opacity-90"
             style={{ color: 'var(--text-secondary)' }}
           >
             <span>{displayLocation}</span>
-            <svg
-              style={{ color: 'var(--text-muted)' }}
-              className="w-3 h-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2.5"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
+            <FiChevronDown className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 shrink-0 opacity-80" style={{ color: 'var(--text-secondary)' }} />
           </div>
           <h1
             className="text-[15px] xs:text-[17px] sm:text-lg md:text-[22px] font-bold leading-tight tracking-tight mt-0.5 md:mt-1.5 whitespace-nowrap"
@@ -122,7 +113,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
           <button
             onClick={onSearchClick}
             title="Search Services"
-            className="w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 border cursor-pointer"
+            className="w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 border cursor-pointer"
             style={{
               backgroundColor: 'var(--surface)',
               borderColor: 'var(--border)',
@@ -131,7 +122,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
             }}
           >
             <svg
-              className="w-3.5 h-3.5 md:w-4 md:h-4"
+              className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

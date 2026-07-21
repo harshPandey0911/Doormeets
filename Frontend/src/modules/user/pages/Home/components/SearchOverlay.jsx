@@ -197,9 +197,8 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search for services..."
-                  className="w-full pl-10 pr-10 py-3 rounded-xl focus:ring-2 transition-all border outline-none text-base font-medium"
+                  className="w-full pl-10 pr-10 py-3 rounded-xl focus:ring-2 transition-all border outline-none text-base font-medium bg-white dark:bg-zinc-900"
                   style={{
-                    backgroundColor: 'var(--divider)',
                     borderColor: 'var(--border)',
                     color: 'var(--text-primary)',
                     '--tw-ring-color': `${themeColors.primary}33`
