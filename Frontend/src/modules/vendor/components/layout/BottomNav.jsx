@@ -1,8 +1,8 @@
 import React, { useState, useEffect, memo, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiHome, FiBriefcase, FiUsers, FiUser, FiBox } from 'react-icons/fi';
-import { HiHome, HiBriefcase, HiUsers, HiUser, HiViewGrid } from 'react-icons/hi';
-import { FaWallet, FaHardHat } from 'react-icons/fa';
+import { FiHome, FiBriefcase, FiBox } from 'react-icons/fi';
+import { HiHome, HiBriefcase, HiViewGrid } from 'react-icons/hi';
+import { FaWallet } from 'react-icons/fa';
 import { vendorTheme as themeColors } from '../../../../theme';
 
 const BottomNav = memo(() => {
@@ -42,7 +42,6 @@ const BottomNav = memo(() => {
       { path: `${prefix}/dashboard`, icon: FiHome, activeIcon: HiHome, label: 'Home' },
       { path: `${prefix}/jobs`, icon: FiBriefcase, activeIcon: HiBriefcase, label: 'Active Jobs', badge: badgeCount },
       { path: `${prefix}/wallet`, icon: FaWallet, activeIcon: FaWallet, label: 'Wallet' },
-      { path: `${prefix}/profile`, icon: FiUser, activeIcon: HiUser, label: 'Profile' },
     ];
   }, [pendingJobsCount, location.pathname]);
 

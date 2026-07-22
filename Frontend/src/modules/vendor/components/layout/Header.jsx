@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiSearch } from 'react-icons/fi';
+import { FiArrowLeft, FiSearch, FiUser } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Logo from '../../../../components/common/Logo';
@@ -48,6 +48,30 @@ const Header = memo(({
 
   const [isOnline, setIsOnline] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+
+  // Profile data from localStorage
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [profileName, setProfileName] = useState('');
+
+  useEffect(() => {
+    const isWorker = localStorage.getItem('role') === 'worker';
+    const storageKey = isWorker ? 'workerData' : 'vendorData';
+    const loadProfile = () => {
+      try {
+        const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        setProfilePhoto(data.profilePhoto || null);
+        setProfileName(data.name || '');
+      } catch (e) { /* ignore */ }
+    };
+    loadProfile();
+    const profileEvent = isWorker ? 'workerProfileUpdated' : 'vendorProfileUpdated';
+    window.addEventListener('vendorDataUpdated', loadProfile);
+    window.addEventListener(profileEvent, loadProfile);
+    return () => {
+      window.removeEventListener('vendorDataUpdated', loadProfile);
+      window.removeEventListener(profileEvent, loadProfile);
+    };
+  }, []);
 
   // Sync online status
   useEffect(() => {
@@ -192,6 +216,37 @@ const Header = memo(({
                 onClick={handleNotifications}
               />
             )}
+
+            {/* Profile Avatar */}
+            <div
+              className="relative rounded-full cursor-pointer group active:scale-95 transition-transform duration-300 z-50 shrink-0 w-8 h-8 md:w-10 md:h-10 lg:w-11 lg:h-11 flex items-center justify-center"
+              style={{ margin: '2px' }}
+              onClick={() => {
+                const isWorker = localStorage.getItem('role') === 'worker';
+                navigate(isWorker ? '/worker/profile' : '/vendor/profile');
+              }}
+              title="Profile"
+            >
+              {/* Subtle Circular Border */}
+              <div
+                className="absolute inset-0 rounded-full z-0 border transition-colors duration-200 bg-white dark:bg-zinc-900"
+                style={{ borderColor: 'var(--border)' }}
+              />
+              {/* Inner Button */}
+              <button
+                className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden transition-colors duration-200 bg-white dark:bg-zinc-900"
+              >
+                {profilePhoto ? (
+                  <img
+                    src={profilePhoto.startsWith('http') ? profilePhoto : `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/api$/, '')}${profilePhoto.startsWith('/') ? '' : '/'}${profilePhoto}`}
+                    alt="Profile"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <FiUser className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5 text-dark-text" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </header>
