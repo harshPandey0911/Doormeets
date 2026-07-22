@@ -89,23 +89,9 @@ const WorkersList = () => {
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
       <Header title="Workers" />
 
-      <main className="px-4 py-6">
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search workers by name or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all font-normal"
-            />
-          </div>
-        </div>
-
+      <main className="px-3.5 py-4">
         {/* Filter Buttons */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
           {[
             { id: 'all', label: 'All Workers' },
             { id: 'online', label: 'Online' },
@@ -114,19 +100,19 @@ const WorkersList = () => {
             <button
               key={option.id}
               onClick={() => setFilter(option.id)}
-              className={`px-5 py-2.5 rounded-full font-bold text-xs whitespace-nowrap transition-all duration-300 ${filter === option.id
-                ? 'text-white shadow-lg shadow-teal-500/20'
-                : 'bg-white text-gray-500 border border-gray-100'
+              className={`px-3.5 py-1.5 rounded-md font-bold text-xs whitespace-nowrap transition-all duration-300 ${filter === option.id
+                ? 'text-white shadow-xs'
+                : 'bg-white text-gray-600 border border-gray-100'
                 }`}
               style={
                 filter === option.id
                   ? { background: themeColors.button }
-                  : { boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)' }
+                  : { boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)' }
               }
             >
               {option.label}
               {filter === option.id && (
-                <span className="ml-2 bg-white/20 px-1.5 py-0.5 rounded-md text-[10px]">
+                <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 rounded-md text-[10px]">
                   {filteredWorkers.length}
                 </span>
               )}
@@ -134,19 +120,33 @@ const WorkersList = () => {
           ))}
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search workers by name or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3.5 py-2.5 bg-white rounded-md border border-gray-100 shadow-2xs focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all text-xs md:text-sm font-normal"
+            />
+          </div>
+        </div>
+
         {/* Workers List */}
         {loading ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 animate-pulse">
-                <div className="flex gap-4">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl shrink-0" />
-                  <div className="flex-1 space-y-3">
-                    <div className="h-5 w-40 bg-slate-100 rounded" />
-                    <div className="h-4 w-24 bg-slate-100 rounded" />
+              <div key={i} className="bg-white rounded-md p-4 border border-slate-100 animate-pulse">
+                <div className="flex gap-3">
+                  <div className="w-12 h-12 bg-slate-100 rounded-md shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-slate-100 rounded-md" />
+                    <div className="h-3 w-20 bg-slate-100 rounded-md" />
                     <div className="flex gap-2">
-                      <div className="h-6 w-16 bg-slate-100 rounded-full" />
-                      <div className="h-6 w-16 bg-slate-100 rounded-full" />
+                      <div className="h-5 w-14 bg-slate-100 rounded-md" />
+                      <div className="h-5 w-14 bg-slate-100 rounded-md" />
                     </div>
                   </div>
                 </div>
@@ -154,24 +154,17 @@ const WorkersList = () => {
             ))}
           </div>
         ) : filteredWorkers.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-dashed border-gray-200">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiUsers className="w-10 h-10 text-gray-200" />
+          <div className="bg-white rounded-md p-6 text-center shadow-2xs border border-dashed border-gray-200">
+            <div className="w-12 h-12 bg-gray-50 rounded-md flex items-center justify-center mx-auto mb-3">
+              <FiUsers className="w-6 h-6 text-gray-300" />
             </div>
-            <p className="text-gray-600 font-bold mb-1">No workers found</p>
-            <p className="text-xs text-gray-400 mb-6 font-medium">
-              {searchQuery ? 'Try matching a different name or phone' : 'Start by adding a worker to your team'}
+            <p className="text-gray-700 font-bold text-sm mb-1">No workers found</p>
+            <p className="text-xs text-gray-400 font-medium">
+              {searchQuery ? 'Try matching a different name or phone' : 'Click the + button below to add a worker'}
             </p>
-            <button
-              onClick={() => navigate('/vendor/workers/add')}
-              className="px-8 py-3.5 rounded-xl font-bold text-white text-sm transition-all active:scale-95 shadow-lg shadow-teal-500/20"
-              style={{ background: themeColors.button }}
-            >
-              Add Worker
-            </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredWorkers.map((worker, index) => {
               const statusRaw = (worker.status || 'OFFLINE').toUpperCase();
 
@@ -190,22 +183,22 @@ const WorkersList = () => {
                 <div
                   key={worker.id || index}
                   onClick={() => navigate(`/vendor/workers/${worker.id}/edit`)}
-                  className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all active:scale-[0.99] group relative"
+                  className="bg-white rounded-md p-3 shadow-2xs border border-gray-100 hover:shadow-xs transition-all active:scale-[0.99] group relative"
                 >
-                  <div className="flex gap-4">
+                  <div className="flex gap-3">
                     {/* Profile Photo */}
                     <div className="relative shrink-0">
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-md overflow-hidden bg-gray-50 border border-gray-100 shadow-2xs">
                         {worker.profilePhoto ? (
                           <img src={worker.profilePhoto} alt={worker.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                            <FiUser className="w-8 h-8 text-gray-300" />
+                            <FiUser className="w-6 h-6 text-gray-300" />
                           </div>
                         )}
                       </div>
                       <div
-                        className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-4 border-white shadow-sm transition-all duration-300 ${statusRaw === 'ONLINE' ? 'animate-pulse ring-4 ring-green-100' : ''}`}
+                        className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-md border-2 border-white shadow-2xs transition-all duration-300 ${statusRaw === 'ONLINE' ? 'animate-pulse' : ''}`}
                         style={{ backgroundColor: statusColor }}
                       />
                     </div>
@@ -214,19 +207,19 @@ const WorkersList = () => {
                     <div className="flex-1 min-w-0 py-0.5">
                       <div className="flex justify-between items-start mb-1">
                         <div className="min-w-0">
-                          <h3 className="font-bold text-gray-900 text-lg truncate">{worker.name}</h3>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: statusColor }} />
+                          <h3 className="font-bold text-gray-900 text-xs md:text-sm truncate">{worker.name}</h3>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="flex items-center gap-1">
+                              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
                               <span
-                                className="text-[10px] font-bold uppercase tracking-wider"
+                                className="text-[9px] font-bold uppercase tracking-wider"
                                 style={{ color: statusColor }}
                               >
                                 {displayStatus}
                               </span>
                             </div>
                             <span className="text-gray-300">•</span>
-                            <span className="text-gray-500 font-medium text-xs font-mono">{worker.phone}</span>
+                            <span className="text-gray-500 font-medium text-[11px] font-mono">{worker.phone}</span>
                           </div>
                         </div>
 
@@ -237,49 +230,49 @@ const WorkersList = () => {
                               e.stopPropagation();
                               navigate(`/vendor/workers/${worker.id}/edit`);
                             }}
-                            className="p-1.5 rounded-lg hover:bg-teal-50 text-teal-600 transition-colors"
+                            className="p-1 rounded-md hover:bg-teal-50 text-teal-600 transition-colors"
                           >
-                            <FiEdit2 className="w-4 h-4" />
+                            <FiEdit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(worker.id);
                             }}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+                            className="p-1 rounded-md hover:bg-red-50 text-red-500 transition-colors"
                           >
-                            <FiTrash2 className="w-4 h-4" />
+                            <FiTrash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
 
                       {/* Skills & Stats */}
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <div className="flex flex-wrap gap-1.5 min-w-0 max-w-[60%]">
+                      <div className="flex flex-wrap gap-1.5 items-center mt-1">
+                        <div className="flex flex-wrap gap-1 min-w-0 max-w-[60%]">
                           {worker.skills && worker.skills.length > 0 ? (
                             worker.skills.slice(0, 2).map((skill, idx) => (
                               <span
                                 key={idx}
-                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-gray-50 text-gray-500 border border-gray-100 whitespace-nowrap"
+                                className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-gray-50 text-gray-500 border border-gray-100 whitespace-nowrap"
                               >
                                 {skill}
                               </span>
                             ))
                           ) : (
-                            <span className="text-[10px] text-gray-400 font-medium italic">No skills</span>
+                            <span className="text-[9px] text-gray-400 font-medium italic">No skills</span>
                           )}
                           {worker.skills?.length > 2 && (
-                            <span className="text-[10px] text-gray-400 font-bold">+{worker.skills.length - 2}</span>
+                            <span className="text-[9px] text-gray-400 font-bold">+{worker.skills.length - 2}</span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3 ml-auto shrink-0">
-                          <div className="flex items-center gap-1">
-                            <span className="text-amber-400 text-xs text-yellow-500">⭐</span>
-                            <span className="text-xs font-bold text-gray-800">{worker.rating || '4.5'}</span>
+                        <div className="flex items-center gap-2 ml-auto shrink-0">
+                          <div className="flex items-center gap-0.5">
+                            <span className="text-amber-400 text-[10px]">⭐</span>
+                            <span className="text-[10px] font-bold text-gray-800">{worker.rating || '4.5'}</span>
                           </div>
                           <div className="h-3 w-[1px] bg-gray-200" />
-                          <div className="text-[10px] font-bold text-gray-600">
+                          <div className="text-[9px] font-bold text-gray-600">
                             {worker.completedJobs || 0} Jobs
                           </div>
                         </div>
@@ -296,19 +289,19 @@ const WorkersList = () => {
       {/* Floating Action Button */}
       <motion.button
         onClick={() => navigate('/vendor/workers/add')}
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl active:scale-95 z-50 overflow-hidden"
+        className="fixed bottom-20 right-4 w-9 h-9 rounded-md flex items-center justify-center text-white shadow-md active:scale-95 z-50 overflow-hidden"
         style={{
           background: themeColors.button,
-          boxShadow: `0 8px 16px ${themeColors.brand.teal}40`,
-          border: '2px solid rgba(255, 255, 255, 0.2)'
+          boxShadow: `0 3px 10px ${themeColors.brand.teal}35`,
+          border: '1.5px solid rgba(255, 255, 255, 0.3)'
         }}
         initial={{ scale: 0, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.05 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
       >
         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <FiPlus className="w-8 h-8 font-bold" />
+        <FiPlus className="w-4 h-4 font-bold" />
       </motion.button>
 
       <BottomNav />

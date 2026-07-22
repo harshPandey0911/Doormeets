@@ -185,14 +185,14 @@ const AddressManagement = () => {
         onBack={() => navigate('/vendor/settings')}
       />
 
-      <main className="px-4 py-6">
+      <main className="px-3.5 py-4 max-w-lg mx-auto">
         {/* Info Card - Same logic as Modal */}
-        <div className="rounded-xl p-3 mb-6 border" style={{ backgroundColor: `${themeColors.brand.teal}0D`, borderColor: `${themeColors.brand.teal}1A` }}>
-          <div className="flex items-start gap-3">
-            <FiMapPin className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: themeColors.button }} />
+        <div className="rounded-md p-2.5 mb-3 border shadow-2xs" style={{ backgroundColor: `${themeColors.brand.teal}0D`, borderColor: `${themeColors.brand.teal}1A` }}>
+          <div className="flex items-start gap-2.5">
+            <FiMapPin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: themeColors.button }} />
             <div>
-              <h3 className="font-semibold mb-1 text-sm" style={{ color: themeColors.button }}>Set Business Location</h3>
-              <p className="text-xs" style={{ color: `${themeColors.brand.teal}CC` }}>
+              <h3 className="font-bold mb-0.5 text-xs" style={{ color: themeColors.button }}>Set Business Location</h3>
+              <p className="text-[10px] leading-normal font-medium" style={{ color: `${themeColors.brand.teal}CC` }}>
                 Place the pin accurately on the map to help customers locate you easily.
               </p>
             </div>
@@ -200,7 +200,7 @@ const AddressManagement = () => {
         </div>
 
         {/* Map Section */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6 border border-gray-100">
+        <div className="bg-white rounded-md shadow-2xs overflow-hidden mb-3 border border-gray-100">
           <LocationPicker
             onLocationSelect={handleLocationSelect}
             initialPosition={selectedLocation}
@@ -208,11 +208,11 @@ const AddressManagement = () => {
         </div>
 
         {/* Form Inputs Container */}
-        <div className="bg-white rounded-xl p-4 shadow-md space-y-4">
+        <div className="bg-white rounded-md p-3 shadow-2xs border border-gray-100 space-y-3">
 
           {/* Address Autocomplete */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
               Street Address / Area
             </label>
             {isLoaded ? (
@@ -225,13 +225,13 @@ const AddressManagement = () => {
                 }}
               >
                 <div className="relative">
-                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
                   <input
                     type="text"
                     placeholder="Search for area, street name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border-2 rounded-lg text-sm focus:outline-none transition-colors"
+                    className="w-full pl-9 pr-3 py-2 border rounded-md text-xs focus:outline-none transition-colors"
                     style={{ borderColor: '#e5e7eb' }}
                     onFocus={(e) => e.target.style.borderColor = themeColors.button}
                     onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -240,13 +240,13 @@ const AddressManagement = () => {
               </Autocomplete>
             ) : (
               <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
                 <input
                   type="text"
                   placeholder="Enter area, street name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 rounded-lg text-sm focus:outline-none transition-colors"
+                  className="w-full pl-9 pr-3 py-2 border rounded-md text-xs focus:outline-none transition-colors"
                   style={{ borderColor: '#e5e7eb' }}
                   onFocus={(e) => e.target.style.borderColor = themeColors.button}
                   onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -257,17 +257,17 @@ const AddressManagement = () => {
 
           {/* House Number */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
               Shop / Building Number
             </label>
             <div className="relative">
-              <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
                 placeholder="e.g. Shop 101, Complex B"
                 value={houseNumber}
                 onChange={(e) => setHouseNumber(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 rounded-lg text-sm focus:outline-none transition-colors"
+                className="w-full pl-9 pr-3 py-2 border rounded-md text-xs focus:outline-none transition-colors"
                 style={{ borderColor: '#e5e7eb' }}
                 onFocus={(e) => e.target.style.borderColor = themeColors.button}
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -277,7 +277,7 @@ const AddressManagement = () => {
 
           {/* Coordinates Display (Optional, for transparency) */}
           {selectedLocation && (
-            <p className="text-xs text-gray-400">
+            <p className="text-[10px] text-gray-400 font-bold">
               Lat/Lng: {selectedLocation.lat?.toFixed(5)}, {selectedLocation.lng?.toFixed(5)}
             </p>
           )}
@@ -286,13 +286,13 @@ const AddressManagement = () => {
           <button
             onClick={handleSave}
             disabled={!searchQuery || loading}
-            className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full py-2.5 rounded-md font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-1 shadow-xs"
             style={{
               background: themeColors.button,
-              boxShadow: `0 4px 12px ${themeColors.button}40`
+              boxShadow: `0 4px 12px ${themeColors.button}30`
             }}
           >
-            <FiSave className="w-5 h-5" />
+            <FiSave className="w-4 h-4" />
             {loading ? 'Saving...' : 'Save Business Address'}
           </button>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { FiBell, FiCheck, FiArrowLeft, FiTrash2, FiX } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -17,6 +18,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState(null);
   const [filter, setFilter] = useState('all'); // all, alerts, jobs, payments
 
   const fetchNotifications = async () => {
@@ -139,24 +141,24 @@ const Notifications = () => {
     <div className="min-h-screen pb-20 bg-white dark:bg-zinc-950 text-dark-text">
       {/* Header */}
       <div className="backdrop-blur-xl bg-white/40 sticky top-0 z-50 border-b border-border-color w-full">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-md mx-auto px-3.5 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => navigate(-1)}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-dark-text"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-dark-text"
             >
               <FiArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-dark-text">Notifications</h1>
+              <h1 className="text-sm md:text-base font-bold text-dark-text">Notifications</h1>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="max-w-md mx-auto px-3.5 py-4">
         {/* Filter Buttons */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
           {[
             { id: 'all', label: 'All' },
             { id: 'jobs', label: 'Bookings' },
@@ -165,15 +167,15 @@ const Notifications = () => {
             <button
               key={filterOption.id}
               onClick={() => setFilter(filterOption.id)}
-              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all border ${filter === filterOption.id
-                ? 'text-white border-transparent'
-                : 'bg-white dark:bg-zinc-900 text-secondary-text border-border-color'
+              className={`px-3.5 py-1.5 rounded-md font-bold text-xs whitespace-nowrap transition-all border ${filter === filterOption.id
+                ? 'text-white border-transparent shadow-xs'
+                : 'bg-white dark:bg-zinc-900 text-secondary-text border-border-color shadow-2xs'
                 }`}
               style={
                 filter === filterOption.id
                   ? {
                     background: themeColors.button,
-                    boxShadow: `0 2px 8px ${themeColors.button}40`,
+                    boxShadow: `0 2px 6px ${themeColors.button}30`,
                   }
                   : {}
               }
@@ -185,16 +187,16 @@ const Notifications = () => {
 
         {/* Action Buttons */}
         {notifications.length > 0 && (
-          <div className="flex justify-end gap-4 mb-4">
+          <div className="flex justify-end gap-3 mb-3 px-0.5">
             <button
               onClick={handleMarkAllRead}
-              className="text-xs font-semibold text-secondary-text hover:text-dark-text transition-colors"
+              className="text-[11px] font-bold text-secondary-text hover:text-dark-text transition-colors"
             >
               Mark All as Read
             </button>
             <button
               onClick={handleClearAll}
-              className="text-xs font-semibold text-brand hover:brightness-110 transition-colors flex items-center gap-1"
+              className="text-[11px] font-bold text-brand hover:brightness-110 transition-colors flex items-center gap-1"
             >
               <FiTrash2 className="w-3 h-3" />
               Clear All
@@ -204,129 +206,179 @@ const Notifications = () => {
 
         {/* Notifications List */}
         {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white dark:bg-zinc-900 rounded-2xl p-4 shadow-sm border border-border-color animate-pulse">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 shrink-0"></div>
-                  <div className="flex-1 space-y-3 py-1">
-                    <div className="flex justify-between items-start">
-                      <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 w-full bg-gray-200 dark:bg-gray-800 rounded"></div>
-                      <div className="h-3 w-2/3 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                    </div>
-                    <div className="h-2 w-16 bg-gray-100 dark:bg-gray-900 rounded"></div>
+          <div className="space-y-2.5">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white dark:bg-zinc-900 rounded-md p-3 shadow-2xs border border-border-color animate-pulse">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-md bg-gray-200 dark:bg-gray-800 shrink-0"></div>
+                  <div className="flex-1 space-y-2 py-0.5">
+                    <div className="h-3.5 w-32 bg-gray-200 dark:bg-gray-800 rounded-md"></div>
+                    <div className="h-3 w-full bg-gray-200 dark:bg-gray-800 rounded-md"></div>
+                    <div className="h-2.5 w-16 bg-gray-100 dark:bg-gray-900 rounded-md"></div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900 rounded-xl p-8 text-center shadow-md border border-border-color">
-            <FiBell className="w-16 h-16 mx-auto mb-4 text-secondary-text" />
-            <p className="text-dark-text font-semibold mb-2">No notifications</p>
-            <p className="text-sm text-secondary-text">You're all caught up!</p>
+          <div className="bg-white dark:bg-zinc-900 rounded-md p-6 text-center shadow-2xs border border-border-color">
+            <FiBell className="w-12 h-12 mx-auto mb-3 text-secondary-text" />
+            <p className="text-dark-text font-bold text-sm mb-1">No notifications</p>
+            <p className="text-xs text-secondary-text font-medium">You're all caught up!</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredNotifications.map((notif) => (
-              <div
-                key={notif.id}
-                className={`bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm border border-border-color transition-all relative group ${!notif.read ? 'border-l-4' : ''
-                  }`}
-                style={{
-                  borderLeftColor: !notif.read ? getNotificationColor(notif.type) : 'transparent',
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                    style={{ backgroundColor: `${getNotificationColor(notif.type)}15` }}
-                  >
-                    {getNotificationIcon(notif.type)}
-                  </div>
-                  <div className="flex-1 pr-6"> {/* Added pr-6 to avoid overlap with delete btn */}
-                    <div className="flex items-start justify-between mb-1">
-                      <div>
-                        <p className={`font-semibold text-dark-text ${!notif.read ? 'font-bold' : ''}`}>{notif.title}</p>
-                        <p className="text-sm text-secondary-text mt-1 leading-snug">{notif.message}</p>
-                      </div>
+          <div className="space-y-2.5">
+            {filteredNotifications.map((notif) => {
+              const cardImage = notif.imageUrl || notif.image || notif.data?.imageUrl || notif.data?.image;
+              return (
+                <div
+                  key={notif.id}
+                  onClick={() => {
+                    if (!notif.read) {
+                      handleMarkAsRead(notif.id);
+                    }
+                    if (cardImage || (!notif.action && !notif.bookingId && !notif.relatedId)) {
+                      setSelectedNotif(notif);
+                    } else if (notif.action === 'view_booking' || notif.bookingId || (notif.relatedType === 'booking' && notif.relatedId)) {
+                      const bId = notif.bookingId || notif.relatedId;
+                      navigate(`/user/booking/${bId}`);
+                    } else if (notif.action === 'view_wallet') {
+                      navigate('/user/wallet');
+                    } else {
+                      setSelectedNotif(notif);
+                    }
+                  }}
+                  className={`bg-white dark:bg-zinc-900 rounded-md p-3 shadow-2xs border border-border-color hover:shadow-xs active:scale-[0.99] transition-all relative cursor-pointer ${!notif.read ? 'border-l-[3.5px]' : ''
+                    }`}
+                  style={{
+                    borderLeftColor: !notif.read ? getNotificationColor(notif.type) : 'transparent',
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-sm flex-shrink-0 shadow-2xs mt-0.5"
+                      style={{ backgroundColor: `${getNotificationColor(notif.type)}15` }}
+                    >
+                      {getNotificationIcon(notif.type)}
                     </div>
-                    <p className="text-xs text-muted-text mt-2 font-medium">{notif.time}</p>
-                    {notif.action && (
-                      <button
-                        onClick={() => {
-                          if (notif.action === 'view_booking') {
-                            navigate(`/user/booking/${notif.bookingId}`);
-                          } else if (notif.action === 'view_wallet') {
-                            navigate('/user/wallet');
-                          }
-                        }}
-                        className="mt-3 text-sm font-bold flex items-center gap-1 text-brand hover:brightness-110"
-                      >
-                        View Details
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                      </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-xs text-dark-text ${!notif.read ? 'font-bold' : 'font-semibold'}`}>{notif.title}</p>
+                        {!notif.read && (
+                          <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0 mt-1" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-secondary-text mt-0.5 leading-snug font-medium line-clamp-2">{notif.message}</p>
+                      <p className="text-[9px] text-muted-text mt-1.5 font-bold">{notif.time || (notif.createdAt && new Date(notif.createdAt).toLocaleString())}</p>
+                    </div>
+
+                    {/* Thumbnail if image attached */}
+                    {cardImage && (
+                      <div className="w-11 h-11 rounded-md overflow-hidden flex-shrink-0 border border-border-color shadow-2xs bg-gray-50">
+                        <img src={cardImage} alt="Attachment" className="w-full h-full object-cover" />
+                      </div>
                     )}
                   </div>
                 </div>
-
-                {/* Actions: Mark Read & Delete */}
-                <div className="absolute top-3 right-3 flex gap-2">
-                  {!notif.read && (
-                    <button
-                      onClick={() => handleMarkAsRead(notif.id)}
-                      className="p-1.5 rounded-full bg-light-bg hover:bg-card-bg text-green-600 transition-colors shadow-sm border border-border-color"
-                      title="Mark as read"
-                    >
-                      <FiCheck className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => handleDelete(e, notif.id)}
-                    className="p-1.5 rounded-full bg-light-bg hover:bg-red-500/10 text-secondary-text hover:text-red-500 transition-colors shadow-sm border border-border-color"
-                    title="Delete"
-                  >
-                    <FiX className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
 
       <BottomNav />
 
-      {/* Confirmation Modal */}
-      {showClearConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-card-bg w-full max-w-sm rounded-2xl p-6 shadow-xl border border-border-color animate-scale-in">
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
-                <FiTrash2 className="w-6 h-6 text-red-500" />
-              </div>
-              <h3 className="text-xl font-bold text-dark-text">Clear All Notifications?</h3>
-              <p className="text-sm text-secondary-text mt-2">This action cannot be undone.</p>
+      {/* Notification Detail Modal */}
+      {selectedNotif && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 rounded-md w-full max-w-md shadow-2xl overflow-hidden max-h-[85vh] flex flex-col border border-border-color animate-scale-in">
+            {/* Header */}
+            <div className="flex items-center justify-between p-3.5 border-b border-border-color bg-gray-50/50 dark:bg-zinc-800/50">
+              <h3 className="font-bold text-dark-text text-xs md:text-sm">Notification Details</h3>
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="p-1 text-secondary-text hover:text-dark-text rounded-md transition font-bold text-sm"
+              >
+                ✕
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* Content */}
+            <div className="p-4 overflow-y-auto space-y-3">
+              {(selectedNotif.imageUrl || selectedNotif.image || selectedNotif.data?.imageUrl || selectedNotif.data?.image) && (
+                <div className="w-full rounded-md overflow-hidden border border-border-color shadow-2xs max-h-60 bg-gray-50 dark:bg-zinc-800 flex items-center justify-center">
+                  <img
+                    src={selectedNotif.imageUrl || selectedNotif.image || selectedNotif.data?.imageUrl || selectedNotif.data?.image}
+                    alt="Notification Attachment"
+                    className="w-full h-full object-contain max-h-60"
+                  />
+                </div>
+              )}
+
+              <div>
+                <h4 className="font-bold text-dark-text text-sm md:text-base leading-snug">{selectedNotif.title}</h4>
+                <p className="text-[10px] text-muted-text font-bold mt-1">
+                  {selectedNotif.time || (selectedNotif.createdAt && new Date(selectedNotif.createdAt).toLocaleString())}
+                </p>
+              </div>
+
+              <div className="text-xs text-secondary-text leading-relaxed font-medium bg-gray-50 dark:bg-zinc-800/60 p-3 rounded-md border border-border-color whitespace-pre-wrap">
+                {selectedNotif.message}
+              </div>
+
+              {(selectedNotif.actionUrl || selectedNotif.relatedId || selectedNotif.bookingId) && (
+                <button
+                  onClick={() => {
+                    const notif = selectedNotif;
+                    setSelectedNotif(null);
+                    if (notif.actionUrl) {
+                      window.open(notif.actionUrl, '_blank');
+                    } else if (notif.action === 'view_booking' || notif.bookingId || (notif.relatedType === 'booking' && notif.relatedId)) {
+                      const bId = notif.bookingId || notif.relatedId;
+                      navigate(`/user/booking/${bId}`);
+                    } else if (notif.action === 'view_wallet') {
+                      navigate('/user/wallet');
+                    }
+                  }}
+                  className="w-full py-2 bg-orange-500 text-white font-bold text-xs rounded-md shadow-xs transition-transform active:scale-95 text-center mt-2"
+                >
+                  View Related Page
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Confirmation Modal */}
+      {showClearConfirm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-md p-5 shadow-2xl border border-border-color animate-scale-in">
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className="w-10 h-10 bg-red-500/10 rounded-md flex items-center justify-center mb-3 shadow-2xs border border-red-500/20">
+                <FiTrash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <h3 className="text-sm md:text-base font-bold text-dark-text">Clear All Notifications?</h3>
+              <p className="text-xs text-secondary-text mt-1 font-medium">This action cannot be undone.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="py-3 rounded-xl font-bold text-secondary-text hover:bg-light-bg transition-colors"
+                className="py-2 rounded-md font-bold text-xs text-secondary-text bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmClearAll}
-                className="py-3 rounded-xl font-bold text-white bg-red-500 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
+                className="py-2 rounded-md font-bold text-xs text-white bg-red-500 shadow-xs hover:bg-red-600 active:scale-95 transition-all"
               >
                 Yes, Clear All
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

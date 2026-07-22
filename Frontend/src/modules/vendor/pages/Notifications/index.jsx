@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { FiBell, FiCheck, FiX, FiFilter, FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -18,6 +19,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState(null);
   const [filter, setFilter] = useState('all'); // all, alerts, jobs, payments
 
   useLayoutEffect(() => {
@@ -159,9 +161,9 @@ const Notifications = () => {
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
       <Header title="Notifications" />
 
-      <main className="px-4 py-6">
+      <main className="px-3.5 py-4 max-w-lg mx-auto">
         {/* Filter Buttons */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
           {[
             { id: 'all', label: 'All' },
             { id: 'jobs', label: 'Jobs' },
@@ -170,19 +172,17 @@ const Notifications = () => {
             <button
               key={filterOption.id}
               onClick={() => setFilter(filterOption.id)}
-              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all ${filter === filterOption.id
-                ? 'text-white'
-                : 'bg-white text-gray-700'
+              className={`px-3.5 py-1.5 rounded-md font-bold text-xs whitespace-nowrap transition-all ${filter === filterOption.id
+                ? 'text-white shadow-xs'
+                : 'bg-white text-gray-700 border border-gray-100 shadow-2xs'
                 }`}
               style={
                 filter === filterOption.id
                   ? {
                     background: themeColors.button,
-                    boxShadow: `0 2px 8px ${themeColors.button}40`,
+                    boxShadow: `0 2px 6px ${themeColors.button}30`,
                   }
-                  : {
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                  }
+                  : {}
               }
             >
               {filterOption.label}
@@ -192,16 +192,16 @@ const Notifications = () => {
 
         {/* Action Buttons */}
         {notifications.length > 0 && (
-          <div className="flex justify-end gap-4 mb-4">
+          <div className="flex justify-end gap-3 mb-3 px-0.5">
             <button
               onClick={handleMarkAllRead}
-              className="text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+              className="text-[11px] font-bold text-gray-500 hover:text-gray-800 transition-colors"
             >
               Mark All as Read
             </button>
             <button
               onClick={handleClearAll}
-              className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center gap-1"
+              className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors flex items-center gap-1"
             >
               <FiTrash2 className="w-3 h-3" />
               Clear All
@@ -211,131 +211,180 @@ const Notifications = () => {
 
         {/* Notifications List */}
         {filteredNotifications.length === 0 ? (
-          <div
-            className="bg-white rounded-xl p-8 text-center shadow-md"
-            style={{
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <FiBell className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-gray-600 font-semibold mb-2">No notifications</p>
-            <p className="text-sm text-gray-500">You're all caught up!</p>
+          <div className="bg-white rounded-md p-6 text-center shadow-2xs border border-gray-100">
+            <FiBell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <p className="text-gray-800 font-bold text-sm mb-1">No notifications</p>
+            <p className="text-xs text-gray-500 font-medium">You're all caught up!</p>
           </div>
         ) : (
           <div className="space-y-2.5">
-            {filteredNotifications.map((notif) => (
-              <div
-                key={notif.id}
-                className={`bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 hover:shadow-md transition-all relative group ${!notif.read ? 'border-l-[3px]' : ''
-                  }`}
-                style={{
-                  borderLeftColor: !notif.read ? getNotificationColor(notif.type) : 'transparent',
-                }}
-              >
-                <div className="flex items-start gap-2.5">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0"
-                    style={{ backgroundColor: `${getNotificationColor(notif.type)}15` }}
-                  >
-                    {getNotificationIcon(notif.type)}
-                  </div>
-                  <div className="flex-1 pr-10">
-                    <div className="flex items-start justify-between mb-0.5">
-                      <div>
-                        <p className={`text-xs font-semibold text-gray-800 ${!notif.read ? 'font-bold' : ''}`}>{notif.title}</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5 leading-normal">{notif.message}</p>
-                      </div>
+            {filteredNotifications.map((notif) => {
+              const cardImage = notif.imageUrl || notif.image || notif.data?.imageUrl || notif.data?.image;
+              return (
+                <div
+                  key={notif.id}
+                  onClick={() => {
+                    if (!notif.read) {
+                      handleMarkAsRead(notif.id);
+                    }
+                    if (cardImage || (!notif.relatedType && !notif.action && !notif.bookingId)) {
+                      setSelectedNotif(notif);
+                    } else if (notif.relatedType === 'booking' && notif.relatedId) {
+                      if (notif.data?.isPainting || notif.title?.toLowerCase().includes('painting')) {
+                        const consultationId = notif.data?.consultationId || notif.relatedId;
+                        navigate(`/vendor/painting-consultations?consultationId=${consultationId}`);
+                      } else {
+                        navigate(`/vendor/booking/${notif.relatedId}`);
+                      }
+                    } else if (notif.action === 'view_booking' && notif.bookingId) {
+                      if (notif.title?.toLowerCase().includes('painting')) {
+                        navigate(`/vendor/painting-consultations?consultationId=${notif.bookingId}`);
+                      } else {
+                        navigate(`/vendor/booking/${notif.bookingId}`);
+                      }
+                    } else if (notif.action === 'view_wallet' || (notif.type && ['payment', 'payout', 'wallet'].some(t => notif.type.toLowerCase().includes(t)))) {
+                      navigate('/vendor/wallet');
+                    } else {
+                      setSelectedNotif(notif);
+                    }
+                  }}
+                  className={`bg-white rounded-md p-3 shadow-2xs border border-gray-100 hover:shadow-xs active:scale-[0.99] transition-all relative cursor-pointer ${!notif.read ? 'border-l-[3.5px]' : ''
+                    }`}
+                  style={{
+                    borderLeftColor: !notif.read ? getNotificationColor(notif.type) : 'transparent',
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-sm flex-shrink-0 shadow-2xs mt-0.5"
+                      style={{ backgroundColor: `${getNotificationColor(notif.type)}15` }}
+                    >
+                      {getNotificationIcon(notif.type)}
                     </div>
-                    <p className="text-[9px] text-gray-400 mt-1">{notif.time || (notif.createdAt && new Date(notif.createdAt).toLocaleString())}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-xs text-gray-900 ${!notif.read ? 'font-bold' : 'font-semibold'}`}>{notif.title}</p>
+                        {!notif.read && (
+                          <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0 mt-1" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-0.5 leading-snug font-medium line-clamp-2">{notif.message}</p>
+                      <p className="text-[9px] text-gray-400 mt-1.5 font-bold">{notif.time || (notif.createdAt && new Date(notif.createdAt).toLocaleString())}</p>
+                    </div>
 
-                    {/* Action button based on type/related entity */}
-                    {(notif.action || notif.relatedType === 'booking' || notif.type === 'payout_requested') && (
-                      <button
-                        onClick={() => {
-                          if (notif.relatedType === 'booking' && notif.relatedId) {
-                            if (notif.data?.isPainting || notif.title?.toLowerCase().includes('painting')) {
-                              const consultationId = notif.data?.consultationId || notif.relatedId;
-                              navigate(`/vendor/painting-consultations?consultationId=${consultationId}`);
-                            } else {
-                              navigate(`/vendor/booking/${notif.relatedId}`);
-                            }
-                          } else if (notif.action === 'view_booking' && notif.bookingId) {
-                            if (notif.title?.toLowerCase().includes('painting')) {
-                              navigate(`/vendor/painting-consultations?consultationId=${notif.bookingId}`);
-                            } else {
-                              navigate(`/vendor/booking/${notif.bookingId}`);
-                            }
-                          } else if (notif.action === 'view_wallet') {
-                            navigate('/vendor/wallet');
-                          }
-                        }}
-                        className="mt-1.5 text-[10px] font-bold flex items-center gap-0.5"
-                        style={{ color: themeColors.button }}
-                      >
-                        View Details
-                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-                      </button>
+                    {/* Thumbnail if image attached */}
+                    {cardImage && (
+                      <div className="w-11 h-11 rounded-md overflow-hidden flex-shrink-0 border border-gray-100 shadow-2xs bg-gray-50">
+                        <img src={cardImage} alt="Attachment" className="w-full h-full object-cover" />
+                      </div>
                     )}
                   </div>
                 </div>
-
-                {/* Actions: Mark Read & Delete - Positioned absolute top-right */}
-                <div className="absolute top-2.5 right-2.5 flex gap-1.5">
-                  {!notif.read && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMarkAsRead(notif.id);
-                      }}
-                      className="p-1 rounded-full bg-gray-50 hover:bg-gray-100 text-green-600 transition-colors shadow-sm"
-                      title="Mark as read"
-                    >
-                      <FiCheck className="w-3 h-3" />
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => handleDelete(e, notif.id)}
-                    className="p-1 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors shadow-sm"
-                    title="Delete"
-                  >
-                    <FiX className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
 
       <BottomNav />
 
-      {/* Confirmation Modal */}
-      {showClearConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl animate-scale-in">
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                <FiTrash2 className="w-6 h-6 text-red-500" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">Clear All Notifications?</h3>
-              <p className="text-sm text-gray-500 mt-2">This action cannot be undone.</p>
+      {/* Notification Detail Modal */}
+      {selectedNotif && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-md w-full max-w-md shadow-2xl overflow-hidden max-h-[85vh] flex flex-col border border-gray-100 animate-scale-in">
+            {/* Header */}
+            <div className="flex items-center justify-between p-3.5 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="font-bold text-gray-900 text-xs md:text-sm">Notification Details</h3>
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-md transition font-bold text-sm"
+              >
+                ✕
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* Content */}
+            <div className="p-4 overflow-y-auto space-y-3">
+              {(selectedNotif.imageUrl || selectedNotif.image || selectedNotif.data?.imageUrl || selectedNotif.data?.image) && (
+                <div className="w-full rounded-md overflow-hidden border border-gray-100 shadow-2xs max-h-60 bg-gray-50 flex items-center justify-center">
+                  <img
+                    src={selectedNotif.imageUrl || selectedNotif.image || selectedNotif.data?.imageUrl || selectedNotif.data?.image}
+                    alt="Notification Attachment"
+                    className="w-full h-full object-contain max-h-60"
+                  />
+                </div>
+              )}
+
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm md:text-base leading-snug">{selectedNotif.title}</h4>
+                <p className="text-[10px] text-gray-400 font-bold mt-1">
+                  {selectedNotif.time || (selectedNotif.createdAt && new Date(selectedNotif.createdAt).toLocaleString())}
+                </p>
+              </div>
+
+              <div className="text-xs text-gray-700 leading-relaxed font-medium bg-gray-50 p-3 rounded-md border border-gray-100 whitespace-pre-wrap">
+                {selectedNotif.message}
+              </div>
+
+              {(selectedNotif.actionUrl || selectedNotif.relatedId || selectedNotif.bookingId) && (
+                <button
+                  onClick={() => {
+                    const notif = selectedNotif;
+                    setSelectedNotif(null);
+                    if (notif.actionUrl) {
+                      window.open(notif.actionUrl, '_blank');
+                    } else if (notif.relatedType === 'booking' && notif.relatedId) {
+                      if (notif.data?.isPainting || notif.title?.toLowerCase().includes('painting')) {
+                        const consultationId = notif.data?.consultationId || notif.relatedId;
+                        navigate(`/vendor/painting-consultations?consultationId=${consultationId}`);
+                      } else {
+                        navigate(`/vendor/booking/${notif.relatedId}`);
+                      }
+                    } else if (notif.action === 'view_booking' && notif.bookingId) {
+                      navigate(`/vendor/booking/${notif.bookingId}`);
+                    } else if (notif.action === 'view_wallet') {
+                      navigate('/vendor/wallet');
+                    }
+                  }}
+                  className="w-full py-2 bg-orange-500 text-white font-bold text-xs rounded-md shadow-xs transition-transform active:scale-95 text-center mt-2"
+                >
+                  View Related Page
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Confirmation Modal */}
+      {showClearConfirm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-md p-5 shadow-2xl border border-gray-100 animate-scale-in">
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className="w-10 h-10 bg-red-50 rounded-md flex items-center justify-center mb-3 shadow-2xs">
+                <FiTrash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <h3 className="text-sm md:text-base font-bold text-gray-900">Clear All Notifications?</h3>
+              <p className="text-xs text-gray-500 mt-1 font-medium">This action cannot be undone.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+                className="py-2 rounded-md font-bold text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmClearAll}
-                className="py-3 rounded-xl font-bold text-white bg-red-500 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
+                className="py-2 rounded-md font-bold text-xs text-white bg-red-500 shadow-xs hover:bg-red-600 active:scale-95 transition-all"
               >
                 Yes, Clear All
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

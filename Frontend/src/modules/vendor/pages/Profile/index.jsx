@@ -279,12 +279,14 @@ const Profile = () => {
                     </div>
                     <span className="text-[10px] md:text-[11px] text-orange-950 font-bold tracking-tight">{profile.phone}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 rounded bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
-                      <FiMail className="w-2.5 h-2.5 text-orange-800" />
+                  {profile.email && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="p-0.5 rounded bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
+                        <FiMail className="w-2.5 h-2.5 text-orange-800" />
+                      </div>
+                      <span className="text-[10px] md:text-[11px] text-orange-950 font-bold tracking-tight truncate">{profile.email}</span>
                     </div>
-                    <span className="text-[10px] md:text-[11px] text-orange-950 font-bold tracking-tight truncate max-w-[140px]">{profile.email}</span>
-                  </div>
+                  )}
                 </div>
               </div>
 

@@ -356,35 +356,35 @@ const AddEditWorker = () => {
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
       <Header title={isEdit ? 'Edit Worker' : 'Add Worker'} />
 
-      <main className="px-4 py-6 max-w-lg mx-auto">
+      <main className="px-3.5 py-4 max-w-lg mx-auto">
 
         {/* Tabs for Add New vs Link */}
         {!isEdit && (
-          <div className="flex bg-white rounded-xl p-1 mb-6 shadow-sm border border-gray-100">
+          <div className="flex bg-white rounded-md p-1 mb-4 shadow-2xs border border-gray-100">
             <button
               onClick={() => setActiveTab('new')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'new'
-                ? 'text-white shadow-md'
+              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === 'new'
+                ? 'text-white shadow-xs'
                 : 'text-gray-500 hover:bg-gray-50'
                 }`}
               style={{
                 background: activeTab === 'new' ? themeColors.button : 'transparent'
               }}
             >
-              <FiUserPlus className="w-4 h-4" />
+              <FiUserPlus className="w-3.5 h-3.5" />
               Create New
             </button>
             <button
               onClick={() => setActiveTab('link')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'link'
-                ? 'text-white shadow-md'
+              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === 'link'
+                ? 'text-white shadow-xs'
                 : 'text-gray-500 hover:bg-gray-50'
                 }`}
               style={{
                 background: activeTab === 'link' ? themeColors.button : 'transparent'
               }}
             >
-              <FiLink className="w-4 h-4" />
+              <FiLink className="w-3.5 h-3.5" />
               Link Existing
             </button>
           </div>
@@ -392,25 +392,25 @@ const AddEditWorker = () => {
 
         {/* Link Existing Mode */}
         {activeTab === 'link' && !isEdit && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center space-y-4">
+          <div className="bg-white rounded-md p-4 shadow-2xs border border-gray-100 text-center space-y-3">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2"
+              className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-1"
               style={{ background: `${themeColors.button}15` }}
             >
-              <FiSearch className="w-8 h-8" style={{ color: themeColors.button }} />
+              <FiSearch className="w-6 h-6" style={{ color: themeColors.button }} />
             </div>
-            <h3 className="text-lg font-bold text-gray-800">Add Existing Worker</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="text-base font-bold text-gray-800">Add Existing Worker</h3>
+            <p className="text-xs text-gray-500">
               Enter the phone number of a registered worker to add them to your team.
             </p>
 
-            <div className="pt-2">
+            <div className="pt-1">
               <input
                 type="tel"
                 value={linkPhone}
                 onChange={(e) => setLinkPhone(e.target.value)}
                 placeholder="Enter 10-digit mobile number"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 text-center text-lg font-medium tracking-wide"
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 text-center text-sm font-medium tracking-wide"
                 maxLength={10}
               />
             </div>
@@ -418,10 +418,10 @@ const AddEditWorker = () => {
             <button
               onClick={handleLinkWorker}
               disabled={loading}
-              className="w-full py-4 text-white rounded-xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 mt-4"
+              className="w-full py-2.5 text-white rounded-md font-bold text-xs shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 mt-3"
               style={{
                 background: themeColors.button,
-                boxShadow: `0 8px 24px ${themeColors.button}40`
+                boxShadow: `0 4px 12px ${themeColors.button}30`
               }}
             >
               {loading ? 'Processing...' : 'Find & Add Worker'}
@@ -431,13 +431,13 @@ const AddEditWorker = () => {
 
         {/* Create / Edit Mode */}
         {(activeTab === 'new' || isEdit) && (
-          <div className="space-y-6">
+          <div className="space-y-4">
 
             {/* Profile Photo Upload */}
-            <div className="flex flex-col items-center justify-center mb-2">
+            <div className="flex flex-col items-center justify-center mb-1">
               <div className="relative group">
                 <div
-                  className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100"
+                  className="w-20 h-20 rounded-md overflow-hidden border-2 border-white shadow-2xs bg-gray-100"
                 >
                   {photoPreview || formData.profilePhoto ? (
                     <img
@@ -447,17 +447,17 @@ const AddEditWorker = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
-                      <FiUserPlus className="w-8 h-8" />
+                      <FiUserPlus className="w-7 h-7" />
                     </div>
                   )}
                 </div>
 
                 <label
                   htmlFor="worker-photo-upload"
-                  className="absolute bottom-0 right-0 p-2 rounded-full cursor-pointer shadow-md transition-transform active:scale-95 hover:scale-105"
+                  className="absolute -bottom-1 -right-1 p-1.5 rounded-md cursor-pointer shadow-2xs transition-transform active:scale-95 hover:scale-105"
                   style={{ background: themeColors.button }}
                 >
-                  <FiCamera className="w-4 h-4 text-white" />
+                  <FiCamera className="w-3.5 h-3.5 text-white" />
                   <input
                     id="worker-photo-upload"
                     type="file"
@@ -467,20 +467,20 @@ const AddEditWorker = () => {
                   />
                 </label>
               </div>
-              <p className="text-gray-400 text-[10px] mt-2 font-medium">Add Profile Photo</p>
+              <p className="text-gray-400 text-[10px] mt-1.5 font-bold">Add Profile Photo</p>
             </div>
 
             {/* Basic Info */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="bg-white rounded-md p-3.5 shadow-2xs border border-gray-100 space-y-3">
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Details</h4>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Full Name *"
-                  className={`w-full px-4 py-3 bg-gray-50 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.name ? 'border-red-500' : 'border-gray-100'}`}
+                  className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.name ? 'border-red-500' : 'border-gray-100'}`}
                 />
 
                 <input
@@ -488,7 +488,7 @@ const AddEditWorker = () => {
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="Mobile Number *"
-                  className={`w-full px-4 py-3 bg-gray-50 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.phone ? 'border-red-500' : 'border-gray-100'}`}
+                  className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.phone ? 'border-red-500' : 'border-gray-100'}`}
                   maxLength={10}
                 />
 
@@ -497,16 +497,17 @@ const AddEditWorker = () => {
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="Email Address (Optional)"
-                  className={`w-full px-4 py-3 bg-gray-50 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? 'border-red-500' : 'border-gray-100'}`}
+                  className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? 'border-red-500' : 'border-gray-100'}`}
                 />
               </div>
             </div>
+
             {/* Address Info */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="bg-white rounded-md p-3.5 shadow-2xs border border-gray-100 space-y-3">
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Address</h4>
 
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-sm font-medium text-gray-700">
+              <div className="p-2.5 bg-gray-50 rounded-md border border-gray-100">
+                <p className="text-xs font-medium text-gray-700">
                   {formData.address?.fullAddress ||
                     (formData.address?.addressLine1 ? `${formData.address.addressLine1}, ${formData.address.city}` : 'No address set')
                   }
@@ -515,31 +516,31 @@ const AddEditWorker = () => {
 
               <button
                 onClick={() => setIsAddressModalOpen(true)}
-                className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm border border-blue-100 hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2 bg-blue-50 text-blue-600 rounded-md font-bold text-xs border border-blue-100 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5"
               >
-                <FiMapPin className="w-4 h-4" />
+                <FiMapPin className="w-3.5 h-3.5" />
                 Select Address on Map
               </button>
             </div>
 
             {/* Work Profile */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm space-y-2">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Work Profile</h4>
+            <div className="bg-white rounded-md p-3.5 shadow-2xs border border-gray-100 space-y-2">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Work Profile</h4>
 
               {/* Category Dropdown */}
               <div>
-                <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Category</label>
+                <label className="text-[10px] font-bold text-gray-500 mb-1 block uppercase tracking-wide">Category</label>
                 <div className="relative">
                   <button
                     onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                    className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-3.5 py-2 bg-gray-50 rounded-md border border-gray-100 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-100 text-xs"
                   >
                     <span className={`font-medium truncate ${formData.serviceCategories.length > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
                       {formData.serviceCategories.length > 0
                         ? `${formData.serviceCategories.length} Selected`
                         : 'Select Categories'}
                     </span>
-                    <FiChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} />
+                    <FiChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {isCategoryOpen && (
@@ -548,24 +549,28 @@ const AddEditWorker = () => {
                         className="fixed inset-0 z-10 bg-transparent"
                         onClick={() => setIsCategoryOpen(false)}
                       />
-                      <div className="absolute z-20 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1.5 bg-white rounded-md shadow-xl border border-gray-100 max-h-56 overflow-y-auto">
                         {categories.length > 0 ? (
-                          categories.map(cat => (
-                            <button
-                              key={cat._id}
-                              onClick={() => {
-                                toggleCategory(cat.title);
-                              }}
-                              className="w-full text-left px-4 py-3 hover:bg-gray-50 font-medium text-gray-700 border-b border-gray-50 last:border-0 flex items-center justify-between"
-                            >
-                              {cat.title}
-                              {formData.serviceCategories.includes(cat.title) && (
-                                <div className="w-2 h-2 rounded-full bg-green-500" />
-                              )}
-                            </button>
-                          ))
+                          categories.map((cat, index) => {
+                            const catKey = cat._id || cat.id || cat.title || index;
+                            const catTitle = typeof cat === 'string' ? cat : (cat.title || cat.name || '');
+                            return (
+                              <button
+                                key={catKey}
+                                onClick={() => {
+                                  toggleCategory(catTitle);
+                                }}
+                                className="w-full text-left px-3.5 py-2 hover:bg-gray-50 font-medium text-xs text-gray-700 border-b border-gray-50 last:border-0 flex items-center justify-between"
+                              >
+                                {catTitle}
+                                {formData.serviceCategories.includes(catTitle) && (
+                                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                                )}
+                              </button>
+                            );
+                          })
                         ) : (
-                          <div className="px-4 py-3 text-gray-400 text-sm">No categories found</div>
+                          <div className="px-3.5 py-2 text-gray-400 text-xs">No categories found</div>
                         )}
                       </div>
                     </>
@@ -574,16 +579,16 @@ const AddEditWorker = () => {
 
                 {/* Selected Categories Tags */}
                 {formData.serviceCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-1.5 mt-2">
                     {formData.serviceCategories.map((cat, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-100"
+                        className="inline-flex items-center px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[10px] font-bold border border-blue-100"
                       >
                         {cat}
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleCategory(cat); }}
-                          className="ml-2 text-blue-500 hover:text-red-500 focus:outline-none"
+                          className="ml-1.5 text-blue-500 hover:text-red-500 focus:outline-none"
                         >
                           <FiX className="w-3 h-3" />
                         </button>
@@ -599,19 +604,19 @@ const AddEditWorker = () => {
             {/* Documents (Simplified) */}
             {
               !isEdit && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="bg-white rounded-md p-3.5 shadow-2xs border border-gray-100 space-y-2.5">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Identity Proof (Aadhar)</h4>
                   <input
                     type="text"
                     value={formData.aadhar.number}
                     onChange={(e) => handleInputChange('aadhar.number', e.target.value)}
                     placeholder="Aadhar Number *"
-                    className={`w-full px-4 py-3 bg-gray-50 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors['aadhar.number'] ? 'border-red-500' : 'border-gray-100'}`}
+                    className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors['aadhar.number'] ? 'border-red-500' : 'border-gray-100'}`}
                     maxLength={12}
                   />
 
                   {/* File Upload */}
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center transition-colors hover:border-blue-300 bg-gray-50">
+                  <div className="border-2 border-dashed border-gray-200 rounded-md p-4 text-center transition-colors hover:border-blue-300 bg-gray-50">
                     <input
                       id="worker-aadhar-upload"
                       type="file"
@@ -622,19 +627,19 @@ const AddEditWorker = () => {
                     <label htmlFor="worker-aadhar-upload" className="cursor-pointer flex flex-col items-center">
                       {aadharFile ? (
                         <div className="flex items-center gap-2 text-green-600 font-medium">
-                          <FiUpload className="w-5 h-5" />
-                          <span className="truncate max-w-[200px]">{aadharFile.name}</span>
+                          <FiUpload className="w-4 h-4" />
+                          <span className="truncate max-w-[200px] text-xs">{aadharFile.name}</span>
                         </div>
                       ) : formData.aadhar.document && formData.aadhar.document !== 'data:image/png;base64,placeholder' ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <p className="text-green-600 font-medium text-sm mb-2">Document Uploaded</p>
-                          <span className="text-xs text-blue-500 underline">Click to update</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <p className="text-green-600 font-bold text-xs">Document Uploaded</p>
+                          <span className="text-[10px] text-blue-500 underline">Click to update</span>
                         </div>
                       ) : (
                         <>
-                          <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
-                          <span className="text-sm text-gray-500 font-medium">Click to upload Aadhar Card</span>
-                          <span className="text-xs text-gray-400 mt-1">First Page Only (Max 5MB)</span>
+                          <FiUpload className="w-6 h-6 text-gray-400 mb-1" />
+                          <span className="text-xs text-gray-600 font-medium">Click to upload Aadhar Card</span>
+                          <span className="text-[10px] text-gray-400 mt-0.5">First Page Only (Max 5MB)</span>
                         </>
                       )}
                     </label>
@@ -648,15 +653,15 @@ const AddEditWorker = () => {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full py-4 text-white rounded-xl font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 text-white rounded-md font-bold text-xs uppercase tracking-wider shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"
               style={{
                 background: themeColors.button,
-                boxShadow: `0 8px 24px ${themeColors.button}40`
+                boxShadow: `0 4px 12px ${themeColors.button}30`
               }}
             >
               {loading ? 'Saving...' : (isEdit ? 'Update Details' : 'Create Worker')}
             </button>
-          </div >
+          </div>
         )}
       </main >
 
