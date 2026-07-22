@@ -15,7 +15,7 @@ const getVendorCategories = async (req, res) => {
       categoryType: 'service'
     };
 
-    if (req.user && req.user.role === 'vendor') {
+    if (req.user && (req.user.role === 'vendor' || req.userRole === 'vendor')) {
       const assignedCategories = Array.from(new Set([
         ...(req.user.service || []),
         ...(req.user.categories || [])
@@ -94,7 +94,7 @@ const getCategoryBrands = async (req, res) => {
       { categoryId: categoryId }
     ];
 
-    if (req.user && req.user.role === 'vendor') {
+    if (req.user && (req.user.role === 'vendor' || req.userRole === 'vendor')) {
       const allowedBrands = req.user.brands || [];
       if (allowedBrands.length === 0) {
         return res.status(200).json({ success: true, count: 0, brands: [] });
@@ -183,7 +183,7 @@ const getBrandServicesAndPricing = async (req, res) => {
       .filter(p => p.serviceId && p.serviceId.status === 'active');
 
     // Filter by vendor's allowed subCategories
-    if (req.user && req.user.role === 'vendor') {
+    if (req.user && (req.user.role === 'vendor' || req.userRole === 'vendor')) {
       const allowedSubs = req.user.subCategories || [];
       if (allowedSubs.length > 0) {
         servicesWithPricing = servicesWithPricing.filter(p => {

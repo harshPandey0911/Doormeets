@@ -47,6 +47,9 @@ const sendOTP = async (req, res) => {
     }
 
     if (isWorker) {
+      if (!actor.vendorId) {
+        return res.status(403).json({ success: false, message: 'Account not linked to any vendor.' });
+      }
       if (actor.status === 'inactive' || actor.status === 'suspended') {
         return res.status(403).json({ success: false, message: 'Account restricted.' });
       }
@@ -180,6 +183,9 @@ const verifyLogin = async (req, res) => {
       // Check if worker exists
       const workerDoc = await Worker.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
       if (workerDoc) {
+        if (!workerDoc.vendorId) {
+          return res.status(403).json({ success: false, message: 'Account not linked to any vendor. Please contact your vendor.' });
+        }
         if (workerDoc.status === 'inactive' || workerDoc.status === 'suspended') {
           return res.status(403).json({ success: false, message: 'Account suspended or inactive. Please contact your vendor.' });
         }
@@ -558,6 +564,12 @@ const refreshToken = async (req, res) => {
         });
       }
 
+      if (!workerDoc.vendorId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Worker account is not linked to any vendor'
+        });
+      }
       if (workerDoc.status === 'inactive' || workerDoc.status === 'suspended') {
         return res.status(403).json({
           success: false,

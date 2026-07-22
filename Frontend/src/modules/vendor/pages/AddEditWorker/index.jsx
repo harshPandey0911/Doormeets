@@ -381,79 +381,7 @@ const AddEditWorker = () => {
 
       <main className="px-3.5 py-4 max-w-lg mx-auto">
 
-        {/* Tabs for Add New vs Link */}
-        {!isEdit && (
-          <div className="flex bg-white rounded-md p-1 mb-4 shadow-2xs border border-gray-100">
-            <button
-              onClick={() => setActiveTab('new')}
-              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === 'new'
-                ? 'text-white shadow-xs'
-                : 'text-gray-500 hover:bg-gray-50'
-                }`}
-              style={{
-                background: activeTab === 'new' ? themeColors.button : 'transparent'
-              }}
-            >
-              <FiUserPlus className="w-3.5 h-3.5" />
-              Create New
-            </button>
-            <button
-              onClick={() => setActiveTab('link')}
-              className={`flex-1 py-2 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === 'link'
-                ? 'text-white shadow-xs'
-                : 'text-gray-500 hover:bg-gray-50'
-                }`}
-              style={{
-                background: activeTab === 'link' ? themeColors.button : 'transparent'
-              }}
-            >
-              <FiLink className="w-3.5 h-3.5" />
-              Link Existing
-            </button>
-          </div>
-        )}
-
-        {/* Link Existing Mode */}
-        {activeTab === 'link' && !isEdit && (
-          <div className="bg-white rounded-md p-4 shadow-2xs border border-gray-100 text-center space-y-3">
-            <div
-              className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-1"
-              style={{ background: `${themeColors.button}15` }}
-            >
-              <FiSearch className="w-6 h-6" style={{ color: themeColors.button }} />
-            </div>
-            <h3 className="text-base font-bold text-gray-800">Add Existing Worker</h3>
-            <p className="text-xs text-gray-500">
-              Enter the phone number of a registered worker to add them to your team.
-            </p>
-
-            <div className="pt-1">
-              <input
-                type="tel"
-                value={linkPhone}
-                onChange={(e) => setLinkPhone(e.target.value)}
-                placeholder="Enter 10-digit mobile number"
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 text-center text-sm font-medium tracking-wide"
-                maxLength={10}
-              />
-            </div>
-
-            <button
-              onClick={handleLinkWorker}
-              disabled={loading}
-              className="w-full py-2.5 text-white rounded-md font-bold text-xs shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 mt-3"
-              style={{
-                background: themeColors.button,
-                boxShadow: `0 4px 12px ${themeColors.button}30`
-              }}
-            >
-              {loading ? 'Processing...' : 'Find & Add Worker'}
-            </button>
-          </div>
-        )}
-
         {/* Create / Edit Mode */}
-        {(activeTab === 'new' || isEdit) && (
           <div className="space-y-4">
 
             {/* Profile Photo Upload */}
@@ -742,7 +670,6 @@ const AddEditWorker = () => {
               {loading ? 'Saving...' : (isEdit ? 'Update Details' : 'Create Worker')}
             </button>
           </div>
-        )}
       </main >
 
       <AddressSelectionModal
