@@ -374,8 +374,15 @@ const homeContentSchema = new mongoose.Schema({
       'booked',
       'ctaBanner',
       'howItWorks',
-      'categorySections'
+      'categorySections',
+      'bottomSection'
     ]
+  },
+  bottomSection: {
+    title: { type: String, default: '' },
+    subtitle: { type: String, default: '' },
+    description: { type: String, default: '' },
+    isVisible: { type: Boolean, default: true }
   }
 }, {
   timestamps: true

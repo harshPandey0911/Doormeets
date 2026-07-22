@@ -1151,22 +1151,28 @@ const getPublicHomeContent = async (req, res) => {
         slug: contentObj.ctaBanner.slug
       } : null,
       sectionHeaders: contentObj.sectionHeaders || {},
-      sectionOrder: contentObj.sectionOrder && contentObj.sectionOrder.length > 0 ? contentObj.sectionOrder : [
-        'banners',
-        'promos',
-        'trustItems',
-        'categories',
-        'popularServices',
-        'upcomingCategories',
-        'orderAgain',
-        'featuredSections',
-        'curated',
-        'noteworthy',
-        'booked',
-        'ctaBanner',
-              'howItWorks',
-        'categorySections'
-      ]
+      bottomSection: contentObj.bottomSection || { title: '', subtitle: '', description: '', isVisible: true },
+      sectionOrder: (() => {
+        const order = contentObj.sectionOrder && contentObj.sectionOrder.length > 0 ? [...contentObj.sectionOrder] : [
+          'banners',
+          'promos',
+          'trustItems',
+          'categories',
+          'popularServices',
+          'upcomingCategories',
+          'orderAgain',
+          'featuredSections',
+          'curated',
+          'noteworthy',
+          'booked',
+          'ctaBanner',
+          'howItWorks',
+          'categorySections',
+          'bottomSection'
+        ];
+        if (!order.includes('bottomSection')) order.push('bottomSection');
+        return order;
+      })()
     };
 
     res.status(200).json({
@@ -1451,22 +1457,28 @@ const getPublicHomeData = async (req, res) => {
           slug: contentObj.ctaBanner.slug
         } : null,
         sectionHeaders: contentObj.sectionHeaders || {},
-        sectionOrder: contentObj.sectionOrder && contentObj.sectionOrder.length > 0 ? contentObj.sectionOrder : [
-          'banners',
-          'promos',
-          'trustItems',
-          'categories',
-          'popularServices',
-          'upcomingCategories',
-          'orderAgain',
-          'featuredSections',
-          'curated',
-          'noteworthy',
-          'booked',
-          'ctaBanner',
-              'howItWorks',
-          'categorySections'
-        ],
+        bottomSection: contentObj.bottomSection || { title: '', subtitle: '', description: '', isVisible: true },
+        sectionOrder: (() => {
+          const order = contentObj.sectionOrder && contentObj.sectionOrder.length > 0 ? [...contentObj.sectionOrder] : [
+            'banners',
+            'promos',
+            'trustItems',
+            'categories',
+            'popularServices',
+            'upcomingCategories',
+            'orderAgain',
+            'featuredSections',
+            'curated',
+            'noteworthy',
+            'booked',
+            'ctaBanner',
+            'howItWorks',
+            'categorySections',
+            'bottomSection'
+          ];
+          if (!order.includes('bottomSection')) order.push('bottomSection');
+          return order;
+        })(),
         featuredSections: (await Promise.all(
           (contentObj.featuredSections || [])
             .filter(section => section.isVisible)

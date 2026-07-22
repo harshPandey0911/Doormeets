@@ -192,7 +192,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       'noteworthy',
       'booked',
       'ctaBanner',
-      'categorySections'
+      'categorySections',
+      'bottomSection'
     ];
     const currentOrder = home?.sectionOrder && home.sectionOrder.length > 0 ? home.sectionOrder : defaultOrder;
     const idx = currentOrder.indexOf(sectionKey);
@@ -265,6 +266,9 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
 
   // CTA Banner
   const [ctaBannerForm, setCtaBannerForm] = useState({ title: '', subtitle: '', buttonText: 'Book Now', imageUrl: '', targetCategoryId: '', slug: '' });
+
+  // Bottom Section
+  const [bottomSectionForm, setBottomSectionForm] = useState({ title: '', subtitle: '', description: '', isVisible: true });
 
   // Section Headers
   const [sectionHeaders, setSectionHeaders] = useState({ promoTitle: '', promoSubtitle: '', curatedTitle: '', curatedSubtitle: '', noteworthyTitle: '', bookedTitle: '', sectionsTitle: '', trustTitle: '' });
@@ -343,6 +347,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             isCategoriesVisible: hc.isCategoriesVisible ?? true,
             trustItems: addIds(hc.trustItems || []),
             ctaBanner: hc.ctaBanner || {},
+            bottomSection: hc.bottomSection || { title: '', subtitle: '', description: '', isVisible: true },
             sectionHeaders: hc.sectionHeaders || {},
             sectionOrder: hc.sectionOrder || []
           };
@@ -350,6 +355,9 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           // Seed local form states from fetched data
           if (hc.ctaBanner) {
             setCtaBannerForm(prev => ({ ...prev, ...hc.ctaBanner }));
+          }
+          if (hc.bottomSection) {
+            setBottomSectionForm(prev => ({ ...prev, ...hc.bottomSection }));
           }
           if (hc.sectionHeaders) {
             setSectionHeaders(prev => ({ ...prev, ...hc.sectionHeaders }));
@@ -480,6 +488,14 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     } catch (error) {}
   };
 
+  // ── Bottom Section save ──────────────────────────────────────────────────
+  const saveBottomSection = async () => {
+    try {
+      await patchHome({ bottomSection: bottomSectionForm });
+      toast.success('Bottom Section saved!');
+    } catch (error) {}
+  };
+
   const getCategoryTitle = (id) => {
     const found = categories.find((c) => c.id === id);
     return found?.title || "";
@@ -575,6 +591,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
         isCategoriesVisible: homeData.isCategoriesVisible,
         trustItems: homeData.trustItems || [],
         ctaBanner: homeData.ctaBanner || {},
+        bottomSection: homeData.bottomSection || {},
         sectionHeaders: homeData.sectionHeaders || {},
         sectionOrder: homeData.sectionOrder || []
       };
@@ -2066,6 +2083,62 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             >
               {isSyncing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <FiSave className="w-4 h-4" />}
               {isSyncing ? 'Saving...' : 'Save Headers'}
+            </button>
+          </div>
+        </div>
+      </CardShell>
+
+      {/* ── Bottom Section Manager ─────────────────────────────────────────── */}
+      <CardShell icon={FiGrid} title="Bottom Section" action={renderArrangementControls('bottomSection')}>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Configure a dynamic heading, subheading, and description to display at the end of the homepage.</p>
+          <div className="flex items-center gap-4 mb-2">
+            <ToggleSwitch
+              label="Show Bottom Section"
+              checked={bottomSectionForm.isVisible}
+              onChange={() => setBottomSectionForm(p => ({ ...p, isVisible: !p.isVisible }))}
+            />
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">Heading</label>
+              <input
+                value={bottomSectionForm.title}
+                onChange={e => setBottomSectionForm(p => ({ ...p, title: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Heading title (e.g. Why Choose Doormeets?)"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">Subheading</label>
+              <input
+                value={bottomSectionForm.subtitle}
+                onChange={e => setBottomSectionForm(p => ({ ...p, subtitle: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Subheading description (e.g. Your premium partner for all home services)"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wide">Description</label>
+              <textarea
+                value={bottomSectionForm.description}
+                onChange={e => setBottomSectionForm(p => ({ ...p, description: e.target.value }))}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                placeholder="Announcements, SEO keywords, descriptive text, etc."
+              />
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={saveBottomSection}
+              disabled={isSyncing}
+              className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50"
+              style={{ background: isSyncing ? '#cbd5e1' : 'linear-gradient(to right, #2874F0, #1e5fd4)' }}
+            >
+              {isSyncing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> : <FiSave className="w-4 h-4" />}
+              {isSyncing ? 'Saving...' : 'Save Section'}
             </button>
           </div>
         </div>

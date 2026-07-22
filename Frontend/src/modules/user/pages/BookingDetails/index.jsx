@@ -757,34 +757,34 @@ const BookingDetails = () => {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 py-6 lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:items-start space-y-6 lg:space-y-0">
+        <main className="max-w-7xl mx-auto px-3 md:px-4 py-3 lg:grid lg:grid-cols-[1fr_380px] lg:gap-6 lg:items-start space-y-3 lg:space-y-0">
           {/* LEFT COLUMN: Main details, tracker, images, vendor info */}
-          <div className="space-y-6">
+          <div className="space-y-3">
 
 
             {/* Cancelled/Rejected status message */}
             {['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
-              <div className="bg-red-50 rounded-2xl p-4 border border-red-100 flex items-center gap-3 text-red-700">
-                <FiXCircle className="w-5 h-5 shrink-0" />
-                <p className="font-medium text-sm">This booking has been {booking.status.toLowerCase()}.</p>
+              <div className="bg-red-50 rounded-md p-3 border border-red-100 flex items-center gap-2.5 text-red-700">
+                <FiXCircle className="w-4 h-4 shrink-0" />
+                <p className="font-medium text-xs">This booking has been {booking.status.toLowerCase()}.</p>
               </div>
             )}
 
             {/* Visual Progress Stepper */}
             {!['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
-              <div className="bg-card-bg rounded-md px-6 py-5 shadow-sm border border-border-color overflow-hidden">
+              <div className="bg-card-bg rounded-md px-3 py-2.5 shadow-sm border border-border-color overflow-hidden">
                 <div className="flex justify-between relative">
                   {[
-                    { label: 'Booked', icon: <FiCheckCircle className="w-4 h-4" />, active: true },
+                    { label: 'Booked', icon: <FiCheckCircle className="w-3.5 h-3.5" />, active: true },
                     { label: 'Assigned', icon: '2', active: ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase()) },
                     { label: 'Started', icon: '3', active: ['journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase()) },
                     { label: 'Done', icon: '4', active: ['work_done', 'completed'].includes(booking.status?.toLowerCase()) },
                   ].map((step, idx) => (
-                    <div key={idx} className="flex flex-col items-center gap-1.5 flex-1">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step.active ? 'bg-[#B33A35] text-white shadow-md' : 'bg-divider text-secondary-text'}`}>
+                    <div key={idx} className="flex flex-col items-center gap-1 flex-1">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${step.active ? 'bg-[#B33A35] text-white shadow-sm' : 'bg-divider text-secondary-text'}`}>
                         {step.icon}
                       </div>
-                      <p className={`text-[9px] font-bold uppercase tracking-widest text-center transition-colors ${step.active ? 'text-[#B33A35]' : 'text-secondary-text'}`}>{step.label}</p>
+                      <p className={`text-[8px] font-bold uppercase tracking-wider text-center transition-colors ${step.active ? 'text-[#B33A35]' : 'text-secondary-text'}`}>{step.label}</p>
                     </div>
                   ))}
                 </div>
@@ -795,10 +795,10 @@ const BookingDetails = () => {
             <div className="flex items-center justify-center">
               <div
                 style={getStatusStyle(booking.status)}
-                className="px-4 py-2 rounded-md flex items-center gap-2 shadow-sm border"
+                className="px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-xs border"
               >
                 {getStatusIcon(booking.status)}
-                <span className="text-xs font-black uppercase tracking-wider">{getStatusLabel(booking.status)}</span>
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider">{getStatusLabel(booking.status)}</span>
               </div>
             </div>
 
@@ -1048,24 +1048,24 @@ const BookingDetails = () => {
             {(((booking.paymentMethod === 'online' || booking.paymentMethod === 'Qr online') && booking.paymentStatus?.toLowerCase() === 'pending') || booking.customerConfirmationOTP || booking.paymentStatus === 'success' || isAddonPending) && !booking.cashCollected && !['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
               <div
                 onClick={() => { if (booking.customerConfirmationOTP) setShowPaymentModal(true); }}
-                className={`relative overflow-hidden rounded-md shadow-sm border border-border-color p-4 bg-white dark:bg-zinc-900 ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}
+                className={`relative overflow-hidden rounded-md shadow-xs border border-border-color p-3 bg-white dark:bg-zinc-900 ${booking.customerConfirmationOTP ? 'cursor-pointer' : ''}`}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-md flex items-center justify-center border ${booking.paymentStatus === 'success'
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className={`w-8 h-8 rounded-md flex items-center justify-center border shrink-0 ${booking.paymentStatus === 'success'
                       ? 'bg-green-500/10 border-green-500/20 text-green-600'
                       : 'bg-teal-500/10 border-teal-500/20 text-teal-600'
                     }`}>
                     {booking.paymentStatus === 'success' ? (
-                      <FiCheckCircle className="w-5 h-5" />
+                      <FiCheckCircle className="w-4 h-4" />
                     ) : (
-                      <FiDollarSign className="w-5 h-5" />
+                      <FiDollarSign className="w-4 h-4" />
                     )}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-dark-text tracking-tight">
+                    <h3 className="text-xs md:text-sm font-bold text-dark-text tracking-tight">
                       {booking.paymentStatus === 'success' ? 'Payment Received' : 'Online Payment'}
                     </h3>
-                    <p className="text-xs text-secondary-text font-medium">
+                    <p className="text-[11px] text-secondary-text font-medium leading-tight">
                       {booking.paymentStatus === 'success' ? 'Transaction verified successfully' : 'Complete your online payment'}
                     </p>
                   </div>
@@ -1076,27 +1076,27 @@ const BookingDetails = () => {
                   <>
                     <button
                       onClick={handleOnlinePayment}
-                      className="w-full py-3 mb-4 bg-brand text-white rounded-md font-bold text-xs shadow-md active:scale-95 transition-all hover:bg-brand-light flex items-center justify-center gap-2 group"
+                      className="w-full py-2 mb-2.5 bg-brand text-white rounded-md font-bold text-xs shadow-xs active:scale-95 transition-all hover:bg-brand-light flex items-center justify-center gap-2 group"
                     >
-                      <FiDollarSign className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                      <FiDollarSign className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
                       Pay Online Now
-                      <FiChevronRight className="w-4 h-4" />
+                      <FiChevronRight className="w-3.5 h-3.5" />
                     </button>
 
                     {booking.customerConfirmationOTP && (
-                      <div className="flex flex-col items-center mb-4">
-                        <p className="text-[10px] font-bold text-secondary-text uppercase tracking-[0.2em] mb-2">Verification Code</p>
-                        <div className="flex justify-center gap-2">
+                      <div className="flex flex-col items-center mb-2.5">
+                        <p className="text-[9px] font-bold text-secondary-text uppercase tracking-widest mb-1.5">Verification Code</p>
+                        <div className="flex justify-center gap-1.5">
                           {String(booking.customerConfirmationOTP).split('').map((digit, idx) => (
                             <div
                               key={idx}
-                              className="w-10 h-12 bg-light-bg rounded-[4px] flex items-center justify-center border border-border-color shadow-sm"
+                              className="w-8 h-9 bg-light-bg rounded-[4px] flex items-center justify-center border border-border-color shadow-xs"
                             >
-                              <span className="text-xl font-bold text-dark-text">{digit}</span>
+                              <span className="text-base font-bold text-dark-text">{digit}</span>
                             </div>
                           ))}
                         </div>
-                        <p className="text-[9px] text-secondary-text mt-2 font-medium bg-light-bg border border-border-color px-3 py-1 rounded-[4px]">
+                        <p className="text-[8px] text-secondary-text mt-1.5 font-medium bg-light-bg border border-border-color px-2.5 py-0.5 rounded-[4px]">
                           Share this code with the professional ONLY after your satisfaction
                         </p>
                       </div>
@@ -1104,21 +1104,21 @@ const BookingDetails = () => {
                   </>
                 )}
 
-                <div className="bg-light-bg rounded-md p-3.5 border border-border-color">
-                  <div className="flex items-center gap-2.5 text-dark-text">
+                <div className="bg-light-bg rounded-md p-2.5 border border-border-color">
+                  <div className="flex items-center gap-2 text-dark-text">
                     {booking.paymentStatus === 'success' ? (
-                      <FiCheckCircle className="w-4.5 h-4.5 text-green-500" />
+                      <FiCheckCircle className="w-4 h-4 text-green-500 shrink-0" />
                     ) : (
-                      <FiClock className="w-4.5 h-4.5 text-teal-500" />
+                      <FiClock className="w-4 h-4 text-teal-500 shrink-0" />
                     )}
-                    <div className="text-xs">
+                    <div className="text-[11px] leading-tight">
                       {booking.paymentStatus === 'success'
                         ? (
                           booking.paymentMethod === 'plan_benefit'
                             ? <p className="font-semibold">Covered by your Membership Plan</p>
                             : <p className="font-semibold">Booking completed successfully. Thank you for choosing us!</p>
                         )
-                        : <p className="font-semibold">Total Amount: <span className="text-sm font-bold text-brand ml-1">₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}</span></p>
+                        : <p className="font-semibold">Total Amount: <span className="text-xs font-bold text-brand ml-1">₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}</span></p>
                       }
                       {booking.paymentStatus !== 'success' && <p className="text-[9px] text-secondary-text mt-0.5">Pay online above or prepare cash for the professional.</p>}
                     </div>
@@ -1128,53 +1128,52 @@ const BookingDetails = () => {
             )}
 
             {/* Location & Time Section */}
-            <section className="space-y-4">
-              {/* Map Preview - Improved overlay for better usability */}
+            <section className="space-y-3">
               {/* Dedicated Track Button - Only visible when journey started */}
               {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) && (
                 <button
                   onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
-                  className="w-full py-4 bg-linear-to-r from-gray-900 to-gray-800 text-white rounded-md font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 hover:shadow-xl"
+                  className="w-full py-2.5 bg-linear-to-r from-gray-900 to-gray-800 text-white rounded-md font-bold text-xs shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <FiMapPin className="w-4 h-4 text-white" />
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                    <FiMapPin className="w-3.5 h-3.5 text-white" />
                   </div>
                   Track Service Agent
                 </button>
               )}
 
-              <div className="bg-card-bg rounded-md shadow-sm border border-border-color overflow-hidden">
+              <div className="bg-card-bg rounded-md shadow-xs border border-border-color overflow-hidden">
                 <div
                   onClick={() => setIsLocationExpanded(!isLocationExpanded)}
-                  className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
+                  className="px-3.5 py-2.5 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
                 >
-                  <h3 className="font-semibold text-dark-text">Location & Schedule</h3>
+                  <h3 className="font-semibold text-xs md:text-sm text-dark-text">Location & Schedule</h3>
                   {isLocationExpanded ? (
-                    <FiChevronUp className="w-5 h-5 text-gray-400" />
+                    <FiChevronUp className="w-4 h-4 text-gray-400" />
                   ) : (
-                    <FiChevronDown className="w-5 h-5 text-gray-400" />
+                    <FiChevronDown className="w-4 h-4 text-gray-400" />
                   )}
                 </div>
                 {isLocationExpanded && (
-                  <div className="p-5 space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20">
-                        <FiMapPin className="w-5 h-5 text-teal-500" />
+                  <div className="p-3.5 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20">
+                        <FiMapPin className="w-4 h-4 text-teal-500" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Service Address</p>
-                        <p className="text-sm font-medium text-dark-text leading-relaxed">{getAddressString(booking.address)}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-secondary-text font-bold uppercase tracking-wider mb-0.5">Service Address</p>
+                        <p className="text-xs font-medium text-dark-text leading-snug">{getAddressString(booking.address)}</p>
                       </div>
                     </div>
                     <div className="w-full h-px bg-divider"></div>
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
-                        <FiCalendar className="w-5 h-5 text-indigo-500" />
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
+                        <FiCalendar className="w-4 h-4 text-indigo-500" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-secondary-text font-semibold uppercase tracking-wide mb-1">Slot</p>
-                        <p className="text-sm font-medium text-dark-text">{formatDate(booking.scheduledDate)}</p>
-                        <p className="text-sm text-secondary-text">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-secondary-text font-bold uppercase tracking-wider mb-0.5">Slot</p>
+                        <p className="text-xs font-medium text-dark-text">{formatDate(booking.scheduledDate)}</p>
+                        <p className="text-xs text-secondary-text">{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</p>
                       </div>
                     </div>
                   </div>
@@ -1186,12 +1185,12 @@ const BookingDetails = () => {
 
             {/* Service Details (Order Summary Dropdown with dynamic Badges) - Only show if Payment Summary is NOT visible */}
             {!(['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
-              <section className="bg-card-bg rounded-3xl shadow-sm border border-border-color overflow-hidden">
+              <section className="bg-card-bg rounded-md shadow-xs border border-border-color overflow-hidden">
                 <div
                   onClick={() => setIsOrderSummaryExpanded(!isOrderSummaryExpanded)}
-                  className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
+                  className="px-3.5 md:px-5 py-2.5 md:py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
                 >
-                  <h3 className="font-semibold text-dark-text">Order Summary</h3>
+                  <h3 className="font-semibold text-xs md:text-sm text-dark-text">Order Summary</h3>
                   <div className="flex items-center gap-2">
                     {booking.bookingType === 'instant' ? (
                       <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-xs">
@@ -1203,15 +1202,15 @@ const BookingDetails = () => {
                       </span>
                     )}
                     {isOrderSummaryExpanded ? (
-                      <FiChevronUp className="w-5 h-5 text-gray-400" />
+                      <FiChevronUp className="w-4 h-4 text-gray-400" />
                     ) : (
-                      <FiChevronDown className="w-5 h-5 text-gray-400" />
+                      <FiChevronDown className="w-4 h-4 text-gray-400" />
                     )}
                   </div>
                 </div>
 
                 {isOrderSummaryExpanded && (
-                  <div className="p-5 space-y-4 animate-in fade-in duration-200">
+                  <div className="p-3 md:p-5 space-y-2.5 md:space-y-4 animate-in fade-in duration-200">
                     {/* 1. Service Category */}
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center shrink-0 border border-teal-500/20 overflow-hidden">
@@ -1353,10 +1352,10 @@ const BookingDetails = () => {
 
             {/* Payment Summary - Only show if payment is completed/collected, if a payment request is active (Work Done), or if a bill exists (e.g. addons added) */}
             {(hasBill || ['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
-              <section className="bg-card-bg rounded-md shadow-sm border border-border-color overflow-hidden">
+              <section className="bg-card-bg rounded-md shadow-xs border border-border-color overflow-hidden">
                 <div
                   onClick={() => setIsPaymentSummaryExpanded(!isPaymentSummaryExpanded)}
-                  className="px-5 py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
+                  className="px-3.5 md:px-5 py-2.5 md:py-4 border-b border-border-color bg-light-bg/50 flex items-center justify-between cursor-pointer active:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <div className={`p-1.5 rounded-lg ${booking.paymentMethod === 'plan_benefit' ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'}`}>
@@ -1366,256 +1365,248 @@ const BookingDetails = () => {
                         <FiDollarSign className="w-4 h-4" />
                       )}
                     </div>
-                    <h3 className="font-semibold text-dark-text">
+                    <h3 className="font-semibold text-xs md:text-sm text-dark-text">
                       {booking.paymentMethod === 'plan_benefit' ? 'Membership Benefit' : 'Payment Summary'}
                     </h3>
                   </div>
                   {isPaymentSummaryExpanded ? (
-                    <FiChevronUp className="w-5 h-5 text-gray-400" />
+                    <FiChevronUp className="w-4 h-4 text-gray-400" />
                   ) : (
-                    <FiChevronDown className="w-5 h-5 text-gray-400" />
+                    <FiChevronDown className="w-4 h-4 text-gray-400" />
                   )}
                 </div>
                 {isPaymentSummaryExpanded && (
-                  <div className="p-5">
+                  <>
+                    <div className="p-3 md:p-5">
 
-                    <div className="space-y-3 text-sm">
-                      {hasBill ? (
-                        // NEW DETAILED BREAKDOWN
-                        <div className="space-y-4">
-                          {/* Services Section */}
-                          <div>
-                            <h4 className="flex items-center gap-2 text-xs font-bold text-secondary-text uppercase tracking-wide mb-2">
-                              <FiCheckCircle className="w-3.5 h-3.5" /> Services
-                            </h4>
-                            <div className="space-y-2 pl-1">
-                              {/* Original Base */}
-                              <div className="flex justify-between items-center text-secondary-text">
-                                <span>Original Booking : {originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
-                                {isPlanBenefit ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="line-through text-secondary-text opacity-50 text-xs">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                    <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
+                      <div className="space-y-2.5 md:space-y-3 text-xs md:text-sm">
+                        {hasBill ? (
+                          // NEW DETAILED BREAKDOWN
+                          <div className="space-y-2.5 md:space-y-4">
+                            {/* Services Section */}
+                            <div>
+                              <h4 className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-secondary-text uppercase tracking-wide mb-1.5 md:mb-2">
+                                <FiCheckCircle className="w-3.5 h-3.5" /> Services
+                              </h4>
+                              <div className="space-y-1.5 md:space-y-2 pl-1">
+                                {/* Original Base */}
+                                <div className="flex justify-between items-center text-secondary-text">
+                                  <span>Original Booking : {originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
+                                  {isPlanBenefit ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="line-through text-secondary-text opacity-50 text-xs">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                      <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
+                                    </div>
+                                  ) : (
+                                    <span className="font-medium text-dark-text">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  )}
+                                </div>
+
+                                {/* Extra Services */}
+                                {services.map((s, i) => (
+                                  <div key={i} className="flex justify-between items-center text-secondary-text">
+                                    <span>{s.name} <span className="text-secondary-text opacity-50 text-xs">x{s.quantity}</span></span>
+                                    <span className="font-mono text-xs text-dark-text">₹{(parseFloat(s.total) || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
                                   </div>
-                                ) : (
-                                  <span className="font-medium text-dark-text">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                ))}
+
+                                {/* Service Subtotal */}
+                                <div className="flex justify-between font-bold text-dark-text pt-1 text-xs md:text-sm">
+                                  <span>Total Service</span>
+                                  <span>₹{(originalBase + extraServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
+                                </div>
+
+                                {instantMarkup > 0 && (
+                                  <div className="flex justify-between items-center text-secondary-text pt-1.5 mt-1.5 border-t border-dashed border-border-color">
+                                    <span className="flex items-center gap-1 text-xs">⚡ Instant Booking Fee</span>
+                                    <span className="font-bold text-dark-text">₹{instantMarkup.toFixed(2)}</span>
+                                  </div>
                                 )}
                               </div>
-
-                              {/* Extra Services */}
-                              {services.map((s, i) => (
-                                <div key={i} className="flex justify-between items-center text-secondary-text">
-                                  <span>{s.name} <span className="text-secondary-text opacity-50 text-xs">x{s.quantity}</span></span>
-                                  <span className="font-mono text-xs text-dark-text">₹{(parseFloat(s.total) || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
-                                </div>
-                              ))}
-
-                              {/* Service GST block removed */}
-
-                              {/* Service Subtotal */}
-                              <div className="flex justify-between font-bold text-dark-text pt-1">
-                                <span>Total Service</span>
-                                <span>₹{(originalBase + extraServiceBase + originalGST + extraServiceGST).toFixed(2)}</span>
-                              </div>
-
-                              {instantMarkup > 0 && (
-                                <div className="flex justify-between items-center text-secondary-text pt-2 mt-2 border-t border-dashed border-border-color">
-                                  <span className="flex items-center gap-1 text-xs">⚡ Instant Booking Fee</span>
-                                  <span className="font-bold text-dark-text">₹{instantMarkup.toFixed(2)}</span>
-                                </div>
-                              )}
                             </div>
-                          </div>
 
-                          {/* Parts Section */}
-                          {(parts.length > 0 || customItems.length > 0) && (
-                            <div>
-                              <h4 className="flex items-center gap-2 text-xs font-bold text-secondary-text uppercase tracking-wide mb-2 mt-4">
-                                <FiPackage className="w-3.5 h-3.5 text-orange-500" /> Parts & Material
-                              </h4>
-                              <div className="space-y-2 pl-1">
-                                {parts.map((p, i) => (
-                                  <div key={`p-${i}`} className="flex justify-between items-center text-secondary-text">
-                                    <span>{p.name} <span className="text-secondary-text opacity-50 text-xs">x{p.quantity}</span></span>
-                                    <span className="font-mono text-xs text-dark-text">₹{(p.price * p.quantity).toFixed(2)}</span>
-                                  </div>
-                                ))}
-                                {customItems.map((c, i) => (
-                                  <div key={`c-${i}`} className="flex justify-between items-center text-secondary-text">
-                                    <div>
-                                      <span>{c.name} <span className="text-secondary-text opacity-50 text-xs">x{c.quantity}</span></span>
-                                      {c.hsnCode && <span className="block text-[9px] text-secondary-text">HSN: {c.hsnCode}</span>}
+                            {/* Parts Section */}
+                            {(parts.length > 0 || customItems.length > 0) && (
+                              <div>
+                                <h4 className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-secondary-text uppercase tracking-wide mb-1.5 md:mb-2 mt-3 md:mt-4">
+                                  <FiPackage className="w-3.5 h-3.5 text-orange-500" /> Parts & Material
+                                </h4>
+                                <div className="space-y-1.5 md:space-y-2 pl-1">
+                                  {parts.map((p, i) => (
+                                    <div key={`p-${i}`} className="flex justify-between items-center text-secondary-text">
+                                      <span>{p.name} <span className="text-secondary-text opacity-50 text-xs">x{p.quantity}</span></span>
+                                      <span className="font-mono text-xs text-dark-text">₹{(p.price * p.quantity).toFixed(2)}</span>
                                     </div>
-                                    <span className="font-mono text-xs text-dark-text">₹{(c.price * c.quantity).toFixed(2)}</span>
+                                  ))}
+                                  {customItems.map((c, i) => (
+                                    <div key={`c-${i}`} className="flex justify-between items-center text-secondary-text">
+                                      <div>
+                                        <span>{c.name} <span className="text-secondary-text opacity-50 text-xs">x{c.quantity}</span></span>
+                                        {c.hsnCode && <span className="block text-[9px] text-secondary-text">HSN: {c.hsnCode}</span>}
+                                      </div>
+                                      <span className="font-mono text-xs text-dark-text">₹{(c.price * c.quantity).toFixed(2)}</span>
+                                    </div>
+                                  ))}
+
+                                  {/* Parts Subtotal */}
+                                  <div className="flex justify-between font-bold text-dark-text pt-1 text-xs md:text-sm">
+                                    <span>Total Parts</span>
+                                    <span>₹{(partsBase + partsGST).toFixed(2)}</span>
                                   </div>
-                                ))}
-
-                                {/* Parts GST block removed */}
-
-                                {/* Parts Subtotal */}
-                                <div className="flex justify-between font-bold text-dark-text pt-1">
-                                  <span>Total Parts</span>
-                                  <span>₹{(partsBase + partsGST).toFixed(2)}</span>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          {/* Visiting Charges block removed per user request */}
+                            {/* Transport Charges */}
+                            {bill?.transportCharges > 0 && (
+                              <div className="mt-1.5 pt-1.5 border-t border-border-color">
+                                <div className="flex justify-between text-xs font-bold text-secondary-text">
+                                  <span className="flex items-center gap-2 uppercase tracking-wide">
+                                    <FiPackage className="w-3.5 h-3.5 text-blue-400" /> Transport Charges
+                                  </span>
+                                  <span className="font-mono">₹{(bill.transportCharges).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            )}
 
-                          {/* Transport Charges */}
-                          {bill?.transportCharges > 0 && (
-                            <div className="mt-2 pt-2 border-t border-border-color">
-                              <div className="flex justify-between text-xs font-bold text-secondary-text">
-                                <span className="flex items-center gap-2 uppercase tracking-wide">
-                                  <FiPackage className="w-3.5 h-3.5 text-blue-400" /> Transport Charges
-                                </span>
-                                <span className="font-mono">₹{(bill.transportCharges).toFixed(2)}</span>
+                            {(booking.paymentMethod || booking.paymentStatus === 'success') && (
+                              <div className="mt-1.5 pt-1.5 border-t border-border-color">
+                                <div className="flex justify-between text-xs font-bold text-secondary-text">
+                                  <span className="flex items-center gap-2 uppercase tracking-wide">
+                                    {booking.paymentMethod === 'cash collected' ? <FiDollarSign className="text-emerald-500" /> : <MdQrCode className="text-blue-500" />}
+                                    Payment Method
+                                  </span>
+                                  <span className={`${booking.paymentMethod === 'cash collected' ? 'text-emerald-500' : 'text-blue-500'} uppercase`}>
+                                    {booking.paymentMethod === 'cash collected' ? 'Cash Collected' :
+                                      booking.paymentMethod === 'Qr online' ? 'QR Online' :
+                                        booking.paymentMethod === 'online' ? 'Online Paid' :
+                                          booking.paymentMethod === 'plan_benefit' ? 'Plan Benefit' :
+                                            booking.paymentMethod || 'Online'}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          {(booking.paymentMethod || booking.paymentStatus === 'success') && (
-                            <div className="mt-2 pt-2 border-t border-border-color">
-                              <div className="flex justify-between text-xs font-bold text-secondary-text">
-                                <span className="flex items-center gap-2 uppercase tracking-wide">
-                                  {booking.paymentMethod === 'cash collected' ? <FiDollarSign className="text-emerald-500" /> : <MdQrCode className="text-blue-500" />}
-                                  Payment Method
-                                </span>
-                                <span className={`${booking.paymentMethod === 'cash collected' ? 'text-emerald-500' : 'text-blue-500'} uppercase`}>
-                                  {booking.paymentMethod === 'cash collected' ? 'Cash Collected' :
-                                    booking.paymentMethod === 'Qr online' ? 'QR Online' :
-                                      booking.paymentMethod === 'online' ? 'Online Paid' :
-                                        booking.paymentMethod === 'plan_benefit' ? 'Plan Benefit' :
-                                          booking.paymentMethod || 'Online'}
-                                </span>
-                              </div>
+                            <div className="pt-2.5 md:pt-4 mt-1.5 md:mt-2 border-t-2 border-border-color flex justify-between items-center">
+                              <span className="font-bold text-dark-text text-sm md:text-lg">Grand Total</span>
+                              <span className="font-black text-brand text-base md:text-2xl">
+                                ₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
                             </div>
-                          )}
-
-                          <div className="pt-4 mt-2 border-t-2 border-border-color flex justify-between items-center">
-                            <span className="font-bold text-dark-text text-lg">Grand Total</span>
-                            <span className="font-black text-brand text-2xl">
-                              ₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                          {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
-                            <div className="mt-2 space-y-1.5 border-t border-dashed border-border-color pt-2 text-xs font-semibold">
-                              <div className="flex justify-between items-center text-green-600">
-                                <span>Paid COD Advance</span>
-                                <span>-₹{booking.codAdvanceAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
+                              <div className="mt-2 space-y-1.5 border-t border-dashed border-border-color pt-2 text-xs font-semibold">
+                                <div className="flex justify-between items-center text-green-600">
+                                  <span>Paid COD Advance</span>
+                                  <span>-₹{booking.codAdvanceAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[#B33A35] font-bold text-sm">
+                                  <span>Amount Left (Pay at Home)</span>
+                                  <span>₹{Math.max(0, finalTotal - booking.codAdvanceAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
                               </div>
-                              <div className="flex justify-between items-center text-[#B33A35] font-bold text-sm">
-                                <span>Amount Left (Pay at Home)</span>
-                                <span>₹{Math.max(0, finalTotal - booking.codAdvanceAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        // OLD SIMPLE BREAKDOWN (Fallback)
-                        <>
-                          {/* Base Items */}
-                          <div className="flex justify-between items-center text-secondary-text">
-                            <span>Base Price</span>
-                            {booking.paymentMethod === 'plan_benefit' ? (
-                              <div className="flex items-center gap-2">
-                                <span className="line-through text-secondary-text opacity-50 text-xs">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
-                                <span className="text-emerald-500 font-bold text-xs bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">FREE ✓</span>
-                              </div>
-                            ) : (
-                              <span className="font-medium text-dark-text">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
                             )}
                           </div>
-
-                          {/* GST block removed since it is included in Base Price */}
-
-                          {/* Convenience Fee block removed per user request */}
-
-                          {booking.paymentMethod !== 'plan_benefit' && booking.discount > 0 && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-green-500">Discount</span>
-                              <span className="font-medium text-green-500">-₹{booking.discount.toLocaleString('en-IN')}</span>
+                        ) : (
+                          // OLD SIMPLE BREAKDOWN (Fallback)
+                          <>
+                            {/* Base Items */}
+                            <div className="flex justify-between items-center text-secondary-text">
+                              <span>Base Price</span>
+                              {booking.paymentMethod === 'plan_benefit' ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="line-through text-secondary-text opacity-50 text-xs">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
+                                  <span className="text-emerald-500 font-bold text-xs bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">FREE ✓</span>
+                                </div>
+                              ) : (
+                                <span className="font-medium text-dark-text">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
+                              )}
                             </div>
-                          )}
 
-                          {instantMarkup > 0 && (
-                            <div className="flex justify-between items-center text-secondary-text pt-2 mt-2 border-t border-dashed border-border-color">
-                              <span className="flex items-center gap-1 text-xs">⚡ Instant Booking Fee</span>
-                              <span className="font-bold text-dark-text">₹{instantMarkup.toLocaleString('en-IN')}</span>
-                            </div>
-                          )}
+                            {booking.paymentMethod !== 'plan_benefit' && booking.discount > 0 && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-green-500">Discount</span>
+                                <span className="font-medium text-green-500">-₹{booking.discount.toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
 
-                          {/* Extra Charges Section */}
-                          {booking.extraCharges && booking.extraCharges.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-border-color">
-                              <p className="text-xs font-bold text-secondary-text uppercase tracking-wide mb-2">Extra Charges</p>
-                              <div className="bg-light-bg rounded-lg p-3 space-y-2 border border-border-color">
-                                {booking.extraCharges.map((item, idx) => (
-                                  <div key={idx} className="flex justify-between text-secondary-text text-sm">
-                                    <span className="flex items-center gap-2">
-                                      <span className="text-xs font-bold bg-card-bg border border-border-color px-1.5 rounded text-secondary-text">x{item.quantity || 1}</span>
-                                      <span>{item.name}</span>
-                                    </span>
-                                    <span className="font-medium">+₹{(item.total || item.price || 0).toLocaleString('en-IN')}</span>
+                            {instantMarkup > 0 && (
+                              <div className="flex justify-between items-center text-secondary-text pt-2 mt-2 border-t border-dashed border-border-color">
+                                <span className="flex items-center gap-1 text-xs">⚡ Instant Booking Fee</span>
+                                <span className="font-bold text-dark-text">₹{instantMarkup.toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+
+                            {/* Extra Charges Section */}
+                            {booking.extraCharges && booking.extraCharges.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-border-color">
+                                <p className="text-xs font-bold text-secondary-text uppercase tracking-wide mb-2">Extra Charges</p>
+                                <div className="bg-light-bg rounded-lg p-3 space-y-2 border border-border-color">
+                                  {booking.extraCharges.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between text-secondary-text text-sm">
+                                      <span className="flex items-center gap-2">
+                                        <span className="text-xs font-bold bg-card-bg border border-border-color px-1.5 rounded text-secondary-text">x{item.quantity || 1}</span>
+                                        <span>{item.name}</span>
+                                      </span>
+                                      <span className="font-medium">+₹{(item.total || item.price || 0).toLocaleString('en-IN')}</span>
+                                    </div>
+                                  ))}
+                                  <div className="flex justify-between font-bold text-blue-500 pt-2 mt-2 border-t border-border-color">
+                                    <span>Total Extras</span>
+                                    <span>+₹{(booking.extraChargesTotal || 0).toLocaleString('en-IN')}</span>
                                   </div>
-                                ))}
-                                <div className="flex justify-between font-bold text-blue-500 pt-2 mt-2 border-t border-border-color">
-                                  <span>Total Extras</span>
-                                  <span>+₹{(booking.extraChargesTotal || 0).toLocaleString('en-IN')}</span>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          <div className="pt-4 mt-2 border-t border-border-color flex justify-between items-center">
-                            <span className="font-bold text-dark-text text-lg">Total Payable</span>
-                            <span className="font-black text-dark-text text-xl">
-                              ₹{(booking.paymentMethod === 'plan_benefit'
-                                ? (booking.userPayableAmount || booking.extraChargesTotal || 0)
-                                : (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0) + instantMarkup)
-                              ).toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                          {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
-                            <div className="mt-2 space-y-1.5 border-t border-dashed border-border-color pt-2 text-xs font-semibold">
-                              <div className="flex justify-between items-center text-green-600">
-                                <span>Paid COD Advance</span>
-                                <span>-₹{booking.codAdvanceAmount.toLocaleString('en-IN')}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-[#B33A35] font-bold text-sm">
-                                <span>Amount Left (Pay at Home)</span>
-                                <span>₹{Math.max(0, (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0)) - booking.codAdvanceAmount).toLocaleString('en-IN')}</span>
-                              </div>
+                            <div className="pt-2.5 md:pt-4 mt-1.5 md:mt-2 border-t border-border-color flex justify-between items-center">
+                              <span className="font-bold text-dark-text text-sm md:text-lg">Total Payable</span>
+                              <span className="font-black text-dark-text text-base md:text-xl">
+                                ₹{(booking.paymentMethod === 'plan_benefit'
+                                  ? (booking.userPayableAmount || booking.extraChargesTotal || 0)
+                                  : (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0) + instantMarkup)
+                                ).toLocaleString('en-IN')}
+                              </span>
                             </div>
-                          )}
-                        </>
-                      )}
+                            {booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0 && (
+                              <div className="mt-2 space-y-1.5 border-t border-dashed border-border-color pt-2 text-xs font-semibold">
+                                <div className="flex justify-between items-center text-green-600">
+                                  <span>Paid COD Advance</span>
+                                  <span>-₹{booking.codAdvanceAmount.toLocaleString('en-IN')}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[#B33A35] font-bold text-sm">
+                                  <span>Amount Left (Pay at Home)</span>
+                                  <span>₹{Math.max(0, (booking.basePrice - booking.discount + (booking.extraChargesTotal || 0)) - booking.codAdvanceAmount).toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
 
-                {/* Payment Status Footer */}
-                <div className="bg-light-bg px-5 py-3 border-t border-border-color flex justify-between items-center">
-                  <span className="text-xs font-bold text-secondary-text uppercase tracking-wide">Payment Status</span>
-                  <span className={`px-2.5 py-1 rounded-md text-xs font-bold capitalize ${['success', 'collected_by_vendor', 'paid'].includes(booking.paymentStatus?.toLowerCase()) ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                    booking.paymentStatus === 'pending' || booking.paymentStatus === 'plan_covered' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                    }`}>
-                    {['success', 'collected_by_vendor', 'paid', 'paid_online'].includes(booking.paymentStatus?.toLowerCase()) ? 'Paid' :
-                      booking.paymentStatus === 'plan_covered' ? 'Processing Bill' :
-                        booking.paymentStatus?.replace(/_/g, ' ') || 'Pending'}
-                  </span>
-                </div>
-                {['completed', 'work_done'].includes(booking.status?.toLowerCase()) && !isAddonPending && (
-                  <div className="bg-card-bg px-5 pb-5 pt-3 flex justify-center">
-                    <button
-                      onClick={handleDownloadInvoice}
-                      className="w-full py-3 rounded-md font-bold text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
-                    >
-                      <FiFileText className="w-5 h-5" />
-                      Download Tax Invoice (PDF)
-                    </button>
-                  </div>
+                    {/* Payment Status Footer */}
+                    <div className="bg-light-bg px-3.5 md:px-5 py-2 md:py-3 border-t border-border-color flex justify-between items-center">
+                      <span className="text-[10px] md:text-xs font-bold text-secondary-text uppercase tracking-wide">Payment Status</span>
+                      <span className={`px-2 md:px-2.5 py-0.5 md:py-1 rounded-md text-[10px] md:text-xs font-bold capitalize ${['success', 'collected_by_vendor', 'paid'].includes(booking.paymentStatus?.toLowerCase()) ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                        booking.paymentStatus === 'pending' || booking.paymentStatus === 'plan_covered' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                        }`}>
+                        {['success', 'collected_by_vendor', 'paid', 'paid_online'].includes(booking.paymentStatus?.toLowerCase()) ? 'Paid' :
+                          booking.paymentStatus === 'plan_covered' ? 'Processing Bill' :
+                            booking.paymentStatus?.replace(/_/g, ' ') || 'Pending'}
+                      </span>
+                    </div>
+                    {['completed', 'work_done'].includes(booking.status?.toLowerCase()) && !isAddonPending && (
+                      <div className="bg-card-bg px-3 md:px-5 pb-3 md:pb-5 pt-2 md:pt-3 flex justify-center">
+                        <button
+                          onClick={handleDownloadInvoice}
+                          className="w-full py-2 md:py-3 rounded-md font-bold text-xs md:text-sm text-white bg-green-600 hover:bg-green-700 flex items-center justify-center gap-1.5 md:gap-2 shadow-xs md:shadow-md active:scale-95 transition-transform"
+                        >
+                          <FiFileText className="w-4 h-4 md:w-5 md:h-5" />
+                          Download Tax Invoice (PDF)
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
             )}
@@ -1653,7 +1644,7 @@ const BookingDetails = () => {
                       onClick={() => {
                         toast.success("You selected Cash. Please hand over the extra amount to the professional.");
                       }}
-                      className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
+                      className="w-full py-4 rounded-md font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
                     >
                       <FiHome className="w-5 h-5" />
                       Pay Cash to Professional
@@ -1661,7 +1652,7 @@ const BookingDetails = () => {
                   ) : !['online', 'razorpay'].includes(booking.paymentMethod) && (
                     <button
                       onClick={handlePayAtHome}
-                      className="w-full py-4 rounded-xl font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
+                      className="w-full py-4 rounded-md font-bold text-secondary-text bg-light-bg border border-border-color flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-card-bg"
                     >
                       <FiHome className="w-5 h-5" />
                       Pay at Home (After Service)
@@ -1672,7 +1663,7 @@ const BookingDetails = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2.5 md:gap-4">
               {/* Support */}
               <button
                 onClick={() => {
@@ -1687,10 +1678,10 @@ const BookingDetails = () => {
                     toast.error('Support phone number not available');
                   }
                 }}
-                className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-md hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
+                className="col-span-1 flex flex-col items-center justify-center gap-1 md:gap-2 p-2.5 md:p-4 bg-card-bg border border-border-color rounded-md hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
               >
-                <FiPhone className="w-6 h-6 text-secondary-text" />
-                <span className="text-sm font-bold">Call Support</span>
+                <FiPhone className="w-4 h-4 md:w-6 md:h-6 text-secondary-text" />
+                <span className="text-xs md:text-sm font-bold">Call Support</span>
               </button>
               <button
                 onClick={() => {
@@ -1701,10 +1692,10 @@ const BookingDetails = () => {
                   link.click();
                   document.body.removeChild(link);
                 }}
-                className="col-span-1 flex flex-col items-center justify-center gap-2 p-4 bg-card-bg border border-border-color rounded-md hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
+                className="col-span-1 flex flex-col items-center justify-center gap-1 md:gap-2 p-2.5 md:p-4 bg-card-bg border border-border-color rounded-md hover:bg-light-bg transition-colors active:scale-95 text-dark-text"
               >
-                <FiMail className="w-6 h-6 text-secondary-text" />
-                <span className="text-sm font-bold">Email Help</span>
+                <FiMail className="w-4 h-4 md:w-6 md:h-6 text-secondary-text" />
+                <span className="text-xs md:text-sm font-bold">Email Help</span>
               </button>
 
               {/* Cancel */}
@@ -1714,14 +1705,14 @@ const BookingDetails = () => {
                     cancelCountdown > 0 ? (
                       <button
                         onClick={handleCancelBooking}
-                        className="w-full py-4 rounded-2xl font-bold text-sm transition-colors text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95"
+                        className="w-full py-2.5 md:py-4 rounded-md font-bold text-xs md:text-sm transition-colors text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95"
                       >
                         Cancel Booking ({formatTime(cancelCountdown)})
                       </button>
                     ) : (
                       <button
                         onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
-                        className="w-full py-4 rounded-2xl font-bold text-sm transition-colors text-brand bg-brand/10 border border-brand/20 hover:bg-brand/20 active:scale-95"
+                        className="w-full py-2.5 md:py-4 rounded-md font-bold text-xs md:text-sm transition-colors text-brand bg-brand/10 border border-brand/20 hover:bg-brand/20 active:scale-95"
                       >
                         Reschedule Booking
                       </button>
@@ -1731,7 +1722,7 @@ const BookingDetails = () => {
                       <button
                         disabled={booking.vendorId && !cancellationTimeLeft}
                         onClick={handleCancelBooking}
-                        className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors ${(booking.vendorId && !cancellationTimeLeft)
+                        className={`w-full py-2.5 md:py-4 rounded-md font-bold text-xs md:text-sm transition-colors ${(booking.vendorId && !cancellationTimeLeft)
                           ? 'bg-divider text-secondary-text border border-border-color cursor-not-allowed'
                           : 'text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
                           }`}
@@ -1739,7 +1730,7 @@ const BookingDetails = () => {
                         Cancel Booking
                       </button>
                       {booking.vendorId && (
-                        <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
+                        <p className="text-[10px] md:text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
                           {cancellationTimeLeft
                             ? '⚠️ Cancellation only allowed within 3 minutes of acceptance'
                             : '🚫 Cancellation window expired (exceeded 3 mins)'}
@@ -1759,41 +1750,35 @@ const BookingDetails = () => {
           </div>
 
           {/* RIGHT COLUMN: Summary and Actions (Sidebar) */}
-          <div className="lg:sticky lg:top-24 space-y-6">
-            {/* Booking Actions Sidebar panel */}
-            <div className="bg-card-bg rounded-md p-5 border border-border-color shadow-sm space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-secondary-text">Booking Actions</h3>
+          {((booking.paymentStatus === 'pending' && booking.status !== 'cancelled') || (['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType !== 'scheduled')) && (
+            <div className="lg:sticky lg:top-24 space-y-3 md:space-y-6">
+              {/* Booking Actions Sidebar panel */}
+              <div className="bg-card-bg rounded-md p-3 md:p-5 border border-border-color shadow-xs md:shadow-sm space-y-2.5 md:space-y-4">
+                <h3 className="text-[10px] md:text-sm font-bold uppercase tracking-wider text-secondary-text">Booking Actions</h3>
 
-              {/* Payment Action */}
-              {booking.paymentStatus === 'pending' && booking.status !== 'cancelled' && (
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  disabled={paying}
-                  className="w-full py-3 bg-[#B33A35] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
-                >
-                  {paying ? 'Processing...' : (booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0) ? `⚡ Pay COD Advance (₹${booking.codAdvanceAmount})` : '⚡ Pay Booking Bill'}
-                </button>
-              )}
+                {/* Payment Action */}
+                {booking.paymentStatus === 'pending' && booking.status !== 'cancelled' && (
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    disabled={paying}
+                    className="w-full py-2 md:py-3 bg-[#B33A35] text-white text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest rounded-md hover:bg-[#9E2E2A] transition-all active:scale-[0.98]"
+                  >
+                    {paying ? 'Processing...' : (booking.paymentMethod === 'pay_at_home' && booking.codAdvanceAmount > 0) ? `⚡ Pay COD Advance (₹${booking.codAdvanceAmount})` : '⚡ Pay Booking Bill'}
+                  </button>
+                )}
 
-              {/* Reschedule Option (Hidden for scheduled bookings here since it's above) */}
-              {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType !== 'scheduled' && (
-                <button
-                  onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
-                  className="w-full py-3 border border-border-color text-dark-text hover:bg-divider text-xs font-bold uppercase tracking-widest rounded-md transition-all active:scale-[0.98]"
-                >
-                  Reschedule Slot
-                </button>
-              )}
-
-              {/* Chat Support */}
-              <button
-                onClick={() => navigate('/user/inbox', { state: { vendorId: booking.vendorId, bookingId: booking._id } })}
-                className="w-full py-3 bg-[#00A6A6] text-white text-xs font-bold uppercase tracking-widest rounded-md hover:opacity-95 transition-all active:scale-[0.98]"
-              >
-                Chat Support
-              </button>
+                {/* Reschedule Option (Hidden for scheduled bookings here since it's above) */}
+                {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType !== 'scheduled' && (
+                  <button
+                    onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
+                    className="w-full py-2 md:py-3 border border-border-color text-dark-text hover:bg-divider text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest rounded-md transition-all active:scale-[0.98]"
+                  >
+                    Reschedule Slot
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </main>
 
         {/* Rating Modal */}

@@ -73,6 +73,7 @@ const getHomeContent = async (req, res) => {
         isFeaturedSectionsVisible: homeContent.isFeaturedSectionsVisible ?? true,
         popularServices: homeContent.popularServices || [],
         isPopularServicesVisible: homeContent.isPopularServicesVisible ?? true,
+        bottomSection: homeContent.bottomSection || { title: '', subtitle: '', description: '', isVisible: true },
         createdAt: homeContent.createdAt,
         updatedAt: homeContent.updatedAt,
         sectionOrder: homeContent.sectionOrder && homeContent.sectionOrder.length > 0 ? homeContent.sectionOrder : [
@@ -89,7 +90,8 @@ const getHomeContent = async (req, res) => {
           'booked',
           'ctaBanner',
           'howItWorks',
-          'categorySections'
+          'categorySections',
+          'bottomSection'
         ]
       }
     });
@@ -236,8 +238,21 @@ const updateHomeContent = async (req, res) => {
       homeContent.markModified('featuredSections');
     }
     if (req.body.sectionOrder !== undefined) {
-      homeContent.sectionOrder = req.body.sectionOrder;
+      const so = Array.isArray(req.body.sectionOrder) ? [...req.body.sectionOrder] : [];
+      if (!so.includes('bottomSection')) so.push('bottomSection');
+      homeContent.sectionOrder = so;
       homeContent.markModified('sectionOrder');
+    }
+
+    if (req.body.bottomSection !== undefined) {
+      const bs = req.body.bottomSection || {};
+      homeContent.bottomSection = {
+        title: bs.title || '',
+        subtitle: bs.subtitle || '',
+        description: bs.description || '',
+        isVisible: bs.isVisible !== undefined ? bs.isVisible : true
+      };
+      homeContent.markModified('bottomSection');
     }
 
     await homeContent.save();
@@ -269,6 +284,7 @@ const updateHomeContent = async (req, res) => {
         isFeaturedSectionsVisible: homeContent.isFeaturedSectionsVisible,
         popularServices: homeContent.popularServices || [],
         isPopularServicesVisible: homeContent.isPopularServicesVisible,
+        bottomSection: homeContent.bottomSection || { title: '', subtitle: '', description: '', isVisible: true },
         sectionOrder: homeContent.sectionOrder && homeContent.sectionOrder.length > 0 ? homeContent.sectionOrder : [
           'banners',
           'promos',
@@ -283,7 +299,8 @@ const updateHomeContent = async (req, res) => {
           'booked',
           'ctaBanner',
           'howItWorks',
-          'categorySections'
+          'categorySections',
+          'bottomSection'
         ]
       }
     });

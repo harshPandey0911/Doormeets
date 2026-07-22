@@ -884,12 +884,16 @@ const Home = () => {
                   'noteworthy',
                   'booked',
                   'ctaBanner',
-                  'categorySections'
+                  'categorySections',
+                  'bottomSection'
                 ];
                 if (!order.includes('howItWorks')) {
                   const idx = order.indexOf('categorySections');
                   if (idx !== -1) order.splice(idx, 0, 'howItWorks');
                   else order.push('howItWorks');
+                }
+                if (!order.includes('bottomSection')) {
+                  order.push('bottomSection');
                 }
                 return order;
               })().map((sectionKey) => {
@@ -1388,6 +1392,30 @@ const Home = () => {
                           </Suspense>
                         </motion.div>
                       ))
+                    );
+                  case 'bottomSection':
+                    return (
+                      homeContent?.bottomSection && homeContent.bottomSection.isVisible !== false && (homeContent.bottomSection.title || homeContent.bottomSection.subtitle || homeContent.bottomSection.description) && (
+                        <motion.section key="bottomSection" variants={itemVariants} className="px-3 md:px-5 w-full pt-2 pb-4 mt-2">
+                          <div className="max-w-4xl text-left space-y-1.5">
+                            {homeContent.bottomSection.title && (
+                              <h2 className="text-[15.5px] md:text-[22px] font-medium md:font-extrabold tracking-tight leading-[1.2]" style={{ color: 'var(--text-primary)' }}>
+                                {homeContent.bottomSection.title}
+                              </h2>
+                            )}
+                            {homeContent.bottomSection.subtitle && (
+                              <p className="text-xs md:text-sm font-medium mt-1" style={{ color: 'var(--text-secondary)' }}>
+                                {homeContent.bottomSection.subtitle}
+                              </p>
+                            )}
+                            {homeContent.bottomSection.description && (
+                              <p className="text-xs md:text-sm font-normal leading-relaxed whitespace-pre-line mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                                {homeContent.bottomSection.description}
+                              </p>
+                            )}
+                          </div>
+                        </motion.section>
+                      )
                     );
                   default:
                     return null;

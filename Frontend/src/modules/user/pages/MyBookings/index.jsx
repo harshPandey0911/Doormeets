@@ -220,23 +220,23 @@ const MyBookings = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending_admin':
-        return 'bg-blue-500 text-white border-transparent ring-blue-500';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30';
       case 'confirmed':
-        return 'bg-emerald-500 text-white border-transparent ring-emerald-500';
+        return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
       case 'in_progress':
       case 'in-progress':
       case 'journey_started':
       case 'visited':
-        return 'bg-[#9E2E2A] text-white border-transparent ring-[#9E2E2A]';
+        return 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30';
       case 'completed':
-        return 'bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white border-transparent ring-[#B33A35]';
+        return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
       case 'cancelled':
       case 'rejected':
-        return 'bg-rose-500 text-white border-transparent ring-rose-500';
+        return 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30';
       case 'awaiting_payment':
-        return 'bg-amber-500 text-white border-transparent ring-amber-500';
+        return 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30';
       default:
-        return 'bg-gray-500 text-white border-transparent ring-gray-500';
+        return 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/30';
     }
   };
 
@@ -500,8 +500,8 @@ const MyBookings = () => {
                     {/* Right Section: Status badge, Price & Chevron */}
                     <div className="flex flex-col justify-between items-end shrink-0 py-0.5">
                       {/* Status Badge */}
-                      <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-[4px] border ring-1 ring-inset flex items-center gap-1 shadow-sm ${getStatusColor(booking.status)}`}>
-                        <span className="text-[8px] md:text-[10px] font-semibold uppercase tracking-wide">
+                      <div className={`px-1.5 md:px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-wider border flex items-center shrink-0 ${getStatusColor(booking.status)}`}>
+                        <span className="leading-none">
                           {getStatusLabel(booking.status)}
                         </span>
                       </div>

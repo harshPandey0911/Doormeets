@@ -319,7 +319,7 @@ const StockManagement = () => {
 
       <BottomNav />
       
-      <style jsx="true">{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
