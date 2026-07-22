@@ -223,3 +223,31 @@ export const getRatings = async (params = {}) => {
     throw error;
   }
 };
+
+/**
+ * Accept reschedule request
+ * @param {string} bookingId - Booking ID
+ */
+export const acceptReschedule = async (bookingId) => {
+  try {
+    const response = await api.post(`/vendors/bookings/${bookingId}/reschedule/accept`);
+    return response.data;
+  } catch (error) {
+    console.error('Error accepting reschedule:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reject reschedule request
+ * @param {string} bookingId - Booking ID
+ */
+export const rejectReschedule = async (bookingId) => {
+  try {
+    const response = await api.post(`/vendors/bookings/${bookingId}/reschedule/reject`);
+    return response.data;
+  } catch (error) {
+    console.error('Error rejecting reschedule:', error);
+    throw error;
+  }
+};

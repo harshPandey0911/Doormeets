@@ -215,7 +215,10 @@ const createBooking = async (req, res) => {
         const vendorFilters = {
           _id: { $in: qualifiedVendorIds },
           checkCashLimit: paymentMethod === 'cash',
-          city: address.city
+          city: address.city,
+          scheduledDate: scheduledDate,
+          timeSlot: timeSlot,
+          scheduledTime: scheduledTime
         };
 
         console.log(`[CreateBooking] Searching for ${qualifiedVendorIds.length} specific vendors near user location...`);

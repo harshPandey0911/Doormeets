@@ -16,7 +16,9 @@ import {
   verifySelfVisit,
   completeSelfJob,
   requestCancel,
-  cancelAccepted
+  cancelAccepted,
+  acceptReschedule,
+  rejectReschedule
 } from '../../services/bookingService';
 import vendorBillService from '../../../../services/vendorBillService';
 import { CashCollectionModal, ConfirmDialog, WorkerPaymentModal, OtpVerificationModal, ReachedPhotoModal } from '../../components/common';
@@ -1046,6 +1048,42 @@ export default function BookingDetails() {
     });
   };
 
+  const handleAcceptReschedule = async () => {
+    setLoading(true);
+    try {
+      const res = await acceptReschedule(id);
+      if (res.success) {
+        toast.success('Reschedule request accepted!');
+        loadBooking();
+      } else {
+        toast.error(res.message || 'Failed to accept reschedule request');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error accepting reschedule request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectReschedule = async () => {
+    setLoading(true);
+    try {
+      const res = await rejectReschedule(id);
+      if (res.success) {
+        toast.success('Reschedule request rejected. Broadcast initiated.');
+        navigate('/vendor/dashboard');
+      } else {
+        toast.error(res.message || 'Failed to reject reschedule request');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error rejecting reschedule request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePayWorkerClick = () => {
     setIsPayWorkerModalOpen(true);
   };
@@ -1477,6 +1515,48 @@ export default function BookingDetails() {
       <Header title="Booking Details" />
 
       <main className="px-4 py-6">
+        {/* Reschedule Request Banner */}
+        {booking.rescheduleRequest && booking.rescheduleRequest.status === 'pending' && (
+          <div className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border border-amber-500/30 rounded-2xl p-5 mb-6 shadow-sm flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30 shrink-0 text-amber-500 animate-pulse">
+                <FiClock className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-dark-text tracking-tight">Reschedule Request Pending</h4>
+                <p className="text-xs text-secondary-text mt-1">Customer has requested to reschedule this booking to:</p>
+                <div className="bg-card-bg/60 border border-border-color rounded-xl p-3 mt-2.5 space-y-1">
+                  <p className="text-xs font-bold text-dark-text">
+                    📅 {new Date(booking.rescheduleRequest.newScheduledDate).toLocaleDateString('en-IN', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                  <p className="text-xs text-secondary-text">
+                    🕒 {booking.rescheduleRequest.newScheduledTime || `${booking.rescheduleRequest.newTimeSlot?.start} - ${booking.rescheduleRequest.newTimeSlot?.end}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleAcceptReschedule}
+                className="flex-1 py-3 bg-[#00A6A6] hover:bg-[#00A6A6]/90 text-white font-bold rounded-xl text-xs transition-colors shadow-xs"
+              >
+                Accept
+              </button>
+              <button
+                onClick={handleRejectReschedule}
+                className="flex-1 py-3 bg-[#B33A35] hover:bg-[#B33A35]/90 text-white font-bold rounded-xl text-xs transition-colors shadow-xs"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Cancelled Booking Banner */}
         {booking.status?.toLowerCase() === 'cancelled' && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex items-center gap-2">

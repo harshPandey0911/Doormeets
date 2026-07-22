@@ -1698,13 +1698,19 @@ const BookingDetails = () => {
                       >
                         Cancel Booking ({formatTime(cancelCountdown)})
                       </button>
-                    ) : (
+                    ) : booking.hasBeenRescheduled ? (
+                      null
+                    ) : booking.rescheduleRequest?.status !== 'pending' ? (
                       <button
                         onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
                         className="w-full py-2.5 md:py-4 rounded-md font-bold text-xs md:text-sm transition-colors text-brand bg-brand/10 border border-brand/20 hover:bg-brand/20 active:scale-95"
                       >
                         Reschedule Booking
                       </button>
+                    ) : (
+                      <div className="w-full py-4 rounded-2xl font-bold text-sm text-center text-amber-600 bg-amber-50 border border-amber-100">
+                        Reschedule Request Pending Approval
+                      </div>
                     )
                   ) : (
                     cancelCountdown > 0 && (

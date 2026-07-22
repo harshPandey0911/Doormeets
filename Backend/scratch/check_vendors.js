@@ -1,28 +1,30 @@
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const path = require('path');
+require('dotenv').config();
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-if (!process.env.MONGODB_URI) dotenv.config();
+const dbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/doormeets';
 
-const Vendor = require('../models/Vendor');
-
-const run = async () => {
+async function run() {
   try {
-    const uri = process.env.MONGODB_URI;
-    await mongoose.connect(uri);
-    
-    console.log("=== Vendors ===");
-    const vendors = await Vendor.find({});
+    await mongoose.connect(dbUri);
+    console.log('Connected to MongoDB');
+
+    const Vendor = require('../models/Vendor');
+    const vendors = await Vendor.find({}).lean();
+    console.log(`Total vendors: ${vendors.length}`);
     for (const v of vendors) {
-      console.log(`- Name: ${v.name}, isOnline: ${v.isOnline}, workStatus: ${v.workStatus}, categories: ${JSON.stringify(v.categories)}`);
+      console.log(`Vendor: ${v.name} (${v._id})`);
+      console.log(`- approvalStatus: ${v.approvalStatus}`);
+      console.log(`- isSubscriptionActive: ${v.isSubscriptionActive}`);
+      console.log(`- subscription:`, v.subscription);
+      console.log(`- service count: ${v.service?.length || 0}`);
+      console.log(`- categories count: ${v.categories?.length || 0}`);
     }
 
-    process.exit(0);
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    await mongoose.disconnect();
   }
-};
+}
 
 run();

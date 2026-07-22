@@ -950,10 +950,72 @@ const cancelAcceptedBooking = async (req, res) => {
     if (isPendingAdmin) {
       booking.status = 'pending_admin';
       booking.cancellationReason = 'Vendor cancelled and no other potential professionals left in area.';
+      
+      // Save notification in database for all admins
+      try {
+        const User = require('../../models/User');
+        const { createNotification } = require('../notificationControllers/notificationController');
+        const admins = await User.find({ role: 'ADMIN' });
+        
+        const notificationData = {
+          userId: null,
+          vendorId: null,
+          workerId: null,
+          type: 'admin_booking_requested',
+          title: 'Manual Assignment Needed',
+          message: `Booking #${booking.bookingNumber} was cancelled by vendor and has no other vendors left. Manual assignment needed.`,
+          priority: 'high',
+          pushData: {
+            type: 'admin_booking_requested',
+            bookingId: booking._id.toString(),
+            link: `/admin/bookings/${booking._id}`
+          }
+        };
+        
+        await Promise.all(
+          admins.map(admin =>
+            createNotification({ ...notificationData, adminId: admin._id })
+          )
+        );
+      } catch (dbNotifErr) {
+        console.error('[cancelAcceptedBooking] Failed to save admin notification:', dbNotifErr);
+      }
+
+      // Socket notification
+      try {
+        const { getIO } = require('../../sockets');
+        const io = getIO();
+        if (io) {
+          const userIdStr = booking.userId.toString();
+          const bookingIdStr = booking._id.toString();
+
+          const payload = {
+            bookingId: bookingIdStr,
+            bookingNumber: booking.bookingNumber,
+            status: 'pending_admin',
+            message: 'Booking request sent to admin for manual assignment.'
+          };
+
+          io.to(`user_${userIdStr}`).emit('booking_updated', payload);
+          io.to('all_admins').emit('admin_booking_requested', payload);
+          io.to(`booking_${bookingIdStr}`).emit('booking_updated', payload);
+        }
+      } catch (sockErr) {
+        console.error('[cancelAcceptedBooking] Socket emission failed:', sockErr);
+      }
     } else {
       booking.status = BOOKING_STATUS.SEARCHING;
       booking.currentWave = 1; // Restart waves
       booking.waveStartedAt = new Date(); // Start wave timer now
+      
+      // Trigger broadcast search to notify other potential vendors immediately
+      const { getScheduler } = require('../../services/bookingScheduler');
+      const scheduler = getScheduler();
+      if (scheduler) {
+        scheduler.broadcastBookingSearch(booking._id).catch(err => {
+          console.error('[cancelAcceptedBooking] Background broadcast failed:', err);
+        });
+      }
     }
 
     await booking.save();

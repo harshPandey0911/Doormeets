@@ -430,7 +430,10 @@ class BookingScheduler {
         const vendorFilters = {
           _id: { $in: qualifiedVendorIds },
           checkCashLimit: booking.paymentMethod === 'cash',
-          city: booking.address?.city
+          city: booking.address?.city,
+          scheduledDate: booking.scheduledDate,
+          timeSlot: booking.timeSlot,
+          scheduledTime: booking.scheduledTime
         };
         nearbyVendors = await findNearbyVendors(bookingLocation, 10, vendorFilters);
       }
