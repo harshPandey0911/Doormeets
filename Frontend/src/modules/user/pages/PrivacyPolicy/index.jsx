@@ -44,22 +44,6 @@ const PrivacyPolicy = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Banner */}
-        <div className="rounded-3xl p-6 shadow-sm border overflow-hidden relative" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-          <div className="flex items-center gap-3.5 mb-4">
-            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-              <FiShield className="w-6 h-6 text-blue-500" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Data Shield Security</h2>
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Protected & encrypted connection</p>
-            </div>
-          </div>
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            We implement highest standards of security compliance to protect your account metadata, location and credentials.
-          </p>
-        </div>
-
         {/* Dynamic Privacy Content */}
         <div className="rounded-3xl p-6 shadow-sm border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
           <h3 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Policy Details</h3>
@@ -68,17 +52,6 @@ const PrivacyPolicy = () => {
             style={{ color: 'var(--text-secondary)' }}
           >
             {privacyText}
-          </div>
-        </div>
-
-        {/* Info box */}
-        <div className="bg-blue-50/20 rounded-2xl p-4 border border-blue-100/30 flex gap-3">
-          <FiInfo className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h4 className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Admin Managed</h4>
-            <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              These terms are reviewed and updated dynamically by the Doormeets regulatory team.
-            </p>
           </div>
         </div>
       </main>
