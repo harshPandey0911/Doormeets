@@ -60,7 +60,8 @@ const AddEditWorker = () => {
 
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
-  const [aadharFile, setAadharFile] = useState(null);
+  const [aadharFrontFile, setAadharFrontFile] = useState(null);
+  const [aadharBackFile, setAadharBackFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
@@ -105,6 +106,8 @@ const AddEditWorker = () => {
               email: w.email || '',
               aadhar: {
                 number: w.aadhar?.number || '',
+                frontDocument: w.aadhar?.frontDocument || w.aadhar?.document || '',
+                backDocument: w.aadhar?.backDocument || '',
                 document: w.aadhar?.document || ''
               },
               serviceCategories: w.serviceCategories || (w.serviceCategory ? [w.serviceCategory] : []),
@@ -259,8 +262,12 @@ const AddEditWorker = () => {
     }
 
     // Additional manual check for Aadhar doc on 'new'
-    if (!isEdit && !formData.aadhar.document && !aadharFile) {
-      toast.error("Aadhar document is required");
+    if (!isEdit && !formData.aadhar.frontDocument && !aadharFrontFile) {
+      toast.error("Aadhar Front Side document is required");
+      return;
+    }
+    if (!isEdit && !formData.aadhar.backDocument && !aadharBackFile) {
+      toast.error("Aadhar Back Side document is required");
       return;
     }
 
@@ -269,7 +276,8 @@ const AddEditWorker = () => {
       setUploading(true);
 
       let photoUrl = formData.profilePhoto;
-      let aadharUrl = formData.aadhar.document;
+      let aadharFrontUrl = formData.aadhar.frontDocument;
+      let aadharBackUrl = formData.aadhar.backDocument;
 
       // Upload photo if selected
       if (photoFile) {
@@ -284,13 +292,26 @@ const AddEditWorker = () => {
         }
       }
 
-      // Upload Aadhar if selected
-      if (aadharFile) {
+      // Upload Aadhar Front if selected
+      if (aadharFrontFile) {
         try {
-          aadharUrl = await uploadFile(aadharFile);
+          aadharFrontUrl = await uploadFile(aadharFrontFile);
         } catch (err) {
-          console.error('Aadhar upload failed:', err);
-          toast.error('Failed to upload Aadhar document');
+          console.error('Aadhar Front upload failed:', err);
+          toast.error('Failed to upload Aadhar Front Side');
+          setLoading(false);
+          setUploading(false);
+          return;
+        }
+      }
+
+      // Upload Aadhar Back if selected
+      if (aadharBackFile) {
+        try {
+          aadharBackUrl = await uploadFile(aadharBackFile);
+        } catch (err) {
+          console.error('Aadhar Back upload failed:', err);
+          toast.error('Failed to upload Aadhar Back Side');
           setLoading(false);
           setUploading(false);
           return;
@@ -303,7 +324,9 @@ const AddEditWorker = () => {
         profilePhoto: photoUrl,
         aadhar: {
           ...formData.aadhar,
-          document: aadharUrl || 'pending_upload' // Ensure strictly that we have something
+          frontDocument: aadharFrontUrl || 'pending_upload',
+          backDocument: aadharBackUrl || 'pending_upload',
+          document: aadharFrontUrl || aadharBackUrl || 'pending_upload'
         }
       };
 
@@ -615,34 +638,91 @@ const AddEditWorker = () => {
                     maxLength={12}
                   />
 
-                  {/* File Upload */}
-                  <div className="border-2 border-dashed border-gray-200 rounded-md p-4 text-center transition-colors hover:border-blue-300 bg-gray-50">
-                    <input
-                      id="worker-aadhar-upload"
-                      type="file"
-                      accept="image/*,.pdf"
-                      className="hidden"
-                      onChange={handleAadharChange}
-                    />
-                    <label htmlFor="worker-aadhar-upload" className="cursor-pointer flex flex-col items-center">
-                      {aadharFile ? (
-                        <div className="flex items-center gap-2 text-green-600 font-medium">
-                          <FiUpload className="w-4 h-4" />
-                          <span className="truncate max-w-[200px] text-xs">{aadharFile.name}</span>
-                        </div>
-                      ) : formData.aadhar.document && formData.aadhar.document !== 'data:image/png;base64,placeholder' ? (
-                        <div className="flex flex-col items-center gap-1">
-                          <p className="text-green-600 font-bold text-xs">Document Uploaded</p>
-                          <span className="text-[10px] text-blue-500 underline">Click to update</span>
-                        </div>
-                      ) : (
-                        <>
-                          <FiUpload className="w-6 h-6 text-gray-400 mb-1" />
-                          <span className="text-xs text-gray-600 font-medium">Click to upload Aadhar Card</span>
-                          <span className="text-[10px] text-gray-400 mt-0.5">First Page Only (Max 5MB)</span>
-                        </>
-                      )}
-                    </label>
+                  {/* File Upload Grid (Front & Back) */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* Front Side Upload */}
+                    <div className="border-2 border-dashed border-gray-200 rounded-md p-2.5 text-center transition-colors hover:border-blue-300 bg-gray-50 flex flex-col justify-center items-center min-h-[90px] overflow-hidden">
+                      <input
+                        id="worker-aadhar-front-upload"
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast.error('File size should be less than 5MB');
+                              return;
+                            }
+                            setAadharFrontFile(file);
+                          }
+                        }}
+                      />
+                      <label htmlFor="worker-aadhar-front-upload" className="cursor-pointer flex flex-col items-center w-full min-w-0 px-1 overflow-hidden">
+                        {aadharFrontFile ? (
+                          <div className="flex flex-col items-center w-full min-w-0 overflow-hidden">
+                            <div className="flex items-center justify-center gap-1 text-green-600 font-medium w-full min-w-0 overflow-hidden">
+                              <FiUpload className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate text-[10px] font-bold min-w-0 block">{aadharFrontFile.name}</span>
+                            </div>
+                            <span className="text-[9px] text-gray-400 mt-0.5 font-medium">Front Side</span>
+                          </div>
+                        ) : formData.aadhar?.frontDocument && formData.aadhar.frontDocument !== 'data:image/png;base64,placeholder' ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <p className="text-green-600 font-bold text-xs">Front Uploaded</p>
+                            <span className="text-[10px] text-blue-500 underline font-semibold">Update</span>
+                          </div>
+                        ) : (
+                          <>
+                            <FiUpload className="w-5 h-5 text-gray-400 mb-1" />
+                            <span className="text-xs text-gray-700 font-bold">Front Side</span>
+                            <span className="text-[9px] text-gray-400 mt-0.5">Upload Front (Max 5MB)</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+
+                    {/* Back Side Upload */}
+                    <div className="border-2 border-dashed border-gray-200 rounded-md p-2.5 text-center transition-colors hover:border-blue-300 bg-gray-50 flex flex-col justify-center items-center min-h-[90px] overflow-hidden">
+                      <input
+                        id="worker-aadhar-back-upload"
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast.error('File size should be less than 5MB');
+                              return;
+                            }
+                            setAadharBackFile(file);
+                          }
+                        }}
+                      />
+                      <label htmlFor="worker-aadhar-back-upload" className="cursor-pointer flex flex-col items-center w-full min-w-0 px-1 overflow-hidden">
+                        {aadharBackFile ? (
+                          <div className="flex flex-col items-center w-full min-w-0 overflow-hidden">
+                            <div className="flex items-center justify-center gap-1 text-green-600 font-medium w-full min-w-0 overflow-hidden">
+                              <FiUpload className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate text-[10px] font-bold min-w-0 block">{aadharBackFile.name}</span>
+                            </div>
+                            <span className="text-[9px] text-gray-400 mt-0.5 font-medium">Back Side</span>
+                          </div>
+                        ) : formData.aadhar?.backDocument && formData.aadhar.backDocument !== 'data:image/png;base64,placeholder' ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <p className="text-green-600 font-bold text-xs">Back Uploaded</p>
+                            <span className="text-[10px] text-blue-500 underline font-semibold">Update</span>
+                          </div>
+                        ) : (
+                          <>
+                            <FiUpload className="w-5 h-5 text-gray-400 mb-1" />
+                            <span className="text-xs text-gray-700 font-bold">Back Side</span>
+                            <span className="text-[9px] text-gray-400 mt-0.5">Upload Back (Max 5MB)</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
                   </div>
                   {errors['aadhar.document'] && <p className="text-red-500 text-[10px] mt-1">Document is required</p>}
                 </div>
