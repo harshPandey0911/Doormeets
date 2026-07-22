@@ -124,24 +124,13 @@ const BookingDetails = () => {
     if (!booking) return;
 
     const checkTime = () => {
-      if (booking.bookingType === 'scheduled') {
-        const createdTime = new Date(booking.createdAt).getTime();
-        const elapsedMs = Date.now() - createdTime;
-        const remainingMs = (3 * 60 * 1000) - elapsedMs;
-        if (remainingMs > 0) {
-          setCancelCountdown(Math.ceil(remainingMs / 1000));
-        } else {
-          setCancelCountdown(0);
-        }
+      const createdTime = new Date(booking.createdAt).getTime();
+      const elapsedMs = Date.now() - createdTime;
+      const remainingMs = (3 * 60 * 1000) - elapsedMs;
+      if (remainingMs > 0) {
+        setCancelCountdown(Math.ceil(remainingMs / 1000));
       } else {
-        if (!booking.vendorId || !booking.acceptedAt) {
-          setCancellationTimeLeft(true);
-        } else {
-          const acceptedTime = new Date(booking.acceptedAt).getTime();
-          const elapsedMs = Date.now() - acceptedTime;
-          const allowed = elapsedMs <= 3 * 60 * 1000; // 3 minutes
-          setCancellationTimeLeft(allowed);
-        }
+        setCancelCountdown(0);
       }
     };
 
@@ -1052,8 +1041,8 @@ const BookingDetails = () => {
               >
                 <div className="flex items-center gap-2.5 mb-2.5">
                   <div className={`w-8 h-8 rounded-md flex items-center justify-center border shrink-0 ${booking.paymentStatus === 'success'
-                      ? 'bg-green-500/10 border-green-500/20 text-green-600'
-                      : 'bg-teal-500/10 border-teal-500/20 text-teal-600'
+                    ? 'bg-green-500/10 border-green-500/20 text-green-600'
+                    : 'bg-teal-500/10 border-teal-500/20 text-teal-600'
                     }`}>
                     {booking.paymentStatus === 'success' ? (
                       <FiCheckCircle className="w-4 h-4" />
@@ -1300,7 +1289,7 @@ const BookingDetails = () => {
                         // Direct database key or mathematically derived remainder
                         const directValue = Number(booking.visitingCharges || booking.visitationFee || booking.visitingFee || booking.visitationCharges || 0);
                         const derivedValue = grandTotal - (baseAmt + instantFee + taxAmt - discountAmt);
-                        
+
                         if (directValue > 0) {
                           return (
                             <div className="flex justify-between text-secondary-text">
@@ -1718,25 +1707,14 @@ const BookingDetails = () => {
                       </button>
                     )
                   ) : (
-                    <>
+                    cancelCountdown > 0 && (
                       <button
-                        disabled={booking.vendorId && !cancellationTimeLeft}
                         onClick={handleCancelBooking}
-                        className={`w-full py-2.5 md:py-4 rounded-md font-bold text-xs md:text-sm transition-colors ${(booking.vendorId && !cancellationTimeLeft)
-                          ? 'bg-divider text-secondary-text border border-border-color cursor-not-allowed'
-                          : 'text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
-                          }`}
+                        className="w-full py-2.5 md:py-4 rounded-md font-bold text-xs md:text-sm transition-colors text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95"
                       >
-                        Cancel Booking
+                        Cancel Booking ({formatTime(cancelCountdown)})
                       </button>
-                      {booking.vendorId && (
-                        <p className="text-[10px] md:text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
-                          {cancellationTimeLeft
-                            ? '⚠️ Cancellation only allowed within 3 minutes of acceptance'
-                            : '🚫 Cancellation window expired (exceeded 3 mins)'}
-                        </p>
-                      )}
-                    </>
+                    )
                   )}
                 </div>
               )}
@@ -1793,7 +1771,7 @@ const BookingDetails = () => {
           workerName={booking.workerId?.name || (booking.assignedTo?.name === 'You (Self)' ? 'Service Provider' : (booking.assignedTo?.name || 'Worker'))}
         />
 
-        {/* Payment Verification Modal */}
+  {/* Payment Verification Modal */ }
         <PaymentVerificationModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
@@ -1810,8 +1788,8 @@ const BookingDetails = () => {
           message={confirmDialog.message}
           type={confirmDialog.type}
         />
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 
