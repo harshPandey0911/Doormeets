@@ -2738,6 +2738,10 @@ const acceptReschedule = async (req, res) => {
     
     await booking.save();
 
+    // Update vendor work status to adjust busy slots
+    const Vendor = require('../../models/Vendor');
+    await Vendor.updateWorkStatus(vendorId);
+
     // Notify user
     const { createNotification } = require('../notificationControllers/notificationController');
     await createNotification({
@@ -2790,7 +2794,9 @@ const rejectReschedule = async (req, res) => {
     booking.timeSlot = booking.rescheduleRequest.newTimeSlot;
     booking.hasBeenRescheduled = true;
     
-    // Free vendor
+    await booking.save();
+
+    // Free vendor and sync their busy status
     const Vendor = require('../../models/Vendor');
     await Vendor.findByIdAndUpdate(vendorId, {
       availability: 'AVAILABLE',
@@ -2799,8 +2805,16 @@ const rejectReschedule = async (req, res) => {
       reservedFrom: null,
       reservedBookingId: null
     });
+    await Vendor.updateWorkStatus(vendorId);
 
-    await booking.save();
+    // Trigger broadcast booking search for new vendors in the background
+    const { getScheduler } = require('../../services/bookingScheduler');
+    const scheduler = getScheduler();
+    if (scheduler) {
+      scheduler.broadcastBookingSearch(booking._id).catch(err => {
+        console.error('[rejectReschedule] Background broadcast failed:', err);
+      });
+    }
     
     const { createNotification } = require('../notificationControllers/notificationController');
     await createNotification({
@@ -2814,7 +2828,7 @@ const rejectReschedule = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Reschedule request rejected. Vendor freed.',
+      message: 'Reschedule request rejected. Vendor freed and broadcast initiated.',
       data: booking
     });
   } catch (error) {

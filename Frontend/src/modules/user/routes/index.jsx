@@ -64,6 +64,7 @@ const Checkout = lazyLoad(() => import('../pages/Checkout'));
 const MyBookings = lazyLoad(() => import('../pages/MyBookings'));
 const BookingDetails = lazyLoad(() => import('../pages/BookingDetails'));
 const BookingTrack = lazyLoad(() => import('../pages/BookingTrack'));
+const RescheduleBooking = lazyLoad(() => import('../pages/RescheduleBooking'));
 const BookingConfirmation = lazyLoad(() => import('../pages/BookingConfirmation'));
 const Settings = lazyLoad(() => import('../pages/Settings'));
 const ManagePaymentMethods = lazyLoad(() => import('../pages/ManagePaymentMethods'));
@@ -195,6 +196,7 @@ const UserRoutes = () => {
                 <Route path="/my-bookings" element={<ProtectedRoute userType="user"><MyBookings /></ProtectedRoute>} />
                 <Route path="/booking/:id" element={<ProtectedRoute userType="user"><BookingDetails /></ProtectedRoute>} />
                 <Route path="/booking/:id/track" element={<ProtectedRoute userType="user"><BookingTrack /></ProtectedRoute>} />
+                <Route path="/reschedule-booking/:id" element={<ProtectedRoute userType="user"><RescheduleBooking /></ProtectedRoute>} />
                 <Route path="/booking-confirmation/:id" element={<ProtectedRoute userType="user"><BookingConfirmation /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute userType="user"><Settings /></ProtectedRoute>} />
                 <Route path="/manage-payment-methods" element={<ProtectedRoute userType="user"><ManagePaymentMethods /></ProtectedRoute>} />

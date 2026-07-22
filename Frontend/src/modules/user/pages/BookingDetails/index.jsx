@@ -124,24 +124,13 @@ const BookingDetails = () => {
     if (!booking) return;
 
     const checkTime = () => {
-      if (booking.bookingType === 'scheduled') {
-        const createdTime = new Date(booking.createdAt).getTime();
-        const elapsedMs = Date.now() - createdTime;
-        const remainingMs = (3 * 60 * 1000) - elapsedMs;
-        if (remainingMs > 0) {
-          setCancelCountdown(Math.ceil(remainingMs / 1000));
-        } else {
-          setCancelCountdown(0);
-        }
+      const createdTime = new Date(booking.createdAt).getTime();
+      const elapsedMs = Date.now() - createdTime;
+      const remainingMs = (3 * 60 * 1000) - elapsedMs;
+      if (remainingMs > 0) {
+        setCancelCountdown(Math.ceil(remainingMs / 1000));
       } else {
-        if (!booking.vendorId || !booking.acceptedAt) {
-          setCancellationTimeLeft(true);
-        } else {
-          const acceptedTime = new Date(booking.acceptedAt).getTime();
-          const elapsedMs = Date.now() - acceptedTime;
-          const allowed = elapsedMs <= 3 * 60 * 1000; // 3 minutes
-          setCancellationTimeLeft(allowed);
-        }
+        setCancelCountdown(0);
       }
     };
 
@@ -1727,25 +1716,14 @@ const BookingDetails = () => {
                       </button>
                     )
                   ) : (
-                    <>
+                    cancelCountdown > 0 && (
                       <button
-                        disabled={booking.vendorId && !cancellationTimeLeft}
                         onClick={handleCancelBooking}
-                        className={`w-full py-4 rounded-2xl font-bold text-sm transition-colors ${(booking.vendorId && !cancellationTimeLeft)
-                          ? 'bg-divider text-secondary-text border border-border-color cursor-not-allowed'
-                          : 'text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
-                          }`}
+                        className="w-full py-4 rounded-2xl font-bold text-sm transition-colors text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 active:scale-95"
                       >
-                        Cancel Booking
+                        Cancel Booking ({formatTime(cancelCountdown)})
                       </button>
-                      {booking.vendorId && (
-                        <p className="text-[11px] text-center font-bold uppercase tracking-wider text-secondary-text">
-                          {cancellationTimeLeft
-                            ? '⚠️ Cancellation only allowed within 3 minutes of acceptance'
-                            : '🚫 Cancellation window expired (exceeded 3 mins)'}
-                        </p>
-                      )}
-                    </>
+                    )
                   )}
                 </div>
               )}

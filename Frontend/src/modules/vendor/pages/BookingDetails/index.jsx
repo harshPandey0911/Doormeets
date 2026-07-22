@@ -385,6 +385,7 @@ export default function BookingDetails() {
   });
 
   const [canCancel, setCanCancel] = useState(false);
+  const [cancelCountdown, setCancelCountdown] = useState(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -645,19 +646,34 @@ export default function BookingDetails() {
     html2pdf().from(invoiceHtml).set(opt).save();
   };
 
+  const formatTime = (seconds) => {
+    if (seconds == null) return '';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     if (!booking?.acceptedAt) {
       setCanCancel(false);
+      setCancelCountdown(null);
       return;
     }
 
     const checkWindow = () => {
       const acceptedTime = new Date(booking.acceptedAt).getTime();
-      const timeDiffMs = Date.now() - acceptedTime;
-      const twoMinutesMs = 2 * 60 * 1000;
-      // Show cancel button if accepted within last 2 minutes and in confirmatory status
+      const elapsedMs = Date.now() - acceptedTime;
+      const remainingMs = (3 * 60 * 1000) - elapsedMs; // 3 minutes window
+      
       const isCancellableStatus = ['confirmed', 'accepted', 'assigned'].includes(booking.status?.toLowerCase());
-      setCanCancel(timeDiffMs < twoMinutesMs && isCancellableStatus);
+      
+      if (remainingMs > 0 && isCancellableStatus) {
+        setCancelCountdown(Math.ceil(remainingMs / 1000));
+        setCanCancel(true);
+      } else {
+        setCancelCountdown(0);
+        setCanCancel(false);
+      }
     };
 
     checkWindow();
@@ -2630,13 +2646,13 @@ export default function BookingDetails() {
                 Cancellation Request Pending Admin Approval
               </div>
             ) : (
-              !['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && (
+              !['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && canCancel && (
                 <button
                   onClick={handleCancelBooking}
                   className="w-full py-2.5 rounded-lg font-bold text-xs text-red-600 border border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
                 >
                   <FiXCircle className="w-4 h-4 text-red-500 animate-pulse" />
-                  {canCancel ? 'Cancel Booking (Direct)' : 'Request Cancellation'}
+                  Cancel Booking ({formatTime(cancelCountdown)})
                 </button>
               )
             )}

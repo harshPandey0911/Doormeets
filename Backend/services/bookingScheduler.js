@@ -365,6 +365,199 @@ class BookingScheduler {
       console.error('[BookingScheduler] Error notifying vendors:', error);
     }
   }
+
+  async broadcastBookingSearch(bookingId) {
+    try {
+      const Booking = require('../models/Booking');
+      const Vendor = require('../models/Vendor');
+      const Service = require('../models/Service');
+      const Category = require('../models/Category');
+      const BookingRequest = require('../models/BookingRequest');
+      const { findNearbyVendors } = require('./locationService');
+      const { createNotification } = require('../controllers/notificationControllers/notificationController');
+      
+      const booking = await Booking.findById(bookingId)
+        .populate('userId')
+        .populate('serviceId');
+
+      if (!booking) {
+        console.error(`[broadcastBookingSearch] Booking ${bookingId} not found`);
+        return false;
+      }
+
+      console.log(`[broadcastBookingSearch] Starting broadcast search for Booking #${booking.bookingNumber}`);
+
+      // Clear any existing PENDING or VIEWED booking requests for this booking
+      await BookingRequest.deleteMany({
+        bookingId: booking._id,
+        status: { $in: ['PENDING', 'VIEWED'] }
+      });
+
+      const service = booking.serviceId;
+      if (!service) {
+        console.error(`[broadcastBookingSearch] Service not found for booking ${booking.bookingNumber}`);
+        return false;
+      }
+
+      let finalCategory = booking.categoryId;
+      if (!finalCategory && service.category) {
+        finalCategory = await Category.findOne({ title: service.category });
+      }
+
+      const categoryIdStr = finalCategory ? finalCategory._id.toString() : '';
+      const serviceCategoryStr = service.category || '';
+      
+      const vendorQuery = {};
+      if (finalCategory) {
+        vendorQuery.categories = { $in: [categoryIdStr] };
+      } else if (service.category) {
+        vendorQuery.service = { $in: [serviceCategoryStr] };
+      }
+      
+      if (booking.isConsultation) {
+        vendorQuery.isConsultant = true;
+      }
+
+      const matchingVendors = await Vendor.find(vendorQuery).select('_id').lean();
+      const qualifiedVendorIds = Array.from(new Set(matchingVendors.map(v => v._id.toString())));
+
+      let nearbyVendors = [];
+      if (qualifiedVendorIds.length > 0) {
+        const bookingLocation = {
+          lat: booking.address?.lat,
+          lng: booking.address?.lng
+        };
+        const vendorFilters = {
+          _id: { $in: qualifiedVendorIds },
+          checkCashLimit: booking.paymentMethod === 'cash',
+          city: booking.address?.city
+        };
+        nearbyVendors = await findNearbyVendors(bookingLocation, 10, vendorFilters);
+      }
+
+      if (nearbyVendors.length === 0) {
+        console.warn(`[broadcastBookingSearch] No nearby vendors found for booking ${booking.bookingNumber}`);
+        booking.status = 'pending_admin';
+        booking.cancellationReason = 'No vendor accepted within time limit. Awaiting admin review.';
+        await booking.save();
+
+        // Save notification in database for all admins
+        try {
+          const User = require('../models/User');
+          const admins = await User.find({ role: 'ADMIN' });
+          
+          const notificationData = {
+            userId: null,
+            vendorId: null,
+            workerId: null,
+            type: 'admin_booking_requested',
+            title: 'Manual Assignment Needed',
+            message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`,
+            priority: 'high',
+            pushData: {
+              type: 'admin_booking_requested',
+              bookingId: booking._id.toString(),
+              link: `/admin/bookings/${booking._id}`
+            }
+          };
+          
+          await Promise.all(
+            admins.map(admin =>
+              createNotification({ ...notificationData, adminId: admin._id })
+            )
+          );
+        } catch (dbNotifErr) {
+          console.error('[broadcastBookingSearch] Failed to save admin notification:', dbNotifErr);
+        }
+
+        // Emit socket notification to admins
+        if (this.io) {
+          this.io.to('all_admins').emit('admin_booking_requested', {
+            bookingId: booking._id.toString(),
+            bookingNumber: booking.bookingNumber,
+            status: 'pending_admin',
+            message: 'Booking request sent to admin for manual assignment.'
+          });
+          this.io.to(`user_${booking.userId?._id || booking.userId}`).emit('booking_updated', {
+            bookingId: booking._id.toString(),
+            status: 'pending_admin',
+            message: 'No online vendors available. Booking request sent to admin for manual assignment.'
+          });
+        }
+        return false;
+      }
+
+      // Group qualified vendors by level/distance (similar wave 1 assignment)
+      const getPriority = (v) => {
+        const cLevel = String(v.currentLevel || '').toUpperCase();
+        if (cLevel === 'L1' || v.level === 1) return 1;
+        if (cLevel === 'L2' || v.level === 2) return 2;
+        return 3;
+      };
+
+      const sortedVendors = nearbyVendors.sort((a, b) => {
+        const pA = getPriority(a);
+        const pB = getPriority(b);
+        if (pA !== pB) return pA - pB;
+        return (a.distance || 0) - (b.distance || 0);
+      });
+
+      const potentialVendorsWithWaves = sortedVendors.map((v) => {
+        return {
+          vendorId: v._id,
+          distance: v.distance || 0,
+          wave: 1
+        };
+      });
+
+      const initialWave = 1;
+      const initialWaveVendorsDetails = potentialVendorsWithWaves.filter(v => v.wave === initialWave);
+      const initialWaveVendorsIds = initialWaveVendorsDetails.map(v => v.vendorId);
+      const initialWaveVendors = sortedVendors.filter(v => initialWaveVendorsIds.some(id => id.toString() === v._id.toString()));
+
+      booking.potentialVendors = potentialVendorsWithWaves.map(v => ({
+        vendorId: v.vendorId,
+        distance: v.distance,
+        wave: v.wave
+      }));
+      booking.currentWave = initialWave;
+      booking.waveStartedAt = new Date();
+      booking.notifiedVendors = initialWaveVendors.map(v => v._id);
+      booking.status = 'searching';
+      booking.expiresAt = new Date(Date.now() + 60 * 1000); // 1 minute search limit
+      await booking.save();
+
+      // Create BookingRequests
+      const bookingRequests = initialWaveVendors.map(vendor => ({
+        bookingId: booking._id,
+        vendorId: vendor._id,
+        status: 'PENDING',
+        wave: initialWave,
+        distance: vendor.distance || null,
+        sentAt: new Date(),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      }));
+
+      await BookingRequest.insertMany(bookingRequests, { ordered: false });
+
+      // Notify vendors via socket and FCM/Push
+      await this.notifyVendors(booking, potentialVendorsWithWaves);
+
+      // Notify user about status change
+      if (this.io) {
+        this.io.to(`user_${booking.userId?._id || booking.userId}`).emit('booking_updated', {
+          bookingId: booking._id.toString(),
+          status: 'searching',
+          message: 'Finding new service providers for your rescheduled slot.'
+        });
+      }
+
+      return true;
+    } catch (err) {
+      console.error('[broadcastBookingSearch] Error:', err);
+      return false;
+    }
+  }
 }
 
 // Singleton instance
