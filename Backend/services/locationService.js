@@ -202,7 +202,8 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
           }));
 
         console.log(`[LocationService] Found ${result.length} matching vendors via Redis path`);
-        return filterReservedVendors(result, newBookingEndTime);
+        const reservedFiltered = filterReservedVendors(result, newBookingEndTime);
+        return await filterConflictVendors(reservedFiltered, filters.scheduledDate, filters.timeSlot, filters.scheduledTime);
       }
     }
 
@@ -253,7 +254,8 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
         });
 
         console.log(`[LocationService] Found ${nearbyVendors.length} vendors using 2dsphere query`);
-        return filterReservedVendors(nearbyVendors, newBookingEndTime);
+        const reservedFiltered = filterReservedVendors(nearbyVendors, newBookingEndTime);
+        return await filterConflictVendors(reservedFiltered, filters.scheduledDate, filters.timeSlot, filters.scheduledTime);
       }
     } catch (geoError) {
       console.warn('[LocationService] 2dsphere query failed, falling back to Haversine:', geoError.message);
@@ -290,7 +292,8 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
 
     const currentLocCount = nearbyVendors.filter(v => v.isUsingCurrentLocation).length;
     console.log(`[LocationService] Found ${nearbyVendors.length} vendors (Online/Current: ${currentLocCount}) using Haversine`);
-    return filterReservedVendors(nearbyVendors, newBookingEndTime);
+    const reservedFiltered = filterReservedVendors(nearbyVendors, newBookingEndTime);
+    return await filterConflictVendors(reservedFiltered, filters.scheduledDate, filters.timeSlot, filters.scheduledTime);
   } catch (error) {
     console.error('Find nearby vendors error:', error);
     return [];
@@ -350,6 +353,72 @@ const findVendorsByCity = async (city, filters = {}, newBookingEndTime = null) =
     console.error('Find vendors by city error:', error);
     return [];
   }
+};
+
+const filterConflictVendors = async (vendors, scheduledDate, timeSlot, scheduledTime) => {
+  if (!scheduledDate || (!timeSlot?.start && !scheduledTime) || !vendors || !vendors.length) {
+    return vendors;
+  }
+
+  const mongoose = require('mongoose');
+  const Booking = mongoose.model('Booking');
+  const Worker = mongoose.model('Worker');
+
+  const startOfDay = new Date(scheduledDate);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(scheduledDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const slotStart = timeSlot?.start;
+
+  const filtered = [];
+  for (const vendor of vendors) {
+    try {
+      // 1. Get online workers count for this vendor
+      const onlineWorkersCount = await Worker.countDocuments({
+        vendorId: vendor._id,
+        status: 'ONLINE',
+        isDeleted: { $ne: true }
+      });
+
+      const capacity = 1 + onlineWorkersCount;
+
+      // 2. Get active bookings count at this slot
+      const query = {
+        vendorId: vendor._id,
+        status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] },
+        scheduledDate: {
+          $gte: startOfDay,
+          $lte: endOfDay
+        }
+      };
+
+      if (slotStart && scheduledTime) {
+        query.$or = [
+          { 'timeSlot.start': slotStart },
+          { scheduledTime: scheduledTime }
+        ];
+      } else if (slotStart) {
+        query['timeSlot.start'] = slotStart;
+      } else {
+        query.scheduledTime = scheduledTime;
+      }
+
+      const activeBookingsCount = await Booking.countDocuments(query);
+
+      if (activeBookingsCount >= capacity) {
+        console.log(`[LocationService] Filtering out vendor ${vendor.name || vendor._id} due to capacity limit at slot ${scheduledTime || slotStart}. Active: ${activeBookingsCount}, Capacity: ${capacity}`);
+        continue;
+      }
+
+      filtered.push(vendor);
+    } catch (err) {
+      console.error(`[LocationService] Error evaluating conflict for vendor ${vendor._id}:`, err);
+      filtered.push(vendor); // fallback: keep vendor in case of error
+    }
+  }
+
+  return filtered;
 };
 
 module.exports = {

@@ -115,6 +115,20 @@ const addWorker = async (req, res) => {
       });
     }
 
+    // Resolve category titles to ObjectIds
+    let serviceCategoryIds = [];
+    if (serviceCategories && serviceCategories.length > 0) {
+      const Category = require('../../models/Category');
+      const validObjectIds = serviceCategories.filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+      const foundCategories = await Category.find({
+        $or: [
+          { title: { $in: serviceCategories } },
+          { _id: { $in: validObjectIds } }
+        ]
+      });
+      serviceCategoryIds = foundCategories.map(c => c._id);
+    }
+
     // Create worker
     worker = await Worker.create({
       name,
@@ -125,7 +139,7 @@ const addWorker = async (req, res) => {
         document: aadharUrl
       },
       vendorId,
-      serviceCategories: serviceCategories || [],
+      serviceCategories: serviceCategoryIds,
       address: address || {},
       status: WORKER_STATUS.ACTIVE
     });
@@ -226,7 +240,17 @@ const updateWorker = async (req, res) => {
     // Update fields
     if (updateData.name) worker.name = updateData.name;
     if (updateData.email !== undefined) worker.email = updateData.email || null;
-    if (updateData.serviceCategories) worker.serviceCategories = updateData.serviceCategories;
+    if (updateData.serviceCategories) {
+      const Category = require('../../models/Category');
+      const validObjectIds = updateData.serviceCategories.filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+      const foundCategories = await Category.find({
+        $or: [
+          { title: { $in: updateData.serviceCategories } },
+          { _id: { $in: validObjectIds } }
+        ]
+      });
+      worker.serviceCategories = foundCategories.map(c => c._id);
+    }
     if (updateData.address) worker.address = { ...worker.address, ...updateData.address };
     if (updateData.status) worker.status = updateData.status;
 
