@@ -214,13 +214,13 @@ const Profile = () => {
     <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
       <Header title="Profile" />
 
-      <main className="px-4 pt-4 pb-6">
+      <main className="px-3.5 pt-2 pb-6">
         {/* Profile Header Card with Phone & Email (Light Orange Theme) */}
         <div
-          className="rounded-3xl p-3 mb-3.5 shadow-xl relative overflow-hidden border border-white/60"
+          className="rounded-md p-2.5 md:p-3.5 mb-2.5 shadow-md relative overflow-hidden border border-white/60"
           style={{
             background: 'linear-gradient(135deg, #FFF5EB 0%, #FFEBD6 100%)',
-            boxShadow: '0 12px 24px rgba(255, 159, 69, 0.1)',
+            boxShadow: '0 8px 18px rgba(255, 159, 69, 0.08)',
           }}
         >
           {/* Decorative Patterns */}
@@ -233,7 +233,7 @@ const Profile = () => {
           />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               {/* Profile Photo - Circle with Rating Below */}
               <div className="flex flex-col items-center flex-shrink-0">
                 <div
@@ -241,10 +241,10 @@ const Profile = () => {
                   style={{
                     background: 'rgba(255, 255, 255, 0.6)',
                     backdropFilter: 'blur(10px)',
-                    boxShadow: '0 6px 12px rgba(255, 159, 69, 0.12), inset 0 2px 4px rgba(255, 255, 255, 0.8)',
+                    boxShadow: '0 4px 8px rgba(255, 159, 69, 0.12), inset 0 2px 4px rgba(255, 255, 255, 0.8)',
                     border: '2px solid white',
-                    width: '60px',
-                    height: '60px',
+                    width: '48px',
+                    height: '48px',
                   }}
                 >
                   {profile.photo ? (
@@ -254,7 +254,7 @@ const Profile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <FiUser className="w-7 h-7 text-orange-500" />
+                    <FiUser className="w-6 h-6 text-orange-500" />
                   )}
                 </div>
                 {/* Star Rating Below Photo */}
@@ -268,22 +268,22 @@ const Profile = () => {
 
               {/* Name and Info */}
               <div className="flex-1 min-w-0 flex flex-col">
-                <h2 className="text-base font-bold text-orange-950 mb-0 break-words tracking-tight leading-tight">{profile.name}</h2>
-                <p className="text-orange-900/70 text-[9px] mb-1 font-bold break-words tracking-wide uppercase">{profile.businessName}</p>
+                <h2 className="text-sm md:text-base font-bold text-orange-950 mb-0 break-words tracking-tight leading-tight">{profile.name}</h2>
+                <p className="text-orange-900/70 text-[9px] mb-0.5 font-bold break-words tracking-wide uppercase">{profile.businessName}</p>
 
                 {/* Phone and Email */}
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <div className="flex items-center gap-1.5">
                     <div className="p-0.5 rounded bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
                       <FiPhone className="w-2.5 h-2.5 text-orange-800" />
                     </div>
-                    <span className="text-[11px] text-orange-950 font-bold tracking-tight">{profile.phone}</span>
+                    <span className="text-[10px] md:text-[11px] text-orange-950 font-bold tracking-tight">{profile.phone}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="p-0.5 rounded bg-white/40 backdrop-blur-sm flex-shrink-0 border border-white/60">
                       <FiMail className="w-2.5 h-2.5 text-orange-800" />
                     </div>
-                    <span className="text-[11px] text-orange-950 font-bold tracking-tight truncate max-w-[140px]">{profile.email}</span>
+                    <span className="text-[10px] md:text-[11px] text-orange-950 font-bold tracking-tight truncate max-w-[140px]">{profile.email}</span>
                   </div>
                 </div>
               </div>
@@ -291,9 +291,9 @@ const Profile = () => {
               {/* Navigate Button */}
               <button
                 onClick={() => navigate(isWorker ? '/worker/profile/details' : '/vendor/profile/details')}
-                className="p-2.5 rounded-xl flex-shrink-0 transition-all duration-500 active:scale-90 group bg-white shadow"
+                className="p-2 rounded-md flex-shrink-0 transition-all duration-300 active:scale-90 group bg-white shadow-xs"
               >
-                <FiArrowRight className="w-4 h-4 text-orange-600 group-hover:translate-x-0.5 transition-transform" />
+                <FiArrowRight className="w-3.5 h-3.5 text-orange-600 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
           </div>
@@ -301,37 +301,37 @@ const Profile = () => {
 
         {/* Three Cards Section - Horizontal */}
         {!isWorker && (
-          <div className="mb-4">
-            <div className="grid grid-cols-3 gap-2.5">
+          <div className="mb-3">
+            <div className="grid grid-cols-3 gap-2">
               {/* Active Jobs */}
               <button
                 onClick={() => navigate('/vendor/jobs')}
-                className="flex flex-col items-center justify-center p-2.5 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
+                className="flex flex-col items-center justify-center p-2 md:p-2.5 rounded-md active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
                   border: '1.5px solid rgba(0, 166, 166, 0.15)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 166, 166, 0.15)';
                   e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
                   e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
                 }}
               >
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center mb-1.5"
+                  className="w-7 h-7 md:w-8 md:h-8 rounded-md flex items-center justify-center mb-1"
                   style={{
                     backgroundColor: hexToRgba(themeColors.button, 0.12),
-                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                    boxShadow: `0 2px 6px ${hexToRgba(themeColors.button, 0.15)}`,
                   }}
                 >
-                  <FiBriefcase className="w-4 h-4" style={{ color: themeColors.button }} />
+                  <FiBriefcase className="w-3.5 h-3.5 md:w-4 md:h-4" style={{ color: themeColors.button }} />
                 </div>
-                <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
+                <span className="text-[10px] md:text-[11px] font-bold text-gray-800 text-center leading-tight">
                   Active Jobs
                 </span>
               </button>
@@ -339,32 +339,32 @@ const Profile = () => {
               {/* Wallet */}
               <button
                 onClick={() => navigate('/vendor/wallet')}
-                className="flex flex-col items-center justify-center p-2.5 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
+                className="flex flex-col items-center justify-center p-2 md:p-2.5 rounded-md active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
-                  boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
                   border: '1.5px solid rgba(0, 166, 166, 0.15)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 166, 166, 0.15)';
                   e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
                   e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
                 }}
               >
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center mb-1.5"
+                  className="w-7 h-7 md:w-8 md:h-8 rounded-md flex items-center justify-center mb-1"
                   style={{
                     backgroundColor: hexToRgba(themeColors.button, 0.12),
-                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                    boxShadow: `0 2px 6px ${hexToRgba(themeColors.button, 0.15)}`,
                   }}
                 >
-                  <FaWallet className="w-4 h-4" style={{ color: themeColors.button }} />
+                  <FaWallet className="w-3.5 h-3.5 md:w-4 md:h-4" style={{ color: themeColors.button }} />
                 </div>
-                <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
+                <span className="text-[10px] md:text-[11px] font-bold text-gray-800 text-center leading-tight">
                   Wallet
                 </span>
               </button>
@@ -372,32 +372,32 @@ const Profile = () => {
               {/* Workers */}
               <button
                 onClick={() => navigate('/vendor/workers')}
-                className="flex flex-col items-center justify-center p-2.5 rounded-2xl active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
+                className="flex flex-col items-center justify-center p-2 md:p-2.5 rounded-md active:scale-95 transition-all duration-300 relative overflow-hidden bg-white"
                 style={{
-                  boxShadow: '0 4px 12px rgba(0, 166, 166, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
                   border: '1.5px solid rgba(0, 166, 166, 0.15)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 166, 166, 0.15), 0 3px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 166, 166, 0.15)';
                   e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.25);
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
                   e.currentTarget.style.borderColor = hexToRgba(themeColors.button, 0.15);
                 }}
               >
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center mb-1.5"
+                  className="w-7 h-7 md:w-8 md:h-8 rounded-md flex items-center justify-center mb-1"
                   style={{
                     backgroundColor: hexToRgba(themeColors.button, 0.12),
-                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
+                    boxShadow: `0 2px 6px ${hexToRgba(themeColors.button, 0.15)}`,
                   }}
                 >
-                  <FiUser className="w-4 h-4" style={{ color: themeColors.button }} />
+                  <FiUser className="w-3.5 h-3.5 md:w-4 md:h-4" style={{ color: themeColors.button }} />
                 </div>
-                <span className="text-[11px] font-bold text-gray-800 text-center leading-tight">
+                <span className="text-[10px] md:text-[11px] font-bold text-gray-800 text-center leading-tight">
                   Workers
                 </span>
               </button>
@@ -406,42 +406,42 @@ const Profile = () => {
         )}
 
         {/* Menu List Section */}
-        <div className="mb-4 space-y-3">
+        <div className="mb-3 space-y-2">
           {menuItems.map((item) => {
             const IconComponent = item.icon;
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
-                className="w-full flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all active:scale-[0.98]"
+                className="w-full flex items-center justify-between p-2.5 md:p-3 bg-white rounded-md shadow-2xs border border-gray-100 hover:border-teal-200 hover:shadow-xs transition-all active:scale-[0.98]"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   {item.customIcon ? (
                     <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors group-hover:bg-teal-50"
+                      className="w-8 h-8 md:w-9 md:h-9 rounded-md flex items-center justify-center shrink-0 transition-colors group-hover:bg-teal-50"
                       style={{
                         backgroundColor: hexToRgba(themeColors.button, 0.1),
                         border: `1px solid ${hexToRgba(themeColors.button, 0.2)}`,
                       }}
                     >
-                      <span className="text-sm font-bold" style={{ color: themeColors.button }}>{item.customIcon}</span>
+                      <span className="text-xs font-bold" style={{ color: themeColors.button }}>{item.customIcon}</span>
                     </div>
                   ) : (
                     IconComponent && (
                       <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
+                        className="w-8 h-8 md:w-9 md:h-9 rounded-md flex items-center justify-center shrink-0 transition-colors"
                         style={{ backgroundColor: hexToRgba(themeColors.button, 0.1) }}
                       >
-                        <IconComponent className="w-6 h-6" style={{ color: themeColors.button }} />
+                        <IconComponent className="w-4 h-4 md:w-4.5 md:h-4.5" style={{ color: themeColors.button }} />
                       </div>
                     )
                   )}
-                  <span className="text-[15px] font-bold text-gray-800 text-left">
+                  <span className="text-xs md:text-sm font-bold text-gray-800 text-left">
                     {item.label}
                   </span>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
-                  <FiChevronRight className="w-5 h-5 text-gray-400" />
+                <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center">
+                  <FiChevronRight className="w-3.5 h-3.5 text-gray-400" />
                 </div>
               </button>
             );
@@ -449,19 +449,19 @@ const Profile = () => {
         </div>
 
         {/* SOS Button */}
-        <div className="mb-3">
+        <div className="mb-2.5">
           <button
             type="button"
             disabled={sosTriggering}
             onClick={handleSOSClick}
-            className="w-full font-semibold py-3.5 rounded-xl active:scale-98 transition-all text-white flex items-center justify-center gap-2 text-sm"
+            className="w-full font-bold py-2.5 md:py-3 rounded-md active:scale-98 transition-all text-white flex items-center justify-center gap-2 text-xs md:text-sm"
             style={{
               backgroundColor: '#DC2626',
-              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)',
+              boxShadow: '0 3px 10px rgba(220, 38, 38, 0.3)',
               cursor: 'pointer'
             }}
           >
-            <span className="text-base">🚨</span>
+            <span className="text-sm">🚨</span>
             {sosTriggering ? 'Sending SOS Alert...' : 'SOS Emergency Alert'}
           </button>
         </div>
@@ -493,21 +493,21 @@ const Profile = () => {
                 navigate('/vendor/login');
               }
             }}
-            className="w-full font-semibold py-3 rounded-xl active:scale-98 transition-all text-white flex items-center justify-center gap-2"
+            className="w-full font-bold py-2.5 md:py-3 rounded-md active:scale-98 transition-all text-white flex items-center justify-center gap-2 text-xs md:text-sm"
             style={{
               backgroundColor: '#EF4444',
-              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+              boxShadow: '0 3px 10px rgba(239, 68, 68, 0.25)',
             }}
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = '#DC2626';
-              e.target.style.boxShadow = '0 6px 16px rgba(239, 68, 68, 0.4)';
+              e.target.style.boxShadow = '0 5px 14px rgba(239, 68, 68, 0.35)';
             }}
             onMouseLeave={(e) => {
               e.target.style.backgroundColor = '#EF4444';
-              e.target.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
+              e.target.style.boxShadow = '0 3px 10px rgba(239, 68, 68, 0.25)';
             }}
           >
-            <FiLogOut className="w-5 h-5" />
+            <FiLogOut className="w-4 h-4" />
             Logout
           </button>
         </div>

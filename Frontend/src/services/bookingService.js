@@ -31,10 +31,13 @@ export const bookingService = {
     // SWR: return stale data immediately if available
     const stale = apiCache.getStale(cacheKey);
     if (stale) {
-      // If TTL expired, silently refresh in background (no loader, no component change)
+      // If TTL expired, silently refresh in background and notify UI
       if (apiCache.isExpired(cacheKey)) {
         api.get(url).then(res => {
-          if (res.data?.success) apiCache.set(cacheKey, res.data, 15);
+          if (res.data?.success) {
+            apiCache.set(cacheKey, res.data, 15);
+            window.dispatchEvent(new CustomEvent('userBookingsUpdated'));
+          }
         }).catch(() => {});
       }
       return stale;

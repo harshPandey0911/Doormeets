@@ -41,50 +41,12 @@ const PublicRoute = ({ children, userType = 'user', redirectTo = null }) => {
           break;
       }
 
-      const token = localStorage.getItem(tokenKey);
-      const userData = localStorage.getItem(dataKey);
+      const token = sessionStorage.getItem(tokenKey) || localStorage.getItem(tokenKey);
+      const refreshToken = sessionStorage.getItem(refreshTokenKey) || localStorage.getItem(refreshTokenKey);
+      const userData = sessionStorage.getItem(dataKey) || localStorage.getItem(dataKey);
 
-      if (token && userData) {
-        try {
-          // Decode JWT token to check expiry and role
-          const parts = token.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1]));
-            const currentTime = Date.now() / 1000;
-
-            // Check if token is expired
-            if (!payload.exp || payload.exp <= currentTime) {
-              // Clear expired tokens
-              localStorage.removeItem(tokenKey);
-              localStorage.removeItem(refreshTokenKey);
-              localStorage.removeItem(dataKey);
-              setIsAuthenticated(false);
-              return;
-            }
-
-            // Check if token role matches expected userType
-            const roleMap = {
-              user: 'user',
-              vendor: 'vendor',
-              worker: 'worker',
-              admin: 'admin'
-            };
-
-            if (payload.role === roleMap[userType]) {
-              setIsAuthenticated(true);
-            } else {
-              // Role mismatch
-              setIsAuthenticated(false);
-            }
-          } else {
-            // Invalid token format
-            setIsAuthenticated(false);
-          }
-        } catch (error) {
-          // Invalid token
-          console.error('Token validation error:', error);
-          setIsAuthenticated(false);
-        }
+      if (token || refreshToken) {
+        setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
       }

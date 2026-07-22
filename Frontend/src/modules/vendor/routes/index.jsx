@@ -105,7 +105,7 @@ const VendorRoutes = () => {
   return (
     <ErrorBoundary>
       {/* Main content area - leaves space for bottom nav when needed */}
-      <div className={shouldShowBottomNav ? "pb-24" : ""}>
+      <div className={shouldShowBottomNav ? "pb-14 md:pb-16" : ""}>
         <Suspense fallback={<LoadingFallback />}>
           <PageTransition>
             <Routes>

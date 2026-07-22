@@ -43,8 +43,8 @@ const StatsCards = memo(({ stats }) => {
   ];
 
   return (
-    <div className="px-4 pt-4">
-      <div className="grid grid-cols-2 gap-3 mb-4">
+    <div className="px-3.5 pt-2">
+      <div className="grid grid-cols-2 gap-2 mb-2">
         {cards.map((card, index) => {
           const isAnimated = typeof card.icon === 'string' && card.icon.endsWith('.gif');
           const IconComponent = !isAnimated ? card.icon : null;
@@ -53,7 +53,7 @@ const StatsCards = memo(({ stats }) => {
             <div
               key={index}
               onClick={card.onClick}
-              className="rounded-2xl p-3 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-300 min-h-[82px] flex flex-col justify-between"
+              className="rounded-md p-2.5 relative overflow-hidden cursor-pointer active:scale-95 transition-all duration-300 min-h-[72px] flex flex-col justify-between"
               style={{
                 background: card.gradient,
                 border: `1.5px solid ${card.accent}15`,
@@ -71,7 +71,7 @@ const StatsCards = memo(({ stats }) => {
 
               {/* Icon - Positioned Absolutely at Top-Right */}
               <div
-                className="absolute right-2 top-2 p-1 rounded-xl flex items-center justify-center"
+                className="absolute right-2 top-2 p-1 rounded-md flex items-center justify-center"
                 style={{
                   background: 'rgba(255, 255, 255, 0.7)',
                   backdropFilter: 'blur(8px)',

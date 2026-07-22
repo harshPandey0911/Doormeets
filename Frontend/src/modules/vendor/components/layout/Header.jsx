@@ -5,8 +5,7 @@ import { motion } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
 import Logo from '../../../../components/common/Logo';
 import api from '../../../../services/api';
-import { vendorDashboardService } from '../../services/dashboardService';
-import { toast } from 'react-hot-toast';
+import NotificationBell from '../../../../modules/user/components/common/NotificationBell';
 
 const Header = memo(({
   title,
@@ -123,16 +122,16 @@ const Header = memo(({
           borderBottom: '1.5px solid rgba(150, 52, 247, 0.15)',
         }}
       >
-        <div className="px-4 py-3 flex items-center justify-between gap-2">
+        <div className="px-3.5 py-1.5 md:py-2.5 flex items-center justify-between gap-2">
           {/* Left: Back button or Logo */}
           <div className="flex items-center gap-1.5">
             {showBack ? (
               <motion.button
                 onClick={handleBack}
-                className="-ml-2 p-2 rounded-full hover:bg-white/30 transition-colors"
+                className="-ml-1.5 p-1.5 rounded-full hover:bg-white/30 transition-colors"
                 whileTap={{ scale: 0.95 }}
               >
-                <FiArrowLeft className="w-5 h-5" style={{ color: themeColors.button }} />
+                <FiArrowLeft className="w-4.5 h-4.5 md:w-5 md:h-5" style={{ color: themeColors.button }} />
               </motion.button>
             ) : (
               <motion.div
@@ -140,38 +139,38 @@ const Header = memo(({
                 onClick={handleLogoClick}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ duration: 0.2 }}
               >
-                <Logo className="h-12 w-auto" />
+                <Logo className="h-8 md:h-10 w-auto" />
               </motion.div>
             )}
-            {showBack && <h1 className="text-lg font-bold text-gray-800 whitespace-nowrap">{title || 'Vendor'}</h1>}
+            {showBack && <h1 className="text-base md:text-lg font-bold text-gray-800 whitespace-nowrap">{title || 'Vendor'}</h1>}
           </div>
 
           {/* Right: Search and Notifications */}
           <div className="flex items-center gap-2">
             {showSearch && (
               <button
-                className="p-2 rounded-full hover:bg-white/30 transition-colors active:scale-95"
+                className="p-1.5 rounded-full hover:bg-white/30 transition-colors active:scale-95"
                 onClick={() => navigate('/vendor/jobs')}
               >
-                <FiSearch className="w-5 h-5" style={{ color: themeColors.button }} />
+                <FiSearch className="w-4.5 h-4.5 md:w-5 md:h-5" style={{ color: themeColors.button }} />
               </button>
             )}
             
             {showOnlineToggle && (
-              <div className="flex items-center gap-2 mr-1">
+              <div className="flex items-center gap-1.5 mr-0.5">
                 <button
                   onClick={handleToggleOnline}
                   disabled={isToggling}
-                  className={`relative w-11 h-6 rounded-full transition-all duration-500 flex items-center px-1 shadow-inner ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
+                  className={`relative w-9 h-5 rounded-full transition-all duration-300 flex items-center px-0.5 shadow-inner ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
                 >
                   <motion.div
-                    animate={{ x: isOnline ? 20 : 0 }}
+                    animate={{ x: isOnline ? 16 : 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className="w-4 h-4 bg-white rounded-full shadow-md flex items-center justify-center"
+                    className="w-4 h-4 bg-white rounded-full shadow-sm flex items-center justify-center"
                   >
                     {isToggling ? (
                       <div className="w-2 h-2 border-2 border-[#9634f7] border-t-transparent rounded-full animate-spin" />
@@ -180,60 +179,23 @@ const Header = memo(({
                     )}
                   </motion.div>
                 </button>
-                <span className="hidden min-[400px]:inline-block text-[9px] font-bold text-gray-500 uppercase tracking-tighter w-14">
-                  {isOnline ? 'Go Offline' : 'Go Online'}
+                <span className="hidden min-[400px]:inline-block text-[9px] font-bold text-gray-500 uppercase tracking-tighter w-12">
+                  {isOnline ? 'Offline' : 'Online'}
                 </span>
               </div>
             )}
 
             {showNotifications && (
-              <motion.div
-                className="relative cursor-pointer"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.button
-                  onClick={handleNotifications}
-                  className="relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.15, rotate: [0, -10, 10, -10, 10, 0] }}
-                    transition={{ duration: 0.5 }}
-                    className="flex items-center justify-center"
-                  >
-                    <img 
-                      src="https://cdn-icons-gif.flaticon.com/8721/8721062.gif" 
-                      alt="Notifications" 
-                      className="w-7 h-7 object-contain"
-                      style={{
-                        mixBlendMode: 'multiply',
-                        filter: count > 0 
-                          ? 'drop-shadow(0 2px 8px rgba(239, 68, 68, 0.4))' 
-                          : 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-                      }}
-                    />
-                  </motion.div>
-                </motion.button>
-                {/* 4. Active Badge (Moved outside for robustness and to prevent clipping) */}
-                {count > 0 && (
-                  <span
-                    className="absolute -top-1.5 -right-1.5 bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center z-20"
-                    style={{
-                      minWidth: '20px',
-                      height: '20px',
-                      boxShadow: '0 3px 8px rgba(239, 68, 68, 0.5), 0 0 0 2px #fff',
-                      border: '2px solid #fff'
-                    }}
-                  >
-                    {count > 9 ? '9+' : count}
-                  </span>
-                )}
-              </motion.div>
+              <NotificationBell
+                notificationCount={count}
+                userType="vendor"
+                onClick={handleNotifications}
+              />
             )}
           </div>
         </div>
       </header>
-      <div className="h-[70px] shrink-0" />
+      <div className="h-[44px] md:h-[50px] shrink-0" />
     </>
   );
 });

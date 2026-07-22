@@ -846,31 +846,31 @@ const BookingDetails = () => {
 
             {/* Service Partner Card — Enhanced */}
             {(booking.workerId || booking.assignedTo || booking.vendorId) && ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done'].includes(booking.status?.toLowerCase()) && (
-              <div className="bg-card-bg rounded-md shadow-sm border border-border-color overflow-hidden">
+              <div className="bg-card-bg rounded-md shadow-xs md:shadow-sm border border-border-color overflow-hidden">
                 {/* Top bar */}
-                <div className="px-5 pt-4 pb-3 flex justify-between items-center border-b border-border-color">
+                <div className="px-3.5 md:px-5 py-2.5 md:py-3 flex justify-between items-center border-b border-border-color bg-light-bg/50">
                   {['journey_started', 'visited', 'in_progress'].includes(booking.status?.toLowerCase()) ? (
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-2.5 w-2.5 relative">
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <span className="flex h-2 w-2 relative">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                       </span>
-                      <p className="text-xs font-bold text-green-600 tracking-wider">LIVE TRACKING ACTIVE</p>
+                      <p className="text-[10px] md:text-xs font-bold text-green-600 tracking-wider">LIVE TRACKING ACTIVE</p>
                     </div>
                   ) : (
-                    <p className="text-xs font-bold text-secondary-text tracking-wider uppercase">Your Professional</p>
+                    <p className="text-[10px] md:text-xs font-bold text-secondary-text tracking-wider uppercase">Your Professional</p>
                   )}
                   <button
                     onClick={() => navigate(`/user/booking/${booking._id || booking.id}/track`)}
-                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                    className="text-[10px] md:text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                   >
                     Map View <FiChevronRight />
                   </button>
                 </div>
 
                 {/* Provider Info */}
-                <div className="px-5 py-4 flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-[4px] overflow-hidden bg-divider border border-border-color shrink-0">
+                <div className="px-3.5 md:px-5 py-3 md:py-4 flex items-center gap-3 md:gap-4">
+                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-md overflow-hidden bg-divider border border-border-color shrink-0 flex items-center justify-center">
                     {(booking.workerId?.profileImage || booking.workerId?.profilePhoto || booking.assignedTo?.profileImage || booking.assignedTo?.profilePhoto || booking.vendorId?.profileImage || booking.vendorId?.profilePhoto) ? (
                       <>
                         <img
@@ -879,29 +879,29 @@ const BookingDetails = () => {
                           className="w-full h-full object-cover"
                           onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.querySelector('.fallback-icon').style.display = 'block'; }}
                         />
-                        <FiUser className="w-7 h-7 text-secondary-text m-auto mt-3 fallback-icon hidden" />
+                        <FiUser className="w-5 h-5 md:w-7 md:h-7 text-secondary-text m-auto fallback-icon hidden" />
                       </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <FiUser className="w-7 h-7 text-secondary-text" />
+                        <FiUser className="w-5 h-5 md:w-7 md:h-7 text-secondary-text" />
                       </div>
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-dark-text text-base truncate">
+                    <h3 className="font-semibold md:font-bold text-dark-text text-sm md:text-base truncate">
                       {booking.workerId?.name || booking.assignedTo?.name || booking.vendorId?.name || 'Service Partner'}
                     </h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <div className="flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded-md border border-yellow-500/20">
+                    <div className="flex items-center gap-1.5 mt-0.5 md:mt-1">
+                      <div className="flex items-center gap-1 bg-yellow-500/10 px-1.5 md:px-2 py-0.5 rounded-md border border-yellow-500/20">
                         <FiStar className="w-3 h-3 text-yellow-500 fill-current" />
-                        <span className="text-xs font-bold text-yellow-500">
+                        <span className="text-[10px] md:text-xs font-bold text-yellow-500">
                           {(booking.workerId?.rating || booking.assignedTo?.rating || booking.vendorId?.rating || 0) > 0
                             ? (booking.workerId?.rating || booking.assignedTo?.rating || booking.vendorId?.rating).toFixed(1)
                             : 'New'}
                         </span>
                       </div>
-                      <span className="text-xs text-secondary-text font-medium">• Verified</span>
+                      <span className="text-[10px] md:text-xs text-secondary-text font-medium">• Verified</span>
                     </div>
                   </div>
 
@@ -914,9 +914,9 @@ const BookingDetails = () => {
                       return (
                         <a
                           href={`tel:${vendorPhone}`}
-                          className="w-10 h-10 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center hover:bg-green-500/20 transition-colors active:scale-95 border border-green-500/20"
+                          className="w-9 h-9 md:w-11 md:h-11 bg-green-500/10 text-green-500 rounded-md flex items-center justify-center hover:bg-green-500/20 transition-colors active:scale-95 border border-green-500/20"
                         >
-                          <FiPhone className="w-5 h-5" />
+                          <FiPhone className="w-4 h-4 md:w-5 md:h-5" />
                         </a>
                       );
                     }
@@ -924,11 +924,11 @@ const BookingDetails = () => {
                     return (
                       <a
                         href={`tel:${carePhone}`}
-                        className="flex flex-col items-center gap-0.5 w-12 h-12 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center hover:bg-amber-500/20 transition-colors active:scale-95 border border-amber-500/20"
+                        className="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 md:px-3 md:py-2 bg-amber-500/10 text-amber-600 rounded-md hover:bg-amber-500/20 transition-colors active:scale-95 border border-amber-500/20"
                         title="Customer Care"
                       >
-                        <FiPhone className="w-4 h-4" />
-                        <span className="text-[8px] font-bold uppercase tracking-wide leading-none">Care</span>
+                        <FiPhone className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">CARE</span>
                       </a>
                     );
                   })()}

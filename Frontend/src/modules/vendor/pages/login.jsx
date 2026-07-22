@@ -40,15 +40,15 @@ const VendorLogin = () => {
   // Auto-focus and session restore logic
   useEffect(() => {
     // If already logged in, redirect immediately to dashboard instead of asking for credentials again
-    const workerToken = localStorage.getItem('workerAccessToken');
-    const vendorToken = localStorage.getItem('vendorAccessToken');
+    const workerToken = localStorage.getItem('workerAccessToken') || sessionStorage.getItem('workerAccessToken');
+    const vendorToken = localStorage.getItem('vendorAccessToken') || sessionStorage.getItem('vendorAccessToken');
     
     if (workerToken) {
-      navigate('/worker', { replace: true });
+      navigate('/worker/dashboard', { replace: true });
       return;
     }
     if (vendorToken) {
-      navigate('/vendor', { replace: true });
+      navigate('/vendor/dashboard', { replace: true });
       return;
     }
 

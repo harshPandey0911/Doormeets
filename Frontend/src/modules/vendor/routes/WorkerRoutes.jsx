@@ -59,7 +59,7 @@ const WorkerRoutes = () => {
 
   return (
     <ErrorBoundary>
-      <div className={shouldShowBottomNav ? "pb-24" : ""}>
+      <div className={shouldShowBottomNav ? "pb-14 md:pb-16" : ""}>
         <Suspense fallback={<LoadingFallback />}>
           <PageTransition>
             <Routes>

@@ -8,7 +8,7 @@ import { apiCache } from '../../../../utils/apiCache';
 
 const NOTIF_CACHE_KEY = 'user:notifications:unread';
 
-const NotificationBell = ({ notificationCount = 0 }) => {
+const NotificationBell = ({ notificationCount = 0, onClick, targetUrl, userType = 'user' }) => {
   const navigate = useNavigate();
   const bellRef = useRef(null);
   const bellButtonRef = useRef(null);
@@ -25,18 +25,23 @@ const NotificationBell = ({ notificationCount = 0 }) => {
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
-        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        const isVendor = userType === 'vendor';
+        const tokenKey = isVendor ? 'vendorAccessToken' : 'accessToken';
+        const token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
         if (!token) return;
 
+        const notifCacheKey = isVendor ? 'vendor:notifications:unread' : NOTIF_CACHE_KEY;
+        const notifApiUrl = isVendor ? '/notifications/vendor' : '/notifications/user';
+
         // SWR: show stale count immediately
-        const stale = apiCache.getStale(NOTIF_CACHE_KEY);
+        const stale = apiCache.getStale(notifCacheKey);
         if (stale !== null && typeof stale === 'number') {
           setCount(stale);
           // If expired, refresh silently in background
-          if (apiCache.isExpired(NOTIF_CACHE_KEY)) {
-            api.get('/notifications/user').then(res => {
+          if (apiCache.isExpired(notifCacheKey)) {
+            api.get(notifApiUrl).then(res => {
               if (res.data?.success && typeof res.data.unreadCount === 'number') {
-                apiCache.set(NOTIF_CACHE_KEY, res.data.unreadCount, 30);
+                apiCache.set(notifCacheKey, res.data.unreadCount, 30);
                 setCount(res.data.unreadCount); // update only the badge count
               }
             }).catch(() => {});
@@ -45,9 +50,9 @@ const NotificationBell = ({ notificationCount = 0 }) => {
         }
 
         // First load — fetch normally
-        const res = await api.get('/notifications/user');
+        const res = await api.get(notifApiUrl);
         if (res.data?.success && typeof res.data.unreadCount === 'number') {
-          apiCache.set(NOTIF_CACHE_KEY, res.data.unreadCount, 30);
+          apiCache.set(notifCacheKey, res.data.unreadCount, 30);
           setCount(res.data.unreadCount);
         }
       } catch (error) {
@@ -58,7 +63,20 @@ const NotificationBell = ({ notificationCount = 0 }) => {
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [userType]);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (onClick) {
+      onClick(e);
+    } else if (targetUrl) {
+      navigate(targetUrl);
+    } else if (userType === 'vendor') {
+      navigate('/vendor/notifications');
+    } else {
+      navigate('/user/notifications');
+    }
+  };
 
   return (
     <div
@@ -67,10 +85,7 @@ const NotificationBell = ({ notificationCount = 0 }) => {
       style={{
         margin: '2px'
       }}
-      onClick={(e) => {
-        e.stopPropagation();
-        navigate('/user/notifications');
-      }}
+      onClick={handleClick}
       onMouseEnter={() => {
         if (bellButtonRef.current && bellRef.current) {
           const btn = bellButtonRef.current.querySelector('button');
@@ -118,12 +133,12 @@ const NotificationBell = ({ notificationCount = 0 }) => {
       {/* 4. Active Badge (Moved outside for robustness and to prevent clipping) */}
       {count > 0 && (
         <span
-          className="absolute -top-1.5 -right-1.5 bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center z-20"
+          className="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-red-600 text-white text-[8px] md:text-[9px] font-extrabold rounded-full flex items-center justify-center z-20 px-0.5"
           style={{
-            minWidth: '20px',
-            height: '20px',
-            boxShadow: '0 3px 8px rgba(239, 68, 68, 0.5)',
-            border: '2px solid var(--background)'
+            minWidth: '16px',
+            height: '16px',
+            boxShadow: '0 2px 6px rgba(239, 68, 68, 0.45)',
+            border: '1.5px solid var(--background, #fff)'
           }}
         >
           {count > 9 ? '9+' : count}

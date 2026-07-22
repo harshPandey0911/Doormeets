@@ -77,20 +77,27 @@ const MyBookings = () => {
     let cancelled = false;
 
     try {
-      const params = {};
-      if (currentFilter !== 'all') {
-        params.status = currentFilter;
+      const params = { limit: 100 };
+      if (currentFilter === 'confirmed') {
+        params.status = 'confirmed,assigned,pending_admin';
+      } else if (currentFilter === 'in-progress') {
+        params.status = 'in_progress,journey_started,visited,awaiting_payment,work_done';
+      } else if (currentFilter === 'completed') {
+        params.status = 'completed';
+      } else if (currentFilter === 'cancelled') {
+        params.status = 'cancelled,rejected';
       }
-      
+
       const queryParams = new URLSearchParams();
       if (params.status) queryParams.append('status', params.status);
+      if (params.limit) queryParams.append('limit', params.limit);
       const cacheKey = `user:bookings:${queryParams.toString()}`;
       const hasCached = apiCache.get(cacheKey);
 
       if (!hasCached) {
         setLoading(true);
       }
-      
+
       // Fetch Service Bookings
       const response = await bookingService.getUserBookings(params);
 
@@ -140,11 +147,9 @@ const MyBookings = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // When filter changes: update filterRef, clear stale bookings, and reload
+  // When filter changes: update filterRef and reload
   useEffect(() => {
     filterRef.current = filter;
-    setBookings([]);
-    setLoading(true);
     loadBookings();
 
     // Listen for real-time updates

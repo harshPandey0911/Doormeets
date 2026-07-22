@@ -226,22 +226,22 @@ const Wallet = () => {
       <main className="px-4 py-6 space-y-6">
         
         {/* Earnings Chart Section */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-md p-4 md:p-5 shadow-2xs border border-gray-100">
+          <div className="flex justify-between items-center mb-5">
             <div>
-              <h2 className="text-gray-800 font-bold text-lg">This Week's Earnings</h2>
-              <p className="text-gray-500 text-sm">Last 7 Days</p>
+              <h2 className="text-gray-800 font-bold text-base md:text-lg">This Week's Earnings</h2>
+              <p className="text-gray-500 text-xs">Last 7 Days</p>
             </div>
             <div className="text-right">
-              <h2 className="text-2xl font-black text-gray-900">{(displayCredits + (wallet.totalCashCollected / 10)).toLocaleString()} <span className="text-sm font-bold text-gray-500">Credits</span></h2>
+              <h2 className="text-xl md:text-2xl font-black text-gray-900">{(displayCredits + (wallet.totalCashCollected / 10)).toLocaleString()} <span className="text-xs font-bold text-gray-500">Credits</span></h2>
             </div>
           </div>
 
           {/* Simple CSS Bar Chart */}
-          <div className="flex items-end justify-between h-32 mt-4 px-2">
+          <div className="flex items-end justify-between h-28 md:h-32 mt-3 px-2">
             {barChartData.map((data, idx) => (
-              <div key={idx} className="flex flex-col items-center gap-2 h-full">
-                <div className="w-8 bg-blue-100 rounded-t-md relative group flex flex-col justify-end h-full">
+              <div key={idx} className="flex flex-col items-center gap-1.5 h-full">
+                <div className="w-6 md:w-8 bg-blue-100 rounded-t-md relative group flex flex-col justify-end h-full">
                   <div 
                     className="w-full bg-blue-600 rounded-t-md transition-all duration-500" 
                     style={{ height: data.height }}
@@ -251,77 +251,77 @@ const Wallet = () => {
                     {data.amount} Credits
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-gray-400">{data.day}</span>
+                <span className="text-[10px] md:text-xs font-semibold text-gray-400">{data.day}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-md p-5 md:p-6 shadow-md text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
           
           <div className="flex justify-between items-start relative z-10">
             <div>
-              <p className="text-blue-100 font-semibold mb-1 text-sm uppercase tracking-wider">Credits Balance</p>
+              <p className="text-blue-100 font-semibold mb-1 text-xs uppercase tracking-wider">Credits Balance</p>
               <div className="flex items-baseline gap-1">
-                <h2 className="text-4xl font-black">{displayCredits}</h2>
-                <span className="text-blue-200 font-medium">Credits</span>
+                <h2 className="text-3xl md:text-4xl font-black">{displayCredits}</h2>
+                <span className="text-blue-200 font-medium text-xs md:text-sm">Credits</span>
               </div>
-              <p className="text-xs text-blue-200 mt-1">1 Credit = ₹10</p>
+              <p className="text-[10px] text-blue-200 mt-0.5">1 Credit = ₹10</p>
             </div>
             
             <div 
               onClick={() => navigate('/vendor/wallet/credit-history')}
-              className="bg-white/20 p-3 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition"
+              className="bg-white/20 p-2.5 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition"
               title="View Credit History"
             >
-              <FiArrowRight className="w-6 h-6 text-white" />
+              <FiArrowRight className="w-5 h-5 text-white" />
             </div>
           </div>
           
           {rawCredits > 0 ? (
             <button
               onClick={() => navigate('/vendor/wallet/withdraw')}
-              className="mt-6 w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white py-2.5 rounded-lg font-bold text-sm transition-colors shadow-sm backdrop-blur-sm"
+              className="mt-5 w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white py-2.5 rounded-md font-bold text-xs md:text-sm transition-colors shadow-2xs backdrop-blur-sm"
             >
               Withdraw Funds
             </button>
           ) : (
-            <div className="mt-6 text-blue-100 text-[11px] font-semibold text-center border-t border-white/20 pt-2">
+            <div className="mt-5 text-blue-100 text-[11px] font-semibold text-center border-t border-white/20 pt-2">
               Complete online jobs to earn withdrawable credits!
             </div>
           )}
         </div>
 
         {/* Amount Due to Admin (COD) */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-red-100">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-gray-800 font-bold text-lg">Pending to Admin</h2>
+        <div className="bg-white rounded-md p-4 md:p-5 shadow-2xs border border-red-100">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-gray-800 font-bold text-base md:text-lg">Pending to Admin</h2>
           </div>
           
-          <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+          <div className="bg-red-50 rounded-md p-3.5 border border-red-100">
             <div className="flex justify-between items-center mb-3">
               <div>
-                <p className="text-xs text-red-600 font-semibold uppercase">Total Dues (COD)</p>
+                <p className="text-[10px] text-red-600 font-semibold uppercase">Total Dues (COD)</p>
                 <div className="flex items-baseline gap-1">
-                  <h3 className="text-2xl font-black text-red-700">{wallet.dues / 10}</h3>
-                  <span className="text-sm font-bold text-red-600">Credits</span>
+                  <h3 className="text-xl md:text-2xl font-black text-red-700">{wallet.dues / 10}</h3>
+                  <span className="text-xs font-bold text-red-600">Credits</span>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                <FiArrowDown className="w-5 h-5 text-red-600" />
+              <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-red-100 flex items-center justify-center">
+                <FiArrowDown className="w-4 h-4 text-red-600" />
               </div>
             </div>
             
             {wallet.dues > 0 ? (
               <button
                 onClick={() => navigate('/vendor/wallet/settle')}
-                className="w-full bg-red-600 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-red-700 transition-colors shadow-sm"
+                className="w-full bg-red-600 text-white py-2.5 rounded-md font-bold text-xs md:text-sm hover:bg-red-700 transition-colors shadow-2xs"
               >
                 Pay Dues Now
               </button>
             ) : (
-              <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-lg text-sm font-bold">
+              <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded-md text-xs md:text-sm font-bold">
                 <FiCheckCircle />
                 No pending dues
               </div>
@@ -329,9 +329,8 @@ const Wallet = () => {
           </div>
         </div>
 
-
         {/* Filter Buttons */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 mb-3 overflow-x-auto pb-2 scrollbar-hide">
           {[
             { id: 'all', label: 'All' },
             { id: 'cash_collected', label: 'Cash Collected' },
@@ -343,7 +342,7 @@ const Wallet = () => {
             <button
               key={filterOption.id}
               onClick={() => setFilter(filterOption.id)}
-              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all ${filter === filterOption.id
+              className={`px-3.5 py-1.5 rounded-md font-bold text-xs whitespace-nowrap transition-all ${filter === filterOption.id
                 ? 'text-white'
                 : 'bg-white text-gray-700'
                 }`}
@@ -351,10 +350,10 @@ const Wallet = () => {
                 filter === filterOption.id
                   ? {
                     background: themeColors.button,
-                    boxShadow: `0 2px 8px ${themeColors.button}40`,
+                    boxShadow: `0 2px 6px ${themeColors.button}33`,
                   }
                   : {
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
                   }
               }
             >
@@ -365,22 +364,22 @@ const Wallet = () => {
 
         {/* Transactions/Ledger */}
         <div>
-          <h3 className="font-bold text-gray-800 mb-4">Transaction History</h3>
+          <h3 className="font-bold text-gray-800 text-sm md:text-base mb-3">Transaction History</h3>
           {transactions.length === 0 ? (
-            <div className="bg-white rounded-xl p-8 text-center shadow-md">
-              <FiDollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-600 font-semibold mb-2">No transactions yet</p>
-              <p className="text-sm text-gray-500">Your ledger will appear here</p>
+            <div className="bg-white rounded-md p-6 text-center shadow-2xs border border-gray-100">
+              <FiDollarSign className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-gray-700 font-bold text-sm mb-1">No transactions yet</p>
+              <p className="text-xs text-gray-500">Your ledger will appear here</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {transactions.map((txn) => {
                 const isIncentive = txn.type === 'credit';
                 return (
                   <div
                     key={txn._id}
                     onClick={() => setExpandedTxn(expandedTxn === txn._id ? null : txn._id)}
-                    className="bg-white rounded-xl p-4 shadow-md border-l-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="bg-white rounded-md p-3.5 shadow-2xs border-l-4 cursor-pointer hover:bg-gray-50 transition-colors"
                     style={{
                       borderLeftColor:
                         txn.type === 'cash_collected' ? '#DC2626' :
@@ -393,7 +392,7 @@ const Wallet = () => {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center"
+                        className="w-10 h-10 md:w-11 md:h-11 rounded-md flex items-center justify-center"
                         style={{
                           background:
                             txn.type === 'cash_collected' ? '#FEE2E2' :
@@ -408,23 +407,23 @@ const Wallet = () => {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-bold text-gray-900 text-sm">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className="font-bold text-gray-900 text-xs md:text-sm">
                             {getTransactionLabel(txn)}
                           </p>
-                          <p className={`text-lg font-bold whitespace-nowrap flex-shrink-0 ml-2 text-right ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type)
+                          <p className={`text-base font-bold whitespace-nowrap flex-shrink-0 ml-2 text-right ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type)
                             ? 'text-red-600'
                             : 'text-green-600'
                             }`}>
-                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}{(Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-xs">Credits</span>
+                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}{(Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-[10px]">Credits</span>
                           </p>
                         </div>
 
-                        <p className="text-xs text-gray-600 truncate mb-1">{txn.description}</p>
+                        <p className="text-[11px] text-gray-600 truncate mb-1">{txn.description}</p>
 
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">{formatDate(txn.createdAt)}</span>
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${txn.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          <span className="text-[10px] text-gray-400">{formatDate(txn.createdAt)}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${txn.status === 'completed' ? 'bg-green-100 text-green-700' :
                             txn.status === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'
                             }`}>
                             {txn.status}
@@ -438,13 +437,13 @@ const Wallet = () => {
 
                     {/* Expanded Content */}
                     {expandedTxn === txn._id && txn.bookingId && (
-                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-                        <p className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2">Booking Details</p>
-                        <div className="bg-gray-50 rounded-lg p-3 space-y-1">
-                          <p className="text-sm"><span className="text-gray-500">Booking ID:</span> <span className="font-semibold text-gray-900">{txn.bookingId.bookingNumber}</span></p>
-                          <p className="text-sm"><span className="text-gray-500">Service:</span> <span className="font-semibold text-gray-900">{txn.bookingId.serviceName}</span></p>
+                      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                        <p className="text-[10px] font-bold text-gray-800 uppercase tracking-wider mb-1">Booking Details</p>
+                        <div className="bg-gray-50 rounded-md p-2.5 space-y-1">
+                          <p className="text-xs"><span className="text-gray-500">Booking ID:</span> <span className="font-semibold text-gray-900">{txn.bookingId.bookingNumber}</span></p>
+                          <p className="text-xs"><span className="text-gray-500">Service:</span> <span className="font-semibold text-gray-900">{txn.bookingId.serviceName}</span></p>
                           {txn.bookingId.scheduledDate && (
-                            <p className="text-sm"><span className="text-gray-500">Scheduled Date:</span> <span className="font-semibold text-gray-900">{formatDate(txn.bookingId.scheduledDate)}</span></p>
+                            <p className="text-xs"><span className="text-gray-500">Scheduled Date:</span> <span className="font-semibold text-gray-900">{formatDate(txn.bookingId.scheduledDate)}</span></p>
                           )}
                         </div>
                       </div>

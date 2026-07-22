@@ -119,17 +119,17 @@ const CreditPurchase = () => {
         <h1 className="text-xl font-bold text-gray-800">Credits Recharge</h1>
       </div>
 
-      <div className="px-4 py-6">
-        <p className="text-gray-600 mb-6 font-medium">Recharge amount select karein. Is se aapko platform pe services lene mein madad milegi.</p>
+      <div className="px-3.5 py-4">
+        <p className="text-gray-600 mb-4 text-xs md:text-sm font-medium">Recharge amount select karein. Is se aapko platform pe services lene mein madad milegi.</p>
         
         {loading ? (
           <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
         ) : packages.length === 0 ? (
-          <div className="text-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-gray-500">No packages available at the moment.</p>
+          <div className="text-center p-6 bg-white rounded-md border border-gray-100 shadow-2xs">
+            <p className="text-gray-500 text-xs">No packages available at the moment.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {packages.map((pkg) => {
               const gstAmount = (pkg.price * gst) / 100;
               const totalAmount = pkg.price + gstAmount;
@@ -137,22 +137,22 @@ const CreditPurchase = () => {
               return (
                 <div 
                   key={pkg._id}
-                  className="bg-white rounded-2xl p-4 cursor-pointer transition-all border-2 relative flex flex-col border-gray-100 hover:border-gray-300 shadow-sm"
+                  className="bg-white rounded-md p-3.5 cursor-pointer transition-all border border-gray-100 hover:border-gray-300 shadow-2xs flex flex-col justify-between"
                 >
 
-                  <h3 className="font-bold text-gray-800 mb-1">{pkg.name}</h3>
+                  <h3 className="font-bold text-gray-800 mb-1 text-xs md:text-sm">{pkg.name}</h3>
                   <div className="flex items-end gap-1 mb-2">
-                    <span className="text-2xl font-black text-blue-600">{pkg.creditsAmount}</span>
-                    <span className="text-xs font-semibold text-blue-600/70 mb-1">Credits</span>
+                    <span className="text-xl md:text-2xl font-black text-blue-600">{pkg.creditsAmount}</span>
+                    <span className="text-[10px] font-bold text-blue-600/70 mb-0.5">Credits</span>
                   </div>
-                  <div className="mt-auto pt-3 border-t border-gray-100 space-y-1">
+                  <div className="mt-auto pt-2 border-t border-gray-100">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePurchase(pkg);
                       }}
                       disabled={processingPackageId === pkg._id}
-                      className="w-full mt-3 py-2 rounded-xl text-sm font-bold transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50"
+                      className="w-full mt-2 py-1.5 rounded-md text-xs font-bold transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50"
                     >
                       {processingPackageId === pkg._id ? 'Processing...' : 'Add'}
                     </button>

@@ -63,23 +63,23 @@ const CreditHistory = () => {
         </div>
         <button 
           onClick={() => navigate('/vendor/wallet/credit-purchase')}
-          className="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 shadow hover:bg-blue-700"
+          className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md font-bold flex items-center gap-1 shadow-xs hover:bg-blue-700"
         >
-          <FiPlus className="w-4 h-4" /> Add
+          <FiPlus className="w-3.5 h-3.5" /> Add
         </button>
       </div>
 
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-3.5 py-4 space-y-4">
         
         {/* Tabs */}
-        <div className="flex bg-white rounded-full p-1 shadow-sm border border-gray-100 overflow-x-auto scrollbar-hide">
+        <div className="flex bg-white rounded-md p-1 shadow-2xs border border-gray-100 overflow-x-auto scrollbar-hide">
           {['All', 'Added', 'Deducted'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 px-4 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+              className={`flex-1 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === tab 
-                  ? 'bg-blue-600 text-white shadow-md' 
+                  ? 'bg-blue-600 text-white shadow-xs' 
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -89,7 +89,7 @@ const CreditHistory = () => {
         </div>
 
         {/* History List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-md shadow-2xs border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
           ) : history.length === 0 ? (

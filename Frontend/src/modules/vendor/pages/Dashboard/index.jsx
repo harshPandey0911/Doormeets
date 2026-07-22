@@ -745,9 +745,9 @@ const Dashboard = memo(() => {
         )}
 
         {/* Vendor Header Welcome & Level Badge Card */}
-        <div className="px-4 pt-4">
+        <div className="px-3.5 pt-2.5">
           <div
-            className="rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden border border-white/10"
+            className="rounded-md p-3 md:p-4 flex items-center justify-between shadow-md relative overflow-hidden border border-white/10"
             style={{
               background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
             }}
@@ -756,17 +756,17 @@ const Dashboard = memo(() => {
             <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2.5 relative z-10">
               {/* Profile Image / Initials */}
               {vendorProfile.photo ? (
                 <img
                   src={vendorProfile.photo}
                   alt={vendorProfile.name}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/30 shadow-md"
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-purple-500/30 shadow-md"
                 />
               ) : (
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg select-none border-2 border-purple-500/30 shadow-md text-white"
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-base md:text-lg select-none border-2 border-purple-500/30 shadow-md text-white"
                   style={{
                     background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)'
                   }}
@@ -776,10 +776,10 @@ const Dashboard = memo(() => {
               )}
 
               <div>
-                <h2 className="text-base font-black text-white leading-tight">
+                <h2 className="text-sm md:text-base font-black text-white leading-tight">
                   {vendorProfile.businessName || vendorProfile.name}
                 </h2>
-                <p className="text-[11px] font-semibold text-purple-300/80 uppercase tracking-wider mt-0.5">
+                <p className="text-[10px] md:text-[11px] font-semibold text-purple-300/80 uppercase tracking-wider mt-0.5">
                   Partner ID: DM-{String(vendorProfile.name.slice(0, 3)).toUpperCase()}-{stats.level}
                 </p>
               </div>
@@ -789,7 +789,7 @@ const Dashboard = memo(() => {
             <div className="flex items-center relative z-10 shrink-0">
               {/* Performance Level Badge */}
               <span
-                className="text-[11px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider text-white shadow-md animate-pulse"
+                className="text-[10px] md:text-[11px] font-black px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-md uppercase tracking-wider text-white shadow-md animate-pulse"
                 style={{
                   background: stats.level === 1
                     ? 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)' // Gold for Level 1
@@ -812,16 +812,16 @@ const Dashboard = memo(() => {
 
         {/* Banners Media Carousel */}
         {banners.length > 0 && (
-          <div className="px-4 pt-4">
+          <div className="px-3.5 pt-2">
             <div
               ref={bannerContainerRef}
-              className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory py-2"
+              className="flex gap-3 overflow-x-auto scrollbar-none snap-x snap-mandatory py-1"
             >
               {banners.map((b) => (
                 <div
                   key={b._id}
                   onClick={b.mediaType === 'video' ? undefined : () => handleBannerClick(b)}
-                  className="w-full flex-shrink-0 h-40 md:h-64 rounded-2xl overflow-hidden shadow-md snap-start cursor-pointer border border-white/10 hover:shadow-lg transition-shadow relative"
+                  className="w-full flex-shrink-0 h-36 md:h-64 rounded-md overflow-hidden shadow-md snap-start cursor-pointer border border-white/10 hover:shadow-lg transition-shadow relative"
                   style={{ backgroundColor: b.bgColor || '#1e293b' }}
                 >
                   {b.mediaType === 'video' ? (
@@ -885,7 +885,7 @@ const Dashboard = memo(() => {
             <div className="grid grid-cols-2 gap-2.5">
               {/* Completed Jobs Card */}
               <div
-                className="rounded-xl p-2.5 relative overflow-hidden transition-all duration-300 hover:shadow-md group flex flex-col justify-between min-h-[72px]"
+                className="rounded-md p-2.5 relative overflow-hidden transition-all duration-300 hover:shadow-md group flex flex-col justify-between min-h-[72px]"
                 style={{
                   background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
                   border: '1px solid rgba(16, 185, 129, 0.1)',
@@ -893,7 +893,7 @@ const Dashboard = memo(() => {
               >
                 <div className="relative z-10 flex flex-col h-full justify-between space-y-1">
                   <div className="flex items-center justify-between">
-                    <div className="p-1 rounded-lg bg-white shadow-sm border border-green-100 group-hover:scale-105 transition-transform duration-300">
+                    <div className="p-1 rounded-md bg-white shadow-sm border border-green-100 group-hover:scale-105 transition-transform duration-300">
                       <FiCheckCircle className="w-3.5 h-3.5 text-green-600" />
                     </div>
                     <span className="text-[7.5px] font-black text-green-700 bg-green-100 px-1.5 py-0.2 rounded-full uppercase tracking-normal">
@@ -915,7 +915,7 @@ const Dashboard = memo(() => {
 
               {/* Rating Card */}
               <div
-                className="rounded-xl p-2.5 relative overflow-hidden transition-all duration-300 hover:shadow-md group flex flex-col justify-between min-h-[72px]"
+                className="rounded-md p-2.5 relative overflow-hidden transition-all duration-300 hover:shadow-md group flex flex-col justify-between min-h-[72px]"
                 style={{
                   background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
                   border: '1px solid rgba(245, 158, 11, 0.1)',
@@ -923,7 +923,7 @@ const Dashboard = memo(() => {
               >
                 <div className="relative z-10 flex flex-col h-full justify-between space-y-1">
                   <div className="flex items-center justify-between">
-                    <div className="p-1 rounded-lg bg-white shadow-sm border border-amber-100 group-hover:scale-105 transition-transform duration-300">
+                    <div className="p-1 rounded-md bg-white shadow-sm border border-amber-100 group-hover:scale-105 transition-transform duration-300">
                       <FiTrendingUp className="w-3.5 h-3.5 text-amber-600" />
                     </div>
                     <div className="flex items-center gap-0.5 text-amber-600">
@@ -947,107 +947,7 @@ const Dashboard = memo(() => {
             </div>
           </div>
 
-          {/* Recent Jobs - List View */}
-          <div>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <h2 className="text-base font-bold text-gray-800">Active Jobs</h2>
-              {recentJobs.length > 0 && (
-                <button
-                  onClick={() => navigate('/vendor/jobs')}
-                  className="px-3 py-1.5 rounded-xl font-semibold text-xs transition-all duration-300 active:scale-95 text-white"
-                  style={{
-                    background: `linear-gradient(135deg, ${themeColors.button} 0%, ${themeColors.button}dd 100%)`,
-                    boxShadow: `0 2px 8px ${hexToRgba(themeColors.button, 0.2)}`,
-                  }}
-                >
-                  View All
-                </button>
-              )}
-            </div>
-            {recentJobs.length > 0 ? (
-              <div className="space-y-2.5">
-                {recentJobs.map((job, index) => {
-                  const getStatusStyle = (status) => {
-                    const s = String(status || '').toLowerCase();
-                    if (s === 'completed' || s === 'work_done') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-                    if (s === 'cancelled' || s === 'rejected') return 'bg-red-50 text-red-700 border-red-100';
-                    return 'bg-amber-50 text-amber-700 border-amber-100';
-                  };
 
-                  return (
-                    <div
-                      key={job.id}
-                      onClick={() => navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`)}
-                      className="bg-white rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
-                    >
-                      {/* Compact Content */}
-                      <div className="p-2.5">
-                        <div className="flex items-center gap-2.5">
-                          {/* Profile Image Circle */}
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-50 border border-gray-100">
-                            <FiUser className="w-3.5 h-3.5 text-gray-400" />
-                          </div>
-
-                          {/* Main Content */}
-                          <div className="flex-1 min-w-0 space-y-1">
-                            {/* Name and Service tag */}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="text-xs font-semibold text-gray-900 truncate">{job.customerName}</p>
-                              <span className="text-[9px] font-semibold px-1.5 py-0.2 bg-gray-50 border border-gray-100 text-gray-500 rounded">
-                                {job.serviceType || 'Service'}
-                              </span>
-                            </div>
-
-                            {/* Address and Time */}
-                            <div className="flex items-center gap-2 flex-wrap text-[10px] text-gray-550 font-medium">
-                              <div className="flex items-center gap-0.5 truncate max-w-[120px]">
-                                <FiMapPin className="w-3 h-3 text-gray-400 shrink-0" />
-                                <span>{job.location}</span>
-                              </div>
-                              <div className="flex items-center gap-0.5">
-                                <FiClock className="w-3 h-3 text-gray-400 shrink-0" />
-                                <span>{job.time}</span>
-                              </div>
-                            </div>
-
-                            {/* Status tag */}
-                            <div className="flex items-center mt-0.5">
-                              <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${getStatusStyle(job.status)}`}>
-                                {getStatusLabel(job.status)}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Navigate Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(isWorker ? `/worker/booking/${job.id}` : `/vendor/booking/${job.id}`);
-                            }}
-                            className="p-1 rounded-full bg-gray-50 text-gray-400 hover:text-gray-800 hover:bg-gray-100 border border-gray-150 transition-colors shrink-0"
-                          >
-                            <FiChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div
-                className="bg-white rounded-xl p-6 shadow-md text-center"
-                style={{
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
-                }}
-              >
-                <FiBriefcase className="w-12 h-12 mx-auto mb-3" style={{ color: '#D1D5DB' }} />
-                <p className="text-sm text-gray-600 mb-1">No active jobs</p>
-                <p className="text-xs text-gray-500">New bookings will appear here</p>
-              </div>
-            )}
-          </div>
         </div>
       </main>
 
