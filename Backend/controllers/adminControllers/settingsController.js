@@ -46,7 +46,7 @@ exports.updateSettings = async (req, res, next) => {
       // Billing Settings
       companyName, companyGSTIN, companyPAN, companyAddress, companyCity, companyState, companyPincode, companyPhone, companyEmail, companyCIN, companyWebsite, invoicePrefix, sacCode,
       // Support Settings
-      supportEmail, supportPhone, supportWhatsapp,
+      supportEmail, supportPhone, supportWhatsapp, privacyPolicy,
       // Booking Timing
       maxSearchTime, waveDuration, searchRadius,
       // Payment Control
@@ -107,6 +107,7 @@ exports.updateSettings = async (req, res, next) => {
         supportEmail,
         supportPhone,
         supportWhatsapp,
+        privacyPolicy,
         companyName,
         companyAddress,
         companyCity,
@@ -178,6 +179,7 @@ exports.updateSettings = async (req, res, next) => {
       if (supportEmail !== undefined) settings.supportEmail = supportEmail;
       if (supportPhone !== undefined) settings.supportPhone = supportPhone;
       if (supportWhatsapp !== undefined) settings.supportWhatsapp = supportWhatsapp;
+      if (privacyPolicy !== undefined) settings.privacyPolicy = privacyPolicy;
 
       // Booking Timing update
       if (maxSearchTime !== undefined) settings.maxSearchTime = maxSearchTime;
@@ -282,7 +284,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig aboutPageConfig levelConfig');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp privacyPolicy cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig aboutPageConfig levelConfig');
 
     // Default if not found (fallback values)
     if (!settings) {

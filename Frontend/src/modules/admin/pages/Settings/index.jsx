@@ -65,9 +65,11 @@ const AdminSettings = () => {
   const [supportSettings, setSupportSettings] = useState({
     supportEmail: '',
     supportPhone: '',
-    supportWhatsapp: ''
+    supportWhatsapp: '',
+    privacyPolicy: ''
   });
   const [supportLoading, setSupportLoading] = useState(false);
+  const [privacyLoading, setPrivacyLoading] = useState(false);
 
   // About Page Settings State
   const [aboutSettings, setAboutSettings] = useState({
@@ -231,7 +233,8 @@ const AdminSettings = () => {
           setSupportSettings({
             supportEmail: res.settings.supportEmail || '',
             supportPhone: res.settings.supportPhone || '',
-            supportWhatsapp: res.settings.supportWhatsapp || ''
+            supportWhatsapp: res.settings.supportWhatsapp || '',
+            privacyPolicy: res.settings.privacyPolicy || ''
           });
           // Load about settings
           if (res.settings.aboutPageConfig) {
@@ -690,6 +693,18 @@ const AdminSettings = () => {
           <p className="text-sm text-gray-500">Configure dynamically the vendor level criteria, target jobs and upgrade steps</p>
         </div>
       )}
+
+      {/* Privacy Policy Settings Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('privacy')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-100 transition-colors">
+            <FiShield className="w-6 h-6 text-indigo-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Privacy & Data</h3>
+          <p className="text-sm text-gray-500">Configure dynamically the user privacy policy and data agreement terms</p>
+        </div>
+      )}
     </div>
   );
 
@@ -1021,11 +1036,11 @@ const AdminSettings = () => {
                   </div>
 
                   {/* Vendor Busy Buffer Hours */}
-                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 space-y-3">
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
                     <div>
                       <p className="font-semibold text-gray-800">Vendor Job Buffer Time (Hours)</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        How many hours before a scheduled booking the vendor becomes <span className="font-bold text-orange-600">busy</span> and stops receiving new bookings. Default: 1 hour.
+                        How many hours before a scheduled booking the vendor becomes busy and stops receiving new bookings. Default: 1 hour.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1034,7 +1049,7 @@ const AdminSettings = () => {
                         name="vendorBusyBufferHours"
                         value={financialSettings.vendorBusyBufferHours ?? 1}
                         onChange={(e) => setFinancialSettings(prev => ({ ...prev, vendorBusyBufferHours: Number(e.target.value) }))}
-                        className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg outline-none focus:border-orange-500 bg-white"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white"
                         min="0"
                         step="0.5"
                       />
@@ -1047,7 +1062,7 @@ const AdminSettings = () => {
                             toast.error('Failed to update vendor buffer time');
                           }
                         }}
-                        className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
                       >
                         Save
                       </button>
@@ -1703,6 +1718,59 @@ const AdminSettings = () => {
                   >
                     {levelsLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
                     Save Level Config
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Privacy Policy View */}
+        {activeView === 'privacy' && isSuperAdmin && (
+          <motion.div key="privacy" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+            <div className="max-w-3xl mx-auto bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <FiShield className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide">Privacy Policy & Data Agreement</h2>
+                  <p className="text-xs text-gray-500">Configure dynamically the user privacy policy and data agreement terms</p>
+                </div>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setPrivacyLoading(true);
+                try {
+                  await updateSettings({ privacyPolicy: supportSettings.privacyPolicy });
+                  toast.success('Privacy Policy updated successfully');
+                } catch (error) {
+                  toast.error('Failed to update Privacy Policy');
+                } finally {
+                  setPrivacyLoading(false);
+                }
+              }} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5 font-bold">Privacy Policy Terms</label>
+                  <textarea
+                    value={supportSettings.privacyPolicy}
+                    onChange={(e) => setSupportSettings(prev => ({ ...prev, privacyPolicy: e.target.value }))}
+                    required
+                    rows="15"
+                    placeholder="Enter full privacy agreement content here..."
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 transition-all font-semibold text-gray-800 text-xs leading-relaxed"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100">
+                  <button
+                    type="submit"
+                    disabled={privacyLoading}
+                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-indigo-200 text-xs font-bold uppercase tracking-wider"
+                  >
+                    {privacyLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
+                    Save Policy
                   </button>
                 </div>
               </form>

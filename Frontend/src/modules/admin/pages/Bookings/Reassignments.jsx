@@ -113,7 +113,12 @@ const Reassignments = () => {
     setShowModal(true);
     try {
       setVendorsLoading(true);
-      const res = await adminVendorService.getAllVendors({ limit: 1000 });
+      const params = { limit: 1000 };
+      const categoryId = booking?.categoryId?._id || booking?.categoryId;
+      if (categoryId) {
+        params.categoryId = categoryId;
+      }
+      const res = await adminVendorService.getAllVendors(params);
       if (res.success) setVendors(res.data || []);
     } catch { toast.error('Could not load vendor list'); }
     finally { setVendorsLoading(false); }

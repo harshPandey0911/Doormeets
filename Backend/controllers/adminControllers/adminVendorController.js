@@ -16,6 +16,7 @@ const getAllVendors = async (req, res) => {
       search,
       approvalStatus,
       isActive,
+      categoryId,
       page = 1,
       limit = 20
     } = req.query;
@@ -34,14 +35,30 @@ const getAllVendors = async (req, res) => {
       query.isActive = isActive === 'true';
     }
 
+    if (categoryId) {
+      query.$and = [
+        {
+          $or: [
+            { service: categoryId },
+            { categories: categoryId }
+          ]
+        }
+      ];
+    }
+
     // Search by name, email, phone, or business name
     if (search) {
-      query.$or = [
+      const searchOr = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
         { businessName: { $regex: search, $options: 'i' } }
       ];
+      if (query.$and) {
+        query.$and.push({ $or: searchOr });
+      } else {
+        query.$or = searchOr;
+      }
     }
 
     // Pagination

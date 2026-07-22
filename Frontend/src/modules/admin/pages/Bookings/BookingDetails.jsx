@@ -44,10 +44,14 @@ const BookingDetails = () => {
   const [vendorSearch, setVendorSearch] = useState('');
   const [assigning, setAssigning] = useState(false);
 
-  const fetchVendors = async () => {
+  const fetchVendors = async (categoryId) => {
     try {
       setVendorsLoading(true);
-      const res = await adminVendorService.getAllVendors({ limit: 1000 });
+      const params = { limit: 1000 };
+      if (categoryId) {
+        params.categoryId = categoryId;
+      }
+      const res = await adminVendorService.getAllVendors(params);
       if (res.success) {
         setVendors(res.data || []);
       }
@@ -60,7 +64,8 @@ const BookingDetails = () => {
   };
 
   const handleOpenAssignModal = () => {
-    fetchVendors();
+    const categoryId = booking?.categoryId?._id || booking?.categoryId;
+    fetchVendors(categoryId);
     setShowAssignModal(true);
   };
 

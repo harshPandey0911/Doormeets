@@ -34,10 +34,14 @@ const ManualAssignment = () => {
     }
   };
 
-  const fetchVendors = async () => {
+  const fetchVendors = async (categoryId) => {
     try {
       setVendorsLoading(true);
-      const res = await adminVendorService.getAllVendors({ limit: 1000 });
+      const params = { limit: 1000 };
+      if (categoryId) {
+        params.categoryId = categoryId;
+      }
+      const res = await adminVendorService.getAllVendors(params);
       if (res.success) {
         setBookings(prevBookings => {
           loadBookings(); // Reload to refresh list
@@ -68,7 +72,9 @@ const ManualAssignment = () => {
 
   const handleOpenAssignModal = (bookingId) => {
     setSelectedBookingId(bookingId);
-    fetchVendors();
+    const booking = bookings.find(b => b._id === bookingId);
+    const categoryId = booking?.categoryId?._id || booking?.categoryId;
+    fetchVendors(categoryId);
     setShowAssignModal(true);
   };
 
