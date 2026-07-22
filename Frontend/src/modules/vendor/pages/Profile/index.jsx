@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiEdit2, FiMapPin, FiPhone, FiMail, FiBriefcase, FiStar, FiArrowRight, FiSettings, FiChevronRight, FiCreditCard, FiLogOut, FiTrash2, FiGrid, FiBox } from 'react-icons/fi';
+import { FiUser, FiEdit2, FiMapPin, FiPhone, FiMail, FiBriefcase, FiStar, FiArrowRight, FiSettings, FiChevronRight, FiCreditCard, FiLogOut, FiTrash2, FiGrid, FiBox, FiAward } from 'react-icons/fi';
 import { FaWallet } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../../theme';
@@ -31,6 +31,7 @@ const Profile = () => {
     { id: 14, label: 'Painting Consultations', icon: FiBriefcase, path: '/vendor/painting-consultations' },
     { id: 10, label: 'Categories', icon: FiGrid, path: '/vendor/categories' },
     { id: 12, label: 'Performance & Stats', icon: FiBox, path: '/vendor/my-services' },
+    { id: 15, label: 'My Level', icon: FiAward, path: '/vendor/my-level' },
     { id: 7, label: 'Manage Address', icon: FiMapPin, path: '/vendor/address-management' },
     { id: 8, label: 'Settings', icon: FiSettings, path: '/vendor/settings' },
     { id: 9, label: 'About Doormeets', icon: null, customIcon: 'S', path: '/vendor/about-cleaning-expert' },
@@ -122,7 +123,9 @@ const Profile = () => {
           photo: storedVendorData.profilePhoto || null,
           approvalStatus: storedVendorData.approvalStatus || 'approved',
           isPhoneVerified: storedVendorData.isPhoneVerified || false,
-          isEmailVerified: storedVendorData.isEmailVerified || false
+          isEmailVerified: storedVendorData.isEmailVerified || false,
+          level: storedVendorData.level || 3,
+          currentLevel: storedVendorData.currentLevel || 'L3'
         });
         setIsLoading(false); // Show content immediately
       }
@@ -152,7 +155,9 @@ const Profile = () => {
             photo: vendorData.profilePhoto || null,
             approvalStatus: vendorData.approvalStatus || 'approved',
             isPhoneVerified: vendorData.isPhoneVerified || false,
-            isEmailVerified: vendorData.isEmailVerified || false
+            isEmailVerified: vendorData.isEmailVerified || false,
+            level: vendorData.level || 3,
+            currentLevel: vendorData.currentLevel || 'L3'
           });
           localStorage.setItem(storageKey, JSON.stringify(vendorData));
         } else {

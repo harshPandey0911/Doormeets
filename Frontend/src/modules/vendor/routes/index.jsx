@@ -68,6 +68,7 @@ const SettlementRequest = lazyLoad(() => import('../pages/Wallet/SettlementReque
 const SettlementHistory = lazyLoad(() => import('../pages/Wallet/SettlementHistory'));
 const MyRatings = lazyLoad(() => import('../pages/MyRatings'));
 const AboutCleaningExpert = lazyLoad(() => import('../pages/AboutCleaningExpert'));
+const MyLevel = lazyLoad(() => import('../pages/MyLevel'));
 
 // Training module lazy loading
 const Training = lazyLoad(() => import('../pages/Training'));
@@ -145,6 +146,7 @@ const VendorRoutes = () => {
               <Route path="/my-ratings" element={<ProtectedRoute userType="vendor"><MyRatings /></ProtectedRoute>} />
               <Route path="/about-cleaning-expert" element={<ProtectedRoute userType="vendor"><AboutCleaningExpert /></ProtectedRoute>} />
               <Route path="/my-services" element={<ProtectedRoute userType="vendor"><MyServices /></ProtectedRoute>} />
+              <Route path="/my-level" element={<ProtectedRoute userType="vendor"><MyLevel /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute userType="vendor"><Categories /></ProtectedRoute>} />
               <Route path="/categories/:categoryId" element={<ProtectedRoute userType="vendor"><CategoryDetail /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute userType="vendor"><Categories /></ProtectedRoute>} />

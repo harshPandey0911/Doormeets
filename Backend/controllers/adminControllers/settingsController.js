@@ -80,7 +80,8 @@ exports.updateSettings = async (req, res, next) => {
       aboutPageConfig,
       shopReferralRewardShopOwner,
       shopReferralRewardVendor,
-      shopReferralQrCodeUrl
+      shopReferralQrCodeUrl,
+      levelConfig
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -137,7 +138,8 @@ exports.updateSettings = async (req, res, next) => {
         aboutPageConfig: aboutPageConfig !== undefined ? aboutPageConfig : undefined,
         shopReferralRewardShopOwner: shopReferralRewardShopOwner !== undefined ? Number(shopReferralRewardShopOwner) : 100,
         shopReferralRewardVendor: shopReferralRewardVendor !== undefined ? Number(shopReferralRewardVendor) : 50,
-        shopReferralQrCodeUrl: shopReferralQrCodeUrl !== undefined ? shopReferralQrCodeUrl : ''
+        shopReferralQrCodeUrl: shopReferralQrCodeUrl !== undefined ? shopReferralQrCodeUrl : '',
+        levelConfig: levelConfig !== undefined ? levelConfig : undefined
       });
     } else {
       // Update fields if provided
@@ -216,6 +218,7 @@ exports.updateSettings = async (req, res, next) => {
       if (shopReferralRewardShopOwner !== undefined) settings.shopReferralRewardShopOwner = Number(shopReferralRewardShopOwner);
       if (shopReferralRewardVendor !== undefined) settings.shopReferralRewardVendor = Number(shopReferralRewardVendor);
       if (shopReferralQrCodeUrl !== undefined) settings.shopReferralQrCodeUrl = shopReferralQrCodeUrl;
+      if (levelConfig !== undefined) settings.levelConfig = levelConfig;
 
       await settings.save();
     }
@@ -279,7 +282,7 @@ exports.updateSettings = async (req, res, next) => {
 // Get Public Settings (Visited Charges, GST)
 exports.getPublicSettings = async (req, res, next) => {
   try {
-    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig aboutPageConfig');
+    let settings = await Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage supportEmail supportPhone supportWhatsapp cancellationPenalty companyName companyAddress companyCity companyState companyPincode companyPhone companyEmail companyGSTIN companyPAN companyCIN companyWebsite vendorCgstPercentage vendorSgstPercentage sacCode isOnlinePaymentEnabled loyaltyPointsEarningRate loyaltyPointsRedemptionRate loyaltyPointsCancellationPenalty loyaltyPointsFixedCompletionAward referralRewardReferrer referralRewardReferee maxWalletUsagePercentage isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime instantBookingVendorShare paintingRates propertyLayouts paintingPageConfig aboutPageConfig levelConfig');
 
     // Default if not found (fallback values)
     if (!settings) {

@@ -462,6 +462,36 @@ const settingsSchema = new mongoose.Schema({
         { title: 'Relax', desc: 'Enjoy high-quality service', iconName: 'FiSmile' }
       ]
     }
+  },
+  levelConfig: {
+    L3: {
+      badge: { type: String, default: 'Bronze Partner' },
+      name: { type: String, default: 'Level 3 (Beginner)' },
+      color: { type: String, default: '#D97706' },
+      desc: { type: String, default: 'You are currently on Level 3. Complete more jobs and maintain high ratings to upgrade your level.' },
+      targetJobs: { type: Number, default: 15 },
+      targetRating: { type: Number, default: 4.2 },
+      targetCompletionRate: { type: Number, default: 85 }
+    },
+    L2: {
+      badge: { type: String, default: 'Silver Partner' },
+      name: { type: String, default: 'Level 2 (Professional)' },
+      color: { type: String, default: '#0D9488' },
+      desc: { type: String, default: 'Great job! You are a Level 2 partner. Keep providing excellent service to climb to the top Level 1.' },
+      targetJobs: { type: Number, default: 50 },
+      targetRating: { type: Number, default: 4.7 },
+      targetCompletionRate: { type: Number, default: 92 }
+    },
+    L1: {
+      badge: { type: String, default: 'Gold Elite Partner' },
+      name: { type: String, default: 'Level 1 (Expert)' },
+      color: { type: String, default: '#EAB308' },
+      desc: { type: String, default: 'Congratulations! You are a Level 1 Elite partner. You receive the highest preference in matching and premium job bookings.' },
+      targetJobs: { type: Number, default: 10 },
+      targetRating: { type: Number, default: 4.7 },
+      maintenanceDesc: { type: String, default: 'Complete at least 10 bookings every month' },
+      violationDesc: { type: String, default: 'Zero safety violations or major complaints' }
+    }
   }
 }, { timestamps: true });
 

@@ -82,6 +82,8 @@ const getProfile = async (req, res) => {
         policeVerification: vendor.policeVerification || null,
         isOnline: vendor.isOnline || false,
         availability: vendor.availability || 'OFFLINE',
+        level: vendor.level || 3,
+        currentLevel: vendor.currentLevel || 'L3',
         createdAt: vendor.createdAt,
         updatedAt: vendor.updatedAt
       }
