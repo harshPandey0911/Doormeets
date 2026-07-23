@@ -173,11 +173,16 @@ const Dashboard = memo(() => {
       });
     });
 
-    // Filter out locally ignored bookings
+    // Filter out locally ignored and already expired bookings from API response
     const finalMap = new Map();
     mergedMap.forEach((value, key) => {
       if (!ignoredBookingIds.current.has(key)) {
-        finalMap.set(key, value);
+        const createdAt = value.createdAt ? new Date(value.createdAt).getTime() : Date.now();
+        const expiresAt = value.expiresAt || (value.createdAt && config ? new Date(createdAt + (config.maxSearchTime || 5) * 60000).toISOString() : null);
+        const isExpired = (expiresAt && new Date(expiresAt) <= new Date()) || (Date.now() - createdAt > (config?.maxSearchTime || 5) * 60000);
+        if (!isExpired) {
+          finalMap.set(key, { ...value, expiresAt });
+        }
       }
     });
 
