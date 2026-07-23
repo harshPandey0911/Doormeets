@@ -25,7 +25,7 @@ const getAllServices = async (req, res) => {
     }
 
     const services = await Service.find(query)
-      .populate('categoryId', 'title')
+      .populate('categoryId', 'title templateId')
       .populate('subCategoryId', 'title')
       .sort({ createdAt: -1 });
 

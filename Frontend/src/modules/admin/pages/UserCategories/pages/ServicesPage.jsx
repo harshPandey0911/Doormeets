@@ -1452,7 +1452,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const filteredServices = selectedCity
     ? services.filter(srv => {
         const srvCityIds = srv.cityIds || [];
-        if (srvCityIds.length === 0) return false; // Strict match: hide "All Cities" if a specific city is selected
+        if (srvCityIds.length === 0) return true; // Global service: available in all cities
         const isAllowed = srvCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
         if (!isAllowed) return false;
         
@@ -1460,7 +1460,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         const category = categories.find(c => (c.id === catId || c._id === catId));
         if (!category) return true;
         const catCityIds = category.cityIds || [];
-        if (catCityIds.length === 0) return false; // Strict match: hide if parent category is "All Cities"
+        if (catCityIds.length === 0) return true; // Global category: available in all cities
         return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
       })
     : services;
@@ -1468,8 +1468,9 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const finalFilteredServices = filterTemplateId
     ? filteredServices.filter(srv => {
         const catId = srv.categoryId?._id || srv.categoryId;
+        const srvTemplateId = srv.categoryId?.templateId; // from populated categoryId
         const category = categories.find(c => (c.id === catId || c._id === catId));
-        return category && String(category.templateId || category.template) === String(filterTemplateId);
+        return (category && String(category.templateId || category.template) === String(filterTemplateId)) || (srvTemplateId && String(srvTemplateId) === String(filterTemplateId));
       })
     : filteredServices;
 

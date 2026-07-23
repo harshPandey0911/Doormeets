@@ -54,7 +54,8 @@ const PackageBased = () => {
   // Form states
   const [mainCatForm, setMainCatForm] = useState({ title: '', status: 'active', homeIconUrl: '', homeBadge: '', sacCode: '', minWalletBalance: 0 });
   const [subCatForm, setSubCatForm] = useState({ categoryId: '', title: '', description: '', iconUrl: '', imageUrl: '', videoUrl: '', status: 'active' });
-  const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0, allowUserEdit: true, codEnabled: true, codAdvanceAmount: 0 });
+  const [comboForm, setComboForm] = useState({ title: '', description: '', price: '', originalPrice: '', discountPercentage: 0, duration: '', rating: 4.5, reviewCount: '1.0k', isPopular: false, isActive: true, includedItems: [], gstPercentage: 18, gstIncluded: true, vendorPayout: 0, allowUserEdit: true, codEnabled: true, codAdvanceAmount: 0, vendorAcceptanceFee: 0 });
+
 
   // Media upload progress states
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -1653,6 +1654,27 @@ const PackageBased = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Vendor Wallet Acceptance Fee Section */}
+                <div className="grid grid-cols-1 gap-3 border-t pt-3 mt-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-red-600 uppercase mb-1">Deduction on Acceptance (₹) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white font-bold text-red-700 outline-none focus:ring-2 focus:ring-red-400"
+                      value={comboForm.vendorAcceptanceFee === 0 ? '' : comboForm.vendorAcceptanceFee}
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        setComboForm({ ...comboForm, vendorAcceptanceFee: isNaN(val) ? 0 : Math.max(0, val) });
+                      }}
+                      placeholder="e.g. 20"
+                      required
+                    />
+                    <p className="text-[9px] text-gray-400 mt-1 font-semibold">Deducted from vendor wallet upon accepting booking.</p>
+                  </div>
+                </div>
+
 
                 {/* Split Calculation Details Box */}
                 {(() => {
