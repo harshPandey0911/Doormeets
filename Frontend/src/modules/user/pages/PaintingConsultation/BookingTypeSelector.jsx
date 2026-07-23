@@ -1,13 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiZap, FiCalendar, FiCheck, FiClock } from 'react-icons/fi';
-
-const TIME_SLOTS = [
-  '09:00 AM - 11:00 AM',
-  '11:00 AM - 01:00 PM',
-  '02:00 PM - 04:00 PM',
-  '04:00 PM - 06:00 PM',
-];
+import { userAuthService } from '../../../../services/authService';
+import { generateDynamicSlots } from '../../../../utils/timeSlotUtils';
 
 // Generate next 7 days excluding today
 const getAvailableDates = () => {
@@ -32,6 +27,27 @@ const BookingTypeSelector = ({ wizardData, updateWizardData, onNext }) => {
   const [bookingType, setBookingType] = useState(wizardData.bookingType || 'INSTANT');
   const [selectedDate, setSelectedDate] = useState(wizardData.scheduledSlot?.date || null);
   const [selectedSlot, setSelectedSlot] = useState(wizardData.scheduledSlot?.timeSlot || '');
+  const [slotsStartTime, setSlotsStartTime] = useState('09:00 AM');
+  const [slotsEndTime, setSlotsEndTime] = useState('09:00 PM');
+  const [slotIntervalGap, setSlotIntervalGap] = useState(120);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await userAuthService.getCheckoutData();
+        if (res.success && res.settings) {
+          setSlotsStartTime(res.settings.slotsStartTime || '09:00 AM');
+          setSlotsEndTime(res.settings.slotsEndTime || '09:00 PM');
+          setSlotIntervalGap(res.settings.slotIntervalGap || 120);
+        }
+      } catch (e) {
+        console.error('Failed to load settings', e);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const dynamicSlots = generateDynamicSlots(slotsStartTime, slotsEndTime, slotIntervalGap);
   const availableDates = getAvailableDates();
 
   const handleContinue = () => {
@@ -189,19 +205,20 @@ const BookingTypeSelector = ({ wizardData, updateWizardData, onNext }) => {
                   <FiClock className="text-indigo-500" /> Select Time Slot
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {TIME_SLOTS.map((slot) => {
-                    const isSelected = selectedSlot === slot;
+                  {dynamicSlots.map((slotObj) => {
+                    const slotText = slotObj.displayRange;
+                    const isSelected = selectedSlot === slotText;
                     return (
                       <button
-                        key={slot}
-                        onClick={() => setSelectedSlot(slot)}
+                        key={slotText}
+                        onClick={() => setSelectedSlot(slotText)}
                         className={`py-3 px-3 rounded-xl border-2 text-sm font-semibold transition-all ${
                           isSelected
                             ? 'border-indigo-500 bg-indigo-600 text-white shadow-md'
                             : 'border-gray-200 text-gray-600 hover:border-indigo-300'
                         }`}
                       >
-                        {slot}
+                        {slotText}
                       </button>
                     );
                   })}

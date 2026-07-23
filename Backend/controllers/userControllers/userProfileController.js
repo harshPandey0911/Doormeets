@@ -187,7 +187,7 @@ const getCheckoutData = async (req, res) => {
     const [user, cart, settings] = await Promise.all([
       User.findById(userId).select('addresses phone name loyaltyPoints wallet'),
       Cart.findOne({ userId }).populate('items.serviceId', 'title iconUrl slug codAdvanceAmount packages').populate('items.categoryId', 'title slug'),
-      Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage loyaltyPointsRedemptionRate isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime paintingRates maxSearchTime maxWalletUsagePercentage codAdvancePercentage waveDuration')
+      Settings.findOne({ type: 'global' }).select('visitedCharges serviceGstPercentage partsGstPercentage loyaltyPointsRedemptionRate isInstantBookingEnabled instantBookingMarkup instantBookingWaitTime instantBookingWindowHours showArrivalTime paintingRates maxSearchTime maxWalletUsagePercentage codAdvancePercentage waveDuration slotsStartTime slotsEndTime slotIntervalGap')
     ]);
 
     if (!user) {
