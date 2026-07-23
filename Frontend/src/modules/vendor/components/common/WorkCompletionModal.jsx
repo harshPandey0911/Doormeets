@@ -92,48 +92,48 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-white w-full max-w-md rounded-[24px] shadow-2xl relative z-10 overflow-hidden"
+            className="bg-white w-full max-w-xs sm:max-w-sm rounded-[20px] shadow-2xl relative z-10 overflow-hidden"
           >
-            <div className="flex flex-col max-h-[90vh]">
+            <div className="flex flex-col max-h-[85vh]">
               {/* Header */}
-              <div className="px-8 pt-8 pb-4 flex justify-between items-start flex-shrink-0">
+              <div className="px-5 pt-5 pb-2 flex justify-between items-start flex-shrink-0">
                 <div>
-                  <h3 className="text-2xl font-black text-gray-900 leading-tight">Complete Work</h3>
-                  <p className="text-xs text-green-600 font-bold uppercase tracking-wider mt-1">Final Step</p>
+                  <h3 className="text-lg font-bold text-gray-900 leading-tight">Complete Work</h3>
+                  <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Final Step</p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 active:scale-95"
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 active:scale-95"
                 >
-                  <FiX className="w-6 h-6" />
+                  <FiX className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Scrollable Content */}
-              <div className="px-8 pb-4 space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                <p className="text-sm text-gray-500 font-medium leading-relaxed mt-2">
+              <div className="px-5 pb-3 space-y-3 overflow-y-auto custom-scrollbar flex-1">
+                <p className="text-xs text-gray-500 font-medium leading-normal">
                   Please upload proof of work from your camera to confirm completion.
                 </p>
 
                 {/* Photo Upload Section */}
                 <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Work Photos <span className="text-red-500 font-bold">(Mandatory)</span></p>
-                    <span className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded-md font-bold">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Work Photos <span className="text-red-500 font-bold">(Mandatory)</span></p>
+                    <span className="text-[9px] bg-red-50 text-red-500 px-1.5 py-0.5 rounded font-bold">
                       {workPhotos.length}/5 (Min 1)
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     {workPhotos.map((photo, index) => (
-                      <div key={index} className="aspect-square rounded-2xl bg-gray-100 border border-gray-100 relative overflow-hidden group">
+                      <div key={index} className="aspect-square rounded-xl bg-gray-100 border border-gray-100 relative overflow-hidden group">
                         <img src={photo} className="w-full h-full object-cover" alt="work" />
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <button
                           onClick={() => handleRemovePhoto(index)}
-                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-transform opacity-0 group-hover:opacity-100"
+                          className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-transform opacity-0 group-hover:opacity-100"
                         >
-                          <FiTrash className="w-3 h-3" />
+                          <FiTrash className="w-2.5 h-2.5" />
                         </button>
                       </div>
                     ))}
@@ -148,10 +148,10 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
                             cameraInputRef.current?.click();
                           }
                         }}
-                        className="aspect-square rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-green-400 hover:bg-green-50/30 flex flex-col items-center justify-center text-gray-400 hover:text-green-500 cursor-pointer active:scale-95 transition-all"
+                        className="aspect-square rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-emerald-500 hover:bg-emerald-50/30 flex flex-col items-center justify-center text-gray-400 hover:text-emerald-600 cursor-pointer active:scale-95 transition-all p-1"
                       >
-                        <FiCamera className="w-7 h-7 mb-1" />
-                        <span className="text-[10px] font-bold uppercase">Camera Only</span>
+                        <FiCamera className="w-5 h-5 mb-0.5" />
+                        <span className="text-[9px] font-bold uppercase leading-tight text-center">Camera Only</span>
                       </button>
                     )}
                   </div>
@@ -164,23 +164,23 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
                     className="hidden"
                   />
 
-                  {isUploading && <p className="text-blue-500 text-[10px] font-bold mt-2 ml-1 animate-pulse">Uploading photos...</p>}
+                  {isUploading && <p className="text-blue-500 text-[10px] font-bold mt-1.5 ml-1 animate-pulse">Uploading photos...</p>}
                 </div>
 
-                {/* Quality Checklist (Restored from Vendor Design) */}
-                <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100">
-                  <div className="flex items-center gap-2 text-emerald-700 mb-3">
-                    <FiCheckCircle className="w-5 h-5" />
-                    <span className="font-bold text-sm">Quality Checklist</span>
+                {/* Quality Checklist */}
+                <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                  <div className="flex items-center gap-1.5 text-emerald-700 mb-1.5">
+                    <FiCheckCircle className="w-4 h-4" />
+                    <span className="font-bold text-xs">Quality Checklist</span>
                   </div>
-                  <ul className="space-y-2">
+                  <ul className="space-y-1">
                     {[
                       'Double checked the results',
                       'Cleaned up work area',
                       'Customer satisfaction confirmed'
                     ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-xs font-semibold text-gray-600">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <li key={i} className="flex items-center gap-1.5 text-[11px] font-medium text-gray-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                         {item}
                       </li>
                     ))}
@@ -188,30 +188,30 @@ const WorkCompletionModal = ({ isOpen, onClose, job, onComplete, loading }) => {
                 </div>
 
                 {/* Payment Info */}
-                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex items-center justify-between">
+                <div className="bg-gray-50 rounded-xl p-2.5 border border-gray-100 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase">Total Bill Value</p>
-                    <p className="text-lg font-black text-gray-800">₹{calculateTotal().toFixed(2)}</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Total Bill Value</p>
+                    <p className="text-base font-bold text-gray-800">₹{calculateTotal().toFixed(2)}</p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-green-600 shadow-sm">
-                    <FiDollarSign className="w-5 h-5" />
+                  <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-emerald-600 shadow-sm">
+                    <FiDollarSign className="w-4 h-4" />
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons (Fixed at Bottom) */}
-              <div className="px-8 py-6 bg-white border-t border-gray-100 flex-shrink-0">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="px-5 py-3.5 bg-white border-t border-gray-100 flex-shrink-0">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     onClick={onClose}
-                    className="py-4 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors active:scale-95"
+                    className="py-2.5 rounded-xl border border-gray-200 font-bold text-xs text-gray-600 hover:bg-gray-50 transition-colors active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={loading || isUploading}
-                    className="py-4 rounded-xl font-bold text-white shadow-lg shadow-green-500/30 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
+                    className="py-2.5 rounded-xl font-bold text-xs text-white shadow-md shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
                     style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
                   >
                     {loading ? 'Confirming...' : 'Complete Work'}

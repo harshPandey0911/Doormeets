@@ -78,59 +78,59 @@ const ReachedPhotoModal = ({ isOpen, onClose, onComplete, loading }) => {
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-white w-full max-w-md rounded-[24px] shadow-2xl relative z-10 overflow-hidden"
+            className="bg-white w-full max-w-xs sm:max-w-sm rounded-[20px] shadow-2xl relative z-10 overflow-hidden"
           >
-            <div className="flex flex-col max-h-[90vh]">
+            <div className="flex flex-col max-h-[85vh]">
               {/* Header */}
-              <div className="px-8 pt-8 pb-4 flex justify-between items-start flex-shrink-0">
+              <div className="px-5 pt-5 pb-2 flex justify-between items-start flex-shrink-0">
                 <div>
-                  <h3 className="text-2xl font-black text-gray-900 leading-tight">Verify Arrival</h3>
-                  <p className="text-xs text-orange-600 font-bold uppercase tracking-wider mt-1">Safety & Checklist</p>
+                  <h3 className="text-lg font-bold text-gray-900 leading-tight">Verify Arrival</h3>
+                  <p className="text-[10px] text-orange-600 font-bold uppercase tracking-wider mt-0.5">Safety & Checklist</p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 active:scale-95"
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 active:scale-95"
                 >
-                  <FiX className="w-6 h-6" />
+                  <FiX className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Scrollable Content */}
-              <div className="px-8 pb-4 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+              <div className="px-5 pb-3 space-y-3 overflow-y-auto custom-scrollbar flex-1">
                 {/* Safety Banner */}
-                <div className="bg-amber-50 border-2 border-amber-200/60 rounded-2xl p-4 flex items-start gap-3 shadow-sm animate-pulse">
-                  <FiAlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-2.5 flex items-start gap-2 shadow-sm">
+                  <FiAlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-bold text-amber-900 text-sm">Safety Protocol Required</h4>
-                    <p className="text-xs font-black text-amber-800 uppercase mt-1 tracking-wider">
+                    <h4 className="font-bold text-amber-900 text-xs">Safety Protocol Required</h4>
+                    <p className="text-[10px] font-bold text-amber-800 uppercase mt-0.5 tracking-wider">
                       Please wear gloves and mask
                     </p>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                <p className="text-xs text-gray-500 font-medium leading-normal">
                   Please upload a photo showing you at the customer's location wearing your safety gear.
                 </p>
 
                 {/* Photo Upload Section */}
                 <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Arrival Photos <span className="text-red-500 font-bold">(Mandatory)</span></p>
-                    <span className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded-md font-bold">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Arrival Photos <span className="text-red-500 font-bold">(Mandatory)</span></p>
+                    <span className="text-[9px] bg-red-50 text-red-500 px-1.5 py-0.5 rounded font-bold">
                       {photos.length}/5 (Min 1)
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     {photos.map((photo, index) => (
-                      <div key={index} className="aspect-square rounded-2xl bg-gray-100 border border-gray-100 relative overflow-hidden group">
+                      <div key={index} className="aspect-square rounded-xl bg-gray-100 border border-gray-100 relative overflow-hidden group">
                         <img src={photo} className="w-full h-full object-cover" alt="arrival" />
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <button
                           onClick={() => handleRemovePhoto(index)}
-                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-transform opacity-0 group-hover:opacity-100"
+                          className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white shadow-md active:scale-90 transition-transform opacity-0 group-hover:opacity-100"
                         >
-                          <FiTrash className="w-3 h-3" />
+                          <FiTrash className="w-2.5 h-2.5" />
                         </button>
                       </div>
                     ))}
@@ -145,10 +145,10 @@ const ReachedPhotoModal = ({ isOpen, onClose, onComplete, loading }) => {
                             cameraInputRef.current?.click();
                           }
                         }}
-                        className="aspect-square rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-orange-400 hover:bg-orange-50/30 flex flex-col items-center justify-center text-gray-400 hover:text-orange-500 cursor-pointer active:scale-95 transition-all"
+                        className="aspect-square rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-orange-400 hover:bg-orange-50/30 flex flex-col items-center justify-center text-gray-400 hover:text-orange-500 cursor-pointer active:scale-95 transition-all p-1"
                       >
-                        <FiCamera className="w-7 h-7 mb-1" />
-                        <span className="text-[10px] font-bold uppercase">Camera Only</span>
+                        <FiCamera className="w-5 h-5 mb-0.5" />
+                        <span className="text-[9px] font-bold uppercase leading-tight text-center">Camera Only</span>
                       </button>
                     )}
                   </div>
@@ -161,23 +161,23 @@ const ReachedPhotoModal = ({ isOpen, onClose, onComplete, loading }) => {
                     className="hidden"
                   />
 
-                  {isUploading && <p className="text-blue-500 text-[10px] font-bold mt-2 ml-1 animate-pulse">Uploading photos...</p>}
+                  {isUploading && <p className="text-blue-500 text-[10px] font-bold mt-1.5 ml-1 animate-pulse">Uploading photos...</p>}
                 </div>
               </div>
 
               {/* Action Buttons (Fixed at Bottom) */}
-              <div className="px-8 py-6 bg-white border-t border-gray-100 flex-shrink-0">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="px-5 py-3.5 bg-white border-t border-gray-100 flex-shrink-0">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     onClick={onClose}
-                    className="py-4 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors active:scale-95"
+                    className="py-2.5 rounded-xl border border-gray-200 font-bold text-xs text-gray-600 hover:bg-gray-50 transition-colors active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={loading || isUploading}
-                    className="py-4 rounded-xl font-bold text-white shadow-lg shadow-orange-500/30 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
+                    className="py-2.5 rounded-xl font-bold text-xs text-white shadow-md shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
                     style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)' }}
                   >
                     {loading ? 'Confirming...' : 'Verify Arrival'}
