@@ -189,7 +189,7 @@ const MyLevel = () => {
               <div
                 key={lvlKey}
                 onClick={handleCardClick}
-                className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[245px] cursor-pointer border ${
+                className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[245px] cursor-pointer ${
                   isSelected
                     ? 'shadow-amber-950/40 ring-2 ring-white/90'
                     : 'hover:opacity-100'
@@ -199,7 +199,7 @@ const MyLevel = () => {
                   zIndex: zIndex,
                   opacity: opacity,
                   transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  borderColor: isSelected ? lvl.color : '#E5E7EB',
+                  borderColor: 'transparent',
                   WebkitMaskImage: 'radial-gradient(circle 14px at 0px 50%, transparent 100%, black 100%), radial-gradient(circle 14px at 100% 50%, transparent 100%, black 100%)',
                   maskImage: 'radial-gradient(circle 14px at 0px 50%, transparent 100%, black 100%), radial-gradient(circle 14px at 100% 50%, transparent 100%, black 100%)',
                   WebkitMaskComposite: 'destination-in',
