@@ -496,6 +496,27 @@ const settingsSchema = new mongoose.Schema({
       maintenanceDesc: { type: String, default: 'Complete at least 10 bookings every month' },
       violationDesc: { type: String, default: 'Zero safety violations or major complaints' }
     }
+  },
+  cancellationPageConfig: {
+    freeCancellationTitle: { type: String, default: 'Free Cancellation' },
+    freeCancellationDesc: { type: String, default: 'Until professional is assigned' },
+    lateFeeTitle: { type: String, default: 'Late Fee' },
+    lateFeeDesc: { type: String, default: 'If cancelled after assignment' },
+    stage1Title: { type: String, default: 'Before Journey Start' },
+    stage1Desc: { type: String, default: 'Any time before professional starts travel' },
+    stage1RefundText: { type: String, default: 'Full Refund • No Fee' },
+    stage2Title: { type: String, default: 'Journey Started' },
+    stage2Desc: { type: String, default: 'When professional is on the way' },
+    stage2RefundText: { type: String, default: '₹{penalty} Cancellation Penalty Applies' },
+    stage3Title: { type: String, default: 'Professional Arrived' },
+    stage3Desc: { type: String, default: 'When professional reaches your location' },
+    stage3RefundText: { type: String, default: '₹{visitingCharges} Visiting Charges Apply' },
+    whyChargeTitle: { type: String, default: 'Why do we charge a fee?' },
+    whyChargeSubtitle: { type: String, default: 'To support our professionals time & effort' },
+    whyChargeDetails: { type: String, default: 'Our service partners reserve their time exclusively for your booking and may travel significant distances. The cancellation fee compensates them for their lost time and travel expenses if a confirmed booking is cancelled last minute.' },
+    rescheduleTitle: { type: String, default: 'Need to change plans?' },
+    rescheduleDesc: { type: String, default: 'Instead of cancelling, you can reschedule your booking for free up to 2 hours before the service time.' },
+    rescheduleButtonLabel: { type: String, default: 'Go Back to Booking' }
   }
 }, { timestamps: true });
 

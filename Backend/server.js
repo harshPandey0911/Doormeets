@@ -1,4 +1,7 @@
-// Server Entry Point
+// Force Google DNS to bypass broken local IPv6 DNS settings
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -87,10 +90,11 @@ app.use(cookieParser());
 // app.use(express.json({ limit: "20mb" })); // REMOVED redundant
 // app.use(express.urlencoded({ extended: true, limit: "20mb" })); // REMOVED redundant
 
-// DEBUG: Log Booking Request Body
-app.use('/api/users/bookings', (req, res, next) => {
-  if (req.method === 'POST') {
-    console.log('DEBUG: POST /api/users/bookings BODY:', JSON.stringify(req.body, null, 2));
+// DEBUG: Log Requests
+app.use('/api', (req, res, next) => {
+  console.log(`DEBUG: Incoming Request -> ${req.method} ${req.originalUrl}`);
+  if (req.method === 'POST' || req.method === 'PUT') {
+    console.log('DEBUG: Request Body:', JSON.stringify(req.body, null, 2));
   }
   next();
 });
@@ -181,6 +185,7 @@ app.use('/api/users', require('./routes/user-routes/cart.routes'));
 app.use('/api/users/fcm-tokens', require('./routes/user-routes/fcmToken.routes'));
 app.use('/api/users', require('./routes/user-routes/sos.routes'));
 app.use('/api/users/painting-consultations', require('./routes/user-routes/painting-consultation.routes'));
+app.use('/api/user/support', require('./routes/user-routes/support.routes'));
 
 
 // Vendor routes

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud, FiAward } from 'react-icons/fi';
 import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus } from '../../services/settingsService';
+import { supportService } from '../../services/supportService';
 import { cityService } from '../../services/cityService';
 import CityManagement from '../Cities';
 import DeletedAccountsDashboard from '../DeletedAccounts';
@@ -93,6 +94,38 @@ const AdminSettings = () => {
     ]
   });
   const [aboutLoading, setAboutLoading] = useState(false);
+
+  // Cancellation Policy settings state
+  const [cancellationSettings, setCancellationSettings] = useState({
+    freeCancellationTitle: 'Free Cancellation',
+    freeCancellationDesc: 'Until professional is assigned',
+    lateFeeTitle: 'Late Fee',
+    lateFeeDesc: 'If cancelled after assignment',
+    stage1Title: 'Before Journey Start',
+    stage1Desc: 'Any time before professional starts travel',
+    stage1RefundText: 'Full Refund • No Fee',
+    stage2Title: 'Journey Started',
+    stage2Desc: 'When professional is on the way',
+    stage2RefundText: '₹{penalty} Cancellation Penalty Applies',
+    stage3Title: 'Professional Arrived',
+    stage3Desc: 'When professional reaches your location',
+    stage3RefundText: '₹{visitingCharges} Visiting Charges Apply',
+    whyChargeTitle: 'Why do we charge a fee?',
+    whyChargeSubtitle: 'To support our professionals time & effort',
+    whyChargeDetails: 'Our service partners reserve their time exclusively for your booking and may travel significant distances. The cancellation fee compensates them for their lost time and travel expenses if a confirmed booking is cancelled last minute.',
+    rescheduleTitle: 'Need to change plans?',
+    rescheduleDesc: 'Instead of cancelling, you can reschedule your booking for free up to 2 hours before the service time.',
+    rescheduleButtonLabel: 'Go Back to Booking'
+  });
+  const [cancellationLoading, setCancellationLoading] = useState(false);
+
+  // User tickets support settings state
+  const [userTickets, setUserTickets] = useState([]);
+  const [selectedUserTicket, setSelectedUserTicket] = useState(null);
+  const [userTicketReply, setUserTicketReply] = useState('');
+  const [userTicketsLoading, setUserTicketsLoading] = useState(false);
+  const [userTicketsFilter, setUserTicketsFilter] = useState('all');
+  const [userTicketSending, setUserTicketSending] = useState(false);
 
   const [profile, setProfile] = useState({
     name: '',
@@ -260,6 +293,29 @@ const AdminSettings = () => {
             });
           }
           // Load level config settings
+          if (res.settings.cancellationPageConfig) {
+            setCancellationSettings({
+              freeCancellationTitle: res.settings.cancellationPageConfig.freeCancellationTitle || 'Free Cancellation',
+              freeCancellationDesc: res.settings.cancellationPageConfig.freeCancellationDesc || 'Until professional is assigned',
+              lateFeeTitle: res.settings.cancellationPageConfig.lateFeeTitle || 'Late Fee',
+              lateFeeDesc: res.settings.cancellationPageConfig.lateFeeDesc || 'If cancelled after assignment',
+              stage1Title: res.settings.cancellationPageConfig.stage1Title || 'Before Journey Start',
+              stage1Desc: res.settings.cancellationPageConfig.stage1Desc || 'Any time before professional starts travel',
+              stage1RefundText: res.settings.cancellationPageConfig.stage1RefundText || 'Full Refund • No Fee',
+              stage2Title: res.settings.cancellationPageConfig.stage2Title || 'Journey Started',
+              stage2Desc: res.settings.cancellationPageConfig.stage2Desc || 'When professional is on the way',
+              stage2RefundText: res.settings.cancellationPageConfig.stage2RefundText || '₹{penalty} Cancellation Penalty Applies',
+              stage3Title: res.settings.cancellationPageConfig.stage3Title || 'Professional Arrived',
+              stage3Desc: res.settings.cancellationPageConfig.stage3Desc || 'When professional reaches your location',
+              stage3RefundText: res.settings.cancellationPageConfig.stage3RefundText || '₹{visitingCharges} Visiting Charges Apply',
+              whyChargeTitle: res.settings.cancellationPageConfig.whyChargeTitle || 'Why do we charge a fee?',
+              whyChargeSubtitle: res.settings.cancellationPageConfig.whyChargeSubtitle || 'To support our professionals time & effort',
+              whyChargeDetails: res.settings.cancellationPageConfig.whyChargeDetails || 'Our service partners reserve their time exclusively for your booking and may travel significant distances. The cancellation fee compensates them for their lost time and travel expenses if a confirmed booking is cancelled last minute.',
+              rescheduleTitle: res.settings.cancellationPageConfig.rescheduleTitle || 'Need to change plans?',
+              rescheduleDesc: res.settings.cancellationPageConfig.rescheduleDesc || 'Instead of cancelling, you can reschedule your booking for free up to 2 hours before the service time.',
+              rescheduleButtonLabel: res.settings.cancellationPageConfig.rescheduleButtonLabel || 'Go Back to Booking'
+            });
+          }
           if (res.settings.levelConfig) {
             setLevelConfigSettings(res.settings.levelConfig);
           }
@@ -414,6 +470,26 @@ const AdminSettings = () => {
   // Save support settings
   const handleSupportSave = async (e) => {
     e.preventDefault();
+
+    const phoneRegex = /^[6-9]\d{9}$/;
+
+    if (!supportSettings.supportPhone || !supportSettings.supportPhone.trim()) {
+      return toast.error('Support Phone is required');
+    }
+    const phones = supportSettings.supportPhone.split(',').map(p => p.trim());
+    for (const phone of phones) {
+      if (!phoneRegex.test(phone)) {
+        return toast.error('Each Support Phone number must be a valid 10-digit number (e.g. 9876543210)');
+      }
+    }
+
+    if (!supportSettings.supportWhatsapp || !supportSettings.supportWhatsapp.trim()) {
+      return toast.error('WhatsApp Support number is required');
+    }
+    if (!phoneRegex.test(supportSettings.supportWhatsapp.trim())) {
+      return toast.error('WhatsApp Support must be a valid 10-digit number (e.g. 9876543210)');
+    }
+
     setSupportLoading(true);
     try {
       await updateSettings(supportSettings);
@@ -422,6 +498,79 @@ const AdminSettings = () => {
       toast.error('Failed to update support settings');
     } finally {
       setSupportLoading(false);
+    }
+  };
+
+  // Fetch user tickets
+  const fetchUserTickets = async () => {
+    try {
+      setUserTicketsLoading(true);
+      const params = { role: 'user' };
+      if (userTicketsFilter !== 'all') {
+        params.status = userTicketsFilter;
+      }
+      const res = await supportService.getAllTickets(params);
+      if (res.success) {
+        setUserTickets(res.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load user tickets:', err);
+    } finally {
+      setUserTicketsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeView === 'user-tickets') {
+      fetchUserTickets();
+    }
+  }, [activeView, userTicketsFilter]);
+
+  const handleUserTicketSelect = async (id) => {
+    try {
+      const res = await supportService.getTicketDetails(id);
+      if (res.success) {
+        setSelectedUserTicket(res.ticket);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user ticket details:', err);
+      toast.error('Failed to load ticket details');
+    }
+  };
+
+  const handleUserReply = async (e) => {
+    e.preventDefault();
+    if (!userTicketReply.trim() || !selectedUserTicket) return;
+
+    try {
+      setUserTicketSending(true);
+      const res = await supportService.replyToTicket(selectedUserTicket._id, { message: userTicketReply });
+      if (res.success) {
+        toast.success('Reply sent successfully');
+        setSelectedUserTicket(res.ticket);
+        setUserTicketReply('');
+        fetchUserTickets();
+      }
+    } catch (err) {
+      console.error('Failed to reply to user ticket:', err);
+      toast.error('Failed to send reply');
+    } finally {
+      setUserTicketSending(false);
+    }
+  };
+
+  const handleUserTicketStatusChange = async (newStatus) => {
+    if (!selectedUserTicket) return;
+    try {
+      const res = await supportService.updateTicketStatus(selectedUserTicket._id, newStatus);
+      if (res.success) {
+        toast.success(`Ticket marked as ${newStatus}`);
+        setSelectedUserTicket(res.ticket);
+        fetchUserTickets();
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      toast.error('Failed to update status');
     }
   };
 
@@ -442,6 +591,26 @@ const AdminSettings = () => {
       toast.error('Failed to update about page settings');
     } finally {
       setAboutLoading(false);
+    }
+  };
+
+  // Handle cancellation settings change
+  const handleCancellationChange = (e) => {
+    const { name, value } = e.target;
+    setCancellationSettings(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Save cancellation settings
+  const handleCancellationSave = async (e) => {
+    e.preventDefault();
+    setCancellationLoading(true);
+    try {
+      await updateSettings({ cancellationPageConfig: cancellationSettings });
+      toast.success('Cancellation policy settings updated');
+    } catch (error) {
+      toast.error('Failed to update cancellation policy settings');
+    } finally {
+      setCancellationLoading(false);
     }
   };
 
@@ -645,6 +814,29 @@ const AdminSettings = () => {
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">About Page</h3>
           <p className="text-sm text-gray-500">Configure dynamically the "Welcome to Doormeets" about section texts and stats</p>
+        </div>
+      )}
+      {/* Cancellation Policy Settings Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('cancellation-policy')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
+            <FiFileText className="w-6 h-6 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Cancellation Policy</h3>
+          <p className="text-sm text-gray-500">Configure dynamically the cancellation rules, timeline stages, and FAQ content</p>
+        </div>
+      )}
+
+      {/* User Tickets Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('user-tickets')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-100 transition-colors">
+            <FiMessageCircle className="w-6 h-6 text-indigo-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">User Tickets</h3>
+          <p className="text-sm text-gray-500">View and respond to support chat tickets submitted by users</p>
         </div>
       )}
 
@@ -1110,6 +1302,8 @@ const AdminSettings = () => {
                     <div className="relative">
                       <FiMessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <input type="tel" name="supportWhatsapp" value={supportSettings.supportWhatsapp} onChange={handleSupportChange}
+                        maxLength={10}
+                        placeholder="e.g. 9876543210"
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all" />
                     </div>
                   </div>
@@ -1288,6 +1482,327 @@ const AdminSettings = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          )
+        }
+
+        {/* Cancellation Policy Config View */}
+        {
+          activeView === 'cancellation-policy' && isSuperAdmin && (
+            <motion.div key="cancellation-policy" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
+              className="max-w-3xl mx-auto bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <FiFileText className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800">Cancellation Policy Config</h2>
+                  <p className="text-xs text-gray-500">Configure texts and info shown to customers on the Cancellation Policy page</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCancellationSave} className="space-y-6">
+                {/* Highlights section */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Key Highlights</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Free Cancellation Title</label>
+                      <input type="text" name="freeCancellationTitle" value={cancellationSettings.freeCancellationTitle} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Free Cancellation Description</label>
+                      <input type="text" name="freeCancellationDesc" value={cancellationSettings.freeCancellationDesc} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Late Fee Title</label>
+                      <input type="text" name="lateFeeTitle" value={cancellationSettings.lateFeeTitle} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Late Fee Description</label>
+                      <input type="text" name="lateFeeDesc" value={cancellationSettings.lateFeeDesc} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline Stages section */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Cancellation Timeline Stages</h3>
+                  
+                  {/* Stage 1 */}
+                  <div className="p-4 bg-gray-50 rounded-xl space-y-3 border border-gray-200">
+                    <span className="text-xs font-bold text-green-600 uppercase">Stage 1 (Before Journey Start)</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Title</label>
+                        <input type="text" name="stage1Title" value={cancellationSettings.stage1Title} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Description</label>
+                        <input type="text" name="stage1Desc" value={cancellationSettings.stage1Desc} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Refund Text</label>
+                        <input type="text" name="stage1RefundText" value={cancellationSettings.stage1RefundText} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 2 */}
+                  <div className="p-4 bg-gray-50 rounded-xl space-y-3 border border-gray-200">
+                    <span className="text-xs font-bold text-orange-600 uppercase">Stage 2 (Journey Started)</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Title</label>
+                        <input type="text" name="stage2Title" value={cancellationSettings.stage2Title} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Description</label>
+                        <input type="text" name="stage2Desc" value={cancellationSettings.stage2Desc} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Refund Text (use &#123;penalty&#125; for fee value)</label>
+                        <input type="text" name="stage2RefundText" value={cancellationSettings.stage2RefundText} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 3 */}
+                  <div className="p-4 bg-gray-50 rounded-xl space-y-3 border border-gray-200">
+                    <span className="text-xs font-bold text-red-600 uppercase">Stage 3 (Professional Arrived)</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Title</label>
+                        <input type="text" name="stage3Title" value={cancellationSettings.stage3Title} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Description</label>
+                        <input type="text" name="stage3Desc" value={cancellationSettings.stage3Desc} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Refund Text (use &#123;visitingCharges&#125; for fee value)</label>
+                        <input type="text" name="stage3RefundText" value={cancellationSettings.stage3RefundText} onChange={handleCancellationChange} required
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded outline-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FAQ section */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Fee FAQ / Explainer</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Section Title</label>
+                      <input type="text" name="whyChargeTitle" value={cancellationSettings.whyChargeTitle} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Section Subtitle</label>
+                      <input type="text" name="whyChargeSubtitle" value={cancellationSettings.whyChargeSubtitle} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">FAQ Description Text</label>
+                      <textarea name="whyChargeDetails" value={cancellationSettings.whyChargeDetails} onChange={handleCancellationChange} required rows="4"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm resize-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reschedule section */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Rescheduling Alternative</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Alternative Title</label>
+                      <input type="text" name="rescheduleTitle" value={cancellationSettings.rescheduleTitle} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Button Label</label>
+                      <input type="text" name="rescheduleButtonLabel" value={cancellationSettings.rescheduleButtonLabel} onChange={handleCancellationChange} required
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Alternative Description</label>
+                      <textarea name="rescheduleDesc" value={cancellationSettings.rescheduleDesc} onChange={handleCancellationChange} required rows="3"
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm resize-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100">
+                  <button type="submit" disabled={cancellationLoading}
+                    className="px-8 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-red-100 transition-all">
+                    {cancellationLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-5 h-5" />}
+                    Save Policy Settings
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )
+        }
+
+        {/* User Tickets View */}
+        {
+          activeView === 'user-tickets' && isSuperAdmin && (
+            <motion.div key="user-tickets" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
+                    <FiMessageCircle className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800">User Support Tickets</h2>
+                    <p className="text-sm text-gray-500">Total {userTickets.length} user tickets found</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <select 
+                    value={userTicketsFilter}
+                    onChange={(e) => setUserTicketsFilter(e.target.value)}
+                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 outline-none animate-none"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="waiting_on_user">Waiting on User</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-1 overflow-hidden">
+                {/* Left side list */}
+                <div className="w-1/3 border-r border-gray-100 overflow-y-auto">
+                  {userTicketsLoading ? (
+                    <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div></div>
+                  ) : userTickets.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400 text-sm">No tickets found</div>
+                  ) : (
+                    <div className="divide-y divide-gray-50">
+                      {userTickets.map(ticket => (
+                        <div 
+                          key={ticket._id}
+                          onClick={() => handleUserTicketSelect(ticket._id)}
+                          className={`p-4 cursor-pointer hover:bg-gray-50/50 transition-colors ${selectedUserTicket?._id === ticket._id ? 'bg-indigo-50/30 border-l-4 border-indigo-500' : ''}`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-bold text-gray-400">#{ticket.ticketNumber}</span>
+                            <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                              ticket.status === 'resolved' || ticket.status === 'closed' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {ticket.status.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-gray-800 text-sm truncate">{ticket.subject}</h4>
+                          <p className="text-xs text-gray-500 mt-1 truncate">By: {ticket.creator?.name || 'Unknown User'}</p>
+                          <span className="text-[9px] text-gray-400 block mt-1">{new Date(ticket.updatedAt).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right side chat */}
+                <div className="flex-1 flex flex-col bg-gray-50/30 overflow-hidden">
+                  {selectedUserTicket ? (
+                    <>
+                      {/* Ticket Detail Info Header */}
+                      <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-gray-800 text-sm">{selectedUserTicket.subject}</h3>
+                          <p className="text-xs text-gray-500">User: {selectedUserTicket.creator?.name} ({selectedUserTicket.creator?.email || 'No email'})</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleUserTicketStatusChange('resolved')}
+                            className="px-3 py-1 bg-green-600 text-white rounded text-xs font-semibold hover:bg-green-700 cursor-pointer"
+                          >
+                            Mark Resolved
+                          </button>
+                          <button
+                            onClick={() => handleUserTicketStatusChange('closed')}
+                            className="px-3 py-1 bg-gray-600 text-white rounded text-xs font-semibold hover:bg-gray-700 cursor-pointer"
+                          >
+                            Close Ticket
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Messages List */}
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {selectedUserTicket.messages.map((msg, idx) => {
+                          const isAdmin = msg.sender === 'admin';
+                          return (
+                            <div key={idx} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[70%] rounded-xl px-4 py-2 text-sm shadow-sm ${
+                                isAdmin 
+                                  ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                  : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                              }`}>
+                                <span className="text-[9px] font-semibold block mb-0.5 opacity-85">
+                                  {isAdmin ? 'You (Admin)' : selectedUserTicket.creator?.name || 'User'}
+                                </span>
+                                <p className="break-words">{msg.message}</p>
+                                <span className="text-[8px] block text-right mt-1 opacity-60">
+                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Message Input form */}
+                      {selectedUserTicket.status !== 'closed' ? (
+                        <form onSubmit={handleUserReply} className="p-4 bg-white border-t border-gray-100 flex gap-2">
+                          <input 
+                            type="text"
+                            required
+                            placeholder="Type a reply..."
+                            value={userTicketReply}
+                            onChange={(e) => setUserTicketReply(e.target.value)}
+                            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500"
+                          />
+                          <button 
+                            type="submit" 
+                            disabled={userTicketSending}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 cursor-pointer"
+                          >
+                            {userTicketSending ? 'Sending...' : 'Send'}
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="p-4 bg-gray-100 text-center text-xs text-gray-500 font-semibold">
+                          This ticket is closed.
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+                      Select a ticket from the left panel to start chat support.
+                    </div>
+                  )}
+                </div>
+              </div>
             </motion.div>
           )
         }
