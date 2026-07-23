@@ -159,6 +159,11 @@ const AdminSettings = () => {
       name: 'Level 3 (Beginner)',
       color: '#D97706',
       desc: 'You are currently on Level 3. Complete more jobs and maintain high ratings to upgrade your level.',
+      customSteps: [
+        'Complete at least 15 customer bookings',
+        'Maintain minimum 4.2 customer rating',
+        'Achieve 85%+ booking completion rate'
+      ],
       targetJobs: 15,
       targetRating: 4.2,
       targetCompletionRate: 85
@@ -168,6 +173,11 @@ const AdminSettings = () => {
       name: 'Level 2 (Professional)',
       color: '#0D9488',
       desc: 'Great job! You are a Level 2 partner. Keep providing excellent service to climb to the top Level 1.',
+      customSteps: [
+        'Complete at least 50 customer bookings',
+        'Maintain minimum 4.7 customer rating',
+        'Achieve 92%+ booking completion rate'
+      ],
       targetJobs: 50,
       targetRating: 4.7,
       targetCompletionRate: 92
@@ -177,6 +187,11 @@ const AdminSettings = () => {
       name: 'Level 1 (Expert)',
       color: '#EAB308',
       desc: 'Congratulations! You are a Level 1 Elite partner. You receive the highest preference in matching and premium job bookings.',
+      customSteps: [
+        'Complete at least 10 bookings every month',
+        'Maintain 4.7+ customer rating',
+        'Zero safety violations or major complaints'
+      ],
       targetJobs: 10,
       targetRating: 4.7,
       maintenanceDesc: 'Complete at least 10 bookings every month',
@@ -2130,9 +2145,84 @@ const AdminSettings = () => {
                       }));
                     }}
                     required
-                    rows="3"
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                    rows="2"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs mb-4"
                   />
+
+                  <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/80">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-xs font-black text-amber-900 uppercase tracking-wider">
+                        Level Upgrade Steps (Shown in Ticket Card)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLevelConfigSettings(prev => {
+                            const current = prev[activeLevelTab].customSteps || [];
+                            return {
+                              ...prev,
+                              [activeLevelTab]: {
+                                ...prev[activeLevelTab],
+                                customSteps: [...current, '']
+                              }
+                            };
+                          });
+                        }}
+                        className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-extrabold transition-all shadow-xs"
+                      >
+                        + Add Step
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {(levelConfigSettings[activeLevelTab].customSteps || []).map((stepText, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-amber-200 text-amber-900 font-extrabold text-[10px] flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={stepText}
+                            placeholder={`Step ${idx + 1} description...`}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setLevelConfigSettings(prev => {
+                                const list = [...(prev[activeLevelTab].customSteps || [])];
+                                list[idx] = val;
+                                return {
+                                  ...prev,
+                                  [activeLevelTab]: {
+                                    ...prev[activeLevelTab],
+                                    customSteps: list
+                                  }
+                                };
+                              });
+                            }}
+                            className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:border-amber-500 text-xs font-semibold text-gray-800"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLevelConfigSettings(prev => {
+                                const list = (prev[activeLevelTab].customSteps || []).filter((_, i) => i !== idx);
+                                return {
+                                  ...prev,
+                                  [activeLevelTab]: {
+                                    ...prev[activeLevelTab],
+                                    customSteps: list
+                                  }
+                                };
+                              });
+                            }}
+                            className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg text-xs font-bold transition-all"
+                            title="Delete Step"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">

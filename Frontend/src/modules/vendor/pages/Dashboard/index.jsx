@@ -771,76 +771,7 @@ const Dashboard = memo(() => {
           </div>
         )}
 
-        {/* Vendor Header Welcome & Level Badge Card */}
-        <div className="px-3.5 pt-2.5">
-          <div
-            className="rounded-md p-3 md:p-4 flex items-center justify-between shadow-md relative overflow-hidden border border-white/10"
-            style={{
-              background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
-            }}
-          >
-            {/* Glowing accents */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex items-center gap-2.5 relative z-10">
-              {/* Profile Image / Initials */}
-              {vendorProfile.photo ? (
-                <img
-                  src={vendorProfile.photo}
-                  alt={vendorProfile.name}
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-purple-500/30 shadow-md"
-                />
-              ) : (
-                <div
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-base md:text-lg select-none border-2 border-purple-500/30 shadow-md text-white"
-                  style={{
-                    background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)'
-                  }}
-                >
-                  {vendorProfile.name.charAt(0).toUpperCase()}
-                </div>
-              )}
-
-              <div>
-                <h2 className="text-sm md:text-base font-black text-white leading-tight">
-                  {vendorProfile.businessName || vendorProfile.name}
-                </h2>
-                <p className="text-[10px] md:text-[11px] font-semibold text-purple-300/80 uppercase tracking-wider mt-0.5">
-                  Partner ID: DM-{String(vendorProfile.name.slice(0, 3)).toUpperCase()}-{stats.level}
-                </p>
-              </div>
-            </div>
-
-            {/* Badges Container */}
-            <div className="flex items-center relative z-10 shrink-0">
-              {/* Performance Level Badge */}
-              <span
-                className="text-[10px] md:text-[11px] font-black px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-md uppercase tracking-wider text-white shadow-md animate-pulse"
-                style={{
-                  background: stats.level === 1
-                    ? `linear-gradient(135deg, ${levelConfig?.L1?.color || '#eab308'} 0%, ${levelConfig?.L1?.color || '#ca8a04'}cc 100%)`
-                    : stats.level === 2
-                      ? `linear-gradient(135deg, ${levelConfig?.L2?.color || '#94a3b8'} 0%, ${levelConfig?.L2?.color || '#64748b'}cc 100%)`
-                      : `linear-gradient(135deg, ${levelConfig?.L3?.color || '#b45309'} 0%, ${levelConfig?.L3?.color || '#78350f'}cc 100%)`,
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  boxShadow: stats.level === 1
-                    ? `0 4px 14px ${levelConfig?.L1?.color || '#eab308'}66`
-                    : stats.level === 2
-                      ? `0 4px 14px ${levelConfig?.L2?.color || '#94a3b8'}66`
-                      : `0 4px 14px ${levelConfig?.L3?.color || '#b45309'}66`
-                }}
-              >
-                {stats.level === 1
-                  ? `🥇 ${levelConfig?.L1?.badge || levelConfig?.L1?.name || 'Level 1'}`
-                  : stats.level === 2
-                    ? `🥈 ${levelConfig?.L2?.badge || levelConfig?.L2?.name || 'Level 2'}`
-                    : `🥉 ${levelConfig?.L3?.badge || levelConfig?.L3?.name || 'Level 3'}`
-                }
-              </span>
-            </div>
-          </div>
-        </div>
 
         {/* Banners Media Carousel */}
         {banners.length > 0 && (
