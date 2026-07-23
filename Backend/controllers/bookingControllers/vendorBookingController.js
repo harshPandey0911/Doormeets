@@ -745,6 +745,7 @@ const rejectBooking = async (req, res) => {
       _id: id,
       $or: [
         { notifiedVendors: vendorId },
+        { vendorId: vendorId },
         { vendorId: null, status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] } }
       ]
     });
@@ -1309,8 +1310,11 @@ const updateBookingStatus = async (req, res) => {
       });
     }
 
+    const oldStatus = booking.status;
+    const isStatusChanged = status && status !== oldStatus;
+
     // Validate status transition if status is changing
-    if (status && status !== booking.status) {
+    if (isStatusChanged) {
       // 2-minute cancellation limit for vendor after acceptance
       if (status === BOOKING_STATUS.CANCELLED || status === 'cancelled') {
         if (booking.acceptedAt) {
@@ -1355,7 +1359,7 @@ const updateBookingStatus = async (req, res) => {
       }
 
       if (status === BOOKING_STATUS.COMPLETED) {
-        if (booking.status === BOOKING_STATUS.WORK_DONE && booking.paymentOtp) {
+        if (oldStatus === BOOKING_STATUS.WORK_DONE && booking.paymentOtp) {
           if (!req.body.otp || req.body.otp !== booking.paymentOtp) {
             return res.status(400).json({ success: false, message: 'Invalid or missing OTP for completion' });
           }
@@ -1377,8 +1381,8 @@ const updateBookingStatus = async (req, res) => {
 
     await booking.save();
 
-    // Send notification
-    if (status === BOOKING_STATUS.COMPLETED) {
+    // Send completion notification ONLY if status actually changed to COMPLETED
+    if (isStatusChanged && status === BOOKING_STATUS.COMPLETED) {
       createNotification({
         userId: booking.userId,
         type: 'booking_completed',
@@ -1392,10 +1396,6 @@ const updateBookingStatus = async (req, res) => {
           link: `/user/booking/${booking._id}`
         }
       });
-
-      // Send FCM push notification to user
-      // Manual push removed - auto handled by createNotification
-      // sendNotificationToUser(booking.userId, { ... });
 
       // SEND INVOICE EMAILS
       try {
@@ -1411,14 +1411,16 @@ const updateBookingStatus = async (req, res) => {
       }
     }
 
-    // Emit socket event for real-time UI refresh
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`user_${booking.userId}`).emit('booking_updated', {
-        bookingId: booking._id,
-        status: booking.status,
-        message: `Booking status updated to ${booking.status}`
-      });
+    // Emit socket event for real-time UI refresh ONLY if status actually changed
+    if (isStatusChanged) {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${booking.userId}`).emit('booking_updated', {
+          bookingId: booking._id,
+          status: booking.status,
+          message: `Booking status updated to ${booking.status}`
+        });
+      }
     }
 
     // ── Update Vendor Performance Stats & Availability ──

@@ -274,10 +274,24 @@ const Dashboard = memo(() => {
     });
   }, []);
 
+  // Load initial data from cache if available for instant 0ms rendering
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem('vendor_dashboard_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.statsRes) processApiResponse(parsed.statsRes);
+        if (parsed.banners) setBanners(parsed.banners);
+        setLoading(false);
+      }
+    } catch (e) {}
+  }, [processApiResponse]);
+
   // Main data loader - useCallback to prevent recreation
   const loadDashboardData = useCallback(async (showSpinner = true) => {
     try {
-      if (showSpinner) setLoading(true);
+      const hasCache = !!sessionStorage.getItem('vendor_dashboard_cache');
+      if (showSpinner && !hasCache) setLoading(true);
       setError(null);
 
       const [statsRes, bannersRes] = await Promise.all([
@@ -289,6 +303,12 @@ const Dashboard = memo(() => {
       if (bannersRes.success) {
         setBanners(bannersRes.data || []);
       }
+
+      // Save to cache for instant 0ms subsequent loads
+      sessionStorage.setItem('vendor_dashboard_cache', JSON.stringify({
+        statsRes,
+        banners: bannersRes.data || []
+      }));
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       setError(String(err.message || 'Failed to load dashboard data'));
@@ -298,9 +318,8 @@ const Dashboard = memo(() => {
   }, [processApiResponse]);
 
   useEffect(() => {
-    // loadDashboardData handles the subscription check implicitly via API call (interceptor handles 403)
-    // This prevents the "flicker" where it redirects to subscription page based on stale localStorage
-    loadDashboardData();
+    // loadDashboardData handles the subscription check implicitly via API call
+    loadDashboardData(false);
   }, [loadDashboardData]);
 
   // Check for redirected state (to open a specific alert modal)

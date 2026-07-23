@@ -40,14 +40,29 @@ const ActiveJobs = memo(() => {
     };
   }, []);
 
+  // Load initial cached jobs for instant 0ms render
+  useEffect(() => {
+    try {
+      const cacheKey = `vendor_active_jobs_${filter}_${searchQuery}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setJobs(parsed);
+        setLoading(false);
+      }
+    } catch (e) {}
+  }, [filter, searchQuery]);
+
   // Memoize loadJobs to prevent recreation
   const loadJobs = useCallback(async (currentFilter, currentSearch) => {
+    const cacheKey = `vendor_active_jobs_${currentFilter}_${currentSearch}`;
+    const hasCache = !!sessionStorage.getItem(cacheKey);
     try {
-      setLoading(true);
+      if (!hasCache) setLoading(true);
       const response = await getBookings({
         status: currentFilter,
         q: currentSearch,
-        limit: 50 // Fetch more than default since we removed client-side filter
+        limit: 50
       });
       const jobsData = response.data || [];
       // Map API response to Component State structure
@@ -72,6 +87,8 @@ const ActiveJobs = memo(() => {
           time: job.scheduledTime || 'Time'
         }
       }));
+
+      sessionStorage.setItem(cacheKey, JSON.stringify(mappedJobs));
       setJobs(mappedJobs);
     } catch (error) {
       console.error('Error loading jobs:', error);

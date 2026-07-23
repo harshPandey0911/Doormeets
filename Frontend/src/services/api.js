@@ -188,7 +188,16 @@ api.interceptors.response.use(
         console.error('Account frozen:', error.response.data.message);
         // Don't redirect; let the component handle the frozen state
       } else {
-        console.error('Access Denied (403):', error.response.data.message);
+        console.error('Access Denied (403):', error.response?.data?.message || 'Forbidden');
+      }
+    }
+
+    // Automatic retry for transient Network Errors (e.g. ERR_NETWORK_CHANGED) on GET requests
+    if ((error.code === 'ERR_NETWORK' || error.message === 'Network Error') && originalRequest && !originalRequest._retryNetwork) {
+      if (!originalRequest.method || originalRequest.method.toLowerCase() === 'get') {
+        originalRequest._retryNetwork = true;
+        await new Promise(res => setTimeout(res, 600));
+        return api(originalRequest);
       }
     }
 

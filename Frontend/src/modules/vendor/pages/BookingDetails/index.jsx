@@ -722,9 +722,22 @@ export default function BookingDetails() {
     };
   }, []);
 
-  const loadBooking = async () => {
+  // Load cached booking details immediately for instant 0ms render
+  useEffect(() => {
     try {
-      setLoading(true);
+      const cached = sessionStorage.getItem(`vendor_booking_${id}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setBooking(parsed);
+        setLoading(false);
+      }
+    } catch (e) {}
+  }, [id]);
+
+  const loadBooking = async (showSpinner = true) => {
+    try {
+      const hasCache = !!sessionStorage.getItem(`vendor_booking_${id}`);
+      if (showSpinner && !hasCache) setLoading(true);
       let billData = null;
 
       const [bookingRes, billRes] = await Promise.all([
@@ -797,6 +810,7 @@ export default function BookingDetails() {
         finalSettlementStatus: apiData.finalSettlementStatus
       };
 
+      sessionStorage.setItem(`vendor_booking_${id}`, JSON.stringify(mappedBooking));
       setBooking(mappedBooking);
     } catch (error) {
       // Error loading booking
@@ -806,11 +820,12 @@ export default function BookingDetails() {
   };
 
   useEffect(() => {
-    loadBooking();
-    window.addEventListener('vendorJobsUpdated', loadBooking);
+    loadBooking(false);
+    const handleRefresh = () => loadBooking(false);
+    window.addEventListener('vendorJobsUpdated', handleRefresh);
 
     return () => {
-      window.removeEventListener('vendorJobsUpdated', loadBooking);
+      window.removeEventListener('vendorJobsUpdated', handleRefresh);
     };
   }, [id]);
 
