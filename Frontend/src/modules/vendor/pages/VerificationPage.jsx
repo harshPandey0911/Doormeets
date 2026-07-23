@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import api from '../../../services/api';
+import { configService } from '../../../services/configService';
 import LogoLoader from '../../../components/common/LogoLoader';
 import SubscriptionSelection from './Subscription/SubscriptionSelection'; // Reusing existing component
 import MCQTest from './Training/MCQTest'; // Import MCQ Test
@@ -49,6 +50,15 @@ const VerificationPage = () => {
   // 1 = Aadhaar & PAN Upload, 2 = Police Verification upload, 3 = Video, 4 = MCQ, 5 = Subscription
   const [levelInfo, setLevelInfo] = useState(null);
   const [canSubmitVideo, setCanSubmitVideo] = useState(false);
+  const [adminLevelConfig, setAdminLevelConfig] = useState(null);
+
+  useEffect(() => {
+    configService.getSettings().then(res => {
+      if (res?.success && res?.settings?.levelConfig) {
+        setAdminLevelConfig(res.settings.levelConfig);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Refs for tracking HTML5 and YouTube watch times
   const playerRef = React.useRef(null);
@@ -900,7 +910,11 @@ const VerificationPage = () => {
                     ? 'bg-blue-500'
                     : 'bg-red-500'
                 }`}>
-                {levelInfo.level === 'L1' || levelInfo.level === 1 ? 'Level 1 — Premium' : levelInfo.level === 'L2' || levelInfo.level === 2 ? 'Level 2 — Standard' : 'Level 3 — Basic'}
+                {levelInfo.level === 'L1' || levelInfo.level === 1
+                  ? adminLevelConfig?.L1?.badge || adminLevelConfig?.L1?.name || 'Level 1 — Premium'
+                  : levelInfo.level === 'L2' || levelInfo.level === 2
+                    ? adminLevelConfig?.L2?.badge || adminLevelConfig?.L2?.name || 'Level 2 — Standard'
+                    : adminLevelConfig?.L3?.badge || adminLevelConfig?.L3?.name || 'Level 3 — Basic'}
               </span>
               <p className="text-gray-700 text-sm mt-3 font-medium leading-relaxed">
                 {levelInfo.level === 'L1' || levelInfo.level === 1

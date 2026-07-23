@@ -147,6 +147,7 @@ const VendorRoutes = () => {
               <Route path="/about-cleaning-expert" element={<ProtectedRoute userType="vendor"><AboutCleaningExpert /></ProtectedRoute>} />
               <Route path="/my-services" element={<ProtectedRoute userType="vendor"><MyServices /></ProtectedRoute>} />
               <Route path="/my-level" element={<ProtectedRoute userType="vendor"><MyLevel /></ProtectedRoute>} />
+              <Route path="/targets" element={<ProtectedRoute userType="vendor"><MyLevel /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute userType="vendor"><Categories /></ProtectedRoute>} />
               <Route path="/categories/:categoryId" element={<ProtectedRoute userType="vendor"><CategoryDetail /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute userType="vendor"><Categories /></ProtectedRoute>} />

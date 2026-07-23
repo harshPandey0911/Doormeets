@@ -1,35 +1,18 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiAward, FiStar, FiCheckCircle, FiInfo, FiChevronLeft, FiActivity, FiShield } from 'react-icons/fi';
-import { vendorTheme as themeColors } from '../../../../theme';
+import React, { useState, useEffect } from 'react';
+import { FiAward, FiStar, FiCheckCircle, FiInfo, FiShield } from 'react-icons/fi';
 import { vendorAuthService } from '../../../../services/authService';
 import { configService } from '../../../../services/configService';
-import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import LogoLoader from '../../../../components/common/LogoLoader';
 
 const MyLevel = () => {
-  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [dynamicConfig, setDynamicConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState('L3'); // 'L3', 'L2', 'L1'
 
-  useLayoutEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const root = document.getElementById('root');
-    const bgStyle = themeColors.backgroundGradient;
 
-    if (html) html.style.background = bgStyle;
-    if (body) body.style.background = bgStyle;
-    if (root) root.style.background = bgStyle;
 
-    return () => {
-      if (html) html.style.background = '';
-      if (body) body.style.background = '';
-      if (root) root.style.background = '';
-    };
-  }, []);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -40,6 +23,9 @@ const MyLevel = () => {
         ]);
         if (res && res.success) {
           setProfile(res.vendor);
+          if (res.vendor?.currentLevel) {
+            setSelectedTab(res.vendor.currentLevel);
+          }
         }
         if (configRes && configRes.success && configRes.settings?.levelConfig) {
           setDynamicConfig(configRes.settings.levelConfig);
@@ -58,7 +44,7 @@ const MyLevel = () => {
   }
 
   // Fallback defaults
-  const currentLevel = profile?.currentLevel || 'L3'; // 'L1', 'L2', 'L3'
+  const userCurrentLevel = profile?.currentLevel || 'L3'; // 'L1', 'L2', 'L3'
   const rating = profile?.rating || 0;
   const totalJobs = profile?.totalJobs || 0;
   const completionRate = profile?.completionRate || 0;
@@ -66,184 +52,286 @@ const MyLevel = () => {
   // Level Details Configuration
   const levelsInfo = {
     L3: {
-      name: dynamicConfig?.L3?.name || 'Level 3 (Beginner)',
+      key: 'L3',
+      name: dynamicConfig?.L3?.badge || dynamicConfig?.L3?.name || 'Level 3',
       badge: dynamicConfig?.L3?.badge || 'Bronze Partner',
-      color: dynamicConfig?.L3?.color || '#D97706', // Amber/Bronze
-      bg: `linear-gradient(135deg, ${(dynamicConfig?.L3?.color || '#D97706')}10 0%, ${(dynamicConfig?.L3?.color || '#D97706')}20 100%)`,
+      color: dynamicConfig?.L3?.color || '#D97706',
+      bg: `linear-gradient(135deg, ${(dynamicConfig?.L3?.color || '#D97706')}15 0%, ${(dynamicConfig?.L3?.color || '#D97706')}30 100%)`,
       text: dynamicConfig?.L3?.color || '#D97706',
       desc: dynamicConfig?.L3?.desc || 'You are currently on Level 3. Complete more jobs and maintain high ratings to upgrade your level.',
       steps: [
-        { label: `Complete ${dynamicConfig?.L3?.targetJobs || 15} successful bookings`, target: dynamicConfig?.L3?.targetJobs || 15, current: totalJobs, metric: 'jobs' },
-        { label: `Maintain a customer rating of ${dynamicConfig?.L3?.targetRating || 4.2} or above`, target: dynamicConfig?.L3?.targetRating || 4.2, current: rating, metric: 'rating' },
-        { label: `Keep job completion rate above ${dynamicConfig?.L3?.targetCompletionRate || 85}%`, target: dynamicConfig?.L3?.targetCompletionRate || 85, current: Math.round(completionRate), metric: 'percent' }
+        { label: `Target Completed Bookings`, target: dynamicConfig?.L3?.targetJobs || 15, current: totalJobs, metric: 'jobs' },
+        { label: `Min Customer Rating`, target: dynamicConfig?.L3?.targetRating || 4.2, current: rating, metric: 'rating' },
+        { label: `Min Completion Rate`, target: dynamicConfig?.L3?.targetCompletionRate || 85, current: Math.round(completionRate), metric: 'percent' }
       ],
-      nextLevel: 'Level 2'
+      nextLevel: dynamicConfig?.L2?.badge || dynamicConfig?.L2?.name || 'Level 2'
     },
     L2: {
-      name: dynamicConfig?.L2?.name || 'Level 2 (Professional)',
+      key: 'L2',
+      name: dynamicConfig?.L2?.badge || dynamicConfig?.L2?.name || 'Level 2',
       badge: dynamicConfig?.L2?.badge || 'Silver Partner',
-      color: dynamicConfig?.L2?.color || '#0D9488', // Teal/Silver
-      bg: `linear-gradient(135deg, ${(dynamicConfig?.L2?.color || '#0D9488')}10 0%, ${(dynamicConfig?.L2?.color || '#0D9488')}20 100%)`,
+      color: dynamicConfig?.L2?.color || '#0D9488',
+      bg: `linear-gradient(135deg, ${(dynamicConfig?.L2?.color || '#0D9488')}15 0%, ${(dynamicConfig?.L2?.color || '#0D9488')}30 100%)`,
       text: dynamicConfig?.L2?.color || '#0D9488',
       desc: dynamicConfig?.L2?.desc || 'Great job! You are a Level 2 partner. Keep providing excellent service to climb to the top Level 1.',
       steps: [
-        { label: `Complete ${dynamicConfig?.L2?.targetJobs || 50} successful bookings in total`, target: dynamicConfig?.L2?.targetJobs || 50, current: totalJobs, metric: 'jobs' },
-        { label: `Maintain a customer rating of ${dynamicConfig?.L2?.targetRating || 4.7} or above`, target: dynamicConfig?.L2?.targetRating || 4.7, current: rating, metric: 'rating' },
-        { label: `Keep job completion rate above ${dynamicConfig?.L2?.targetCompletionRate || 92}%`, target: dynamicConfig?.L2?.targetCompletionRate || 92, current: Math.round(completionRate), metric: 'percent' }
+        { label: `Target Completed Bookings`, target: dynamicConfig?.L2?.targetJobs || 50, current: totalJobs, metric: 'jobs' },
+        { label: `Min Customer Rating`, target: dynamicConfig?.L2?.targetRating || 4.7, current: rating, metric: 'rating' },
+        { label: `Min Completion Rate`, target: dynamicConfig?.L2?.targetCompletionRate || 92, current: Math.round(completionRate), metric: 'percent' }
       ],
-      nextLevel: 'Level 1'
+      nextLevel: dynamicConfig?.L1?.badge || dynamicConfig?.L1?.name || 'Level 1'
     },
     L1: {
-      name: dynamicConfig?.L1?.name || 'Level 1 (Expert)',
+      key: 'L1',
+      name: dynamicConfig?.L1?.badge || dynamicConfig?.L1?.name || 'Level 1',
       badge: dynamicConfig?.L1?.badge || 'Gold Elite Partner',
-      color: dynamicConfig?.L1?.color || '#EAB308', // Gold
-      bg: `linear-gradient(135deg, ${(dynamicConfig?.L1?.color || '#EAB308')}10 0%, ${(dynamicConfig?.L1?.color || '#EAB308')}20 100%)`,
+      color: dynamicConfig?.L1?.color || '#EAB308',
+      bg: `linear-gradient(135deg, ${(dynamicConfig?.L1?.color || '#EAB308')}15 0%, ${(dynamicConfig?.L1?.color || '#EAB308')}30 100%)`,
       text: dynamicConfig?.L1?.color || '#EAB308',
       desc: dynamicConfig?.L1?.desc || 'Congratulations! You are a Level 1 Elite partner. You receive the highest preference in matching and premium job bookings.',
       steps: [
-        { label: dynamicConfig?.L1?.maintenanceDesc || 'Complete at least 10 bookings every month', target: dynamicConfig?.L1?.targetJobs || 10, current: 'Ongoing', metric: 'text' },
-        { label: `Maintain a customer rating of ${dynamicConfig?.L1?.targetRating || 4.7} or above`, target: dynamicConfig?.L1?.targetRating || 4.7, current: rating, metric: 'rating' },
-        { label: dynamicConfig?.L1?.violationDesc || 'Zero safety violations or major complaints', target: 0, current: 'Clean', metric: 'text' }
+        { label: `Target Completed Bookings`, target: dynamicConfig?.L1?.targetJobs || 100, current: totalJobs, metric: 'jobs' },
+        { label: `Min Customer Rating`, target: dynamicConfig?.L1?.targetRating || 4.7, current: rating, metric: 'rating' },
+        { label: `Min Completion Rate`, target: dynamicConfig?.L1?.targetCompletionRate || 95, current: Math.round(completionRate), metric: 'percent' }
       ],
       nextLevel: null
     }
   };
 
-  const currentLevelInfo = levelsInfo[currentLevel] || levelsInfo.L3;
+  const activeLevelInfo = levelsInfo[selectedTab] || levelsInfo.L3;
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: themeColors.backgroundGradient }}>
-      <Header title="My Partner Level" />
+    <div className="min-h-screen pb-20 bg-gray-50">
+      {/* ─── Full-width Red Theme Top Section with Subtle Curved Bottom ─── */}
+      <div
+        className="relative pt-4 pb-4 overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #E5534C 0%, #F06E67 50%, #D3433C 100%)',
+          borderBottomLeftRadius: '50% 24px',
+          borderBottomRightRadius: '50% 24px',
+        }}
+      >
+        {/* Decorative white blobs in bg */}
+        <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+        <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
 
-      <main className="px-4 py-6 max-w-lg mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate('/vendor/profile')}
-          className="flex items-center gap-1.5 text-xs font-bold text-gray-500 mb-5 active:scale-95 transition-transform"
-        >
-          <FiChevronLeft className="w-4 h-4" />
-          Back to Profile
-        </button>
+        <div className="px-4 max-w-lg mx-auto flex justify-center py-1 min-h-[235px] relative items-center">
+          {/* ─── Stacked Cards Deck (Taas ke Patte Style with Swap) ─── */}
+          {['L3', 'L2', 'L1'].map((lvlKey) => {
+            const lvl = levelsInfo[lvlKey];
+            const isSelected = selectedTab === lvlKey;
+            const isUserCurrent = userCurrentLevel === lvlKey;
 
-        {/* Level Banner Card */}
-        <div
-          className="rounded-2xl p-6 mb-6 shadow-md border relative overflow-hidden"
-          style={{
-            background: currentLevelInfo.bg,
-            borderColor: `${currentLevelInfo.color}30`
-          }}
-        >
-          {/* Decorative Medal Background Icon */}
-          <FiAward
-            className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10"
-            style={{ color: currentLevelInfo.color }}
-          />
+            // Stack Positions based on relative index to selectedTab
+            const levelOrder = ['L3', 'L2', 'L1'];
+            const selIdx = levelOrder.indexOf(selectedTab);
+            const thisIdx = levelOrder.indexOf(lvlKey);
+            const diff = (thisIdx - selIdx + 3) % 3; // 0 = front (selected), 1 = middle/back, 2 = deep back
 
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-sm border-2 border-white"
-              style={{ backgroundColor: `${currentLevelInfo.color}15` }}
-            >
-              <FiAward className="w-9 h-9" style={{ color: currentLevelInfo.color }} />
-            </div>
+            // Calculate rotation & translation so cards are tilted left while peeking to the right
+            let rotate = '-5deg';
+            let translateX = '0px';
+            let translateY = '0px';
+            let zIndex = 30;
+            let opacity = 1;
 
-            <span
-              className="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-1"
-              style={{
-                backgroundColor: `${currentLevelInfo.color}20`,
-                color: currentLevelInfo.color
-              }}
-            >
-              {currentLevelInfo.badge}
-            </span>
+            if (diff === 0) {
+              // Front Active Selected Card (Tilted Left)
+              rotate = '-5deg';
+              translateX = '0px';
+              translateY = '0px';
+              zIndex = 30;
+              opacity = 1;
+            } else if (diff === 1) {
+              // 1st Card behind (Slightly less tilted left, peeking Right)
+              rotate = '-1deg';
+              translateX = '16px';
+              translateY = '4px';
+              zIndex = 20;
+              opacity = 0.9;
+            } else {
+              // 2nd Card deep behind (Peeking Further Right)
+              rotate = '3deg';
+              translateX = '30px';
+              translateY = '8px';
+              zIndex = 10;
+              opacity = 0.8;
+            }
 
-            <h2 className="text-xl font-black mb-2" style={{ color: currentLevelInfo.text }}>
-              {currentLevelInfo.name}
-            </h2>
+            // Click handler: if clicking top selected card, swap to next level card in cycle
+            const handleCardClick = () => {
+              if (isSelected) {
+                const nextTab = levelOrder[(selIdx + 1) % 3];
+                setSelectedTab(nextTab);
+              } else {
+                setSelectedTab(lvlKey);
+              }
+            };
 
-            <p className="text-xs font-medium leading-relaxed max-w-xs" style={{ color: `${currentLevelInfo.text}CC` }}>
-              {currentLevelInfo.desc}
-            </p>
-          </div>
+            return (
+              <div
+                key={lvlKey}
+                onClick={handleCardClick}
+                className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[245px] cursor-pointer border ${
+                  isSelected
+                    ? 'shadow-amber-950/40 ring-2 ring-white/90'
+                    : 'hover:opacity-100'
+                }`}
+                style={{
+                  transform: `translate(${translateX}, ${translateY}) rotate(${rotate}) scale(${diff === 0 ? 1.04 : 0.95})`,
+                  zIndex: zIndex,
+                  opacity: opacity,
+                  transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  borderColor: isSelected ? lvl.color : '#E5E7EB',
+                  WebkitMaskImage: 'radial-gradient(circle 14px at 0px 50%, transparent 100%, black 100%), radial-gradient(circle 14px at 100% 50%, transparent 100%, black 100%)',
+                  maskImage: 'radial-gradient(circle 14px at 0px 50%, transparent 100%, black 100%), radial-gradient(circle 14px at 100% 50%, transparent 100%, black 100%)',
+                  WebkitMaskComposite: 'destination-in',
+                  maskComposite: 'intersect'
+                }}
+              >
+                {/* Ticket TOP: Icon + Name + Desc */}
+                <div className="flex flex-col items-center text-center px-3 pt-3 pb-1.5 relative">
+                  {isUserCurrent && (
+                    <span className="absolute top-2 right-2 bg-emerald-500 text-white px-1.5 py-0.2 rounded-full text-[7.5px] font-black tracking-wider shadow-xs">
+                      CURRENT
+                    </span>
+                  )}
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center mb-1 shadow-md border-2 border-white"
+                    style={{ backgroundColor: lvl.color }}
+                  >
+                    <FiAward className="w-5 h-5 text-white" />
+                  </div>
+
+                  <h2
+                    className="text-base font-black tracking-tight mb-0.5 capitalize flex items-center gap-1"
+                    style={{ color: lvl.color }}
+                  >
+                    {lvl.name}
+                  </h2>
+
+                  <p className="text-[9px] font-medium leading-tight text-gray-500 max-w-[190px] line-clamp-2">
+                    {lvl.desc}
+                  </p>
+                </div>
+
+                {/* Dashed Line Divider */}
+                <div className="px-5 my-0.5">
+                  <div
+                    className="w-full border-t border-dashed"
+                    style={{ borderColor: `${lvl.color}33` }}
+                  />
+                </div>
+
+                {/* Ticket BOTTOM: Stats */}
+                <div className="grid grid-cols-3 px-2 py-1.5 bg-gray-50/60">
+                  <div className="flex flex-col items-center gap-0">
+                    <div className="flex items-center gap-0.5">
+                      <FiStar className="w-3 h-3 text-amber-500 fill-amber-400" />
+                      <span className="text-xs font-black text-gray-800">
+                        {rating > 0 ? rating.toFixed(1) : 'N/A'}
+                      </span>
+                    </div>
+                    <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider">Rating</span>
+                  </div>
+
+                  <div
+                    className="flex flex-col items-center gap-0 border-x"
+                    style={{ borderColor: `${lvl.color}22` }}
+                  >
+                    <span className="text-xs font-black text-gray-800">{totalJobs}</span>
+                    <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider text-center leading-tight">
+                      Jobs Done
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-0">
+                    <span className="text-xs font-black text-gray-800">{Math.round(completionRate)}%</span>
+                    <span className="text-[7px] font-bold text-gray-400 uppercase tracking-wider">Completion</span>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+          {/* ─── End Stacked Cards Deck ─── */}
+
         </div>
+      </div>
+      {/* ─── End Red Section ─── */}
 
-        {/* Current Metrics Summary */}
-        <div className="bg-white rounded-2xl p-5 shadow-xs border border-gray-100 mb-6">
-          <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-            <FiActivity className="w-4 h-4 text-teal-600" />
-            Your Current Stats
-          </h3>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase">Rating</span>
-              <span className="text-base font-black text-gray-800 flex items-center justify-center gap-1 mt-1">
-                <FiStar className="w-4 h-4 text-amber-500 fill-amber-500" />
-                {rating > 0 ? rating.toFixed(1) : 'N/A'}
-              </span>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase">Jobs Done</span>
-              <span className="text-base font-black text-gray-800 block mt-1">{totalJobs}</span>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase">Completion</span>
-              <span className="text-base font-black text-gray-800 block mt-1">{Math.round(completionRate)}%</span>
-            </div>
-          </div>
-        </div>
+      {/* ─── Below section: Requirements + Benefits ─── */}
+      <main className="px-4 pt-4 pb-6 max-w-lg mx-auto">
 
-        {/* Upgrade / Maintenance Roadmap */}
-        <div className="bg-white rounded-2xl p-5 shadow-xs border border-gray-100 mb-6">
+        {/* Requirements & Target Metrics */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
           <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-            <FiShield className="w-4 h-4 text-orange-600" />
-            {currentLevel === 'L1' ? 'Level 1 Maintenance Criteria' : `Steps to reach ${currentLevelInfo.nextLevel}`}
+            <FiShield className="w-4 h-4 text-[#B33A35]" />
+            Requirements &amp; Targets ({activeLevelInfo.name})
           </h3>
 
           <div className="space-y-4">
-            {currentLevelInfo.steps.map((step, idx) => {
-              // Check if requirement is met
+            {activeLevelInfo.steps.map((step, idx) => {
               let isMet = false;
+              let currentVal = 0;
+              let targetVal = step.target;
+              let percent = 0;
+
               if (step.metric === 'jobs') {
+                currentVal = totalJobs;
                 isMet = totalJobs >= step.target;
+                percent = Math.min(100, Math.max(0, (totalJobs / step.target) * 100));
               } else if (step.metric === 'rating') {
+                currentVal = rating;
                 isMet = rating >= step.target;
+                percent = Math.min(100, Math.max(0, (rating / step.target) * 100));
               } else if (step.metric === 'percent') {
+                currentVal = Math.round(completionRate);
                 isMet = completionRate >= step.target;
-              } else {
-                isMet = true; // default met for text descriptions
+                percent = Math.min(100, Math.max(0, (completionRate / step.target) * 100));
               }
 
               return (
-                <div key={idx} className="flex items-start gap-3.5 p-3 rounded-xl bg-gray-50/60 border border-gray-100">
-                  <FiCheckCircle
-                    className={`w-5 h-5 shrink-0 mt-0.5 ${
-                      isMet ? 'text-green-500 fill-green-50' : 'text-gray-300'
-                    }`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-gray-700 leading-tight">
-                      {step.label}
-                    </p>
-                    {step.metric !== 'text' && (
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Progress</span>
-                        <span className="text-[10px] font-extrabold" style={{ color: isMet ? '#10B981' : '#F59E0B' }}>
-                          {step.current} / {step.target}
-                          {step.metric === 'percent' ? '%' : ''}
-                        </span>
-                      </div>
-                    )}
-                    {step.metric !== 'text' && (
-                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1 overflow-hidden">
-                        <div
-                          className="h-1.5 rounded-full transition-all duration-500"
-                          style={{
-                            backgroundColor: isMet ? '#10B981' : '#F59E0B',
-                            width: `${Math.min(100, Math.max(0, (step.metric === 'rating' ? (rating / step.target) * 100 : (totalJobs / step.target) * 100)))}%`
-                          }}
-                        />
-                      </div>
-                    )}
+                <div key={idx} className="p-3.5 rounded-xl bg-gray-50/70 border border-gray-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FiCheckCircle
+                        className={`w-4 h-4 shrink-0 ${
+                          isMet ? 'text-emerald-500 fill-emerald-50' : 'text-gray-300'
+                        }`}
+                      />
+                      <span className="text-xs font-bold text-gray-800">
+                        {step.label}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        isMet ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      {isMet ? 'TARGET MET ✓' : 'IN PROGRESS'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] pt-1">
+                    <span className="font-semibold text-gray-400">Current Progress</span>
+                    <span className="font-extrabold text-gray-800">
+                      {step.metric === 'rating' ? (currentVal > 0 ? currentVal.toFixed(1) : '0.0') : currentVal}
+                      {step.metric === 'percent' ? '%' : ''} / {targetVal}{step.metric === 'percent' ? '%' : ''}
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-2 rounded-full transition-all duration-500"
+                      style={{
+                        backgroundColor: isMet ? '#10B981' : activeLevelInfo.color,
+                        width: `${percent}%`
+                      }}
+                    />
                   </div>
                 </div>
               );
@@ -252,15 +340,16 @@ const MyLevel = () => {
         </div>
 
         {/* Benefits Info Box */}
-        <div className="bg-teal-50/60 rounded-2xl p-4 border border-teal-100 flex gap-3">
-          <FiInfo className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
+        <div className="bg-red-50/70 rounded-2xl p-4 border border-red-100 flex gap-3">
+          <FiInfo className="w-5 h-5 text-[#B33A35] shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <h4 className="text-xs font-black text-teal-950">Why Level matters?</h4>
-            <p className="text-[11px] text-teal-900/80 leading-relaxed font-semibold">
-              Higher-level partners receive bookings on priority, pay lower platform commissions, and get special elite badges on their profiles visible to customers!
+            <h4 className="text-xs font-black text-[#9E2E2A]">Why Level Target Matters?</h4>
+            <p className="text-[11px] text-gray-600 leading-relaxed font-medium">
+              Achieving your level targets grants high matching priority for new customer bookings, lower commission rates, and an exclusive verified badge!
             </p>
           </div>
         </div>
+
       </main>
 
       <BottomNav />

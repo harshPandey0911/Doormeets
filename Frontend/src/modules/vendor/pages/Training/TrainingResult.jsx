@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   FiCheckCircle, FiXCircle, FiAward, FiRefreshCw,
   FiArrowRight, FiBookOpen, FiHome
 } from 'react-icons/fi';
+import { configService } from '../../../../services/configService';
 
 const levelConfig = {
   L1: {
@@ -91,7 +92,24 @@ const TrainingResult = () => {
   }
 
   const { score, correctAnswers, totalQuestions, levelAssigned, passed, attemptNumber, nextAttemptAt, answerReview } = result;
-  const level = levelConfig[levelAssigned] || levelConfig.L3;
+  const [adminLevelConfig, setAdminLevelConfig] = useState(null);
+
+  useEffect(() => {
+    configService.getSettings().then(res => {
+      if (res?.success && res?.settings?.levelConfig) {
+        setAdminLevelConfig(res.settings.levelConfig);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const staticLevel = levelConfig[levelAssigned] || levelConfig.L3;
+  const adminInfo = adminLevelConfig?.[levelAssigned];
+  const level = {
+    ...staticLevel,
+    label: adminInfo?.badge || adminInfo?.name || staticLevel.label,
+    message: adminInfo?.desc || staticLevel.message,
+    color: adminInfo?.color || staticLevel.color,
+  };
   const [showReview, setShowReview] = React.useState(false);
 
   return (

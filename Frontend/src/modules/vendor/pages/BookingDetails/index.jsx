@@ -1578,7 +1578,7 @@ export default function BookingDetails() {
       id: 8,
       title: 'Finish Job',
       icon: FiCheckCircle,
-      description: 'Step 2: Close Booking',
+      description: 'Close Booking',
       timestamp: booking?.completedAt
     }
   ];
@@ -1732,601 +1732,57 @@ export default function BookingDetails() {
             )}
           </>
         )}
-        {/* Service Type Card */}
-        <div
-          className="bg-white rounded-xl p-4 mb-4 shadow-md"
-          style={{
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Service Type</p>
-              <p className="text-base font-semibold text-gray-800">
-                {booking.serviceType}
-              </p>
-            </div>
-             <div className="flex flex-col items-end gap-1 shrink-0">
-              <div
-                className="w-24 py-1 rounded-full text-xs font-semibold flex items-center justify-center text-center"
-                style={{
-                  background: `${themeColors.button}15`,
-                  color: themeColors.button,
-                }}
-              >
-                {booking.status}
-              </div>
-              {booking.assignedTo?.name === 'You (Self)' && (
-                <span className="w-24 py-1 rounded-full text-[9px] font-bold text-green-600 bg-green-50 border border-green-100 uppercase tracking-wider flex items-center justify-center text-center">
-                  Personal Job
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* User Info Card */}
-        <div className="bg-white rounded-xl shadow-md mb-4 overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
-          <div
-            onClick={() => setIsCustomerInfoExpanded(!isCustomerInfoExpanded)}
-            className="p-4 bg-gray-50/50 flex items-center justify-between cursor-pointer border-b border-gray-100"
-          >
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-              <FiUser className="w-4 h-4" style={{ color: themeColors.icon }} />
-              Customer Information
-            </h3>
-            {isCustomerInfoExpanded ? (
-              <FiChevronUp className="w-4 h-4 text-gray-400" />
-            ) : (
-              <FiChevronDown className="w-4 h-4 text-gray-400" />
-            )}
-          </div>
-          {isCustomerInfoExpanded && (
-            <div className="p-4">
-              {/* Customer Contact row */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+
+        {/* Booking Timeline */}
+        <div className="relative pl-0 pr-1.5 sm:px-1 py-2 overflow-hidden max-w-full">
+          {timelineStages.map((stage, index) => {
+            const IconComponent = stage.icon;
+            const isCompleted = stage.id < currentStage;
+            const isCurrent = stage.id === currentStage;
+            const isPending = stage.id > currentStage;
+
+            // Render stage if it has a timestamp or is current or completed in history
+            // For a cleaner look in the dropdown, we show all stages but highlight appropriately
+            return (
+              <div key={stage.id} className="relative pb-6 last:pb-0">
+                {/* Vertical line link */}
+                {index < timelineStages.length - 1 && (
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: `${themeColors.icon}15` }}
+                    className="absolute left-3 top-6 sm:left-3.5 sm:top-7 w-0.5 h-full -translate-x-1/2"
+                    style={{
+                      background: isCompleted ? themeColors.button : '#E5E7EB',
+                    }}
+                  />
+                )}
+
+                {/* Stage Node */}
+                <div className="flex items-start gap-2 sm:gap-2.5 min-w-0">
+                  {/* Icon Node */}
+                  <div
+                    className={`relative z-10 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isCompleted || isCurrent ? 'bg-white' : 'bg-gray-50'
+                      }`}
+                    style={{
+                      border: `1.5px solid ${isCompleted || isCurrent ? themeColors.button : '#E5E7EB'}`,
+                      boxShadow: isCurrent ? `0 0 0 2.5px ${themeColors.button}15` : 'none',
+                    }}
                   >
-                    <FiUser className="w-5 h-5" style={{ color: themeColors.icon }} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800">{booking.user?.name || booking.customerName || 'Customer'}</p>
-                    {(() => {
-                      const phone = booking.user?.phone || booking.customerPhone;
-                      const isHidden = !phone || phone === 'Hidden' || phone === 'Phone hidden';
-                      return (
-                        <p className="text-sm text-gray-600">
-                          {isHidden ? (
-                            <span className="text-xs text-amber-600 font-medium">📞 Available after journey starts</span>
-                          ) : phone}
-                        </p>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <button
-                  onClick={handleCallUser}
-                  className="flex flex-col items-center gap-0.5 p-2 rounded-xl hover:bg-gray-100 transition-colors"
-                  style={{ backgroundColor: `${themeColors.button}15` }}
-                >
-                  <FiPhone className="w-5 h-5" style={{ color: themeColors.button }} />
-                  {(() => {
-                    const phone = booking.user?.phone || booking.customerPhone;
-                    const isHidden = !phone || phone === 'Hidden' || phone === 'Phone hidden';
-                    return isHidden ? (
-                      <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wide leading-none">Care</span>
-                    ) : null;
-                  })()}
-                </button>
-              </div>
-
-              {/* Address Divider */}
-              <div className="w-full h-px bg-gray-100 my-4"></div>
-
-              {/* Address details */}
-              <div className="flex items-start gap-3 mb-3">
-                <FiMapPin className="w-5 h-5 mt-0.5" style={{ color: themeColors.icon }} />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 mb-1">Address</p>
-                  <p className="font-semibold text-gray-800">{booking.location.address}</p>
-                  <p className="text-sm text-gray-500 mt-1">{booking.location.distance} away</p>
-                </div>
-              </div>
-
-              {/* Map Embed */}
-              <div className="w-full h-48 rounded-lg overflow-hidden mb-3 bg-gray-200 relative group cursor-pointer" onClick={() => navigate(isWorker ? `/worker/booking/${booking.id}/map` : `/vendor/booking/${booking.id}/map`)}>
-                {(() => {
-                  const hasCoordinates = booking.location.lat && booking.location.lng && booking.location.lat !== 0 && booking.location.lng !== 0;
-                  const mapQuery = hasCoordinates
-                    ? `${booking.location.lat},${booking.location.lng}`
-                    : encodeURIComponent(booking.location.address);
-
-                  return (
-                    <>
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        frameBorder="0"
-                        style={{ border: 0, pointerEvents: 'none' }}
-                        src={`https://maps.google.com/maps?q=${mapQuery}&z=15&output=embed`}
-                        allowFullScreen
-                        tabIndex="-1"
-                      ></iframe>
-                      <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 transition-colors flex items-center justify-center">
-                        <span className="bg-white/90 px-3 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                          View Full Map
-                        </span>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-
-              {/* Maps Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => navigate(isWorker ? `/worker/booking/${booking.id || id}/map` : `/vendor/booking/${booking.id || id}/map`)}
-                  className="flex-1 py-3 rounded-xl font-bold border flex items-center justify-center gap-2 transition-all active:scale-95 bg-white text-sm"
-                  style={{
-                    borderColor: themeColors.button,
-                    color: themeColors.button,
-                  }}
-                >
-                  <FiMapPin className="w-4 h-4" />
-                  View Map
-                </button>
-                <button
-                  onClick={() => {
-                    const hasCoords = booking.location.lat && booking.location.lng;
-                    const dest = hasCoords
-                      ? `${booking.location.lat},${booking.location.lng}`
-                      : encodeURIComponent(booking.location.address);
-                    window.location.href = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
-                  }}
-                  className="flex-1 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm text-sm"
-                  style={{
-                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
-                  }}
-                >
-                  <FiNavigation className="w-4 h-4" />
-                  Directions
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-
-
-        {/* Booked Items Details */}
-        {booking.items && booking.items.length > 0 && (
-          <div
-            className="bg-white rounded-xl mb-4 shadow-md overflow-hidden"
-            style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
-          >
-            <div
-              onClick={() => setIsOrderSummaryExpanded(!isOrderSummaryExpanded)}
-              className="flex items-center justify-between p-4 bg-gray-50/50 border-b border-gray-100 cursor-pointer active:bg-gray-100 transition-colors"
-            >
-              <p className="text-sm font-bold text-gray-700">Order Summary</p>
-              <div className="flex items-center gap-2">
-                {booking.bookingType === 'instant' ? (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-xs">
-                    ⚡ Instant
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-xs">
-                    📅 Scheduled
-                  </span>
-                )}
-                {isOrderSummaryExpanded ? (
-                  <FiChevronUp className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <FiChevronDown className="w-4 h-4 text-gray-400" />
-                )}
-              </div>
-            </div>
-
-            {isOrderSummaryExpanded && (
-              <div className="p-4">
-
-                {/* Service Category */}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
-                    style={{ backgroundColor: `${themeColors.button}15`, border: `1px solid ${themeColors.button}25` }}>
-                    {booking.categoryIcon ? (
-                      <img src={booking.categoryIcon} alt="" className="w-5 h-5 object-contain" />
+                    {isCompleted ? (
+                      <FiCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: themeColors.button }} />
                     ) : (
-                      <FiTool className="w-4 h-4" style={{ color: themeColors.button }} />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Service Category</p>
-                    <p className="text-sm font-bold text-gray-800">{booking.serviceCategory || booking.serviceType || 'Service'}</p>
-                  </div>
-                </div>
-
-                {/* Brand */}
-                {(() => {
-                  const brandName = booking.brandName || booking.items?.[0]?.brandName;
-                  const brandIcon = booking.brandIcon || booking.items?.[0]?.brandIcon;
-                  if (!brandName) return null;
-                  return (
-                    <div className="flex items-center gap-3 mb-3 pt-3 border-t border-dashed border-gray-100">
-                      <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden">
-                        {brandIcon ? (
-                          <img src={brandIcon} alt={brandName} className="w-6 h-6 object-contain" />
-                        ) : (
-                          <span className="text-base font-bold text-slate-400">{brandName.charAt(0)}</span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Brand</p>
-                        <p className="text-sm font-bold text-gray-800">{brandName}</p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Service Cards */}
-                <div className="pt-3 border-t border-dashed border-gray-100 space-y-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Services</p>
-                  {booking.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-start bg-gray-50 rounded-xl p-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold px-1.5 py-0.5 rounded border"
-                            style={{ color: themeColors.button, backgroundColor: `${themeColors.button}10`, borderColor: `${themeColors.button}25` }}>
-                            ×{item.quantity}
-                          </span>
-                          <span className="text-sm font-semibold text-gray-900 truncate">{item.card?.title || 'Service Item'}</span>
-                        </div>
-                        {item.card?.subtitle && <p className="text-xs text-gray-400 mt-0.5 ml-8 line-clamp-1">{item.card.subtitle}</p>}
-                        {item.card?.duration && <p className="text-xs text-gray-400 mt-0.5 ml-8">⏱ {item.card.duration}</p>}
-                      </div>
-                      <div className="text-right ml-3 shrink-0">
-                        <p className="text-sm font-bold text-gray-900">₹{((item.card?.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
-                        {item.quantity > 1 && <p className="text-xs text-gray-400">₹{item.card?.price || 0} each</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Billing Breakdown - Only show if Payment Invoice Card is NOT visible */}
-                {!(['work_done', 'completed'].includes(booking.status?.toLowerCase()) || booking.paymentStatus === 'success' || booking.cashCollected) && (
-                  <div className="pt-4 border-t border-dashed border-gray-100 space-y-2 text-xs mt-2">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Billing Breakdown</p>
-
-                    <div className="flex justify-between text-gray-500">
-                      <span>Base Amount</span>
-                      <span className="font-semibold text-gray-800">₹{(booking.basePrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-
-                    {(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup) > 0 && (
-                      <div className="flex justify-between text-gray-500">
-                        <span>Instant Booking Fee</span>
-                        <span className="font-semibold text-gray-800">₹{(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-
-                    {booking.paymentMethod === 'plan_benefit' ? (
-                      <div className="flex justify-between text-gray-500">
-                        <span>Visiting Charges</span>
-                        <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
-                      </div>
-                    ) : (() => {
-                      const baseAmt = Number(booking.basePrice || 0);
-                      const instantFee = Number(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup || 0);
-                      const taxAmt = Number(booking.tax || 0);
-                      const discountAmt = Number(booking.discount || 0);
-                      const grandTotal = Number(booking.finalAmount || 0);
-                      const directValue = Number(booking.visitingCharges || booking.visitationFee || booking.visitingFee || 0);
-                      const derivedValue = grandTotal - (baseAmt + instantFee + taxAmt - discountAmt);
-                      
-                      if (directValue > 0) {
-                        return (
-                          <div className="flex justify-between text-gray-500">
-                            <span>Visiting Charges</span>
-                            <span className="font-semibold text-gray-800">₹{directValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        );
-                      } else if (derivedValue > 0.01) {
-                        return (
-                          <div className="flex justify-between text-gray-500">
-                            <span>Additional Charges</span>
-                            <span className="font-semibold text-gray-800">₹{derivedValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-
-                    {(booking.tax || booking.cgst || booking.sgst) > 0 && (
-                      <div className="flex justify-between text-gray-500">
-                        <span>Taxes & GST</span>
-                        <span className="font-semibold text-gray-800">₹{(booking.tax || ((booking.cgst || 0) + (booking.sgst || 0))).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-
-                    {booking.discount > 0 && (
-                      <div className="flex justify-between text-emerald-600 font-medium">
-                        <span>Discount</span>
-                        <span>-₹{(booking.discount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-100">
-                      <span>Payment Method</span>
-                      <span className="font-bold text-gray-800 uppercase text-[10px] tracking-wider">
-                        {booking.paymentMethod === 'plan_benefit' ? 'Membership Benefit' : (booking.paymentMethod || 'Online')}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between text-gray-800 pt-2.5 mt-1 border-t-2 border-gray-200 text-sm">
-                      <span className="font-bold">Grand Total</span>
-                      <span className="font-bold text-base" style={{ color: themeColors.button }}>₹{(booking.finalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Time Slot */}
-        <div className="bg-white rounded-xl shadow-md mb-4 overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
-          <div
-            onClick={() => setIsPreferredTimeExpanded(!isPreferredTimeExpanded)}
-            className="p-4 bg-gray-50/50 flex items-center justify-between cursor-pointer border-b border-gray-100"
-          >
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-              <FiClock className="w-4 h-4" style={{ color: themeColors.icon }} />
-              Preferred Time
-            </h3>
-            {isPreferredTimeExpanded ? (
-              <FiChevronUp className="w-4 h-4 text-gray-400" />
-            ) : (
-              <FiChevronDown className="w-4 h-4 text-gray-400" />
-            )}
-          </div>
-          {isPreferredTimeExpanded && (
-            <div className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${themeColors.icon}15` }}>
-                <FiClock className="w-5 h-5" style={{ color: themeColors.icon }} />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800">{booking.timeSlot.date}</p>
-                <p className="text-sm text-gray-600">{booking.timeSlot.time}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Payment Invoice Card - Light Header Style */}
-        <div className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 mb-4">
-          <div
-            onClick={() => setIsPaymentSummaryExpanded(!isPaymentSummaryExpanded)}
-            className="bg-slate-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between cursor-pointer active:bg-gray-100 transition-colors"
-          >
-            <div>
-              <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mb-0.5">TOTAL INVOICE AMOUNT</p>
-              <h2 className="text-xl font-bold text-gray-900">₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              {isPlanBenefit && (
-                <span className="bg-amber-500/10 text-amber-700 border border-amber-500/20 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide">
-                  Plan Covered
-                </span>
-              )}
-              {isPaymentSummaryExpanded ? (
-                <FiChevronUp className="w-4 h-4 text-gray-400" />
-              ) : (
-                <FiChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </div>
-          </div>
-
-          {isPaymentSummaryExpanded && (
-            <div className="p-4 space-y-4 text-sm">
-              {/* Services Section */}
-              <div>
-                <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-1.5 border-b border-gray-100">
-                  <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px]"><FiTool /></span>
-                  Services
-                </h4>
-                <div className="space-y-2.5 pl-1">
-                  <div className="flex justify-between items-start text-gray-600 text-xs">
-                    <div>
-                      <span className="font-semibold text-gray-800">{booking.serviceCategory || booking.serviceType || 'Service'}</span>
-                      <p className="text-[9px] text-gray-400 font-medium mt-0.5">Taxes included</p>
-                    </div>
-                    {isPlanBenefit ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="line-through text-gray-400 text-xs font-mono">₹{(originalBase + originalGST).toFixed(2)}</span>
-                        <span className="text-emerald-600 font-bold text-[9px] bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100">FREE</span>
-                      </div>
-                    ) : (
-                      <span className="font-semibold text-gray-900 font-mono">₹{(originalBase + originalGST).toFixed(2)}</span>
+                      <IconComponent
+                        className="w-3 h-3 sm:w-3.5 sm:h-3.5"
+                        style={{
+                          color: isCurrent ? themeColors.button : '#9CA3AF',
+                        }}
+                      />
                     )}
                   </div>
 
-                  {services.map((s, i) => (
-                    <div key={i} className="flex justify-between items-start text-gray-600 text-xs">
-                      <div>
-                        <span className="font-semibold text-gray-800">{s.name} x {s.quantity}</span>
-                        <p className="text-[9px] text-gray-400 font-medium mt-0.5">Taxes included</p>
-                      </div>
-                      <span className="font-mono text-gray-900">₹{(s.total || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-                {/* Instant Booking Fee */}
-                {instantMarkup > 0 && (
-                  <div className="pt-2 border-t border-dashed border-gray-100 text-xs">
-                    <div className="flex justify-between text-gray-600">
-                      <span className="flex items-center gap-1">⚡ Instant Booking Fee</span>
-                      <span className="font-bold text-gray-900 font-mono">₹{instantMarkup.toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Grand Total Row */}
-                <div className="pt-2.5 mt-1 border-t-2 border-gray-200 flex justify-between items-center text-xs">
-                  <span className="font-bold text-gray-800">Grand Total</span>
-                  <span className="font-bold text-sm" style={{ color: themeColors.button }}>
-                    ₹{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-
-                {/* Parts Section */}
-                {(parts.length > 0 || customItems.length > 0) && (
-                  <div>
-                    <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                      <span className="w-6 h-6 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center text-xs"><FiPackage /></span>
-                      Parts & Material
-                    </h4>
-                    <div className="space-y-2 pl-2">
-                      {parts.map((p, i) => (
-                        <div key={`p-${i}`} className="flex justify-between text-gray-600">
-                          <span>{p.name} x {p.quantity}</span>
-                          <span className="font-mono">₹{(p.price * p.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      {customItems.map((c, i) => (
-                        <div key={`c-${i}`} className="flex justify-between text-gray-600">
-                          <div>
-                            <span>{c.name} x {c.quantity}</span>
-                            {c.hsnCode && <p className="text-[9px] text-gray-400">HSN: {c.hsnCode}</p>}
-                          </div>
-                          <span className="font-mono">₹{(c.price * c.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-
-                      {/* Parts GST */}
-                      <div className="flex justify-between text-xs text-gray-500 border-t border-dashed border-gray-100 pt-1 mt-1">
-                        <span>Parts GST (18%)</span>
-                        <span className="font-mono">₹{partsGST.toFixed(2)}</span>
-                      </div>
-
-                      {/* Parts Subtotal */}
-                      <div className="flex justify-between font-bold text-gray-800 pt-1">
-                        <span>Total Parts</span>
-                        <span>₹{(partsBase + partsGST).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Visiting Charges */}
-                {(booking.visitingCharges > 0 || bill?.visitingCharges > 0) && (
-                  <div>
-                    <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
-                      <span className="w-6 h-6 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center text-xs"><FiClock /></span>
-                      Visiting Charges
-                    </h4>
-                    <div className="flex justify-between pl-2 font-bold text-gray-800">
-                      <span>Visiting Price</span>
-                      <span>₹{(bill?.visitingCharges || booking.visitingCharges || 0).toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Transport Charges */}
-                {bill?.transportCharges > 0 && (
-                  <div className="mt-4">
-                    <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
-                      <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs"><FiPackage /></span>
-                      Transport Charges
-                    </h4>
-                    <div className="flex justify-between pl-2 font-bold text-gray-800">
-                      <span>Transport/Travel</span>
-                      <span>₹{(bill.transportCharges).toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-          )}
-
-              {/* Vendor Earnings Footer Removed per User Request */}
-            </div>
-
-        {/* Booking Timeline - Dropdown Accordion */}
-          <div className="bg-white rounded-xl shadow-md mb-4 overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
-            <div
-              onClick={() => setIsTimelineExpanded(!isTimelineExpanded)}
-              className="p-4 bg-gray-50/50 flex items-center justify-between cursor-pointer border-b border-gray-100 active:bg-gray-100 transition-colors"
-            >
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                <FiClock className="w-4 h-4" style={{ color: themeColors.icon }} />
-                Booking Timeline
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Status: {booking?.status}
-                </span>
-                {isTimelineExpanded ? (
-                  <FiChevronUp className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <FiChevronDown className="w-4 h-4 text-gray-400" />
-                )}
-              </div>
-            </div>
-
-            {isTimelineExpanded && (
-              <div className="p-5">
-                <div className="relative">
-                  {timelineStages.map((stage, index) => {
-                    const IconComponent = stage.icon;
-                    const isCompleted = stage.id < currentStage;
-                    const isCurrent = stage.id === currentStage;
-                    const isPending = stage.id > currentStage;
-
-                    // Render stage if it has a timestamp or is current or completed in history
-                    // For a cleaner look in the dropdown, we show all stages but highlight appropriately
-                    return (
-                      <div key={stage.id} className="relative pb-6 last:pb-0">
-                        {/* Vertical line link */}
-                        {index < timelineStages.length - 1 && (
-                          <div
-                            className="absolute left-3.5 top-7 w-0.5 h-full -translate-x-1/2"
-                            style={{
-                              background: isCompleted ? themeColors.button : '#E5E7EB',
-                            }}
-                          />
-                        )}
-
-                        {/* Stage Node */}
-                        <div className="flex items-start gap-2.5">
-                          {/* Icon Node */}
-                          <div
-                            className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isCompleted || isCurrent ? 'bg-white' : 'bg-gray-50'
-                              }`}
-                            style={{
-                              border: `1.5px solid ${isCompleted || isCurrent ? themeColors.button : '#E5E7EB'}`,
-                              boxShadow: isCurrent ? `0 0 0 2.5px ${themeColors.button}15` : 'none',
-                            }}
-                          >
-                            {isCompleted ? (
-                              <FiCheck className="w-3.5 h-3.5" style={{ color: themeColors.button }} />
-                            ) : (
-                              <IconComponent
-                                className="w-3.5 h-3.5"
-                                style={{
-                                  color: isCurrent ? themeColors.button : '#9CA3AF',
-                                }}
-                              />
-                            )}
-                          </div>
-
-                          {/* Content details */}
-                          <div className="flex-1 pt-0.5">
+                  {/* Content details */}
+                  <div className="flex-1 min-w-0 pt-0.5">
                             <h4
-                              className={`text-sm font-bold ${isCompleted || isCurrent ? 'text-gray-800' : 'text-gray-400'
+                              className={`text-sm font-bold truncate ${isCompleted || isCurrent ? 'text-gray-800' : 'text-gray-400'
                                 }`}
                             >
                               {stage.title}
@@ -2519,82 +1975,100 @@ export default function BookingDetails() {
                                       {openDropdown === 'order' ? <FiChevronUp className="w-3 h-3 text-gray-400" /> : <FiChevronDown className="w-3 h-3 text-gray-400" />}
                                     </div>
                                   </button>
-                                  {openDropdown === 'order' && (
-                                    <div className="p-3 bg-white border-t border-gray-100 space-y-3 text-xs">
-                                      {/* Service Category Header */}
-                                      <div className="flex items-center gap-2.5 pb-2 border-b border-gray-100">
-                                        <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center shrink-0 overflow-hidden">
-                                          {booking.categoryIcon ? (
-                                            <img src={booking.categoryIcon} alt="" className="w-4 h-4 object-contain" />
-                                          ) : (
-                                            <FiTool className="w-4 h-4 text-red-500" />
-                                          )}
-                                        </div>
-                                        <div>
-                                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Service Category</p>
-                                          <p className="text-xs font-bold text-gray-800">{booking.serviceCategory || booking.serviceType || 'Service'}</p>
-                                        </div>
-                                      </div>
+                                  {openDropdown === 'order' && (() => {
+                                    const tax = booking.tax || booking.gstAmount || 0;
+                                    const basePrice = booking.basePrice || (booking.finalAmount ? booking.finalAmount - tax : 0);
+                                    const mainServiceTotal = basePrice + tax;
+                                    const computedInstantFee = booking.instantBookingFee || booking.instantFee || booking.instantCharges || booking.urgentBookingFee || (booking.bookingType === 'instant' || booking.isInstantBooking ? (booking.instantBookingPrice || 99) : null) || Math.max(0, (booking.finalAmount || 0) - mainServiceTotal);
 
-                                      {/* Services List */}
-                                      <div className="space-y-1.5">
-                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Services</p>
-                                        {booking.items && booking.items.length > 0 ? (
-                                          booking.items.map((item, idx) => (
-                                            <div key={idx} className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
-                                              <div className="flex items-center gap-2 min-w-0">
-                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 shrink-0">
-                                                  ×{item.quantity || item.qty || 1}
-                                                </span>
-                                                <span className="text-xs font-semibold text-gray-800 truncate">
-                                                  {item.card?.title || item.name || item.serviceName || `Item ${idx + 1}`}
+                                    return (
+                                      <div className="p-3 bg-white border-t border-gray-100 space-y-3 text-xs">
+                                        {/* Service Category Header */}
+                                        <div className="flex items-center gap-2.5 pb-2 border-b border-gray-100">
+                                          <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center shrink-0 overflow-hidden">
+                                            {booking.categoryIcon ? (
+                                              <img src={booking.categoryIcon} alt="" className="w-4 h-4 object-contain" />
+                                            ) : (
+                                              <FiTool className="w-4 h-4 text-red-500" />
+                                            )}
+                                          </div>
+                                          <div>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Service Category</p>
+                                            <p className="text-xs font-bold text-gray-800">{booking.serviceCategory || booking.serviceType || 'Service'}</p>
+                                          </div>
+                                        </div>
+
+                                        {/* Services List */}
+                                        <div className="space-y-1.5">
+                                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Services</p>
+                                          {booking.items && booking.items.length > 0 ? (
+                                            booking.items.map((item, idx) => (
+                                              <div key={idx} className="flex items-center justify-between bg-gray-50 rounded-lg p-2 gap-2">
+                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 shrink-0">
+                                                    ×{item.quantity || item.qty || 1}
+                                                  </span>
+                                                  <span className="text-xs font-semibold text-gray-800 truncate">
+                                                    {item.card?.title || item.name || item.serviceName || `Item ${idx + 1}`}
+                                                  </span>
+                                                </div>
+                                                <span className="text-xs font-bold text-gray-900 shrink-0">
+                                                  ₹{((item.card?.price || item.price || item.amount || 0) * (item.quantity || item.qty || 1)).toLocaleString('en-IN')}
                                                 </span>
                                               </div>
-                                              <span className="text-xs font-bold text-gray-900 shrink-0 ml-2">
-                                                ₹{((item.card?.price || item.price || item.amount || 0) * (item.quantity || item.qty || 1)).toLocaleString('en-IN')}
-                                              </span>
+                                            ))
+                                          ) : (
+                                            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2 gap-2">
+                                              <span className="text-xs font-semibold text-gray-800 truncate min-w-0 flex-1">{booking.serviceType || 'Service Item'}</span>
+                                              <span className="text-xs font-bold text-gray-900 shrink-0">₹{mainServiceTotal.toFixed(2)}</span>
                                             </div>
-                                          ))
-                                        ) : (
-                                          <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
-                                            <span className="text-xs font-semibold text-gray-800">{booking.serviceType || 'Service Item'}</span>
-                                            <span className="text-xs font-bold text-gray-900">₹{(booking.basePrice || 0).toLocaleString('en-IN')}</span>
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      {/* Billing Breakdown */}
-                                      <div className="pt-2 border-t border-dashed border-gray-200 space-y-1.5 text-[11px]">
-                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Billing Breakdown</p>
-                                        
-                                        <div className="flex justify-between text-gray-600">
-                                          <span>Base Amount</span>
-                                          <span className="font-semibold text-gray-800">₹{(booking.basePrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                          )}
                                         </div>
 
-                                        {(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup) > 0 && (
+                                        {/* Billing Breakdown */}
+                                        <div className="pt-2 border-t border-dashed border-gray-200 space-y-1.5 text-[11px]">
+                                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Billing Breakdown</p>
+                                          
                                           <div className="flex justify-between text-gray-600">
-                                            <span>Instant Booking Fee</span>
-                                            <span className="font-semibold text-gray-800">₹{(booking.instantMarkupCharged || booking.instantMarkup || booking.instantBookingMarkup || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            <span>Service Amount (incl. tax)</span>
+                                            <span className="font-medium text-gray-600">₹{mainServiceTotal.toFixed(2)}</span>
                                           </div>
-                                        )}
 
-                                        <div className="flex justify-between text-gray-600">
-                                          <span>Payment Method</span>
-                                          <span className="font-bold text-gray-800 uppercase text-[10px]">
-                                            {booking.paymentMethod === 'plan_benefit' ? 'Membership' : (booking.paymentMethod || 'ONLINE')}
-                                          </span>
-                                        </div>
+                                          {computedInstantFee > 0 && (
+                                            <div className="flex justify-between text-gray-600">
+                                              <span className="flex items-center gap-1">
+                                                <span className="text-amber-500 text-[10px]">⚡</span> Instant Booking Fee
+                                              </span>
+                                              <span className="font-medium text-gray-600">₹{parseFloat(computedInstantFee).toFixed(2)}</span>
+                                            </div>
+                                          )}
 
-                                        <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-100 text-xs">
-                                          <span className="font-bold text-gray-900">Grand Total</span>
-                                          <span className="font-bold text-sm text-red-600">
-                                            ₹{(booking.finalAmount || booking.totalAmount || booking.basePrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                          </span>
+                                          <div className="flex justify-between text-gray-600">
+                                            <span className="flex items-center gap-1">
+                                              <FiCreditCard className="w-3 h-3 text-gray-400" /> Payment Method
+                                            </span>
+                                            <span className="font-semibold text-gray-700 capitalize">
+                                              {booking.paymentMethod ? booking.paymentMethod.replace(/_/g, ' ') : 'Cash'}
+                                            </span>
+                                          </div>
+
+                                          {booking.discount > 0 && (
+                                            <div className="flex justify-between text-green-600">
+                                              <span>Discount Applied</span>
+                                              <span className="font-medium text-green-600">-₹{Math.abs(booking.discount).toFixed(2)}</span>
+                                            </div>
+                                          )}
+
+                                          <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-100 text-xs">
+                                            <span className="font-bold text-gray-900">Grand Total</span>
+                                            <span className="font-black text-sm" style={{ color: themeColors.button }}>
+                                              ₹{(booking.finalAmount || booking.totalAmount || booking.basePrice || 0).toFixed(2)}
+                                            </span>
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  )}
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             )}
@@ -2835,21 +2309,103 @@ export default function BookingDetails() {
                                     </div>
                                   </div>
                                 )}
-
                                 {/* Payment Summary Accordion */}
                                 <div className="rounded-lg border border-gray-100 overflow-hidden">
                                   <button onClick={() => toggleDropdown('payment')} className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors">
                                     <div className="flex items-center gap-2"><FiCreditCard className="w-3 h-3 text-gray-500" /><span className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">Payment Summary</span><span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${['success', 'paid', 'completed'].includes(booking.paymentStatus?.toLowerCase()) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>{booking.paymentStatus || 'pending'}</span></div>
                                     {openDropdown === 'payment' ? <FiChevronUp className="w-3 h-3 text-gray-400" /> : <FiChevronDown className="w-3 h-3 text-gray-400" />}
                                   </button>
-                                  {openDropdown === 'payment' && (
-                                    <div className="px-3 py-2.5 bg-white border-t border-gray-100 space-y-1">
-                                      {[{ label: 'Base Price', value: booking.basePrice }, { label: 'Tax (GST)', value: booking.tax }, { label: 'Visiting Charges', value: booking.visitingCharges || booking.visitationFee }, { label: 'Discount', value: booking.discount ? -booking.discount : null }].filter(r => r.value != null && r.value !== 0).map((row, i) => (<div key={i} className="flex items-center justify-between py-0.5"><span className="text-[10px] text-gray-500">{row.label}</span><span className={`text-[10px] font-medium ${row.value < 0 ? 'text-green-600' : 'text-gray-700'}`}>{row.value < 0 ? '-' : ''}₹{Math.abs(row.value)}</span></div>))}
-                                      <div className="flex items-center justify-between pt-1.5 border-t border-gray-100"><span className="text-[10px] font-bold text-gray-800">Total</span><span className="text-sm font-black" style={{ color: themeColors.button }}>₹{booking.finalAmount || booking.totalAmount || booking.basePrice || 0}</span></div>
-                                      {booking.paymentMethod && <div className="flex items-center gap-1.5 pt-1 border-t border-gray-50"><FiCreditCard className="w-3 h-3 text-gray-400" /><span className="text-[10px] text-gray-500 capitalize">{booking.paymentMethod.replace(/_/g, ' ')}</span></div>}
-                                      {booking.codAdvanceAmount > 0 && <div className="flex items-center gap-1.5"><FiAlertCircle className="w-3 h-3 text-amber-500" /><span className="text-[10px] text-amber-600 font-semibold">COD Advance: ₹{booking.codAdvanceAmount}</span></div>}
-                                    </div>
-                                  )}
+                                  {openDropdown === 'payment' && (() => {
+                                     const basePrice = parseFloat(booking.basePrice || 0);
+                                     const tax = parseFloat(booking.tax || 0);
+                                     const mainServiceTotal = (basePrice + tax) > 0 ? (basePrice + tax) : (parseFloat(booking.finalAmount) || 168);
+                                     
+                                     // Only show real extra work when distinct add-on items exist in workDoneDetails
+                                     const serviceTitle = (booking.serviceType || booking.serviceId?.title || '').toLowerCase().trim();
+                                     const extraWorkItems = (booking.workDoneDetails?.items || []).filter(item => {
+                                       const itemTitle = (item.title || item.name || '').toLowerCase().trim();
+                                       const itemPrice = parseFloat(item.price || 0);
+                                       return itemTitle !== serviceTitle && itemPrice !== mainServiceTotal && itemPrice !== basePrice;
+                                     });
+
+                                     const realExtraWork = extraWorkItems.length > 0
+                                       ? extraWorkItems.reduce((s, i) => s + ((parseFloat(i.price) || 0) * (parseInt(i.quantity) || 1)), 0)
+                                       : (booking.extraCharges && parseFloat(booking.extraCharges) > 0 && parseFloat(booking.extraCharges) !== mainServiceTotal ? parseFloat(booking.extraCharges) : 0);
+                                     
+                                     const computedInstantFee = booking.instantBookingFee || booking.instantFee || booking.instantCharges || booking.urgentBookingFee || (booking.bookingType === 'instant' || booking.isInstantBooking ? (booking.instantBookingPrice || 99) : null) || Math.max(0, (booking.finalAmount || 0) - (mainServiceTotal + realExtraWork));
+                                     const cgst = booking.cgst || (tax ? parseFloat((tax / 2).toFixed(2)) : 0);
+                                     const sgst = booking.sgst || (tax ? parseFloat((tax / 2).toFixed(2)) : 0);
+
+                                     return (
+                                       <div className="px-3.5 py-3 bg-white border-t border-gray-100 space-y-3">
+                                         {/* 1. Service Name */}
+                                         <div>
+                                           <span className="text-xs font-bold text-gray-900 block capitalize">
+                                             {booking.serviceType || booking.serviceId?.title || 'Service'}
+                                           </span>
+                                         </div>
+
+                                         {/* 2. Price Breakdown */}
+                                         <div className="pt-2 border-t border-gray-100 space-y-1">
+                                           <div className="flex items-center justify-between py-0.5">
+                                             <span className="text-[10px] text-gray-400">Service Amount (incl. tax)</span>
+                                             <span className="text-[10px] font-medium text-gray-600">₹{mainServiceTotal.toFixed(2)}</span>
+                                           </div>
+                                           {computedInstantFee > 0 && (
+                                             <div className="flex items-center justify-between py-0.5">
+                                               <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                 <span className="text-amber-500 text-[10px]">⚡</span> Instant Booking Fee
+                                               </span>
+                                               <span className="text-[10px] font-medium text-gray-600">₹{parseFloat(computedInstantFee).toFixed(2)}</span>
+                                             </div>
+                                           )}
+                                           <div className="flex items-center justify-between py-0.5">
+                                             <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                               <FiCreditCard className="w-3 h-3 text-gray-400" /> Payment Method
+                                             </span>
+                                             <span className="text-[10px] font-semibold text-gray-700 capitalize">
+                                               {booking.paymentMethod ? booking.paymentMethod.replace(/_/g, ' ') : 'Cash'}
+                                             </span>
+                                           </div>
+                                           {booking.discount > 0 && (
+                                             <div className="flex items-center justify-between py-0.5">
+                                               <span className="text-[10px] text-green-600">Discount Applied</span>
+                                               <span className="text-[10px] font-medium text-green-600">-₹{Math.abs(booking.discount).toFixed(2)}</span>
+                                             </div>
+                                           )}
+                                         </div>
+
+                                         {/* 3. Add-on / Extra Work (Only when extra work actually exists!) */}
+                                         {realExtraWork > 0 && (
+                                           <div className="pt-2 border-t border-gray-100">
+                                             <div className="flex items-start justify-between pl-6 py-0.5">
+                                               <div>
+                                                 <span className="text-xs font-semibold text-gray-800 block">Add-on / Extra Work</span>
+                                                 <span className="text-[9px] text-gray-400 block">Additional parts & labor</span>
+                                               </div>
+                                               <span className="text-xs font-bold text-gray-900">
+                                                 ₹{realExtraWork.toFixed(2)}
+                                               </span>
+                                             </div>
+                                           </div>
+                                         )}
+
+                                         {/* 4. Grand Total (End of Card) */}
+                                         <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                                           <span className="text-xs font-bold text-gray-900">Grand Total</span>
+                                           <span className="text-sm font-black" style={{ color: themeColors.button }}>
+                                             ₹{(booking.finalAmount || booking.totalAmount || booking.basePrice || 0).toFixed(2)}
+                                           </span>
+                                         </div>
+                                         {booking.codAdvanceAmount > 0 && (
+                                           <div className="flex items-center gap-1.5 pt-1">
+                                             <FiAlertCircle className="w-3 h-3 text-amber-500" />
+                                             <span className="text-[10px] text-amber-600 font-semibold">COD Advance: ₹{booking.codAdvanceAmount}</span>
+                                           </div>
+                                         )}
+                                       </div>
+                                     );
+                                   })()}
                                 </div>
                               </div>
                             )}
@@ -2866,7 +2422,7 @@ export default function BookingDetails() {
                                         </div>
                                         <div>
                                           <h5 className="text-xs font-bold text-gray-900 leading-tight">Finish Job</h5>
-                                          <p className="text-[9px] font-bold text-red-600 uppercase tracking-wider">Step 2: Close Booking</p>
+                                          <p className="text-[9px] font-bold text-red-600 uppercase tracking-wider">Close Booking</p>
                                         </div>
                                       </div>
                                     </div>
@@ -2900,10 +2456,7 @@ export default function BookingDetails() {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-            )}
-          </div>
+        </div>
 
 
           {/* Work Photos (after completion) */}

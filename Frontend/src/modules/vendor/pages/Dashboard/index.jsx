@@ -11,6 +11,7 @@ import { acceptBooking, rejectBooking, assignWorker } from '../../services/booki
 // Booking alert handled globally
 import { toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
+import { configService } from '../../../../services/configService';
 
 import { registerFCMToken } from '../../../../services/pushNotificationService';
 import LogoLoader from '../../../../components/common/LogoLoader';
@@ -61,6 +62,7 @@ const Dashboard = memo(() => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [globalConfig, setGlobalConfig] = useState({ maxSearchTime: 5, waveDuration: 60 });
+  const [levelConfig, setLevelConfig] = useState(null);
 
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const bannerContainerRef = useRef(null);
@@ -320,6 +322,12 @@ const Dashboard = memo(() => {
   useEffect(() => {
     // loadDashboardData handles the subscription check implicitly via API call
     loadDashboardData(false);
+    // Load dynamic level config from admin
+    configService.getSettings().then(res => {
+      if (res?.success && res?.settings?.levelConfig) {
+        setLevelConfig(res.settings.levelConfig);
+      }
+    }).catch(() => {});
   }, [loadDashboardData]);
 
   // Check for redirected state (to open a specific alert modal)
@@ -811,19 +819,24 @@ const Dashboard = memo(() => {
                 className="text-[10px] md:text-[11px] font-black px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-md uppercase tracking-wider text-white shadow-md animate-pulse"
                 style={{
                   background: stats.level === 1
-                    ? 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)' // Gold for Level 1
+                    ? `linear-gradient(135deg, ${levelConfig?.L1?.color || '#eab308'} 0%, ${levelConfig?.L1?.color || '#ca8a04'}cc 100%)`
                     : stats.level === 2
-                      ? 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)' // Silver for Level 2
-                      : 'linear-gradient(135deg, #b45309 0%, #78350f 100%)', // Bronze for Level 3
+                      ? `linear-gradient(135deg, ${levelConfig?.L2?.color || '#94a3b8'} 0%, ${levelConfig?.L2?.color || '#64748b'}cc 100%)`
+                      : `linear-gradient(135deg, ${levelConfig?.L3?.color || '#b45309'} 0%, ${levelConfig?.L3?.color || '#78350f'}cc 100%)`,
                   border: '1px solid rgba(255, 255, 255, 0.15)',
                   boxShadow: stats.level === 1
-                    ? '0 4px 14px rgba(234, 179, 8, 0.4)'
+                    ? `0 4px 14px ${levelConfig?.L1?.color || '#eab308'}66`
                     : stats.level === 2
-                      ? '0 4px 14px rgba(100, 116, 139, 0.4)'
-                      : '0 4px 14px rgba(180, 83, 9, 0.4)'
+                      ? `0 4px 14px ${levelConfig?.L2?.color || '#94a3b8'}66`
+                      : `0 4px 14px ${levelConfig?.L3?.color || '#b45309'}66`
                 }}
               >
-                {stats.level === 1 ? '🥇 Level 1' : stats.level === 2 ? '🥈 Level 2' : '🥉 Level 3'}
+                {stats.level === 1
+                  ? `🥇 ${levelConfig?.L1?.badge || levelConfig?.L1?.name || 'Level 1'}`
+                  : stats.level === 2
+                    ? `🥈 ${levelConfig?.L2?.badge || levelConfig?.L2?.name || 'Level 2'}`
+                    : `🥉 ${levelConfig?.L3?.badge || levelConfig?.L3?.name || 'Level 3'}`
+                }
               </span>
             </div>
           </div>
