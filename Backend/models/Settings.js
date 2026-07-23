@@ -473,6 +473,14 @@ const settingsSchema = new mongoose.Schema({
       name: { type: String, default: 'Level 3 (Beginner)' },
       color: { type: String, default: '#D97706' },
       desc: { type: String, default: 'You are currently on Level 3. Complete more jobs and maintain high ratings to upgrade your level.' },
+      customSteps: {
+        type: [String],
+        default: [
+          'Complete at least 15 customer bookings',
+          'Maintain minimum 4.2 customer rating',
+          'Achieve 85%+ booking completion rate'
+        ]
+      },
       targetJobs: { type: Number, default: 15 },
       targetRating: { type: Number, default: 4.2 },
       targetCompletionRate: { type: Number, default: 85 }
@@ -482,6 +490,14 @@ const settingsSchema = new mongoose.Schema({
       name: { type: String, default: 'Level 2 (Professional)' },
       color: { type: String, default: '#0D9488' },
       desc: { type: String, default: 'Great job! You are a Level 2 partner. Keep providing excellent service to climb to the top Level 1.' },
+      customSteps: {
+        type: [String],
+        default: [
+          'Complete at least 50 customer bookings',
+          'Maintain minimum 4.7 customer rating',
+          'Achieve 92%+ booking completion rate'
+        ]
+      },
       targetJobs: { type: Number, default: 50 },
       targetRating: { type: Number, default: 4.7 },
       targetCompletionRate: { type: Number, default: 92 }
@@ -491,6 +507,14 @@ const settingsSchema = new mongoose.Schema({
       name: { type: String, default: 'Level 1 (Expert)' },
       color: { type: String, default: '#EAB308' },
       desc: { type: String, default: 'Congratulations! You are a Level 1 Elite partner. You receive the highest preference in matching and premium job bookings.' },
+      customSteps: {
+        type: [String],
+        default: [
+          'Complete at least 10 bookings every month',
+          'Maintain 4.7+ customer rating',
+          'Zero safety violations or major complaints'
+        ]
+      },
       targetJobs: { type: Number, default: 10 },
       targetRating: { type: Number, default: 4.7 },
       maintenanceDesc: { type: String, default: 'Complete at least 10 bookings every month' },

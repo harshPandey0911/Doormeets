@@ -59,6 +59,11 @@ const MyLevel = () => {
       bg: `linear-gradient(135deg, ${(dynamicConfig?.L3?.color || '#D97706')}15 0%, ${(dynamicConfig?.L3?.color || '#D97706')}30 100%)`,
       text: dynamicConfig?.L3?.color || '#D97706',
       desc: dynamicConfig?.L3?.desc || 'You are currently on Level 3. Complete more jobs and maintain high ratings to upgrade your level.',
+      customSteps: dynamicConfig?.L3?.customSteps || [
+        'Complete at least 15 customer bookings',
+        'Maintain minimum 4.2 customer rating',
+        'Achieve 85%+ booking completion rate'
+      ],
       steps: [
         { label: `Target Completed Bookings`, target: dynamicConfig?.L3?.targetJobs || 15, current: totalJobs, metric: 'jobs' },
         { label: `Min Customer Rating`, target: dynamicConfig?.L3?.targetRating || 4.2, current: rating, metric: 'rating' },
@@ -74,6 +79,11 @@ const MyLevel = () => {
       bg: `linear-gradient(135deg, ${(dynamicConfig?.L2?.color || '#0D9488')}15 0%, ${(dynamicConfig?.L2?.color || '#0D9488')}30 100%)`,
       text: dynamicConfig?.L2?.color || '#0D9488',
       desc: dynamicConfig?.L2?.desc || 'Great job! You are a Level 2 partner. Keep providing excellent service to climb to the top Level 1.',
+      customSteps: dynamicConfig?.L2?.customSteps || [
+        'Complete at least 50 customer bookings',
+        'Maintain minimum 4.7 customer rating',
+        'Achieve 92%+ booking completion rate'
+      ],
       steps: [
         { label: `Target Completed Bookings`, target: dynamicConfig?.L2?.targetJobs || 50, current: totalJobs, metric: 'jobs' },
         { label: `Min Customer Rating`, target: dynamicConfig?.L2?.targetRating || 4.7, current: rating, metric: 'rating' },
@@ -89,6 +99,11 @@ const MyLevel = () => {
       bg: `linear-gradient(135deg, ${(dynamicConfig?.L1?.color || '#EAB308')}15 0%, ${(dynamicConfig?.L1?.color || '#EAB308')}30 100%)`,
       text: dynamicConfig?.L1?.color || '#EAB308',
       desc: dynamicConfig?.L1?.desc || 'Congratulations! You are a Level 1 Elite partner. You receive the highest preference in matching and premium job bookings.',
+      customSteps: dynamicConfig?.L1?.customSteps || [
+        'Complete at least 10 bookings every month',
+        'Maintain 4.7+ customer rating',
+        'Zero safety violations or major complaints'
+      ],
       steps: [
         { label: `Target Completed Bookings`, target: dynamicConfig?.L1?.targetJobs || 100, current: totalJobs, metric: 'jobs' },
         { label: `Min Customer Rating`, target: dynamicConfig?.L1?.targetRating || 4.7, current: rating, metric: 'rating' },
@@ -212,7 +227,7 @@ const MyLevel = () => {
                     {lvl.name}
                   </h2>
 
-                  <p className="text-[9px] font-medium leading-tight text-gray-500 max-w-[190px] line-clamp-2">
+                  <p className="text-[9px] font-medium leading-normal text-gray-500 px-1">
                     {lvl.desc}
                   </p>
                 </div>
@@ -262,17 +277,94 @@ const MyLevel = () => {
       </div>
       {/* ─── End Red Section ─── */}
 
-      {/* ─── Below section: Requirements + Benefits ─── */}
+      {/* ─── Below section: Steps + Requirements + Benefits ─── */}
       <main className="px-4 pt-4 pb-6 max-w-lg mx-auto">
 
+        {/* Dynamic Level Upgrade Steps Roadmap (Horizontal Taped Sticky Cards Layout) */}
+        {(activeLevelInfo.customSteps && activeLevelInfo.customSteps.length > 0) && (
+          <div className="mb-6 relative">
+            <div className="text-center mb-4">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">
+                ROADMAP TO SUCCESS
+              </span>
+              <h3 className="text-sm font-black text-gray-800 tracking-tight">
+                {selectedTab === 'L1'
+                  ? `How to Maintain Your Current Level?`
+                  : `How to Upgrade Your Level?`}
+              </h3>
+            </div>
+
+            {/* Horizontal Scroll Container */}
+            <div className="flex gap-4 overflow-x-auto pt-5 pb-4 px-2 no-scrollbar scroll-smooth snap-x snap-mandatory">
+              {activeLevelInfo.customSteps.map((stepItem, idx) => {
+                const tapeColors = [
+                  'bg-rose-400/80',
+                  'bg-emerald-400/80',
+                  'bg-amber-400/80',
+                  'bg-teal-400/80',
+                  'bg-indigo-400/80'
+                ];
+                const cardBgGradients = [
+                  'from-rose-50/70 to-white text-rose-900',
+                  'from-emerald-50/70 to-white text-emerald-900',
+                  'from-amber-50/70 to-white text-amber-900',
+                  'from-teal-50/70 to-white text-teal-900',
+                  'from-indigo-50/70 to-white text-indigo-900'
+                ];
+
+                const tapeBg = tapeColors[idx % tapeColors.length];
+                const cardBg = cardBgGradients[idx % cardBgGradients.length];
+
+                // Alternate rotation angles for realistic tape post-it feel
+                const rotations = ['-rotate-2', 'rotate-2', '-rotate-1', 'rotate-3'];
+                const rot = rotations[idx % rotations.length];
+
+                return (
+                  <div
+                    key={idx}
+                    className={`snap-center shrink-0 w-[165px] relative bg-white rounded-2xl p-3 pt-5 shadow-lg border border-gray-100/90 transition-transform duration-300 hover:scale-102 ${rot}`}
+                    style={{
+                      boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.03)'
+                    }}
+                  >
+                    {/* Washi Tape Strip at Top Center */}
+                    <div
+                      className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-8 h-4 ${tapeBg} rounded-xs shadow-xs transform -rotate-2 opacity-85 border-t border-white/40`}
+                      style={{
+                        clipPath: 'polygon(0% 0%, 100% 0%, 96% 100%, 4% 100%)'
+                      }}
+                    />
+
+                    {/* Step Inner Colored Box */}
+                    <div className={`rounded-xl p-2.5 bg-gradient-to-b ${cardBg} mb-2 border border-white/60`}>
+                      <span className="text-lg font-bold tracking-tight block mb-0.5 opacity-85">
+                        0{idx + 1}
+                      </span>
+                      <p className="text-[10px] font-medium leading-snug tracking-normal text-gray-700 line-clamp-3">
+                        {stepItem}
+                      </p>
+                    </div>
+
+                    {/* Step Label Footer */}
+                    <div className="flex items-center justify-between text-[8px] font-bold uppercase text-gray-400 px-0.5">
+                      <span>Step {idx + 1}</span>
+                      <span className="text-emerald-600 font-bold">✓ Action</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Requirements & Target Metrics */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
-          <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+        <div className="mb-6">
+          <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5 px-1">
             <FiShield className="w-4 h-4 text-[#B33A35]" />
             Requirements &amp; Targets ({activeLevelInfo.name})
           </h3>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {activeLevelInfo.steps.map((step, idx) => {
               let isMet = false;
               let currentVal = 0;
@@ -294,7 +386,7 @@ const MyLevel = () => {
               }
 
               return (
-                <div key={idx} className="p-3.5 rounded-xl bg-gray-50/70 border border-gray-100 space-y-2">
+                <div key={idx} className="p-4 rounded-2xl bg-white shadow-sm border border-gray-100 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FiCheckCircle
