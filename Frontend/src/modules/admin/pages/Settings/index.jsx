@@ -40,7 +40,10 @@ const AdminSettings = () => {
     instantBookingMarkup: 99,
     instantBookingWaitTime: 45,
     instantBookingWindowHours: 4,
-    showArrivalTime: true
+    showArrivalTime: true,
+    slotsStartTime: '09:00 AM',
+    slotsEndTime: '09:00 PM',
+    slotIntervalGap: 30
   });
 
   // Billing Configuration State
@@ -243,7 +246,10 @@ const AdminSettings = () => {
             instantBookingMarkup: res.settings.instantBookingMarkup !== undefined ? res.settings.instantBookingMarkup : 99,
             instantBookingWaitTime: res.settings.instantBookingWaitTime !== undefined ? res.settings.instantBookingWaitTime : 45,
             instantBookingWindowHours: res.settings.instantBookingWindowHours !== undefined ? res.settings.instantBookingWindowHours : 4,
-            showArrivalTime: res.settings.showArrivalTime !== undefined ? res.settings.showArrivalTime : true
+            showArrivalTime: res.settings.showArrivalTime !== undefined ? res.settings.showArrivalTime : true,
+            slotsStartTime: res.settings.slotsStartTime || '09:00 AM',
+            slotsEndTime: res.settings.slotsEndTime || '09:00 PM',
+            slotIntervalGap: res.settings.slotIntervalGap !== undefined ? res.settings.slotIntervalGap : 30
           });
           // Load billing settings
           setBillingSettings({
@@ -1312,6 +1318,46 @@ const AdminSettings = () => {
                       className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-blue-200">
                       {supportLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
                       Save Details
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Booking Slot Configuration */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 h-fit lg:col-span-2">
+                <div className="flex items-center gap-3 mb-6">
+                  <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">BOOKING SLOT CONFIGURATION</h2>
+                </div>
+
+                <form onSubmit={handleFinancialSave} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">SLOTS START TIME</label>
+                      <input type="text" name="slotsStartTime" value={financialSettings.slotsStartTime} onChange={(e) => setFinancialSettings(prev => ({ ...prev, slotsStartTime: e.target.value }))}
+                        placeholder="09:00 AM"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-medium text-gray-800" />
+                      <p className="text-[10px] text-gray-400 mt-1">Starting hour for generated slots<br/>(12h format, e.g. 09:00 AM)</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">SLOTS END TIME</label>
+                      <input type="text" name="slotsEndTime" value={financialSettings.slotsEndTime} onChange={(e) => setFinancialSettings(prev => ({ ...prev, slotsEndTime: e.target.value }))}
+                        placeholder="09:00 PM"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-medium text-gray-800" />
+                      <p className="text-[10px] text-gray-400 mt-1">Ending hour for generated slots<br/>(12h format, e.g. 09:00 PM)</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">SLOT INTERVAL GAP (MINUTES)</label>
+                      <input type="number" name="slotIntervalGap" value={financialSettings.slotIntervalGap} onChange={(e) => setFinancialSettings(prev => ({ ...prev, slotIntervalGap: Number(e.target.value) }))}
+                        placeholder="30" min="5"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-medium text-gray-800" />
+                      <p className="text-[10px] text-gray-400 mt-1">Time duration difference in minutes between consecutive slots</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-4">
+                    <button type="submit" disabled={loading}
+                      className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-green-200">
+                      {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
+                      Save Changes
                     </button>
                   </div>
                 </form>

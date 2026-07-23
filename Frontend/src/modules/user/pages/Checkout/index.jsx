@@ -20,6 +20,7 @@ import { voucherService } from '../../../../services/voucherService';
 import { useCart } from '../../../../context/CartContext';
 import { useSocket } from '../../../../context/SocketContext';
 import LiveBookingCard from '../../components/booking/LiveBookingCard';
+import { generateDynamicSlots } from '../../../../utils/timeSlotUtils';
 
 const toAssetUrl = (url) => {
   if (!url) return '';
@@ -96,6 +97,9 @@ const Checkout = () => {
   const [instantBookingWindowHours, setInstantBookingWindowHours] = useState(4);
   const [codAdvancePercentage, setCodAdvancePercentage] = useState(0);
   const [maxSearchTimeMinutes, setMaxSearchTimeMinutes] = useState(1); // From admin settings (1 min default)
+  const [slotsStartTime, setSlotsStartTime] = useState('09:00 AM');
+  const [slotsEndTime, setSlotsEndTime] = useState('09:00 PM');
+  const [slotIntervalGap, setSlotIntervalGap] = useState(60);
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -259,6 +263,9 @@ const Checkout = () => {
             setCodAdvancePercentage(response.settings?.codAdvancePercentage || 0);
             // waveDuration is in seconds (e.g. 60 = 1 min); convert to minutes for frontend countdown
             setMaxSearchTimeMinutes(Math.max(1, Math.round((response.settings?.waveDuration || 60) / 60)));
+            setSlotsStartTime(response.settings?.slotsStartTime || '09:00 AM');
+            setSlotsEndTime(response.settings?.slotsEndTime || '09:00 PM');
+            setSlotIntervalGap(response.settings?.slotIntervalGap || 60);
 
             if (response.user?.addresses?.length > 0) {
               const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
@@ -300,6 +307,9 @@ const Checkout = () => {
             setCodAdvancePercentage(response.settings?.codAdvancePercentage || 0);
             // waveDuration is in seconds (e.g. 60 = 1 min); convert to minutes for frontend countdown
             setMaxSearchTimeMinutes(Math.max(1, Math.round((response.settings?.waveDuration || 60) / 60)));
+            setSlotsStartTime(response.settings?.slotsStartTime || '09:00 AM');
+            setSlotsEndTime(response.settings?.slotsEndTime || '09:00 PM');
+            setSlotIntervalGap(response.settings?.slotIntervalGap || 60);
 
             // Set Addresses
             if (response.user?.addresses?.length > 0) {
@@ -1480,20 +1490,7 @@ const Checkout = () => {
   };
 
   const getTimeSlots = () => {
-    const allSlots = [
-      { value: '09:00', end: '10:00', display: '9:00 AM' },
-      { value: '10:00', end: '11:00', display: '10:00 AM' },
-      { value: '11:00', end: '12:00', display: '11:00 AM' },
-      { value: '12:00', end: '13:00', display: '12:00 PM' },
-      { value: '13:00', end: '14:00', display: '1:00 PM' },
-      { value: '14:00', end: '15:00', display: '2:00 PM' },
-      { value: '15:00', end: '16:00', display: '3:00 PM' },
-      { value: '16:00', end: '17:00', display: '4:00 PM' },
-      { value: '17:00', end: '18:00', display: '5:00 PM' },
-      { value: '18:00', end: '19:00', display: '6:00 PM' },
-      { value: '19:00', end: '20:00', display: '7:00 PM' },
-      { value: '20:00', end: '21:00', display: '8:00 PM' },
-    ];
+    const allSlots = generateDynamicSlots(slotsStartTime, slotsEndTime, slotIntervalGap);
 
     // If today is selected, filter out past time slots
     const now = new Date();

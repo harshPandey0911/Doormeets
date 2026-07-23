@@ -101,6 +101,19 @@ const settingsSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
+  // Booking Slot Configuration
+  slotsStartTime: {
+    type: String,
+    default: '09:00 AM'
+  },
+  slotsEndTime: {
+    type: String,
+    default: '09:00 PM'
+  },
+  slotIntervalGap: {
+    type: Number,
+    default: 30
+  },
   // Razorpay Settings
   razorpayKeyId: {
     type: String,

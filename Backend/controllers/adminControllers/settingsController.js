@@ -82,7 +82,11 @@ exports.updateSettings = async (req, res, next) => {
       shopReferralRewardVendor,
       shopReferralQrCodeUrl,
       levelConfig,
-      cancellationPageConfig
+      cancellationPageConfig,
+      // Booking Slot Configuration
+      slotsStartTime,
+      slotsEndTime,
+      slotIntervalGap
     } = req.body;
 
     let settings = await Settings.findOne({ type: 'global' });
@@ -224,6 +228,11 @@ exports.updateSettings = async (req, res, next) => {
       if (shopReferralQrCodeUrl !== undefined) settings.shopReferralQrCodeUrl = shopReferralQrCodeUrl;
       if (levelConfig !== undefined) settings.levelConfig = levelConfig;
       if (cancellationPageConfig !== undefined) settings.cancellationPageConfig = cancellationPageConfig;
+
+      // Booking Slot Configuration
+      if (slotsStartTime !== undefined) settings.slotsStartTime = slotsStartTime;
+      if (slotsEndTime !== undefined) settings.slotsEndTime = slotsEndTime;
+      if (slotIntervalGap !== undefined) settings.slotIntervalGap = Number(slotIntervalGap);
 
       await settings.save();
     }
