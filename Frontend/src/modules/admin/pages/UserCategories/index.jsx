@@ -24,7 +24,7 @@ import PaintingRatesSettings from "./pages/PaintingRatesSettings";
 const UserCategories = () => {
   const [catalog, setCatalog] = useState(() => ensureIds(loadCatalog()));
   const [cities, setCities] = useState([]);
-  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedCity, setSelectedCity] = useState('6a153cdfb02e3f00051d6156');
 
   useEffect(() => {
     const handler = () => setCatalog(ensureIds(loadCatalog()));
@@ -40,35 +40,6 @@ const UserCategories = () => {
         if (response.success) {
           const loadedCities = (response.cities || []).filter(city => city.isActive);
           setCities(loadedCities);
-
-          // Auto-select default or first city if none selected
-          if (!selectedCity && loadedCities.length > 0) {
-            const defaultCity = loadedCities.find(c => c.isDefault);
-            // Handle potentially different ID formats
-            const cityId = defaultCity
-              ? (defaultCity._id || defaultCity.id)
-              : (loadedCities[0]._id || loadedCities[0].id);
-
-            if (cityId) {
-              // If the logged-in admin is a city_admin, prefer the persisted adminSelectedCity
-              try {
-                const storedAdmin = JSON.parse(sessionStorage.getItem('adminData') || localStorage.getItem('adminData') || '{}');
-                if (storedAdmin.role === 'city_admin') {
-                  const adminSelected = localStorage.getItem('adminSelectedCity');
-                  if (adminSelected) {
-                    setSelectedCity(adminSelected);
-                  } else {
-                    setSelectedCity(cityId);
-                  }
-                } else {
-                  // For super admin, default to global '' (All Cities)
-                  setSelectedCity('');
-                }
-              } catch (e) {
-                setSelectedCity('');
-              }
-            }
-          }
         }
       } catch (error) {
         console.error('Failed to fetch cities:', error);
@@ -90,38 +61,6 @@ const UserCategories = () => {
 
   return (
     <div className="space-y-4">
-      {/* Global City Filter Header - Restored for Super Admin */}
-      {isAdminSuper && cities.length > 0 && (
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-gray-800">City Selection</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Select a city to manage its catalog and features</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">Current City:</span>
-            <select
-              value={selectedCity}
-              onChange={(e) => {
-                setSelectedCity(e.target.value);
-                try {
-                  const storedAdmin = JSON.parse(sessionStorage.getItem('adminData') || localStorage.getItem('adminData') || '{}');
-                  if (storedAdmin && storedAdmin.role === 'city_admin') {
-                    localStorage.setItem('adminSelectedCity', e.target.value);
-                  }
-                } catch (err) {}
-              }}
-              className="bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block p-2.5 font-semibold outline-none"
-            >
-              <option value="">All Cities / Global</option>
-              {cities.map((city) => (
-                <option key={city._id || city.id} value={city._id || city.id}>
-                  {city.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
         <Routes>
           <Route index element={<Navigate to="/admin/user-categories/home" replace />} />

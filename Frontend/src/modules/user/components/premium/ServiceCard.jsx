@@ -62,14 +62,16 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             <span>({service.reviews || '1.2k'} reviews)</span>
           </div>
 
-          <div className="mt-1.5 md:mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-              {service.variants && service.variants.length > 0 ? `Starting from ₹${service.price}` : `₹${service.price}`}
-            </span>
-            {service.originalPrice && (
-              <span className="text-xs md:text-sm line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
-            )}
-          </div>
+          {service.serviceType !== 'package_base' && (
+            <div className="mt-1.5 md:mt-2.5 flex items-baseline gap-1.5">
+              <span className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                {service.variants && service.variants.length > 0 ? `Starting from ₹${service.price}` : `₹${service.price}`}
+              </span>
+              {service.originalPrice && (
+                <span className="text-xs md:text-sm line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Divider and description */}

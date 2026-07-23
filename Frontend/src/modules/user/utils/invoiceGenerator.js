@@ -129,7 +129,7 @@ export const downloadInvoice = (booking, companyDetails) => {
     <div style="font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; color: #333; line-height: 1.5; max-width: 800px; margin: 0 auto; background: #fff; box-sizing: border-box;">
       
       <!-- PAGE 1: PLATFORM INVOICE -->
-      <div style="padding: 40px; min-height: 277mm; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; page-break-after: always; position: relative;">
+      <div style="padding: 40px; height: 270mm; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; position: relative;">
         <div>
           <!-- Header -->
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
@@ -308,8 +308,10 @@ export const downloadInvoice = (booking, companyDetails) => {
         </table>
       </div>
 
+      <div class="html2pdf__page-break"></div>
+
       <!-- PAGE 2: PARTNER/VENDOR INVOICE -->
-      <div style="padding: 40px; min-height: 277mm; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; position: relative;">
+      <div style="padding: 40px; height: 270mm; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; position: relative;">
         <div>
           <!-- Header -->
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
@@ -448,32 +450,7 @@ export const downloadInvoice = (booking, companyDetails) => {
             </tbody>
           </table>
 
-          <!-- Extra platform fee & taxes overview section -->
-          <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px 20px; font-size: 11px; margin-top: 10px;">
-            <strong style="display: block; font-size: 12px; color: #111; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Platform Fees & Taxes Details (Admin Split)</strong>
-            <table style="width: 100%; border-collapse: collapse; line-height: 1.6;">
-              <tr>
-                <td style="color: #666;">Platform Convenience & Booking Fees</td>
-                <td style="text-align: right; font-weight: bold; color: #111;">Rs. ${adminTaxable.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td style="color: #666;">L1 / Service Agent Visiting Charges</td>
-                <td style="text-align: right; font-weight: bold; color: #111;">Rs. ${(booking.visitingCharges || 0).toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td style="color: #666;">IGST @18% / Platform Taxes (Total)</td>
-                <td style="text-align: right; font-weight: bold; color: #111;">Rs. ${adminGst.toFixed(2)}</td>
-              </tr>
-              <tr style="border-top: 1px dashed #ccc; padding-top: 5px; font-weight: bold;">
-                <td style="color: #111; padding-top: 5px;">Total Platform Billing Contribution</td>
-                <td style="text-align: right; color: #111; padding-top: 5px;">Rs. ${adminTotal.toFixed(2)}</td>
-              </tr>
-              <tr style="border-top: 1px solid #111; padding-top: 8px; font-weight: 800; font-size: 12px;">
-                <td style="color: #000; padding-top: 8px;">GRAND TOTAL USER PAID (PLATFORM + SERVICE)</td>
-                <td style="text-align: right; color: #000; padding-top: 8px; font-size: 13px;">Rs. ${grandTotalVal.toFixed(2)}</td>
-              </tr>
-            </table>
-          </div>
+          <!-- Extra platform fee section removed as per user request -->
         </div>
 
         <!-- Signature Section -->

@@ -20,30 +20,16 @@ const getPublicCategories = async (req, res) => {
   try {
     const { cityId } = req.query;
 
-    // Build query
+    // Build query (ignore cityId filter to make catalog global/overall)
     const query = { status: { $in: ['active', 'coming_soon'] } };
-    if (cityId) {
-      query.$or = [
-        { cityIds: cityId },
-        { cityIds: { $exists: false } },
-        { cityIds: { $size: 0 } }
-      ];
-    }
 
     // Find all DB-active category titles (admin status is the source of truth)
     const dbActiveCategories = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
     const dbActiveCatIdsSet = new Set(dbActiveCategories.map(c => c._id.toString()));
     const dbActiveCatTitlesSet = new Set(dbActiveCategories.map(c => c.title.toLowerCase().trim()));
 
-    // Find all online and available vendors — filtered by city if cityId provided
+    // Find all online and available vendors globally
     let vendorFilterCat = { isOnline: true, workStatus: 'available' };
-    if (cityId) {
-      const City = require('../../models/City');
-      const cityDocCat = await City.findById(cityId).select('name').lean();
-      if (cityDocCat && cityDocCat.name) {
-        vendorFilterCat['address.city'] = new RegExp(`^${cityDocCat.name.trim()}$`, 'i');
-      }
-    }
     const onlineVendors = await require('../../models/Vendor').find(vendorFilterCat).select('categories');
 
     const activeCategoryIds = new Set();
@@ -104,8 +90,8 @@ const getPublicCategories = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
         isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).map(mc => ({
-          id: mc._id ? mc._id.toString() : mc.toString(),
+        mappedCategories: (cat.mappedCategories || []).filter(mc => mc && mc._id).map(mc => ({
+          id: mc._id.toString(),
           title: mc.title,
           slug: mc.slug,
           icon: mc.homeIconUrl || ''
@@ -297,14 +283,6 @@ const getPublicBrands = async (req, res) => {
     } else {
       query.categoryIds = { $in: activeCatIds };
     }
-    if (cityId) {
-      query.$or = [
-        { cityIds: cityId },
-        { cityIds: { $exists: false } },
-        { cityIds: { $size: 0 } }
-      ];
-    }
-
     if (search) {
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.title = { $regex: escapedSearch, $options: 'i' };
@@ -315,16 +293,8 @@ const getPublicBrands = async (req, res) => {
       .sort({ order: 1, createdAt: -1 })
       .lean();
 
-    // Find all online and available vendors, filtered by city if cityId provided
+    // Find all online and available vendors globally
     let vendorCityFilter = { isOnline: true, workStatus: 'available' };
-    if (cityId) {
-      // Look up city name to match vendor's address.city string field
-      const City = require('../../models/City');
-      const cityDoc = await City.findById(cityId).select('name').lean();
-      if (cityDoc && cityDoc.name) {
-        vendorCityFilter['address.city'] = new RegExp(`^${cityDoc.name.trim()}$`, 'i');
-      }
-    }
     const onlineVendors = await require('../../models/Vendor').find(vendorCityFilter)
       .select('categories location address geoLocation');
 
@@ -1283,8 +1253,8 @@ const getPublicHomeData = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
         isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).map(mc => ({
-          id: mc._id ? mc._id.toString() : mc.toString(),
+        mappedCategories: (cat.mappedCategories || []).filter(mc => mc && mc._id).map(mc => ({
+          id: mc._id.toString(),
           title: mc.title,
           slug: mc.slug,
           icon: mc.homeIconUrl || ''

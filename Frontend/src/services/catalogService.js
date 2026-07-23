@@ -57,12 +57,14 @@ export const categoryService = {
   // Create new category
   create: async (data) => {
     const response = await api.post('/admin/categories', data);
+    publicCatalogService.invalidateCache();
     return response.data;
   },
 
   // Update category
   update: async (id, data) => {
     const response = await api.put(`/admin/categories/${id}`, data);
+    publicCatalogService.invalidateCache();
     return response.data;
   },
 
