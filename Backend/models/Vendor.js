@@ -25,6 +25,16 @@ const vendorSchema = new mongoose.Schema({
     enum: ['vendor'],
     default: 'vendor'
   },
+  level: {
+    type: Number,
+    enum: [1, 2, 3],
+    default: 3
+  },
+  currentLevel: {
+    type: String,
+    enum: ['L1', 'L2', 'L3'],
+    default: 'L3'
+  },
   password: {
     type: String,
     select: false

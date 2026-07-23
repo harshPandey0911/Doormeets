@@ -80,8 +80,7 @@ const Settings = () => {
   };
 
   const handlePrivacyClick = () => {
-    // Navigate to privacy page (can be implemented later)
-    // navigate('/privacy');
+    navigate('/user/privacy-policy');
   };
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud } from 'react-icons/fi';
+import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud, FiAward } from 'react-icons/fi';
 import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus } from '../../services/settingsService';
 import { cityService } from '../../services/cityService';
 import CityManagement from '../Cities';
@@ -65,9 +65,11 @@ const AdminSettings = () => {
   const [supportSettings, setSupportSettings] = useState({
     supportEmail: '',
     supportPhone: '',
-    supportWhatsapp: ''
+    supportWhatsapp: '',
+    privacyPolicy: ''
   });
   const [supportLoading, setSupportLoading] = useState(false);
+  const [privacyLoading, setPrivacyLoading] = useState(false);
 
   // About Page Settings State
   const [aboutSettings, setAboutSettings] = useState({
@@ -112,6 +114,40 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [activeView, setActiveView] = useState('main'); // 'main', 'profile', 'financial', 'system', 'admins'
+  const [activeLevelTab, setActiveLevelTab] = useState('L3');
+
+  // Level configuration settings state
+  const [levelConfigSettings, setLevelConfigSettings] = useState({
+    L3: {
+      badge: 'Bronze Partner',
+      name: 'Level 3 (Beginner)',
+      color: '#D97706',
+      desc: 'You are currently on Level 3. Complete more jobs and maintain high ratings to upgrade your level.',
+      targetJobs: 15,
+      targetRating: 4.2,
+      targetCompletionRate: 85
+    },
+    L2: {
+      badge: 'Silver Partner',
+      name: 'Level 2 (Professional)',
+      color: '#0D9488',
+      desc: 'Great job! You are a Level 2 partner. Keep providing excellent service to climb to the top Level 1.',
+      targetJobs: 50,
+      targetRating: 4.7,
+      targetCompletionRate: 92
+    },
+    L1: {
+      badge: 'Gold Elite Partner',
+      name: 'Level 1 (Expert)',
+      color: '#EAB308',
+      desc: 'Congratulations! You are a Level 1 Elite partner. You receive the highest preference in matching and premium job bookings.',
+      targetJobs: 10,
+      targetRating: 4.7,
+      maintenanceDesc: 'Complete at least 10 bookings every month',
+      violationDesc: 'Zero safety violations or major complaints'
+    }
+  });
+  const [levelsLoading, setLevelsLoading] = useState(false);
 
 
   const isSuperAdmin = profile.role === 'super_admin';
@@ -197,7 +233,8 @@ const AdminSettings = () => {
           setSupportSettings({
             supportEmail: res.settings.supportEmail || '',
             supportPhone: res.settings.supportPhone || '',
-            supportWhatsapp: res.settings.supportWhatsapp || ''
+            supportWhatsapp: res.settings.supportWhatsapp || '',
+            privacyPolicy: res.settings.privacyPolicy || ''
           });
           // Load about settings
           if (res.settings.aboutPageConfig) {
@@ -221,6 +258,10 @@ const AdminSettings = () => {
                 { title: 'Relax', desc: 'Enjoy high-quality service', iconName: 'FiSmile' }
               ]
             });
+          }
+          // Load level config settings
+          if (res.settings.levelConfig) {
+            setLevelConfigSettings(res.settings.levelConfig);
           }
         }
       } catch (error) {
@@ -401,6 +442,20 @@ const AdminSettings = () => {
       toast.error('Failed to update about page settings');
     } finally {
       setAboutLoading(false);
+    }
+  };
+
+  // Save level configuration settings
+  const handleLevelsSave = async (e) => {
+    e.preventDefault();
+    setLevelsLoading(true);
+    try {
+      await updateSettings({ levelConfig: levelConfigSettings });
+      toast.success('Level configuration settings updated');
+    } catch (error) {
+      toast.error('Failed to update level configuration settings');
+    } finally {
+      setLevelsLoading(false);
     }
   };
 
@@ -626,6 +681,30 @@ const AdminSettings = () => {
         <h3 className="text-lg font-bold text-gray-800 mb-2">SOS Alerts</h3>
         <p className="text-sm text-gray-500">View logged customer distress signals, live locations and resolution details</p>
       </div>
+
+      {/* Level Settings Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('levels')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-100 transition-colors">
+            <FiAward className="w-6 h-6 text-amber-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Level Settings</h3>
+          <p className="text-sm text-gray-500">Configure dynamically the vendor level criteria, target jobs and upgrade steps</p>
+        </div>
+      )}
+
+      {/* Privacy Policy Settings Card - Super Admin Only */}
+      {isSuperAdmin && (
+        <div onClick={() => setActiveView('privacy')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-100 transition-colors">
+            <FiShield className="w-6 h-6 text-indigo-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Privacy & Data</h3>
+          <p className="text-sm text-gray-500">Configure dynamically the user privacy policy and data agreement terms</p>
+        </div>
+      )}
     </div>
   );
 
@@ -957,11 +1036,11 @@ const AdminSettings = () => {
                   </div>
 
                   {/* Vendor Busy Buffer Hours */}
-                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 space-y-3">
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
                     <div>
                       <p className="font-semibold text-gray-800">Vendor Job Buffer Time (Hours)</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        How many hours before a scheduled booking the vendor becomes <span className="font-bold text-orange-600">busy</span> and stops receiving new bookings. Default: 1 hour.
+                        How many hours before a scheduled booking the vendor becomes busy and stops receiving new bookings. Default: 1 hour.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -970,7 +1049,7 @@ const AdminSettings = () => {
                         name="vendorBusyBufferHours"
                         value={financialSettings.vendorBusyBufferHours ?? 1}
                         onChange={(e) => setFinancialSettings(prev => ({ ...prev, vendorBusyBufferHours: Number(e.target.value) }))}
-                        className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg outline-none focus:border-orange-500 bg-white"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-500 bg-white"
                         min="0"
                         step="0.5"
                       />
@@ -983,7 +1062,7 @@ const AdminSettings = () => {
                             toast.error('Failed to update vendor buffer time');
                           }
                         }}
-                        className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors whitespace-nowrap"
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
                       >
                         Save
                       </button>
@@ -1391,6 +1470,311 @@ const AdminSettings = () => {
         {activeView === 'credits' && isSuperAdmin && (
           <motion.div key="credits" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
             <CreditPackages />
+          </motion.div>
+        )}
+
+        {/* Level Settings View */}
+        {activeView === 'levels' && isSuperAdmin && (
+          <motion.div key="levels" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+            <div className="max-w-3xl mx-auto bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <FiAward className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide">Vendor Levels Config</h2>
+                  <p className="text-xs text-gray-500">Configure target requirements and upgrade steps dynamically</p>
+                </div>
+              </div>
+
+              {/* Tabs for Levels */}
+              <div className="flex gap-2 mb-6 border-b border-gray-100 pb-3">
+                {['L3', 'L2', 'L1'].map((lvl) => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => setActiveLevelTab(lvl)}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                      activeLevelTab === lvl
+                        ? 'bg-amber-600 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {lvl === 'L3' ? 'Level 3 (Beginner)' : lvl === 'L2' ? 'Level 2 (Professional)' : 'Level 1 (Expert)'}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleLevelsSave} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Badge Title</label>
+                    <input
+                      type="text"
+                      value={levelConfigSettings[activeLevelTab].badge}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setLevelConfigSettings((prev) => ({
+                          ...prev,
+                          [activeLevelTab]: { ...prev[activeLevelTab], badge: val }
+                        }));
+                      }}
+                      required
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Level Name</label>
+                    <input
+                      type="text"
+                      value={levelConfigSettings[activeLevelTab].name}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setLevelConfigSettings((prev) => ({
+                          ...prev,
+                          [activeLevelTab]: { ...prev[activeLevelTab], name: val }
+                        }));
+                      }}
+                      required
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Badge Color Hex Code</label>
+                    <input
+                      type="text"
+                      value={levelConfigSettings[activeLevelTab].color}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setLevelConfigSettings((prev) => ({
+                          ...prev,
+                          [activeLevelTab]: { ...prev[activeLevelTab], color: val }
+                        }));
+                      }}
+                      required
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Level Description</label>
+                  <textarea
+                    value={levelConfigSettings[activeLevelTab].desc}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setLevelConfigSettings((prev) => ({
+                        ...prev,
+                        [activeLevelTab]: { ...prev[activeLevelTab], desc: val }
+                      }));
+                    }}
+                    required
+                    rows="3"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-4">Requirements & Targets</h3>
+                  
+                  {activeLevelTab !== 'L1' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Target Completed Bookings</label>
+                        <input
+                          type="number"
+                          value={levelConfigSettings[activeLevelTab].targetJobs}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setLevelConfigSettings((prev) => ({
+                              ...prev,
+                              [activeLevelTab]: { ...prev[activeLevelTab], targetJobs: val }
+                            }));
+                          }}
+                          required
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Min Customer Rating (0 - 5)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="5"
+                          value={levelConfigSettings[activeLevelTab].targetRating}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setLevelConfigSettings((prev) => ({
+                              ...prev,
+                              [activeLevelTab]: { ...prev[activeLevelTab], targetRating: val }
+                            }));
+                          }}
+                          required
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Min Completion Rate (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={levelConfigSettings[activeLevelTab].targetCompletionRate}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setLevelConfigSettings((prev) => ({
+                              ...prev,
+                              [activeLevelTab]: { ...prev[activeLevelTab], targetCompletionRate: val }
+                            }));
+                          }}
+                          required
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Min Customer Rating (0 - 5)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="5"
+                            value={levelConfigSettings.L1.targetRating}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setLevelConfigSettings((prev) => ({
+                                ...prev,
+                                L1: { ...prev.L1, targetRating: val }
+                              }));
+                            }}
+                            required
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Monthly Jobs Target (Volume Info)</label>
+                          <input
+                            type="number"
+                            value={levelConfigSettings.L1.targetJobs}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setLevelConfigSettings((prev) => ({
+                                ...prev,
+                                L1: { ...prev.L1, targetJobs: val }
+                              }));
+                            }}
+                            required
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Maintenance Description Text</label>
+                          <input
+                            type="text"
+                            value={levelConfigSettings.L1.maintenanceDesc}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setLevelConfigSettings((prev) => ({
+                                ...prev,
+                                L1: { ...prev.L1, maintenanceDesc: val }
+                              }));
+                            }}
+                            required
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase mb-1.5">Violations / Safety Rules Text</label>
+                          <input
+                            type="text"
+                            value={levelConfigSettings.L1.violationDesc}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setLevelConfigSettings((prev) => ({
+                                ...prev,
+                                L1: { ...prev.L1, violationDesc: val }
+                              }));
+                            }}
+                            required
+                            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-amber-500 transition-all font-bold text-gray-800 text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100 font-bold text-xs uppercase tracking-wider">
+                  <button
+                    type="submit"
+                    disabled={levelsLoading}
+                    className="px-6 py-2.5 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-amber-200 text-xs font-bold"
+                  >
+                    {levelsLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
+                    Save Level Config
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Privacy Policy View */}
+        {activeView === 'privacy' && isSuperAdmin && (
+          <motion.div key="privacy" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+            <div className="max-w-3xl mx-auto bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <FiShield className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wide">Privacy Policy & Data Agreement</h2>
+                  <p className="text-xs text-gray-500">Configure dynamically the user privacy policy and data agreement terms</p>
+                </div>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setPrivacyLoading(true);
+                try {
+                  await updateSettings({ privacyPolicy: supportSettings.privacyPolicy });
+                  toast.success('Privacy Policy updated successfully');
+                } catch (error) {
+                  toast.error('Failed to update Privacy Policy');
+                } finally {
+                  setPrivacyLoading(false);
+                }
+              }} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5 font-bold">Privacy Policy Terms</label>
+                  <textarea
+                    value={supportSettings.privacyPolicy}
+                    onChange={(e) => setSupportSettings(prev => ({ ...prev, privacyPolicy: e.target.value }))}
+                    required
+                    rows="15"
+                    placeholder="Enter full privacy agreement content here..."
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 transition-all font-semibold text-gray-800 text-xs leading-relaxed"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100">
+                  <button
+                    type="submit"
+                    disabled={privacyLoading}
+                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-indigo-200 text-xs font-bold uppercase tracking-wider"
+                  >
+                    {privacyLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
+                    Save Policy
+                  </button>
+                </div>
+              </form>
+            </div>
           </motion.div>
         )}
 
