@@ -1698,6 +1698,12 @@ const PackageBased = () => {
                               ₹{platformEarning.toFixed(2)}
                             </span>
                           </div>
+                          <div className="flex justify-between border-t pt-1 mt-1">
+                            <span className="text-gray-600 font-bold">Wallet Deduction (COD):</span>
+                            <span className="font-extrabold text-blue-600">
+                              ₹{(finalPrice - vendorPayout).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
