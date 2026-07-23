@@ -90,14 +90,7 @@ app.use(cookieParser());
 // app.use(express.json({ limit: "20mb" })); // REMOVED redundant
 // app.use(express.urlencoded({ extended: true, limit: "20mb" })); // REMOVED redundant
 
-// DEBUG: Log Requests
-app.use('/api', (req, res, next) => {
-  console.log(`DEBUG: Incoming Request -> ${req.method} ${req.originalUrl}`);
-  if (req.method === 'POST' || req.method === 'PUT') {
-    console.log('DEBUG: Request Body:', JSON.stringify(req.body, null, 2));
-  }
-  next();
-});
+// DEBUG: Log Requests (Removed to prevent terminal spam)
 // (Old Vendor Register Logger Removed)
 
 

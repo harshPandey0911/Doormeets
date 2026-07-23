@@ -90,8 +90,8 @@ const getPublicCategories = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
         isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).map(mc => ({
-          id: mc._id ? mc._id.toString() : mc.toString(),
+        mappedCategories: (cat.mappedCategories || []).filter(mc => mc && mc._id).map(mc => ({
+          id: mc._id.toString(),
           title: mc.title,
           slug: mc.slug,
           icon: mc.homeIconUrl || ''
@@ -1253,8 +1253,8 @@ const getPublicHomeData = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
         isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).map(mc => ({
-          id: mc._id ? mc._id.toString() : mc.toString(),
+        mappedCategories: (cat.mappedCategories || []).filter(mc => mc && mc._id).map(mc => ({
+          id: mc._id.toString(),
           title: mc.title,
           slug: mc.slug,
           icon: mc.homeIconUrl || ''

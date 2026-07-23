@@ -35,13 +35,38 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
     return categories.filter(c => c.isGroupCategory === true);
   }, [categories]);
 
-  const standardCategories = useMemo(() => {
-    return categories.filter(c => c.isGroupCategory !== true);
-  }, [categories]);
-
   const editing = useMemo(() => {
     return combinedCategories.find(c => c.id === editingId) || null;
   }, [combinedCategories, editingId]);
+
+  // All standard categories for rendering names in the table
+  const allStandardCategories = useMemo(() => {
+    return categories.filter(c => c.isGroupCategory !== true);
+  }, [categories]);
+
+  // Track all categories that are currently mapped to ANY box
+  const allMappedCategoryIds = useMemo(() => {
+    const ids = new Set();
+    combinedCategories.forEach(box => {
+      if (box.mappedCategories) {
+        box.mappedCategories.forEach(id => ids.add(id));
+      }
+    });
+    return ids;
+  }, [combinedCategories]);
+
+  // Filtered standard categories for the modal checkbox list
+  const selectableCategories = useMemo(() => {
+    return allStandardCategories.filter(c => {
+      // If the category is hidden from Home Categories, AND it's not mapped to any box,
+      // it means it was manually hidden by the admin. We hide it from this list.
+      // But if it is mapped to a box, its showOnHome is false automatically, so we still show it!
+      if (c.showOnHome === false && !allMappedCategoryIds.has(c.id)) {
+        return false;
+      }
+      return true;
+    });
+  }, [allStandardCategories, allMappedCategoryIds]);
 
   // Fetch categories from API on mount
   const fetchCategories = async () => {
@@ -111,9 +136,9 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
       cityIds: existingCityIds,
       mappedCategories: (safe.mappedCategories || [])
         .map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))
-        .filter(id => standardCategories.some(sc => sc.id === id)),
+        .filter(id => allStandardCategories.some(sc => sc.id === id)),
     });
-  }, [editing, standardCategories]);
+  }, [editing, allStandardCategories]);
 
   const reset = () => {
     setEditingId(null);
@@ -339,7 +364,7 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
                     <td className="py-4 px-4">
                       <div className="flex flex-wrap gap-1.5 max-w-md">
                         {(c.mappedCategories || []).map(childId => {
-                          const childCat = standardCategories.find(sc => sc.id === childId);
+                          const childCat = allStandardCategories.find(sc => sc.id === childId);
                           return childCat ? (
                             <span key={childId} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100">
                               {childCat.title}
@@ -506,7 +531,7 @@ const CombinedCategoriesPage = ({ catalog, setCatalog, selectedCity, cities = []
             <label className="block text-sm font-bold text-gray-900 mb-1.5">Combine Categories</label>
             <p className="text-xs text-gray-500 mb-3">Select the categories to combine inside this box widget:</p>
             <div className="max-h-48 overflow-y-auto space-y-1 bg-white border border-gray-200 rounded-lg p-2">
-              {standardCategories.map(cat => {
+              {selectableCategories.map(cat => {
                 const isSelected = form.mappedCategories.includes(cat.id);
                 return (
                   <div
