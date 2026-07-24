@@ -157,4 +157,6 @@ const vendorBillSchema = new mongoose.Schema({
   timestamps: true
 });
 
+vendorBillSchema.index({ vendorId: 1, status: 1 });
+
 module.exports = mongoose.model('VendorBill', vendorBillSchema);

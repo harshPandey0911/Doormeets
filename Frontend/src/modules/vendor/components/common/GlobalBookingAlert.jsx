@@ -93,11 +93,19 @@ export default function GlobalBookingAlert() {
       const isApproved = vendorData.approvalStatus?.toLowerCase() === 'approved';
       if (!token || !isApproved) return;
 
+      const cachedMaxSearchTime = sessionStorage.getItem('vendor_max_search_time');
+      if (cachedMaxSearchTime) {
+        setMaxSearchTime(Number(cachedMaxSearchTime) || 1);
+        return;
+      }
+
       try {
         const { vendorDashboardService } = await import('../../services/dashboardService');
         const response = await vendorDashboardService.getDashboardStats();
         if (response.success && response.data.config) {
-          setMaxSearchTime(response.data.config.maxSearchTime || 1);
+          const maxTime = response.data.config.maxSearchTime || 1;
+          setMaxSearchTime(maxTime);
+          sessionStorage.setItem('vendor_max_search_time', String(maxTime));
         }
       } catch (error) {
         console.error('Failed to fetch config for GlobalAlert:', error);

@@ -13,7 +13,7 @@ import { ConfirmDialog } from '../../components/common';
 const ActiveJobs = memo(() => {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !sessionStorage.getItem('vendor_active_jobs_in_progress_'));
   const [filter, setFilter] = useState('in_progress'); // Default to showing active jobs
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({
@@ -68,14 +68,14 @@ const ActiveJobs = memo(() => {
       // Map API response to Component State structure
       const mappedJobs = jobsData.map(job => ({
         id: job._id || job.id,
-        serviceType: job.serviceName || 'Service',
+        serviceType: job.serviceName || job.serviceId?.title || 'Service',
         user: {
           name: job.userId?.name || 'Customer'
         },
         location: {
           address: job.address?.addressLine1 || 'Address not available'
         },
-        price: (job.finalAmount ? job.finalAmount * 0.9 : 0).toFixed(2),
+        price: (job.vendorEarnings > 0 ? job.vendorEarnings : (job.finalAmount ? job.finalAmount * 0.9 : 0)).toFixed(2),
         status: job.status,
         assignedTo: job.isSelfJob
           ? { name: 'You (Self)' }

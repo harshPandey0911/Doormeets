@@ -201,10 +201,15 @@ const getDashboardStats = async (req, res) => {
       ]);
 
       const Settings = require('../../models/Settings');
-      globalSettings = await Settings.findOne({ type: 'global' }).lean();
-
       const Vendor = require('../../models/Vendor');
-      vendorProfile = await Vendor.findById(vendorId).select('performanceScore level commissionRate isOnline isSubscriptionActive currentLevel');
+      
+      const [globalSettingsResult, vendorProfileResult] = await Promise.all([
+        Settings.findOne({ type: 'global' }).lean(),
+        Vendor.findById(vendorId).select('performanceScore level commissionRate isOnline isSubscriptionActive currentLevel').lean()
+      ]);
+      
+      globalSettings = globalSettingsResult;
+      vendorProfile = vendorProfileResult;
     }
 
     res.status(200).json({

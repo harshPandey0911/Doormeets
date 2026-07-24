@@ -32,8 +32,12 @@ const checkSubscription = async (req, res, next) => {
       return next();
     }
 
-    const Vendor = require('../models/Vendor');
-    const vendor = await Vendor.findById(req.userId);
+    // Use vendor attached to req by authMiddleware if available, otherwise do a quick lean projection
+    let vendor = req.user;
+    if (!vendor || vendor.isSubscriptionActive === undefined) {
+      const Vendor = require('../models/Vendor');
+      vendor = await Vendor.findById(req.userId || req.user?._id || req.user?.id).select('isSubscriptionActive subscription').lean();
+    }
 
     if (!vendor) {
       return res.status(404).json({ success: false, message: 'Vendor not found' });
@@ -45,9 +49,11 @@ const checkSubscription = async (req, res, next) => {
     if (!vendor.isSubscriptionActive || (expiryDate && new Date(expiryDate) < now)) {
       // Auto-update status if expired
       if (vendor.isSubscriptionActive) {
-        vendor.isSubscriptionActive = false;
-        if (vendor.subscription) vendor.subscription.status = 'expired';
-        await vendor.save();
+        const Vendor = require('../models/Vendor');
+        await Vendor.findByIdAndUpdate(vendor._id || vendor.id, {
+          isSubscriptionActive: false,
+          'subscription.status': 'expired'
+        });
       }
 
       return res.status(403).json({

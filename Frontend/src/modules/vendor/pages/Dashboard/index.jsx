@@ -59,7 +59,7 @@ const Dashboard = memo(() => {
   const [banners, setBanners] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null); // For video preview modal
   const [playingVideoId, setPlayingVideoId] = useState(null); // For inline video playback
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !sessionStorage.getItem('vendor_dashboard_cache'));
   const [error, setError] = useState('');
   const [globalConfig, setGlobalConfig] = useState({ maxSearchTime: 5, waveDuration: 60 });
   const [levelConfig, setLevelConfig] = useState(null);

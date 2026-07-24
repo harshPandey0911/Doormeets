@@ -6,10 +6,30 @@ import BottomNav from '../../components/layout/BottomNav';
 import LogoLoader from '../../../../components/common/LogoLoader';
 
 const MyLevel = () => {
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(() => {
+    // Instantly load from localStorage for 0ms render
+    try {
+      const storageKey = localStorage.getItem('role') === 'worker' ? 'workerData' : 'vendorData';
+      const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      if (stored && (stored._id || stored.id)) return stored;
+    } catch (e) {}
+    return null;
+  });
   const [dynamicConfig, setDynamicConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState('L3'); // 'L3', 'L2', 'L1'
+  const [loading, setLoading] = useState(() => {
+    try {
+      const storageKey = localStorage.getItem('role') === 'worker' ? 'workerData' : 'vendorData';
+      const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      return !(stored && (stored._id || stored.id));
+    } catch (e) { return true; }
+  });
+  const [selectedTab, setSelectedTab] = useState(() => {
+    try {
+      const storageKey = localStorage.getItem('role') === 'worker' ? 'workerData' : 'vendorData';
+      const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      return stored?.currentLevel || 'L3';
+    } catch (e) { return 'L3'; }
+  });
 
 
 
@@ -40,7 +60,38 @@ const MyLevel = () => {
   }, []);
 
   if (loading) {
-    return <LogoLoader />;
+    return (
+      <div className="min-h-screen pb-20 bg-gray-50">
+        {/* Header skeleton */}
+        <div className="relative pt-4 pb-4 overflow-hidden animate-pulse" style={{ background: 'linear-gradient(135deg, #E5534C 0%, #F06E67 50%, #D3433C 100%)', borderBottomLeftRadius: '50% 24px', borderBottomRightRadius: '50% 24px' }}>
+          <div className="px-4 max-w-lg mx-auto flex justify-center py-1 min-h-[235px] items-center">
+            <div className="w-64 h-40 bg-white/20 rounded-2xl"></div>
+          </div>
+        </div>
+        {/* Tab skeleton */}
+        <div className="flex gap-2 justify-center mt-4 px-4 animate-pulse">
+          {[1,2,3].map(i => <div key={i} className="h-8 w-20 bg-gray-200 rounded-full"></div>)}
+        </div>
+        {/* Content skeleton */}
+        <div className="px-4 mt-4 space-y-3 animate-pulse">
+          <div className="bg-white rounded-2xl p-4 space-y-3">
+            <div className="h-4 w-32 bg-gray-100 rounded"></div>
+            {[1,2,3].map(i => (
+              <div key={i}>
+                <div className="h-3 w-40 bg-gray-100 rounded mb-2"></div>
+                <div className="h-2 w-full bg-gray-100 rounded-full"></div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white rounded-2xl p-4 space-y-2">
+            <div className="h-4 w-28 bg-gray-100 rounded"></div>
+            <div className="h-3 w-full bg-gray-100 rounded"></div>
+            <div className="h-3 w-3/4 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+        <BottomNav />
+      </div>
+    );
   }
 
   // Fallback defaults

@@ -28,44 +28,17 @@ const getWallet = async (req, res) => {
     const earnings = (vendor.wallet?.credits * 10) || 0;
     const totalWithdrawn = vendor.wallet?.totalWithdrawn || 0;
 
-    // Get pending settlements count
-    const pendingSettlements = await Settlement.countDocuments({
-      vendorId,
-      status: 'pending'
-    });
-
-    // Get total cash collected (sum of all cash_collected transactions)
-    const cashCollectedResult = await Transaction.aggregate([
-      {
-        $match: {
-          vendorId: vendor._id,
-          type: 'cash_collected',
-          status: 'completed'
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$amount' }
-        }
-      }
-    ]);
-
-    // Get total settled amount
-    const settledResult = await Transaction.aggregate([
-      {
-        $match: {
-          vendorId: vendor._id,
-          type: 'settlement',
-          status: 'completed'
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$amount' }
-        }
-      }
+    // Run all aggregations and count queries in parallel
+    const [pendingSettlements, cashCollectedResult, settledResult] = await Promise.all([
+      Settlement.countDocuments({ vendorId, status: 'pending' }),
+      Transaction.aggregate([
+        { $match: { vendorId: vendor._id, type: 'cash_collected', status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]),
+      Transaction.aggregate([
+        { $match: { vendorId: vendor._id, type: 'settlement', status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ])
     ]);
 
     const totalCashCollected = cashCollectedResult[0]?.total || 0;

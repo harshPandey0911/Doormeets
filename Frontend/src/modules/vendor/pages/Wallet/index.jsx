@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 
 const Wallet = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !sessionStorage.getItem('vendor_wallet_cache'));
   const [wallet, setWallet] = useState({
     credits: 0,
     dues: 0,
@@ -37,6 +37,16 @@ const Wallet = () => {
   }, []);
 
   useEffect(() => {
+    // Load cached data instantly for 0ms render
+    try {
+      const cached = sessionStorage.getItem('vendor_wallet_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.wallet) setWallet(parsed.wallet);
+        if (parsed.barChartData) setBarChartData(parsed.barChartData);
+        setLoading(false);
+      }
+    } catch (e) {}
     loadWalletData();
   }, []);
 
@@ -47,30 +57,37 @@ const Wallet = () => {
   const fetchTransactions = async () => {
     try {
       const typeParam = filter === 'all' ? undefined : filter;
-      let allTxns = [];
       
-      // Fetch normal transactions (cash, settlement, withdrawal, etc)
+      const promises = [];
       if (filter !== 'credits_history') {
-        const res = await vendorWalletService.getTransactions({ type: typeParam });
-        if (res.success && res.data) {
-          allTxns = [...allTxns, ...res.data];
-        }
+        promises.push(vendorWalletService.getTransactions({ type: typeParam }).catch(() => ({ success: false, data: [] })));
+      } else {
+        promises.push(Promise.resolve({ success: true, data: [] }));
       }
-      
-      // Fetch credit transactions (lead deduct, purchase)
+
       if (filter === 'all' || filter === 'credits_history') {
-        const creditRes = await api.get('/vendors/credits/history');
-        if (creditRes.data.success && creditRes.data.data) {
-          const formattedCredits = creditRes.data.data.map(c => ({
-            _id: c._id,
-            type: c.type === 'purchase' ? 'credit_purchase' : (c.type === 'lead_deduct' ? 'credit_deduct' : 'credit_txn'),
-            amount: c.amount,
-            status: 'completed',
-            createdAt: c.createdAt,
-            description: c.description
-          }));
-          allTxns = [...allTxns, ...formattedCredits];
-        }
+        promises.push(api.get('/vendors/credits/history').catch(() => ({ data: { success: false, data: [] } })));
+      } else {
+        promises.push(Promise.resolve({ data: { success: true, data: [] } }));
+      }
+
+      const [res, creditRes] = await Promise.all(promises);
+
+      let allTxns = [];
+      if (res.success && res.data) {
+        allTxns = [...allTxns, ...res.data];
+      }
+
+      if (creditRes?.data?.success && creditRes?.data?.data) {
+        const formattedCredits = creditRes.data.data.map(c => ({
+          _id: c._id,
+          type: c.type === 'purchase' ? 'credit_purchase' : (c.type === 'lead_deduct' ? 'credit_deduct' : 'credit_txn'),
+          amount: c.amount,
+          status: 'completed',
+          createdAt: c.createdAt,
+          description: c.description
+        }));
+        allTxns = [...allTxns, ...formattedCredits];
       }
       
       // Sort combined by date descending
@@ -84,7 +101,8 @@ const Wallet = () => {
 
   const loadWalletData = async () => {
     try {
-      setLoading(true);
+      const hasCache = !!sessionStorage.getItem('vendor_wallet_cache');
+      if (!hasCache) setLoading(true);
       const [walletRes, analyticsRes] = await Promise.all([
         vendorWalletService.getWallet(),
         vendorWalletService.getEarningsAnalytics({ period: 'daily', filter: 'week' }).catch((err) => {
@@ -131,6 +149,7 @@ const Wallet = () => {
           });
         }
         setBarChartData(last7Days);
+        var finalChartData = last7Days;
       } else {
         // Fallback empty week
         const emptyWeek = Array(7).fill(0).map((_, i) => {
@@ -143,7 +162,20 @@ const Wallet = () => {
           };
         });
         setBarChartData(emptyWeek);
+        var finalChartData = emptyWeek;
       }
+      // Save to session cache for instant next visit
+      sessionStorage.setItem('vendor_wallet_cache', JSON.stringify({
+        wallet: {
+          credits: walletRes.data.credits !== undefined ? walletRes.data.credits : (walletRes.data.vendor?.wallet?.credits || 0),
+          dues: walletRes.data.dues || 0,
+          earnings: walletRes.data.earnings || 0,
+          totalCashCollected: walletRes.data.totalCashCollected || 0,
+          totalSettled: walletRes.data.totalSettled || 0,
+          totalWithdrawn: walletRes.data.totalWithdrawn || 0
+        },
+        barChartData: finalChartData
+      }));
     } catch (error) {
       console.error('loadWalletData error:', error);
       toast.error('Failed to load wallet data');
@@ -152,9 +184,6 @@ const Wallet = () => {
     }
   };
 
-  if (loading) {
-    return <LogoLoader />;
-  }
 
   // Display value for credits (exact decimal without rounding error)
   const rawCredits = wallet.credits !== undefined && wallet.credits !== null ? wallet.credits : (wallet.earnings ? (wallet.earnings / 10) : 0);
@@ -224,8 +253,49 @@ const Wallet = () => {
       <Header title="Wallet" />
 
       <main className="px-4 py-6 space-y-6">
-        
+
+        {loading ? (
+          <div className="space-y-4 animate-pulse">
+            {/* Balance card skeleton */}
+            <div className="bg-white rounded-md p-4 shadow-2xs border border-gray-100">
+              <div className="h-3 w-32 bg-slate-100 rounded mb-3"></div>
+              <div className="h-8 w-48 bg-slate-100 rounded mb-2"></div>
+              <div className="flex gap-2 mt-4">
+                <div className="h-10 flex-1 bg-slate-100 rounded-md"></div>
+                <div className="h-10 flex-1 bg-slate-100 rounded-md"></div>
+              </div>
+            </div>
+            {/* Chart skeleton */}
+            <div className="bg-white rounded-md p-4 shadow-2xs border border-gray-100">
+              <div className="h-3 w-40 bg-slate-100 rounded mb-4"></div>
+              <div className="flex items-end justify-between h-28 px-2 gap-2">
+                {[60, 80, 40, 90, 55, 70, 45].map((h, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                    <div className="w-full bg-slate-100 rounded-t-md" style={{ height: `${h}%` }}></div>
+                    <div className="h-2 w-4 bg-slate-100 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Transaction list skeleton */}
+            <div className="bg-white rounded-md p-4 shadow-2xs border border-gray-100 space-y-3">
+              <div className="h-3 w-36 bg-slate-100 rounded mb-2"></div>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-3 py-2">
+                  <div className="w-9 h-9 bg-slate-100 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-28 bg-slate-100 rounded"></div>
+                    <div className="h-2 w-20 bg-slate-100 rounded"></div>
+                  </div>
+                  <div className="h-4 w-16 bg-slate-100 rounded"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (<>
+
         {/* Earnings Chart Section */}
+
         <div className="bg-white rounded-md p-4 md:p-5 shadow-2xs border border-gray-100">
           <div className="flex justify-between items-center mb-5">
             <div>
@@ -454,6 +524,8 @@ const Wallet = () => {
             </div>
           )}
         </div>
+
+        </>)}
 
       </main>
       <BottomNav />

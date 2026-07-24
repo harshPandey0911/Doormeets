@@ -94,11 +94,13 @@ const getVendorBookings = async (req, res) => {
                 status: 1,
                 paymentMethod: 1,
                 finalAmount: 1,
+                vendorEarnings: 1,
                 scheduledDate: 1,
                 scheduledTime: 1,
                 serviceName: 1,
                 serviceCategory: 1,
                 categoryIcon: 1,
+                isSelfJob: 1,
                 createdAt: 1,
                 'address.addressLine1': 1,
                 'address.city': 1,
@@ -121,16 +123,10 @@ const getVendorBookings = async (req, res) => {
     const bookings = result.data || [];
     const total = result.total?.[0]?.n || 0;
 
-    // ── Populate only required fields ──
+    // ── Populate only required fields (serviceId skipped since serviceName is denormalized) ──
     await Booking.populate(bookings, [
       { path: 'userId', select: 'name', options: { lean: true } },
-      { path: 'workerId', select: 'name', options: { lean: true } },
-      {
-        path: 'serviceId',
-        select: 'title iconUrl categoryId',
-        populate: { path: 'categoryId', select: 'title' },
-        options: { lean: true }
-      }
+      { path: 'workerId', select: 'name phone', options: { lean: true } }
     ]);
 
     res.status(200).json({

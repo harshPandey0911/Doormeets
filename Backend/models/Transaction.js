@@ -79,6 +79,7 @@ transactionSchema.index({ vendorId: 1, createdAt: -1 });
 transactionSchema.index({ workerId: 1, createdAt: -1 });
 transactionSchema.index({ shopOwnerId: 1, createdAt: -1 });
 transactionSchema.index({ bookingId: 1 });
+transactionSchema.index({ vendorId: 1, type: 1, status: 1 });
 transactionSchema.index({ type: 1, status: 1 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);
