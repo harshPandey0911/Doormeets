@@ -75,6 +75,81 @@ class BookingScheduler {
     try {
       const BookingRequest = require('../models/BookingRequest');
 
+      // --- AUTO-CANCEL TIMEOUT BOOKINGS (5 MINUTES) ---
+      try {
+        const timeoutLimitMs = 5 * 60 * 1000; // 5 minutes
+        const fiveMinsAgo = new Date(Date.now() - timeoutLimitMs);
+        
+        const timedOutBookings = await Booking.find({
+          status: { $in: [BOOKING_STATUS.SEARCHING, 'pending_admin', 'requested'] },
+          vendorId: null, // No vendor assigned/accepted
+          createdAt: { $lte: fiveMinsAgo }
+        });
+
+        if (timedOutBookings.length > 0) {
+          console.log(`[BookingScheduler] Found ${timedOutBookings.length} unassigned bookings timed out after 5 minutes. Processing auto-cancellation and refunds.`);
+          for (const bk of timedOutBookings) {
+            try {
+              bk.status = BOOKING_STATUS.CANCELLED;
+              bk.cancelledAt = new Date();
+              bk.cancelledBy = 'system';
+              bk.cancellationReason = 'Auto-cancelled: No service professional accepted the request within 5 minutes.';
+              
+              // Refund if payment was made upfront (success, paid, partially_paid)
+              const hasPaid = ['success', 'paid', 'partially_paid'].includes(bk.paymentStatus?.toLowerCase());
+              const refundAmt = bk.paymentStatus?.toLowerCase() === 'partially_paid' ? (bk.codAdvanceAmount || 0) : bk.finalAmount;
+              
+              if (hasPaid && refundAmt > 0) {
+                const User = require('../models/User');
+                const Transaction = require('../models/Transaction');
+                
+                const userDoc = await User.findById(bk.userId);
+                if (userDoc) {
+                  userDoc.wallet.balance = (userDoc.wallet.balance || 0) + refundAmt;
+                  await userDoc.save();
+                  
+                  await Transaction.create({
+                    userId: bk.userId,
+                    type: 'refund',
+                    amount: refundAmt,
+                    status: 'completed',
+                    paymentMethod: 'wallet',
+                    description: `Auto-refund for timed out booking #${bk.bookingNumber} (${bk.serviceName || 'Service'})`,
+                    bookingId: bk._id,
+                    balanceAfter: userDoc.wallet.balance
+                  });
+                  
+                  bk.paymentStatus = 'refunded';
+                  console.log(`[BookingScheduler] Auto-refunded ₹${refundAmt} to user ${bk.userId} wallet for timed out booking ${bk.bookingNumber}.`);
+                }
+              }
+              
+              await bk.save();
+              
+              // Notify user via socket
+              if (this.io) {
+                this.io.to(`user_${bk.userId.toString()}`).emit('booking_cancelled', {
+                  bookingId: bk._id.toString(),
+                  bookingNumber: bk.bookingNumber,
+                  message: 'Booking auto-cancelled: No professional found within 5 minutes. Refund initiated to wallet.'
+                });
+                
+                // Clean up popup from notified vendors
+                if (bk.notifiedVendors?.length > 0) {
+                  bk.notifiedVendors.forEach(vId => {
+                    this.io.to(`vendor_${vId.toString()}`).emit('removeVendorBooking', { id: bk._id });
+                  });
+                }
+              }
+            } catch (bkErr) {
+              console.error(`[BookingScheduler] Error auto-cancelling timed out booking ${bk.bookingNumber}:`, bkErr);
+            }
+          }
+        }
+      } catch (autoCancelErr) {
+        console.error('[BookingScheduler] Error during timeout auto-cancel check:', autoCancelErr);
+      }
+
       // --- REFRESH SETTINGS ---
       try {
         const globalSettings = await Settings.findOne({ type: 'global' }).lean();

@@ -3,6 +3,7 @@ const { Server } = require('socket.io');
 const { authenticateSocket } = require('../middleware/authMiddleware');
 
 let io = null;
+const userSockets = new Map();
 
 const initializeSocket = (server) => {
   io = new Server(server, {
@@ -40,6 +41,16 @@ const initializeSocket = (server) => {
 
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id} (User: ${socket.userId}, Role: ${socket.userRole})`);
+
+    // Track active socket connections per user
+    if (socket.userId) {
+      const userIdStr = socket.userId.toString();
+      if (!userSockets.has(userIdStr)) {
+        userSockets.set(userIdStr, new Set());
+      }
+      userSockets.get(userIdStr).add(socket.id);
+      console.log(`[Socket] User ${userIdStr} connection added. Active sockets: ${userSockets.get(userIdStr).size}`);
+    }
 
     // Join user-specific room for notifications
     if (socket.userRole === 'USER') {
@@ -84,8 +95,8 @@ const initializeSocket = (server) => {
     });
 
     socket.on('join_worker_room', (workerId) => {
-      if (socket.userRole === 'WORKER' && socket.userId === workerId) {
-        socket.join(`worker_${workerId}`);
+      if (socket.userRole === 'WORKER' && socket.userId.toString() === workerId.toString()) {
+        socket.join(`worker_${workerId.toString()}`);
         console.log(`Socket ${socket.id} explicitly joined room worker_${workerId}`);
       }
     });
@@ -248,11 +259,29 @@ const initializeSocket = (server) => {
 
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);
-      // Update online status
-      if (socket.userRole === 'VENDOR') {
-        updateVendorOnlineStatus(socket.userId, false, null);
-      } else if (socket.userRole === 'WORKER') {
-        updateWorkerOnlineStatus(socket.userId, false, null);
+      
+      let isLastSocket = true;
+      if (socket.userId) {
+        const userIdStr = socket.userId.toString();
+        const sockets = userSockets.get(userIdStr);
+        if (sockets) {
+          sockets.delete(socket.id);
+          console.log(`[Socket] User ${userIdStr} connection removed. Remaining active sockets: ${sockets.size}`);
+          if (sockets.size > 0) {
+            isLastSocket = false;
+          } else {
+            userSockets.delete(userIdStr);
+          }
+        }
+      }
+
+      // Update online status ONLY if this was the last active socket connection
+      if (isLastSocket) {
+        if (socket.userRole === 'VENDOR') {
+          updateVendorOnlineStatus(socket.userId, false, null);
+        } else if (socket.userRole === 'WORKER') {
+          updateWorkerOnlineStatus(socket.userId, false, null);
+        }
       }
     });
   });

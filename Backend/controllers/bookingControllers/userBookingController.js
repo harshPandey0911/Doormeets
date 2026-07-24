@@ -149,35 +149,6 @@ const createBooking = async (req, res) => {
       vendorObj.distance = 0; // Dist is not critical for direct booking
       nearbyVendors = [vendorObj];
     } else {
-      // Sync geoLocation coordinates from address.lat/lng for all approved/active/online vendors who have no real-time coordinates
-      try {
-        await Vendor.updateMany(
-          {
-            isActive: true,
-            approvalStatus: 'APPROVED',
-            isOnline: true,
-            $or: [
-              { geoLocation: { $exists: false } },
-              { 'geoLocation.coordinates': [0, 0] }
-            ],
-            'address.lat': { $ne: null },
-            'address.lng': { $ne: null }
-          },
-          [
-            {
-              $set: {
-                geoLocation: {
-                  type: 'Point',
-                  coordinates: ['$address.lng', '$address.lat']
-                }
-              }
-            }
-          ]
-        );
-      } catch (syncErr) {
-        console.error('[CreateBooking] Background vendor geoLocation sync failed:', syncErr);
-      }
-
       // Find vendors who offer the category of this service
       let qualifiedVendorIds = [];
       const searchCategoryTitle = category ? category.title : (reqServiceCategory || service.category);
@@ -477,6 +448,10 @@ const createBooking = async (req, res) => {
       computedCodAdvanceAmount = Math.max(0, computedCodAdvanceAmount - walletAmountUsed);
     }
 
+    if (paymentMethod === 'pay_at_home' && computedCodAdvanceAmount > 0) {
+      bookingStatus = BOOKING_STATUS.AWAITING_PAYMENT;
+    }
+
     const booking = await Booking.create({
       bookingNumber,
       codAdvanceAmount: computedCodAdvanceAmount,
@@ -531,14 +506,6 @@ const createBooking = async (req, res) => {
       walletAmountApplied: walletAmountUsed,
       userGstNumber: userGstNumber ? String(userGstNumber).trim().toUpperCase() : null
     });
-
-    // Generate visits for this booking based on its workflow configuration
-    try {
-      const { scheduleVisitsForBooking } = require('../../services/workflowScheduler');
-      await scheduleVisitsForBooking(booking);
-    } catch (schedErr) {
-      console.error('[CreateBooking] Workflow visits scheduling failed:', schedErr);
-    }
 
     // Create Wallet debit transaction log
     if (walletAmountUsed > 0) {
@@ -601,53 +568,6 @@ const createBooking = async (req, res) => {
 
     if (nearbyVendors.length === 0) {
       responsePayload.noVendorsFound = true;
-      
-      // Save notification in database for all admins
-      try {
-        const User = require('../../models/User');
-        const { createNotification } = require('../notificationControllers/notificationController');
-        const admins = await User.find({ role: 'ADMIN' });
-        
-        const notificationData = {
-          userId: null,
-          vendorId: null,
-          workerId: null,
-          type: 'admin_booking_requested',
-          title: 'Manual Assignment Needed',
-          message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`,
-          priority: 'high',
-          pushData: {
-            type: 'admin_booking_requested',
-            bookingId: booking._id.toString(),
-            link: `/admin/bookings/${booking._id}`
-          }
-        };
-        
-        await Promise.all(
-          admins.map(admin =>
-            createNotification({ ...notificationData, adminId: admin._id })
-          )
-        );
-      } catch (dbNotifErr) {
-        console.error('[CreateBooking] Failed to save admin notification:', dbNotifErr);
-      }
-
-      // Emit socket notification to admins immediately!
-      try {
-        const { getIO } = require('../../sockets');
-        const io = getIO();
-        if (io) {
-          console.log(`[CreateBooking] No vendors found. Emitting admin_booking_requested to all_admins for booking ${booking.bookingNumber}`);
-          io.to('all_admins').emit('admin_booking_requested', {
-            bookingId: booking._id.toString(),
-            bookingNumber: booking.bookingNumber,
-            status: 'pending_admin',
-            message: 'Booking request sent to admin for manual assignment.'
-          });
-        }
-      } catch (sockErr) {
-        console.error('[CreateBooking] Socket emission failed:', sockErr);
-      }
     }
 
     res.status(201).json(responsePayload);
@@ -656,6 +576,50 @@ const createBooking = async (req, res) => {
     // All operations below will run non-blocking after the HTTP response has been sent.
     setImmediate(async () => {
       try {
+        if (booking.status === BOOKING_STATUS.AWAITING_PAYMENT) {
+          console.log(`[CreateBooking][bg] Booking ${booking._id} requires COD advance payment upfront. Skipping background vendor matching/notifications.`);
+          return;
+        }
+
+        // 1. Sync geoLocation coordinates from address.lat/lng for all approved/active/online vendors who have no real-time coordinates
+        try {
+          const Vendor = require('../../models/Vendor');
+          await Vendor.updateMany(
+            {
+              isActive: true,
+              approvalStatus: 'APPROVED',
+              isOnline: true,
+              $or: [
+                { geoLocation: { $exists: false } },
+                { 'geoLocation.coordinates': [0, 0] }
+              ],
+              'address.lat': { $ne: null },
+              'address.lng': { $ne: null }
+            },
+            [
+              {
+                $set: {
+                  geoLocation: {
+                    type: 'Point',
+                    coordinates: ['$address.lng', '$address.lat']
+                  }
+                }
+              }
+            ]
+          );
+        } catch (syncErr) {
+          console.error('[CreateBooking] Background vendor geoLocation sync failed:', syncErr);
+        }
+
+        // 2. Generate visits for this booking based on its workflow configuration
+        try {
+          const { scheduleVisitsForBooking } = require('../../services/workflowScheduler');
+          await scheduleVisitsForBooking(booking);
+        } catch (schedErr) {
+          console.error('[CreateBooking] Workflow visits scheduling failed:', schedErr);
+        }
+
+        // 3. Process promoCode/voucher
         if (promoCode) {
           const upperCode = promoCode.trim().toUpperCase();
           const PromoCode = require('../../models/PromoCode');
@@ -677,35 +641,21 @@ const createBooking = async (req, res) => {
           }
         }
 
-        // Re-fetch user and booking for background tasks to ensure latest state
-        const userForBackground = await User.findById(userId);
-        const bookingForBackground = await Booking.findById(booking._id)
-          .populate('userId', 'name phone email')
-          .populate('serviceId', 'title iconUrl')
-          .populate('categoryId', 'title slug');
-        const serviceForBackground = await Service.findById(serviceId); // Re-fetch service if needed
-
-        if (!userForBackground || !bookingForBackground || !serviceForBackground) {
-          console.error('[CreateBooking] Background task failed: User, Booking or Service not found after initial creation.');
-          return;
-        }
-
-        // If Plus membership was added, update user status
+        // 4. If Plus membership was added, update user status
         if (isPlusAdded) {
           const expiryDate = new Date();
           expiryDate.setFullYear(expiryDate.getFullYear() + 1); // 1 year membership
-          userForBackground.plans = {
+          user.plans = {
             isActive: true,
             name: 'Plus Membership',
             expiry: expiryDate,
-            price: 999 // Or fetch based on constants if needed, hardcoding placeholder or 0
+            price: 999
           };
-          await userForBackground.save();
+          await user.save();
           console.log(`User ${userId} upgraded to Plus Membership until ${expiryDate}`);
         }
 
-        // Group qualified vendors by Level (L1 -> Wave 1, L2 -> Wave 2, L3 -> Wave 3)
-        // Also sort them internally by distance
+        // 5. Group qualified vendors by Level
         const getPriority = (v) => {
           const cLevel = String(v.currentLevel || '').toUpperCase();
           if (cLevel === 'L1' || v.level === 1) return 1;
@@ -721,14 +671,12 @@ const createBooking = async (req, res) => {
         });
 
         // Determine if this is a Product (Broadcast to all) or Service (Wave based)
-        const categoryForBackground = await Category.findById(serviceForBackground.categoryId);
         const isProduct = 
-          serviceForBackground.type === 'product' || 
-          bookingForBackground.serviceType === 'product' ||
-          categoryForBackground?.categoryType === 'product';
+          service.type === 'product' || 
+          booking.serviceType === 'product' ||
+          finalCategory?.categoryType === 'product';
 
         // Assign waves to vendors
-        // ALL vendors assigned to wave 1 — simultaneous broadcast within 1 minute
         const potentialVendorsWithWaves = sortedVendors.map((v) => {
           return {
             vendorId: v._id,
@@ -750,15 +698,15 @@ const createBooking = async (req, res) => {
         console.log(`[CreateBooking] ${isProduct ? 'PRODUCT' : 'SERVICE'} Flow: Wave ${initialWave} will notify ${initialWaveVendors.length} vendors`);
 
         // Store all potential vendors in booking for scheduler to use
-        bookingForBackground.potentialVendors = potentialVendorsWithWaves.map(v => ({
+        booking.potentialVendors = potentialVendorsWithWaves.map(v => ({
           vendorId: v.vendorId,
           distance: v.distance,
           wave: v.wave
         }));
-        bookingForBackground.currentWave = initialWave;
-        bookingForBackground.waveStartedAt = new Date();
-        bookingForBackground.notifiedVendors = initialWaveVendors.map(v => v._id);
-        await bookingForBackground.save();
+        booking.currentWave = initialWave;
+        booking.waveStartedAt = new Date();
+        booking.notifiedVendors = initialWaveVendors.map(v => v._id);
+        await booking.save();
 
         if (initialWaveVendors.length > 0) {
           console.log(`[CreateBooking] Wave ${initialWave}: Alerting ${initialWaveVendors.length} closest vendors (of ${sortedVendors.length} total)`);
@@ -766,7 +714,7 @@ const createBooking = async (req, res) => {
           // Create BookingRequest entries for initial wave vendors
           const BookingRequest = require('../../models/BookingRequest');
           const bookingRequests = initialWaveVendors.map(vendor => ({
-            bookingId: bookingForBackground._id,
+            bookingId: booking._id,
             vendorId: vendor._id,
             status: 'PENDING',
             wave: initialWave,
@@ -784,8 +732,8 @@ const createBooking = async (req, res) => {
           }
         } else {
           console.warn(`[CreateBooking] NO VENDORS FOUND nearby! Push notifications will not be sent.`);
-          bookingForBackground.status = 'pending_admin';
-          await bookingForBackground.save();
+          booking.status = 'pending_admin';
+          await booking.save();
 
           // Save notification in database for all admins
           try {
@@ -799,12 +747,12 @@ const createBooking = async (req, res) => {
               workerId: null,
               type: 'admin_booking_requested',
               title: 'Manual Assignment Needed',
-              message: `Booking #${bookingForBackground.bookingNumber} has no available vendors. Manual assignment needed.`,
+              message: `Booking #${booking.bookingNumber} has no available vendors. Manual assignment needed.`,
               priority: 'high',
               pushData: {
                 type: 'admin_booking_requested',
-                bookingId: bookingForBackground._id.toString(),
-                link: `/admin/bookings/${bookingForBackground._id}`
+                bookingId: booking._id.toString(),
+                link: `/admin/bookings/${booking._id}`
               }
             };
             
@@ -822,8 +770,8 @@ const createBooking = async (req, res) => {
           const io = getIO();
           if (io) {
             io.to('all_admins').emit('admin_booking_requested', {
-              bookingId: bookingForBackground._id.toString(),
-              bookingNumber: bookingForBackground.bookingNumber,
+              bookingId: booking._id.toString(),
+              bookingNumber: booking.bookingNumber,
               status: 'pending_admin',
               message: 'No online vendors available. Booking request sent to admin for manual assignment.'
             });
@@ -834,14 +782,14 @@ const createBooking = async (req, res) => {
         let deductionAmount = 0;
         try {
           const PricingConfig = require('../../models/PricingConfig');
-          const pricings = await PricingConfig.find({ serviceId: bookingForBackground.serviceId });
+          const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
           if (pricings.length > 0) {
             let pricing = null;
-            if (bookingForBackground.cityId) {
-              pricing = pricings.find(p => p.cityId && String(p.cityId) === String(bookingForBackground.cityId));
+            if (booking.cityId) {
+              pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
             }
-            if (!pricing && bookingForBackground.brandId) {
-              pricing = pricings.find(p => p.brandId && String(p.brandId) === String(bookingForBackground.brandId));
+            if (!pricing && booking.brandId) {
+              pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
             }
             if (!pricing) {
               pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
@@ -864,22 +812,22 @@ const createBooking = async (req, res) => {
             const vendorRoom = `vendor_${vendor._id.toString()}`;
             console.log(`[Wave ${initialWave}] Emitting to ${vendorRoom} (dist: ${vendor.distance?.toFixed(1) || 'N/A'}km)`);
             io.to(vendorRoom).emit('new_booking_request', {
-              bookingId: bookingForBackground._id,
-              serviceName: serviceForBackground.title,
-              customerName: userForBackground.name,
+              bookingId: booking._id,
+              serviceName: service.title,
+              customerName: user.name,
               scheduledDate: scheduledDate,
               scheduledTime: scheduledTime,
               price: finalAmount,
               address: address,
               distance: vendor.distance,
-              serviceCategory: bookingForBackground.serviceCategory,
-              brandName: bookingForBackground.brandName,
-              brandIcon: bookingForBackground.brandIcon,
-              categoryIcon: bookingForBackground.categoryIcon,
-              createdAt: bookingForBackground.createdAt || new Date(),
-              expiresAt: new Date(new Date(bookingForBackground.createdAt || Date.now()).getTime() + (60 * 1000)).toISOString(),
-              status: bookingForBackground.status,
-              serviceType: bookingForBackground.serviceType || 'service',
+              serviceCategory: booking.serviceCategory,
+              brandName: booking.brandName,
+              brandIcon: booking.brandIcon,
+              categoryIcon: booking.categoryIcon,
+              createdAt: booking.createdAt || new Date(),
+              expiresAt: new Date(new Date(booking.createdAt || Date.now()).getTime() + (60 * 1000)).toISOString(),
+              status: booking.status,
+              serviceType: booking.serviceType || 'service',
               playSound: true,
               deductionAmount: deductionAmount,
               message: `New booking request within ${vendor.distance?.toFixed(1) || '?'}km!`
@@ -889,18 +837,19 @@ const createBooking = async (req, res) => {
 
         // 2. Send Firebase/FCM notifications (External service - call AFTER socket)
         try {
+          const { createNotification } = require('../notificationControllers/notificationController');
           const vendorNotifications = initialWaveVendors.map(vendor =>
             createNotification({
               vendorId: vendor._id,
               type: 'booking_request',
               title: 'New Booking Request',
-              message: `New service request for ${serviceForBackground.title} from ${userForBackground.name}`,
-              relatedId: bookingForBackground._id,
+              message: `New service request for ${service.title} from ${user.name}`,
+              relatedId: booking._id,
               relatedType: 'booking',
               data: {
-                bookingId: bookingForBackground._id,
-                serviceName: serviceForBackground.title,
-                customerName: userForBackground.name,
+                bookingId: booking._id,
+                serviceName: service.title,
+                customerName: user.name,
                 scheduledDate: scheduledDate,
                 scheduledTime: scheduledTime,
                 location: address,
@@ -910,7 +859,7 @@ const createBooking = async (req, res) => {
               pushData: {
                 type: 'new_booking',
                 dataOnly: false,
-                link: `/vendor/bookings/${bookingForBackground._id}`
+                link: `/vendor/bookings/${booking._id}`
               }
             })
           );
@@ -920,40 +869,50 @@ const createBooking = async (req, res) => {
         }
 
         // NOTIFY USER: Send actionable notification so they can track status
-        await createNotification({
-          userId,
-          type: 'booking_requested',
-          title: 'Booking Created',
-          message: `Your booking ${bookingForBackground.bookingNumber} has been created successfully.`,
-          relatedId: bookingForBackground._id,
-          relatedType: 'booking',
-          pushData: {
+        try {
+          const { createNotification } = require('../notificationControllers/notificationController');
+          await createNotification({
+            userId,
             type: 'booking_requested',
-            bookingId: bookingForBackground._id.toString(),
-            link: `/user/booking/${bookingForBackground._id}`
-            // dataOnly: true // Removed to ensure User sees the visual notification
-          }
-        });
+            title: 'Booking Created',
+            message: `Your booking ${booking.bookingNumber} has been created successfully.`,
+            relatedId: booking._id,
+            relatedType: 'booking',
+            pushData: {
+              type: 'booking_requested',
+              bookingId: booking._id.toString(),
+              link: `/user/booking/${booking._id}`
+            }
+          });
+        } catch (usrNotifErr) {
+          console.error('[CreateBooking] Failed to create user notification:', usrNotifErr);
+        }
+
         // Clear cart — single atomic operation
         await Cart.findOneAndUpdate({ userId }, { $set: { items: [] } });
         console.log(`[CreateBooking][bg] Cart cleared for user ${userId}`);
 
         // Send vendor notification if it was a direct booking (vendorId provided)
         if (vendorId) {
-          await createNotification({
-            vendorId,
-            type: 'booking_created',
-            title: 'New Booking Received',
-            message: `You have received a new booking ${bookingForBackground.bookingNumber} for ${serviceForBackground.title}.`,
-            relatedId: bookingForBackground._id,
-            relatedType: 'booking'
-          });
+          try {
+            const { createNotification } = require('../notificationControllers/notificationController');
+            await createNotification({
+              vendorId,
+              type: 'booking_created',
+              title: 'New Booking Received',
+              message: `You have received a new booking ${booking.bookingNumber} for ${service.title}.`,
+              relatedId: booking._id,
+              relatedType: 'booking'
+            });
+          } catch (dirNotifErr) {
+            console.error('[CreateBooking] Failed to create direct vendor notification:', dirNotifErr);
+          }
         }
 
         // Send confirmation emails (fire-and-forget — never blocks)
         const vendorObj = vendorId ? await require('../../models/Vendor').findById(vendorId).lean() : null;
         const { sendBookingEmails } = require('../../services/emailService');
-        sendBookingEmails(bookingForBackground, userForBackground, vendorObj, serviceForBackground)
+        sendBookingEmails(booking, user, vendorObj, service)
           .catch(err => console.error('[CreateBooking][bg] Email error:', err));
 
       } catch (bgErr) {
@@ -1257,14 +1216,14 @@ const cancelBooking = async (req, res) => {
     }
 
     const hasStartedJourney = !!booking.journeyStartedAt;
-    const isPaid = ['success', 'completed', 'paid'].includes(booking.paymentStatus?.toLowerCase());
-    const isWalletOrOnline = ['wallet', 'razorpay', 'upi', 'card'].includes(booking.paymentMethod);
+    const isPaid = ['success', 'completed', 'paid', 'partially_paid'].includes(booking.paymentStatus?.toLowerCase());
+    const isWalletOrOnline = ['wallet', 'razorpay', 'upi', 'card', 'pay_at_home'].includes(booking.paymentMethod);
     const isCash = booking.paymentMethod === 'cash';
 
     cancellationFee = 0;
     if (isPaid && isWalletOrOnline) {
-      refundAmount = booking.finalAmount;
-      refundMessage = `Booking cancelled successfully. Full refund of ₹${refundAmount} initiated to your wallet.`;
+      refundAmount = booking.paymentStatus?.toLowerCase() === 'partially_paid' ? (booking.codAdvanceAmount || 0) : booking.finalAmount;
+      refundMessage = `Booking cancelled successfully. Refund of ₹${refundAmount} initiated to your wallet.`;
     } else {
       refundAmount = 0;
       refundMessage = 'Booking cancelled successfully.';
@@ -1286,7 +1245,7 @@ const cancelBooking = async (req, res) => {
           amount: refundAmount,
           status: 'completed',
           paymentMethod: 'wallet',
-          description: `Refund for booking #${booking.bookingNumber}`,
+          description: `Refund for booking #${booking.bookingNumber} (${booking.serviceName || 'Service'})`,
           bookingId: booking._id,
           balanceAfter: user.wallet.balance
         });
