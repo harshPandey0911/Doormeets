@@ -644,7 +644,7 @@ const Checkout = () => {
     });
 
     socket.on('new_bid_received', (data) => {
-      if (data.bookingId === bookingRequest._id) {
+      if (String(data.bookingId) === String(bookingRequest?._id)) {
         setBids(prev => {
           if (prev.some(b => b.bidId === data.bidId)) return prev;
           const newBid = {
@@ -665,7 +665,7 @@ const Checkout = () => {
     });
 
     socket.on('booking_accepted', (data) => {
-      if (data.bookingId === bookingRequest._id) {
+      if (String(data.bookingId) === String(bookingRequest?._id)) {
         const vendorData = {
           id: data.vendor.id,
           name: data.vendor.name || 'Vendor',
@@ -1029,7 +1029,7 @@ const Checkout = () => {
 
               // Show search modal now!
               setShowVendorModal(true);
-              setCurrentStep('searching');
+              setCurrentStep('waiting');
               setSearchingVendors(true);
             } else {
               toast.error(verifyResponse.message || 'Payment verification failed');

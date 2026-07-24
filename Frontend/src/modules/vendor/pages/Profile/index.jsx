@@ -4,7 +4,7 @@ import { FiUser, FiEdit2, FiMapPin, FiPhone, FiMail, FiBriefcase, FiStar, FiArro
 import { FaWallet } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../../theme';
-import { vendorAuthService } from '../../../../services/authService';
+import { vendorAuthService, workerAuthService } from '../../../../services/authService';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import LogoLoader from '../../../../components/common/LogoLoader';
@@ -477,28 +477,28 @@ const Profile = () => {
         <div className="mb-3">
           <button
             type="button"
-            onClick={async (e) => {
+            onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              const clearAllTokens = () => {
-                localStorage.removeItem('vendorAccessToken');
-                localStorage.removeItem('vendorRefreshToken');
-                localStorage.removeItem('vendorData');
-                localStorage.removeItem('workerAccessToken');
-                localStorage.removeItem('workerRefreshToken');
-                localStorage.removeItem('workerData');
-                localStorage.removeItem('role');
-              };
-              try {
-                await vendorAuthService.logout();
-                clearAllTokens();
-                toast.success('Logged out successfully');
-                navigate('/vendor/login');
-              } catch (error) {
-                clearAllTokens();
-                toast.success('Logged out successfully');
-                navigate('/vendor/login');
+              
+              // Clear tokens locally first so UI logout is instant
+              localStorage.removeItem('vendorAccessToken');
+              localStorage.removeItem('vendorRefreshToken');
+              localStorage.removeItem('vendorData');
+              localStorage.removeItem('workerAccessToken');
+              localStorage.removeItem('workerRefreshToken');
+              localStorage.removeItem('workerData');
+              localStorage.removeItem('role');
+              
+              // Call API in background (non-blocking)
+              if (isWorker) {
+                workerAuthService.logout().catch(err => console.error('Background logout error:', err));
+              } else {
+                vendorAuthService.logout().catch(err => console.error('Background logout error:', err));
               }
+              
+              toast.success('Logged out successfully');
+              navigate('/vendor/login');
             }}
             className="w-full font-bold py-2.5 md:py-3 rounded-md active:scale-98 transition-all text-white flex items-center justify-center gap-2 text-xs md:text-sm"
             style={{
@@ -506,12 +506,12 @@ const Profile = () => {
               boxShadow: '0 3px 10px rgba(239, 68, 68, 0.25)',
             }}
             onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#DC2626';
-              e.target.style.boxShadow = '0 5px 14px rgba(239, 68, 68, 0.35)';
+              e.currentTarget.style.backgroundColor = '#DC2626';
+              e.currentTarget.style.boxShadow = '0 5px 14px rgba(239, 68, 68, 0.35)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#EF4444';
-              e.target.style.boxShadow = '0 3px 10px rgba(239, 68, 68, 0.25)';
+              e.currentTarget.style.backgroundColor = '#EF4444';
+              e.currentTarget.style.boxShadow = '0 3px 10px rgba(239, 68, 68, 0.25)';
             }}
           >
             <FiLogOut className="w-4 h-4" />

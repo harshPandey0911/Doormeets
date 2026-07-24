@@ -488,6 +488,7 @@ vendorSchema.index({ approvalStatus: 1 });
 vendorSchema.index({ 'wallet.earnings': -1 });
 vendorSchema.index({ geoLocation: '2dsphere' }); // Fast geo queries
 vendorSchema.index({ isOnline: 1, availability: 1, approvalStatus: 1 }); // Compound index for vendor search
+vendorSchema.index({ phone: 1, isDeleted: 1 }); // Auth flow: most frequent query pattern
 
 // Hash password before saving
 vendorSchema.pre('save', async function (next) {

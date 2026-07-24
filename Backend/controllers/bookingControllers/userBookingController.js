@@ -83,7 +83,7 @@ const createBooking = async (req, res) => {
 
     // 1. Parallel Fetching: Service and User
     const [service, user] = await Promise.all([
-      Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds type isConsultation').lean(),
+      Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds type isConsultation codAdvanceAmount codEnabled packages').lean(),
       User.findById(userId).select('name phone wallet plans loyaltyPoints')
     ]);
 

@@ -992,16 +992,16 @@ export default function BookingDetails() {
   };
 
   const canDoFinalSettlement = (booking) => {
-    // Check if payment is already done (Online SUCCESS or Cash COLLECTED)
-    // Robust check for various status strings (case-insensitive)
-    const pStatus = booking?.paymentStatus?.toLowerCase() || '';
-    const isPaid = pStatus === 'success' || pStatus === 'paid' || pStatus === 'completed' || booking?.cashCollected;
-
+    if (!booking) return false;
+    
+    // Check if the payment step is complete
+    const isPaid = booking?.paymentStatus === 'success' || booking?.paymentStatus === 'paid' || booking?.paymentStatus === 'completed' || booking?.cashCollected || booking?.status?.toLowerCase() === 'payment_collected';
     const status = booking?.status?.toLowerCase() || '';
-    const isWorkDone = status === 'work_done' || status === 'completed' || status === 'worker_paid';
+    const isWorkDone = status === 'work_done' || status === 'completed' || status === 'worker_paid' || status === 'payment_collected';
 
     // Check worker payment (enforce worker is paid before vendor can finalize unless doing job self)
-    const isSelfJob = booking?.assignedTo?.name === 'You (Self)';
+    // If there is no workerId, it is a self-job done by the vendor itself.
+    const isSelfJob = !booking?.workerId || booking?.isSelfJob || booking?.assignedTo?.name === 'You (Self)';
     const handleWorkerCheck = isSelfJob || booking?.workerPaymentStatus === 'PAID';
 
     return isWorkDone && isPaid && handleWorkerCheck && booking?.finalSettlementStatus !== 'DONE';

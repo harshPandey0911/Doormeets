@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiBell, FiVolume2, FiGlobe, FiInfo, FiLogOut, FiTrash2, FiMapPin } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../../theme';
-import { vendorAuthService } from '../../../../services/authService';
+import { vendorAuthService, workerAuthService } from '../../../../services/authService';
 import { registerFCMToken, removeFCMToken } from '../../../../services/pushNotificationService';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
@@ -84,15 +84,28 @@ const Settings = () => {
   };
 
   const handleLogout = async () => {
+    const isWorker = localStorage.getItem('role') === 'worker' || window.location.pathname.startsWith('/worker');
     try {
-      await vendorAuthService.logout();
+      if (isWorker) {
+        await workerAuthService.logout();
+      } else {
+        await vendorAuthService.logout();
+      }
+      localStorage.removeItem('role');
       toast.success('Logged out successfully');
       navigate('/vendor/login');
     } catch (error) {
       // Even if API call fails, clear local storage
-      localStorage.removeItem('vendorAccessToken');
-      localStorage.removeItem('vendorRefreshToken');
-      localStorage.removeItem('vendorData');
+      if (isWorker) {
+        localStorage.removeItem('workerAccessToken');
+        localStorage.removeItem('workerRefreshToken');
+        localStorage.removeItem('workerData');
+      } else {
+        localStorage.removeItem('vendorAccessToken');
+        localStorage.removeItem('vendorRefreshToken');
+        localStorage.removeItem('vendorData');
+      }
+      localStorage.removeItem('role');
       toast.success('Logged out successfully');
       navigate('/vendor/login');
     }

@@ -29,6 +29,7 @@ const BookingTimeline = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isWorkApproved, setIsWorkApproved] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   const toggleDropdown = (key) => setOpenDropdown(prev => prev === key ? null : key);
 
@@ -52,6 +53,7 @@ const BookingTimeline = () => {
   useEffect(() => {
     const loadBooking = async () => {
       try {
+        setLoadError(null);
         const response = await getBookingById(id);
         const apiData = response.data || response;
 
@@ -111,6 +113,7 @@ const BookingTimeline = () => {
         setCurrentStage(stage);
       } catch (error) {
         console.error('Error loading booking:', error);
+        setLoadError(error.response?.data?.message || error.message || 'Failed to load booking');
       }
     };
 
@@ -471,6 +474,24 @@ const BookingTimeline = () => {
     if (value && index < 3) document.getElementById(`otp-${index + 1}`).focus();
   };
 
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: themeColors.backgroundGradient }}>
+        <div className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full space-y-4">
+          <div className="text-red-500 text-5xl">⚠️</div>
+          <h3 className="text-lg font-bold text-gray-900">Failed to Load Timeline</h3>
+          <p className="text-sm text-gray-500">{loadError}</p>
+          <button
+            onClick={() => { setLoadError(null); window.location.reload(); }}
+            className="w-full py-3 rounded-xl font-semibold text-white bg-[#347989] hover:bg-[#28606d] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!booking) {
     return (

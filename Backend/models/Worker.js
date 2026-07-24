@@ -81,4 +81,7 @@ const workerSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Auth flow index: phone+isDeleted is the most frequent query in OTP send and verify
+workerSchema.index({ phone: 1, isDeleted: 1 });
+
 module.exports = mongoose.models.Worker || mongoose.model('Worker', workerSchema);
