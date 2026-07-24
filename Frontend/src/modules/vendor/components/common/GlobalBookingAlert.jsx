@@ -115,8 +115,12 @@ export default function GlobalBookingAlert() {
     syncAlerts(true);
     fetchConfig();
 
-    // 3. Heartbeat: Periodic sync
-    const heartbeat = setInterval(() => syncAlerts(false), 5000);
+    // 3. Heartbeat: Periodic sync (with tab visibility check to save network and CPU)
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncAlerts(false);
+      }
+    }, 10000);
 
     // Listen for custom dashboard events from SocketContext
     const handleShowAlert = (e) => {

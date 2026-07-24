@@ -27,8 +27,12 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const { initRedis } = require('./services/redisService');
 initRedis();
 
+const compression = require('compression');
+
 // Initialize Express app
 const app = express();
+
+app.use(compression());
 
 // Trust proxy for reverse proxies (Nginx/PM2) to allow express-rate-limit to read X-Forwarded-For headers correctly
 app.set('trust proxy', 1);

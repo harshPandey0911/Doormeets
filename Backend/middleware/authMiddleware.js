@@ -6,6 +6,21 @@ const Admin = require('../models/Admin');
 const ShopOwner = require('../models/ShopOwner');
 const { USER_ROLES } = require('../utils/constants');
 
+const authMemoryCache = new Map();
+const CACHE_TTL_MS = 5000; // 5 seconds cache to collapse parallel request queries
+
+const getCachedUser = (key) => {
+  const cached = authMemoryCache.get(key);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+    return cached.data;
+  }
+  return null;
+};
+
+const setCachedUser = (key, data) => {
+  authMemoryCache.set(key, { timestamp: Date.now(), data });
+};
+
 /**
  * Authentication middleware - verifies JWT token
  */
@@ -39,12 +54,22 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Get user based on role
-    let user;
-    // console.log('Role from token:', decoded.role); // Debug
+    // Get user based on role (check cache first)
+    const cacheKey = `${decoded.role}:${decoded.userId}`;
+    let user = getCachedUser(cacheKey);
+
+    if (user) {
+      req.user = { ...user, id: user._id.toString() };
+      req.userId = decoded.userId;
+      req.userRole = decoded.role;
+      return next();
+    }
+
+    // Cache miss - Fetch from DB
     switch (decoded.role) {
       case USER_ROLES.USER:
         user = await User.findById(decoded.userId).select('-password').lean();
+        if (user) setCachedUser(cacheKey, user);
         if (user && user.isDeleted) {
           return res.status(401).json({ success: false, message: 'Account has been deleted.' });
         }
@@ -146,6 +171,9 @@ const authenticate = async (req, res, next) => {
         message: 'User not found. Please login again.'
       });
     }
+
+    // Save verified user to cache for 5 seconds
+    setCachedUser(cacheKey, user);
 
     // Attach user to request
     // NOTE: .lean() removes the virtual .id getter — restore it manually

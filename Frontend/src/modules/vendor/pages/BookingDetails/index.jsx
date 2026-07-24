@@ -736,6 +736,7 @@ export default function BookingDetails() {
 
   const loadBooking = async (showSpinner = true) => {
     try {
+      console.log("[loadBooking] Fetching booking details for ID:", id);
       const hasCache = !!sessionStorage.getItem(`vendor_booking_${id}`);
       if (showSpinner && !hasCache) setLoading(true);
       let billData = null;
@@ -745,7 +746,9 @@ export default function BookingDetails() {
         vendorBillService.getBill(id).catch(() => ({ success: false }))
       ]);
 
+      console.log("[loadBooking] getBookingById Response:", bookingRes);
       const apiData = bookingRes.data || bookingRes;
+      console.log("[loadBooking] Extracted API data:", apiData);
       if (billRes && billRes.success) {
         billData = billRes.bill;
       }
@@ -813,7 +816,7 @@ export default function BookingDetails() {
       sessionStorage.setItem(`vendor_booking_${id}`, JSON.stringify(mappedBooking));
       setBooking(mappedBooking);
     } catch (error) {
-      // Error loading booking
+      console.error("[loadBooking] Error mapping or fetching booking:", error);
     } finally {
       setLoading(false);
     }
@@ -2735,7 +2738,7 @@ export default function BookingDetails() {
                   </div>
                 </div>
                 <button
-                  onClick={handleConfirmCash}
+                  onClick={handleCollectCashClick}
                   disabled={loading}
                   className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 hover:brightness-105 bg-amber-600 shadow-md"
                 >
