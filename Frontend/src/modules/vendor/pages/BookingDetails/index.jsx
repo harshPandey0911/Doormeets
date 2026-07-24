@@ -110,6 +110,7 @@ export default function BookingDetails() {
   const isWorker = localStorage.getItem('role') === 'worker' || window.location.pathname.startsWith('/worker');
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [isPayWorkerModalOpen, setIsPayWorkerModalOpen] = useState(false);
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
@@ -736,6 +737,7 @@ export default function BookingDetails() {
 
   const loadBooking = async (showSpinner = true) => {
     try {
+      setError(null);
       console.log("[loadBooking] Fetching booking details for ID:", id);
       const hasCache = !!sessionStorage.getItem(`vendor_booking_${id}`);
       if (showSpinner && !hasCache) setLoading(true);
@@ -815,8 +817,9 @@ export default function BookingDetails() {
 
       sessionStorage.setItem(`vendor_booking_${id}`, JSON.stringify(mappedBooking));
       setBooking(mappedBooking);
-    } catch (error) {
-      console.error("[loadBooking] Error mapping or fetching booking:", error);
+    } catch (err) {
+      console.error("[loadBooking] Error mapping or fetching booking:", err);
+      setError(err.response?.data?.message || err.message || 'Failed to load booking details');
     } finally {
       setLoading(false);
     }
@@ -1258,6 +1261,24 @@ export default function BookingDetails() {
   };
 
 
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: themeColors.backgroundGradient }}>
+        <div className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full space-y-4">
+          <div className="text-red-500 text-5xl">⚠️</div>
+          <h3 className="text-lg font-bold text-gray-900">Failed to Load Details</h3>
+          <p className="text-sm text-gray-500">{error}</p>
+          <button
+            onClick={() => loadBooking(true)}
+            className="w-full py-3 rounded-xl font-semibold text-white bg-[#347989] hover:bg-[#28606d] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!booking) {
     return (
