@@ -78,116 +78,72 @@ const getDashboardStats = async (req, res) => {
         ...(Array.isArray(req.user.service) ? req.user.service : [])
       ];
 
-      // ─── SINGLE PARALLEL BLAST ───────────────────────────────────────────────
-      const [bookingData, workersOnlineCount, earningsResult] = await Promise.all([
-        Booking.aggregate([
-          {
-            $facet: {
-              counts: [
-                {
-                  $match: {
-                    $or: [
-                      { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
-                      {
-                        vendorId: null,
-                        status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
-                        'potentialVendors.vendorId': vId
-                      }
-                    ]
-                  }
-                },
-                {
-                  $group: {
-                    _id: null,
-                    total: { $sum: 1 },
-                    completed: { $sum: { $cond: [{ $eq: ['$status', BOOKING_STATUS.COMPLETED] }, 1, 0] } },
-                    inProgress: {
-                      $sum: {
-                        $cond: [
-                          {
-                            $in: ['$status', [
-                              BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.ASSIGNED, BOOKING_STATUS.CONFIRMED,
-                              BOOKING_STATUS.JOURNEY_STARTED, BOOKING_STATUS.VISITED, BOOKING_STATUS.IN_PROGRESS,
-                              BOOKING_STATUS.WORK_DONE, 'started', 'reached', 'on_the_way'
-                            ]]
-                          }, 1, 0
-                        ]
-                      }
-                    },
-                    pending: {
-                      $sum: {
-                        $cond: [
-                          {
-                            $or: [
-                              { $and: [{ $eq: ['$vendorId', vId] }, { $eq: ['$status', BOOKING_STATUS.REQUESTED] }] },
-                              { $and: [{ $eq: ['$vendorId', null] }, { $in: ['$status', [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING]] }] }
-                            ]
-                          }, 1, 0
-                        ]
-                      }
-                    }
-                  }
-                }
-              ],
-              rating: [
-                { $match: { vendorId: vId, rating: { $ne: null } } },
-                { $group: { _id: null, avg: { $avg: '$rating' } } }
-              ],
-              recent: [
-                {
-                  $match: {
-                    $or: [
-                      { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
-                      {
-                        vendorId: null,
-                        status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
-                        'potentialVendors.vendorId': vId
-                      }
-                    ]
-                  }
-                },
-                { $sort: { createdAt: -1 } },
-                { $limit: 15 },
-                {
-                  $project: {
-                    _id: 1,
-                    bookingNumber: 1,
-                    status: 1,
-                    serviceName: 1,
-                    scheduledDate: 1,
-                    scheduledTime: 1,
-                    finalAmount: 1,
-                    vendorEarnings: 1,
-                    'address.addressLine1': 1,
-                    userId: 1,
-                    workerId: 1,
-                    serviceId: 1,
-                    potentialVendors: 1,
-                    serviceCategory: 1,
-                    brandName: 1,
-                    brandIcon: 1,
-                    categoryIcon: 1,
-                    createdAt: 1,
-                    expiresAt: 1
-                  }
-                }
-              ]
-            }
-          }
-        ]),
-        Promise.resolve(0),
+      // ─── SINGLE PARALLEL BLAST (Highly Optimized Simple Finds) ───────────────
+      const [assignedBookings, searchingBookings, earningsResult] = await Promise.all([
+        Booking.find({ vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } })
+          .select('_id bookingNumber status rating finalAmount vendorEarnings address userId workerId serviceId serviceCategory brandName brandIcon categoryIcon createdAt expiresAt potentialVendors')
+          .lean(),
+        Booking.find({
+          vendorId: null,
+          status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
+          'potentialVendors.vendorId': vId
+        })
+          .select('_id bookingNumber status rating finalAmount vendorEarnings address userId workerId serviceId serviceCategory brandName brandIcon categoryIcon createdAt expiresAt potentialVendors')
+          .lean(),
         VendorBill.aggregate([
           { $match: { vendorId: vId, status: 'paid' } },
           { $group: { _id: null, total: { $sum: '$vendorTotalEarning' } } }
         ])
       ]);
 
-      const facet = bookingData[0];
-      counts = facet.counts?.[0] || { total: 0, completed: 0, inProgress: 0, pending: 0 };
-      recentBookings = facet.recent || [];
-      rating = facet.rating?.[0]?.avg || req.user.rating || 0;
+      // Combine and process in-memory
+      const allBookings = [...assignedBookings, ...searchingBookings];
+
+      let total = allBookings.length;
+      let completed = 0;
+      let inProgress = 0;
+      let pending = 0;
+
+      const inProgressStatuses = [
+        BOOKING_STATUS.ACCEPTED, BOOKING_STATUS.ASSIGNED, BOOKING_STATUS.CONFIRMED,
+        BOOKING_STATUS.JOURNEY_STARTED, BOOKING_STATUS.VISITED, BOOKING_STATUS.IN_PROGRESS,
+        BOOKING_STATUS.WORK_DONE, 'started', 'reached', 'on_the_way'
+      ];
+
+      allBookings.forEach(bk => {
+        const statusLower = bk.status;
+        if (statusLower === BOOKING_STATUS.COMPLETED) {
+          completed++;
+        } else if (inProgressStatuses.includes(statusLower)) {
+          inProgress++;
+        }
+
+        if (bk.vendorId) {
+          if (statusLower === BOOKING_STATUS.REQUESTED) {
+            pending++;
+          }
+        } else {
+          if ([BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING].includes(statusLower)) {
+            pending++;
+          }
+        }
+      });
+
+      counts = { total, completed, inProgress, pending };
+
+      // Calculate average rating
+      const ratedBookings = assignedBookings.filter(bk => bk.rating !== null && bk.rating !== undefined);
+      rating = ratedBookings.length > 0
+        ? ratedBookings.reduce((sum, bk) => sum + bk.rating, 0) / ratedBookings.length
+        : (req.user.rating || 0);
+
       vendorEarnings = earningsResult[0]?.total || 0;
-      workersOnline = workersOnlineCount;
+      workersOnline = 0;
+
+      // Sort and limit recent bookings in-memory
+      recentBookings = [...allBookings]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 15);
 
       await Booking.populate(recentBookings, [
         { path: 'userId', select: 'name phone', options: { lean: true } },
