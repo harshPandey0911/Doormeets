@@ -829,6 +829,10 @@ export default function BookingDetails() {
     };
   }, [id]);
 
+  const handleConfirmCash = () => {
+    setOtpAction('cash');
+    setIsCashModalOpen(true);
+  };
 
   // ADDED: Socket for Live Location Tracking in Details Page
   const socket = useAppNotifications('vendor'); // Get socket

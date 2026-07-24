@@ -10,15 +10,25 @@ const MyRatings = () => {
   const navigate = useNavigate();
   const [ratings, setRatings] = useState([]);
   const [stats, setStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !sessionStorage.getItem('vendor_my_ratings_cache'));
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
   const fetchRatings = async (page = 1) => {
     try {
-      setIsLoading(true);
+      const hasCache = !!sessionStorage.getItem('vendor_my_ratings_cache');
+      if (page === 1 && !hasCache) setIsLoading(true);
       const response = await getRatings({ page, limit: 10 });
       if (response.success) {
-        setRatings(response.data);
+        if (page === 1) {
+          setRatings(response.data);
+          sessionStorage.setItem('vendor_my_ratings_cache', JSON.stringify({
+            data: response.data,
+            stats: response.stats,
+            pagination: response.pagination
+          }));
+        } else {
+          setRatings(prev => [...prev, ...response.data]);
+        }
         setStats(response.stats);
         setPagination(response.pagination);
       } else {
@@ -33,7 +43,17 @@ const MyRatings = () => {
   };
 
   useEffect(() => {
-    fetchRatings();
+    try {
+      const cached = sessionStorage.getItem('vendor_my_ratings_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.data) setRatings(parsed.data);
+        if (parsed.stats) setStats(parsed.stats);
+        if (parsed.pagination) setPagination(parsed.pagination);
+        setIsLoading(false);
+      }
+    } catch (e) {}
+    fetchRatings(1);
   }, []);
 
   const formatDate = (dateString) => {
@@ -64,13 +84,18 @@ const MyRatings = () => {
     );
   };
 
-  if (isLoading && pagination.page === 1) {
+  if (isLoading && pagination.page === 1 && ratings.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <FiLoader className="w-10 h-10 text-teal-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 font-medium">Loading your ratings...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="My Ratings" />
+        <main className="px-3.5 py-4 space-y-4 animate-pulse">
+          <div className="bg-white rounded-md p-4 h-24 border border-gray-100"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-md p-4 h-28 border border-gray-100"></div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }

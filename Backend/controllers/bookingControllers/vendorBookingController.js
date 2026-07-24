@@ -2456,32 +2456,34 @@ const getVendorRatings = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Fetch bookings where rating is not null
-    const bookings = await Booking.find({ vendorId, rating: { $ne: null } })
-      .populate('userId', 'name profilePhoto')
-      .populate('serviceId', 'title iconUrl')
-      .populate('workerId', 'name profilePhoto')
-      .sort({ reviewedAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    const vId = new mongoose.Types.ObjectId(vendorId);
 
-    const total = await Booking.countDocuments({ vendorId, rating: { $ne: null } });
-
-    // Calculate average rating
-    const stats = await Booking.aggregate([
-      { $match: { vendorId: new mongoose.Types.ObjectId(vendorId), rating: { $ne: null } } },
-      {
-        $group: {
-          _id: null,
-          averageRating: { $avg: '$rating' },
-          totalReviews: { $sum: 1 },
-          star5: { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } },
-          star4: { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
-          star3: { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
-          star2: { $sum: { $cond: [{ $eq: ['$rating', 2] }, 1, 0] } },
-          star1: { $sum: { $cond: [{ $eq: ['$rating', 1] }, 1, 0] } },
+    // Run queries in parallel
+    const [bookings, total, stats] = await Promise.all([
+      Booking.find({ vendorId, rating: { $ne: null } })
+        .populate('userId', 'name profilePhoto')
+        .populate('serviceId', 'title iconUrl')
+        .populate('workerId', 'name profilePhoto')
+        .sort({ reviewedAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Booking.countDocuments({ vendorId, rating: { $ne: null } }),
+      Booking.aggregate([
+        { $match: { vendorId: vId, rating: { $ne: null } } },
+        {
+          $group: {
+            _id: null,
+            averageRating: { $avg: '$rating' },
+            totalReviews: { $sum: 1 },
+            star5: { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } },
+            star4: { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
+            star3: { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
+            star2: { $sum: { $cond: [{ $eq: ['$rating', 2] }, 1, 0] } },
+            star1: { $sum: { $cond: [{ $eq: ['$rating', 1] }, 1, 0] } },
+          }
         }
-      }
+      ])
     ]);
 
     res.status(200).json({
