@@ -209,7 +209,7 @@ const VendorServicesPage = ({ selectedCity }) => {
       } else {
         const catCityIds = parentCategory.cityIds || [];
         if (catCityIds.length === 0) {
-          matchesCity = false;
+          matchesCity = true;
         } else {
           matchesCity = catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
         }

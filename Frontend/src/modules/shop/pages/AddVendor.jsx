@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../services/api';
 import { MdPerson, MdPhone, MdBuild, MdCheckCircleOutline } from 'react-icons/md';
 
 const AddVendor = () => {
@@ -13,17 +13,19 @@ const AddVendor = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
   useEffect(() => {
     const fetchProfessions = async () => {
       try {
-        const response = await axios.get(`${API_URL}/public/professions`);
+        setError('');
+        const response = await api.get('/public/professions');
         if (response.data.success) {
           setProfessions(response.data.data);
+        } else {
+          setError(response.data.message || 'Failed to fetch professions.');
         }
       } catch (err) {
         console.error('Error fetching professions:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch professions.');
       }
     };
     fetchProfessions();
@@ -45,8 +47,8 @@ const AddVendor = () => {
 
     try {
       const token = localStorage.getItem('shopAccessToken');
-      const response = await axios.post(
-        `${API_URL}/shop/vendors/add`,
+      const response = await api.post(
+        '/shop/vendors/add',
         { 
           name, 
           phone, 

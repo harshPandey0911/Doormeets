@@ -77,8 +77,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401 and we haven't tried to refresh yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // If error is 401
+    if (error.response?.status === 401) {
+      const { access, refresh, role } = getTokenKeys(originalRequest.url);
+
+      if (originalRequest._retry) {
+        console.warn('API: Request failed with 401 even after retry. Logging out...', originalRequest.url);
+        handleLogout(role);
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         console.log('API: isRefreshing is true, pushing to failedQueue', originalRequest.url);
         // If already refreshing, queue this request
@@ -100,12 +108,12 @@ api.interceptors.response.use(
       isRefreshing = true;
       console.log('API: isRefreshing set to true for url', originalRequest.url);
 
-      const { access, refresh, role } = getTokenKeys(originalRequest.url);
       const refreshToken = sessionStorage.getItem(refresh) || localStorage.getItem(refresh);
 
       if (!refreshToken) {
-        console.log('API: No refresh token found, setting isRefreshing = false and rejecting');
+        console.log('API: No refresh token found, setting isRefreshing = false, logging out');
         isRefreshing = false;
+        handleLogout(role);
         return Promise.reject(error);
       }
 
@@ -151,9 +159,10 @@ api.interceptors.response.use(
           console.error('RefreshToken response data:', refreshError.response.data);
         }
         
-        // If refresh fails with 401/403/400, the token is dead. Clear it to prevent infinite loops.
-        if (refreshError.response?.status === 401 || refreshError.response?.status === 403 || refreshError.response?.status === 400) {
-          console.warn('Refresh token invalid or expired. Logging out...');
+        // If refresh fails with 401/403/400/404, the token is dead. Clear it to prevent infinite loops.
+        const status = refreshError.response?.status;
+        if (status === 401 || status === 403 || status === 400 || status === 404) {
+          console.warn('Refresh token invalid, expired, or user deleted. Logging out...');
           handleLogout(role);
         }
 

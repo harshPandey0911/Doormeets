@@ -142,7 +142,7 @@ const ProfessionsPage = ({ selectedCity }) => {
           if (!category) return false;
           
           const catCityIds = category.cityIds || [];
-          if (catCityIds.length === 0) return false;
+          if (catCityIds.length === 0) return true; // Show if category is available in "All Cities"
           
           return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
         });
