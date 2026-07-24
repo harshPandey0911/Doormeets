@@ -78,52 +78,42 @@ const getVendorBookings = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // ── Single DB round-trip: list + total via $facet ──
-    const [result] = await Booking.aggregate([
-      { $match: query },
-      {
-        $facet: {
-          data: [
-            { $sort: { createdAt: -1 } },
-            { $skip: skip },
-            { $limit: parseInt(limit) },
-            {
-              $project: {
-                _id: 1,
-                bookingNumber: 1,
-                status: 1,
-                paymentMethod: 1,
-                finalAmount: 1,
-                vendorEarnings: 1,
-                scheduledDate: 1,
-                scheduledTime: 1,
-                serviceName: 1,
-                serviceCategory: 1,
-                categoryIcon: 1,
-                isSelfJob: 1,
-                createdAt: 1,
-                'address.addressLine1': 1,
-                'address.city': 1,
-                userId: 1,
-                workerId: 1,
-                serviceId: 1,
-                acceptedAt: 1,
-                assignedAt: 1,
-                brandName: 1,
-                brandIcon: 1,
-                expiresAt: 1
-              }
-            }
-          ],
-          total: [{ $count: 'n' }]
-        }
-      }
+    // ── Run parallel find and count queries (highly optimized) ──
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .select({
+          _id: 1,
+          bookingNumber: 1,
+          status: 1,
+          paymentMethod: 1,
+          finalAmount: 1,
+          vendorEarnings: 1,
+          scheduledDate: 1,
+          scheduledTime: 1,
+          serviceName: 1,
+          serviceCategory: 1,
+          categoryIcon: 1,
+          isSelfJob: 1,
+          createdAt: 1,
+          'address.addressLine1': 1,
+          'address.city': 1,
+          userId: 1,
+          workerId: 1,
+          serviceId: 1,
+          acceptedAt: 1,
+          assignedAt: 1,
+          brandName: 1,
+          brandIcon: 1,
+          expiresAt: 1
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Booking.countDocuments(query)
     ]);
 
-    const bookings = result.data || [];
-    const total = result.total?.[0]?.n || 0;
-
-    // ── Populate only required fields (serviceId skipped since serviceName is denormalized) ──
+    // ── Populate only required fields ──
     await Booking.populate(bookings, [
       { path: 'userId', select: 'name', options: { lean: true } },
       { path: 'workerId', select: 'name phone', options: { lean: true } }

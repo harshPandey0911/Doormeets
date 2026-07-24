@@ -28,18 +28,21 @@ const sendOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid phone number format.' });
     }
 
-    // Check existing vendor/worker status to prevent OTP if restricted
-    let actor = await Vendor.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
+    // Run Vendor + Worker lookups in PARALLEL (was sequential — 2x slower)
+    const [actor, workerActor] = await Promise.all([
+      Vendor.findOne({ phone: cleanPhone, isDeleted: { $ne: true } }).select('_id phone approvalStatus isActive status vendorId'),
+      Worker.findOne({ phone: cleanPhone, isDeleted: { $ne: true } }).select('_id phone status vendorId isDeleted')
+    ]);
+
     let isWorker = false;
-    if (!actor) {
-      actor = await Worker.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
-      if (actor) {
-        isWorker = true;
-      }
+    let resolvedActor = actor;
+    if (!actor && workerActor) {
+      resolvedActor = workerActor;
+      isWorker = true;
     }
-    
+
     // User requested: If not registered, do not send OTP, tell them to register first.
-    if (!actor) {
+    if (!resolvedActor) {
       return res.status(404).json({
         success: false,
         message: 'Number not registered. Please register first.'
@@ -47,14 +50,14 @@ const sendOTP = async (req, res) => {
     }
 
     if (isWorker) {
-      if (!actor.vendorId) {
+      if (!resolvedActor.vendorId) {
         return res.status(403).json({ success: false, message: 'Account not linked to any vendor.' });
       }
-      if (actor.status === 'inactive' || actor.status === 'suspended') {
+      if (resolvedActor.status === 'inactive' || resolvedActor.status === 'suspended') {
         return res.status(403).json({ success: false, message: 'Account restricted.' });
       }
     } else {
-      if (actor.approvalStatus === VENDOR_STATUS.REJECTED || actor.approvalStatus === VENDOR_STATUS.SUSPENDED) {
+      if (resolvedActor.approvalStatus === VENDOR_STATUS.REJECTED || resolvedActor.approvalStatus === VENDOR_STATUS.SUSPENDED) {
         return res.status(403).json({ success: false, message: 'Account restricted.' });
       }
     }
@@ -106,7 +109,10 @@ const sendOTP = async (req, res) => {
  */
 const verifyLogin = async (req, res) => {
   try {
+    console.time('verifyLogin-total');
     const { phone, otp } = req.body;
+    
+    console.time('verifyLogin-otp');
 
     // 1. Verify OTP
     const verification = await verifyOTP(phone, otp);
@@ -116,10 +122,18 @@ const verifyLogin = async (req, res) => {
         message: verification.message
       });
     }
+    console.timeEnd('verifyLogin-otp');
 
-    // 2. Check if vendor exists (using sanitized phone)
+    // 2. Run Vendor + Worker lookups in PARALLEL (was sequential — 2x slower)
+    console.time('verifyLogin-db');
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const vendor = await Vendor.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
+    const [vendor, workerDoc] = await Promise.all([
+      Vendor.findOne({ phone: cleanPhone, isDeleted: { $ne: true } })
+        .select('_id name email phone businessName service categories approvalStatus isSubscriptionActive subscription referralCode isActive fcmTokens fcmTokenMobile loginSessionId'),
+      Worker.findOne({ phone: cleanPhone, isDeleted: { $ne: true } })
+        .select('_id name phone email status vendorId isDeleted')
+    ]);
+    console.timeEnd('verifyLogin-db');
 
     if (vendor) {
       // EXISTING VENDOR
@@ -148,6 +162,7 @@ const verifyLogin = async (req, res) => {
       }
 
       // SINGLE DEVICE LOGIN: Update Session ID & Clear OLD FCM tokens
+      console.time('verifyLogin-update');
       const loginSessionId = Date.now().toString();
       await Vendor.findByIdAndUpdate(vendor._id, { 
         loginSessionId,
@@ -180,8 +195,7 @@ const verifyLogin = async (req, res) => {
       });
 
     } else {
-      // Check if worker exists
-      const workerDoc = await Worker.findOne({ phone: cleanPhone, isDeleted: { $ne: true } });
+      // Check if worker exists (already fetched in parallel above)
       if (workerDoc) {
         if (!workerDoc.vendorId) {
           return res.status(403).json({ success: false, message: 'Account not linked to any vendor. Please contact your vendor.' });

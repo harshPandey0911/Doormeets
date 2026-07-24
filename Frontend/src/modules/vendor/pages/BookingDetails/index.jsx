@@ -110,6 +110,7 @@ export default function BookingDetails() {
   const isWorker = localStorage.getItem('role') === 'worker' || window.location.pathname.startsWith('/worker');
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [isPayWorkerModalOpen, setIsPayWorkerModalOpen] = useState(false);
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
@@ -384,13 +385,13 @@ export default function BookingDetails() {
 
   const getFilteredList = () => {
     if (activeAddonTab === 'services') {
-      return categoryServices.filter(s => s.name.toLowerCase().includes(addonSearch.toLowerCase()));
+      return categoryServices.filter(s => (s.name || '').toLowerCase().includes((addonSearch || '').toLowerCase()));
     } else {
       return addonCatalog.filter(s => {
         const catIdMatch = String(s.categoryId?._id || s.categoryId || '') === String(booking?.categoryId || '');
         const catNameMatch = String(s.categoryId?.title || '').toLowerCase() === String(booking?.serviceCategory || '').toLowerCase();
         const isCategoryMatch = catIdMatch || catNameMatch;
-        const isSearchMatch = s.name.toLowerCase().includes(addonSearch.toLowerCase());
+        const isSearchMatch = (s.name || '').toLowerCase().includes((addonSearch || '').toLowerCase());
         return isCategoryMatch && isSearchMatch;
       });
     }
@@ -736,6 +737,8 @@ export default function BookingDetails() {
 
   const loadBooking = async (showSpinner = true) => {
     try {
+      setError(null);
+      console.log("[loadBooking] Fetching booking details for ID:", id);
       const hasCache = !!sessionStorage.getItem(`vendor_booking_${id}`);
       if (showSpinner && !hasCache) setLoading(true);
       let billData = null;
@@ -745,7 +748,9 @@ export default function BookingDetails() {
         vendorBillService.getBill(id).catch(() => ({ success: false }))
       ]);
 
+      console.log("[loadBooking] getBookingById Response:", bookingRes);
       const apiData = bookingRes.data || bookingRes;
+      console.log("[loadBooking] Extracted API data:", apiData);
       if (billRes && billRes.success) {
         billData = billRes.bill;
       }
@@ -769,7 +774,7 @@ export default function BookingDetails() {
           })(),
           lat: apiData.address?.lat || 0,
           lng: apiData.address?.lng || 0,
-          distance: apiData.distance ? `${apiData.distance.toFixed(1)} km` : 'N/A'
+          distance: apiData.distance ? `${parseFloat(apiData.distance).toFixed(1)} km` : 'N/A'
         },
         // Price Breakdown
         basePrice: parseFloat(apiData.basePrice || 0),
@@ -788,11 +793,11 @@ export default function BookingDetails() {
         ),
 
         // Display Price (Vendor Earnings by default as requested)
-        price: (apiData.vendorEarnings || (apiData.finalAmount ? apiData.finalAmount - (apiData.commission || 0) : 0)).toFixed(2),
+        price: (parseFloat(apiData.vendorEarnings) || (apiData.finalAmount ? parseFloat(apiData.finalAmount) - (parseFloat(apiData.commission) || 0) : 0)).toFixed(2),
 
         timeSlot: {
           date: apiData.scheduledDate ? new Date(apiData.scheduledDate).toLocaleDateString() : 'Today',
-          time: apiData.scheduledTime || apiData.timeSlot?.start ? `${apiData.timeSlot.start} - ${apiData.timeSlot.end}` : 'Flexible'
+          time: apiData.timeSlot?.start ? `${apiData.timeSlot.start} - ${apiData.timeSlot.end}` : (apiData.scheduledTime || 'Flexible')
         },
         status: apiData.status,
         description: apiData.description || apiData.notes || 'No description provided',
@@ -812,8 +817,9 @@ export default function BookingDetails() {
 
       sessionStorage.setItem(`vendor_booking_${id}`, JSON.stringify(mappedBooking));
       setBooking(mappedBooking);
-    } catch (error) {
-      // Error loading booking
+    } catch (err) {
+      console.error("[loadBooking] Error mapping or fetching booking:", err);
+      setError(err.response?.data?.message || err.message || 'Failed to load booking details');
     } finally {
       setLoading(false);
     }
@@ -990,16 +996,16 @@ export default function BookingDetails() {
   };
 
   const canDoFinalSettlement = (booking) => {
-    // Check if payment is already done (Online SUCCESS or Cash COLLECTED)
-    // Robust check for various status strings (case-insensitive)
-    const pStatus = booking?.paymentStatus?.toLowerCase() || '';
-    const isPaid = pStatus === 'success' || pStatus === 'paid' || pStatus === 'completed' || booking?.cashCollected;
-
+    if (!booking) return false;
+    
+    // Check if the payment step is complete
+    const isPaid = booking?.paymentStatus === 'success' || booking?.paymentStatus === 'paid' || booking?.paymentStatus === 'completed' || booking?.cashCollected || booking?.status?.toLowerCase() === 'payment_collected';
     const status = booking?.status?.toLowerCase() || '';
-    const isWorkDone = status === 'work_done' || status === 'completed' || status === 'worker_paid';
+    const isWorkDone = status === 'work_done' || status === 'completed' || status === 'worker_paid' || status === 'payment_collected';
 
     // Check worker payment (enforce worker is paid before vendor can finalize unless doing job self)
-    const isSelfJob = booking?.assignedTo?.name === 'You (Self)';
+    // If there is no workerId, it is a self-job done by the vendor itself.
+    const isSelfJob = !booking?.workerId || booking?.isSelfJob || booking?.assignedTo?.name === 'You (Self)';
     const handleWorkerCheck = isSelfJob || booking?.workerPaymentStatus === 'PAID';
 
     return isWorkDone && isPaid && handleWorkerCheck && booking?.finalSettlementStatus !== 'DONE';
@@ -1259,6 +1265,24 @@ export default function BookingDetails() {
   };
 
 
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: themeColors.backgroundGradient }}>
+        <div className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full space-y-4">
+          <div className="text-red-500 text-5xl">⚠️</div>
+          <h3 className="text-lg font-bold text-gray-900">Failed to Load Details</h3>
+          <p className="text-sm text-gray-500">{error}</p>
+          <button
+            onClick={() => loadBooking(true)}
+            className="w-full py-3 rounded-xl font-semibold text-white bg-[#347989] hover:bg-[#28606d] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!booking) {
     return (
@@ -1980,10 +2004,10 @@ export default function BookingDetails() {
                                     </div>
                                   </button>
                                   {openDropdown === 'order' && (() => {
-                                    const tax = booking.tax || booking.gstAmount || 0;
-                                    const basePrice = booking.basePrice || (booking.finalAmount ? booking.finalAmount - tax : 0);
+                                    const tax = parseFloat(booking.tax || booking.gstAmount || 0);
+                                    const basePrice = parseFloat(booking.basePrice || (booking.finalAmount ? parseFloat(booking.finalAmount) - tax : 0));
                                     const mainServiceTotal = basePrice + tax;
-                                    const computedInstantFee = booking.instantBookingFee || booking.instantFee || booking.instantCharges || booking.urgentBookingFee || (booking.bookingType === 'instant' || booking.isInstantBooking ? (booking.instantBookingPrice || 99) : null) || Math.max(0, (booking.finalAmount || 0) - mainServiceTotal);
+                                    const computedInstantFee = parseFloat(booking.instantBookingFee || booking.instantFee || booking.instantCharges || booking.urgentBookingFee || (booking.bookingType === 'instant' || booking.isInstantBooking ? (booking.instantBookingPrice || 99) : 0)) || Math.max(0, (parseFloat(booking.finalAmount) || 0) - mainServiceTotal);
 
                                     return (
                                       <div className="p-3 bg-white border-t border-gray-100 space-y-3 text-xs">
@@ -2066,7 +2090,7 @@ export default function BookingDetails() {
                                           <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-100 text-xs">
                                             <span className="font-bold text-gray-900">Grand Total</span>
                                             <span className="font-black text-sm" style={{ color: themeColors.button }}>
-                                              ₹{(booking.finalAmount || booking.totalAmount || booking.basePrice || 0).toFixed(2)}
+                                              ₹{parseFloat(booking.finalAmount || booking.totalAmount || booking.basePrice || 0).toFixed(2)}
                                             </span>
                                           </div>
                                         </div>
@@ -2393,12 +2417,11 @@ export default function BookingDetails() {
                                              </div>
                                            </div>
                                          )}
-
                                          {/* 4. Grand Total (End of Card) */}
                                          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                                            <span className="text-xs font-bold text-gray-900">Grand Total</span>
                                            <span className="text-sm font-black" style={{ color: themeColors.button }}>
-                                             ₹{(booking.finalAmount || booking.totalAmount || booking.basePrice || 0).toFixed(2)}
+                                             ₹{parseFloat(booking.finalAmount || booking.totalAmount || booking.basePrice || 0).toFixed(2)}
                                            </span>
                                          </div>
                                          {booking.codAdvanceAmount > 0 && (
@@ -2740,7 +2763,7 @@ export default function BookingDetails() {
                   </div>
                 </div>
                 <button
-                  onClick={handleConfirmCash}
+                  onClick={handleCollectCashClick}
                   disabled={loading}
                   className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 hover:brightness-105 bg-amber-600 shadow-md"
                 >

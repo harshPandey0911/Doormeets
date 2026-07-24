@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiPhone, FiArrowRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
+import { FiPhone, FiArrowRight, FiChevronLeft } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { sendOTP, verifyLogin } from '../services/authService';
 import Logo from '../../../components/common/Logo';
+import LogoLoader from '../../../components/common/LogoLoader';
 import loginIllustration from '../../../assets/images/loginpage.png';
 
 import { z } from "zod";
@@ -15,6 +16,11 @@ const phoneSchema = z.object({
 
 const VendorLogin = () => {
   const navigate = useNavigate();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
+    const workerToken = localStorage.getItem('workerAccessToken') || sessionStorage.getItem('workerAccessToken');
+    const vendorToken = localStorage.getItem('vendorAccessToken') || sessionStorage.getItem('vendorAccessToken');
+    return !!(workerToken || vendorToken);
+  });
   const [step, setStep] = useState('phone'); // 'phone' or 'otp'
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -52,6 +58,8 @@ const VendorLogin = () => {
       return;
     }
 
+    setIsCheckingAuth(false);
+
     if (step === 'phone' && phoneInputRef.current) {
       setTimeout(() => phoneInputRef.current.focus(), 100);
     } else if (step === 'otp' && otpInputRefs.current[0]) {
@@ -85,6 +93,11 @@ const VendorLogin = () => {
         setStep('otp');
         setResendTimer(120); // Start timer
         toast.success('OTP sent successfully');
+
+        // PREFETCH: speculatively load vendor dashboard chunk while user enters OTP
+        // This means by the time they verify, the chunk is already in browser cache
+        import('./Dashboard/index.jsx').catch(() => {});
+        import('../routes/index.jsx').catch(() => {});
       } else {
         setIsLoading(false);
         toast.error(response.message || 'Failed to send OTP');
@@ -121,16 +134,22 @@ const VendorLogin = () => {
   };
 
   // Auto-verify as last digit enters
+  // Note: Using ref to hold latest handleOtpSubmit to avoid stale closure issues
+  const handleOtpSubmitRef = useRef(null);
+  useEffect(() => {
+    handleOtpSubmitRef.current = handleOtpSubmit;
+  });
   useEffect(() => {
     const otpValue = otp.join('');
     if (otpValue.length === 6 && !isLoading && otpToken) {
-      handleOtpSubmit();
+      handleOtpSubmitRef.current?.();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp]);
 
-  const handleOtpSubmit = async (e) => {
+  const handleOtpSubmit = async (e, directOtpValue = null) => {
     if (e) e.preventDefault();
-    const otpValue = otp.join('');
+    const otpValue = directOtpValue || otp.join('');
     if (otpValue.length !== 6) {
       toast.error('Please enter complete OTP');
       return;
@@ -147,33 +166,29 @@ const VendorLogin = () => {
       });
 
       if (response.success) {
-        setIsLoading(false);
+        // DO NOT call setIsLoading(false) here — navigating away immediately,
+        // so the extra React re-render would just flash the un-spun button for one frame
 
         if (response.isNewUser) {
-          toast.success('Phone verified! Please complete registration.');
           navigate('/vendor/signup', {
             state: { phone: phoneNumber.replace(/\D/g, ''), verificationToken: response.verificationToken }
           });
+          toast.success('Phone verified! Please complete registration.');
         } else {
           if (response.isWorker) {
             localStorage.setItem('workerAccessToken', response.accessToken);
             localStorage.setItem('workerRefreshToken', response.refreshToken);
             localStorage.setItem('workerData', JSON.stringify(response.worker));
             localStorage.setItem('role', 'worker');
-
-            toast.success(
-              <div className="flex flex-col">
-                <span className="font-bold">Welcome Back!</span>
-                <span className="text-xs">Successfully logged into your worker account.</span>
-              </div>,
-              { icon: <FiCheckCircle className="text-green-500" /> }
-            );
+            // Navigate FIRST — then show toast (toast appears on the next page)
             navigate('/worker', { replace: true });
+            toast.success('Welcome Back! Logged into worker account.');
             return;
           }
 
           // Check for rejected status
           if (response.vendor?.adminApproval === 'rejected' || response.vendor?.adminApproval === 'REJECTED' || response.vendor?.approvalStatus === 'REJECTED') {
+            setIsLoading(false);
             toast.error('Your application has been rejected.');
             return;
           }
@@ -181,11 +196,11 @@ const VendorLogin = () => {
           // Check for pending approval status (New Verification Flow)
           const isPending = response.vendor?.approvalStatus?.toLowerCase() === 'pending' || response.vendor?.adminApproval?.toLowerCase() === 'pending';
           if (isPending) {
-            toast.success('Please complete your training and subscription.');
             localStorage.setItem('vendorAccessToken', response.accessToken);
             localStorage.setItem('vendorRefreshToken', response.refreshToken);
             localStorage.setItem('vendorData', JSON.stringify(response.vendor));
             navigate('/vendor/verification');
+            toast.success('Please complete your training and subscription.');
             return;
           }
 
@@ -193,14 +208,10 @@ const VendorLogin = () => {
           localStorage.setItem('vendorRefreshToken', response.refreshToken);
           localStorage.setItem('vendorData', JSON.stringify(response.vendor));
 
-          toast.success(
-            <div className="flex flex-col">
-              <span className="font-bold">Welcome Back!</span>
-              <span className="text-xs">Successfully logged into your vendor account.</span>
-            </div>,
-            { icon: <FiCheckCircle className="text-green-500" /> }
-          );
+          // Navigate FIRST — dashboard is already prefetched, so it loads instantly
           navigate('/vendor', { replace: true });
+          // Toast fires after navigation (appears on dashboard)
+          toast.success('Welcome Back! Logged in successfully.');
         }
       } else {
         setIsLoading(false);
@@ -212,6 +223,10 @@ const VendorLogin = () => {
       toast.error(errorMessage);
     }
   };
+
+  if (isCheckingAuth) {
+    return <LogoLoader />;
+  }
 
   return (
     <div className="min-h-[100dvh] bg-[#F4F5F8] md:bg-gray-100 flex flex-col justify-start md:justify-center md:py-12 md:px-6 lg:px-8 relative overflow-x-hidden font-['Montserrat']">
@@ -225,6 +240,7 @@ const VendorLogin = () => {
             src={loginIllustration}
             alt="Login Illustration"
             className="mx-auto mt-2 h-[140px] w-auto object-contain"
+            fetchPriority="high"
           />
         </div>
 

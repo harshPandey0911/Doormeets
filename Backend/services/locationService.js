@@ -371,54 +371,55 @@ const filterConflictVendors = async (vendors, scheduledDate, timeSlot, scheduled
 
   const slotStart = timeSlot?.start;
 
-  const filtered = [];
-  for (const vendor of vendors) {
-    try {
-      // 1. Get online workers count for this vendor
-      const onlineWorkersCount = await Worker.countDocuments({
-        vendorId: vendor._id,
-        status: 'ONLINE',
-        isDeleted: { $ne: true }
-      });
+  // Evaluate all vendors in parallel to speed up booking creation
+  const evaluations = await Promise.all(
+    vendors.map(async (vendor) => {
+      try {
+        const query = {
+          vendorId: vendor._id,
+          status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] },
+          scheduledDate: {
+            $gte: startOfDay,
+            $lte: endOfDay
+          }
+        };
 
-      const capacity = 1 + onlineWorkersCount;
-
-      // 2. Get active bookings count at this slot
-      const query = {
-        vendorId: vendor._id,
-        status: { $in: ['accepted', 'assigned', 'visited', 'in_progress', 'work_done', 'final_settlement', 'confirmed'] },
-        scheduledDate: {
-          $gte: startOfDay,
-          $lte: endOfDay
+        if (slotStart && scheduledTime) {
+          query.$or = [
+            { 'timeSlot.start': slotStart },
+            { scheduledTime: scheduledTime }
+          ];
+        } else if (slotStart) {
+          query['timeSlot.start'] = slotStart;
+        } else {
+          query.scheduledTime = scheduledTime;
         }
-      };
 
-      if (slotStart && scheduledTime) {
-        query.$or = [
-          { 'timeSlot.start': slotStart },
-          { scheduledTime: scheduledTime }
-        ];
-      } else if (slotStart) {
-        query['timeSlot.start'] = slotStart;
-      } else {
-        query.scheduledTime = scheduledTime;
+        const [onlineWorkersCount, activeBookingsCount] = await Promise.all([
+          Worker.countDocuments({
+            vendorId: vendor._id,
+            status: 'ONLINE',
+            isDeleted: { $ne: true }
+          }),
+          Booking.countDocuments(query)
+        ]);
+
+        const capacity = 1 + onlineWorkersCount;
+
+        if (activeBookingsCount >= capacity) {
+          console.log(`[LocationService] Filtering out vendor ${vendor.name || vendor._id} due to capacity limit. Active: ${activeBookingsCount}, Capacity: ${capacity}`);
+          return null;
+        }
+
+        return vendor;
+      } catch (err) {
+        console.error(`[LocationService] Error evaluating conflict for vendor ${vendor._id}:`, err);
+        return vendor; // fallback: keep vendor in case of error
       }
+    })
+  );
 
-      const activeBookingsCount = await Booking.countDocuments(query);
-
-      if (activeBookingsCount >= capacity) {
-        console.log(`[LocationService] Filtering out vendor ${vendor.name || vendor._id} due to capacity limit at slot ${scheduledTime || slotStart}. Active: ${activeBookingsCount}, Capacity: ${capacity}`);
-        continue;
-      }
-
-      filtered.push(vendor);
-    } catch (err) {
-      console.error(`[LocationService] Error evaluating conflict for vendor ${vendor._id}:`, err);
-      filtered.push(vendor); // fallback: keep vendor in case of error
-    }
-  }
-
-  return filtered;
+  return evaluations.filter(Boolean);
 };
 
 module.exports = {

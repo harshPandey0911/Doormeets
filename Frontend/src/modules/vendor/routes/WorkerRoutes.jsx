@@ -85,7 +85,7 @@ const WorkerRoutes = () => {
         </Suspense>
       </div>
 
-      {shouldShowBottomNav && <GlobalBookingAlert />}
+      <GlobalBookingAlert />
       {shouldShowBottomNav && <BottomNav />}
     </ErrorBoundary>
   );

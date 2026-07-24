@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, memo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, memo, useRef, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiBriefcase, FiUsers, FiBell, FiArrowRight, FiUser, FiClock, FiMapPin, FiCheckCircle, FiTrendingUp, FiChevronRight, FiBox, FiPlayCircle, FiX } from 'react-icons/fi';
 import { FaWallet } from 'react-icons/fa';
@@ -15,8 +15,42 @@ import { configService } from '../../../../services/configService';
 
 import { registerFCMToken } from '../../../../services/pushNotificationService';
 import LogoLoader from '../../../../components/common/LogoLoader';
-import StatsCards from './components/StatsCards';
-import PendingBookings from './components/PendingBookings';
+
+const StatsCards = lazy(() => import('./components/StatsCards'));
+const PendingBookings = lazy(() => import('./components/PendingBookings'));
+
+const DashboardSkeleton = () => (
+  <div className="px-4 py-4 space-y-6 animate-pulse">
+    {/* Stats Cards Skeleton */}
+    <div className="grid grid-cols-2 gap-3 mt-4">
+      <div className="h-24 bg-white/20 rounded-2xl"></div>
+      <div className="h-24 bg-white/20 rounded-2xl"></div>
+      <div className="h-24 bg-white/20 rounded-2xl"></div>
+      <div className="h-24 bg-white/20 rounded-2xl"></div>
+    </div>
+    {/* Pending Bookings Skeleton */}
+    <div className="h-32 bg-white/20 rounded-2xl"></div>
+    {/* Performance Metrics Skeleton */}
+    <div className="grid grid-cols-2 gap-2.5">
+      <div className="h-24 bg-white/20 rounded-md"></div>
+      <div className="h-24 bg-white/20 rounded-md"></div>
+    </div>
+  </div>
+);
+
+const WorkerDashboardSkeleton = () => (
+  <div className="px-4 py-4 space-y-6 animate-pulse">
+    <div className="h-20 bg-white/20 rounded-2xl"></div>
+    <div className="grid grid-cols-2 gap-3">
+      <div className="h-24 bg-white/20 rounded-2xl"></div>
+      <div className="h-24 bg-white/20 rounded-2xl"></div>
+    </div>
+    <div className="space-y-3 mt-4">
+      <div className="h-28 bg-white/20 rounded-2xl"></div>
+      <div className="h-28 bg-white/20 rounded-2xl"></div>
+    </div>
+  </div>
+);
 
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:5000';
@@ -572,10 +606,7 @@ const Dashboard = memo(() => {
     return labels[s] || status;
   };
 
-  // Show loading state
-  if (loading) {
-    return <LogoLoader />;
-  }
+  // Removed blocking loading state to show layout instantly
 
   // Show error state
   if (error) {
@@ -623,7 +654,11 @@ const Dashboard = memo(() => {
         <Header title="Xpert Dashboard" showBack={false} />
 
         <main className="pt-4 px-4 space-y-6">
-          {/* Welcome Card */}
+          {loading ? (
+            <WorkerDashboardSkeleton />
+          ) : (
+            <>
+              {/* Welcome Card */}
           <div
             className="rounded-2xl p-5 shadow-lg relative overflow-hidden border border-white/10"
             style={{
@@ -732,6 +767,8 @@ const Dashboard = memo(() => {
               </div>
             )}
           </div>
+            </>
+          )}
         </main>
         <BottomNav />
       </div>
@@ -743,10 +780,11 @@ const Dashboard = memo(() => {
       <Header title="Dashboard" showBack={false} notificationCount={stats.pendingAlerts} />
 
       <main className="pt-0">
-
-
-
-        {/* Incomplete Profile Prompt */}
+        {loading ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            {/* Incomplete Profile Prompt */}
         {(!vendorProfile.service || vendorProfile.service.length === 0) && (
           <div className="px-4 pt-2 -mb-2">
             <div
@@ -832,20 +870,24 @@ const Dashboard = memo(() => {
         )}
 
         {/* Stats Cards - Optimized Component */}
-        <StatsCards stats={stats} />
+        <Suspense fallback={<div className="h-32 bg-white/10 rounded-2xl mx-4 animate-pulse"></div>}>
+          <StatsCards stats={stats} />
+        </Suspense>
 
         {/* Content Section (below gradient) */}
         <div className="px-4 py-4 space-y-4">
           {/* Pending Booking Alerts - Optimized Component */}
-          <PendingBookings
-            bookings={pendingBookings}
-            maxSearchTimeMins={globalConfig.maxSearchTime}
-            setPendingBookings={setPendingBookings}
-            setActiveAlertBooking={(booking) => {
-              // Dispatch to global alert via CustomEvent
-              window.dispatchEvent(new CustomEvent('showDashboardBookingAlert', { detail: booking }));
-            }}
-          />
+          <Suspense fallback={<div className="h-32 bg-white/10 rounded-2xl animate-pulse"></div>}>
+            <PendingBookings
+              bookings={pendingBookings}
+              maxSearchTimeMins={globalConfig.maxSearchTime}
+              setPendingBookings={setPendingBookings}
+              setActiveAlertBooking={(booking) => {
+                // Dispatch to global alert via CustomEvent
+                window.dispatchEvent(new CustomEvent('showDashboardBookingAlert', { detail: booking }));
+              }}
+            />
+          </Suspense>
 
           {/* Performance Metrics */}
           <div>
@@ -917,6 +959,8 @@ const Dashboard = memo(() => {
 
 
         </div>
+          </>
+        )}
       </main>
 
       {/* Video Player Modal */}

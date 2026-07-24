@@ -133,14 +133,14 @@ const createNotification = async ({
         payload.dataOnly = true;
       }
 
-      // Send to target
+      // Send to target in background (non-blocking)
       try {
-        if (userId) await sendNotificationToUser(userId, payload);
-        if (vendorId) await sendNotificationToVendor(vendorId, payload);
-        if (workerId) await sendNotificationToWorker(workerId, payload);
+        if (userId) sendNotificationToUser(userId, payload).catch(err => console.error('FCM user error:', err.message));
+        if (vendorId) sendNotificationToVendor(vendorId, payload).catch(err => console.error('FCM vendor error:', err.message));
+        if (workerId) sendNotificationToWorker(workerId, payload).catch(err => console.error('FCM worker error:', err.message));
         if (adminId) {
           const { sendNotificationToAdmin } = require('../../services/firebaseAdmin');
-          await sendNotificationToAdmin(adminId, payload);
+          sendNotificationToAdmin(adminId, payload).catch(err => console.error('FCM admin error:', err.message));
         }
       } catch (pushError) {
         console.error('Auto-push notification failed:', pushError);

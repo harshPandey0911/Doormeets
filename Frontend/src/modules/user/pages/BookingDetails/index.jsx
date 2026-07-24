@@ -1060,8 +1060,8 @@ const BookingDetails = () => {
                   </div>
                 </div>
 
-                {/* Action Button for Online Payment - Only show if not paid */}
-                {booking.paymentStatus !== 'success' && (
+                {/* Action Button for Online Payment - Only show if not paid and booking is not completed */}
+                {booking.paymentStatus !== 'success' && booking.status?.toLowerCase() !== 'completed' && (
                   <>
                     <button
                       onClick={handleOnlinePayment}
@@ -1072,7 +1072,7 @@ const BookingDetails = () => {
                       <FiChevronRight className="w-3.5 h-3.5" />
                     </button>
 
-                    {booking.customerConfirmationOTP && (
+                    {booking.customerConfirmationOTP && booking.status?.toLowerCase() === 'work_done' && (
                       <div className="flex flex-col items-center mb-2.5">
                         <p className="text-[9px] font-bold text-secondary-text uppercase tracking-widest mb-1.5">Verification Code</p>
                         <div className="flex justify-center gap-1.5">

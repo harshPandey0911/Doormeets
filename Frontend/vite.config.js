@@ -45,10 +45,28 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // SAFE STRATEGY: Bundle all dependencies into one vendor file
-          // This fixes the "Cannot set properties of undefined (setting 'Activity')" error
-          // by ensuring all libraries share the same execution context.
           if (id.includes('node_modules')) {
+            if (id.includes('react-icons')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('gsap') || id.includes('framer-motion')) {
+              return 'vendor-animations';
+            }
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-recharts';
+            }
+            if (id.includes('leaflet') || id.includes('react-leaflet')) {
+              return 'vendor-leaflet';
+            }
+            if (id.includes('html2pdf.js') || id.includes('html2canvas') || id.includes('jspdf')) {
+              return 'vendor-pdf';
+            }
+            if (id.includes('@react-google-maps') || id.includes('google-maps')) {
+              return 'vendor-maps';
+            }
             return 'vendor';
           }
         },

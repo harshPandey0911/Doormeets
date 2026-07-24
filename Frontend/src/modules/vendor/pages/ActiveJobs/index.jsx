@@ -108,9 +108,10 @@ const ActiveJobs = memo(() => {
   }, [filter, searchQuery, loadJobs]);
 
   useEffect(() => {
-    window.addEventListener('vendorJobsUpdated', () => loadJobs(filter, searchQuery));
+    const handleUpdate = () => loadJobs(filter, searchQuery);
+    window.addEventListener('vendorJobsUpdated', handleUpdate);
     return () => {
-      window.removeEventListener('vendorJobsUpdated', () => loadJobs(filter, searchQuery));
+      window.removeEventListener('vendorJobsUpdated', handleUpdate);
     };
   }, [loadJobs, filter, searchQuery]);
 

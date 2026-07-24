@@ -82,20 +82,20 @@ const getDashboardStats = async (req, res) => {
       const [bookingData, workersOnlineCount, earningsResult] = await Promise.all([
         Booking.aggregate([
           {
+            $match: {
+              $or: [
+                { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
+                {
+                  vendorId: null,
+                  status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
+                  'potentialVendors.vendorId': vId
+                }
+              ]
+            }
+          },
+          {
             $facet: {
               counts: [
-                {
-                  $match: {
-                    $or: [
-                      { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
-                      {
-                        vendorId: null,
-                        status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
-                        'potentialVendors.vendorId': vId
-                      }
-                    ]
-                  }
-                },
                 {
                   $group: {
                     _id: null,
@@ -134,18 +134,6 @@ const getDashboardStats = async (req, res) => {
                 { $group: { _id: null, avg: { $avg: '$rating' } } }
               ],
               recent: [
-                {
-                  $match: {
-                    $or: [
-                      { vendorId: vId, status: { $ne: BOOKING_STATUS.AWAITING_PAYMENT } },
-                      {
-                        vendorId: null,
-                        status: { $in: [BOOKING_STATUS.REQUESTED, BOOKING_STATUS.SEARCHING] },
-                        'potentialVendors.vendorId': vId
-                      }
-                    ]
-                  }
-                },
                 { $sort: { createdAt: -1 } },
                 { $limit: 15 },
                 {
@@ -187,7 +175,7 @@ const getDashboardStats = async (req, res) => {
       recentBookings = facet.recent || [];
       rating = facet.rating?.[0]?.avg || req.user.rating || 0;
       vendorEarnings = earningsResult[0]?.total || 0;
-      workersOnline = workersOnlineCount;
+      workersOnline = 0;
 
       await Booking.populate(recentBookings, [
         { path: 'userId', select: 'name phone', options: { lean: true } },
