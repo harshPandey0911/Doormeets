@@ -399,6 +399,7 @@ const PackageBased = () => {
         allowUserEdit: combo.allowUserEdit !== false,
         codEnabled: combo.codEnabled !== false,
         codAdvanceAmount: combo.codAdvanceAmount || 0,
+        vendorAcceptanceFee: combo.vendorAcceptanceFee || 0,
         targetSubCategoryIds: associatedSubCatIds.length > 0 ? associatedSubCatIds : [String(selectedSubCategoryId)]
       });
     } else {
@@ -419,6 +420,7 @@ const PackageBased = () => {
         vendorPayout: 0,
         allowUserEdit: true,
         codEnabled: true,
+        vendorAcceptanceFee: 0,
         targetSubCategoryIds: selectedSubCategoryIds.length > 0 ? selectedSubCategoryIds.map(String) : (selectedSubCategoryId ? [String(selectedSubCategoryId)] : [])
       });
     }
@@ -461,7 +463,8 @@ const PackageBased = () => {
       vendorPayout: Number(comboForm.vendorPayout || 0),
       allowUserEdit: comboForm.allowUserEdit !== false,
       codEnabled: comboForm.codEnabled !== false,
-      codAdvanceAmount: Number(comboForm.codAdvanceAmount) || 0
+      codAdvanceAmount: Number(comboForm.codAdvanceAmount) || 0,
+      vendorAcceptanceFee: Number(comboForm.vendorAcceptanceFee || 0)
     };
 
     try {

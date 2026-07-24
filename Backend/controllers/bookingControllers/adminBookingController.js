@@ -237,26 +237,30 @@ const cancelBooking = async (req, res) => {
       }
     }
     // Refund upfront payment to user's wallet if payment was successful
-    if (booking.paymentStatus === 'success' && booking.finalAmount > 0) {
+    const isPaidRefund = ['success', 'paid', 'partially_paid'].includes(booking.paymentStatus?.toLowerCase());
+    if (isPaidRefund) {
       try {
         const User = require('../../models/User');
         const Transaction = require('../../models/Transaction');
         
-        await User.findByIdAndUpdate(booking.userId, { $inc: { 'wallet.balance': booking.finalAmount } });
-        
-        await Transaction.create({
-          userId: booking.userId,
-          type: 'refund',
-          amount: booking.finalAmount,
-          status: 'completed',
-          paymentMethod: 'wallet',
-          description: `Refund of ₹${booking.finalAmount} online payment for booking #${booking.bookingNumber} (admin cancellation)`,
-          bookingId: booking._id,
-          balanceAfter: (await User.findById(booking.userId)).wallet?.balance || 0
-        });
-        
-        booking.paymentStatus = 'refunded';
-        console.log(`[AdminCancel] Refunded upfront payment of ₹${booking.finalAmount} to user ${booking.userId} wallet.`);
+        const refundAmt = booking.paymentStatus?.toLowerCase() === 'partially_paid' ? (booking.codAdvanceAmount || 0) : booking.finalAmount;
+        if (refundAmt > 0) {
+          await User.findByIdAndUpdate(booking.userId, { $inc: { 'wallet.balance': refundAmt } });
+          
+          await Transaction.create({
+            userId: booking.userId,
+            type: 'refund',
+            amount: refundAmt,
+            status: 'completed',
+            paymentMethod: 'wallet',
+            description: `Refund of ₹${refundAmt} online payment for booking #${booking.bookingNumber} (${booking.serviceName || 'Service'}) (admin cancellation)`,
+            bookingId: booking._id,
+            balanceAfter: (await User.findById(booking.userId)).wallet?.balance || 0
+          });
+          
+          booking.paymentStatus = 'refunded';
+          console.log(`[AdminCancel] Refunded upfront payment of ₹${refundAmt} to user ${booking.userId} wallet.`);
+        }
       } catch (refundErr) {
         console.error('[AdminCancel] Error refunding upfront payment to wallet:', refundErr);
       }
@@ -603,37 +607,39 @@ const approveCancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No pending cancellation request for this booking' });
     }
 
-    const isPaid = ['success', 'completed', 'paid'].includes(booking.paymentStatus?.toLowerCase());
-    if (isPaid && booking.finalAmount > 0) {
+    const isPaid = ['success', 'completed', 'paid', 'partially_paid'].includes(booking.paymentStatus?.toLowerCase());
+    if (isPaid) {
       try {
         const User = require('../../models/User');
         const Transaction = require('../../models/Transaction');
         
-        const refundAmount = booking.finalAmount;
+        const refundAmount = booking.paymentStatus?.toLowerCase() === 'partially_paid' ? (booking.codAdvanceAmount || 0) : booking.finalAmount;
 
-        const userDoc = await User.findById(booking.userId);
-        if (userDoc) {
-          const balanceBefore = userDoc.wallet.balance || 0;
-          userDoc.wallet.balance = balanceBefore + refundAmount;
-          await userDoc.save();
+        if (refundAmount > 0) {
+          const userDoc = await User.findById(booking.userId);
+          if (userDoc) {
+            const balanceBefore = userDoc.wallet.balance || 0;
+            userDoc.wallet.balance = balanceBefore + refundAmount;
+            await userDoc.save();
 
-          // Create refund transaction
-          await Transaction.create({
-            userId: booking.userId,
-            type: 'refund',
-            amount: refundAmount,
-            status: 'completed',
-            paymentMethod: 'system',
-            description: `Refund of ₹${refundAmount} for cancelled booking #${booking.bookingNumber}`,
-            bookingId: booking._id,
-            referenceType: 'cancellation_refund',
-            balanceBefore: balanceBefore,
-            balanceAfter: userDoc.wallet.balance
-          });
-          
-          booking.paymentStatus = 'refunded';
-          booking.penalty = 0;
-          console.log(`[AdminApproveCancel] Refunded ₹${refundAmount} to user ${booking.userId} wallet. Balance: ${balanceBefore} → ${userDoc.wallet.balance}`);
+            // Create refund transaction
+            await Transaction.create({
+              userId: booking.userId,
+              type: 'refund',
+              amount: refundAmount,
+              status: 'completed',
+              paymentMethod: 'system',
+              description: `Refund of ₹${refundAmount} for cancelled booking #${booking.bookingNumber} (${booking.serviceName || 'Service'})`,
+              bookingId: booking._id,
+              referenceType: 'cancellation_refund',
+              balanceBefore: balanceBefore,
+              balanceAfter: userDoc.wallet.balance
+            });
+            
+            booking.paymentStatus = 'refunded';
+            booking.penalty = 0;
+            console.log(`[AdminApproveCancel] Refunded ₹${refundAmount} to user ${booking.userId} wallet. Balance: ${balanceBefore} → ${userDoc.wallet.balance}`);
+          }
         }
       } catch (refundErr) {
         console.error('[AdminApproveCancel] Error refunding upfront payment to wallet:', refundErr);

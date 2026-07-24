@@ -584,7 +584,7 @@ const Checkout = () => {
 
         userGstNumber: userGstNumber.trim() || null,
 
-        paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
+        paymentMethod: (paymentMethod === 'pay_at_home') ? 'pay_at_home' : (totalAmount === 0 ? 'plan_benefit' : paymentMethod),
         redeemLoyaltyPoints: useLoyaltyPoints,
         applyWallet: walletDiscount > 0,
         walletAmountRequested: walletDiscount,
@@ -594,6 +594,14 @@ const Checkout = () => {
 
       if (response.success) {
         setBookingRequest(response.data);
+
+        if (paymentMethod === 'pay_at_home' && finalCodAdvanceAmount > 0) {
+          setShowVendorModal(false);
+          setSearchingVendors(false);
+          setCurrentStep('details');
+          await handleUpfrontPayment(response.data);
+          return;
+        }
 
         // If the backend returns an assigned vendor immediately (rare but possible)
         if (response.data.vendorId && (response.data.status === 'ACCEPTED' || response.data.status === 'ASSIGNED')) {
@@ -880,7 +888,7 @@ const Checkout = () => {
         scheduledTime: finalTimeDisplay,
         timeSlot: timeSlotObj,
         // userNotes: null, // Removed per request
-        paymentMethod: amountToPay === 0 ? 'plan_benefit' : paymentMethod,
+        paymentMethod: (paymentMethod === 'pay_at_home') ? 'pay_at_home' : (totalAmount === 0 ? 'plan_benefit' : paymentMethod),
         amount: amountToPay,
         redeemLoyaltyPoints: useLoyaltyPoints,
         applyWallet: walletDiscount > 0,
@@ -917,6 +925,14 @@ const Checkout = () => {
       setBookingRequest(booking);
       toast.dismiss();
 
+      if (paymentMethod === 'pay_at_home' && finalCodAdvanceAmount > 0) {
+        setSearchingVendors(false);
+        setShowVendorModal(false);
+        setCurrentStep('details');
+        await handleUpfrontPayment(booking);
+        return;
+      }
+
       // Clear cart immediately as search starts (consumes items)
       try {
         if (category) {
@@ -952,6 +968,97 @@ const Checkout = () => {
       setCurrentStep('details');
       setSearchingVendors(false);
       setShowVendorModal(false);
+    }
+  };
+
+  const handleUpfrontPayment = async (targetBooking) => {
+    try {
+      toast.loading('Creating payment order...');
+      const orderResponse = await paymentService.createOrder(targetBooking._id, 'pay_at_home');
+
+      if (!orderResponse.success) {
+        toast.dismiss();
+        toast.error(orderResponse.message || 'Failed to create payment order');
+        return;
+      }
+
+      toast.dismiss();
+
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!razorpayKey) {
+        toast.error('Razorpay key not configured');
+        return;
+      }
+
+      if (!window.Razorpay) {
+        toast.error('Razorpay SDK not loaded');
+        return;
+      }
+
+      const options = {
+        key: razorpayKey,
+        amount: orderResponse.data.amount * 100,
+        currency: orderResponse.data.currency || 'INR',
+        order_id: orderResponse.data.orderId,
+        name: 'Doormeets',
+        description: `Advance Payment for ${targetBooking.serviceName || 'service'}`,
+        handler: async function (response) {
+          try {
+            toast.loading('Verifying payment...');
+            const verifyResponse = await paymentService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+
+            toast.dismiss();
+
+            if (verifyResponse.success) {
+              toast.success('Advance Payment successful!');
+
+              // Clear cart
+              try {
+                if (category) {
+                  await removeCategoryGlobal(category);
+                } else {
+                  await clearCartGlobal();
+                }
+                setCartItems([]);
+              } catch (error) {
+              }
+
+              // Show search modal now!
+              setShowVendorModal(true);
+              setCurrentStep('searching');
+              setSearchingVendors(true);
+            } else {
+              toast.error(verifyResponse.message || 'Payment verification failed');
+            }
+          } catch (error) {
+            toast.dismiss();
+            toast.error('Failed to verify payment');
+          }
+        },
+        prefill: {
+          name: contactDetails.name || JSON.parse(localStorage.getItem('userData'))?.name || 'User',
+          email: JSON.parse(localStorage.getItem('userData'))?.email || '',
+          contact: contactDetails.phone || userPhone
+        },
+        theme: {
+          color: themeColors.button
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.on('payment.failed', function (response) {
+        toast.dismiss();
+        toast.error(`Payment failed: ${response.error.description || 'Unknown error'}`);
+      });
+      razorpay.open();
+
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to process payment');
     }
   };
 
@@ -1447,7 +1554,7 @@ const Checkout = () => {
   }, 0);
 
   const baseTotalAmount = netAfterLoyalty;
-  const baseAdvanceAmount = customCodAdvanceSum > 0 ? customCodAdvanceSum : Math.round(baseTotalAmount * (codAdvancePercentage / 100));
+  const baseAdvanceAmount = customCodAdvanceSum;
   const baseRemainingAmount = Math.max(0, baseTotalAmount - baseAdvanceAmount);
 
   const finalCodAdvanceAmount = Math.max(0, baseAdvanceAmount - walletDiscount);

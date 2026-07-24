@@ -57,12 +57,15 @@ const createPaymentOrder = async (req, res) => {
       if (booking.codAdvanceAmount > 0) {
         orderAmount = booking.codAdvanceAmount;
       } else {
-        const globalSettings = await Settings.findOne({ type: 'global' }).lean();
-        const codPct = globalSettings?.codAdvancePercentage !== undefined ? globalSettings.codAdvancePercentage : 10;
-        if (codPct > 0 && codPct < 100) {
-          orderAmount = parseFloat((booking.finalAmount * (codPct / 100)).toFixed(2));
-        }
+        orderAmount = 0;
       }
+    }
+
+    if (orderAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No advance payment is required for this booking'
+      });
     }
 
     // Create Razorpay order
@@ -170,7 +173,9 @@ const verifyPaymentWebhook = async (req, res) => {
 
     // Update booking status based on current state
     const wasAwaitingPayment = booking.status === BOOKING_STATUS.AWAITING_PAYMENT;
-    if ([BOOKING_STATUS.PENDING, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.AWAITING_PAYMENT].includes(booking.status)) {
+    if (wasAwaitingPayment && booking.paymentMethod === 'pay_at_home') {
+      booking.status = BOOKING_STATUS.SEARCHING;
+    } else if ([BOOKING_STATUS.PENDING, BOOKING_STATUS.SEARCHING, BOOKING_STATUS.AWAITING_PAYMENT].includes(booking.status)) {
       booking.status = BOOKING_STATUS.CONFIRMED;
     } else if (booking.status === BOOKING_STATUS.WORK_DONE) {
       booking.status = BOOKING_STATUS.COMPLETED;
@@ -187,6 +192,19 @@ const verifyPaymentWebhook = async (req, res) => {
       booking.totalAmount = booking.finalAmount;
     }
     await booking.save();
+
+    if (wasAwaitingPayment && booking.paymentMethod === 'pay_at_home') {
+      try {
+        const { getScheduler } = require('../../services/bookingScheduler');
+        const scheduler = getScheduler();
+        if (scheduler) {
+          console.log(`[Webhook] Triggering vendor search broadcast for booking ${booking.bookingNumber} post COD-advance payment.`);
+          await scheduler.broadcastBookingSearch(booking._id.toString());
+        }
+      } catch (searchErr) {
+        console.error('[Webhook] Failed to broadcast booking search after advance payment:', searchErr);
+      }
+    }
 
     // Notify vendor & user via socket when online payment is confirmed (including addon payment)
     try {

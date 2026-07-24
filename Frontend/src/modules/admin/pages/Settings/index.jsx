@@ -43,7 +43,8 @@ const AdminSettings = () => {
     showArrivalTime: true,
     slotsStartTime: '09:00 AM',
     slotsEndTime: '09:00 PM',
-    slotIntervalGap: 30
+    slotIntervalGap: 30,
+    codAdvancePercentage: 0
   });
 
   // Billing Configuration State
@@ -264,7 +265,8 @@ const AdminSettings = () => {
             showArrivalTime: res.settings.showArrivalTime !== undefined ? res.settings.showArrivalTime : true,
             slotsStartTime: res.settings.slotsStartTime || '09:00 AM',
             slotsEndTime: res.settings.slotsEndTime || '09:00 PM',
-            slotIntervalGap: res.settings.slotIntervalGap !== undefined ? res.settings.slotIntervalGap : 30
+            slotIntervalGap: res.settings.slotIntervalGap !== undefined ? res.settings.slotIntervalGap : 30,
+            codAdvancePercentage: res.settings.codAdvancePercentage !== undefined ? res.settings.codAdvancePercentage : 0
           });
           // Load billing settings
           setBillingSettings({
@@ -1044,6 +1046,13 @@ const AdminSettings = () => {
                       <input type="number" name="searchRadius" value={financialSettings.searchRadius} onChange={handleFinancialChange}
                         className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
                       <p className="text-[10px] text-gray-400 mt-1">Default global search radius for hunting vendors (10 KM)</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">COD Advance Percentage (%)</label>
+                      <input type="number" name="codAdvancePercentage" value={financialSettings.codAdvancePercentage} onChange={handleFinancialChange}
+                        min="0" max="100"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-green-500 transition-all font-bold text-gray-800" />
+                      <p className="text-[10px] text-gray-400 mt-1">Percentage of booking amount required online upfront for COD bookings (Set to 0 to disable)</p>
                     </div>
                   </div>
                   <div className="flex justify-end pt-2">
