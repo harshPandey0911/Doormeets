@@ -304,30 +304,7 @@ const verifyPaymentWebhook = async (req, res) => {
         booking.invoiceGenerated = true;
         await booking.save();
 
-        // Online payment: only earnings increase, NO dues (platform holds the money)
-        await Vendor.findByIdAndUpdate(booking.vendorId, {
-          $inc: { 'wallet.credits': vendorEarning / 10 }
-        });
-
-        // Earnings credit transaction
-        if (vendorEarning > 0) {
-          await Transaction.create({
-            vendorId: booking.vendorId,
-            bookingId: booking._id,
-            amount: vendorEarning,
-            type: 'earnings_credit',
-            paymentMethod: 'system',
-            status: 'completed',
-            description: `Earnings ₹${vendorEarning} credited (base only) for booking ${booking.bookingNumber} (online payment)`,
-            metadata: {
-              type: 'earnings_increase',
-              billId: bill?._id?.toString(),
-              serviceEarning: vendorEarning,
-              partsEarning: 0,
-              transactionGroupId
-            }
-          });
-        }
+        // Wallet credits and transaction entries are centrally managed in processBookingCompletion()
 
         if (bill) {
           bill.vendorTotalEarning = vendorEarning;
@@ -534,30 +511,7 @@ const processWalletPayment = async (req, res) => {
         booking.invoiceGenerated = true;
         await booking.save();
 
-        // Increment vendor wallet by baseAmount ONLY
-        await Vendor.findByIdAndUpdate(booking.vendorId, {
-          $inc: { 'wallet.credits': vendorEarning / 10 }
-        });
-
-        // Save Transaction ledger entry
-        if (vendorEarning > 0) {
-          await Transaction.create({
-            vendorId: booking.vendorId,
-            bookingId: booking._id,
-            amount: vendorEarning,
-            type: 'earnings_credit',
-            paymentMethod: 'system',
-            status: 'completed',
-            description: `Earnings ₹${vendorEarning} credited (base only) for booking ${booking.bookingNumber} (wallet payment)`,
-            metadata: {
-              type: 'earnings_increase',
-              billId: bill?._id?.toString(),
-              serviceEarning: vendorEarning,
-              partsEarning: 0,
-              transactionGroupId
-            }
-          });
-        }
+        // Wallet credits and transaction entries are centrally managed in processBookingCompletion()
 
         if (bill) {
           bill.vendorTotalEarning = vendorEarning;
@@ -1064,32 +1018,7 @@ const confirmCashCollection = async (req, res) => {
         booking.invoiceGenerated = true;
         await booking.save();
 
-        // Cash collection: Vendor keeps the cash, so we add DUES to their wallet
-        const duesAmount = booking.finalAmount - vendorEarning;
-        await Vendor.findByIdAndUpdate(booking.vendorId, {
-          $inc: {
-            'wallet.credits': vendorEarning / 10,
-            'wallet.dues': duesAmount
-          }
-        });
-
-        // Save Transaction ledger entry for dues
-        if (duesAmount > 0) {
-          await Transaction.create({
-            vendorId: booking.vendorId,
-            bookingId: booking._id,
-            amount: duesAmount,
-            type: 'dues_increase',
-            paymentMethod: 'system',
-            status: 'completed',
-            description: `Dues ₹${duesAmount} added for booking ${booking.bookingNumber} (Cash collected by vendor)`,
-            metadata: {
-              type: 'dues_increase',
-              billId: bill?._id?.toString(),
-              transactionGroupId
-            }
-          });
-        }
+        // Wallet dues/credits and transaction entries are centrally managed in processBookingCompletion()
 
         if (bill) {
           bill.vendorTotalEarning = vendorEarning;

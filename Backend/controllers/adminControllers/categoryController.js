@@ -64,6 +64,7 @@ const getAllCategories = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isGroupCategory: cat.isGroupCategory || false,
         mappedCategories: (cat.mappedCategories || []).map(id => (id && typeof id === 'object') ? id.toString() : String(id)),
+        minWalletBalance: cat.minWalletBalance || 0,
         sacCode: cat.sacCode || null,
         createdAt: cat.createdAt,
         updatedAt: cat.updatedAt

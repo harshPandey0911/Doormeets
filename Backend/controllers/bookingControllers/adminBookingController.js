@@ -266,6 +266,14 @@ const cancelBooking = async (req, res) => {
       }
     }
 
+    // Refund vendor acceptance fee (lead fee) on cancellation
+    try {
+      const { refundVendorLeadFee } = require('./vendorBookingController');
+      await refundVendorLeadFee(booking._id);
+    } catch (refundErr) {
+      console.error('[AdminCancelBooking] Error refunding vendor lead fee:', refundErr);
+    }
+
     await booking.save();
 
     // Notify user of the status change via socket
@@ -652,6 +660,15 @@ const approveCancelBooking = async (req, res) => {
     booking.cancellationReason = `Approved Request: ${booking.cancelRequestReason}`;
     booking.cancelledBy = `admin (via ${booking.cancelRequestedBy} request)`;
     booking.cancelRequestStatus = 'approved';
+
+    // Refund vendor acceptance fee (lead fee) on cancellation approval
+    try {
+      const { refundVendorLeadFee } = require('./vendorBookingController');
+      await refundVendorLeadFee(booking._id);
+    } catch (refundErr) {
+      console.error('[AdminApproveCancel] Error refunding vendor lead fee:', refundErr);
+    }
+
     await booking.save();
 
     console.log(`[AdminCancel] Cancellation approved for booking ${booking.bookingNumber}`);

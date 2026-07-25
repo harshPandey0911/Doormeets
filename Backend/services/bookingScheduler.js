@@ -374,7 +374,57 @@ class BookingScheduler {
               pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
             }
           }
-          const acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+          let acceptanceFee = 0;
+          try {
+            const Service = require('../models/Service');
+            const serviceDoc = await Service.findById(serviceIdStr).select('serviceType packages serviceGroups').lean();
+            if (serviceDoc && serviceDoc.serviceType === 'package_base') {
+              const bookedItemTitle = populatedBooking.bookedItems?.[0]?.card?.title;
+              if (bookedItemTitle) {
+                // 1. Check in option groups sub-items first
+                if (Array.isArray(serviceDoc.serviceGroups)) {
+                  for (const grp of serviceDoc.serviceGroups) {
+                    if (Array.isArray(grp.items)) {
+                      const matchedItem = grp.items.find(item => 
+                        bookedItemTitle === item.title || 
+                        bookedItemTitle.endsWith(` - ${item.title}`) || 
+                        bookedItemTitle.includes(item.title)
+                      );
+                      if (matchedItem) {
+                        acceptanceFee = matchedItem.vendorAcceptanceFee || 0;
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // 2. If not found, check in combo packages
+                if (acceptanceFee === 0 && Array.isArray(serviceDoc.packages) && serviceDoc.packages.length > 0) {
+                  const matchedPkg = serviceDoc.packages.find(p => 
+                    bookedItemTitle === p.title || 
+                    bookedItemTitle.endsWith(` - ${p.title}`) || 
+                    bookedItemTitle.includes(p.title)
+                  );
+                  if (matchedPkg) {
+                    acceptanceFee = matchedPkg.vendorAcceptanceFee || 0;
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('[BookingScheduler] Error checking sub-package acceptance fee:', err);
+          }
+
+          if (acceptanceFee === 0) {
+            acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+          }
+          if (acceptanceFee === 0 && populatedBooking.categoryId) {
+            const Category = require('../models/Category');
+            const cat = await Category.findById(populatedBooking.categoryId).select('minWalletBalance').lean();
+            if (cat && cat.minWalletBalance > 0) {
+              acceptanceFee = cat.minWalletBalance;
+            }
+          }
           requiredCredits = acceptanceFee > 0 ? (acceptanceFee / 10) : 0;
         }
       } catch (priceErr) {
@@ -474,9 +524,11 @@ class BookingScheduler {
         return false;
       }
 
-      let finalCategory = booking.categoryId;
-      if (!finalCategory && service.category) {
-        finalCategory = await Category.findOne({ title: service.category });
+      let finalCategory = null;
+      if (booking.categoryId) {
+        finalCategory = await Category.findById(booking.categoryId).select('title minWalletBalance').lean();
+      } else if (service.category) {
+        finalCategory = await Category.findOne({ title: service.category }).select('title minWalletBalance').lean();
       }
 
       const categoryIdStr = finalCategory ? finalCategory._id.toString() : '';
@@ -517,7 +569,8 @@ class BookingScheduler {
           city: booking.address?.city,
           scheduledDate: booking.scheduledDate,
           timeSlot: booking.timeSlot,
-          scheduledTime: booking.scheduledTime
+          scheduledTime: booking.scheduledTime,
+          minWalletBalance: finalCategory?.minWalletBalance || 0
         };
         nearbyVendors = await findNearbyVendors(bookingLocation, 10, vendorFilters);
       }

@@ -103,7 +103,7 @@ const createBooking = async (req, res) => {
 
     // 2. Fetch Category if exists
     const categoryId = service.categoryId || service.categoryIds?.[0];
-    const category = categoryId ? await Category.findById(categoryId).select('title icon image slug').lean() : null;
+    const category = categoryId ? await Category.findById(categoryId).select('title icon image slug minWalletBalance').lean() : null;
 
     // Calculate total value from booked items or fallback to service base price
     if (totalServiceValue === 0) {
@@ -197,7 +197,8 @@ const createBooking = async (req, res) => {
           city: address.city,
           scheduledDate: scheduledDate,
           timeSlot: timeSlot,
-          scheduledTime: scheduledTime
+          scheduledTime: scheduledTime,
+          minWalletBalance: category?.minWalletBalance || 0
         };
 
         console.log(`[CreateBooking] Searching for ${qualifiedVendorIds.length} specific vendors near user location...`);
@@ -791,8 +792,8 @@ const createBooking = async (req, res) => {
         try {
           const PricingConfig = require('../../models/PricingConfig');
           const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
+          let pricing = null;
           if (pricings.length > 0) {
-            let pricing = null;
             if (booking.cityId) {
               pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
             }
@@ -802,10 +803,55 @@ const createBooking = async (req, res) => {
             if (!pricing) {
               pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
             }
-            if (pricing && pricing.vendorAcceptanceFee) {
-              deductionAmount = Number(pricing.vendorAcceptanceFee) / 10;
-            }
           }
+          let acceptanceFee = 0;
+          try {
+            const Service = require('../../models/Service');
+            const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
+            if (serviceDoc && serviceDoc.serviceType === 'package_base') {
+              const bookedItemTitle = booking.bookedItems?.[0]?.card?.title;
+              if (bookedItemTitle) {
+                // 1. Check in option groups sub-items first
+                if (Array.isArray(serviceDoc.serviceGroups)) {
+                  for (const grp of serviceDoc.serviceGroups) {
+                    if (Array.isArray(grp.items)) {
+                      const matchedItem = grp.items.find(item => 
+                        bookedItemTitle === item.title || 
+                        bookedItemTitle.endsWith(` - ${item.title}`) || 
+                        bookedItemTitle.includes(item.title)
+                      );
+                      if (matchedItem) {
+                        acceptanceFee = matchedItem.vendorAcceptanceFee || 0;
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // 2. If not found, check in combo packages
+                if (acceptanceFee === 0 && Array.isArray(serviceDoc.packages) && serviceDoc.packages.length > 0) {
+                  const matchedPkg = serviceDoc.packages.find(p => 
+                    bookedItemTitle === p.title || 
+                    bookedItemTitle.endsWith(` - ${p.title}`) || 
+                    bookedItemTitle.includes(p.title)
+                  );
+                  if (matchedPkg) {
+                    acceptanceFee = matchedPkg.vendorAcceptanceFee || 0;
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('[CreateBooking] Error checking sub-package acceptance fee:', err);
+          }
+
+          if (acceptanceFee === 0) {
+            acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+          }
+          if (acceptanceFee === 0 && category?.minWalletBalance > 0) {
+            acceptanceFee = category.minWalletBalance;
+          }
+          deductionAmount = acceptanceFee / 10;
         } catch (err) {
           console.error('[CreateBooking] Error calculating deductionAmount:', err);
         }
@@ -1260,6 +1306,14 @@ const cancelBooking = async (req, res) => {
 
         booking.paymentStatus = PAYMENT_STATUS.REFUNDED;
       }
+    }
+
+    // Refund vendor acceptance fee (lead fee) on cancellation
+    try {
+      const { refundVendorLeadFee } = require('./vendorBookingController');
+      await refundVendorLeadFee(booking._id);
+    } catch (refundErr) {
+      console.error('[UserCancelBooking] Error refunding vendor lead fee:', refundErr);
     }
 
     // Update booking status

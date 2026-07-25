@@ -104,6 +104,7 @@ const _buildVendorQuery = (filters = {}) => {
   
   const checkCashLimit = filters.checkCashLimit;
   const serviceCategory = filters.service;
+  const minWalletBalance = Number(filters.minWalletBalance) || 0;
   
   const queryFilters = { ...filters };
   delete queryFilters.checkCashLimit;
@@ -112,6 +113,7 @@ const _buildVendorQuery = (filters = {}) => {
   delete queryFilters.scheduledDate;
   delete queryFilters.timeSlot;
   delete queryFilters.scheduledTime;
+  delete queryFilters.minWalletBalance;
 
   const baseQuery = {
     approvalStatus: VENDOR_STATUS.APPROVED,
@@ -120,6 +122,11 @@ const _buildVendorQuery = (filters = {}) => {
     availability: { $in: ['AVAILABLE', 'BUSY'] },
     ...queryFilters
   };
+
+  if (minWalletBalance > 0) {
+    const requiredCredits = minWalletBalance / 10;
+    baseQuery['wallet.credits'] = { $gte: requiredCredits };
+  }
 
   if (filters.city) {
     baseQuery['address.city'] = { $regex: new RegExp(filters.city, 'i') };

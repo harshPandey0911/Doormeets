@@ -153,8 +153,8 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline, onPay
             {/* Bill Details */}
             <div className="space-y-3 md:space-y-4">
               {(() => {
-                const amountAlreadyPaid = (booking.paymentStatus === 'paid' || booking.paymentStatus === 'SUCCESS' || booking.paymentStatus === 'success') 
-                  ? ((booking.basePrice || 0) + (booking.tax || 0)) 
+                const amountAlreadyPaid = ['success', 'paid', 'completed', 'collected_by_vendor'].includes(booking.paymentStatus?.toLowerCase()) 
+                  ? finalTotal 
                   : 0;
                 const netAmountPayable = Math.max(0, finalTotal - amountAlreadyPaid);
 
@@ -271,7 +271,7 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline, onPay
 
             {/* Actions */}
             <div className="mt-5 md:mt-8 space-y-2.5 md:space-y-3">
-              {booking.paymentStatus === 'success' ? (
+              {['success', 'paid', 'completed', 'collected_by_vendor'].includes(booking.paymentStatus?.toLowerCase()) ? (
                 <div className="bg-green-500/10 border border-green-500/20 rounded-md p-3 md:p-4 flex items-center gap-3">
                   <div className="w-8 h-8 md:w-10 md:h-10 bg-card-bg rounded-full flex items-center justify-center text-green-500 shadow-xs shrink-0 border border-border-color">
                     <FiCheckCircle className="w-4 h-4 md:w-5 md:h-5" />

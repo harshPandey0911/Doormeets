@@ -9,6 +9,7 @@ const serviceGroupItemSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },     // "Haircut for men"
   price: { type: Number, required: true, default: 0 },     // 199
   vendorPayout: { type: Number, default: 0 },
+  vendorAcceptanceFee: { type: Number, default: 0 },       // Deduction on acceptance (₹)
   description: { type: String, trim: true, default: '' },  // Optional description
   duration: { type: String, trim: true, default: '' },     // "30 mins"
   imageUrl: { type: String, default: null },               // Item image shown in options modal

@@ -31,21 +31,46 @@ async function processBookingCompletion(bookingId) {
     let adminCommission = 0;
     let vendorShare = 0;
 
-    // Check Combo Package Payout in Service Model first!
-    let packageVendorPayout = 0;
+    let basePayout = 0;
+    let acceptanceFee = 0;
+
+    // Check Combo Package Payout / Options Group Payout in Service Model first!
     try {
       const Service = require('../models/Service');
-      const serviceDoc = await Service.findById(booking.serviceId);
-      if (serviceDoc && serviceDoc.packages && serviceDoc.packages.length > 0 && booking.bookedItems && booking.bookedItems.length > 0) {
-        const bookedTitle = booking.bookedItems[0].card?.title;
+      const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
+      if (serviceDoc) {
+        const bookedTitle = booking.bookedItems?.[0]?.card?.title;
         if (bookedTitle) {
-          const matchingPackage = serviceDoc.packages.find(pkg => 
-            pkg.title === bookedTitle || 
-            bookedTitle.includes(pkg.title) || 
-            pkg.title.includes(bookedTitle)
-          );
-          if (matchingPackage && matchingPackage.vendorPayout > 0) {
-            packageVendorPayout = matchingPackage.vendorPayout;
+          // A. Check Option Groups first
+          if (Array.isArray(serviceDoc.serviceGroups)) {
+            for (const grp of serviceDoc.serviceGroups) {
+              if (Array.isArray(grp.items)) {
+                const matchedItem = grp.items.find(item => 
+                  item.title === bookedTitle || 
+                  bookedTitle.endsWith(` - ${item.title}`) || 
+                  bookedTitle.includes(item.title) ||
+                  item.title.includes(bookedTitle)
+                );
+                if (matchedItem) {
+                  basePayout = Number(matchedItem.vendorPayout) || 0;
+                  acceptanceFee = Number(matchedItem.vendorAcceptanceFee) || 0;
+                  break;
+                }
+              }
+            }
+          }
+          // B. Check Combo Packages
+          if (basePayout === 0 && Array.isArray(serviceDoc.packages)) {
+            const matchedPkg = serviceDoc.packages.find(pkg => 
+              pkg.title === bookedTitle || 
+              bookedTitle.endsWith(` - ${pkg.title}`) || 
+              bookedTitle.includes(pkg.title) ||
+              pkg.title.includes(bookedTitle)
+            );
+            if (matchedPkg) {
+              basePayout = Number(matchedPkg.vendorPayout) || 0;
+              acceptanceFee = Number(matchedPkg.vendorAcceptanceFee) || 0;
+            }
           }
         }
       }
@@ -56,7 +81,7 @@ async function processBookingCompletion(bookingId) {
     const PricingConfig = require('../models/PricingConfig');
     let pricing = null;
 
-    if (packageVendorPayout === 0 && booking.serviceId) {
+    if (basePayout === 0 && booking.serviceId) {
       const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
       if (pricings.length > 0) {
         if (booking.cityId) {
@@ -69,37 +94,29 @@ async function processBookingCompletion(bookingId) {
           pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
         }
       }
-    }
-
-    let customItemsPayoutSum = 0;
-    let hasCustomItems = false;
-
-    if (packageVendorPayout === 0 && (!pricing || (pricing.vendorPayoutBase === undefined || pricing.vendorPayoutBase === null)) && booking.dynamicFields && booking.dynamicFields.length > 0) {
-      try {
-        const Service = require('../models/Service');
-        const serviceDoc = await Service.findById(booking.serviceId);
-        if (serviceDoc && serviceDoc.serviceGroups) {
-          booking.dynamicFields.forEach(field => {
-            const valStr = String(field.value || '');
-            serviceDoc.serviceGroups.forEach(group => {
-              group.items.forEach(item => {
-                if (valStr.toLowerCase().includes(item.title.toLowerCase())) {
-                  customItemsPayoutSum += (item.vendorPayout || 0);
-                  hasCustomItems = true;
-                }
-              });
-            });
-          });
-        }
-      } catch (err) {
-        console.error('[CommissionService] Custom items payout parse error:', err);
+      if (pricing) {
+        basePayout = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
+        acceptanceFee = pricing.vendorAcceptanceFee !== undefined && pricing.vendorAcceptanceFee !== null ? pricing.vendorAcceptanceFee : 0;
       }
     }
 
-    if (packageVendorPayout > 0 || (hasCustomItems && customItemsPayoutSum > 0) || pricing) {
-      let totalVendorPayoutBase = packageVendorPayout > 0 
-        ? packageVendorPayout 
-        : (hasCustomItems && customItemsPayoutSum > 0 ? customItemsPayoutSum : (pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0));
+    // Fallback for acceptanceFee from Category if still 0
+    if (acceptanceFee === 0 && booking.categoryId) {
+      try {
+        const Category = require('../models/Category');
+        const cat = await Category.findById(booking.categoryId).select('minWalletBalance').lean();
+        if (cat && cat.minWalletBalance > 0) {
+          acceptanceFee = cat.minWalletBalance;
+        }
+      } catch (err) {}
+    }
+
+    // If we have a basePayout resolved, calculate the exact matrix requested by user
+    if (basePayout > 0) {
+      let instantShare = 0;
+      if (booking.bookingType === 'instant' && settings) {
+        instantShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+      }
 
       // Check if there is a generated VendorBill for this booking to aggregate addon prices
       try {
@@ -120,7 +137,7 @@ async function processBookingCompletion(bookingId) {
               if (s.catalogId) {
                 const catalogItem = svcCatalogMap[s.catalogId.toString()];
                 if (catalogItem && catalogItem.vendorPayoutBase > 0) {
-                  totalVendorPayoutBase += catalogItem.vendorPayoutBase * (s.quantity || 1);
+                  basePayout += catalogItem.vendorPayoutBase * (s.quantity || 1);
                 }
               }
             });
@@ -137,7 +154,7 @@ async function processBookingCompletion(bookingId) {
               if (p.catalogId) {
                 const catalogItem = partCatalogMap[p.catalogId.toString()];
                 if (catalogItem && catalogItem.vendorPayoutBase > 0) {
-                  totalVendorPayoutBase += catalogItem.vendorPayoutBase * (p.quantity || 1);
+                  basePayout += catalogItem.vendorPayoutBase * (p.quantity || 1);
                 }
               }
             });
@@ -147,17 +164,23 @@ async function processBookingCompletion(bookingId) {
         console.error('[CommissionService] Error aggregating addon prices:', err);
       }
 
-      let vPayoutBase = totalVendorPayoutBase;
-      if (booking.bookingType === 'instant' && settings) {
-        const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
-        vPayoutBase += vendorMarkupShare;
-      }
-      const vSgstPct = pricing ? (pricing.vendorSgstPercentage ?? 2.5) : 2.5;
-      const vCgstPct = pricing ? (pricing.vendorCgstPercentage ?? 2.5) : 2.5;
-      const vTdsPct = pricing ? (pricing.vendorTdsPercentage ?? 0) : 0;
-      const vCommPct = pricing ? (pricing.commissionPercentage ?? 10) : 10;
+      // vPayoutBase is base + instant - acceptanceFee
+      const vPayoutBase = basePayout + instantShare - acceptanceFee;
 
-      vendorShare = parseFloat(vPayoutBase.toFixed(2));
+      // Platform commission percentage: use pricing commission (default 25%)
+      const vCommPct = pricing ? (pricing.commissionPercentage ?? 25) : 25;
+      const vSgstPct = 2.5;
+      const vCgstPct = 2.5;
+      const levelWiseChargePct = 0; // Currently 0%
+
+      const platformCommission = vPayoutBase * (vCommPct / 100);
+      const sgst = vPayoutBase * (vSgstPct / 100);
+      const cgst = vPayoutBase * (vCgstPct / 100);
+      const levelCharge = vPayoutBase * (levelWiseChargePct / 100);
+
+      const totalDeductions = platformCommission + sgst + cgst + levelCharge;
+      
+      vendorShare = parseFloat(Math.max(0, vPayoutBase - totalDeductions).toFixed(2));
       adminCommission = parseFloat((amount - vendorShare).toFixed(2));
     } else if (booking.bookingType === 'instant' && settings) {
       const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
@@ -215,26 +238,67 @@ async function processBookingCompletion(bookingId) {
       }
     });
 
-    // 6. Update Vendor's wallet balance
+    // 6. Update Vendor's wallet balance (Sole source of wallet updates now!)
     if (vendorId) {
       const Vendor = require('../models/Vendor');
       const vendor = await Vendor.findById(vendorId);
       if (vendor) {
         if (!vendor.wallet) {
-          vendor.wallet = { dues: 0, earnings: 0, totalCashCollected: 0, totalWithdrawn: 0, totalSettled: 0, cashLimit: 10000 };
+          vendor.wallet = { dues: 0, earnings: 0, totalCashCollected: 0, totalWithdrawn: 0, totalSettled: 0, cashLimit: 10000, credits: 0 };
         }
         
         if (isCash) {
-          // Cash booking: dues increase by total amount, earnings increase by vendorShare
+          // Cash booking: dues increase by total amount, credits increase by vendorShare / 10
           vendor.wallet.dues = parseFloat(((vendor.wallet.dues || 0) + amount).toFixed(2));
-          vendor.wallet.earnings = parseFloat(((vendor.wallet.earnings || 0) + vendorShare).toFixed(2));
+          vendor.wallet.credits = parseFloat(((vendor.wallet.credits || 0) + (vendorShare / 10)).toFixed(2));
           vendor.wallet.totalCashCollected = parseFloat(((vendor.wallet.totalCashCollected || 0) + amount).toFixed(2));
         } else {
-          // Online booking: only earnings increase by vendorShare (no dues change)
-          vendor.wallet.earnings = parseFloat(((vendor.wallet.earnings || 0) + vendorShare).toFixed(2));
+          // Online booking: only credits increase by vendorShare / 10 (no dues change)
+          vendor.wallet.credits = parseFloat(((vendor.wallet.credits || 0) + (vendorShare / 10)).toFixed(2));
         }
+        // Sync earnings value as well (credits * 10)
+        vendor.wallet.earnings = parseFloat((vendor.wallet.credits * 10).toFixed(2));
+
+        // Block checks
+        const netOwed = (vendor.wallet.dues || 0) - (vendor.wallet.earnings || 0);
+        const cashLimit = vendor.wallet.cashLimit || 10000;
+        if (netOwed > cashLimit) {
+          vendor.wallet.isBlocked = true;
+          vendor.wallet.blockedAt = new Date();
+          vendor.wallet.blockReason = `Cash limit exceeded. Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`;
+          
+          // Notify admins
+          try {
+            const { createNotification } = require('../notificationControllers/notificationController');
+            const Admin = require('../models/Admin');
+            const admins = await Admin.find({ isActive: true }).select('_id');
+            for (const admin of admins) {
+              await createNotification({
+                adminId: admin._id,
+                type: 'vendor_cash_limit_exceeded',
+                title: '⚠️ Cash Limit Exceeded',
+                message: `${vendor.businessName || vendor.name} exceeded cash limit! Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`,
+                relatedId: vendor._id,
+                relatedType: 'vendor',
+                data: {
+                  vendorId: vendor._id,
+                  vendorName: vendor.businessName || vendor.name,
+                  netOwed,
+                  cashLimit
+                },
+                pushData: {
+                  type: 'admin_alert',
+                  link: '/admin/settlements'
+                }
+              });
+            }
+          } catch (notifyErr) {
+            console.error('[CommissionService] Failed to notify admins about cash limit block:', notifyErr);
+          }
+        }
+
         await vendor.save();
-        console.log(`[CommissionService] Updated wallet for Vendor ${vendorId}. Dues: ${vendor.wallet.dues}, Earnings: ${vendor.wallet.earnings}`);
+        console.log(`[CommissionService] Updated wallet for Vendor ${vendorId}. Dues: ${vendor.wallet.dues}, Credits: ${vendor.wallet.credits}`);
       }
     }
 

@@ -31,6 +31,57 @@ const calcPriceMatrix = (pkg) => {
   return { basePrice, gstAmount, finalPrice, platformEarning };
 };
 
+const PayoutMatrixPreview = ({ vendorPayout, acceptanceFee }) => {
+  const vPayoutBase = Math.max(0, Number(vendorPayout || 0) - Number(acceptanceFee || 0));
+  const platformCommission = vPayoutBase * 0.25;
+  const sgst = vPayoutBase * 0.025;
+  const cgst = vPayoutBase * 0.025;
+  const totalDeductions = platformCommission + sgst + cgst;
+  const finalVendorProfit = Math.max(0, vPayoutBase - totalDeductions);
+  
+  if (Number(vendorPayout) <= 0) return null;
+
+  return (
+    <div className="mt-4 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl shadow-sm col-span-2">
+      <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center gap-2">
+        <FiDollarSign className="w-4 h-4" /> Vendor Profit Matrix (India Rules)
+      </h4>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between items-center text-gray-700">
+          <span className="font-medium">Base Payout</span>
+          <span className="font-bold">₹{Number(vendorPayout).toFixed(2)}</span>
+        </div>
+        {Number(acceptanceFee) > 0 && (
+          <div className="flex justify-between items-center text-red-500">
+            <span className="font-medium">Acceptance Fee</span>
+            <span className="font-bold">- ₹{Number(acceptanceFee).toFixed(2)} <span className="text-[10px] text-red-400">({Number(acceptanceFee) / 10} Credits)</span></span>
+          </div>
+        )}
+        <div className="flex justify-between items-center text-indigo-900 font-black border-b border-indigo-200 pb-2 pt-1">
+          <span>Net Taxable Base</span>
+          <span>₹{vPayoutBase.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center text-gray-500 text-xs">
+          <span>Platform Commission (25%)</span>
+          <span className="font-medium text-red-500">- ₹{platformCommission.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center text-gray-500 text-xs">
+          <span>SGST (2.5%)</span>
+          <span className="font-medium text-red-500">- ₹{sgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center text-gray-500 text-xs pb-2 border-b border-indigo-200">
+          <span>CGST (2.5%)</span>
+          <span className="font-medium text-red-500">- ₹{cgst.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center text-green-700 font-black pt-1 text-base bg-green-50 p-2 rounded-lg mt-1 border border-green-100">
+          <span>Final Vendor Profit</span>
+          <span>₹{finalVendorProfit.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PackageBased = () => {
   // Main Navigation Tabs: 'main_cats' | 'sub_cats' | 'packages' | 'combos'
   const [activeTab, setActiveTab] = useState('main_cats');
@@ -351,7 +402,7 @@ const PackageBased = () => {
   const handleAddItemToGroup = () => {
     setGroupForm(p => ({
       ...p,
-      items: [...p.items, { title: '', price: 0, vendorPayout: 0, description: '', duration: '', imageUrl: '' }]
+      items: [...p.items, { title: '', price: 0, vendorPayout: 0, vendorAcceptanceFee: 0, description: '', duration: '', imageUrl: '' }]
     }));
   };
 
@@ -1285,14 +1336,14 @@ const PackageBased = () => {
                       >
                         Remove
                       </button>
-                      <div className="grid grid-cols-3 gap-2 pr-12">
+                      <div className="grid grid-cols-4 gap-2 pr-12">
                         <input
                           type="text"
                           required
                           value={item.title}
                           onChange={e => handleUpdateItemInGroup(i, 'title', e.target.value)}
-                          placeholder="Item Name (e.g. Haircut for men)"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none font-semibold"
+                          placeholder="Item Name"
+                          className="px-2 py-1.5 border rounded-lg text-[11px] focus:outline-none font-semibold"
                           style={{ backgroundColor: '#ffffff', color: '#1f2937', borderColor: '#d1d5db' }}
                         />
                         <input
@@ -1301,7 +1352,7 @@ const PackageBased = () => {
                           value={item.price}
                           onChange={e => handleUpdateItemInGroup(i, 'price', Number(e.target.value))}
                           placeholder="Price ₹"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none font-bold text-emerald-600"
+                          className="px-2 py-1.5 border rounded-lg text-[11px] focus:outline-none font-bold text-emerald-600"
                           style={{ backgroundColor: '#ffffff', color: '#10b981', borderColor: '#d1d5db' }}
                           min="0"
                         />
@@ -1311,8 +1362,18 @@ const PackageBased = () => {
                           value={item.vendorPayout === 0 ? '' : item.vendorPayout}
                           onChange={e => handleUpdateItemInGroup(i, 'vendorPayout', Number(e.target.value) || 0)}
                           placeholder="Payout ₹"
-                          className="px-2.5 py-1.5 border rounded-lg text-xs focus:outline-none font-bold text-blue-600"
+                          className="px-2 py-1.5 border rounded-lg text-[11px] focus:outline-none font-bold text-blue-600"
                           style={{ backgroundColor: '#ffffff', color: '#2563eb', borderColor: '#d1d5db' }}
+                          min="0"
+                        />
+                        <input
+                          type="number"
+                          required
+                          value={item.vendorAcceptanceFee === 0 ? '' : item.vendorAcceptanceFee}
+                          onChange={e => handleUpdateItemInGroup(i, 'vendorAcceptanceFee', Number(e.target.value) || 0)}
+                          placeholder="Accept Fee ₹"
+                          className="px-2 py-1.5 border rounded-lg text-[11px] focus:outline-none font-bold text-red-650"
+                          style={{ backgroundColor: '#ffffff', color: '#dc2626', borderColor: '#d1d5db' }}
                           min="0"
                         />
                       </div>
@@ -1334,6 +1395,7 @@ const PackageBased = () => {
                           style={{ backgroundColor: '#ffffff', color: '#1f2937', borderColor: '#d1d5db' }}
                         />
                       </div>
+                      <PayoutMatrixPreview vendorPayout={item.vendorPayout} acceptanceFee={item.vendorAcceptanceFee} />
                       {/* Item Image Upload */}
                       <div className="pt-1 space-y-1.5">
                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Item Image (shown in options modal)</label>
@@ -1734,6 +1796,8 @@ const PackageBased = () => {
                     </div>
                   );
                 })()}
+                
+                <PayoutMatrixPreview vendorPayout={comboForm.vendorPayout} acceptanceFee={comboForm.vendorAcceptanceFee} />
               </div>
 
               <div className="flex gap-3 pt-3">

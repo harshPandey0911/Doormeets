@@ -565,8 +565,8 @@ const PaymentOverview = () => {
                     { key: 'customerPay', label: 'Customer Pay', type: 'currency' },
                     { key: 'vendorPayoutBase', label: 'Vendor Base', type: 'currency' },
                     { key: 'platformCommissionAmount', label: 'Platform Commission', type: 'currency' },
-                    { key: 'levelCommissionAmount', label: 'Level Commission', type: 'currency' },
-                    { key: 'totalCommissionEarned', label: 'Total Earnings', type: 'currency' }
+                    { key: 'adminGrossShare', label: 'Admin Gross Earning', type: 'currency' },
+                    { key: 'adminTaxableEarning', label: 'Admin Net Profit (After GST)', type: 'currency' }
                   ]);
                 }}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2 transition-colors"
@@ -588,8 +588,8 @@ const PaymentOverview = () => {
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer Pay</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor Base</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Platform Comm</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Level Comm</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Commission</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Gross</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Net Profit</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                   </tr>
                 </thead>
@@ -622,8 +622,8 @@ const PaymentOverview = () => {
                         <td className="py-3 px-4 font-medium text-gray-700">{formatCurrency(row.customerPay)}</td>
                         <td className="py-3 px-4 text-gray-600">{formatCurrency(row.vendorPayoutBase)}</td>
                         <td className="py-3 px-4 text-gray-600">{formatCurrency(row.platformCommissionAmount)}</td>
-                        <td className="py-3 px-4 text-gray-600">{formatCurrency(row.levelCommissionAmount)}</td>
-                        <td className="py-3 px-4 font-bold text-emerald-600">{formatCurrency(row.totalCommissionEarned)}</td>
+                        <td className="py-3 px-4 font-bold text-blue-600">{formatCurrency(row.adminGrossShare)}</td>
+                        <td className="py-3 px-4 font-bold text-emerald-600">{formatCurrency(row.adminTaxableEarning)}</td>
                         <td className="py-3 px-4 text-gray-500 text-sm">{formatDate(row.createdAt)}</td>
                       </tr>
                     ))
