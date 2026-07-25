@@ -62,7 +62,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
             <span>({service.reviews || '1.2k'} reviews)</span>
           </div>
 
-          {service.serviceType !== 'package_base' && (
+          {(service.serviceType !== 'package_base' || !service.packages || service.packages.length === 0) && (
             <div className="mt-1.5 md:mt-2.5 flex items-baseline gap-1.5">
               <span className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
                 {service.variants && service.variants.length > 0 ? `Starting from ₹${service.price}` : `₹${service.price}`}
@@ -189,48 +189,63 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
           })()}
         </div>
 
-        {/* Absolute Add Button centered at the bottom overlap (only if service has no variants) */}
-        {(!service.variants || service.variants.length === 0) && (
+        {/* Absolute Add Button / Open Button centered at the bottom overlap */}
+        {service.serviceType === 'package_base' && service.packages && service.packages.length > 0 ? (
           <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
-            {quantity > 0 ? (
-              <div 
-                onClick={(e) => e.stopPropagation()}
-                className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-violet-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md flex items-center justify-between px-1.5"
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDecrease(service);
-                  }}
-                  className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
-                >
-                  -
-                </button>
-                <span className="font-extrabold text-[11px] md:text-xs">{quantity}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onIncrease(service);
-                  }}
-                  className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
-                >
-                  +
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAdd(service);
-                }}
-                className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-0.5"
-                style={{ color: '#B33A35' }}
-              >
-                <span>Add</span>
-                <span className="text-[10px] md:text-xs font-semibold">+</span>
-              </button>
-            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen?.(service);
+              }}
+              className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center"
+              style={{ color: '#B33A35' }}
+            >
+              <span>Open</span>
+            </button>
           </div>
+        ) : (
+          (!service.variants || service.variants.length === 0) && (
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
+              {quantity > 0 ? (
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-violet-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md flex items-center justify-between px-1.5"
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDecrease(service);
+                    }}
+                    className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
+                  >
+                    -
+                  </button>
+                  <span className="font-extrabold text-[11px] md:text-xs">{quantity}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onIncrease(service);
+                    }}
+                    className="w-5 h-5 md:w-6 md:h-6 hover:bg-violet-100 dark:hover:bg-zinc-800 rounded-full flex items-center justify-center text-sm md:text-base"
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAdd(service);
+                  }}
+                  className="w-[72px] h-[28px] md:w-[84px] md:h-[32px] bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-0.5"
+                  style={{ color: '#B33A35' }}
+                >
+                  <span>Add</span>
+                  <span className="text-[10px] md:text-xs font-semibold">+</span>
+                </button>
+              )}
+            </div>
+          )
         )}
       </div>
     </motion.article>

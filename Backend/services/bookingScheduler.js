@@ -484,7 +484,16 @@ class BookingScheduler {
       
       const vendorQuery = {};
       if (finalCategory) {
-        vendorQuery.categories = { $in: [categoryIdStr] };
+        const searchArray = [categoryIdStr];
+        // Include any Group Categories that map to this category
+        const groupCategories = await Category.find({
+          isGroupCategory: true,
+          mappedCategories: finalCategory._id
+        }).select('_id');
+        groupCategories.forEach(gc => {
+          searchArray.push(gc._id.toString());
+        });
+        vendorQuery.categories = { $in: searchArray };
       } else if (service.category) {
         vendorQuery.service = { $in: [serviceCategoryStr] };
       }

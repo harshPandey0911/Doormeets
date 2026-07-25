@@ -1,17 +1,10 @@
-const dotenv = require('dotenv');
-dotenv.config();
-const mongoose = require('mongoose');
+const fs = require('fs');
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const content = fs.readFileSync('c:\\Users\\DELL\\Desktop\\Door__meets\\Doormeets\\Frontend\\src\\modules\\user\\pages\\PremiumCategoryPage\\index.jsx', 'utf8');
 
-async function check() {
-  await mongoose.connect(MONGODB_URI);
-  const TrainingVideo = require('./models/TrainingVideo');
-  
-  const videos = await TrainingVideo.find({});
-  console.log('Training Videos:', JSON.stringify(videos, null, 2));
-
-  process.exit(0);
-}
-
-check();
+const lines = content.split('\n');
+lines.forEach((line, i) => {
+  if (line.includes('ServiceCard') && line.includes('import')) {
+    console.log(`${i + 1}: ${line.trim()}`);
+  }
+});
