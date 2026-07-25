@@ -121,7 +121,12 @@ const AllVendors = () => {
       }
     } catch (error) {
       console.error('Error approving vendor:', error);
-      toast.error(error.response?.data?.message || 'Failed to approve vendor. Please try again.');
+      const msg = error.response?.data?.message || 'Failed to approve vendor. Please try again.';
+      if (error.response?.data?.requiresPoliceVerification) {
+        toast.error(msg, { duration: 5000, icon: '⚠️' });
+      } else {
+        toast.error(msg);
+      }
     }
   };
 

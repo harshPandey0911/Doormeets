@@ -180,6 +180,14 @@ const approveVendor = async (req, res) => {
       });
     }
 
+    if (vendor.policeVerification?.status !== 'approved') {
+      return res.status(400).json({
+        success: false,
+        requiresPoliceVerification: true,
+        message: 'Police Verification must be approved first! Please approve Police Verification on the Police Verification page before approving vendor.'
+      });
+    }
+
     const wasApproved = vendor.approvalStatus === VENDOR_STATUS.APPROVED;
 
     vendor.approvalStatus = VENDOR_STATUS.APPROVED;

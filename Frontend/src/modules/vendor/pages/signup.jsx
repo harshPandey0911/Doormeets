@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiUser, FiPhone, FiBriefcase, FiArrowRight } from 'react-icons/fi';
+import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../theme';
 import { register } from '../services/authService';
@@ -14,11 +14,31 @@ const VendorSignup = () => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    professionId: ''
+    professionIds: []
   });
   const [professions, setProfessions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProfessions, setLoadingProfessions] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('#profession-dropdown-container')) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getSelectedLabels = () => {
+    if (!formData.professionIds || formData.professionIds.length === 0) {
+      return 'Select your professions';
+    }
+    const selectedObj = professions.filter(p => formData.professionIds.includes(p._id));
+    return selectedObj.map(p => p.name).join(', ');
+  };
 
   useEffect(() => {
     // Clear any existing vendor tokens on page load
@@ -49,6 +69,17 @@ const VendorSignup = () => {
     }));
   };
 
+  const toggleProfession = (profId) => {
+    setFormData(prev => {
+      const current = prev.professionIds || [];
+      if (current.includes(profId)) {
+        return { ...prev, professionIds: current.filter(id => id !== profId) };
+      } else {
+        return { ...prev, professionIds: [...current, profId] };
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || formData.name.length < 2) {
@@ -59,14 +90,20 @@ const VendorSignup = () => {
       toast.error('Please enter a valid 10-digit phone number');
       return;
     }
-    if (!formData.professionId) {
-      toast.error('Please select a profession');
+    if (!formData.professionIds || formData.professionIds.length === 0) {
+      toast.error('Please select at least one profession');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await register(formData);
+      const payload = {
+        name: formData.name,
+        phone: formData.phone,
+        professionIds: formData.professionIds,
+        professionId: formData.professionIds[0] // Fallback for backward compatibility
+      };
+      const response = await register(payload);
       if (response.success) {
         toast.success('Registration successful!');
         if (response.accessToken) {
@@ -160,30 +197,72 @@ const VendorSignup = () => {
                   </div>
                 </div>
 
-                {/* Profession dropdown */}
-                <div>
-                  <label htmlFor="professionId" className="block text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
-                    Profession
+                {/* Profession Multi-Select Dropdown */}
+                <div id="profession-dropdown-container" className="relative">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5 flex justify-between items-center">
+                    <span>Profession</span>
+                    {formData.professionIds.length > 0 && (
+                      <span className="text-[10px] text-[#B33A35] font-bold">
+                        {formData.professionIds.length} Selected
+                      </span>
+                    )}
                   </label>
-                  <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                      <FiBriefcase />
+                  
+                  {/* Dropdown Trigger Box */}
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(prev => !prev)}
+                    className={`w-full flex items-center justify-between pl-4 pr-3 py-2.5 rounded-2xl border text-sm transition-all duration-200 bg-white text-left ${
+                      isDropdownOpen
+                        ? 'border-[#B33A35] ring-1 ring-[#B33A35]'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <FiBriefcase className={`w-4 h-4 shrink-0 ${formData.professionIds.length > 0 ? 'text-[#B33A35]' : 'text-gray-400'}`} />
+                      <span className={`truncate text-sm ${formData.professionIds.length > 0 ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+                        {getSelectedLabels()}
+                      </span>
                     </div>
-                    <select
-                      id="professionId"
-                      name="professionId"
-                      required
-                      value={formData.professionId}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-10 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0 appearance-none bg-white"
-                      disabled={loadingProfessions}
-                    >
-                      <option value="" disabled>Select your profession</option>
-                      {professions.map(prof => (
-                        <option key={prof._id} value={prof._id}>{prof.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                    <FiChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${isDropdownOpen ? 'rotate-180 text-[#B33A35]' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Options Popup */}
+                  {isDropdownOpen && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 max-h-56 overflow-y-auto space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {loadingProfessions ? (
+                        <div className="p-3 text-center text-xs text-gray-400">Loading professions...</div>
+                      ) : professions.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-gray-400">No professions available</div>
+                      ) : (
+                        professions.map(prof => {
+                          const isSelected = formData.professionIds.includes(prof._id);
+                          return (
+                            <button
+                              key={prof._id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleProfession(prof._id);
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-left ${
+                                isSelected
+                                  ? 'bg-[#B33A35]/10 text-[#B33A35] font-semibold'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>{prof.name}</span>
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                                isSelected ? 'bg-[#B33A35] border-[#B33A35] text-white' : 'border-gray-300 bg-white'
+                              }`}>
+                                {isSelected && <FiCheck className="w-3 h-3 stroke-[3]" />}
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <button
