@@ -160,6 +160,14 @@ const createBooking = async (req, res) => {
         }
         if (category) {
           searchArray.push(category._id.toString());
+          // Include any Group Categories that map to this category
+          const groupCategories = await Category.find({
+            isGroupCategory: true,
+            mappedCategories: category._id
+          }).select('_id');
+          groupCategories.forEach(gc => {
+            searchArray.push(gc._id.toString());
+          });
         }
         
         // Find vendors who have the category ID or category Title
