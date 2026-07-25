@@ -15,7 +15,11 @@ const { uploadPaymentScreenshot } = require('../../utils/cloudinaryUpload');
 const getWallet = async (req, res) => {
   try {
     const vendorId = req.user.id;
-    const vendor = await Vendor.findById(vendorId).select('wallet name businessName');
+    // Run Vendor lookup and Settlement count query in parallel
+    const [vendor, pendingSettlements] = await Promise.all([
+      Vendor.findById(vendorId).select('wallet name businessName'),
+      Settlement.countDocuments({ vendorId, status: 'pending' })
+    ]);
 
     if (!vendor) {
       return res.status(404).json({
@@ -27,22 +31,8 @@ const getWallet = async (req, res) => {
     const dues = vendor.wallet?.dues || 0;
     const earnings = (vendor.wallet?.credits * 10) || 0;
     const totalWithdrawn = vendor.wallet?.totalWithdrawn || 0;
-
-    // Run all aggregations and count queries in parallel
-    const [pendingSettlements, cashCollectedResult, settledResult] = await Promise.all([
-      Settlement.countDocuments({ vendorId, status: 'pending' }),
-      Transaction.aggregate([
-        { $match: { vendorId: vendor._id, type: 'cash_collected', status: 'completed' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
-      ]),
-      Transaction.aggregate([
-        { $match: { vendorId: vendor._id, type: 'settlement', status: 'completed' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
-      ])
-    ]);
-
-    const totalCashCollected = cashCollectedResult[0]?.total || 0;
-    const totalSettled = settledResult[0]?.total || 0;
+    const totalCashCollected = vendor.wallet?.totalCashCollected || 0;
+    const totalSettled = vendor.wallet?.totalSettled || 0;
 
     res.status(200).json({
       success: true,

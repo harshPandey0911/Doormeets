@@ -6,6 +6,8 @@ import { vendorTheme as themeColors } from '../../../../theme';
 import Logo from '../../../../components/common/Logo';
 import api from '../../../../services/api';
 import NotificationBell from '../../../../modules/user/components/common/NotificationBell';
+import { vendorDashboardService } from '../../services/dashboardService';
+import { toast } from 'react-hot-toast';
 
 const Header = memo(({
   title,
@@ -26,25 +28,7 @@ const Header = memo(({
     }
   }, [notificationCount]);
 
-  // Fetch unread count
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const res = await api.get('/notifications/vendor');
-        if (res.data.success && typeof res.data.unreadCount === 'number') {
-          setCount(res.data.unreadCount);
-        }
-      } catch (error) {
-        // Silent fail
-      }
-    };
-
-    if (showNotifications) {
-      fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 60000); // Poll every minute
-      return () => clearInterval(interval);
-    }
-  }, [showNotifications]);
+  // Notification count is managed by NotificationBell internally now
 
   const [isOnline, setIsOnline] = useState(false);
   const [isToggling, setIsToggling] = useState(false);

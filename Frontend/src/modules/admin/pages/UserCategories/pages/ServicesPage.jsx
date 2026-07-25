@@ -1192,7 +1192,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         _id: config._id || null,
         cityId: config.cityId?._id || config.cityId || '',
         brandId: config.brandId?._id || config.brandId || '',
-        variantId: config.variantId || '',
+        variantId: config.variantId?._id || config.variantId || '',
         subCategoryId: config.subCategoryId?._id || config.subCategoryId || '',
         customerPrice: config.customerPrice || '',
         originalPrice: config.originalPrice || '',
@@ -2948,9 +2948,10 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                           <div>
                             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">City Availability</label>
                             <select
-                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                              className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none disabled:bg-gray-100 disabled:text-gray-500"
                               value={pricingForm.cityId}
                               onChange={e => setPricingForm({ ...pricingForm, cityId: e.target.value })}
+                              disabled={editingPricingConfigIdx !== null}
                             >
                               <option value="">All Cities (Global Pricing)</option>
                               {cities.map(city => <option key={city._id || city.id} value={city._id || city.id}>{city.name}</option>)}
@@ -2961,9 +2962,10 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             <div>
                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variant (Addon)</label>
                               <select
-                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-violet-700"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-violet-700 disabled:bg-gray-100 disabled:text-gray-500"
                                 value={pricingForm.variantId}
                                 onChange={e => setPricingForm({ ...pricingForm, variantId: e.target.value })}
+                                disabled={editingPricingConfigIdx !== null}
                               >
                                 <option value="">-- Apply to Base Service --</option>
                                 {variants.map((v, vIdx) => (
@@ -2977,9 +2979,10 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                             <div>
                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Subcategory</label>
                               <select
-                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-blue-700"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold text-blue-700 disabled:bg-gray-100 disabled:text-gray-500"
                                 value={pricingForm.subCategoryId}
                                 onChange={e => setPricingForm({ ...pricingForm, subCategoryId: e.target.value })}
+                                disabled={editingPricingConfigIdx !== null}
                               >
                                 <option value="">-- Select Subcategory --</option>
                                 {subCategories.filter(sub => !formData.categoryId || sub.categoryId?._id === formData.categoryId || sub.categoryId === formData.categoryId).map(sub => (
@@ -3005,10 +3008,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                               <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Brand</label>
                                 <select
-                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
+                                  className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none disabled:bg-gray-100 disabled:text-gray-500"
                                   value={pricingForm.brandId}
                                   onChange={e => setPricingForm({ ...pricingForm, brandId: e.target.value })}
                                   required={selectedCat?.brandRequired === true}
+                                  disabled={editingPricingConfigIdx !== null}
                                 >
                                   <option value="">Select Brand {selectedCat?.brandRequired ? '(Required)' : '(Optional)'}</option>
                                   {filteredBrands.map(brnd => <option key={brnd._id || brnd.id} value={brnd._id || brnd.id}>{brnd.title}</option>)}

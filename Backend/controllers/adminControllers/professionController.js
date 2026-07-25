@@ -90,15 +90,12 @@ exports.updateProfession = async (req, res) => {
 
 exports.deleteProfession = async (req, res) => {
   try {
-    const profession = await Profession.findById(req.params.id);
+    const profession = await Profession.findByIdAndDelete(req.params.id);
     if (!profession) {
       return res.status(404).json({ success: false, message: 'Profession not found' });
     }
 
-    profession.status = 'deleted';
-    await profession.save();
-
-    res.status(200).json({ success: true, message: 'Profession deleted successfully' });
+    res.status(200).json({ success: true, message: 'Profession deleted permanently' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete profession' });
   }

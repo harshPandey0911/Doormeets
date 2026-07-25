@@ -18,6 +18,8 @@ const handleCityAdminApproval = async (req, res, { requestType, proposedData, ci
     const admin = req.admin || req.user;
     if (!admin) return false;
 
+    console.log('[handleCityAdminApproval] admin role:', admin.role, 'isSuperAdmin method exists:', typeof admin.isSuperAdmin);
+
     const isSuper = admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin';
     if (isSuper) {
       // Super admin can make direct modifications, do not intercept
