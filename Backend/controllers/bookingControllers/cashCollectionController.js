@@ -404,84 +404,9 @@ exports.confirmCashCollection = async (req, res) => {
     const { processBookingCompletion } = require('../../services/commissionService');
     processBookingCompletion(booking._id).catch(err => console.error('[CommissionService] Background trigger failed:', err));
 
-    // Update Vendor Wallet
-    const vendorId = booking.vendorId;
-    const vendor = await Vendor.findById(vendorId).lean();
-    let newDues = 0;
-
-    if (vendor) {
-      newDues = (vendor.wallet?.dues || 0) + grandTotal;
-      const newEarnings = (vendor.wallet?.earnings || 0) + vendorEarning;
-      const cashLimit = vendor.wallet?.cashLimit || 10000;
-      const netOwed = newDues - newEarnings;
-      const isOverLimit = netOwed > cashLimit;
-
-      const walletUpdate = {
-        $inc: {
-          'wallet.dues': grandTotal,
-          'wallet.credits': vendorEarning / 10,
-          'wallet.totalCashCollected': grandTotal
-        }
-      };
-
-      if (isOverLimit) {
-        walletUpdate.$set = {
-          'wallet.isBlocked': true,
-          'wallet.blockedAt': new Date(),
-          'wallet.blockReason': `Cash limit exceeded. Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`
-        };
-      }
-
-      await Vendor.findByIdAndUpdate(vendorId, walletUpdate, { runValidators: false });
-      await Vendor.updateWorkStatus(vendorId);
-
-      // Record Transaction - Cash Collected
-      try {
-        await Transaction.create({
-          vendorId,
-          userId: booking.userId,
-          bookingId: booking._id,
-          amount: grandTotal,
-          type: 'cash_collected',
-          paymentMethod: 'cash collected',
-          description: `Cash ₹${grandTotal} collected for booking ${booking.bookingNumber}`,
-          status: 'completed',
-          metadata: {
-            type: 'dues_increase',
-            collectedBy: userRole,
-            billId: bill?._id?.toString(),
-            vendorEarning,
-            companyRevenue: platformFeeAmount,
-            transactionGroupId
-          }
-        });
-      } catch (txnErr) {
-        console.error('[ConfirmCash] Transaction 1 (cash_collected) failed:', txnErr);
-      }
-
-      // Record Transaction - Earnings Credit (base only)
-      if (vendorEarning > 0) {
-        try {
-          await Transaction.create({
-            vendorId,
-            bookingId: booking._id,
-            amount: vendorEarning,
-            type: 'earnings_credit',
-            paymentMethod: 'system',
-            description: `Earnings ₹${vendorEarning} credited (base only) for booking ${booking.bookingNumber}`,
-            status: 'completed',
-            metadata: {
-              type: 'earnings_increase',
-              billId: bill?._id?.toString(),
-              serviceEarning: vendorEarning,
-              partsEarning: 0,
-              transactionGroupId
-            }
-          });
-        } catch (txnErr) {
-          console.error('[ConfirmCash] Transaction 2 (earnings_credit) failed:', txnErr);
-        }
-      }
+    // Wallet dues/credits and transaction records are centrally processed in processBookingCompletion()
+    if (booking.vendorId) {
+      await Vendor.updateWorkStatus(booking.vendorId);
     }
 
     // Record stats in the Daily Earning Tracker
@@ -660,44 +585,9 @@ exports.verifyOnlinePayment = async (req, res) => {
           await bill.save();
         }
 
-        const vendorId = booking.vendorId;
-        const Vendor = require('../../models/Vendor');
-        await Vendor.findByIdAndUpdate(vendorId, {
-          $inc: { 'wallet.credits': vendorEarning / 10 }
-        });
-        await Vendor.updateWorkStatus(vendorId);
-
-        // 3. Transactions
-        await Transaction.create({
-          userId: booking.userId,
-          bookingId: booking._id,
-          amount: booking.finalAmount,
-          type: 'payment',
-          paymentMethod: 'Qr online',
-          status: 'completed',
-          description: `Online QR payment for booking #${booking.bookingNumber}`,
-          referenceId: capturedPayment.id,
-          metadata: {
-            source: 'vendor_qr',
-            razorpayPaymentId: capturedPayment.id
-          }
-        });
-
-        if (vendorEarning > 0) {
-          await Transaction.create({
-            vendorId: booking.vendorId,
-            bookingId: booking._id,
-            amount: vendorEarning,
-            type: 'earnings_credit',
-            paymentMethod: 'system',
-            status: 'completed',
-            description: `Earnings ₹${vendorEarning} credited (base only) for online booking #${booking.bookingNumber}`,
-            metadata: {
-              type: 'online_earning',
-              billId: bill?._id?.toString(),
-              transactionGroupId
-            }
-          });
+        // Wallet credits and transaction records are centrally processed in processBookingCompletion()
+        if (booking.vendorId) {
+          await Vendor.updateWorkStatus(booking.vendorId);
         }
 
         // 4. Record Stats (Async)
@@ -840,40 +730,9 @@ exports.confirmManualOnlinePayment = async (req, res) => {
       await bill.save();
     }
 
-    const vendorId = booking.vendorId;
-    await Vendor.findByIdAndUpdate(vendorId, {
-      $inc: { 'wallet.credits': vendorEarning / 10 }
-    });
-    await Vendor.updateWorkStatus(vendorId);
-
-    // 3. Transactions
-    await Transaction.create({
-      userId: booking.userId,
-      bookingId: booking._id,
-      amount: booking.finalAmount,
-      type: 'payment',
-      paymentMethod: 'Qr online',
-      status: 'completed',
-      description: `Manual confirmation of UPI QR payment for booking #${booking.bookingNumber}`,
-      referenceId: booking.paymentId,
-      metadata: { source: 'manual_vendor_confirm' }
-    });
-
-    if (vendorEarning > 0) {
-      await Transaction.create({
-        vendorId: booking.vendorId,
-        bookingId: booking._id,
-        amount: vendorEarning,
-        type: 'earnings_credit',
-        paymentMethod: 'system',
-        status: 'completed',
-        description: `Earnings ₹${vendorEarning} credited (base only) for manual online booking #${booking.bookingNumber}`,
-        metadata: {
-          type: 'online_earning',
-          billId: bill?._id?.toString(),
-          transactionGroupId
-        }
-      });
+    // Wallet credits and transaction records are centrally processed in processBookingCompletion()
+    if (booking.vendorId) {
+      await Vendor.updateWorkStatus(booking.vendorId);
     }
 
     // 4. Record Stats (Async)

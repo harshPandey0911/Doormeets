@@ -145,6 +145,12 @@ const CreditPurchase = () => {
                     <span className="text-xl md:text-2xl font-black text-blue-600">{pkg.creditsAmount}</span>
                     <span className="text-[10px] font-bold text-blue-600/70 mb-0.5">Credits</span>
                   </div>
+
+                  <div className="mb-3 space-y-0.5">
+                    <div className="text-sm font-extrabold text-slate-800">₹{pkg.price}</div>
+                    <div className="text-[10.5px] font-medium text-slate-400">+{gst}% GST (₹{gstAmount.toFixed(0)})</div>
+                    <div className="text-[11.5px] font-extrabold text-blue-700">Payable: ₹{totalAmount.toFixed(0)}</div>
+                  </div>
                   <div className="mt-auto pt-2 border-t border-gray-100">
                     <button
                       onClick={(e) => {

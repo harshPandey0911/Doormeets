@@ -192,13 +192,93 @@ const getBookingById = async (req, res) => {
       }
     }
 
+    // Calculate required credits if booking is in pending/searching status
+    let requiredCredits = 0;
+    if (booking.status === 'searching' || booking.status === 'requested') {
+      try {
+        const PricingConfig = require('../../models/PricingConfig');
+        const Category = require('../../models/Category');
+        const serviceIdStr = booking.serviceId?._id ? booking.serviceId._id.toString() : (booking.serviceId ? booking.serviceId.toString() : '');
+        if (serviceIdStr) {
+          const pricings = await PricingConfig.find({ serviceId: serviceIdStr });
+          let pricing = null;
+          if (pricings.length > 0) {
+            if (booking.cityId) {
+              pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+            }
+            if (!pricing && booking.brandId) {
+              pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+            }
+            if (!pricing) {
+              pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+            }
+          }
+          let acceptanceFee = 0;
+          try {
+            const Service = require('../../models/Service');
+            const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
+            if (serviceDoc && serviceDoc.serviceType === 'package_base') {
+              const bookedItemTitle = booking.bookedItems?.[0]?.card?.title;
+              if (bookedItemTitle) {
+                // 1. Check in option groups sub-items first
+                if (Array.isArray(serviceDoc.serviceGroups)) {
+                  for (const grp of serviceDoc.serviceGroups) {
+                    if (Array.isArray(grp.items)) {
+                      const matchedItem = grp.items.find(item => 
+                        bookedItemTitle === item.title || 
+                        bookedItemTitle.endsWith(` - ${item.title}`) || 
+                        bookedItemTitle.includes(item.title)
+                      );
+                      if (matchedItem) {
+                        acceptanceFee = matchedItem.vendorAcceptanceFee || 0;
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // 2. If not found, check in combo packages
+                if (acceptanceFee === 0 && Array.isArray(serviceDoc.packages) && serviceDoc.packages.length > 0) {
+                  const matchedPkg = serviceDoc.packages.find(p => 
+                    bookedItemTitle === p.title || 
+                    bookedItemTitle.endsWith(` - ${p.title}`) || 
+                    bookedItemTitle.includes(p.title)
+                  );
+                  if (matchedPkg) {
+                    acceptanceFee = matchedPkg.vendorAcceptanceFee || 0;
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('[getBookingById] Error checking sub-package acceptance fee:', err);
+          }
+
+          if (acceptanceFee === 0) {
+            acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+          }
+          if (acceptanceFee === 0 && booking.categoryId) {
+            const cat = await Category.findById(booking.categoryId).select('minWalletBalance').lean();
+            if (cat && cat.minWalletBalance > 0) {
+              acceptanceFee = cat.minWalletBalance;
+            }
+          }
+          requiredCredits = acceptanceFee > 0 ? (acceptanceFee / 10) : 0;
+        }
+      } catch (priceErr) {
+        console.error('[getBookingById] Error calculating required credits:', priceErr);
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
         ...bookingData,
         hasSubmittedBid: !!existingBid,
         myBid: existingBid,
-        isSelfJob: !!(booking.assignedAt && !booking.workerId)
+        isSelfJob: !!(booking.assignedAt && !booking.workerId),
+        requiredCredits: requiredCredits,
+        deductionAmount: requiredCredits // fallback
       }
     });
   } catch (error) {
@@ -485,7 +565,58 @@ const acceptBooking = async (req, res) => {
     }
 
     // 2. Deduction Logic (Capped at minWalletBalance)
-    let acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+    let acceptanceFee = 0;
+    
+    // Check if it's a package_base service with sub-packages or option group sub-items
+    try {
+      const Service = require('../../models/Service');
+      const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
+      if (serviceDoc && serviceDoc.serviceType === 'package_base') {
+        const bookedItemTitle = booking.bookedItems?.[0]?.card?.title;
+        if (bookedItemTitle) {
+          // 1. Check in option groups sub-items first
+          if (Array.isArray(serviceDoc.serviceGroups)) {
+            for (const grp of serviceDoc.serviceGroups) {
+              if (Array.isArray(grp.items)) {
+                const matchedItem = grp.items.find(item => 
+                  bookedItemTitle === item.title || 
+                  bookedItemTitle.endsWith(` - ${item.title}`) || 
+                  bookedItemTitle.includes(item.title)
+                );
+                if (matchedItem) {
+                  acceptanceFee = matchedItem.vendorAcceptanceFee || 0;
+                  break;
+                }
+              }
+            }
+          }
+
+          // 2. If not found, check in combo packages
+          if (acceptanceFee === 0 && Array.isArray(serviceDoc.packages) && serviceDoc.packages.length > 0) {
+            const matchedPkg = serviceDoc.packages.find(p => 
+              bookedItemTitle === p.title || 
+              bookedItemTitle.endsWith(` - ${p.title}`) || 
+              bookedItemTitle.includes(p.title)
+            );
+            if (matchedPkg) {
+              acceptanceFee = matchedPkg.vendorAcceptanceFee || 0;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[AcceptBooking] Error checking sub-package acceptance fee:', err);
+    }
+    
+    // Fallback: Use PricingConfig
+    if (acceptanceFee === 0) {
+      acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+    }
+    
+    // Fallback: If no pricing fee is set, default to the category's minWalletBalance
+    if (acceptanceFee === 0 && minWalletBalanceRs > 0) {
+      acceptanceFee = minWalletBalanceRs;
+    }
     
     // Cap the deduction amount so it never exceeds the minimum wallet balance (if defined)
     if (minWalletBalanceRs > 0 && acceptanceFee > minWalletBalanceRs) {
@@ -896,6 +1027,9 @@ const cancelAcceptedBooking = async (req, res) => {
         message: 'Booking not found or not accepted by you'
       });
     }
+
+    // Refund the vendor's acceptance fee (lead fee) on cancellation
+    await refundVendorLeadFee(booking._id, vendorId);
 
     // Check if the booking is paid (online, success, paid, completed)
     const isPaid = ['success', 'completed', 'paid'].includes(booking.paymentStatus?.toLowerCase());
@@ -2156,78 +2290,8 @@ const collectSelfCash = async (req, res) => {
     bill.paidAt = new Date();
     await bill.save();
 
-    // ── Update Vendor Wallet (Atomic with $inc) ──
-    const Vendor = require('../../models/Vendor');
-    const vendorDoc = await Vendor.findById(actualVendorId).select('wallet');
-
-    if (vendorDoc) {
-      const currentDues = (vendorDoc.wallet.dues || 0) + grandTotal;
-      const cashLimit = vendorDoc.wallet.cashLimit || 10000;
-      // Net owed = dues − earnings (vendor keeps their share from cash)
-      const netOwed = currentDues - (((vendorDoc.wallet.credits * 10) || 0) + vendorEarning);
-      const isBlocked = netOwed > cashLimit;
-
-      const updateQuery = {
-        $inc: {
-          'wallet.dues': grandTotal,
-          'wallet.credits': vendorEarning / 10,
-          'wallet.totalCashCollected': grandTotal
-        }
-      };
-
-      if (isBlocked) {
-        updateQuery.$set = {
-          'wallet.isBlocked': true,
-          'wallet.blockedAt': new Date(),
-          'wallet.blockReason': `Cash limit exceeded. Net owed: ₹${netOwed.toFixed(2)}, Limit: ₹${cashLimit}`
-        };
-      }
-
-      await Vendor.findByIdAndUpdate(actualVendorId, updateQuery);
-
-      // ── Create Transaction Records ──
-      const Transaction = require('../../models/Transaction');
-
-      // Transaction 1: Cash Collected (Platform is owed this amount)
-      await Transaction.create({
-        vendorId: actualVendorId,
-        bookingId: booking._id,
-        type: 'cash_collected',
-        amount: grandTotal,
-        status: 'completed',
-        paymentMethod: 'cash collected', // Standardized label
-        description: `Cash ₹${grandTotal} collected for booking #${booking.bookingNumber}. Dues increased.`,
-        metadata: {
-          type: 'dues_increase',
-          collectedBy: isWorkerRole ? 'worker' : 'vendor',
-          billId: bill._id.toString(),
-          grandTotal,
-          vendorEarning,
-          companyRevenue: platformFeeAmount,
-          transactionGroupId
-        }
-      });
-
-      // Transaction 2: Earnings Credit (Vendor's rightful share - base only)
-      if (vendorEarning > 0) {
-        await Transaction.create({
-          vendorId: actualVendorId,
-          bookingId: booking._id,
-          type: 'earnings_credit',
-          amount: vendorEarning,
-          status: 'completed',
-          paymentMethod: 'wallet',
-          description: `Earnings ₹${vendorEarning} credited (base only) for booking #${booking.bookingNumber}`,
-          metadata: {
-            type: 'earnings_increase',
-            billId: bill._id.toString(),
-            serviceEarning: vendorEarning,
-            partsEarning: 0,
-            transactionGroupId
-          }
-        });
-      }
-    }
+    // Wallet updates and transaction records are centrally processed in processBookingCompletion()
+    console.log('[collectSelfCash] Skipping duplicate inline wallet credits/dues increase - processBookingCompletion will execute it.');
 
     // ── Notify user ──
     const { createNotification } = require('../notificationControllers/notificationController');
@@ -2528,26 +2592,104 @@ const getPendingBookings = async (req, res) => {
     const validRequests = pendingRequests.filter(r => r.bookingId !== null);
 
     // Format response
-    const bookings = validRequests.map(req => ({
-      requestId: req._id,
-      bookingId: req.bookingId._id,
-      bookingNumber: req.bookingId.bookingNumber,
-      serviceName: req.bookingId.serviceId?.title || req.bookingId.serviceName,
-      customerName: req.bookingId.userId?.name,
-      scheduledDate: req.bookingId.scheduledDate,
-      scheduledTime: req.bookingId.scheduledTime,
-      address: req.bookingId.address,
-      price: req.bookingId.finalAmount,
-      distance: req.distance,
-      wave: req.wave,
-      sentAt: req.sentAt,
-      status: req.status,
-      serviceCategory: req.bookingId.serviceCategory,
-      brandName: req.bookingId.brandName,
-      brandIcon: req.bookingId.brandIcon,
-      categoryIcon: req.bookingId.categoryIcon,
-      createdAt: req.bookingId.createdAt,
-      expiresAt: req.bookingId.expiresAt
+    const Category = require('../../models/Category');
+    const PricingConfig = require('../../models/PricingConfig');
+
+    const bookings = await Promise.all(validRequests.map(async (r) => {
+      // Calculate required credits
+      let requiredCredits = 0;
+      try {
+        const pricings = await PricingConfig.find({ serviceId: r.bookingId.serviceId?._id || r.bookingId.serviceId });
+        let pricing = null;
+        if (pricings.length > 0) {
+          if (r.bookingId.cityId) {
+            pricing = pricings.find(p => p.cityId && String(p.cityId) === String(r.bookingId.cityId));
+          }
+          if (!pricing && r.bookingId.brandId) {
+            pricing = pricings.find(p => p.brandId && String(p.brandId) === String(r.bookingId.brandId));
+          }
+          if (!pricing) {
+            pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+          }
+        }
+        let acceptanceFee = 0;
+        try {
+          const Service = require('../../models/Service');
+          const serviceDoc = await Service.findById(r.bookingId.serviceId).select('serviceType packages serviceGroups').lean();
+          if (serviceDoc && serviceDoc.serviceType === 'package_base') {
+            const bookedItemTitle = r.bookingId.bookedItems?.[0]?.card?.title;
+            if (bookedItemTitle) {
+              // 1. Check in option groups sub-items first
+              if (Array.isArray(serviceDoc.serviceGroups)) {
+                for (const grp of serviceDoc.serviceGroups) {
+                  if (Array.isArray(grp.items)) {
+                    const matchedItem = grp.items.find(item => 
+                      bookedItemTitle === item.title || 
+                      bookedItemTitle.endsWith(` - ${item.title}`) || 
+                      bookedItemTitle.includes(item.title)
+                    );
+                    if (matchedItem) {
+                      acceptanceFee = matchedItem.vendorAcceptanceFee || 0;
+                      break;
+                    }
+                  }
+                }
+              }
+
+              // 2. If not found, check in combo packages
+              if (acceptanceFee === 0 && Array.isArray(serviceDoc.packages) && serviceDoc.packages.length > 0) {
+                const matchedPkg = serviceDoc.packages.find(p => 
+                  bookedItemTitle === p.title || 
+                  bookedItemTitle.endsWith(` - ${p.title}`) || 
+                  bookedItemTitle.includes(p.title)
+                );
+                if (matchedPkg) {
+                  acceptanceFee = matchedPkg.vendorAcceptanceFee || 0;
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[getPendingBookings] Error checking sub-package acceptance fee:', err);
+        }
+
+        if (acceptanceFee === 0) {
+          acceptanceFee = (pricing && pricing.vendorAcceptanceFee) ? Number(pricing.vendorAcceptanceFee) : 0;
+        }
+        if (acceptanceFee === 0 && r.bookingId.categoryId) {
+          const cat = await Category.findById(r.bookingId.categoryId).select('minWalletBalance').lean();
+          if (cat && cat.minWalletBalance > 0) {
+            acceptanceFee = cat.minWalletBalance;
+          }
+        }
+        requiredCredits = acceptanceFee > 0 ? (acceptanceFee / 10) : 0;
+      } catch (priceErr) {
+        console.error('[getPendingBookings] Error calculating required credits:', priceErr);
+      }
+
+      return {
+        requestId: r._id,
+        bookingId: r.bookingId._id,
+        bookingNumber: r.bookingId.bookingNumber,
+        serviceName: r.bookingId.serviceId?.title || r.bookingId.serviceName,
+        customerName: r.bookingId.userId?.name,
+        scheduledDate: r.bookingId.scheduledDate,
+        scheduledTime: r.bookingId.scheduledTime,
+        address: r.bookingId.address,
+        price: r.bookingId.finalAmount,
+        distance: r.distance,
+        wave: r.wave,
+        sentAt: r.sentAt,
+        status: r.status,
+        serviceCategory: r.bookingId.serviceCategory,
+        brandName: r.bookingId.brandName,
+        brandIcon: r.bookingId.brandIcon,
+        categoryIcon: r.bookingId.categoryIcon,
+        createdAt: r.bookingId.createdAt,
+        expiresAt: r.bookingId.expiresAt,
+        requiredCredits: requiredCredits,
+        deductionAmount: requiredCredits // fallback
+      };
     }));
 
     res.status(200).json({
@@ -2887,6 +3029,66 @@ const rejectReschedule = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to reject reschedule request' });
   }
 };
+const refundVendorLeadFee = async (bookingId, specificVendorId = null) => {
+  try {
+    const CreditTransaction = require('../../models/CreditTransaction');
+    const Vendor = require('../../models/Vendor');
+    const Booking = require('../../models/Booking');
+
+    // 1. Find the booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return;
+
+    const vendorId = specificVendorId || booking.vendorId;
+    if (!vendorId) return;
+
+    // 2. Find if there is a 'lead_deduct' transaction for this booking and vendor
+    const txn = await CreditTransaction.findOne({
+      bookingId: booking._id,
+      vendorId: vendorId,
+      type: 'lead_deduct',
+      status: 'completed'
+    });
+
+    if (!txn) {
+      console.log(`[RefundLeadFee] No lead_deduct transaction found for booking #${booking.bookingNumber} and vendor ${vendorId}`);
+      return;
+    }
+
+    // 3. Check if we already refunded this booking for this vendor
+    const existingRefund = await CreditTransaction.findOne({
+      bookingId: booking._id,
+      vendorId: vendorId,
+      type: 'refund'
+    });
+
+    if (existingRefund) {
+      console.log(`[RefundLeadFee] Refund already processed for booking #${booking.bookingNumber} and vendor ${vendorId}`);
+      return;
+    }
+
+    // 4. Refund the credits to vendor
+    const refundCredits = txn.amount;
+    if (refundCredits > 0) {
+      await Vendor.findByIdAndUpdate(vendorId, {
+        $inc: { 'wallet.credits': refundCredits }
+      });
+
+      await CreditTransaction.create({
+        vendorId: vendorId,
+        bookingId: booking._id,
+        type: 'refund',
+        amount: refundCredits,
+        description: `Refund for cancelled booking #${booking.bookingNumber}`,
+        status: 'completed'
+      });
+
+      console.log(`[RefundLeadFee] Successfully refunded ${refundCredits} credits to vendor ${vendorId} for booking #${booking.bookingNumber}`);
+    }
+  } catch (err) {
+    console.error('[RefundLeadFee] Error during lead fee refund:', err);
+  }
+};
 
 module.exports = {
   getVendorBookings,
@@ -2909,5 +3111,6 @@ module.exports = {
   cancelAcceptedBooking,
   requestCancelBooking,
   acceptReschedule,
-  rejectReschedule
+  rejectReschedule,
+  refundVendorLeadFee
 };

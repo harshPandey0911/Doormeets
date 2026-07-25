@@ -481,11 +481,11 @@ const Wallet = () => {
                           <p className="font-bold text-gray-900 text-xs md:text-sm">
                             {getTransactionLabel(txn)}
                           </p>
-                          <p className={`text-base font-bold whitespace-nowrap flex-shrink-0 ml-2 text-right ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type)
+                          <p className={`text-base font-bold whitespace-nowrap flex-shrink-0 ml-2 text-right ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee', 'credit_deduct'].includes(txn.type)
                             ? 'text-red-600'
                             : 'text-green-600'
                             }`}>
-                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee'].includes(txn.type) ? '-' : '+'}{(Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-[10px]">Credits</span>
+                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee', 'credit_deduct'].includes(txn.type) ? '-' : '+'}{txn.type.startsWith('credit_') ? Math.abs(txn.amount).toLocaleString() : (Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-[10px]">Credits</span>
                           </p>
                         </div>
 

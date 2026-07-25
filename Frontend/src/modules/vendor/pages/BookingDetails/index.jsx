@@ -815,7 +815,11 @@ export default function BookingDetails() {
         finalSettlementStatus: apiData.finalSettlementStatus
       };
 
-      sessionStorage.setItem(`vendor_booking_${id}`, JSON.stringify(mappedBooking));
+      try {
+        sessionStorage.setItem(`vendor_booking_${id}`, JSON.stringify(mappedBooking));
+      } catch (storageErr) {
+        console.warn('Could not cache booking details, storage might be full:', storageErr);
+      }
       setBooking(mappedBooking);
     } catch (err) {
       console.error("[loadBooking] Error mapping or fetching booking:", err);
@@ -2436,7 +2440,12 @@ export default function BookingDetails() {
                             {/* STAGE 8: Finish Job → Close Booking */}
                             {stage.id === 8 && ['work_done', 'completed', 'payment_collected'].includes(booking.status?.toLowerCase()) && (
                               <div className="mt-2 space-y-2">
-                                {canDoFinalSettlement(booking) ? (
+                                {booking?.finalSettlementStatus === 'DONE' ? (
+                                  <div className="bg-green-50/50 rounded-lg p-2.5 border border-green-200 text-[10px] text-green-700 font-bold flex items-center gap-1.5 shadow-sm">
+                                    <FiCheckCircle className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                                    <span>Booking finalized and closed successfully!</span>
+                                  </div>
+                                ) : canDoFinalSettlement(booking) ? (
                                   <div className="bg-red-50/40 rounded-lg p-2.5 border border-red-100 space-y-2">
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2">

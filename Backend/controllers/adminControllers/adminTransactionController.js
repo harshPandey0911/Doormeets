@@ -336,7 +336,7 @@ const getTransactionStats = async (req, res) => {
       Object.assign(bookingQuery, bookingFilter);
 
       const bookingsForTaxes = await Booking.find(bookingQuery)
-        .select('finalAmount basePrice serviceId cityId brandId vendorId')
+        .select('finalAmount basePrice serviceId cityId brandId vendorId vendorShare')
         .populate('vendorId', 'level')
         .lean();
 
@@ -368,11 +368,17 @@ const getTransactionStats = async (req, res) => {
         }
 
         const cp = Number(booking.finalAmount || booking.basePrice || 0);
-        const vPayoutBase = pricing ? Number(pricing.vendorPayoutBase || 0) : 0;
-
+        let vPayoutBase = pricing ? Number(pricing.vendorPayoutBase || 0) : 0;
+        
         const gstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
         const vSgstPct = pricing ? Number(pricing.vendorSgstPercentage ?? 2.5) : 2.5;
         const vCgstPct = pricing ? Number(pricing.vendorCgstPercentage ?? 2.5) : 2.5;
+        const pCommPct = pricing ? Number(pricing.commissionPercentage ?? 25) : 25;
+
+        if (vPayoutBase === 0 && booking.vendorShare > 0) {
+           const deductionMultiplier = 1 - ((pCommPct + vSgstPct + vCgstPct) / 100);
+           vPayoutBase = deductionMultiplier > 0 ? (booking.vendorShare / deductionMultiplier) : booking.vendorShare;
+        }
 
         const adminGrossShare = Math.max(0, cp - vPayoutBase);
         const platformGstAmount = adminGrossShare * (gstPct / 100);
@@ -439,7 +445,7 @@ const getEarningsBreakdown = async (req, res) => {
     }
 
     const bookings = await Booking.find(bookingQuery)
-      .select('bookingNumber createdAt userId vendorId finalAmount basePrice serviceId cityId brandId completedAt updatedAt serviceName serviceCategory')
+      .select('bookingNumber createdAt userId vendorId finalAmount basePrice serviceId cityId brandId completedAt updatedAt serviceName serviceCategory vendorShare adminCommission')
       .populate('userId', 'name email phone')
       .populate('vendorId', 'name email phone businessName level')
       .sort({ createdAt: -1 })
@@ -478,12 +484,12 @@ const getEarningsBreakdown = async (req, res) => {
 
       // Calculations
       const cp = Number(booking.finalAmount || booking.basePrice || 0);
-      const vPayoutBase = pricing ? Number(pricing.vendorPayoutBase || 0) : 0;
+      let vPayoutBase = pricing ? Number(pricing.vendorPayoutBase || 0) : 0;
       
       const gstPct = pricing ? Number(pricing.gstPercentage ?? 18) : 18;
       const vSgstPct = pricing ? Number(pricing.vendorSgstPercentage ?? 2.5) : 2.5;
       const vCgstPct = pricing ? Number(pricing.vendorCgstPercentage ?? 2.5) : 2.5;
-      const pCommPct = pricing ? Number(pricing.platformCommission ?? 25) : 25;
+      const pCommPct = pricing ? Number(pricing.commissionPercentage ?? 25) : 25;
       
       // Determine level commission based on vendor level (L1/L2/L3)
       let lCommPct = 0;
@@ -494,6 +500,11 @@ const getEarningsBreakdown = async (req, res) => {
         else if (level === 'L3') lCommPct = pricing ? Number(pricing.l3Commission ?? 0) : 0;
       }
 
+      if (vPayoutBase === 0 && booking.vendorShare > 0) {
+         const deductionMultiplier = 1 - ((pCommPct + vSgstPct + vCgstPct + lCommPct) / 100);
+         vPayoutBase = deductionMultiplier > 0 ? (booking.vendorShare / deductionMultiplier) : booking.vendorShare;
+      }
+
       // Math
       const adminGrossShare = Math.max(0, cp - vPayoutBase);
       const platformGstAmount = adminGrossShare * (gstPct / 100);
@@ -501,12 +512,11 @@ const getEarningsBreakdown = async (req, res) => {
 
       const vendorSgstAmount = vPayoutBase * (vSgstPct / 100);
       const vendorCgstAmount = vPayoutBase * (vCgstPct / 100);
-      const remainingVendorBase = Math.max(0, vPayoutBase - vendorSgstAmount - vendorCgstAmount);
       
-      const platformCommissionAmount = remainingVendorBase * (pCommPct / 100);
-      const levelCommissionAmount = remainingVendorBase * (lCommPct / 100);
+      const platformCommissionAmount = vPayoutBase * (pCommPct / 100);
+      const levelCommissionAmount = vPayoutBase * (lCommPct / 100);
       const totalCommissionEarned = platformCommissionAmount + levelCommissionAmount;
-      const netVendorPayout = remainingVendorBase - totalCommissionEarned;
+      const netVendorPayout = Math.max(0, vPayoutBase - vendorSgstAmount - vendorCgstAmount - totalCommissionEarned);
 
       const totalGstCalculated = platformGstAmount + vendorSgstAmount + vendorCgstAmount;
 
