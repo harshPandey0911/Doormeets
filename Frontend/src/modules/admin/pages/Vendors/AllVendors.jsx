@@ -91,10 +91,25 @@ const AllVendors = () => {
   };
 
   const filteredVendors = useMemo(() => {
-    return vendors.filter(vendor => {
-      const serviceString = Array.isArray(vendor.service)
-        ? vendor.service.join(' ')
-        : (vendor.service || '');
+    // Helper to resolve ObjectIds to titles
+    const resolveServiceNames = (services) => {
+      if (!Array.isArray(services)) return services;
+      return services.map(s => {
+        if (/^[0-9a-fA-F]{24}$/.test(s)) {
+          const cat = categories.find(c => c.id === s || c._id === s);
+          return cat ? cat.title : s;
+        }
+        return s;
+      });
+    };
+
+    return vendors.map(vendor => ({
+      ...vendor,
+      resolvedService: resolveServiceNames(vendor.service)
+    })).filter(vendor => {
+      const serviceString = Array.isArray(vendor.resolvedService)
+        ? vendor.resolvedService.join(' ')
+        : (vendor.resolvedService || '');
 
       const matchesStatus = filterStatus === 'all' || vendor.approvalStatus === filterStatus;
 
@@ -106,7 +121,7 @@ const AllVendors = () => {
         (vendor.businessName && vendor.businessName.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesStatus && matchesSearch;
     });
-  }, [vendors, filterStatus, searchQuery]);
+  }, [vendors, filterStatus, searchQuery, categories]);
 
   const handleApprove = async (vendorId) => {
     try {
@@ -351,13 +366,13 @@ const AllVendors = () => {
                           <p className="font-bold text-gray-800 text-xs">{vendor.businessName || 'N/A'}</p>
                           <p 
                             className="text-[10px] text-blue-600 font-medium mt-0.5 line-clamp-2"
-                            title={Array.isArray(vendor.service) ? vendor.service.join(', ') : vendor.service}
+                            title={Array.isArray(vendor.resolvedService) ? vendor.resolvedService.join(', ') : vendor.resolvedService}
                           >
-                            {Array.isArray(vendor.service) 
-                              ? (vendor.service.length > 3 
-                                  ? `${vendor.service.slice(0, 3).join(', ')} + ${vendor.service.length - 3} more` 
-                                  : vendor.service.join(', ')) 
-                              : (vendor.service || 'No service')}
+                            {Array.isArray(vendor.resolvedService) 
+                              ? (vendor.resolvedService.length > 3 
+                                  ? `${vendor.resolvedService.slice(0, 3).join(', ')} + ${vendor.resolvedService.length - 3} more` 
+                                  : vendor.resolvedService.join(', ')) 
+                              : (vendor.resolvedService || 'No service')}
                           </p>
                         </div>
                       </td>
@@ -482,7 +497,15 @@ const AllVendors = () => {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Service Category</label>
                 <div className="text-gray-900">
-                  {Array.isArray(selectedVendor.service) ? selectedVendor.service.join(', ') : (selectedVendor.service || 'N/A')}
+                  {Array.isArray(selectedVendor.service) 
+                    ? selectedVendor.service.map(s => {
+                        if (/^[0-9a-fA-F]{24}$/.test(s)) {
+                          const cat = categories.find(c => c.id === s || c._id === s);
+                          return cat ? cat.title : s;
+                        }
+                        return s;
+                      }).join(', ') 
+                    : (selectedVendor.service || 'N/A')}
                 </div>
               </div>
               <div>

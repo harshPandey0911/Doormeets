@@ -2080,13 +2080,6 @@ const Checkout = () => {
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{contactDetails.phone || userPhone || 'Loading...'}</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowContactModal(true)}
-              className="text-sm font-medium hover:underline"
-              style={{ color: themeColors.button }}
-            >
-              Change
-            </button>
           </div>
         </div>
 
