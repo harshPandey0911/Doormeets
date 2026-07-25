@@ -56,7 +56,7 @@ const getPublicCategories = async (req, res) => {
     });
 
     const categories = await Category.find(query)
-      .select('title slug homeIconUrl homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers isGroupCategory mappedCategories')
+      .select('title slug homeIconUrl bannerImage homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers isGroupCategory mappedCategories')
       .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status', match: { status: { $in: ['active', 'coming_soon'] } } })
       .sort({ homeOrder: 1, createdAt: -1 })
       .lean();
@@ -82,6 +82,7 @@ const getPublicCategories = async (req, res) => {
         title: cat.title,
         slug: cat.slug,
         icon: cat.homeIconUrl || '',
+        bannerImage: cat.bannerImage || '',
         badge: cat.homeBadge || '',
         hasSaleBadge: cat.hasSaleBadge || false,
         showOnHome: cat.showOnHome || false,

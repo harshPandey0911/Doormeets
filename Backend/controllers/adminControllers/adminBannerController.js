@@ -26,7 +26,7 @@ const getOfferBanners = async (req, res) => {
  */
 const addOfferBanner = async (req, res) => {
   try {
-    const { title, link, priority, image, mobileImage, mediaType } = req.body;
+    const { title, link, targetCategoryId, slug, priority, image, mobileImage, mediaType } = req.body;
 
     if (!image) {
       return res.status(400).json({ success: false, message: 'Image/Video is required' });
@@ -50,6 +50,8 @@ const addOfferBanner = async (req, res) => {
     const banner = await OfferBanner.create({
       title,
       link,
+      targetCategoryId: targetCategoryId || null,
+      slug: slug || null,
       priority: priority || 0,
       imageUrl: uploadRes.url,
       mobileImageUrl: mobileImageUrl || uploadRes.url, // Fallback to main image
@@ -76,9 +78,9 @@ const addOfferBanner = async (req, res) => {
 const updateOfferBanner = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, link, priority, isActive, image, mobileImage, mediaType } = req.body;
+    const { title, link, targetCategoryId, slug, priority, isActive, image, mobileImage, mediaType } = req.body;
 
-    let updateData = { title, link, priority, isActive, mediaType };
+    let updateData = { title, link, targetCategoryId: targetCategoryId || null, slug: slug || null, priority, isActive, mediaType };
 
     if (image && image.startsWith('data:')) {
       // Upload new image

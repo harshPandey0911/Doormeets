@@ -11,8 +11,9 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
   if (!banners || banners.length === 0) return null;
 
   const handleBannerClick = (banner) => {
-    if (banner.link) {
-      const cleanLink = banner.link.trim();
+    const link = banner.link || banner.targetLink;
+    if (link) {
+      const cleanLink = link.trim();
       if (cleanLink.startsWith('http')) {
         window.open(cleanLink, '_blank');
       } else if (cleanLink.startsWith('/')) {
@@ -28,6 +29,14 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
           navigate(`/user/category/${cleanLink}`);
         }
       }
+    } else if (banner.slug) {
+      navigate(`/user/service/${banner.slug}`);
+    } else if (banner.targetCategoryId || banner.categoryId) {
+      const catId = banner.targetCategoryId || banner.categoryId;
+      navigate(`/user/category/${catId}`);
+    } else if (banner.scrollToSection) {
+      const el = document.getElementById(banner.scrollToSection);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -55,8 +64,14 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
           <SwiperSlide
             key={banner._id || banner.id || index}
             className="relative h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
-            onClick={() => handleBannerClick(banner)}
           >
+            <div 
+              className="w-full h-full cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleBannerClick(banner);
+              }}
+            >
             {banner.mediaType === 'video' ? (
               <>
                 <video
@@ -94,6 +109,7 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
                 />
               </>
             )}
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>

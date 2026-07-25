@@ -99,7 +99,7 @@ const RedirectionSelector = ({
             <option value="">-- Choose Category --</option>
             {(categories || []).map((c) => (
               <option key={c.id || c._id} value={c.id || c._id}>
-                {c.title || "Untitled Category"}
+                {c.title || c.name || c.categoryName || "Untitled Category"}
               </option>
             ))}
           </select>
@@ -327,6 +327,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
               imageUrl: b.imageUrl,
               text: b.title,
               link: b.link || '',
+              targetCategoryId: b.targetCategoryId || b.categoryId || null,
+              slug: b.slug || null,
               priority: b.priority || 0,
               isActive: b.isActive !== false
             })) : [],
@@ -451,6 +453,27 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     }
   };
 
+  const patchHome = async (patch) => {
+    const next = ensureIds(catalog);
+    next.home = { ...(next.home || {}), ...patch };
+    setCatalog(next);
+    saveCatalog(next);
+
+    try {
+      const payload = { ...patch };
+      if (selectedCity) payload.cityId = selectedCity;
+      const res = await homeContentService.update(payload);
+      if (res.success) {
+        publicCatalogService.invalidateCache();
+        toast.success("Saved successfully!");
+      } else {
+        throw new Error(res.message || "Failed to save");
+      }
+    } catch (err) {
+      console.error("Failed to update home content:", err);
+      toast.error(err.message || "Failed to save changes");
+    }
+  };
 
   // ── Trust Section handlers ───────────────────────────────────────────────
   const resetTrustForm = () => {
@@ -497,8 +520,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
   };
 
   const getCategoryTitle = (id) => {
-    const found = categories.find((c) => c.id === id);
-    return found?.title || "";
+    const found = categories.find((c) => String(c.id || c._id) === String(id));
+    return found?.title || found?.name || found?.categoryName || "";
   };
 
 
@@ -631,6 +654,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           imageUrl: b.imageUrl,
           text: b.title,
           link: b.link || '',
+          targetCategoryId: b.targetCategoryId || b.categoryId || null,
+          slug: b.slug || null,
           priority: b.priority || 0,
           isActive: b.isActive !== false
         }));
@@ -644,14 +669,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     }
   };
 
-  const patchHome = async (patch) => {
-    const next = ensureIds(catalog);
-    next.home = { ...(next.home || {}), ...patch };
-    setCatalog(next);
-    saveCatalog(next);
-    return await syncHomeToBackend(next.home);
-  };
-
   // Banner handlers
   const resetBannerForm = () => {
     setEditingBannerId(null);
@@ -663,9 +680,21 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
     try {
       setIsSyncing(true);
       let response;
+      let targetLink = bannerForm.link || '';
+      if (bannerForm.slug) {
+        targetLink = `/user/service/${bannerForm.slug}`;
+      } else if (bannerForm.targetCategoryId) {
+        const foundCat = categories.find(c => String(c.id || c._id) === String(bannerForm.targetCategoryId));
+        if (foundCat) {
+          targetLink = `/user/category/${foundCat.slug || foundCat.id}`;
+        }
+      }
+
       const payload = {
         title: bannerForm.text || 'Offer Banner',
-        link: bannerForm.link || bannerForm.slug || '',
+        link: targetLink,
+        targetCategoryId: bannerForm.targetCategoryId || null,
+        slug: bannerForm.slug || null,
         priority: bannerForm.priority || 0,
         image: bannerForm.imageUrl
       };
@@ -687,6 +716,8 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             imageUrl: b.imageUrl,
             text: b.title,
             link: b.link || '',
+            targetCategoryId: b.targetCategoryId || b.categoryId || null,
+            slug: b.slug || null,
             priority: b.priority || 0,
             isActive: b.isActive !== false
           }));
@@ -904,7 +935,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                     <th className="text-left py-2 px-3 text-sm font-bold text-gray-700 w-24">Image</th>
                     <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Text</th>
                     <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Redirect</th>
-                    <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Scroll To</th>
                     <th className="text-center py-2 px-3 text-sm font-bold text-gray-700 w-32">Actions</th>
                   </tr>
                 </thead>
@@ -926,12 +956,17 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="text-sm text-gray-600">
-                          {b.link || b.slug || "—"}
+                          {(() => {
+                            if (b.slug) return `Service: ${b.slug}`;
+                            if (b.targetCategoryId) {
+                              const found = (categories || []).find(c => String(c.id || c._id) === String(b.targetCategoryId));
+                              return found ? `Category: ${found.title}` : `Category ID: ${b.targetCategoryId}`;
+                            }
+                            return b.link || "—";
+                          })()}
                         </div>
                       </td>
-                      <td className="py-2.5 px-3">
-                        <div className="text-sm text-gray-600">{b.scrollToSection || "—"}</div>
-                      </td>
+
                       <td className="py-2.5 px-3">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -966,115 +1001,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       </CardShell>
 
       <CardShell icon={FiGrid}>
-        <div className="space-y-5">
-          {/* Promo Carousel (PromoCarousel) */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-200">
-              <div className="text-lg font-bold text-gray-900">Home Promo Carousel</div>
-              {renderArrangementControls('promos')}
-            </div>
-            <div className="flex items-center gap-4">
-              <ToggleSwitch
-                label="Show Promos"
-                checked={home?.isPromosVisible !== false}
-                onChange={() => patchHome({ isPromosVisible: !home?.isPromosVisible })}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  resetPromoForm();
-                  setIsPromoModalOpen(true);
-                }}
-                className="px-4 py-2 rounded-xl text-white transition-all flex items-center gap-2 text-sm font-semibold shadow-md hover:shadow-lg"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'linear-gradient(to right, #2874F0, #1e5fd4)',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <FiPlus className="w-4 h-4" style={{ display: 'block', color: '#ffffff' }} />
-                <span>Add</span>
-              </button>
-            </div>
-          </div>
-
-          {(home.promoCarousel || []).length === 0 ? (
-            <div className="text-base text-gray-500">No promo cards</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-2 px-3 text-sm font-bold text-gray-700 w-12">#</th>
-                    <th className="text-left py-2 px-3 text-sm font-bold text-gray-700 w-24">Image</th>
-                    <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Title</th>
-                    <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Subtitle</th>
-                    <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Button Text</th>
-                    <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Redirect</th>
-                    <th className="text-center py-2 px-3 text-sm font-bold text-gray-700 w-32">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(home.promoCarousel || []).map((p, idx) => (
-                    <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="py-2.5 px-3 text-sm font-semibold text-gray-600">{idx + 1}</td>
-                      <td className="py-2.5 px-3">
-                        {p.imageUrl ? (
-                          <img src={p.imageUrl} alt="Promo" className="h-14 w-14 object-cover rounded-lg border border-gray-200" />
-                        ) : (
-                          <div className="h-14 w-14 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                            <span className="text-[10px] text-gray-400">No img</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="text-sm font-semibold text-gray-900">{p.title || "—"}</div>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="text-sm text-gray-600">{p.subtitle || "—"}</div>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="text-sm text-gray-600">{p.buttonText || "—"}</div>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="text-sm text-gray-600">{p.targetCategoryId ? getCategoryTitle(p.targetCategoryId) : "—"}</div>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingPromoId(p.id);
-                              setPromoForm({ ...p });
-                              setIsPromoModalOpen(true);
-                            }}
-                            className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                            title="Edit"
-                          >
-                            <FiEdit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => patchHome({ promoCarousel: (home.promoCarousel || []).filter((x) => x.id !== p.id) })}
-                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                            title="Delete"
-                          >
-                            <FiTrash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Curated Services */}
         <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3 pb-2 mb-3 border-b border-gray-200">
             <div>
@@ -1119,7 +1045,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                   <th className="text-left py-2 px-3 text-sm font-bold text-gray-700 w-12">#</th>
                   <th className="text-left py-2 px-3 text-sm font-bold text-gray-700 w-24">Media</th>
                   <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Title</th>
-                  <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">YouTube URL</th>
                   <th className="text-left py-2 px-3 text-sm font-bold text-gray-700">Redirect</th>
                   <th className="text-center py-2 px-3 text-sm font-bold text-gray-700 w-32">Actions</th>
                 </tr>
@@ -1143,9 +1068,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="text-sm font-semibold text-gray-900">{s.title || "—"}</div>
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <div className="text-sm text-gray-600">{s.youtubeUrl || "—"}</div>
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="text-sm text-gray-600">
@@ -1699,112 +1621,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       </CardShell>
 
       {/* ── Trust Section ──────────────────────────────────────────────────── */}
-      {/* ── How It Works Section ──────────────────────────────────────────────── */}
-      <CardShell icon={FiGrid} title="How It Works Section" action={renderArrangementControls('howItWorks')}>
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-gray-500">Steps shown to explain the process.</p>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={home?.isHowItWorksVisible !== false}
-              onChange={() => patchHome({ isHowItWorksVisible: !home?.isHowItWorksVisible })}
-            />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-700">
-              {home?.isHowItWorksVisible !== false ? 'Visible' : 'Hidden'}
-            </span>
-          </label>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1.5">Section Title</label>
-            <div className="flex gap-2">
-              <input
-                value={howItWorksForm.title || (home?.howItWorks?.title || '')}
-                onChange={e => setHowItWorksForm(p => ({ ...p, title: e.target.value }))}
-                className="flex-1 px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                placeholder="How it works"
-              />
-              <button
-                type="button"
-                onClick={() => patchHome({ howItWorks: { ...home?.howItWorks, title: howItWorksForm.title || (home?.howItWorks?.title || 'How it works') } })}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700"
-              >
-                Save Title
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <div className="flex justify-between items-center mb-2">
-              <h4 className="font-bold text-gray-800">Steps</h4>
-              <button
-                type="button"
-                onClick={() => {
-                  const currentSteps = home?.howItWorks?.steps || [];
-                  patchHome({ howItWorks: { ...home?.howItWorks, steps: [...currentSteps, { id: Date.now().toString(), title: 'New Step', description: '', icon: '✓' }] } });
-                }}
-                className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700"
-              >
-                <FiPlus className="w-4 h-4" /> Add Step
-              </button>
-            </div>
-            <div className="space-y-3">
-              {(home?.howItWorks?.steps || []).map((step, idx) => (
-                <div key={step.id || idx} className="p-3 border border-gray-200 rounded-xl bg-gray-50 flex gap-3">
-                  <input
-                    defaultValue={step.icon}
-                    onBlur={(e) => {
-                      if (e.target.value === step.icon) return;
-                      const newSteps = [...(home?.howItWorks?.steps || [])];
-                      newSteps[idx].icon = e.target.value;
-                      patchHome({ howItWorks: { ...home?.howItWorks, steps: newSteps } });
-                    }}
-                    placeholder="Icon"
-                    className="w-12 h-10 px-2 text-center border border-gray-300 rounded-lg text-lg"
-                  />
-                  <div className="flex-1 space-y-2">
-                    <input
-                      defaultValue={step.title}
-                      onBlur={(e) => {
-                        if (e.target.value === step.title) return;
-                        const newSteps = [...(home?.howItWorks?.steps || [])];
-                        newSteps[idx].title = e.target.value;
-                        patchHome({ howItWorks: { ...home?.howItWorks, steps: newSteps } });
-                      }}
-                      placeholder="Step Title"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    />
-                    <input
-                      defaultValue={step.description}
-                      onBlur={(e) => {
-                        if (e.target.value === step.description) return;
-                        const newSteps = [...(home?.howItWorks?.steps || [])];
-                        newSteps[idx].description = e.target.value;
-                        patchHome({ howItWorks: { ...home?.howItWorks, steps: newSteps } });
-                      }}
-                      placeholder="Description"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    />
-                  </div>
-                  <button
-                    onClick={() => {
-                      const newSteps = [...(home?.howItWorks?.steps || [])];
-                      newSteps.splice(idx, 1);
-                      patchHome({ howItWorks: { ...home?.howItWorks, steps: newSteps } });
-                    }}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg h-fit"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </CardShell>
 
       <CardShell icon={FiGrid} title="Trust Section" action={renderArrangementControls('trustItems')}>
         <div className="flex items-center justify-between mb-4">
@@ -2047,7 +1863,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           <p className="text-sm text-gray-500">Customise the title and subtitle displayed above each home page section.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { key: 'promoTitle', sub: 'promoSubtitle', label: 'Promo Carousel' },
               { key: 'curatedTitle', sub: 'curatedSubtitle', label: 'Thoughtful Curations' },
               { key: 'noteworthyTitle', sub: null, label: 'New & Noteworthy' },
               { key: 'bookedTitle', sub: null, label: 'Most Booked' },
@@ -2312,15 +2127,7 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
             onChange={(patch) => setBannerForm((p) => ({ ...p, ...patch }))}
             label="Redirect to..."
           />
-          <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">Scroll To Section (ID)</label>
-            <input
-              value={bannerForm.scrollToSection}
-              onChange={(e) => setBannerForm((p) => ({ ...p, scrollToSection: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
-              placeholder="Waxing & threading"
-            />
-          </div>
+
           <div className="flex gap-3 pt-4">
             <button
               onClick={saveBanner}
@@ -2575,15 +2382,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
                 </div>
               )}
             </div>
-          </div>
-          <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">YouTube URL</label>
-            <input
-              value={curatedForm.youtubeUrl}
-              onChange={(e) => setCuratedForm((p) => ({ ...p, youtubeUrl: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white"
-              placeholder="https://youtube.com/..."
-            />
           </div>
 
           <RedirectionSelector

@@ -740,6 +740,7 @@ bookingSchema.index({ notifiedVendors: 1, status: 1 });
 bookingSchema.index({ 'potentialVendors.vendorId': 1 });
 // Dashboard: $or on { vendorId: null, serviceCategory: ..., status: ... }
 bookingSchema.index({ vendorId: 1, serviceCategory: 1, status: 1 });
+bookingSchema.index({ vendorId: 1, rating: 1 });
 
 require('./Worker');
 

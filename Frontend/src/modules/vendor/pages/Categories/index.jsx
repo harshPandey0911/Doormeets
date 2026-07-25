@@ -22,7 +22,7 @@ const Categories = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !sessionStorage.getItem('vendor_categories_cache'));
   const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'requests'
 
   // Request modal
@@ -32,17 +32,23 @@ const Categories = () => {
 
   const fetchAll = async () => {
     try {
-      setIsLoading(true);
+      const hasCache = !!sessionStorage.getItem('vendor_categories_cache');
+      if (!hasCache) setIsLoading(true);
       const [catRes, reqRes] = await Promise.allSettled([
         vendorCategoryService.getCategories(),
         vendorCategoryRequestService.getMyRequests()
       ]);
+      let cats = [];
+      let reqs = [];
       if (catRes.status === 'fulfilled' && catRes.value.success) {
-        setCategories(catRes.value.categories || []);
+        cats = catRes.value.categories || [];
+        setCategories(cats);
       }
       if (reqRes.status === 'fulfilled' && reqRes.value.success) {
-        setMyRequests(reqRes.value.requests || []);
+        reqs = reqRes.value.requests || [];
+        setMyRequests(reqs);
       }
+      sessionStorage.setItem('vendor_categories_cache', JSON.stringify({ categories: cats, requests: reqs }));
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,7 +56,18 @@ const Categories = () => {
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem('vendor_categories_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.categories) setCategories(parsed.categories);
+        if (parsed.requests) setMyRequests(parsed.requests);
+        setIsLoading(false);
+      }
+    } catch (e) {}
+    fetchAll();
+  }, []);
 
   const handleSubmitRequest = async (e) => {
     e.preventDefault();
@@ -109,7 +126,21 @@ const Categories = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-16"><LogoLoader /></div>
+          <div className="space-y-3 animate-pulse">
+            <div className="flex items-center justify-between mb-3 px-0.5">
+              <div className="h-4 w-32 bg-gray-200 rounded"></div>
+              <div className="h-7 w-28 bg-gray-200 rounded-md"></div>
+            </div>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="w-full bg-white rounded-md p-3 border border-gray-100 flex items-center gap-3">
+                <div className="w-12 h-12 bg-gray-100 rounded-md"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-36 bg-gray-100 rounded"></div>
+                  <div className="h-2.5 w-24 bg-gray-100 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : activeTab === 'browse' ? (
 
           /* ── Browse Categories ── */
