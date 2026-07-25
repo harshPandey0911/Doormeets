@@ -1969,7 +1969,6 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
           <p className="text-sm text-gray-500">Customise the title and subtitle displayed above each home page section.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { key: 'promoTitle', sub: 'promoSubtitle', label: 'Promo Carousel' },
               { key: 'curatedTitle', sub: 'curatedSubtitle', label: 'Thoughtful Curations' },
               { key: 'noteworthyTitle', sub: null, label: 'New & Noteworthy' },
               { key: 'bookedTitle', sub: null, label: 'Most Booked' },
