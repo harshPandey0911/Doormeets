@@ -77,7 +77,16 @@ const PremiumCategoryPage = () => {
 
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState([]);
-  const [activeCategory, setActiveCategory] = useState(location.state?.category || null);
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const stateCat = location.state?.category;
+    if (!stateCat) return null;
+    return {
+      ...stateCat,
+      id: stateCat.id || stateCat._id,
+      icon: toAssetUrl(stateCat.icon || stateCat.homeIconUrl),
+      bannerImage: toAssetUrl(stateCat.bannerImage) || ''
+    };
+  });
   const [subCategories, setSubCategories] = useState(() => {
     const activeCategoryId = location.state?.category?.id || location.state?.category?._id;
     if (!activeCategoryId) return [];
@@ -215,24 +224,35 @@ const PremiumCategoryPage = () => {
   useEffect(() => {
     const loadCategory = async () => {
       try {
-        const homeRes = await publicCatalogService.getHomeData(cityId);
-        if (homeRes?.success && Array.isArray(homeRes.categories)) {
-          const mapped = homeRes.categories.map((cat) => ({
-            id: cat.id || cat._id,
-            title: cat.title,
-            slug: cat.slug || cat.title?.toLowerCase().replace(/\s+/g, '-'),
-            icon: toAssetUrl(cat.icon || cat.homeIconUrl),
-            bannerImage: toAssetUrl(cat.bannerImage) || '',
-            description: cat.description || '',
-            subtitle: cat.subtitle || 'Premium service',
-            status: cat.status || 'active',
-            interestedCount: cat.interestedCount || 0,
-            isInterested: cat.isInterested || false
-          }));
-          setCategories(mapped);
-          const found = mapped.find((item) => item.slug === slug || item.id === slug || item.title.toLowerCase() === String(slug).toLowerCase());
-          if (found) setActiveCategory(found);
-          else if (!activeCategory && mapped.length) setActiveCategory(mapped[0]);
+        const catRes = await publicCatalogService.getCategories(cityId);
+        let categoriesList = catRes?.success && Array.isArray(catRes.categories) ? catRes.categories : [];
+        
+        if (!categoriesList.length) {
+          const homeRes = await publicCatalogService.getHomeData(cityId);
+          if (homeRes?.success && Array.isArray(homeRes.categories)) {
+            categoriesList = homeRes.categories;
+          }
+        }
+
+        const mapped = categoriesList.map((cat) => ({
+          id: cat.id || cat._id,
+          title: cat.title,
+          slug: cat.slug || cat.title?.toLowerCase().replace(/\s+/g, '-'),
+          icon: toAssetUrl(cat.icon || cat.homeIconUrl),
+          bannerImage: toAssetUrl(cat.bannerImage) || '',
+          description: cat.description || '',
+          subtitle: cat.subtitle || 'Premium service',
+          status: cat.status || 'active',
+          interestedCount: cat.interestedCount || 0,
+          isInterested: cat.isInterested || false
+        }));
+
+        setCategories(mapped);
+        const found = mapped.find((item) => item.slug === slug || item.id === slug || item.title?.toLowerCase() === String(slug).toLowerCase());
+        if (found) {
+          setActiveCategory(found);
+        } else if (mapped.length) {
+          setActiveCategory(mapped[0]);
         }
       } catch (error) {
         console.error('Category load error', error);
@@ -1337,29 +1357,11 @@ const PremiumCategoryPage = () => {
               )}
             </section>
 
-            {/* Sticky Promise & Cart (col-span-4) */}
+            {/* Sticky Cart (col-span-4) */}
             <aside 
               className="col-span-4 space-y-6"
               style={{ position: 'sticky', top: '88px', alignSelf: 'start', height: 'fit-content' }}
             >
-              {/* Safety Promise Card */}
-              <div className="border rounded-md p-5 shadow-sm space-y-4 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
-                <h4 className="text-xs font-black uppercase tracking-wider border-b pb-2" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>Doormeets Promise</h4>
-                <ul className="space-y-3 text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
-                  <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">✓</span>
-                    <span>Verified Professionals</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">✓</span>
-                    <span>Safe & Certified Chemicals</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">✓</span>
-                    <span>Superior Quality Guarantee</span>
-                  </li>
-                </ul>
-              </div>
 
               {/* Sticky Cart Summary */}
               <div className="border rounded-md p-5 shadow-sm space-y-4 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>

@@ -147,14 +147,46 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
           })()}
         </div>
 
-      {/* Right side image + absolute button */}
+      {/* Right side image/video + absolute button */}
       <div className="relative w-24 h-24 md:w-32 md:h-32 shrink-0 rounded-md overflow-visible">
-        <div className="w-full h-full rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 border" style={{ borderColor: 'var(--border)' }}>
-          {service.image || service.icon || service.iconUrl ? (
-            <img src={toAssetUrl(service.image || service.icon || service.iconUrl)} alt={service.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-slate-200 dark:bg-zinc-700" />
-          )}
+        <div className="w-full h-full rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 border relative" style={{ borderColor: 'var(--border)' }}>
+          {(() => {
+            const mediaUrl = toAssetUrl(service.image || service.icon || service.iconUrl || service.videoUrl || service.video);
+            if (!mediaUrl) {
+              return <div className="w-full h-full bg-slate-200 dark:bg-zinc-700" />;
+            }
+
+            const isVideo = /\.(mp4|webm|mov|mkv|avi|ogg)($|\?)/i.test(mediaUrl) || mediaUrl.includes('/video/upload/');
+
+            if (isVideo) {
+              return (
+                <video
+                  src={mediaUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    // Fallback to img if video fails
+                    e.target.style.display = 'none';
+                  }}
+                />
+              );
+            }
+
+            return (
+              <img
+                src={mediaUrl}
+                alt={service.title}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=300&auto=format&fit=crop&q=80';
+                }}
+              />
+            );
+          })()}
         </div>
 
         {/* Absolute Add Button centered at the bottom overlap (only if service has no variants) */}
