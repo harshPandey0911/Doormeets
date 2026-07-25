@@ -23,6 +23,15 @@ const offerBannerSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  targetCategoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null
+  },
+  slug: {
+    type: String,
+    default: null
+  },
   priority: {
     type: Number,
     default: 0

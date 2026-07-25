@@ -1013,7 +1013,7 @@ const PremiumCategoryPage = () => {
       </main>
 
       {/* 2. DESKTOP FLOW - Split screen layout */}
-      <main className="hidden lg:grid grid-cols-12 gap-8 w-full px-6 md:px-10 lg:px-12 items-start relative z-10 pt-28">
+      <main className="hidden lg:grid grid-cols-12 gap-8 max-w-[1360px] mx-auto px-12 items-start relative z-10 pt-28">
         
         {/* Left Column (col-span-4) - Stretched to hold sticky child */}
         <aside className="col-span-4 flex flex-col gap-6 self-stretch">

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiArrowLeft, FiHeart, FiShare2, FiShield, FiStar, FiClock, FiCheckCircle, FiSliders, FiInfo, FiUpload, FiPlus, FiMinus, FiX, FiFolder, FiChevronDown, FiChevronUp, FiChevronLeft, FiChevronRight, FiCheck, FiAward, FiSmile, FiShoppingBag, FiFileText } from 'react-icons/fi';
@@ -410,11 +411,17 @@ const PremiumServiceDetailPage = () => {
   const [includedModalTitle, setIncludedModalTitle] = useState('');
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(null);
 
+  const [loadingDetails, setLoadingDetails] = useState(!location.state?.service);
+
   useEffect(() => {
     const fetchDynamicDetails = async () => {
       const sId = service?._id || service?.id || slug;
-      if (!sId) return;
+      if (!sId) {
+        setLoadingDetails(false);
+        return;
+      }
       try {
+        if (!service) setLoadingDetails(true);
         const res = await api.get(`/public/services/${sId}/dynamic-details${cityId ? `?cityId=${cityId}` : ''}`);
         if (res.data.success) {
           if (res.data.service) {
@@ -436,6 +443,8 @@ const PremiumServiceDetailPage = () => {
         }
       } catch (err) {
         console.error("Error loading dynamic details", err);
+      } finally {
+        setLoadingDetails(false);
       }
     };
     fetchDynamicDetails();
@@ -834,6 +843,22 @@ const PremiumServiceDetailPage = () => {
       navigate('/user/cart');
     }
   };
+
+  if (loadingDetails && !service) {
+    return (
+      <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--background)' }}>
+        <Navbar locationLabel="Loading Service..." cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/home')} />
+        <div className="mx-auto max-w-3xl px-4 py-12">
+          <div className="animate-pulse space-y-6">
+            <div className="h-64 bg-gray-200 dark:bg-zinc-800 rounded-3xl w-full"></div>
+            <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded-xl w-3/4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded-lg w-1/2"></div>
+            <div className="h-32 bg-gray-200 dark:bg-zinc-800 rounded-2xl w-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!service) {
     return (
@@ -2341,36 +2366,35 @@ const PremiumServiceDetailPage = () => {
 
 {/* Category Group details modal */}
       <AnimatePresence>
-        {activeCategoryModal && (
-          <>
+        {activeCategoryModal && createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-end justify-center md:items-center md:p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setActiveCategoryModal(null)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] cursor-pointer"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
             />
             {/* Centered Modal / Sheet */}
-            <div className="fixed inset-0 z-[9999] flex items-end justify-center md:items-center md:p-4 pointer-events-none">
-              <motion.div
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                className="w-full max-w-md md:max-w-lg rounded-t-md md:rounded-md p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto bg-white dark:bg-zinc-900"
-                style={{ borderColor: 'var(--border)' }}
-              >
-                <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
-                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                    {activeCategoryModal.title} Options & Packages
-                  </h3>
-                  <button
-                    onClick={() => setActiveCategoryModal(null)}
-                    className="p-1.5 hover:bg-red-50/50 dark:hover:bg-zinc-800 rounded-full text-gray-500 cursor-pointer"
-                  >
-                    <FiX className="w-5 h-5" />
-                  </button>
-                </div>
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="relative z-10 w-full max-w-md md:max-w-lg rounded-t-xl md:rounded-xl p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto bg-white dark:bg-zinc-900"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                  {activeCategoryModal.title} Options & Packages
+                </h3>
+                <button
+                  onClick={() => setActiveCategoryModal(null)}
+                  className="p-1.5 hover:bg-red-50/50 dark:hover:bg-zinc-800 rounded-full text-gray-500 cursor-pointer"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
 
                 {/* Items List */}
                 <div className="space-y-4">
@@ -2469,8 +2493,8 @@ const PremiumServiceDetailPage = () => {
                   </div>
                 </div>
               </motion.div>
-            </div>
-          </>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 

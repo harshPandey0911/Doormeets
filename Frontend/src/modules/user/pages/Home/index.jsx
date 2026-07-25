@@ -597,9 +597,13 @@ const Home = () => {
     
     // 1. Try resolving by targetCategoryId
     if (service.targetCategoryId) {
-      const cat = categories.find(c => (c.id === service.targetCategoryId || c._id === service.targetCategoryId));
+      const targetIdStr = String(service.targetCategoryId);
+      const cat = categories.find(c => String(c.id || c._id) === targetIdStr);
       if (cat) {
         handleCategoryClick(cat);
+        return;
+      } else {
+        navigate(`/user/category/${targetIdStr}`);
         return;
       }
     }
@@ -903,13 +907,18 @@ const Home = () => {
                       homeContent?.isBannersVisible !== false && (
                         <div key="banners" className="md:hidden">
                           <OfferBannerSlider
-                            banners={homeContent?.banners && homeContent.banners.length > 0
-                              ? homeContent.banners.map(b => ({
-                                  ...b,
-                                  imageUrl: toAssetUrl(b.imageUrl),
-                                  link: b.link || b.slug || ''
-                                }))
-                              : offerBanners
+                            banners={
+                              (offerBanners && offerBanners.length > 0
+                                ? offerBanners
+                                : (homeContent?.banners || [])
+                              ).map(b => ({
+                                ...b,
+                                imageUrl: toAssetUrl(b.imageUrl),
+                                link: b.link || '',
+                                targetCategoryId: b.targetCategoryId || b.categoryId,
+                                slug: b.slug,
+                                scrollToSection: b.scrollToSection
+                              }))
                             }
                           />
                         </div>
@@ -1029,15 +1038,23 @@ const Home = () => {
                               </div>
 
                               {/* Right: Banner */}
-                              {homeContent?.banners && homeContent.banners.length > 0 && (
+                              {((offerBanners && offerBanners.length > 0) || (homeContent?.banners && homeContent.banners.length > 0)) && (
                                 <div className="flex-1 min-w-0">
                                   <OfferBannerSlider
                                     noPadding
-                                    banners={homeContent.banners.map(b => ({
-                                      ...b,
-                                      imageUrl: toAssetUrl(b.imageUrl),
-                                      link: b.link || b.slug || ''
-                                    }))}
+                                    banners={
+                                      (offerBanners && offerBanners.length > 0
+                                        ? offerBanners
+                                        : (homeContent?.banners || [])
+                                      ).map(b => ({
+                                        ...b,
+                                        imageUrl: toAssetUrl(b.imageUrl),
+                                        link: b.link || '',
+                                        targetCategoryId: b.targetCategoryId || b.categoryId,
+                                        slug: b.slug,
+                                        scrollToSection: b.scrollToSection
+                                      }))
+                                    }
                                   />
                                 </div>
                               )}
@@ -1289,7 +1306,8 @@ const Home = () => {
                                 title: item.title,
                                 image: toAssetUrl(item.imageUrl),
                                 slug: item.slug,
-                                targetCategoryId: item.targetCategoryId
+                                targetCategoryId: item.targetCategoryId ? (typeof item.targetCategoryId === 'object' ? (item.targetCategoryId.id || item.targetCategoryId._id || String(item.targetCategoryId)) : String(item.targetCategoryId)) : null,
+                                targetServiceId: item.targetServiceId ? (typeof item.targetServiceId === 'object' ? (item.targetServiceId.id || item.targetServiceId._id || String(item.targetServiceId)) : String(item.targetServiceId)) : null
                               }))}
                               onServiceClick={handleServiceClick}
                               onSeeAllClick={() => navigate('/user/categories')}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { FiPlus, FiMinus, FiStar, FiCalendar, FiX } from 'react-icons/fi';
 import { toAssetUrl } from './cartUtils';
@@ -102,37 +103,37 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                   <span>{visits.length} Scheduled Visits</span>
                 </button>
 
-                {showVisitsModal && (
+                {showVisitsModal && createPortal(
                   <div 
-                    className="fixed inset-0 bg-black/55 backdrop-blur-xs z-50 flex items-center justify-center p-4"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowVisitsModal(false);
                     }}
                   >
                     <div 
-                      className="bg-white dark:bg-zinc-900 rounded-md p-5 w-full max-w-sm shadow-xl space-y-4 border dark:border-zinc-800"
+                      className="bg-white dark:bg-zinc-900 rounded-xl p-5 w-full max-w-sm shadow-2xl space-y-4 border dark:border-zinc-800 animate-in fade-in zoom-in-95 duration-200"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex justify-between items-center border-b pb-2 dark:border-zinc-800">
-                        <span className="font-bold text-xs md:text-sm text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
+                      <div className="flex justify-between items-center border-b pb-3 dark:border-zinc-800">
+                        <span className="font-bold text-sm text-slate-800 dark:text-zinc-200 flex items-center gap-2">
                           <FiCalendar className="w-4 h-4 text-indigo-500" /> {visits.length} Scheduled Visits
                         </span>
                         <button
                           type="button"
                           onClick={() => setShowVisitsModal(false)}
-                          className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full"
+                          className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
                         >
                           <FiX className="w-4 h-4" />
                         </button>
                       </div>
-                      <div className="space-y-3 py-1">
+                      <div className="space-y-3 py-1 max-h-[60vh] overflow-y-auto pr-1">
                         {visits.map((v, i) => (
-                          <div key={i} className="flex gap-3 items-start p-2.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-md border border-slate-100 dark:border-zinc-800 text-[10px] md:text-xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                          <div key={i} className="flex gap-3 items-start p-3 bg-slate-50/70 dark:bg-zinc-800/40 rounded-lg border border-slate-100 dark:border-zinc-800 text-xs">
+                            <span className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
                             <div className="flex-1">
                               <div className="font-bold text-slate-800 dark:text-zinc-200">Visit {v.sequence}</div>
-                              <div className="text-gray-400 mt-0.5">
+                              <div className="text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
                                 {v.daysOffset === 0 ? 'Today' : `After ${v.daysOffset} days`} ({formatDate(v.date)})
                               </div>
                             </div>
@@ -140,7 +141,8 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
                         ))}
                       </div>
                     </div>
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </>
             );
