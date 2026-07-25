@@ -244,6 +244,7 @@ exports.updatePricing = async (req, res) => {
     if (req.body.brandId === '') req.body.brandId = null;
     if (req.body.subCategoryId === '') req.body.subCategoryId = null;
     if (req.body.cityId === '' || req.body.cityId === 'all') req.body.cityId = null;
+    if (!req.body.variantId || req.body.variantId === '') req.body.variantId = null;
 
     // Fetch global settings to overwrite commission rates
     let settings = await Settings.findOne({ type: 'global' });

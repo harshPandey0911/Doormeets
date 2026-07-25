@@ -1,1 +1,17 @@
-const mongoose = require('mongoose'); mongoose.connect('mongodb://127.0.0.1:27017/doormeets').then(async () => { const db = mongoose.connection.db; const collections = await db.listCollections().toArray(); for (let c of collections) { const docs = await db.collection(c.name).find({title: /Mens and kids salon/i}).toArray(); if (docs.length > 0) console.log('Found in', c.name, docs); } process.exit(0); });
+const dotenv = require('dotenv');
+dotenv.config();
+const mongoose = require('mongoose');
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+async function check() {
+  await mongoose.connect(MONGODB_URI);
+  const TrainingVideo = require('./models/TrainingVideo');
+  
+  const videos = await TrainingVideo.find({});
+  console.log('Training Videos:', JSON.stringify(videos, null, 2));
+
+  process.exit(0);
+}
+
+check();

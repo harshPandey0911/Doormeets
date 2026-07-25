@@ -50,6 +50,7 @@ const VerificationPage = () => {
   // 1 = Aadhaar & PAN Upload, 2 = Police Verification upload, 3 = Video, 4 = MCQ, 5 = Subscription
   const [levelInfo, setLevelInfo] = useState(null);
   const [canSubmitVideo, setCanSubmitVideo] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(30);
   const [adminLevelConfig, setAdminLevelConfig] = useState(null);
 
   useEffect(() => {
@@ -88,6 +89,27 @@ const VerificationPage = () => {
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
     }
   }, []);
+
+  // On-screen countdown timer (ensures 100% reliability even if YT iframe events are blocked by adblockers/Brave)
+  useEffect(() => {
+    if (step === 3 && video) {
+      const targetSec = video.durationSeconds || 30;
+      setSecondsLeft(targetSec);
+      
+      const timer = setInterval(() => {
+        setSecondsLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setCanSubmitVideo(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [step, video]);
 
   // Track YouTube watch progress
   useEffect(() => {
@@ -850,7 +872,7 @@ const VerificationPage = () => {
                 onClick={handleVideoWatched}
                 className="py-3 px-8 bg-[#9634f7] hover:bg-[#b87cff] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors shadow-lg cursor-pointer active:scale-95 text-xs flex items-center gap-1.5"
               >
-                I have watched the video
+                {secondsLeft > 0 && !videoWatched ? `I have watched the video (${secondsLeft}s)` : "I have watched the video"}
               </button>
             </div>
           </div>

@@ -159,12 +159,17 @@ const getBookingById = async (req, res) => {
       ];
     }
 
-    const booking = await Booking.findOne(query)
-      .populate('userId', 'name phone email profilePhoto')
-      .populate('vendorId', 'name businessName phone email')
-      .populate('serviceId', 'title description iconUrl images')
-      .populate('categoryId', 'title slug')
-      .populate('workerId', 'name phone rating totalJobs completedJobs');
+    // Run Booking find (with populate) and Bid check in parallel
+    const Bid = require('../../models/Bid');
+    const [booking, existingBid] = await Promise.all([
+      Booking.findOne(query)
+        .populate('userId', 'name phone email profilePhoto')
+        .populate('vendorId', 'name businessName phone email')
+        .populate('serviceId', 'title description iconUrl images')
+        .populate('categoryId', 'title slug')
+        .populate('workerId', 'name phone rating totalJobs completedJobs'),
+      Bid.findOne({ bookingId: id, vendorId })
+    ]);
 
     if (!booking) {
       return res.status(404).json({
@@ -172,10 +177,6 @@ const getBookingById = async (req, res) => {
         message: 'Booking not found'
       });
     }
-
-    // Check if THIS vendor has already submitted a bid for this booking
-    const Bid = require('../../models/Bid');
-    const existingBid = await Bid.findOne({ bookingId: id, vendorId });
 
     const bookingData = booking.toObject();
     const phoneRevealedStatuses = ['journey_started', 'visited', 'in_progress', 'work_done', 'final_settlement', 'completed'];

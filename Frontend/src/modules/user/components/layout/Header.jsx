@@ -19,25 +19,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
     { id: 'account', label: 'Account', icon: FiUser, path: '/user/account' },
   ];
 
-  // Load dynamic unread notifications count
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-        if (!token) return;
-        const res = await api.get('/notifications/user');
-        if (res.data.success && typeof res.data.unreadCount === 'number') {
-          setUnreadCount(res.data.unreadCount);
-        }
-      } catch (error) {
-        // Silent fail
-      }
-    };
-
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Notification count is managed by NotificationBell internally now
 
   const displayLocation =
     location && location !== '...' && location !== 'Select Location'

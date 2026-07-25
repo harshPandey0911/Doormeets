@@ -561,9 +561,8 @@ const deleteBrand = async (req, res) => {
       });
     }
 
-    // Soft delete - set status to deleted
-    brand.status = SERVICE_STATUS.DELETED;
-    await brand.save();
+    // Hard delete brand
+    await Brand.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,

@@ -44,7 +44,14 @@ const BookingAlertCard = ({ booking, onAccept, onReject, onAssign, maxSearchTime
 
     if (timeLeft <= 0) {
       if (!isWaiting) {
-        onReject?.(booking.id || booking._id);
+        // Silently remove from local storage and state without hitting the server API
+        try {
+          const pendingJobs = JSON.parse(localStorage.getItem('vendorPendingJobs') || '[]');
+          const updated = pendingJobs.filter(b => String(b.id || b._id) !== String(booking.id || booking._id));
+          localStorage.setItem('vendorPendingJobs', JSON.stringify(updated));
+        } catch (err) {
+          console.error('Error clearing expired local storage alert:', err);
+        }
         window.dispatchEvent(new CustomEvent('removeVendorBooking', { detail: { id: booking.id || booking._id } }));
       }
       return;

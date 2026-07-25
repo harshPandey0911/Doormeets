@@ -610,9 +610,8 @@ const deleteCategory = async (req, res) => {
       });
     }
 
-    // Soft delete - set status to deleted
-    category.status = SERVICE_STATUS.DELETED;
-    await category.save();
+    // Hard delete category
+    await Category.findByIdAndDelete(id);
 
     // Delete associated subcategories
     const SubCategory = require('../../models/SubCategory');
