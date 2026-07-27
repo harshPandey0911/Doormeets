@@ -54,6 +54,7 @@ const Checkout = () => {
 
   // Optional GST Number State
   const [userGstNumber, setUserGstNumber] = useState('');
+  const [showGstField, setShowGstField] = useState(false);
 
   // New state for vendor search flow
   const [currentStep, setCurrentStep] = useState('details'); // 'details' | 'searching' | 'waiting' | 'accepted' | 'payment'
@@ -2083,24 +2084,41 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* Optional GST Number Input */}
+        {/* Optional GST Number Input with Checkbox Toggle */}
         <div className="border rounded-md p-4 mb-4" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
-          <div className="flex items-center gap-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-            <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>GST Number <span className="text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>(Optional – for GST invoice)</span></p>
-          </div>
-          <input
-            id="checkout-gst-number"
-            type="text"
-            placeholder="Enter GSTIN (e.g. 22AAAAA0000A1Z5)"
-            value={userGstNumber}
-            onChange={(e) => setUserGstNumber(e.target.value.toUpperCase())}
-            maxLength={15}
-            className="w-full px-3 py-2 rounded-md border text-sm"
-            style={{ backgroundColor: 'var(--input-bg, #f9fafb)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-          />
-          {userGstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(userGstNumber) && (
-            <p className="text-xs mt-1" style={{ color: '#f59e0b' }}>Please enter a valid 15-character GSTIN</p>
+          <label className="flex items-center gap-3 cursor-pointer" htmlFor="gst-checkbox-toggle">
+            <input
+              id="gst-checkbox-toggle"
+              type="checkbox"
+              checked={showGstField}
+              onChange={(e) => {
+                setShowGstField(e.target.checked);
+                if (!e.target.checked) setUserGstNumber('');
+              }}
+              className="w-4 h-4 rounded border-gray-300 accent-indigo-600 cursor-pointer"
+            />
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>I have a GST Number <span className="text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>(for GST invoice)</span></p>
+            </div>
+          </label>
+          {showGstField && (
+            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+              <input
+                id="checkout-gst-number"
+                type="text"
+                placeholder="Enter GSTIN (e.g. 22AAAAA0000A1Z5)"
+                value={userGstNumber}
+                onChange={(e) => setUserGstNumber(e.target.value.toUpperCase())}
+                maxLength={15}
+                autoFocus
+                className="w-full px-3 py-2 rounded-md border text-sm"
+                style={{ backgroundColor: 'var(--input-bg, #f9fafb)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+              />
+              {userGstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(userGstNumber) && (
+                <p className="text-xs mt-1" style={{ color: '#f59e0b' }}>Please enter a valid 15-character GSTIN</p>
+              )}
+            </div>
           )}
         </div>
 
