@@ -689,11 +689,16 @@ const PremiumCategoryPage = () => {
   };
 
   const cartTotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + (item.price * (item.serviceCount || 1)), 0);
+    return cartItems.reduce((sum, item) => sum + (item.price || 0), 0);
   }, [cartItems]);
 
   const cartOriginalTotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + ((item.originalPrice || item.price) * (item.serviceCount || 1)), 0);
+    return cartItems.reduce((sum, item) => {
+      if (item.originalPrice) {
+        return sum + (item.originalPrice * (item.serviceCount || 1));
+      }
+      return sum + (item.price || 0);
+    }, 0);
   }, [cartItems]);
 
   return (
@@ -1400,8 +1405,8 @@ const PremiumCategoryPage = () => {
 
                             {/* Price */}
                             <div className="text-right shrink-0 min-w-[60px]">
-                              <p className="text-xs font-bold text-slate-900 dark:text-white">₹{item.price * (item.serviceCount || 1)}</p>
-                              {item.originalPrice && item.originalPrice > item.price && (
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">₹{item.price}</p>
+                              {item.originalPrice && (item.originalPrice * (item.serviceCount || 1)) > item.price && (
                                 <p className="text-[10px] text-gray-400 line-through">₹{item.originalPrice * (item.serviceCount || 1)}</p>
                               )}
                             </div>

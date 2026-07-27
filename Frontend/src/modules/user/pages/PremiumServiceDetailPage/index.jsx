@@ -2157,6 +2157,7 @@ const PremiumServiceDetailPage = () => {
                       <span className="text-[10px] text-gray-400 font-normal">Variants</span>
                       <button
                         type="button"
+                        onClick={(e) => { e.stopPropagation(); setActiveCategoryModal(group); }}
                         className="px-2.5 py-0.5 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#B33A35] font-bold text-[11px] hover:border-[#B33A35] hover:bg-red-50/40 dark:hover:bg-red-950/20 transition-all cursor-pointer shadow-xs active:scale-95"
                       >
                         Add
@@ -2365,36 +2366,37 @@ const PremiumServiceDetailPage = () => {
       </div>
 
 {/* Category Group details modal */}
-      <AnimatePresence>
-        {activeCategoryModal && createPortal(
-          <div className="fixed inset-0 z-[99999] flex items-end justify-center md:items-center md:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActiveCategoryModal(null)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
-            />
-            {/* Centered Modal / Sheet */}
-            <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative z-10 w-full max-w-md md:max-w-lg rounded-t-xl md:rounded-xl p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto bg-white dark:bg-zinc-900"
-              style={{ borderColor: 'var(--border)' }}
-            >
-              <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
-                <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {activeCategoryModal.title} Options & Packages
-                </h3>
-                <button
-                  onClick={() => setActiveCategoryModal(null)}
-                  className="p-1.5 hover:bg-red-50/50 dark:hover:bg-zinc-800 rounded-full text-gray-500 cursor-pointer"
-                >
-                  <FiX className="w-5 h-5" />
-                </button>
-              </div>
+      {createPortal(
+        <AnimatePresence>
+          {activeCategoryModal && (
+            <div className="fixed inset-0 z-[99999] flex items-end justify-center md:items-center md:p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setActiveCategoryModal(null)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
+              />
+              {/* Centered Modal / Sheet */}
+              <motion.div
+                initial={{ y: '100%', opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: '100%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                className="relative z-10 w-full max-w-md md:max-w-lg rounded-t-xl md:rounded-xl p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto bg-white dark:bg-zinc-900"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {activeCategoryModal.title} Options & Packages
+                  </h3>
+                  <button
+                    onClick={() => setActiveCategoryModal(null)}
+                    className="p-1.5 hover:bg-red-50/50 dark:hover:bg-zinc-800 rounded-full text-gray-500 cursor-pointer"
+                  >
+                    <FiX className="w-5 h-5" />
+                  </button>
+                </div>
 
                 {/* Items List */}
                 <div className="space-y-4">
@@ -2493,10 +2495,11 @@ const PremiumServiceDetailPage = () => {
                   </div>
                 </div>
               </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
         {/* Package Customization Modal/Bottom Sheet */}
         <AnimatePresence>

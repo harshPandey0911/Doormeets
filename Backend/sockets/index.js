@@ -289,45 +289,47 @@ const initializeSocket = (server) => {
   console.log('Socket.io initialized successfully');
 };
 
-// Helper function to update vendor online status
-const updateVendorOnlineStatus = async (vendorId, isOnline, socketId) => {
+const updateVendorOnlineStatus = async (vendorId, isConnected, socketId) => {
   try {
     const Vendor = require('../models/Vendor');
 
+    // We no longer override isOnline/availability. That is controlled manually by the vendor via API.
     const updateData = {
-      currentSocketId: socketId,
-      isOnline: isOnline,
-      availability: isOnline ? 'AVAILABLE' : 'OFFLINE'
+      currentSocketId: isConnected ? socketId : null,
     };
+    
+    if (!isConnected) {
+      updateData.lastSeenAt = new Date();
+    }
 
     // Update MongoDB
     await Vendor.findByIdAndUpdate(vendorId, updateData);
 
-    console.log(`[Socket] Vendor ${vendorId} is now ${isOnline ? 'ONLINE' : 'OFFLINE'} (socketId=${socketId})`);
+    console.log(`[Socket] Vendor ${vendorId} is now ${isConnected ? 'CONNECTED' : 'DISCONNECTED'} (socketId=${socketId})`);
   } catch (error) {
     console.error('[Socket] Error updating vendor online status:', error);
   }
 };
 
 // Helper function to update worker online status
-const updateWorkerOnlineStatus = async (workerId, isOnline, socketId) => {
+const updateWorkerOnlineStatus = async (workerId, isConnected, socketId) => {
   try {
     const mongoose = require('mongoose');
     const Worker = mongoose.model('Worker');
 
+    // We no longer override worker status. That is controlled manually via API.
     const updateData = {
-      status: isOnline ? 'ONLINE' : 'OFFLINE',
-      // currentSocketId: socketId // Add to model if needed
+      currentSocketId: isConnected ? socketId : null,
     };
 
-    if (!isOnline) {
-      updateData.lastSeenAt = new Date(); // Add to model if needed
+    if (!isConnected) {
+      updateData.lastSeenAt = new Date();
     }
 
     // Update MongoDB
     await Worker.findByIdAndUpdate(workerId, updateData);
 
-    console.log(`[Socket] Worker ${workerId} is now ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+    console.log(`[Socket] Worker ${workerId} is now ${isConnected ? 'CONNECTED' : 'DISCONNECTED'}`);
   } catch (error) {
     console.error('[Socket] Error updating worker online status:', error);
   }
