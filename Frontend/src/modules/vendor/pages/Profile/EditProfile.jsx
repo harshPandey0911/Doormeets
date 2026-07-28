@@ -17,10 +17,7 @@ const vendorProfileSchema = z.object({
   businessName: z.string().optional(),
   phone: z.string().regex(/^\+?[0-9]{10,13}$/, "Invalid phone number"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
-  address: z.custom((val) => {
-    return (typeof val === 'string' && val.trim().length > 0) ||
-      (typeof val === 'object' && val !== null && (val.fullAddress || val.addressLine1));
-  }, "Address is required"),
+  address: z.any().optional(),
   serviceCategories: z.any().optional(), // Relaxed validation for debugging
 });
 
