@@ -18,7 +18,9 @@ import {
   requestCancel,
   cancelAccepted,
   acceptReschedule,
-  rejectReschedule
+  rejectReschedule,
+  approveWork,
+  rejectWork
 } from '../../services/bookingService';
 import vendorBillService from '../../../../services/vendorBillService';
 import { CashCollectionModal, ConfirmDialog, WorkerPaymentModal, OtpVerificationModal, ReachedPhotoModal } from '../../components/common';
@@ -855,6 +857,16 @@ export default function BookingDetails() {
     enableHighAccuracy: true
   });
 
+  const playAlertSound = () => {
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav');
+      audio.volume = 0.5;
+      audio.play();
+    } catch (e) {
+      console.warn('Failed to play alert sound:', e);
+    }
+  };
+
   // Listen for Real-Time Booking Updates (e.g. Online Payment)
   useEffect(() => {
     if (socket && id) {
@@ -889,8 +901,40 @@ export default function BookingDetails() {
         }
       };
 
+      // Listen for worker workdone submission (for vendor view)
+      const handleWorkDoneSubmitted = (data) => {
+        if (data.bookingId === id) {
+          playAlertSound();
+          toast.success('Worker submitted work done details for approval!');
+          window.dispatchEvent(new Event('vendorJobsUpdated'));
+          loadBooking();
+        }
+      };
+
+      // Listen for work approval/rejection (for worker view)
+      const handleWorkApproved = (data) => {
+        if (data.bookingId === id) {
+          playAlertSound();
+          toast.success('Your work has been approved by the vendor!');
+          window.dispatchEvent(new Event('vendorJobsUpdated'));
+          loadBooking();
+        }
+      };
+
+      const handleWorkRejected = (data) => {
+        if (data.bookingId === id) {
+          playAlertSound();
+          toast.error(`Your work has been rejected: ${data.reason || 'Please try again'}`);
+          window.dispatchEvent(new Event('vendorJobsUpdated'));
+          loadBooking();
+        }
+      };
+
       socket.on('booking_updated', handleBookingUpdate);
       socket.on('payment_success', handleBookingUpdate);
+      socket.on('work_done_submitted', handleWorkDoneSubmitted);
+      socket.on('work_approved', handleWorkApproved);
+      socket.on('work_rejected', handleWorkRejected);
 
       // Listen for booking cancellation by user — redirect vendor immediately
       const handleBookingCancelled = (data) => {
@@ -909,6 +953,9 @@ export default function BookingDetails() {
       return () => {
         socket.off('booking_updated', handleBookingUpdate);
         socket.off('payment_success', handleBookingUpdate);
+        socket.off('work_done_submitted', handleWorkDoneSubmitted);
+        socket.off('work_approved', handleWorkApproved);
+        socket.off('work_rejected', handleWorkRejected);
         socket.off('booking_cancelled', handleBookingCancelled);
       };
     }
@@ -970,6 +1017,51 @@ export default function BookingDetails() {
       setActionLoading(false);
     }
   };
+  const handleApproveWork = async () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Approve Work',
+      message: 'Are you sure you want to approve this work completion request? The customer will receive their final bill and OTP to make payment.',
+      type: 'info',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await approveWork(id);
+          toast.success('Work approved successfully!');
+          window.dispatchEvent(new Event('vendorJobsUpdated'));
+          loadBooking();
+        } catch (error) {
+          console.error('Error approving work:', error);
+          toast.error(error.response?.data?.message || 'Failed to approve work. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  const handleRejectWorkPrompt = async () => {
+    const reason = window.prompt('Please enter the reason for rejecting work completion:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      toast.error('Rejection reason is required');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await rejectWork(id, reason);
+      toast.success('Work completion request rejected successfully.');
+      window.dispatchEvent(new Event('vendorJobsUpdated'));
+      loadBooking();
+    } catch (error) {
+      console.error('Error rejecting work:', error);
+      toast.error(error.response?.data?.message || 'Failed to reject work. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getAvailableStatuses = (currentStatus, booking) => {
     // Check payment status
     const workerPaymentDone = booking?.workerPaymentStatus === 'PAID';
@@ -2228,6 +2320,58 @@ export default function BookingDetails() {
                                         {booking.workInstructions && <p className="text-[10px] text-gray-600 italic">🔧 {booking.workInstructions}</p>}
                                       </div>
                                     )}
+                                  </div>
+                                )}
+
+                                {/* Worker Rejection Alert */}
+                                {isWorker && booking.workDoneApprovalStatus === 'rejected' && (
+                                  <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs font-semibold text-center mb-2">
+                                    ❌ Work Rejected: {booking.workDoneRejectionReason}
+                                  </div>
+                                )}
+
+                                {/* Worker Waiting Screen */}
+                                {isWorker && booking.status === 'work_done_submitted' && (
+                                  <div className="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl text-xs font-bold text-center flex flex-col items-center gap-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-800" />
+                                    <span>Waiting for Vendor Approval</span>
+                                  </div>
+                                )}
+
+                                {/* Vendor Approval Panel */}
+                                {!isWorker && booking.status === 'work_done_submitted' && (
+                                  <div className="p-4 bg-white border border-gray-200 rounded-xl space-y-3 shadow-sm">
+                                    <div className="text-[10px] font-bold text-gray-700 uppercase tracking-wide">
+                                      Review Worker Work Completion
+                                    </div>
+                                    {booking.workPhotos && booking.workPhotos.length > 0 && (
+                                      <div className="grid grid-cols-3 gap-1.5">
+                                        {booking.workPhotos.map((p, idx) => (
+                                          <img key={idx} src={p} alt="Work Done" className="w-full aspect-square object-cover rounded-lg border cursor-pointer hover:opacity-90" onClick={() => window.open(p, '_blank')} />
+                                        ))}
+                                      </div>
+                                    )}
+                                    {booking.workDoneDetails?.notes && (
+                                      <p className="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-lg italic">
+                                        "{booking.workDoneDetails.notes}"
+                                      </p>
+                                    )}
+                                    <div className="flex gap-2 pt-1">
+                                      <button
+                                        onClick={handleApproveWork}
+                                        className="flex-1 py-2 px-3 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1"
+                                      >
+                                        <FiCheckCircle className="w-3.5 h-3.5" />
+                                        <span>Approve</span>
+                                      </button>
+                                      <button
+                                        onClick={handleRejectWorkPrompt}
+                                        className="flex-1 py-2 px-3 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1"
+                                      >
+                                        <FiXCircle className="w-3.5 h-3.5" />
+                                        <span>Reject</span>
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
 

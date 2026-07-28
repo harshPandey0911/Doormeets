@@ -1372,7 +1372,7 @@ const PremiumServiceDetailPage = () => {
                     <div className="flex flex-col items-end shrink-0 gap-2">
                       <div className="text-right">
                         <div className="font-semibold text-sm text-brand">₹{pkg.price}</div>
-                        {pkg.originalPrice && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                        {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
                       </div>
                       <button
                         type="button"
@@ -1513,7 +1513,7 @@ const PremiumServiceDetailPage = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="font-extrabold text-lg text-[#B33A35]">₹{pkg.price}</div>
-                      {pkg.originalPrice && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                      {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
                     </div>
                   </div>
  
@@ -2266,7 +2266,7 @@ const PremiumServiceDetailPage = () => {
                         <div className="flex flex-col items-end shrink-0 gap-3">
                           <div className="text-right">
                             <div className="font-extrabold text-sm text-[#B33A35]">₹{pkg.price}</div>
-                            {pkg.originalPrice && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                            {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
                           </div>
                           <button
                             type="button"

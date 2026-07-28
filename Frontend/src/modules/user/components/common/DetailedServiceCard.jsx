@@ -110,7 +110,7 @@ const DetailedServiceCard = memo(({ image, title, rating, reviews, price, origin
         <div className="flex items-center gap-1 mt-auto">
           {isPriceDisclosed ? (
             <>
-              {displayOriginalPrice && (
+              {displayOriginalPrice && Number(originalPrice) > Number(price) && (
                 <span className="text-[10px] text-gray-400 line-through">₹{displayOriginalPrice}</span>
               )}
               <span className="text-[11.5px] font-bold" style={{ color: 'var(--text-primary)' }}>₹{displayPrice}</span>

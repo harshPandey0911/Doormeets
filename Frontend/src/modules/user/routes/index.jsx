@@ -166,8 +166,7 @@ const UserRoutes = () => {
   const hasSeenWelcome = localStorage.getItem('hasSeenWelcome') === 'true';
   const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
   if ((location.pathname === '/user' || location.pathname === '/user/') && hasSeenWelcome) {
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    return <Navigate to={token || isDesktop ? "/user/home" : "/user/login"} replace />;
+    return <Navigate to="/user/home" replace />;
   }
 
   return (

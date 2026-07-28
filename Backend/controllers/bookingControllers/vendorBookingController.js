@@ -1454,9 +1454,10 @@ const updateBookingStatus = async (req, res) => {
         [BOOKING_STATUS.PENDING]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.REJECTED, BOOKING_STATUS.CANCELLED],
         [BOOKING_STATUS.AWAITING_PAYMENT]: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED],
         [BOOKING_STATUS.CONFIRMED]: [BOOKING_STATUS.ASSIGNED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.CANCELLED],
-        [BOOKING_STATUS.ASSIGNED]: [BOOKING_STATUS.VISITED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.WORK_DONE, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED],
-        [BOOKING_STATUS.VISITED]: [BOOKING_STATUS.WORK_DONE, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.CANCELLED],
-        [BOOKING_STATUS.IN_PROGRESS]: [BOOKING_STATUS.WORK_DONE, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED],
+        [BOOKING_STATUS.ASSIGNED]: [BOOKING_STATUS.VISITED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.WORK_DONE, BOOKING_STATUS.WORK_DONE_SUBMITTED, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED],
+        [BOOKING_STATUS.VISITED]: [BOOKING_STATUS.WORK_DONE, BOOKING_STATUS.WORK_DONE_SUBMITTED, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.CANCELLED],
+        [BOOKING_STATUS.IN_PROGRESS]: [BOOKING_STATUS.WORK_DONE, BOOKING_STATUS.WORK_DONE_SUBMITTED, BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED],
+        [BOOKING_STATUS.WORK_DONE_SUBMITTED]: [BOOKING_STATUS.WORK_DONE, BOOKING_STATUS.IN_PROGRESS, BOOKING_STATUS.CANCELLED],
         [BOOKING_STATUS.WORK_DONE]: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED]
       };
 
@@ -2102,6 +2103,71 @@ const completeSelfJob = async (req, res) => {
     // STEP 7: UPDATE BOOKING (no earnings!)
     // ═══════════════════════════════════════════
 
+    const { createNotification } = require('../notificationControllers/notificationController');
+
+    if (isWorkerRole) {
+      booking.status = BOOKING_STATUS.WORK_DONE_SUBMITTED;
+      booking.workDoneApprovalStatus = 'pending';
+      booking.workDoneRejectionReason = null;
+      if (workPhotos) booking.workPhotos = workPhotos;
+      booking.finalAmount = grandTotal;
+      booking.userPayableAmount = grandTotal;
+      booking.vendorBillId = bill._id;
+
+      booking.workDoneDetails = {
+        ...(typeof workDoneDetails === 'object' ? workDoneDetails : {}),
+        billId: bill._id.toString(),
+        items: [
+          ...allServices.map(s => ({ title: s.name, qty: s.quantity, price: s.total })),
+          ...billParts.map(p => ({ title: p.name, qty: p.quantity, price: p.total }))
+        ]
+      };
+      booking.markModified('workDoneDetails');
+      await booking.save();
+
+      // Notify Vendor
+      createNotification({
+        userId: booking.vendorId,
+        type: 'work_done_submitted',
+        title: 'Work Done Approval Request',
+        message: `Worker ${req.user.name || 'Worker'} has submitted completion details for booking ${booking.bookingNumber}. Please review and approve.`,
+        relatedId: booking._id,
+        relatedType: 'booking',
+        priority: 'high',
+        pushData: {
+          type: 'work_done_submitted',
+          bookingId: booking._id.toString(),
+          link: `/vendor/booking/${booking._id}`
+        }
+      });
+
+      // Emit socket event to vendor to trigger alert and sound
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`vendor_${booking.vendorId}`).emit('work_done_submitted', {
+          bookingId: booking._id,
+          status: booking.status,
+          message: 'Worker submitted completion details, approval required',
+          sound: 'alert'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Completion details submitted for vendor approval successfully',
+        data: {
+          booking,
+          bill: {
+            id: bill._id,
+            grandTotal,
+            totalGST,
+            totalServiceBase,
+            totalPartsBase
+          }
+        }
+      });
+    }
+
     booking.status = BOOKING_STATUS.WORK_DONE;
     booking.finalAmount = grandTotal;
     booking.userPayableAmount = grandTotal; // Ensure consistency
@@ -2127,7 +2193,6 @@ const completeSelfJob = async (req, res) => {
     await booking.save();
 
     // ── Notify user ──
-    const { createNotification } = require('../notificationControllers/notificationController');
 
     // 1. Notify user that work is completed
     createNotification({
@@ -3091,6 +3156,188 @@ const refundVendorLeadFee = async (bookingId, specificVendorId = null) => {
   }
 };
 
+/**
+ * Approve Worker's Work Done
+ */
+const approveWorkerWork = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+
+    const booking = await Booking.findOne({ _id: id, vendorId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status !== BOOKING_STATUS.WORK_DONE_SUBMITTED) {
+      return res.status(400).json({ success: false, message: 'Booking is not in work_done_submitted state' });
+    }
+
+    // Reuse existing Payment OTP for cash collection or generate new one
+    const payOtp = booking.paymentOtp || Math.floor(1000 + Math.random() * 9000).toString();
+    booking.paymentOtp = payOtp;
+
+    // Transition status to WORK_DONE
+    booking.status = BOOKING_STATUS.WORK_DONE;
+    booking.workDoneApprovalStatus = 'approved';
+    booking.workDoneRejectionReason = null;
+    await booking.save();
+
+    // ── Notify user and worker ──
+    const { createNotification } = require('../notificationControllers/notificationController');
+
+    // 1. Notify customer that work is approved/completed & ready for payment
+    createNotification({
+      userId: booking.userId,
+      type: 'work_completed',
+      title: 'Work Completed',
+      message: `Work finished! Your bill is being prepared.`,
+      relatedId: booking._id,
+      relatedType: 'booking',
+      priority: 'high',
+      pushData: {
+        type: 'work_completed',
+        bookingId: booking._id.toString(),
+        link: `/user/booking/${booking._id}`
+      }
+    });
+
+    createNotification({
+      userId: booking.userId,
+      type: 'work_done',
+      title: 'Billing Ready',
+      message: `Bill Generated: ₹${booking.finalAmount}. Your verification OTP is ${payOtp}. Please share this with the professional to complete.`,
+      relatedId: booking._id,
+      relatedType: 'booking',
+      priority: 'high',
+      pushData: {
+        type: 'work_done',
+        bookingId: booking._id.toString(),
+        paymentOtp: payOtp,
+        link: `/user/booking/${booking._id}`
+      }
+    });
+
+    // 2. Notify worker that work is approved
+    if (booking.workerId) {
+      createNotification({
+        userId: booking.workerId,
+        type: 'work_approved',
+        title: 'Work Approved! 🎉',
+        message: `Vendor approved your work for booking ${booking.bookingNumber}. You can now collect payment/OTP.`,
+        relatedId: booking._id,
+        relatedType: 'booking',
+        priority: 'high',
+        pushData: {
+          type: 'work_approved',
+          bookingId: booking._id.toString(),
+          link: `/worker/booking/${booking._id}`
+        }
+      });
+
+      // Emit socket event to worker
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`worker_${booking.workerId}`).emit('work_approved', {
+          bookingId: booking._id,
+          status: booking.status,
+          message: 'Your work has been approved by the vendor',
+          sound: 'play'
+        });
+      }
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${booking.userId}`).emit('booking_updated', {
+        bookingId: booking._id,
+        status: BOOKING_STATUS.WORK_DONE,
+        finalAmount: booking.finalAmount
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Work approved successfully',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Approve worker work error:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve work' });
+  }
+};
+
+/**
+ * Reject Worker's Work Done
+ */
+const rejectWorkerWork = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const booking = await Booking.findOne({ _id: id, vendorId });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (booking.status !== BOOKING_STATUS.WORK_DONE_SUBMITTED) {
+      return res.status(400).json({ success: false, message: 'Booking is not in work_done_submitted state' });
+    }
+
+    // Revert status to IN_PROGRESS so worker must resubmit
+    booking.status = BOOKING_STATUS.IN_PROGRESS;
+    booking.workDoneApprovalStatus = 'rejected';
+    booking.workDoneRejectionReason = reason || 'Work done rejected by vendor. Please recheck or upload photos again.';
+    
+    // Clear work photos since it was rejected, to allow new ones to be uploaded/re-submitted
+    booking.workPhotos = []; 
+    await booking.save();
+
+    // ── Notify worker ──
+    const { createNotification } = require('../notificationControllers/notificationController');
+
+    if (booking.workerId) {
+      createNotification({
+        userId: booking.workerId,
+        type: 'work_rejected',
+        title: 'Work Rejected ❌',
+        message: `Vendor rejected your work for booking ${booking.bookingNumber}. Reason: ${booking.workDoneRejectionReason}`,
+        relatedId: booking._id,
+        relatedType: 'booking',
+        priority: 'high',
+        pushData: {
+          type: 'work_rejected',
+          bookingId: booking._id.toString(),
+          reason: booking.workDoneRejectionReason,
+          link: `/worker/booking/${booking._id}`
+        }
+      });
+
+      // Emit socket event to worker
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`worker_${booking.workerId}`).emit('work_rejected', {
+          bookingId: booking._id,
+          status: booking.status,
+          reason: booking.workDoneRejectionReason,
+          message: 'Your work has been rejected by the vendor',
+          sound: 'play'
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Work rejected successfully, worker notified to resubmit',
+      data: booking
+    });
+  } catch (error) {
+    console.error('Reject worker work error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject work' });
+  }
+};
+
 module.exports = {
   getVendorBookings,
   getBookingById,
@@ -3113,5 +3360,7 @@ module.exports = {
   requestCancelBooking,
   acceptReschedule,
   rejectReschedule,
-  refundVendorLeadFee
+  refundVendorLeadFee,
+  approveWorkerWork,
+  rejectWorkerWork
 };

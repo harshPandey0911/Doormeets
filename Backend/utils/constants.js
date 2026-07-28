@@ -137,6 +137,7 @@ const BOOKING_STATUS = {
   VISITED: 'visited',
   IN_PROGRESS: 'in_progress',
   WORK_DONE: 'work_done',
+  WORK_DONE_SUBMITTED: 'work_done_submitted',
   COMPLETED: 'completed',
   BIDDING: 'bidding', // Open for bidding
   CANCELLED: 'cancelled',
