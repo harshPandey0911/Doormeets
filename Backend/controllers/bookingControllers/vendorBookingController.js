@@ -1939,7 +1939,7 @@ const completeSelfJob = async (req, res) => {
       // Get Dynamic Commission from Settings based on Vendor Level (DISABLED: Commission removed)
       const dynamicCommission = 0;
 
-      const serviceSplitPct = isOnlineJob ? 100 : (100 - dynamicCommission);
+      const serviceSplitPct = settings?.servicePayoutPercentage ?? 70;
       const partsSplitPct = settings?.partsPayoutPercentage ?? 10;
       const serviceGstPct = settings?.serviceGstPercentage ?? 18;
       const partsGstPct = settings?.partsGstPercentage ?? 18;
@@ -2017,13 +2017,99 @@ const completeSelfJob = async (req, res) => {
       // ═══════════════════════════════════════════
       // STEP 5: REVENUE SPLIT (internal only)
       // ═══════════════════════════════════════════
-      // Vendor % is applied ONLY on base — never on GST
-      // TODO:
-      // New dual-invoice accounting logic will be implemented here.
-      const vendorServiceEarning = 0;
-      const vendorPartsEarning = 0;
-      const vendorTotalEarning = 0;
-      const companyRevenue = 0;
+      let packageVendorPayout = 0;
+      try {
+        const Service = require('../../models/Service');
+        const serviceDoc = await Service.findById(booking.serviceId);
+        if (serviceDoc && serviceDoc.packages && serviceDoc.packages.length > 0 && booking.bookedItems && booking.bookedItems.length > 0) {
+          for (const bookedItem of booking.bookedItems) {
+            const bookedTitle = bookedItem.card?.title;
+            const qty = Number(bookedItem.quantity) || 1;
+            if (bookedTitle) {
+              const matchingPackage = serviceDoc.packages.find(pkg => 
+                pkg.title === bookedTitle || 
+                bookedTitle.includes(pkg.title) || 
+                pkg.title.includes(bookedTitle)
+              );
+              if (matchingPackage && matchingPackage.vendorPayout > 0) {
+                packageVendorPayout += matchingPackage.vendorPayout * qty;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error finding package vendor payout:', err);
+      }
+
+      const PricingConfig = require('../../models/PricingConfig');
+      let pricing = null;
+      if (packageVendorPayout === 0 && booking.serviceId) {
+        const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
+        if (pricings.length > 0) {
+          if (booking.cityId) {
+            pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+          }
+          if (!pricing && booking.brandId) {
+            pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+          }
+          if (!pricing) {
+            pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+          }
+        }
+      }
+
+      let vendorServiceEarning = 0;
+      if (packageVendorPayout > 0) {
+        vendorServiceEarning = packageVendorPayout;
+      } else if (pricing) {
+        vendorServiceEarning = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
+      } else {
+        vendorServiceEarning = parseFloat((originalBase * (serviceSplitPct / 100)).toFixed(2));
+      }
+
+      // Add vendor's instant booking markup share if applicable
+      let vendorInstantMarkupShare = 0;
+      if (booking.bookingType === 'instant') {
+        vendorInstantMarkupShare = settings?.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+        vendorServiceEarning = parseFloat((vendorServiceEarning + vendorInstantMarkupShare).toFixed(2));
+      }
+
+      // Add extra services vendor earnings (using catalog vendorPayoutBase if configured)
+      let extraServicesEarning = 0;
+      const VendorServiceCatalog = require('../../models/VendorServiceCatalog');
+      if (billDetails?.services && Array.isArray(billDetails.services)) {
+        for (const item of billDetails.services) {
+          let catalogItem = null;
+          let itemPricing = null;
+          if (item.catalogId) {
+            catalogItem = await VendorServiceCatalog.findById(item.catalogId);
+            if (!catalogItem) {
+              const pricings = await PricingConfig.find({ serviceId: item.catalogId });
+              if (pricings.length > 0) {
+                if (booking.cityId) itemPricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+                if (!itemPricing && booking.brandId) itemPricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+                if (!itemPricing) itemPricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+              }
+            }
+          }
+          const qty = Number(item.quantity) || 1;
+          if (catalogItem && catalogItem.vendorPayoutBase !== undefined && catalogItem.vendorPayoutBase > 0) {
+            extraServicesEarning += catalogItem.vendorPayoutBase * qty;
+          } else if (itemPricing && itemPricing.vendorPayoutBase !== undefined && itemPricing.vendorPayoutBase !== null) {
+            extraServicesEarning += itemPricing.vendorPayoutBase * qty;
+          } else {
+            const unitPrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
+            extraServicesEarning += parseFloat(((unitPrice * qty) * (serviceSplitPct / 100)).toFixed(2));
+          }
+        }
+      }
+      vendorServiceEarning = parseFloat((vendorServiceEarning + extraServicesEarning).toFixed(2));
+
+      // Parts earnings
+      const vendorPartsEarning = parseFloat((totalPartsBase * (partsSplitPct / 100)).toFixed(2));
+
+      const vendorTotalEarning = parseFloat((vendorServiceEarning + vendorPartsEarning).toFixed(2));
+      const companyRevenue = parseFloat((grandTotal - vendorTotalEarning).toFixed(2));
 
       // ═══════════════════════════════════════════
       // STEP 6: PERSIST BILL
