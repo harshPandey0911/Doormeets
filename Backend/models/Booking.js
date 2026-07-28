@@ -384,6 +384,15 @@ const bookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
+  workDoneApprovalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', null],
+    default: null
+  },
+  workDoneRejectionReason: {
+    type: String,
+    default: null
+  },
   // Note: Detailed billing (items/parts) is now handled by VendorBill model
   // workDoneDetails and extraCharges are deprecated in favor of VendorBill
 

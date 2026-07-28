@@ -68,7 +68,7 @@ const ServiceWithRatingCard = memo(({
           <span className={`text-[11.5px] xs:text-[12.5px] md:text-[14px] truncate whitespace-nowrap ${price && !isNaN(price.toString().replace(/[,]/g, '')) ? 'font-semibold' : 'font-normal'}`} style={{ color: 'var(--text-primary)' }}>
             {displayPrice}
           </span>
-          {originalPrice && (
+          {originalPrice && Number(originalPrice) > Number(price) && (
             <span className="text-[10px] md:text-[12px] text-gray-400 line-through shrink-0">
               ₹{originalPrice}
             </span>

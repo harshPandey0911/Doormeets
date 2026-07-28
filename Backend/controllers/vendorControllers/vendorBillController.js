@@ -196,15 +196,18 @@ const createOrUpdateBill = async (req, res) => {
       const Service = require('../../models/Service');
       const serviceDoc = await Service.findById(booking.serviceId);
       if (serviceDoc && serviceDoc.packages && serviceDoc.packages.length > 0 && booking.bookedItems && booking.bookedItems.length > 0) {
-        const bookedTitle = booking.bookedItems[0].card?.title;
-        if (bookedTitle) {
-          const matchingPackage = serviceDoc.packages.find(pkg => 
-            pkg.title === bookedTitle || 
-            bookedTitle.includes(pkg.title) || 
-            pkg.title.includes(bookedTitle)
-          );
-          if (matchingPackage && matchingPackage.vendorPayout > 0) {
-            packageVendorPayout = matchingPackage.vendorPayout;
+        for (const bookedItem of booking.bookedItems) {
+          const bookedTitle = bookedItem.card?.title;
+          const qty = Number(bookedItem.quantity) || 1;
+          if (bookedTitle) {
+            const matchingPackage = serviceDoc.packages.find(pkg => 
+              pkg.title === bookedTitle || 
+              bookedTitle.includes(pkg.title) || 
+              pkg.title.includes(bookedTitle)
+            );
+            if (matchingPackage && matchingPackage.vendorPayout > 0) {
+              packageVendorPayout += matchingPackage.vendorPayout * qty;
+            }
           }
         }
       }

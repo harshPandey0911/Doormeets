@@ -251,3 +251,19 @@ export const rejectReschedule = async (bookingId) => {
     throw error;
   }
 };
+
+/**
+ * Approve worker work completion (Vendor)
+ */
+export const approveWork = async (bookingId) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/approve-work`);
+  return response.data;
+};
+
+/**
+ * Reject worker work completion (Vendor)
+ */
+export const rejectWork = async (bookingId, reason) => {
+  const response = await api.post(`/vendors/bookings/${bookingId}/reject-work`, { reason });
+  return response.data;
+};

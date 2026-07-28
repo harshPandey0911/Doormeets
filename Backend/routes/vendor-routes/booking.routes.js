@@ -25,7 +25,9 @@ const {
   cancelAcceptedBooking,
   requestCancelBooking,
   acceptReschedule,
-  rejectReschedule
+  rejectReschedule,
+  approveWorkerWork,
+  rejectWorkerWork
 } = require('../../controllers/bookingControllers/vendorBookingController');
 
 // Validation rules
@@ -42,7 +44,7 @@ const assignWorkerValidation = [
 ];
 
 const updateStatusValidation = [
-  body('status').isIn(['pending', 'confirmed', 'assigned', 'visited', 'in_progress', 'work_done', 'completed', 'cancelled', 'rejected'])
+  body('status').isIn(['pending', 'confirmed', 'assigned', 'visited', 'in_progress', 'work_done', 'work_done_submitted', 'completed', 'cancelled', 'rejected'])
     .withMessage('Invalid status')
 ];
 
@@ -78,6 +80,10 @@ router.post('/:id/pay-worker', authenticate, isVendor, payWorker);
 
 // Reconfirmation Route
 router.put('/:id/reconfirm', authenticate, isVendor, reconfirmBooking);
+
+// Worker Workdone Approval Routes
+router.post('/:id/approve-work', authenticate, isVendor, approveWorkerWork);
+router.post('/:id/reject-work', authenticate, isVendor, rejectWorkerWork);
 
 module.exports = router;
 

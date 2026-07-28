@@ -68,7 +68,7 @@ const ServiceCard = ({ service, quantity = 0, onAdd, onIncrease, onDecrease, onO
               <span className="text-sm md:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
                 {service.variants && service.variants.length > 0 ? `Starting from ₹${service.price}` : `₹${service.price}`}
               </span>
-              {service.originalPrice && (
+              {service.originalPrice && Number(service.originalPrice) > Number(service.price) && (
                 <span className="text-xs md:text-sm line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{service.originalPrice}</span>
               )}
             </div>

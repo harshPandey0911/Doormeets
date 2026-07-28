@@ -42,7 +42,7 @@ const ServiceSection = ({
                     <span className="text-sm text-gray-600">{service.duration}</span>
                   </>
                 )}
-                {service.originalPrice && (
+                {service.originalPrice && Number(service.originalPrice) > Number(service.price) && (
                   <>
                     <span className="text-sm text-gray-400 line-through ml-2">₹{service.originalPrice}</span>
                   </>

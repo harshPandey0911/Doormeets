@@ -39,8 +39,7 @@ const ProtectedRoute = ({ children, userType = 'user', redirectTo = null, allowD
         setIsAuthenticated(true);
         setIsLoading(false);
       } else {
-        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-        if (userType === 'user' && allowDesktopGuest && isDesktop) {
+        if (userType === 'user' && allowDesktopGuest) {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);

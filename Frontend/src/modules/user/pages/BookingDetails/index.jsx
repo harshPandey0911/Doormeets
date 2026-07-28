@@ -792,7 +792,7 @@ const BookingDetails = () => {
             </div>
 
             {/* Broadcast/Searching State Card */}
-            {!booking.workerId && !booking.assignedTo && ['requested', 'searching', 'bidding'].includes(booking.status?.toLowerCase()) && (
+            {!booking.workerId && !booking.assignedTo && ['requested', 'searching', 'bidding', 'pending_admin'].includes(booking.status?.toLowerCase()) && (
               <div className="bg-card-bg rounded-md p-6 shadow-sm border border-border-color relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
                 <div className="relative z-10">
@@ -801,21 +801,29 @@ const BookingDetails = () => {
                       <FiSearch className="w-6 h-6 text-amber-500 animate-pulse" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-black text-dark-text leading-tight">Finding Your Expert</h3>
+                      <h3 className="text-lg font-black text-dark-text leading-tight">
+                        {booking.status?.toLowerCase() === 'pending_admin' ? 'Routing to Admin' : 'Finding Your Expert'}
+                      </h3>
                       <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
-                        {booking.status?.toLowerCase() === 'bidding' ? 'Accepting Quotes' : 'Broadcast in Progress'}
+                        {booking.status?.toLowerCase() === 'pending_admin' ? 'Manual Assignment Required' : (booking.status?.toLowerCase() === 'bidding' ? 'Accepting Quotes' : 'Broadcast in Progress')}
                       </p>
                     </div>
                   </div>
                   <p className="text-sm text-secondary-text mb-4 leading-relaxed font-medium">
-                    {booking.status?.toLowerCase() === 'bidding'
+                    {booking.status?.toLowerCase() === 'pending_admin'
+                      ? "No immediate experts were available to accept your booking. We have routed your request to our admin team who will manually assign a professional to you shortly."
+                      : booking.status?.toLowerCase() === 'bidding'
                       ? "Vendors are now submitting their best prices for your request. View the quotes below and pick the best one!"
                       : "We've sent your request to all verified experts in your area. You'll be notified automatically as soon as someone accepts."}
                   </p>
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-xs text-secondary-text bg-light-bg rounded-md p-3 border border-border-color">
                       <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping"></span>
-                      <span>Waiting for quotes from nearby partners...</span>
+                      <span>
+                        {booking.status?.toLowerCase() === 'pending_admin'
+                          ? "Waiting for admin manual assignment..."
+                          : "Waiting for quotes from nearby partners..."}
+                      </span>
                     </div>
                   </div>
                 </div>

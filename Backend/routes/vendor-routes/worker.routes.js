@@ -27,7 +27,8 @@ const addWorkerValidation = [
 
 const updateWorkerValidation = [
   body('name').optional().trim().notEmpty(),
-  body('email').optional().isEmail(),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email is required'),
+  body('phone').optional().trim().isLength({ min: 10, max: 10 }).withMessage('Phone number must be 10 digits'),
   body('serviceCategory').optional().trim(),
   body('serviceCategories').optional().isArray(),
   body('skills').optional().isArray(),

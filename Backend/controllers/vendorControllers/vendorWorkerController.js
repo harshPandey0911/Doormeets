@@ -240,6 +240,16 @@ const updateWorker = async (req, res) => {
     // Update fields
     if (updateData.name) worker.name = updateData.name;
     if (updateData.email !== undefined) worker.email = updateData.email || null;
+    if (updateData.phone && updateData.phone !== worker.phone) {
+      const existingWorker = await Worker.findOne({ phone: updateData.phone });
+      if (existingWorker) {
+        return res.status(400).json({
+          success: false,
+          message: 'Another worker is already registered with this phone number'
+        });
+      }
+      worker.phone = updateData.phone;
+    }
     if (updateData.serviceCategories) {
       const Category = require('../../models/Category');
       const validObjectIds = updateData.serviceCategories.filter(id => /^[0-9a-fA-F]{24}$/.test(id));

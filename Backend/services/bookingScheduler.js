@@ -525,29 +525,35 @@ class BookingScheduler {
       }
 
       let finalCategory = null;
-      if (booking.categoryId) {
-        finalCategory = await Category.findById(booking.categoryId).select('title minWalletBalance').lean();
-      } else if (service.category) {
-        finalCategory = await Category.findOne({ title: service.category }).select('title minWalletBalance').lean();
+      const targetCategoryId = booking.categoryId || service.categoryId;
+      if (targetCategoryId) {
+        finalCategory = await Category.findById(targetCategoryId).select('title minWalletBalance').lean();
       }
 
-      const categoryIdStr = finalCategory ? finalCategory._id.toString() : '';
-      const serviceCategoryStr = service.category || '';
-      
       const vendorQuery = {};
       if (finalCategory) {
-        const searchArray = [categoryIdStr];
+        // Vendors might have category ObjectIds or Titles in their categories array
+        const searchArray = [finalCategory._id.toString(), finalCategory.title];
+        
         // Include any Group Categories that map to this category
         const groupCategories = await Category.find({
           isGroupCategory: true,
           mappedCategories: finalCategory._id
-        }).select('_id');
+        }).select('_id title');
+        
         groupCategories.forEach(gc => {
           searchArray.push(gc._id.toString());
+          if (gc.title) searchArray.push(gc.title);
         });
-        vendorQuery.categories = { $in: searchArray };
-      } else if (service.category) {
-        vendorQuery.service = { $in: [serviceCategoryStr] };
+
+        // Some vendors have it in 'categories', some in 'service' depending on how they saved their profile
+        vendorQuery.$or = [
+          { categories: { $in: searchArray } },
+          { service: { $in: searchArray } }
+        ];
+      } else {
+        // Fallback to impossible match so we don't broadcast to EVERYONE if category is missing
+        vendorQuery._id = null;
       }
       
       if (booking.isConsultation) {

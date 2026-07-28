@@ -31,171 +31,189 @@ async function processBookingCompletion(bookingId) {
     let adminCommission = 0;
     let vendorShare = 0;
 
-    let basePayout = 0;
-    let acceptanceFee = 0;
+    const VendorBill = require('../models/VendorBill');
+    const bill = await VendorBill.findOne({ bookingId: booking._id });
 
-    // Check Combo Package Payout / Options Group Payout in Service Model first!
-    try {
-      const Service = require('../models/Service');
-      const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
-      if (serviceDoc) {
-        const bookedTitle = booking.bookedItems?.[0]?.card?.title;
-        if (bookedTitle) {
-          // A. Check Option Groups first
-          if (Array.isArray(serviceDoc.serviceGroups)) {
-            for (const grp of serviceDoc.serviceGroups) {
-              if (Array.isArray(grp.items)) {
-                const matchedItem = grp.items.find(item => 
-                  item.title === bookedTitle || 
-                  bookedTitle.endsWith(` - ${item.title}`) || 
-                  bookedTitle.includes(item.title) ||
-                  item.title.includes(bookedTitle)
+    if (bill && bill.vendorTotalEarning !== undefined && bill.vendorTotalEarning !== null) {
+      vendorShare = bill.vendorTotalEarning;
+      adminCommission = bill.companyRevenue ?? parseFloat((amount - vendorShare).toFixed(2));
+      console.log(`[CommissionService] Using VendorBill single source of truth: vendorShare=${vendorShare}, adminCommission=${adminCommission}`);
+    } else {
+      let basePayout = 0;
+      let acceptanceFee = 0;
+
+      // Check Combo Package Payout / Options Group Payout in Service Model for ALL booked items!
+      try {
+        const Service = require('../models/Service');
+        const serviceDoc = await Service.findById(booking.serviceId).select('serviceType packages serviceGroups').lean();
+        if (serviceDoc && Array.isArray(booking.bookedItems)) {
+          for (const bookedItem of booking.bookedItems) {
+            const bookedTitle = bookedItem.card?.title;
+            const qty = Number(bookedItem.quantity) || 1;
+            if (bookedTitle) {
+              let itemPayout = 0;
+              let itemAcceptance = 0;
+              
+              // A. Check Option Groups first
+              if (Array.isArray(serviceDoc.serviceGroups)) {
+                for (const grp of serviceDoc.serviceGroups) {
+                  if (Array.isArray(grp.items)) {
+                    const matchedItem = grp.items.find(item => 
+                      item.title === bookedTitle || 
+                      bookedTitle.endsWith(` - ${item.title}`) || 
+                      bookedTitle.includes(item.title) ||
+                      item.title.includes(bookedTitle)
+                    );
+                    if (matchedItem) {
+                      itemPayout = Number(matchedItem.vendorPayout) || 0;
+                      itemAcceptance = Number(matchedItem.vendorAcceptanceFee) || 0;
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              // B. Check Combo Packages
+              if (itemPayout === 0 && Array.isArray(serviceDoc.packages)) {
+                const matchedPkg = serviceDoc.packages.find(pkg => 
+                  pkg.title === bookedTitle || 
+                  bookedTitle.endsWith(` - ${pkg.title}`) || 
+                  bookedTitle.includes(pkg.title) ||
+                  pkg.title.includes(bookedTitle)
                 );
-                if (matchedItem) {
-                  basePayout = Number(matchedItem.vendorPayout) || 0;
-                  acceptanceFee = Number(matchedItem.vendorAcceptanceFee) || 0;
-                  break;
+                if (matchedPkg) {
+                  itemPayout = Number(matchedPkg.vendorPayout) || 0;
+                  itemAcceptance = Number(matchedPkg.vendorAcceptanceFee) || 0;
                 }
               }
+
+              basePayout += itemPayout * qty;
+              acceptanceFee += itemAcceptance * qty;
             }
-          }
-          // B. Check Combo Packages
-          if (basePayout === 0 && Array.isArray(serviceDoc.packages)) {
-            const matchedPkg = serviceDoc.packages.find(pkg => 
-              pkg.title === bookedTitle || 
-              bookedTitle.endsWith(` - ${pkg.title}`) || 
-              bookedTitle.includes(pkg.title) ||
-              pkg.title.includes(bookedTitle)
-            );
-            if (matchedPkg) {
-              basePayout = Number(matchedPkg.vendorPayout) || 0;
-              acceptanceFee = Number(matchedPkg.vendorAcceptanceFee) || 0;
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('[CommissionService] Error finding package vendor payout:', err);
-    }
-
-    const PricingConfig = require('../models/PricingConfig');
-    let pricing = null;
-
-    if (basePayout === 0 && booking.serviceId) {
-      const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
-      if (pricings.length > 0) {
-        if (booking.cityId) {
-          pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
-        }
-        if (!pricing && booking.brandId) {
-          pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
-        }
-        if (!pricing) {
-          pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
-        }
-      }
-      if (pricing) {
-        basePayout = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
-        acceptanceFee = pricing.vendorAcceptanceFee !== undefined && pricing.vendorAcceptanceFee !== null ? pricing.vendorAcceptanceFee : 0;
-      }
-    }
-
-    // Fallback for acceptanceFee from Category if still 0
-    if (acceptanceFee === 0 && booking.categoryId) {
-      try {
-        const Category = require('../models/Category');
-        const cat = await Category.findById(booking.categoryId).select('minWalletBalance').lean();
-        if (cat && cat.minWalletBalance > 0) {
-          acceptanceFee = cat.minWalletBalance;
-        }
-      } catch (err) {}
-    }
-
-    // If we have a basePayout resolved, calculate the exact matrix requested by user
-    if (basePayout > 0) {
-      let instantShare = 0;
-      if (booking.bookingType === 'instant' && settings) {
-        instantShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
-      }
-
-      // Check if there is a generated VendorBill for this booking to aggregate addon prices
-      try {
-        const VendorBill = require('../models/VendorBill');
-        const VendorServiceCatalog = require('../models/VendorServiceCatalog');
-        const VendorPartsCatalog = require('../models/VendorPartsCatalog');
-
-        const bill = await VendorBill.findOne({ bookingId: booking._id });
-        if (bill) {
-          // Add vendorPayoutBase for selected services
-          if (bill.services && bill.services.length > 0) {
-            const svcCatalogIds = bill.services.map(s => s.catalogId).filter(Boolean);
-            const svcCatalogItems = await VendorServiceCatalog.find({ _id: { $in: svcCatalogIds } });
-            const svcCatalogMap = {};
-            svcCatalogItems.forEach(item => { svcCatalogMap[item._id.toString()] = item; });
-
-            bill.services.forEach(s => {
-              if (s.catalogId) {
-                const catalogItem = svcCatalogMap[s.catalogId.toString()];
-                if (catalogItem && catalogItem.vendorPayoutBase > 0) {
-                  basePayout += catalogItem.vendorPayoutBase * (s.quantity || 1);
-                }
-              }
-            });
-          }
-
-          // Add vendorPayoutBase for selected parts
-          if (bill.parts && bill.parts.length > 0) {
-            const partCatalogIds = bill.parts.map(p => p.catalogId).filter(Boolean);
-            const partCatalogItems = await VendorPartsCatalog.find({ _id: { $in: partCatalogIds } });
-            const partCatalogMap = {};
-            partCatalogItems.forEach(item => { partCatalogMap[item._id.toString()] = item; });
-
-            bill.parts.forEach(p => {
-              if (p.catalogId) {
-                const catalogItem = partCatalogMap[p.catalogId.toString()];
-                if (catalogItem && catalogItem.vendorPayoutBase > 0) {
-                  basePayout += catalogItem.vendorPayoutBase * (p.quantity || 1);
-                }
-              }
-            });
           }
         }
       } catch (err) {
-        console.error('[CommissionService] Error aggregating addon prices:', err);
+        console.error('[CommissionService] Error finding package vendor payout:', err);
       }
 
-      // vPayoutBase is base + instant - acceptanceFee
-      const vPayoutBase = basePayout + instantShare - acceptanceFee;
+      const PricingConfig = require('../models/PricingConfig');
+      let pricing = null;
 
-      // Platform commission percentage: use pricing commission (default 25%)
-      const vCommPct = pricing ? (pricing.commissionPercentage ?? 25) : 25;
-      const vSgstPct = 2.5;
-      const vCgstPct = 2.5;
-      const levelWiseChargePct = 0; // Currently 0%
+      if (basePayout === 0 && booking.serviceId) {
+        const pricings = await PricingConfig.find({ serviceId: booking.serviceId });
+        if (pricings.length > 0) {
+          if (booking.cityId) {
+            pricing = pricings.find(p => p.cityId && String(p.cityId) === String(booking.cityId));
+          }
+          if (!pricing && booking.brandId) {
+            pricing = pricings.find(p => p.brandId && String(p.brandId) === String(booking.brandId));
+          }
+          if (!pricing) {
+            pricing = pricings.find(p => !p.cityId && !p.brandId) || pricings[0];
+          }
+        }
+        if (pricing) {
+          basePayout = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
+          acceptanceFee = pricing.vendorAcceptanceFee !== undefined && pricing.vendorAcceptanceFee !== null ? pricing.vendorAcceptanceFee : 0;
+        }
+      }
 
-      const platformCommission = vPayoutBase * (vCommPct / 100);
-      const sgst = vPayoutBase * (vSgstPct / 100);
-      const cgst = vPayoutBase * (vCgstPct / 100);
-      const levelCharge = vPayoutBase * (levelWiseChargePct / 100);
+      // Fallback for acceptanceFee from Category if still 0
+      if (acceptanceFee === 0 && booking.categoryId) {
+        try {
+          const Category = require('../models/Category');
+          const cat = await Category.findById(booking.categoryId).select('minWalletBalance').lean();
+          if (cat && cat.minWalletBalance > 0) {
+            acceptanceFee = cat.minWalletBalance;
+          }
+        } catch (err) {}
+      }
 
-      const totalDeductions = platformCommission + sgst + cgst + levelCharge;
-      
-      vendorShare = parseFloat(Math.max(0, vPayoutBase - totalDeductions).toFixed(2));
-      adminCommission = parseFloat((amount - vendorShare).toFixed(2));
-    } else if (booking.bookingType === 'instant' && settings) {
-      const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
-      const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
-      const adminMarkupShare = Math.max(0, markupFee - vendorMarkupShare);
+      // If we have a basePayout resolved, calculate the exact matrix requested by user
+      if (basePayout > 0) {
+        let instantShare = 0;
+        if (booking.bookingType === 'instant' && settings) {
+          instantShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+        }
 
-      const baseForCommission = Math.max(0, amount - markupFee);
-      const baseAdminCommission = parseFloat(((baseForCommission * commissionPct) / 100).toFixed(2));
-      const baseVendorShare = parseFloat((baseForCommission - baseAdminCommission).toFixed(2));
+        // Check if there is a generated VendorBill for this booking to aggregate addon prices
+        try {
+          const VendorServiceCatalog = require('../models/VendorServiceCatalog');
+          const VendorPartsCatalog = require('../models/VendorPartsCatalog');
 
-      adminCommission = parseFloat((baseAdminCommission + adminMarkupShare).toFixed(2));
-      vendorShare = parseFloat((baseVendorShare + vendorMarkupShare).toFixed(2));
-    } else {
-      adminCommission = parseFloat(((amount * commissionPct) / 100).toFixed(2));
-      vendorShare = parseFloat((amount - adminCommission).toFixed(2));
+          if (bill) {
+            // Add vendorPayoutBase for selected services
+            if (bill.services && bill.services.length > 0) {
+              const svcCatalogIds = bill.services.map(s => s.catalogId).filter(Boolean);
+              const svcCatalogItems = await VendorServiceCatalog.find({ _id: { $in: svcCatalogIds } });
+              const svcCatalogMap = {};
+              svcCatalogItems.forEach(item => { svcCatalogMap[item._id.toString()] = item; });
+
+              bill.services.forEach(s => {
+                if (s.catalogId) {
+                  const catalogItem = svcCatalogMap[s.catalogId.toString()];
+                  if (catalogItem && catalogItem.vendorPayoutBase > 0) {
+                    basePayout += catalogItem.vendorPayoutBase * (s.quantity || 1);
+                  }
+                }
+              });
+            }
+
+            // Add vendorPayoutBase for selected parts
+            if (bill.parts && bill.parts.length > 0) {
+              const partCatalogIds = bill.parts.map(p => p.catalogId).filter(Boolean);
+              const partCatalogItems = await VendorPartsCatalog.find({ _id: { $in: partCatalogIds } });
+              const partCatalogMap = {};
+              partCatalogItems.forEach(item => { partCatalogMap[item._id.toString()] = item; });
+
+              bill.parts.forEach(p => {
+                if (p.catalogId) {
+                  const catalogItem = partCatalogMap[p.catalogId.toString()];
+                  if (catalogItem && catalogItem.vendorPayoutBase > 0) {
+                    basePayout += catalogItem.vendorPayoutBase * (p.quantity || 1);
+                  }
+                }
+              });
+            }
+          }
+        } catch (err) {
+          console.error('[CommissionService] Error aggregating addon prices:', err);
+        }
+
+        // vPayoutBase is base - acceptanceFee (instantShare is handled separately below)
+        const vPayoutBase = Math.max(0, basePayout - acceptanceFee);
+
+        // Platform commission percentage: use pricing commission (default 25%)
+        const vCommPct = pricing ? (pricing.commissionPercentage ?? 25) : 25;
+        const vSgstPct = 2.5;
+        const vCgstPct = 2.5;
+        const levelWiseChargePct = 0; // Currently 0%
+
+        const platformCommission = vPayoutBase * (vCommPct / 100);
+        const sgst = vPayoutBase * (vSgstPct / 100);
+        const cgst = vPayoutBase * (vCgstPct / 100);
+        const levelCharge = vPayoutBase * (levelWiseChargePct / 100);
+
+        const totalDeductions = platformCommission + sgst + cgst + levelCharge;
+        
+        const baseVendorShare = Math.max(0, vPayoutBase - totalDeductions);
+        vendorShare = parseFloat((baseVendorShare + instantShare).toFixed(2));
+        adminCommission = parseFloat((amount - vendorShare).toFixed(2));
+      } else if (booking.bookingType === 'instant' && settings) {
+        const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
+        const vendorMarkupShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+        const adminMarkupShare = Math.max(0, markupFee - vendorMarkupShare);
+
+        const baseForCommission = Math.max(0, amount - markupFee);
+        const baseAdminCommission = parseFloat(((baseForCommission * commissionPct) / 100).toFixed(2));
+        const baseVendorShare = parseFloat((baseForCommission - baseAdminCommission).toFixed(2));
+
+        adminCommission = parseFloat((baseAdminCommission + adminMarkupShare).toFixed(2));
+        vendorShare = parseFloat((baseVendorShare + vendorMarkupShare).toFixed(2));
+      } else {
+        adminCommission = parseFloat(((amount * commissionPct) / 100).toFixed(2));
+        vendorShare = parseFloat((amount - adminCommission).toFixed(2));
+      }
     }
 
     booking.totalAmount = amount;
