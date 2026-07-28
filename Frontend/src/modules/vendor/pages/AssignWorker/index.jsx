@@ -55,7 +55,7 @@ const AssignWorker = () => {
         // Filter available workers
         const available = workersList.filter(w => {
           const status = (w.status || w.availability || '').toUpperCase();
-          return (status === 'ONLINE' || status === 'ACTIVE') && !w.currentJob;
+          return status === 'ONLINE' && !w.currentJob;
         });
         setWorkers(available);
       } catch (error) {

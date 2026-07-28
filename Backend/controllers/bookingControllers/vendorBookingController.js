@@ -1307,12 +1307,11 @@ const assignWorker = async (req, res) => {
       });
     }
 
-    // Check if worker is active
-    const validStatuses = ['active', 'ONLINE', 'ACTIVE'];
-    if (!validStatuses.includes(worker.status) && !validStatuses.includes(worker.currentAvailability)) {
+    // Check if worker is ONLINE
+    if (worker.status !== 'ONLINE') {
       return res.status(400).json({
         success: false,
-        message: `Worker is not available (Status: ${worker.status || worker.currentAvailability})`
+        message: 'Worker is currently offline and cannot be assigned to new jobs.'
       });
     }
 
