@@ -164,8 +164,8 @@ async function processBookingCompletion(bookingId) {
         console.error('[CommissionService] Error aggregating addon prices:', err);
       }
 
-      // vPayoutBase is base + instant - acceptanceFee
-      const vPayoutBase = basePayout + instantShare - acceptanceFee;
+      // vPayoutBase is base - acceptanceFee (instantShare is handled separately below)
+      const vPayoutBase = Math.max(0, basePayout - acceptanceFee);
 
       // Platform commission percentage: use pricing commission (default 25%)
       const vCommPct = pricing ? (pricing.commissionPercentage ?? 25) : 25;
@@ -180,7 +180,8 @@ async function processBookingCompletion(bookingId) {
 
       const totalDeductions = platformCommission + sgst + cgst + levelCharge;
       
-      vendorShare = parseFloat(Math.max(0, vPayoutBase - totalDeductions).toFixed(2));
+      const baseVendorShare = Math.max(0, vPayoutBase - totalDeductions);
+      vendorShare = parseFloat((baseVendorShare + instantShare).toFixed(2));
       adminCommission = parseFloat((amount - vendorShare).toFixed(2));
     } else if (booking.bookingType === 'instant' && settings) {
       const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;

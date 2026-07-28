@@ -71,7 +71,7 @@ const getTransactions = async (req, res) => {
     const vendorId = req.user.id;
     const { page = 1, limit = 20, type, status } = req.query;
 
-    const query = { vendorId };
+    const query = { vendorId, type: { $ne: 'online_collection' } };
     if (type) query.type = type;
     if (status) query.status = status;
 
