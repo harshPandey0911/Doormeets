@@ -326,7 +326,7 @@ const register = async (req, res) => {
       });
     }
 
-    const { name, professionId } = req.body;
+    const { name, professionId, professionIds } = req.body;
     let phone = req.body.phone;
 
     // Direct registration without OTP
@@ -344,13 +344,24 @@ const register = async (req, res) => {
     }
 
     // Process Professions
+    const professionIdsToProcess = [];
+    if (professionIds && Array.isArray(professionIds) && professionIds.length > 0) {
+      professionIdsToProcess.push(...professionIds);
+    } else if (professionId) {
+      professionIdsToProcess.push(professionId);
+    }
+
     let finalCategories = [];
-    if (professionId) {
+    if (professionIdsToProcess.length > 0) {
       const Profession = require('../../models/Profession');
-      const professionData = await Profession.findById(professionId);
-      if (professionData && professionData.categories && professionData.categories.length > 0) {
-        finalCategories = professionData.categories.map(c => c.toString());
-      }
+      const professionDataList = await Profession.find({ _id: { $in: professionIdsToProcess } });
+      const catSet = new Set();
+      professionDataList.forEach(p => {
+        if (p.categories && p.categories.length > 0) {
+          p.categories.forEach(c => catSet.add(c.toString()));
+        }
+      });
+      finalCategories = Array.from(catSet);
     }
 
     // Calculate Police Verification Due Date
@@ -418,7 +429,7 @@ const register = async (req, res) => {
     const vendor = await Vendor.create({
       name,
       phone,
-      professions: professionId ? [professionId] : [],
+      professions: professionIdsToProcess,
       categories: finalCategories,
       service: finalCategories,
       subCategories: finalSubCategories,

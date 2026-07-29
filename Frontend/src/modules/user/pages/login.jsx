@@ -236,6 +236,7 @@ const Login = () => {
                         value={phoneNumber}
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, '');
+                          if (val.length > 0 && !/^[6-9]/.test(val)) return;
                           if (val.length <= 10) setPhoneNumber(val);
                         }}
                       />

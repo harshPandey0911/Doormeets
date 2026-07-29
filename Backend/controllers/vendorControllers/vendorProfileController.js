@@ -281,14 +281,18 @@ const updateProfile = async (req, res) => {
         if (uploadRes.success) aadharBackUrl = uploadRes.url;
       }
 
+      const cleanAadharName = req.body.aadharName !== undefined 
+        ? req.body.aadharName.replace(/[^a-zA-Z\s]/g, '').trim() 
+        : (vendor.aadhar?.name || '');
+
       if (vendor.aadhar) {
         if (aadharNumber) vendor.aadhar.number = aadharNumber;
-        if (req.body.aadharName !== undefined) vendor.aadhar.name = req.body.aadharName;
+        if (req.body.aadharName !== undefined) vendor.aadhar.name = cleanAadharName;
         if (aadharDocument) vendor.aadhar.document = aadharUrl;
         if (aadharBackDocument) vendor.aadhar.backDocument = aadharBackUrl;
       } else {
         vendor.aadhar = {
-          name: req.body.aadharName || '',
+          name: cleanAadharName,
           number: aadharNumber || '',
           document: aadharUrl || '',
           backDocument: aadharBackUrl || ''

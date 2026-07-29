@@ -221,10 +221,14 @@ const VerificationPage = () => {
 
         // Prepopulate basic documents if they exist
         if (vendorData.aadhar) {
-          setAadharName(vendorData.aadhar.name || '');
+          const formattedName = (vendorData.aadhar.name || '').replace(/[^a-zA-Z\s]/g, '');
+          setAadharName(formattedName);
           setAadharNumber(vendorData.aadhar.number || '');
           setAadharFront(vendorData.aadhar.document || '');
           setAadharBack(vendorData.aadhar.backDocument || '');
+        } else if (vendorData.name) {
+          const formattedVendorName = vendorData.name.replace(/[^a-zA-Z\s]/g, '');
+          setAadharName(formattedVendorName);
         }
         if (vendorData.pan) {
           setPanNumber(vendorData.pan.number || '');
@@ -352,8 +356,13 @@ const VerificationPage = () => {
   const handleSubmitBasicDocs = async (e) => {
     e.preventDefault();
 
-    if (!aadharName || !aadharName.trim()) {
-      toast.error('Please enter the name as on your Aadhaar card');
+    const trimmedName = (aadharName || '').trim();
+    if (!trimmedName || trimmedName.length < 2) {
+      toast.error('Please enter a valid name as on your Aadhaar card (min 2 letters)');
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(trimmedName)) {
+      toast.error('Aadhaar name can only contain letters and spaces');
       return;
     }
     if (!aadharNumber || aadharNumber.length !== 12) {
@@ -503,26 +512,41 @@ const VerificationPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
+    <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center relative">
+      {/* Close X Button to return to Vendor Login */}
+      <button
+        onClick={() => {
+          localStorage.removeItem('vendorAccessToken');
+          localStorage.removeItem('vendorRefreshToken');
+          localStorage.removeItem('vendorData');
+          navigate('/vendor/login');
+        }}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all z-50 cursor-pointer text-base font-bold"
+        aria-label="Close to Login"
+        title="Back to Vendor Login"
+      >
+        ✕
+      </button>
+
       <div className="max-w-4xl w-full mx-auto space-y-8">
 
         {/* Step Indicator Header */}
         {step <= 4 && (
           <div className="mb-12 text-center max-w-xl mx-auto">
             <div className="flex items-center justify-center">
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 1 ? 'bg-[#9634f7] shadow-lg shadow-purple-500/20' : 'bg-gray-300'}`}>1</div>
-              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 2 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 2 ? 'bg-[#9634f7] shadow-lg shadow-purple-500/20' : 'bg-gray-300'}`}>2</div>
-              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 3 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 3 ? 'bg-[#9634f7] shadow-lg shadow-purple-500/20' : 'bg-gray-300'}`}>3</div>
-              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 4 ? 'bg-[#9634f7]' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 4 ? 'bg-[#9634f7] shadow-lg shadow-purple-500/20' : 'bg-gray-300'}`}>4</div>
+              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 1 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>1</div>
+              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 2 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
+              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 2 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>2</div>
+              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 3 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
+              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 3 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>3</div>
+              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 4 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
+              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 4 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>4</div>
             </div>
             <div className="grid grid-cols-4 mt-3 text-[10px] md:text-xs font-bold text-gray-500">
-              <span className={step >= 1 ? 'text-[#9634f7]' : ''}>Identity Docs</span>
-              <span className={step >= 2 ? 'text-[#9634f7]' : ''}>Police Verif.</span>
-              <span className={step >= 3 ? 'text-[#9634f7]' : ''}>Training Video</span>
-              <span className={step >= 4 ? 'text-[#9634f7]' : ''}>Evaluation</span>
+              <span className={step >= 1 ? 'text-[#B33A35]' : ''}>Identity Docs</span>
+              <span className={step >= 2 ? 'text-[#B33A35]' : ''}>Police Verif.</span>
+              <span className={step >= 3 ? 'text-[#B33A35]' : ''}>Training Video</span>
+              <span className={step >= 4 ? 'text-[#B33A35]' : ''}>Evaluation</span>
             </div>
           </div>
         )}
@@ -531,7 +555,7 @@ const VerificationPage = () => {
         {step === 1 && (
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8 animate-fade-in max-w-3xl mx-auto">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <FiShield className="text-3xl text-[#9634f7]" />
+              <FiShield className="text-3xl text-[#B33A35]" />
               <h2 className="text-xl sm:text-2xl font-black text-gray-800">Identify Proof Verification</h2>
             </div>
 
@@ -551,7 +575,7 @@ const VerificationPage = () => {
               {/* Aadhaar Section */}
               <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100 space-y-4">
                 <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black">1</span>
+                  <span className="w-5 h-5 rounded-full bg-[#B33A35]/10 text-[#B33A35] flex items-center justify-center text-[10px] font-black">1</span>
                   Aadhaar Card Details
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -561,9 +585,29 @@ const VerificationPage = () => {
                       type="text"
                       required
                       value={aadharName}
-                      onChange={(e) => setAadharName(e.target.value)}
-                      placeholder="Name as printed on Aadhaar"
-                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                      onChange={(e) => {
+                        // Allow only letters and single space between words (no leading space, no double space)
+                        const formatted = e.target.value
+                          .replace(/[^a-zA-Z\s]/g, '')
+                          .replace(/^\s+/g, '')
+                          .replace(/\s{2,}/g, ' ');
+                        setAadharName(formatted);
+                      }}
+                      onBlur={() => {
+                        // Capitalize each word nicely on blur
+                        if (aadharName) {
+                          const titleCase = aadharName
+                            .trim()
+                            .replace(/\s+/g, ' ')
+                            .toLowerCase()
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                          setAadharName(titleCase);
+                        }
+                      }}
+                      placeholder="e.g. John Doe (Letters only)"
+                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B33A35]/20 focus:border-[#B33A35] transition-all bg-white"
                     />
                   </div>
                   <div>
@@ -575,7 +619,7 @@ const VerificationPage = () => {
                       value={aadharNumber}
                       onChange={(e) => setAadharNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
                       placeholder="12-digit Aadhaar Number"
-                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B33A35]/20 focus:border-[#B33A35] transition-all bg-white"
                     />
                   </div>
                 </div>
@@ -613,10 +657,10 @@ const VerificationPage = () => {
                 </div>
               </div>
 
-              {/* PAN Card Section */}
+              {/* PAN Section */}
               <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100 space-y-4">
                 <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black">2</span>
+                  <span className="w-5 h-5 rounded-full bg-[#B33A35]/10 text-[#B33A35] flex items-center justify-center text-[10px] font-black">2</span>
                   PAN Card Details
                 </h3>
                 <div>
@@ -626,9 +670,9 @@ const VerificationPage = () => {
                     required
                     maxLength={10}
                     value={panNumber}
-                    onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
+                    onChange={(e) => setPanNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
                     placeholder="10-character PAN Number"
-                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-white uppercase"
+                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B33A35]/20 focus:border-[#B33A35] transition-all bg-white uppercase"
                   />
                 </div>
                 <div>
@@ -651,7 +695,7 @@ const VerificationPage = () => {
               {/* Police Verification Option Selection */}
               <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100 space-y-4">
                 <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-[10px] font-black">3</span>
+                  <span className="w-5 h-5 rounded-full bg-[#B33A35]/10 text-[#B33A35] flex items-center justify-center text-[10px] font-black">3</span>
                   Police Verification Preferences
                 </h3>
                 <p className="text-xs text-gray-500 mb-4">
@@ -659,7 +703,7 @@ const VerificationPage = () => {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <label className={`flex flex-col p-4 border rounded-2xl cursor-pointer transition ${pvMethod === 'self' ? 'border-[#9634f7] bg-purple-50/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <label className={`flex flex-col p-4 border rounded-2xl cursor-pointer transition ${pvMethod === 'self' ? 'border-[#B33A35] bg-[#B33A35]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <input
                         type="radio"
@@ -667,7 +711,7 @@ const VerificationPage = () => {
                         value="self"
                         checked={pvMethod === 'self'}
                         onChange={() => setPvMethod('self')}
-                        className="text-[#9634f7] focus:ring-[#9634f7]"
+                        className="text-[#B33A35] focus:ring-[#B33A35]"
                       />
                       <span className="font-bold text-xs text-gray-800">Self Verification</span>
                     </div>
@@ -676,7 +720,7 @@ const VerificationPage = () => {
                     </span>
                   </label>
 
-                  <label className={`flex flex-col p-4 border rounded-2xl cursor-pointer transition ${pvMethod === 'admin' ? 'border-[#9634f7] bg-purple-50/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <label className={`flex flex-col p-4 border rounded-2xl cursor-pointer transition ${pvMethod === 'admin' ? 'border-[#B33A35] bg-[#B33A35]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <input
                         type="radio"
@@ -684,7 +728,7 @@ const VerificationPage = () => {
                         value="admin"
                         checked={pvMethod === 'admin'}
                         onChange={() => setPvMethod('admin')}
-                        className="text-[#9634f7] focus:ring-[#9634f7]"
+                        className="text-[#B33A35] focus:ring-[#B33A35]"
                       />
                       <span className="font-bold text-xs text-gray-800">Doormeets Admin Verification</span>
                     </div>
@@ -702,7 +746,7 @@ const VerificationPage = () => {
               <button
                 type="submit"
                 disabled={submittingDocs}
-                className="w-full py-4 bg-[#9634f7] hover:bg-[#822cd6] disabled:opacity-50 text-white rounded-2xl font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-purple-200 text-sm sm:text-base mt-8 cursor-pointer active:scale-95"
+                className="w-full py-4 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 text-white rounded-2xl font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-[#B33A35]/20 text-sm sm:text-base mt-8 cursor-pointer active:scale-95"
               >
                 {submittingDocs ? (
                   <span className="w-5 h-5 border-2 border-white/35 border-t-white rounded-full animate-spin" />
@@ -721,14 +765,14 @@ const VerificationPage = () => {
         {step === 2 && (
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 sm:p-8 animate-fade-in max-w-2xl mx-auto text-left">
             <div className="flex items-center gap-3 mb-6 justify-center">
-              <FiShield className="text-3xl text-purple-600" />
+              <FiShield className="text-3xl text-[#B33A35]" />
               <h2 className="text-xl sm:text-2xl font-black text-gray-800">Police Verification</h2>
             </div>
 
             <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-6 space-y-3">
               <div className="flex justify-between text-xs font-semibold">
                 <span className="text-gray-500 flex items-center gap-1.5"><FiFileText /> Chosen Method:</span>
-                <span className="text-purple-600 uppercase tracking-wider font-extrabold">{pvMethod === 'self' ? 'Self Upload' : 'Admin Process'}</span>
+                <span className="text-[#B33A35] uppercase tracking-wider font-extrabold">{pvMethod === 'self' ? 'Self Upload' : 'Admin Process'}</span>
               </div>
               <div className="flex justify-between text-xs font-semibold">
                 <span className="text-gray-500 flex items-center gap-1.5"><FiCalendar /> Deadline:</span>
@@ -756,8 +800,8 @@ const VerificationPage = () => {
 
             <form onSubmit={pvMethod === 'admin' ? (e) => { e.preventDefault(); setStep(3); } : handleSubmitPVDocument} className="space-y-6">
               {pvMethod === 'admin' ? (
-                <div className="bg-purple-50/50 border border-purple-100 p-6 rounded-2xl text-center space-y-3">
-                  <FiShield className="mx-auto text-4xl text-[#9634f7] animate-pulse" />
+                <div className="bg-[#B33A35]/5 border border-[#B33A35]/10 p-6 rounded-2xl text-center space-y-3">
+                  <FiShield className="mx-auto text-4xl text-[#B33A35] animate-pulse" />
                   <h3 className="font-bold text-sm text-gray-800">Admin Processing Active</h3>
                   <p className="text-xs text-gray-550 max-w-sm mx-auto leading-relaxed">
                     Your police verification is being processed by the Doormeets Admin team. You can proceed with the onboarding steps (training video and test) during the grace period.
@@ -800,7 +844,7 @@ const VerificationPage = () => {
                 <button
                   type="submit"
                   disabled={submittingPV}
-                  className="flex-1 py-4 bg-[#9634f7] hover:bg-[#822cd6] disabled:opacity-50 text-white rounded-2xl font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-purple-200 text-sm cursor-pointer active:scale-95"
+                  className="flex-1 py-4 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 text-white rounded-2xl font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-[#B33A35]/20 text-sm cursor-pointer active:scale-95"
                 >
                   {submittingPV ? (
                     <span className="w-5 h-5 border-2 border-white/35 border-t-white rounded-full animate-spin" />
@@ -820,7 +864,7 @@ const VerificationPage = () => {
         {step === 3 && (
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-8 animate-fade-in max-w-3xl mx-auto">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <FiPlayCircle className="text-3xl text-[#9634f7]" />
+              <FiPlayCircle className="text-3xl text-[#B33A35]" />
               <h2 className="text-2xl font-bold text-gray-800">Mandatory Training Video</h2>
             </div>
             <p className="text-center text-gray-500 mb-8">Please watch this short training video before taking the MCQ test.</p>
@@ -870,7 +914,7 @@ const VerificationPage = () => {
                 type="button"
                 disabled={!canSubmitVideo && !videoWatched}
                 onClick={handleVideoWatched}
-                className="py-3 px-8 bg-[#9634f7] hover:bg-[#b87cff] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors shadow-lg cursor-pointer active:scale-95 text-xs flex items-center gap-1.5"
+                className="py-3 px-8 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors shadow-lg cursor-pointer active:scale-95 text-xs flex items-center gap-1.5"
               >
                 {secondsLeft > 0 && !videoWatched ? `I have watched the video (${secondsLeft}s)` : "I have watched the video"}
               </button>
@@ -953,7 +997,7 @@ const VerificationPage = () => {
                   setLevelInfo(null);
                   handleSubscriptionComplete();
                 }}
-                className="w-full py-3.5 bg-[#9634f7] hover:bg-[#b87cff] text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                className="w-full py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
               >
                 Proceed to Review
               </button>
