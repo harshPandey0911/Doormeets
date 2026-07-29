@@ -147,6 +147,18 @@ exports.getWorkerReport = async (req, res) => {
       availabilityQueryMatch.vendorId = { $ne: null };
     }
 
+    // CITY ADMIN FILTER: Restrict to assigned cities
+    const City = require('../../models/City');
+    let cityMatch = {};
+    if (req.user && (req.user.role === 'CITY_ADMIN' || req.user.role === 'admin' || req.userRole === 'CITY_ADMIN')) {
+      if (req.user.assignedCities && req.user.assignedCities.length > 0) {
+        const cities = await City.find({ _id: { $in: req.user.assignedCities } });
+        const cityNames = cities.map(c => new RegExp(`^${c.name}$`, 'i'));
+        cityMatch = { 'worker.address.city': { $in: cityNames } };
+        availabilityQueryMatch['address.city'] = { $in: cityNames };
+      }
+    }
+
     // Top workers by jobs completed formatted as totalBookings / fullName
     const topWorkers = await Booking.aggregate([
       { $match: workerQueryMatch },
@@ -157,8 +169,6 @@ exports.getWorkerReport = async (req, res) => {
           avgRating: { $avg: '$rating' }
         }
       },
-      { $sort: { completedJobs: -1 } },
-      { $limit: 10 },
       {
         $lookup: {
           from: 'workers',
@@ -169,8 +179,13 @@ exports.getWorkerReport = async (req, res) => {
       },
       { $unwind: '$worker' },
       {
-        $match: type === 'labour' ? { 'worker.vendorId': null } : type === 'worker' ? { 'worker.vendorId': { $ne: null } } : {}
+        $match: {
+          ...cityMatch,
+          ...(type === 'labour' ? { 'worker.vendorId': null } : type === 'worker' ? { 'worker.vendorId': { $ne: null } } : {})
+        }
       },
+      { $sort: { completedJobs: -1 } },
+      { $limit: 10 },
       {
         $project: {
           fullName: '$worker.name',
@@ -190,16 +205,64 @@ exports.getWorkerReport = async (req, res) => {
     // Average rating distribution
     const ratingDistribution = await Booking.aggregate([
       { $match: { workerId: { $ne: null }, rating: { $exists: true, $ne: null } } },
+      {
+        $lookup: {
+          from: 'workers',
+          localField: 'workerId',
+          foreignField: '_id',
+          as: 'worker'
+        }
+      },
+      { $unwind: '$worker' },
+      { $match: cityMatch },
       { $group: { _id: { $floor: '$rating' }, count: { $sum: 1 } } },
       { $sort: { _id: -1 } }
     ]);
+
+    // Fetch all workers and their booking aggregates
+    const allWorkersData = await Worker.find(availabilityQueryMatch)
+      .select('name phone vendorId status approvalStatus')
+      .lean();
+
+    const workerIds = allWorkersData.map(w => w._id);
+
+    const bookingStats = await Booking.aggregate([
+      { $match: { workerId: { $in: workerIds }, status: BOOKING_STATUS.COMPLETED } },
+      {
+        $group: {
+          _id: '$workerId',
+          totalBookings: { $sum: 1 },
+          avgRating: { $avg: '$rating' }
+        }
+      }
+    ]);
+
+    const statsMap = new Map(bookingStats.map(s => [s._id.toString(), s]));
+
+    const allWorkersList = allWorkersData.map(worker => {
+      const stats = statsMap.get(worker._id.toString()) || { totalBookings: 0, avgRating: 0 };
+      const isActiveStatus = worker.status !== 'inactive' && worker.status !== 'suspended';
+      return {
+        _id: worker._id,
+        name: worker.name,
+        phone: worker.phone,
+        association: worker.vendorId ? 'Vendor-Linked' : 'Independent',
+        totalBookings: stats.totalBookings,
+        avgRating: stats.avgRating ? parseFloat(stats.avgRating.toFixed(2)) : 0,
+        status: isActiveStatus ? 'Active' : 'Blocked'
+      };
+    });
+
+    // Sort by bookings first, then name
+    allWorkersList.sort((a, b) => b.totalBookings - a.totalBookings || a.name.localeCompare(b.name));
 
     res.status(200).json({
       success: true,
       data: {
         topWorkers,
         statusDistribution,
-        ratingDistribution
+        ratingDistribution,
+        allWorkers: allWorkersList
       }
     });
   } catch (error) {
