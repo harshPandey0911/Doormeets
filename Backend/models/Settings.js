@@ -94,13 +94,7 @@ const settingsSchema = new mongoose.Schema({
     default: 10, // 10 km default search radius
     min: 1
   },
-  // COD (Cash on Delivery) Settings
-  codAdvancePercentage: {
-    type: Number,
-    default: 0, // % advance for COD bookings (0 = no advance)
-    min: 0,
-    max: 100
-  },
+
   // Booking Slot Configuration
   slotsStartTime: {
     type: String,

@@ -19,6 +19,7 @@ const AddressManagement = () => {
   const [autocomplete, setAutocomplete] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [zoneStatus, setZoneStatus] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -68,6 +69,9 @@ const AddressManagement = () => {
           if (location) {
             setSelectedLocation(location);
           }
+          if (response.vendor?.zoneStatus) {
+            setZoneStatus(response.vendor.zoneStatus);
+          }
         }
       } catch (error) {
         console.error('Error loading address:', error);
@@ -76,12 +80,26 @@ const AddressManagement = () => {
     loadAddress();
   }, []);
 
+  const checkZone = async (lat, lng) => {
+    try {
+      const response = await vendorService.checkZoneStatus(lat, lng);
+      if (response.success) {
+        setZoneStatus(response.zoneStatus);
+      }
+    } catch (error) {
+      console.error('Error checking zone status:', error);
+    }
+  };
+
   const handleLocationSelect = (location) => {
     setSelectedLocation(location);
     // setAddress(location.address); 
     // Usually user selects from map -> we update search query & address field
     setSearchQuery(location.address);
     setAddress(location.address);
+    if (location.lat && location.lng) {
+      checkZone(location.lat, location.lng);
+    }
   };
 
   const onPlaceChanged = () => {
@@ -97,6 +115,7 @@ const AddressManagement = () => {
         setSelectedLocation(location);
         setAddress(place.formatted_address);
         setSearchQuery(place.formatted_address);
+        checkZone(location.lat, location.lng);
       }
     }
   };
@@ -162,6 +181,9 @@ const AddressManagement = () => {
 
       if (response.success) {
         toast.success('Address saved successfully!');
+        if (response.zoneStatus) {
+          setZoneStatus(response.zoneStatus);
+        }
         setTimeout(() => {
           //   navigate('/vendor/profile'); // Stay here or go back settings? User preference.
           //   Let's just show success. Or maybe go back.
@@ -274,6 +296,37 @@ const AddressManagement = () => {
               />
             </div>
           </div>
+
+          {/* Zone Status Banner */}
+          {zoneStatus && (
+            <div 
+              className="p-3 rounded-lg border text-xs font-semibold leading-relaxed"
+              style={{
+                backgroundColor: zoneStatus.inZone ? '#f0fdf4' : '#fffbeb',
+                borderColor: zoneStatus.inZone ? '#bbf7d0' : '#fef3c7',
+                color: zoneStatus.inZone ? '#166534' : '#92400e'
+              }}
+            >
+              {zoneStatus.inZone ? (
+                <p className="flex items-center gap-1.5 m-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  Active Service Area: <strong>{zoneStatus.zoneName}</strong>
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  <p className="flex items-center gap-1.5 m-0 text-red-600">
+                    <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                    Outside Service Zones
+                  </p>
+                  {zoneStatus.nearestZone && (
+                    <p className="m-0 text-[11px] font-medium text-slate-500">
+                      Nearest Zone: <strong>{zoneStatus.nearestZone.name}</strong> (~{zoneStatus.nearestZone.distanceKm} km away)
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Coordinates Display (Optional, for transparency) */}
           {selectedLocation && (

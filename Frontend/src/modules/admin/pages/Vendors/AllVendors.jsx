@@ -705,12 +705,12 @@ const AllVendors = () => {
                     <label className="flex items-center gap-2 cursor-pointer flex-1">
                       <input
                         type="checkbox"
-                        checked={editFormData.service.includes(category.title)}
+                        checked={editFormData.service.includes(category.title) || editFormData.service.includes(category.id) || editFormData.service.includes(category._id)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setEditFormData(prev => ({ ...prev, service: [...prev.service, category.title] }));
+                            setEditFormData(prev => ({ ...prev, service: [...prev.service, category.id || category._id] }));
                           } else {
-                            setEditFormData(prev => ({ ...prev, service: prev.service.filter(s => s !== category.title) }));
+                            setEditFormData(prev => ({ ...prev, service: prev.service.filter(s => s !== category.title && s !== category.id && s !== category._id) }));
                           }
                         }}
                         className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
@@ -718,30 +718,30 @@ const AllVendors = () => {
                       <span className="text-sm font-semibold text-gray-800">{category.title}</span>
                     </label>
                     <button 
-                      onClick={() => handleExpandCategory(category.id)}
+                      onClick={() => handleExpandCategory(category.id || category._id)}
                       className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"
                     >
-                      {expandedCategory === category.id ? <FiChevronUp /> : <FiChevronDown />}
+                      {expandedCategory === (category.id || category._id) ? <FiChevronUp /> : <FiChevronDown />}
                     </button>
                   </div>
 
                   {/* Subcategories and Brands */}
-                  {expandedCategory === category.id && (
+                  {expandedCategory === (category.id || category._id) && (
                     <div className="pl-6 pr-2 pb-3 bg-gray-50/50 space-y-4 border-t border-gray-50 pt-2">
                       {/* SubCategories */}
                       <div>
                         <p className="text-xs font-semibold text-gray-500 mb-2">Sub Categories</p>
                         <div className="space-y-1.5 pl-2">
-                          {(subCategoriesData[category.id] || []).map(subCat => (
+                          {(subCategoriesData[category.id || category._id] || []).map(subCat => (
                             <label key={subCat._id} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
                               <input
                                 type="checkbox"
-                                checked={editFormData.subCategories.includes(subCat.title)}
+                                checked={editFormData.subCategories.includes(subCat.title) || editFormData.subCategories.includes(subCat._id)}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setEditFormData(prev => ({ ...prev, subCategories: [...prev.subCategories, subCat.title] }));
+                                    setEditFormData(prev => ({ ...prev, subCategories: [...prev.subCategories, subCat._id] }));
                                   } else {
-                                    setEditFormData(prev => ({ ...prev, subCategories: prev.subCategories.filter(s => s !== subCat.title) }));
+                                    setEditFormData(prev => ({ ...prev, subCategories: prev.subCategories.filter(s => s !== subCat.title && s !== subCat._id) }));
                                   }
                                 }}
                                 className="w-3.5 h-3.5 text-blue-500 rounded border-gray-300 focus:ring-blue-500"
@@ -749,7 +749,7 @@ const AllVendors = () => {
                               {subCat.title}
                             </label>
                           ))}
-                          {(!subCategoriesData[category.id] || subCategoriesData[category.id].length === 0) && (
+                          {(!subCategoriesData[category.id || category._id] || subCategoriesData[category.id || category._id].length === 0) && (
                             <p className="text-xs text-gray-400 italic">No subcategories found.</p>
                           )}
                         </div>
@@ -759,16 +759,16 @@ const AllVendors = () => {
                       <div>
                         <p className="text-xs font-semibold text-gray-500 mb-2">Brands</p>
                         <div className="space-y-1.5 pl-2">
-                          {(brandsData[category.id] || []).map(brand => (
+                          {(brandsData[category.id || category._id] || []).map(brand => (
                             <label key={brand._id} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
                               <input
                                 type="checkbox"
-                                checked={editFormData.brands.includes(brand.title)}
+                                checked={editFormData.brands.includes(brand.title) || editFormData.brands.includes(brand._id)}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setEditFormData(prev => ({ ...prev, brands: [...prev.brands, brand.title] }));
+                                    setEditFormData(prev => ({ ...prev, brands: [...prev.brands, brand._id] }));
                                   } else {
-                                    setEditFormData(prev => ({ ...prev, brands: prev.brands.filter(b => b !== brand.title) }));
+                                    setEditFormData(prev => ({ ...prev, brands: prev.brands.filter(b => b !== brand.title && b !== brand._id) }));
                                   }
                                 }}
                                 className="w-3.5 h-3.5 text-blue-500 rounded border-gray-300 focus:ring-blue-500"
@@ -776,7 +776,7 @@ const AllVendors = () => {
                               {brand.title}
                             </label>
                           ))}
-                          {(!brandsData[category.id] || brandsData[category.id].length === 0) && (
+                          {(!brandsData[category.id || category._id] || brandsData[category.id || category._id].length === 0) && (
                             <p className="text-xs text-gray-400 italic">No brands found.</p>
                           )}
                         </div>

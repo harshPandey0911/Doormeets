@@ -83,7 +83,7 @@ const createBooking = async (req, res) => {
 
     // 1. Parallel Fetching: Service and User
     const [service, user] = await Promise.all([
-      Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds type isConsultation codAdvanceAmount codEnabled packages').lean(),
+      Service.findById(serviceId).select('title basePrice discountPrice description images iconUrl categoryId category categoryIds type isConsultation codAdvanceAmount codEnabled packages subCategoryId').lean(),
       User.findById(userId).select('name phone wallet plans loyaltyPoints')
     ]);
 
@@ -178,6 +178,42 @@ const createBooking = async (req, res) => {
         
         if (isConsultation) {
           vendorQuery.isConsultant = true;
+        }
+
+        if (service.subCategoryId) {
+          const subCategoryIdStr = service.subCategoryId.toString();
+          const SubCategory = require('../../models/SubCategory');
+          const subCatDoc = await SubCategory.findById(service.subCategoryId).select('title').lean();
+          const subCatSearch = [subCategoryIdStr];
+          if (subCatDoc && subCatDoc.title) {
+            subCatSearch.push(subCatDoc.title);
+          }
+          vendorQuery.subCategories = { $in: subCatSearch };
+        }
+
+        // Filter by Brand if booking has brandName
+        let targetBrandName = reqBrandName;
+        if (!targetBrandName && bookedItems && bookedItems.length > 0) {
+          const distinctBrands = [...new Set(bookedItems.map(item => item.brandName || item.sectionTitle || item.brand).filter(Boolean))];
+          if (distinctBrands.length > 0) {
+            targetBrandName = distinctBrands.join(', ');
+          }
+        }
+
+        if (targetBrandName) {
+          const brandNames = targetBrandName.split(',').map(b => b.trim()).filter(Boolean);
+          if (brandNames.length > 0) {
+            const Brand = require('../../models/Brand');
+            const brandDocs = await Brand.find({ title: { $in: brandNames.map(b => new RegExp(`^${b}$`, 'i')) } }).select('_id title').lean();
+            const brandSearch = [];
+            brandDocs.forEach(b => {
+              brandSearch.push(b._id.toString());
+              brandSearch.push(b.title);
+            });
+            if (brandSearch.length > 0) {
+              vendorQuery.brands = { $in: brandSearch };
+            }
+          }
         }
 
         const matchingVendors = await Vendor.find(vendorQuery).select('_id').lean();

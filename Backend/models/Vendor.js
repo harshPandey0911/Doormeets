@@ -193,6 +193,11 @@ const vendorSchema = new mongoose.Schema({
     enum: Object.values(VENDOR_STATUS),
     default: VENDOR_STATUS.PENDING
   },
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null
+  },
   approvalDate: {
     type: Date
   },

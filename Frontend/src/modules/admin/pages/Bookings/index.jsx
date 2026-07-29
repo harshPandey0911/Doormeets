@@ -8,10 +8,10 @@ import { toast } from 'react-hot-toast';
 import { adminBookingService } from '../../../../services/adminBookingService';
 import { getDashboardStats } from '../../../../services/adminDashboardService';
 
-const BookingStatsCard = ({ title, count, icon: Icon, colorClass, bgClass }) => (
+const BookingStatsCard = ({ title, count, icon: Icon, colorClass, bgClass, iconBg }) => (
   <div className={`p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between ${bgClass}`}>
     <div>
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${colorClass.replace('text-', 'bg-').replace('600', '100')}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${iconBg}`}>
         <Icon className={`w-4 h-4 ${colorClass}`} />
       </div>
       <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">{title}</h3>
@@ -105,6 +105,10 @@ const Bookings = () => {
   }, [page, debouncedSearch, statusFilter, startDate, endDate]);
 
   const handleExport = () => {
+    if (!bookings || bookings.length === 0) {
+      toast.error('No data available to export');
+      return;
+    }
     const headers = ['Order ID', 'Customer', 'Service', 'Total', 'Status', 'Date'];
     const rows = bookings.map(b => [
       b.bookingNumber,
@@ -131,14 +135,14 @@ const Bookings = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <BookingStatsCard title="Awaiting" count={stats.pending} icon={FiClock} bgClass="bg-yellow-50" colorClass="text-yellow-600" />
-        <BookingStatsCard title="Confirmed" count={stats.pending} icon={FiCheckCircle} bgClass="bg-blue-50" colorClass="text-blue-600" />
-        <BookingStatsCard title="In Progress" count={stats.inProgress} icon={FiBox} bgClass="bg-purple-50" colorClass="text-purple-600" />
-        <BookingStatsCard title="Completed" count={stats.completed} icon={FiTruck} bgClass="bg-green-50" colorClass="text-green-600" />
-        <BookingStatsCard title="Delivered" count={stats.completed} icon={FiCheckCircle} bgClass="bg-emerald-50" colorClass="text-emerald-600" />
-        <BookingStatsCard title="Cancelled" count={stats.cancelled} icon={FiXCircle} bgClass="bg-red-50" colorClass="text-red-600" />
-        <BookingStatsCard title="Returned" count={0} icon={FiRefreshCw} bgClass="bg-orange-50" colorClass="text-orange-600" />
-        <BookingStatsCard title="Total Orders" count={stats.total} icon={FiShoppingBag} bgClass="bg-gray-50" colorClass="text-gray-600" />
+        <BookingStatsCard title="Awaiting" count={stats.pending} icon={FiClock} bgClass="bg-yellow-50" colorClass="text-yellow-600" iconBg="bg-yellow-100" />
+        <BookingStatsCard title="Confirmed" count={stats.pending} icon={FiCheckCircle} bgClass="bg-blue-50" colorClass="text-blue-600" iconBg="bg-blue-100" />
+        <BookingStatsCard title="In Progress" count={stats.inProgress} icon={FiBox} bgClass="bg-purple-50" colorClass="text-purple-600" iconBg="bg-purple-100" />
+        <BookingStatsCard title="Completed" count={stats.completed} icon={FiTruck} bgClass="bg-green-50" colorClass="text-green-600" iconBg="bg-green-100" />
+        <BookingStatsCard title="Delivered" count={stats.completed} icon={FiCheckCircle} bgClass="bg-emerald-50" colorClass="text-emerald-600" iconBg="bg-emerald-100" />
+        <BookingStatsCard title="Cancelled" count={stats.cancelled} icon={FiXCircle} bgClass="bg-red-50" colorClass="text-red-600" iconBg="bg-red-100" />
+        <BookingStatsCard title="Returned" count={0} icon={FiRefreshCw} bgClass="bg-amber-50" colorClass="text-amber-600" iconBg="bg-amber-100" />
+        <BookingStatsCard title="Total Orders" count={stats.total} icon={FiShoppingBag} bgClass="bg-gray-50" colorClass="text-gray-600" iconBg="bg-gray-100" />
       </div>
 
       {/* Filter Bar */}
@@ -174,15 +178,24 @@ const Bookings = () => {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent text-[11px] text-gray-600 focus:outline-none w-20"
+              className="bg-transparent text-[11px] text-gray-600 focus:outline-none w-[105px]"
             />
             <span className="text-gray-400 text-[10px]">to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent text-[11px] text-gray-600 focus:outline-none w-20"
+              className="bg-transparent text-[11px] text-gray-600 focus:outline-none w-[105px]"
             />
+            {(startDate || endDate) && (
+              <button
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                className="ml-1 p-0.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                title="Clear dates"
+              >
+                <FiXCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <button

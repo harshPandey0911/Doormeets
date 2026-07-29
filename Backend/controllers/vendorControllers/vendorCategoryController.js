@@ -76,55 +76,18 @@ const getVendorCategories = async (req, res) => {
   }
 };
 
-/**
- * Get brands under a specific category (Vendor view)
- * GET /api/vendors/categories/:categoryId/brands
- */
 const getCategoryBrands = async (req, res) => {
   try {
     const { categoryId } = req.params;
 
     const query = {
       status: 'active',
-      type: { $ne: 'product' }
+      type: { $ne: 'product' },
+      $or: [
+        { categoryIds: categoryId },
+        { categoryId: categoryId }
+      ]
     };
-
-    const categoryCond = [
-      { categoryIds: categoryId },
-      { categoryId: categoryId }
-    ];
-
-    if (req.user && (req.user.role === 'vendor' || req.userRole === 'vendor')) {
-      const allowedBrands = req.user.brands || [];
-      if (allowedBrands.length === 0) {
-        return res.status(200).json({ success: true, count: 0, brands: [] });
-      }
-
-      const objectIds = [];
-      const names = [];
-      allowedBrands.forEach(brand => {
-        if (/^[0-9a-fA-F]{24}$/.test(brand)) {
-          objectIds.push(brand);
-        } else {
-          names.push(new RegExp(`^${brand}$`, 'i'));
-        }
-      });
-
-      const brandFilter = [];
-      if (objectIds.length > 0) brandFilter.push({ _id: { $in: objectIds } });
-      if (names.length > 0) brandFilter.push({ title: { $in: names } });
-
-      if (brandFilter.length > 0) {
-        query.$and = [
-          { $or: categoryCond },
-          { $or: brandFilter }
-        ];
-      } else {
-        return res.status(200).json({ success: true, count: 0, brands: [] });
-      }
-    } else {
-      query.$or = categoryCond;
-    }
 
     const brands = await Brand.find(query)
       .select('title slug iconUrl badge isPopular isFeatured type rating')
@@ -201,6 +164,7 @@ const getBrandServicesAndPricing = async (req, res) => {
     servicesWithPricing = servicesWithPricing.map(pricing => ({
       id: pricing.serviceId._id,
       title: pricing.serviceId.title,
+      subCategory: pricing.subCategoryId ? pricing.subCategoryId.title : null,
       duration: pricing.serviceId.duration,
       warranty: pricing.serviceId.warranty,
       iconUrl: pricing.serviceId.iconUrl,

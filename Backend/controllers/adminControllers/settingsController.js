@@ -67,7 +67,6 @@ exports.updateSettings = async (req, res, next) => {
       referralRewardReferrer,
       referralRewardReferee,
       maxWalletUsagePercentage,
-      codAdvancePercentage,
       isInstantBookingEnabled,
       instantBookingMarkup,
       instantBookingWaitTime,
@@ -131,7 +130,6 @@ exports.updateSettings = async (req, res, next) => {
         referralRewardReferrer: referralRewardReferrer !== undefined ? Number(referralRewardReferrer) : 100,
         referralRewardReferee: referralRewardReferee !== undefined ? Number(referralRewardReferee) : 100,
         maxWalletUsagePercentage: maxWalletUsagePercentage !== undefined ? Number(maxWalletUsagePercentage) : 30,
-        codAdvancePercentage: codAdvancePercentage !== undefined ? Number(codAdvancePercentage) : 10,
         isInstantBookingEnabled: isInstantBookingEnabled !== undefined ? isInstantBookingEnabled : true,
         instantBookingMarkup: instantBookingMarkup !== undefined ? Number(instantBookingMarkup) : 99,
         instantBookingWaitTime: instantBookingWaitTime !== undefined ? Number(instantBookingWaitTime) : 45,
@@ -212,7 +210,6 @@ exports.updateSettings = async (req, res, next) => {
       if (referralRewardReferrer !== undefined) settings.referralRewardReferrer = Number(referralRewardReferrer);
       if (referralRewardReferee !== undefined) settings.referralRewardReferee = Number(referralRewardReferee);
       if (maxWalletUsagePercentage !== undefined) settings.maxWalletUsagePercentage = Number(maxWalletUsagePercentage);
-      if (codAdvancePercentage !== undefined) settings.codAdvancePercentage = Number(codAdvancePercentage);
       if (isInstantBookingEnabled !== undefined) settings.isInstantBookingEnabled = isInstantBookingEnabled;
       if (instantBookingMarkup !== undefined) settings.instantBookingMarkup = Number(instantBookingMarkup);
       if (instantBookingWaitTime !== undefined) settings.instantBookingWaitTime = Number(instantBookingWaitTime);

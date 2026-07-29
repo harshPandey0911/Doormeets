@@ -68,7 +68,7 @@ const AllWorkers = () => {
       try {
         const response = await api.get('/public/categories');
         if (response.data?.success) {
-          setCategories(response.data.data || []);
+          setCategories(response.data.categories || response.data.data || []);
         }
       } catch (err) {
         console.error('Error fetching categories:', err);
@@ -344,12 +344,17 @@ const AllWorkers = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {worker.serviceCategories && worker.serviceCategories.length > 0 ? (
-                          worker.serviceCategories.map((cat, idx) => (
-                            <span key={idx} className="bg-gray-100 text-gray-700 border border-gray-200 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
-                              {typeof cat === 'object' ? cat.title : cat}
-                            </span>
-                          ))
+                        {worker.serviceCategories && worker.serviceCategories.filter(Boolean).length > 0 ? (
+                          worker.serviceCategories.filter(Boolean).map((cat, idx) => {
+                            const title = typeof cat === 'object'
+                              ? (cat.title || cat.name || 'Unknown')
+                              : (categories.find(c => String(c._id) === String(cat) || String(c.id) === String(cat))?.title || 'Deleted Category');
+                            return (
+                              <span key={idx} className="bg-gray-100 text-gray-700 border border-gray-200 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+                                {title}
+                              </span>
+                            );
+                          })
                         ) : (
                           <span className="text-[10px] text-gray-400">No categories</span>
                         )}

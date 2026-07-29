@@ -642,30 +642,7 @@ const EditProfile = () => {
             {errors.serviceCategories && <p className="text-red-500 text-sm mt-1">{errors.serviceCategories}</p>}
           </div>
 
-          {/* Service Range */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-              <div
-                className="p-2 rounded-lg"
-                style={{
-                  background: `linear-gradient(135deg, ${themeColors.icon}25 0%, ${themeColors.icon}15 100%)`,
-                }}
-              >
-                <FiMapPin className="w-4 h-4" style={{ color: themeColors.icon }} />
-              </div>
-              <span>Service Range (Km) <span className="text-red-500">*</span></span>
-            </label>
-            <input
-              type="number"
-              value={formData.serviceRange}
-              onChange={(e) => handleInputChange('serviceRange', e.target.value)}
-              placeholder="e.g. 10"
-              min="1"
-              className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:outline-none focus:ring-2"
-              style={{ focusRingColor: themeColors.button }}
-            />
-            <p className="text-[10px] text-gray-400 mt-1">Distance from your location where you can provide services</p>
-          </div>
+
 
           {/* Aadhar Document Upload */}
           <div>

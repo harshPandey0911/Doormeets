@@ -170,140 +170,50 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
   }
 
   try {
-    // Fetch default radius from settings
-    if (radiusKm === 10) {
-      const globalSettings = await Settings.findOne({ type: 'global' }).select('searchRadius').lean();
-      if (globalSettings?.searchRadius) radiusKm = globalSettings.searchRadius;
+    const { findZoneByLocation } = require('./zoneService');
+    const matchedZone = await findZoneByLocation(centerLocation.lat, centerLocation.lng);
+
+    if (!matchedZone) {
+      console.log(`[LocationService] Booking location (${centerLocation.lat}, ${centerLocation.lng}) is outside all active Polygon Zones. Empty array returned for manual assignment.`);
+      return [];
     }
+
+    console.log(`[LocationService] Booking location matches Zone: ${matchedZone.name} (${matchedZone._id})`);
 
     const baseQuery = _buildVendorQuery(filters);
+    const zoneQuery = {
+      ...baseQuery,
+      zoneId: matchedZone._id
+    };
 
-    // Dynamic Service-Wise Minimum Wallet Balance Check (REMOVED)
-    // Requests now broadcast to everyone; balance check moved to accept phase.
+    let zoneVendors = await Vendor.find(zoneQuery)
+      .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation level currentLevel reservedFrom')
+      .lean();
 
-    const totalApprovedVendors = await Vendor.countDocuments({ approvalStatus: 'APPROVED', isActive: true });
-    console.log(`[LocationService] Total Approved/Active Vendors in DB: ${totalApprovedVendors}`);
-    console.log(`[LocationService] Searching with query: ${JSON.stringify(baseQuery)}`);
+    console.log(`[LocationService] Found ${zoneVendors.length} vendors in Zone ${matchedZone.name}`);
 
-
-    // OPTION 1: Try Redis geo cache first (fastest - <5ms)
-    if (isRedisConnected()) {
-      const cachedVendors = await getNearbyVendorsFromCache(centerLocation.lat, centerLocation.lng, radiusKm);
-
-      if (cachedVendors && cachedVendors.length > 0) {
-        console.log(`[LocationService] Found ${cachedVendors.length} vendors from Redis cache`);
-
-        // Fetch full vendor details from MongoDB
-        const vendorIds = cachedVendors.map(v => v.vendorId);
-        const vendors = await Vendor.find({
-          _id: { $in: vendorIds },
-          ...baseQuery
-        }).select('name businessName phone address profilePhoto service rating isOnline availability geoLocation level currentLevel reservedFrom');
-
-        // Merge distance from cache
-        const vendorMap = new Map(vendors.map(v => [v._id.toString(), v.toObject()]));
-        const result = cachedVendors
-          .filter(cv => vendorMap.has(cv.vendorId))
-          .map(cv => ({
-            ...vendorMap.get(cv.vendorId),
-            distance: cv.distance
-          }));
-
-        console.log(`[LocationService] Found ${result.length} matching vendors via Redis path`);
-        const reservedFiltered = filterReservedVendors(result, newBookingEndTime);
-        return await filterConflictVendors(reservedFiltered, filters.scheduledDate, filters.timeSlot, filters.scheduledTime);
-      }
-    }
-
-    // OPTION 2: Try MongoDB 2dsphere geo query (fast)
-    let nearbyVendors = [];
-
-    try {
-      // Check if any vendors have geoLocation set
-      const hasGeoVendors = await Vendor.countDocuments({
-        ...baseQuery,
-        'geoLocation.coordinates': { $ne: [0, 0] }
-      });
-
-      if (hasGeoVendors > 0) {
-        // Use fast 2dsphere query
-        nearbyVendors = await Vendor.find({
-          ...baseQuery,
-          geoLocation: {
-            $near: {
-              $geometry: {
-                type: 'Point',
-                coordinates: [centerLocation.lng, centerLocation.lat] // GeoJSON is [lng, lat]
-              },
-              $maxDistance: radiusKm * 1000 // Convert km to meters
-            }
-          }
-        })
-          .select('name businessName phone address profilePhoto service rating isOnline availability geoLocation settings level currentLevel reservedFrom')
-          .limit(50); // Increased limit as we filter below
-
-        // Calculate distance for each vendor
-        nearbyVendors = nearbyVendors.map(vendor => {
-          const vendorObj = vendor.toObject();
-          if (vendor.geoLocation && vendor.geoLocation.coordinates) {
-            vendorObj.distance = calculateDistance(centerLocation, {
-              lat: vendor.geoLocation.coordinates[1],
-              lng: vendor.geoLocation.coordinates[0]
-            });
-          } else {
-            vendorObj.distance = null;
-          }
-          return vendorObj;
-        });
-
-        // Filter strictly by global search radius (ignore individual vendor range settings)
-        nearbyVendors = nearbyVendors.filter(v => {
-          return v.distance !== null && v.distance <= radiusKm;
-        });
-
-        console.log(`[LocationService] Found ${nearbyVendors.length} vendors using 2dsphere query`);
-        const reservedFiltered = filterReservedVendors(nearbyVendors, newBookingEndTime);
-        return await filterConflictVendors(reservedFiltered, filters.scheduledDate, filters.timeSlot, filters.scheduledTime);
-      }
-    } catch (geoError) {
-      console.warn('[LocationService] 2dsphere query failed, falling back to Haversine:', geoError.message);
-    }
-
-    // Fallback: Use Haversine formula (slower but works without geo index)
-    const vendors = await Vendor.find(baseQuery)
-      .select('name businessName phone address location profilePhoto service rating isOnline availability settings level currentLevel reservedFrom');
-
-    console.log(`[LocationService] Haversine fallback: found ${vendors.length} vendors matching baseQuery before distance filter`);
-
-    // Calculate distances and filter by radius
-    nearbyVendors = vendors.map(vendor => {
+    // Calculate distance for sorting and tracking reference
+    zoneVendors = zoneVendors.map(vendor => {
       let distance = null;
-
-      // PRIORITY: Use real-time location (location) first, then registered address
-      const vLat = vendor.location?.lat || vendor.address?.lat;
-      const vLng = vendor.location?.lng || vendor.address?.lng;
-
+      const vLat = vendor.location?.lat || vendor.address?.lat || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[1] : null);
+      const vLng = vendor.location?.lng || vendor.address?.lng || (vendor.geoLocation?.coordinates ? vendor.geoLocation.coordinates[0] : null);
       if (vLat && vLng) {
-        distance = calculateDistance(centerLocation, {
-          lat: vLat,
-          lng: vLng
-        });
+        distance = calculateDistance(centerLocation, { lat: vLat, lng: vLng });
       }
-
       return {
-        ...vendor.toObject(),
-        distance: distance,
-        withinRange: distance !== null && distance <= radiusKm,
-        isUsingCurrentLocation: !!vendor.location?.lat // Flag for debugging
+        ...vendor,
+        distance: distance
       };
-    }).filter(vendor => vendor.withinRange);
+    });
 
-    const currentLocCount = nearbyVendors.filter(v => v.isUsingCurrentLocation).length;
-    console.log(`[LocationService] Found ${nearbyVendors.length} vendors (Online/Current: ${currentLocCount}) using Haversine`);
-    const reservedFiltered = filterReservedVendors(nearbyVendors, newBookingEndTime);
-    return await filterConflictVendors(reservedFiltered, filters.scheduledDate, filters.timeSlot, filters.scheduledTime);
+    // Filter out conflicting and reserved vendors
+    const reservedFiltered = filterReservedVendors(zoneVendors, newBookingEndTime);
+    const conflictFiltered = await filterConflictVendors(reservedFiltered, filters.scheduledDate, filters.timeSlot, filters.scheduledTime);
+
+    console.log(`[LocationService] Matched ${conflictFiltered.length} available vendors in zone: ${matchedZone.name}`);
+    return conflictFiltered;
   } catch (error) {
-    console.error('Find nearby vendors error:', error);
+    console.error('Find nearby vendors strict polygon error:', error);
     return [];
   }
 };

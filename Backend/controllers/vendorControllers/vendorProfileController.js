@@ -59,15 +59,46 @@ const getProfile = async (req, res) => {
     const completedJobs = await Booking.countDocuments({ vendorId, status: 'completed' });
     const completionRate = totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0;
 
+    let zoneStatus = { inZone: true };
+    if (vendor.zoneId) {
+      const Zone = require('../../models/Zone');
+      const vendorZone = await Zone.findById(vendor.zoneId);
+      if (vendorZone) {
+        zoneStatus.inZone = true;
+        zoneStatus.zoneName = vendorZone.name;
+      }
+    } else if (vendor.address && vendor.address.lat && vendor.address.lng) {
+      const { findNearestZone } = require('../../services/zoneService');
+      zoneStatus.inZone = false;
+      const nearestZone = await findNearestZone(parseFloat(vendor.address.lat), parseFloat(vendor.address.lng));
+      if (nearestZone) {
+        zoneStatus.nearestZone = {
+          name: nearestZone.name,
+          distanceKm: nearestZone.distanceKm
+        };
+      }
+    }
+
+    const rawServices = vendor.service && vendor.service.length > 0 ? vendor.service : (vendor.categories || []);
+    const Category = require('../../models/Category');
+    const resolvedServices = await Promise.all(rawServices.map(async (item) => {
+      if (/^[0-9a-fA-F]{24}$/.test(item)) {
+        const cat = await Category.findById(item);
+        return cat ? cat.title : item;
+      }
+      return item;
+    }));
+
     res.status(200).json({
       success: true,
       vendor: {
         id: vendor._id,
+        zoneStatus,
         name: vendor.name,
         businessName: vendor.businessName || null,
         email: vendor.email,
         phone: vendor.phone,
-        service: vendor.service && vendor.service.length > 0 ? vendor.service : (vendor.categories || []),
+        service: resolvedServices,
         skills: vendor.skills || [],
         address: vendor.address || null,
         rating: rating > 0 ? parseFloat(rating.toFixed(1)) : 0,
@@ -192,6 +223,11 @@ const updateProfile = async (req, res) => {
             type: 'Point',
             coordinates: [vendor.address.lng, vendor.address.lat] // [lng, lat]
           };
+
+          // Update zoneId based on address coordinates
+          const { findZoneByLocation } = require('../../services/zoneService');
+          const matchedZone = await findZoneByLocation(parseFloat(vendor.address.lat), parseFloat(vendor.address.lng));
+          vendor.zoneId = matchedZone ? matchedZone._id : null;
         }
       }
     }
@@ -307,16 +343,47 @@ const updateProfile = async (req, res) => {
       }
     }
 
+    let zoneStatus = { inZone: true };
+    if (vendor.zoneId) {
+      const Zone = require('../../models/Zone');
+      const vendorZone = await Zone.findById(vendor.zoneId);
+      if (vendorZone) {
+        zoneStatus.inZone = true;
+        zoneStatus.zoneName = vendorZone.name;
+      }
+    } else if (vendor.address && vendor.address.lat && vendor.address.lng) {
+      const { findNearestZone } = require('../../services/zoneService');
+      zoneStatus.inZone = false;
+      const nearestZone = await findNearestZone(parseFloat(vendor.address.lat), parseFloat(vendor.address.lng));
+      if (nearestZone) {
+        zoneStatus.nearestZone = {
+          name: nearestZone.name,
+          distanceKm: nearestZone.distanceKm
+        };
+      }
+    }
+
+    const rawServices = vendor.service || [];
+    const Category = require('../../models/Category');
+    const resolvedServices = await Promise.all(rawServices.map(async (item) => {
+      if (/^[0-9a-fA-F]{24}$/.test(item)) {
+        const cat = await Category.findById(item);
+        return cat ? cat.title : item;
+      }
+      return item;
+    }));
+
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
+      zoneStatus,
       vendor: {
         id: vendor._id,
         name: vendor.name,
         businessName: vendor.businessName,
         email: vendor.email,
         phone: vendor.phone,
-        service: vendor.service,
+        service: resolvedServices,
         address: vendor.address,
         approvalStatus: vendor.approvalStatus,
         isPhoneVerified: vendor.isPhoneVerified,
@@ -384,12 +451,33 @@ const updateAddress = async (req, res) => {
       coordinates: [parseFloat(lng), parseFloat(lat)]
     };
 
+    const { findZoneByLocation, findNearestZone } = require('../../services/zoneService');
+    const matchedZone = await findZoneByLocation(parseFloat(lat), parseFloat(lng));
+
+    let zoneStatus = { inZone: true };
+    if (matchedZone) {
+      vendor.zoneId = matchedZone._id;
+      zoneStatus.inZone = true;
+      zoneStatus.zoneName = matchedZone.name;
+    } else {
+      vendor.zoneId = null;
+      zoneStatus.inZone = false;
+      const nearestZone = await findNearestZone(parseFloat(lat), parseFloat(lng));
+      if (nearestZone) {
+        zoneStatus.nearestZone = {
+          name: nearestZone.name,
+          distanceKm: nearestZone.distanceKm
+        };
+      }
+    }
+
     await vendor.save();
 
     res.status(200).json({
       success: true,
       message: 'Address updated successfully',
-      address: vendor.address
+      address: vendor.address,
+      zoneStatus
     });
   } catch (error) {
     console.error('Update vendor address error:', error);
@@ -412,16 +500,38 @@ const updateLocation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Latitude and Longitude are required' });
     }
 
-    // Update only the location field
+    const { findZoneByLocation, findNearestZone } = require('../../services/zoneService');
+    const matchedZone = await findZoneByLocation(parseFloat(lat), parseFloat(lng));
+
+    let responseData = { success: true, message: 'Location updated' };
+    let zoneUpdate = null;
+
+    if (matchedZone) {
+      zoneUpdate = matchedZone._id;
+      responseData.inZone = true;
+      responseData.zoneName = matchedZone.name;
+    } else {
+      const nearestZone = await findNearestZone(parseFloat(lat), parseFloat(lng));
+      responseData.inZone = false;
+      if (nearestZone) {
+        responseData.nearestZone = {
+          name: nearestZone.name,
+          distanceKm: nearestZone.distanceKm
+        };
+      }
+    }
+
+    // Update only the location field and zoneId
     await Vendor.findByIdAndUpdate(vendorId, {
-      location: { lat, lng, updatedAt: new Date() },
+      location: { lat: parseFloat(lat), lng: parseFloat(lng), updatedAt: new Date() },
       geoLocation: {
         type: 'Point',
-        coordinates: [lng, lat]
-      }
+        coordinates: [parseFloat(lng), parseFloat(lat)]
+      },
+      zoneId: zoneUpdate
     });
 
-    res.status(200).json({ success: true, message: 'Location updated' });
+    res.status(200).json(responseData);
   } catch (error) {
     console.error('Vendor location update error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
