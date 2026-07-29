@@ -105,6 +105,10 @@ const Bookings = () => {
   }, [page, debouncedSearch, statusFilter, startDate, endDate]);
 
   const handleExport = () => {
+    if (!bookings || bookings.length === 0) {
+      toast.error('No data available to export');
+      return;
+    }
     const headers = ['Order ID', 'Customer', 'Service', 'Total', 'Status', 'Date'];
     const rows = bookings.map(b => [
       b.bookingNumber,
