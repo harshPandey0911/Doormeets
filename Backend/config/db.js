@@ -1,4 +1,8 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Force DNS resolution to use public DNS servers (prevents querySrv ETIMEOUT issues)
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 /**
  * Connect to MongoDB
