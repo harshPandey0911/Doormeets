@@ -100,9 +100,23 @@ const SubCategoriesPage = ({ selectedCity, filterTemplateId }) => {
     });
   }
 
-  const filteredCategoriesForForm = filterTemplateId
-    ? categories.filter(c => String(c.templateId || c.template) === String(filterTemplateId))
-    : categories;
+  const filteredCategoriesForForm = categories.filter(c => {
+    if (filterTemplateId) {
+      const tId = c.templateId || c.template;
+      if (!tId) return false;
+      const catTemplateId = typeof tId === 'object'
+        ? String(tId._id || tId.id || tId.toString())
+        : String(tId);
+      if (catTemplateId !== String(filterTemplateId)) return false;
+    }
+    if (selectedCity) {
+      const catCityIds = c.cityIds || [];
+      if (catCityIds.length > 0) {
+        return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
+      }
+    }
+    return true;
+  });
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-sm">

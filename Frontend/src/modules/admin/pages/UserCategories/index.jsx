@@ -61,6 +61,29 @@ const UserCategories = () => {
 
   return (
     <div className="space-y-4">
+      {/* City Scope Selector Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-150 shadow-xs">
+        <div>
+          <h1 className="text-base font-extrabold text-gray-900">Catalog Management</h1>
+          <p className="text-[11px] text-gray-400 mt-0.5">Filter services, pricing matrix, and category layouts by selecting a target city.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 whitespace-nowrap">City Scope:</span>
+          <select
+            value={selectedCity || ''}
+            onChange={(e) => setSelectedCity(e.target.value || null)}
+            className="px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-extrabold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer min-w-[180px] shadow-2xs hover:bg-gray-100"
+          >
+            <option value="">All Cities (Global View)</option>
+            {cities.map((city) => (
+              <option key={city._id || city.id} value={city._id || city.id}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
         <Routes>
           <Route index element={<Navigate to="/admin/user-categories/home" replace />} />

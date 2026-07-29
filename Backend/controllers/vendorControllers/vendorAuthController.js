@@ -161,13 +161,60 @@ const verifyLogin = async (req, res) => {
          // Proceed to generate tokens
       }
 
-      // SINGLE DEVICE LOGIN: Update Session ID & Clear OLD FCM tokens
+       // SINGLE DEVICE LOGIN: Update Session ID & Clear OLD FCM tokens
       console.time('verifyLogin-update');
       const loginSessionId = Date.now().toString();
-      await Vendor.findByIdAndUpdate(vendor._id, { 
-        loginSessionId,
-        $set: { fcmTokens: [], fcmTokenMobile: [] } // Clear all old tokens to prevent ghost notifications
-      });
+
+      // POLYGON GEOCONTEXT FOR VENDOR LOGIN
+      let zoneStatus = { inZone: true };
+      const reqLat = req.body.lat !== undefined ? parseFloat(req.body.lat) : null;
+      const reqLng = req.body.lng !== undefined ? parseFloat(req.body.lng) : null;
+      
+      if (reqLat !== null && reqLng !== null && !isNaN(reqLat) && !isNaN(reqLng)) {
+        const { findZoneByLocation, findNearestZone } = require('../../services/zoneService');
+        const matchedZone = await findZoneByLocation(reqLat, reqLng);
+        
+        let zoneUpdate = null;
+        if (matchedZone) {
+          zoneUpdate = matchedZone._id;
+          zoneStatus.inZone = true;
+          zoneStatus.zoneName = matchedZone.name;
+        } else {
+          zoneStatus.inZone = false;
+          const nearestZone = await findNearestZone(reqLat, reqLng);
+          if (nearestZone) {
+            zoneStatus.nearestZone = {
+              name: nearestZone.name,
+              distanceKm: nearestZone.distanceKm
+            };
+          }
+        }
+        
+        await Vendor.findByIdAndUpdate(vendor._id, { 
+          loginSessionId,
+          location: { lat: reqLat, lng: reqLng, updatedAt: new Date() },
+          geoLocation: {
+            type: 'Point',
+            coordinates: [reqLng, reqLat]
+          },
+          zoneId: zoneUpdate,
+          $set: { fcmTokens: [], fcmTokenMobile: [] }
+        });
+      } else {
+        await Vendor.findByIdAndUpdate(vendor._id, { 
+          loginSessionId,
+          $set: { fcmTokens: [], fcmTokenMobile: [] }
+        });
+        if (vendor.zoneId) {
+          const Zone = require('../../models/Zone');
+          const vendorZone = await Zone.findById(vendor.zoneId);
+          if (vendorZone) {
+            zoneStatus.inZone = true;
+            zoneStatus.zoneName = vendorZone.name;
+          }
+        }
+      }
+      console.timeEnd('verifyLogin-update');
 
       const tokens = generateTokenPair({
         userId: vendor._id,
@@ -175,17 +222,28 @@ const verifyLogin = async (req, res) => {
         loginSessionId
       });
 
+      const rawServices = vendor.service && vendor.service.length > 0 ? vendor.service : (vendor.categories || []);
+      const Category = require('../../models/Category');
+      const resolvedServices = await Promise.all(rawServices.map(async (item) => {
+        if (/^[0-9a-fA-F]{24}$/.test(item)) {
+          const cat = await Category.findById(item);
+          return cat ? cat.title : item;
+        }
+        return item;
+      }));
+
       return res.status(200).json({
         success: true,
         isNewUser: false,
         message: 'Login successful',
+        zoneStatus,
         vendor: {
           id: vendor._id,
           name: vendor.name,
           email: vendor.email,
           phone: vendor.phone,
           businessName: vendor.businessName,
-          service: vendor.service && vendor.service.length > 0 ? vendor.service : (vendor.categories || []),
+          service: resolvedServices,
           approvalStatus: vendor.approvalStatus,
           isSubscriptionActive: vendor.isSubscriptionActive,
           subscription: vendor.subscription,
@@ -334,6 +392,28 @@ const register = async (req, res) => {
       }
     }
 
+    let finalSubCategories = [];
+    let finalBrands = [];
+    if (finalCategories.length > 0) {
+      try {
+        const SubCategory = require('../../models/SubCategory');
+        const Brand = require('../../models/Brand');
+        
+        const subs = await SubCategory.find({ categoryId: { $in: finalCategories } });
+        finalSubCategories = subs.map(s => s._id.toString());
+        
+        const brs = await Brand.find({
+          $or: [
+            { categoryIds: { $in: finalCategories } },
+            { categoryId: { $in: finalCategories } }
+          ]
+        });
+        finalBrands = brs.map(b => b._id.toString());
+      } catch (err) {
+        console.error('Error fetching subcategories/brands for registration:', err);
+      }
+    }
+
     // Create Vendor Record
     const vendor = await Vendor.create({
       name,
@@ -341,6 +421,8 @@ const register = async (req, res) => {
       professions: professionId ? [professionId] : [],
       categories: finalCategories,
       service: finalCategories,
+      subCategories: finalSubCategories,
+      brands: finalBrands,
       approvalStatus: VENDOR_STATUS.PENDING,
       isActive: true, // Allow them to attempt login but blocked by PENDING status
       settings: { serviceRange: 15 },
@@ -476,10 +558,56 @@ const login = async (req, res) => {
 
     // SINGLE DEVICE LOGIN: Update Session ID & Clear OLD FCM tokens
     const loginSessionId = Date.now().toString();
-    await Vendor.findByIdAndUpdate(vendor._id, { 
-      loginSessionId,
-      $set: { fcmTokens: [], fcmTokenMobile: [] } // Clear all old tokens to prevent ghost notifications
-    });
+
+    // POLYGON GEOCONTEXT FOR VENDOR LOGIN
+    let zoneStatus = { inZone: true };
+    const reqLat = req.body.lat !== undefined ? parseFloat(req.body.lat) : null;
+    const reqLng = req.body.lng !== undefined ? parseFloat(req.body.lng) : null;
+    
+    if (reqLat !== null && reqLng !== null && !isNaN(reqLat) && !isNaN(reqLng)) {
+      const { findZoneByLocation, findNearestZone } = require('../../services/zoneService');
+      const matchedZone = await findZoneByLocation(reqLat, reqLng);
+      
+      let zoneUpdate = null;
+      if (matchedZone) {
+        zoneUpdate = matchedZone._id;
+        zoneStatus.inZone = true;
+        zoneStatus.zoneName = matchedZone.name;
+      } else {
+        zoneStatus.inZone = false;
+        const nearestZone = await findNearestZone(reqLat, reqLng);
+        if (nearestZone) {
+          zoneStatus.nearestZone = {
+            name: nearestZone.name,
+            distanceKm: nearestZone.distanceKm
+          };
+        }
+      }
+      
+      await Vendor.findByIdAndUpdate(vendor._id, { 
+        loginSessionId,
+        location: { lat: reqLat, lng: reqLng, updatedAt: new Date() },
+        geoLocation: {
+          type: 'Point',
+          coordinates: [reqLng, reqLat]
+        },
+        zoneId: zoneUpdate,
+        $set: { fcmTokens: [], fcmTokenMobile: [] }
+      });
+    } else {
+      await Vendor.findByIdAndUpdate(vendor._id, { 
+        loginSessionId,
+        $set: { fcmTokens: [], fcmTokenMobile: [] }
+      });
+      if (vendor.zoneId) {
+        const Zone = require('../../models/Zone');
+        const vendorZone = await Zone.findById(vendor.zoneId);
+        if (vendorZone) {
+          zoneStatus.inZone = true;
+          zoneStatus.zoneName = vendorZone.name;
+        }
+      }
+    }
 
     // Generate JWT tokens
     const tokens = generateTokenPair({
@@ -488,16 +616,27 @@ const login = async (req, res) => {
       loginSessionId
     });
 
+    const rawServices = vendor.service && vendor.service.length > 0 ? vendor.service : (vendor.categories || []);
+    const Category = require('../../models/Category');
+    const resolvedServices = await Promise.all(rawServices.map(async (item) => {
+      if (/^[0-9a-fA-F]{24}$/.test(item)) {
+        const cat = await Category.findById(item);
+        return cat ? cat.title : item;
+      }
+      return item;
+    }));
+
     res.status(200).json({
       success: true,
       message: 'Login successful',
+      zoneStatus,
       vendor: {
         id: vendor._id,
         name: vendor.name,
         email: vendor.email,
         phone: vendor.phone,
         businessName: vendor.businessName,
-        service: vendor.service && vendor.service.length > 0 ? vendor.service : (vendor.categories || []),
+        service: resolvedServices,
         approvalStatus: vendor.approvalStatus,
         isSubscriptionActive: vendor.isSubscriptionActive,
         subscription: vendor.subscription,

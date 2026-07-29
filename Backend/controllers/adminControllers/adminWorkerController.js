@@ -64,6 +64,7 @@ const getAllWorkers = async (req, res) => {
     // Get workers
     const workers = await Worker.find(query)
       .select('-password')
+      .populate('serviceCategories', 'title slug')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));

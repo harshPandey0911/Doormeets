@@ -560,6 +560,33 @@ class BookingScheduler {
         vendorQuery.isConsultant = true;
       }
 
+      if (service.subCategoryId) {
+        const subCategoryIdStr = service.subCategoryId.toString();
+        const SubCategory = require('../models/SubCategory');
+        const subCatDoc = await SubCategory.findById(service.subCategoryId).select('title').lean();
+        const subCatSearch = [subCategoryIdStr];
+        if (subCatDoc && subCatDoc.title) {
+          subCatSearch.push(subCatDoc.title);
+        }
+        vendorQuery.subCategories = { $in: subCatSearch };
+      }
+
+      if (booking.brandName) {
+        const brandNames = booking.brandName.split(',').map(b => b.trim()).filter(Boolean);
+        if (brandNames.length > 0) {
+          const Brand = require('../models/Brand');
+          const brandDocs = await Brand.find({ title: { $in: brandNames.map(b => new RegExp(`^${b}$`, 'i')) } }).select('_id title').lean();
+          const brandSearch = [];
+          brandDocs.forEach(b => {
+            brandSearch.push(b._id.toString());
+            brandSearch.push(b.title);
+          });
+          if (brandSearch.length > 0) {
+            vendorQuery.brands = { $in: brandSearch };
+          }
+        }
+      }
+
       const matchingVendors = await Vendor.find(vendorQuery).select('_id').lean();
       const qualifiedVendorIds = Array.from(new Set(matchingVendors.map(v => v._id.toString())));
 

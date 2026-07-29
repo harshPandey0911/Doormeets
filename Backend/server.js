@@ -222,6 +222,7 @@ app.use('/api/workers', require('./routes/worker-routes/workerWallet.routes'));
 
 // Admin routes
 app.use('/api/admin/auth', require('./routes/admin-routes/adminAuth.routes'));
+app.use('/api/admin/zones', require('./routes/admin-routes/zone.routes'));
 app.use('/api/admin', require('./routes/admin-routes/cityManagement.routes.js'));
 app.use('/api/admin', require('./routes/admin-routes/dashboard.routes'));
 app.use('/api/admin', require('./routes/admin-routes/userManagement.routes'));

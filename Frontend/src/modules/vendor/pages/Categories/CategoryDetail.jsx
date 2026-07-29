@@ -140,7 +140,10 @@ const CategoryDetail = () => {
                           Active
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {service.subCategory && (
+                          <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100 uppercase tracking-wide">{service.subCategory}</span>
+                        )}
                         {service.duration && (
                           <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md">{service.duration} mins</span>
                         )}
@@ -148,18 +151,6 @@ const CategoryDetail = () => {
                           <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">{service.warranty} warranty</span>
                         )}
                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* Compact Price Info Row */}
-                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-dashed border-gray-100">
-                    <div className="bg-gray-50 rounded-md p-1.5 flex items-center justify-between border border-gray-100">
-                      <span className="text-[9px] font-bold text-gray-400">Customer Pays</span>
-                      <span className="text-xs font-bold text-gray-800">₹{service.priceDetails?.finalCustomerPrice}</span>
-                    </div>
-                    <div className="rounded-md p-1.5 flex items-center justify-between border" style={{ background: `${themeColors.button}08`, borderColor: `${themeColors.button}15` }}>
-                      <span className="text-[9px] font-bold" style={{ color: themeColors.button }}>Your Profit</span>
-                      <span className="text-xs font-bold" style={{ color: themeColors.button }}>₹{service.priceDetails?.vendorProfit}</span>
                     </div>
                   </div>
                 </div>
@@ -275,7 +266,10 @@ const CategoryDetail = () => {
                             Active
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-1">
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          {service.subCategory && (
+                            <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100 uppercase tracking-wide">{service.subCategory}</span>
+                          )}
                           {service.duration && (
                             <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md">{service.duration} mins</span>
                           )}
@@ -283,18 +277,6 @@ const CategoryDetail = () => {
                             <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">{service.warranty} warranty</span>
                           )}
                         </div>
-                      </div>
-                    </div>
-                    
-                    {/* Compact Price Info Row */}
-                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-dashed border-gray-100">
-                      <div className="bg-gray-50 rounded-md p-1.5 flex items-center justify-between border border-gray-100">
-                        <span className="text-[9px] font-bold text-gray-400">Customer Pays</span>
-                        <span className="text-xs font-bold text-gray-800">₹{service.priceDetails?.finalCustomerPrice}</span>
-                      </div>
-                      <div className="rounded-md p-1.5 flex items-center justify-between border" style={{ background: `${themeColors.button}08`, borderColor: `${themeColors.button}15` }}>
-                        <span className="text-[9px] font-bold" style={{ color: themeColors.button }}>Your Profit</span>
-                        <span className="text-xs font-bold" style={{ color: themeColors.button }}>₹{service.priceDetails?.vendorProfit}</span>
                       </div>
                     </div>
                   </div>

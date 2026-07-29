@@ -1474,9 +1474,23 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       })
     : filteredServices;
 
-  const filteredCategoriesForForm = filterTemplateId
-    ? categories.filter(c => String(c.templateId || c.template) === String(filterTemplateId))
-    : categories;
+  const filteredCategoriesForForm = categories.filter(c => {
+    if (filterTemplateId) {
+      const tId = c.templateId || c.template;
+      if (!tId) return false;
+      const catTemplateId = typeof tId === 'object'
+        ? String(tId._id || tId.id || tId.toString())
+        : String(tId);
+      if (catTemplateId !== String(filterTemplateId)) return false;
+    }
+    if (selectedCity) {
+      const catCityIds = c.cityIds || [];
+      if (catCityIds.length > 0) {
+        return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
+      }
+    }
+    return true;
+  });
 
   const typeColors = { minute_base: 'bg-blue-100 text-blue-700', package_base: 'bg-emerald-100 text-emerald-700', image_base: 'bg-purple-100 text-purple-700', multi_visit: 'bg-orange-100 text-orange-700', subscription_base: 'bg-violet-100 text-violet-700' };
   const typeLabels = { minute_base: '⏱ Minute Base', package_base: '📦 Package', image_base: '📸 Image Quote', multi_visit: '🔄 Multi-Visit', subscription_base: '💳 Subscription' };

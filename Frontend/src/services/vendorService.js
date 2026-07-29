@@ -34,6 +34,12 @@ const vendorService = {
   getRevenueAnalytics: async (period) => {
     const response = await api.get(`/vendors/dashboard/revenue?period=${period}`);
     return response.data;
+  },
+
+  // Check geofence zone status by coordinates
+  checkZoneStatus: async (lat, lng) => {
+    const response = await api.get(`/public/check-zone?lat=${lat}&lng=${lng}`);
+    return response.data;
   }
 };
 
