@@ -15,15 +15,23 @@ const getVendorCategories = async (req, res) => {
       categoryType: 'service'
     };
 
-    if (req.user && (req.user.role === 'vendor' || req.userRole === 'vendor')) {
-      const assignedCategories = Array.from(new Set([
-        ...(req.user.service || []),
-        ...(req.user.categories || [])
-      ]));
+    const userRole = (req.userRole || req.user?.role || '').toUpperCase();
 
-      if (assignedCategories.length === 0) {
+    if (userRole === 'VENDOR' || userRole === 'WORKER') {
+      let vendorDoc = req.user;
+      if (userRole === 'WORKER' && req.user.vendorId) {
+        const Vendor = require('../../models/Vendor');
+        vendorDoc = await Vendor.findById(req.user.vendorId).lean();
+      }
+
+      if (!vendorDoc) {
         return res.status(200).json({ success: true, count: 0, categories: [] });
       }
+
+      const assignedCategories = Array.from(new Set([
+        ...(vendorDoc.service || []),
+        ...(vendorDoc.categories || [])
+      ]));
 
       const objectIds = [];
       const names = [];

@@ -12,9 +12,9 @@ const getProfile = async (req, res) => {
 
     const isWorkerRole = req.userRole === 'WORKER' || req.user?.role === 'WORKER';
 
-    if (isWorkerRole) {
+     if (isWorkerRole) {
       const Worker = require('../../models/Worker');
-      const worker = await Worker.findById(vendorId).select('-__v');
+      const worker = await Worker.findById(vendorId).populate('serviceCategories', 'title').select('-__v');
       if (!worker) {
         return res.status(404).json({ success: false, message: 'Worker not found' });
       }
@@ -31,6 +31,7 @@ const getProfile = async (req, res) => {
           totalJobs: worker.totalJobs || 0,
           completionRate: worker.completionRate || 100,
           skills: worker.skills || [],
+          service: worker.serviceCategories ? worker.serviceCategories.map(c => c.title) : [],
           role: 'worker',
           approvalStatus: 'approved'
         }

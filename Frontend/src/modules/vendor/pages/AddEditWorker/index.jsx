@@ -100,6 +100,14 @@ const AddEditWorker = () => {
           const res = await getWorkerById(id);
           if (res.success) {
             const w = res.data;
+            const mappedServiceCategories = (w.serviceCategories || []).map(cat => {
+              if (typeof cat === 'object' && cat !== null) {
+                return cat.title || cat.name || '';
+              }
+              const catObj = (catRes.categories || []).find(c => String(c._id) === String(cat) || String(c.id) === String(cat));
+              return catObj ? (catObj.title || catObj.name) : cat;
+            }).filter(Boolean);
+
             setFormData({
               name: w.name || '',
               phone: w.phone || '',
@@ -110,7 +118,7 @@ const AddEditWorker = () => {
                 backDocument: w.aadhar?.backDocument || '',
                 document: w.aadhar?.document || ''
               },
-              serviceCategories: w.serviceCategories || (w.serviceCategory ? [w.serviceCategory] : []),
+              serviceCategories: mappedServiceCategories,
               address: {
                 addressLine1: w.address?.addressLine1 || '',
                 city: w.address?.city || '',

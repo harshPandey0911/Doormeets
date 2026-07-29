@@ -226,16 +226,15 @@ const BookingDetails = () => {
     }
   }, [id, navigate]);
 
-  // Auto-show rating modal ONLY when booking is fully completed AND paid
+  // Auto-show rating modal when booking is completed or work is done
   useEffect(() => {
     if (booking) {
       const isCompleted = ['completed', 'work_done'].includes(booking.status?.toLowerCase());
-      const isPaid = ['success', 'paid', 'collected_by_vendor'].includes(booking.paymentStatus?.toLowerCase());
       const isRated = !!booking.rating;
       const isDismissed = localStorage.getItem(`rating_dismissed_${id}`);
 
-      // Only show rating modal if work is done AND payment is verified
-      if (isCompleted && isPaid && !isRated && !isDismissed) {
+      // Only show rating modal if work is completed
+      if (isCompleted && !isRated && !isDismissed) {
         setShowRatingModal(true);
       }
     }

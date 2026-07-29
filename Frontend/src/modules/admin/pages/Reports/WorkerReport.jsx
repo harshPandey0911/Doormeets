@@ -115,6 +115,67 @@ const WorkerReport = () => {
           </CardShell>
         </div>
       </div>
+
+      {/* All Workers Performance Table */}
+      <CardShell className="bg-white p-4 mt-6">
+        <h3 className="text-base font-bold mb-4 flex items-center gap-2">
+          <FiStar className="text-blue-600" />
+          All Workers Performance
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Worker Name</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contact</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Association</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Bookings</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Avg Rating</th>
+                <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {data?.allWorkers && data.allWorkers.length > 0 ? (
+                data.allWorkers.map((worker) => (
+                  <tr key={worker._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900">{worker.name}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600">{worker.phone}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                        worker.association === 'Vendor-Linked'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {worker.association}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-gray-900">{worker.totalBookings}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 text-xs font-bold text-gray-900">
+                        <FiStar className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                        {worker.avgRating > 0 ? worker.avgRating : 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                        worker.status === 'Active'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {worker.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-4 py-8 text-center text-xs text-gray-500">No worker analytics available</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CardShell>
     </div>
   );
 };

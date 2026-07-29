@@ -24,6 +24,7 @@ const getVendorWorkers = async (req, res) => {
     // Get workers
     const workers = await Worker.find(query)
       .select('-password')
+      .populate('serviceCategories', 'title')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -448,7 +449,7 @@ const getVendorWorkerById = async (req, res) => {
     const vendorId = req.user.id;
     const { id } = req.params;
 
-    const worker = await Worker.findOne({ _id: id, vendorId });
+    const worker = await Worker.findOne({ _id: id, vendorId }).populate('serviceCategories', 'title');
 
     if (!worker) {
       return res.status(404).json({
