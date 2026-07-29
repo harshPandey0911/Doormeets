@@ -110,10 +110,44 @@ const WithdrawalRequest = () => {
   const handleBankInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Validate number-only fields
+    // Account number: digits only, max 18 digits
     if (name === 'accountNumber' || name === 'confirmAccountNumber') {
-      const numValue = value.replace(/[^0-9]/g, '');
+      const numValue = value.replace(/[^0-9]/g, '').slice(0, 18);
       setBankAccount(prev => ({ ...prev, [name]: numValue }));
+      return;
+    }
+
+    // Account holder name: only letters & spaces, auto Title Case
+    if (name === 'accountHolderName') {
+      const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
+      const titleCase = lettersOnly.replace(/\b\w/g, ch => ch.toUpperCase());
+      setBankAccount(prev => ({ ...prev, [name]: titleCase }));
+      return;
+    }
+
+    // Bank name: only letters & spaces, auto Title Case
+    if (name === 'bankName') {
+      const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
+      const titleCase = lettersOnly.replace(/\b\w/g, ch => ch.toUpperCase());
+      setBankAccount(prev => ({ ...prev, [name]: titleCase }));
+      return;
+    }
+
+    // IFSC code: alphanumeric only, auto UPPERCASE, max 11 chars
+    if (name === 'ifscCode') {
+      const alphaNum = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 11);
+      setBankAccount(prev => ({ ...prev, [name]: alphaNum }));
+      return;
+    }
+
+    // UPI ID: allowed chars = alphanumeric + . _ - @, only one @, lowercase, max 50 chars
+    if (name === 'upiId') {
+      const cleaned = value.toLowerCase().replace(/[^a-z0-9.\-_@]/g, '');
+      // Allow only one '@'
+      const atCount = (cleaned.match(/@/g) || []).length;
+      if (atCount > 1) return; // block second @
+      const limited = cleaned.slice(0, 50);
+      setBankAccount(prev => ({ ...prev, [name]: limited }));
       return;
     }
 
@@ -177,77 +211,75 @@ const WithdrawalRequest = () => {
       <main className="px-4 py-6 max-w-lg mx-auto">
         {/* Modern Balance Header */}
         {/* Modern Balance Header - Matched with Wallet Earnings Card */}
-        <div className="rounded-2xl p-6 shadow-xl relative overflow-hidden mb-8 bg-gradient-to-br from-green-600 to-green-800">
+        <div className="rounded-2xl p-4 shadow-xl relative overflow-hidden mb-5 bg-gradient-to-br from-green-600 to-green-800">
           <div className="relative z-10 text-white flex flex-col items-center">
-            <span className="text-white/80 text-[11px] font-bold uppercase tracking-[0.2em] mb-1">Total Redeemable</span>
+            <span className="text-white/80 text-[10px] font-bold uppercase tracking-[0.15em] mb-0.5">Total Redeemable</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-5xl font-black text-white tracking-tight">
+              <span className="text-3xl font-black text-white tracking-tight">
                 {wallet.available.toLocaleString()}
               </span>
-              <span className="text-2xl font-black text-white/90 ml-1">Credits</span>
+              <span className="text-base font-black text-white/90 ml-1">Credits</span>
             </div>
-            <div className="mt-4 flex gap-2">
-              <div className="px-3 py-1 bg-white/20 text-white rounded-full text-[10px] font-bold border border-white/30 flex items-center gap-1 backdrop-blur-sm">
-                <FiCheckCircle className="w-3 h-3" /> Verified Balance
+            <div className="mt-2 flex gap-2">
+              <div className="px-2.5 py-0.5 bg-white/20 text-white rounded-full text-[9px] font-bold border border-white/30 flex items-center gap-1 backdrop-blur-sm">
+                <FiCheckCircle className="w-2.5 h-2.5" /> Verified Balance
               </div>
             </div>
           </div>
-          {/* Decorative Icon Background */}
           <div className="absolute -bottom-6 -right-6 text-white/10 transform rotate-12">
-            <FiDollarSign className="w-40 h-40" />
+            <FiDollarSign className="w-28 h-28" />
           </div>
         </div>
 
         {/* Input Card */}
-        <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-gray-50 mb-6 group transition-all hover:shadow-2xl">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-2xl p-4 shadow-xl border border-gray-50 mb-5 group transition-all hover:shadow-2xl">
+          <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <FiDollarSign className="w-5 h-5" />
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <FiDollarSign className="w-4 h-4" />
               </div>
-              <h3 className="text-sm font-bold text-gray-800">Withdraw Amount</h3>
+              <h3 className="text-xs font-bold text-gray-800">Withdraw Amount</h3>
             </div>
             <button
               onClick={handleMaxAmount}
-              className="text-[10px] font-black text-white px-3 py-1.5 rounded-lg transition-all active:scale-95"
+              className="text-[9px] font-black text-white px-2.5 py-1 rounded-lg transition-all active:scale-95"
               style={{ background: themeColors.button }}
             >
               USE MAX
             </button>
           </div>
 
-          <div className="relative mb-4 group-focus-within:scale-[1.02] transition-transform duration-300">
+          <div className="relative mb-3">
             <input
               type="text"
               value={amount}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0 Credits"
-              className={`w-full px-4 py-5 bg-white rounded-2xl border-2 border-dashed ${error ? 'border-red-300 bg-red-50 text-red-500' : 'border-emerald-300 focus:border-emerald-500'
-                } text-4xl font-black text-center focus:outline-none transition-all shadow-sm focus:shadow-emerald-100/50 focus:shadow-lg text-gray-900 caret-emerald-500 placeholder:text-gray-200`}
+              className={`w-full px-4 py-3 bg-white rounded-xl border-2 border-dashed ${error ? 'border-red-300 bg-red-50 text-red-500' : 'border-emerald-300 focus:border-emerald-500'
+                } text-2xl font-black text-center focus:outline-none transition-all shadow-sm text-gray-900 caret-emerald-500 placeholder:text-gray-200`}
             />
           </div>
 
-          {error && <p className="text-red-500 text-[11px] font-bold text-center mb-4 flex justify-center items-center gap-1"><FiAlertCircle className="w-3.5 h-3.5" /> {error}</p>}
+          {error && <p className="text-red-500 text-[10px] font-bold text-center mb-3 flex justify-center items-center gap-1"><FiAlertCircle className="w-3 h-3" /> {error}</p>}
 
           {amount && !error && (
-            <div className="bg-emerald-50/50 rounded-2xl p-4 space-y-3 border border-emerald-50">
-              <div className="flex justify-between text-xs font-bold text-gray-500">
+            <div className="bg-emerald-50/50 rounded-xl p-3 space-y-2 border border-emerald-50">
+              <div className="flex justify-between text-[11px] font-semibold text-gray-500">
                 <span>Gross Total</span>
                 <span>₹{grossAmount.toLocaleString()}</span>
               </div>
-              
 
-              <div className="flex justify-between text-xs font-bold text-red-500/70">
+              <div className="flex justify-between text-[11px] font-semibold text-red-500/70">
                 <span>TDS Deduction ({tdsRate}%)</span>
                 <span>- ₹{tdsAmount.toLocaleString()}</span>
               </div>
 
               <div className="pt-2 border-t border-emerald-100 flex justify-between items-end">
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Estimated</span>
-                  <span className="text-xs font-black text-gray-800 uppercase tracking-widest leading-none">Net Payout</span>
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-0.5">Estimated</span>
+                  <span className="text-[10px] font-black text-gray-800 uppercase tracking-widest leading-none">Net Payout</span>
                 </div>
-                <span className="text-2xl font-black text-emerald-600 leading-none">₹{netAmount.toLocaleString()}</span>
+                <span className="text-lg font-black text-emerald-600 leading-none">₹{netAmount.toLocaleString()}</span>
               </div>
             </div>
           )}
@@ -289,7 +321,7 @@ const WithdrawalRequest = () => {
                   name="accountHolderName"
                   value={bankAccount.accountHolderName}
                   onChange={handleBankInputChange}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold text-gray-800 placeholder:font-medium transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-medium text-gray-800 placeholder:text-gray-400 transition-all"
                   placeholder="e.g. John Doe"
                 />
               </div>
@@ -302,7 +334,7 @@ const WithdrawalRequest = () => {
                   name="bankName"
                   value={bankAccount.bankName}
                   onChange={handleBankInputChange}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold text-gray-800 placeholder:font-medium transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-medium text-gray-800 placeholder:text-gray-400 transition-all"
                   placeholder="e.g. HDFC Bank"
                 />
               </div>
@@ -315,7 +347,7 @@ const WithdrawalRequest = () => {
                   name="accountNumber"
                   value={bankAccount.accountNumber}
                   onChange={handleBankInputChange}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-xl font-bold text-gray-900 tracking-wide placeholder:font-medium transition-all"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-medium text-gray-800 tracking-widest placeholder:text-gray-400 transition-all"
                   placeholder="0000000000"
                   inputMode="numeric"
                 />
@@ -330,7 +362,7 @@ const WithdrawalRequest = () => {
                   name="confirmAccountNumber"
                   value={bankAccount.confirmAccountNumber || ''}
                   onChange={handleBankInputChange}
-                  className={`w-full px-4 py-3 bg-gray-50 rounded-xl border focus:bg-white focus:ring-4 outline-none text-xl font-bold text-gray-900 tracking-wide placeholder:font-medium transition-all ${bankAccount.confirmAccountNumber && bankAccount.accountNumber !== bankAccount.confirmAccountNumber
+                  className={`w-full px-4 py-3 bg-gray-50 rounded-xl border focus:bg-white focus:ring-4 outline-none text-sm font-medium text-gray-800 tracking-widest placeholder:text-gray-400 transition-all ${bankAccount.confirmAccountNumber && bankAccount.accountNumber !== bankAccount.confirmAccountNumber
                     ? 'border-red-200 focus:border-red-500 focus:ring-red-500/10'
                     : 'border-gray-200 focus:border-blue-500 focus:ring-blue-500/10'
                     }`}
@@ -353,7 +385,7 @@ const WithdrawalRequest = () => {
                   name="ifscCode"
                   value={bankAccount.ifscCode}
                   onChange={handleBankInputChange}
-                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold text-gray-800 placeholder:font-medium transition-all uppercase"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-medium text-gray-800 placeholder:text-gray-400 transition-all tracking-widest"
                   placeholder="HDFC0000123"
                   maxLength={11}
                 />

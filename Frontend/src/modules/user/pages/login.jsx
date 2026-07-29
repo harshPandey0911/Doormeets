@@ -356,7 +356,10 @@ const Login = () => {
                 </Link>
               </p>
             )}
-            <p className="mt-3 text-center text-xs text-gray-400 font-normal">
+            <p className="mt-2 text-center text-xs text-gray-400 font-normal">
+              By continuing, you agree to Doormeets' <Link to="/terms-and-conditions" className="text-gray-500 hover:text-gray-700 underline font-medium">Terms & Conditions</Link> & <Link to="/privacy-policy" className="text-gray-500 hover:text-gray-700 underline font-medium">Privacy Policy</Link>
+            </p>
+            <p className="mt-1.5 text-center text-xs text-gray-400 font-normal">
               &copy; {new Date().getFullYear()} Doormeets. All rights reserved.
             </p>
           </div>

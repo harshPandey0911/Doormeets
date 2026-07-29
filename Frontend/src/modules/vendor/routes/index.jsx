@@ -94,6 +94,8 @@ const Products = lazyLoad(() => import('../pages/Products'));
 const StockManagement = lazyLoad(() => import('../pages/Stock'));
 const CategoryDetail = lazyLoad(() => import('../pages/Categories/CategoryDetail'));
 const PaintingConsultations = lazyLoad(() => import('../pages/PaintingConsultation'));
+const PrivacyPolicy = lazyLoad(() => import('../../user/pages/PrivacyPolicy'));
+const TermsAndConditions = lazyLoad(() => import('../../user/pages/TermsAndConditions'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -171,6 +173,8 @@ const VendorRoutes = () => {
               <Route path="/training" element={<ProtectedRoute userType="vendor"><Training /></ProtectedRoute>} />
               <Route path="/training/test" element={<ProtectedRoute userType="vendor"><MCQTest /></ProtectedRoute>} />
               <Route path="/training/result" element={<ProtectedRoute userType="vendor"><TrainingResult /></ProtectedRoute>} />
+              <Route path="/privacy-policy" element={<ProtectedRoute userType="vendor" allowDesktopGuest={true}><PrivacyPolicy /></ProtectedRoute>} />
+              <Route path="/terms-and-conditions" element={<ProtectedRoute userType="vendor" allowDesktopGuest={true}><TermsAndConditions /></ProtectedRoute>} />
             </Routes>
           </PageTransition>
         </Suspense>

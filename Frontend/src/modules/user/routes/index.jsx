@@ -102,6 +102,7 @@ const PaintingConsultation = lazyLoad(() => import('../pages/PaintingConsultatio
 // Lazy loaded property details screen
 const PaintingLayoutDetails = lazyLoad(() => import('../pages/PaintingConsultation/PaintingLayoutDetails'));
 const PrivacyPolicy = lazyLoad(() => import('../pages/PrivacyPolicy'));
+const TermsAndConditions = lazyLoad(() => import('../pages/TermsAndConditions'));
 
 // Loading fallback component
 import LogoLoader from '../../../components/common/LogoLoader';
@@ -227,7 +228,8 @@ const UserRoutes = () => {
                 <Route path="/cancellation-policy" element={<ProtectedRoute userType="user"><CancellationPolicy /></ProtectedRoute>} />
                 <Route path="/painting" element={<ProtectedRoute userType="user"><PaintingConsultation /></ProtectedRoute>} />
                 <Route path="/painting/:layoutId" element={<ProtectedRoute userType="user"><PaintingLayoutDetails /></ProtectedRoute>} />
-                <Route path="/privacy-policy" element={<ProtectedRoute userType="user"><PrivacyPolicy /></ProtectedRoute>} />
+                <Route path="/privacy-policy" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><PrivacyPolicy /></ProtectedRoute>} />
+                <Route path="/terms-and-conditions" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><TermsAndConditions /></ProtectedRoute>} />
               </Routes>
             </PageTransition>
           </Suspense>

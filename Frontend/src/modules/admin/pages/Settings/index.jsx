@@ -71,7 +71,8 @@ const AdminSettings = () => {
     supportEmail: '',
     supportPhone: '',
     supportWhatsapp: '',
-    privacyPolicy: ''
+    privacyPolicy: '',
+    termsAndConditions: ''
   });
   const [supportLoading, setSupportLoading] = useState(false);
   const [privacyLoading, setPrivacyLoading] = useState(false);
@@ -290,7 +291,8 @@ const AdminSettings = () => {
             supportEmail: res.settings.supportEmail || '',
             supportPhone: res.settings.supportPhone || '',
             supportWhatsapp: res.settings.supportWhatsapp || '',
-            privacyPolicy: res.settings.privacyPolicy || ''
+            privacyPolicy: res.settings.privacyPolicy || '',
+            termsAndConditions: res.settings.termsAndConditions || ''
           });
           // Load about settings
           if (res.settings.aboutPageConfig) {
@@ -2392,10 +2394,13 @@ const AdminSettings = () => {
                 e.preventDefault();
                 setPrivacyLoading(true);
                 try {
-                  await updateSettings({ privacyPolicy: supportSettings.privacyPolicy });
-                  toast.success('Privacy Policy updated successfully');
+                  await updateSettings({ 
+                    privacyPolicy: supportSettings.privacyPolicy,
+                    termsAndConditions: supportSettings.termsAndConditions 
+                  });
+                  toast.success('Legal Policies & Terms updated successfully');
                 } catch (error) {
-                  toast.error('Failed to update Privacy Policy');
+                  toast.error('Failed to update Legal Policies & Terms');
                 } finally {
                   setPrivacyLoading(false);
                 }
@@ -2406,8 +2411,18 @@ const AdminSettings = () => {
                     value={supportSettings.privacyPolicy}
                     onChange={(e) => setSupportSettings(prev => ({ ...prev, privacyPolicy: e.target.value }))}
                     required
-                    rows="15"
+                    rows="10"
                     placeholder="Enter full privacy agreement content here..."
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 transition-all font-semibold text-gray-800 text-xs leading-relaxed mb-4"
+                  />
+
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5 font-bold">Terms & Conditions</label>
+                  <textarea
+                    value={supportSettings.termsAndConditions}
+                    onChange={(e) => setSupportSettings(prev => ({ ...prev, termsAndConditions: e.target.value }))}
+                    required
+                    rows="10"
+                    placeholder="Enter full terms and conditions content here..."
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 transition-all font-semibold text-gray-800 text-xs leading-relaxed"
                   />
                 </div>
@@ -2418,8 +2433,7 @@ const AdminSettings = () => {
                     disabled={privacyLoading}
                     className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-indigo-200 text-xs font-bold uppercase tracking-wider"
                   >
-                    {privacyLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiSave className="w-4 h-4" />}
-                    Save Policy
+                    {privacyLoading ? 'Saving...' : 'Save Legal Policies'}
                   </button>
                 </div>
               </form>

@@ -41,7 +41,7 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
   };
 
   return (
-    <div className={noPadding ? 'w-full h-full' : 'px-3 md:px-5 mt-0.5 mb-3 md:mt-2 md:mb-6 w-full'}>
+    <div className={noPadding ? 'w-full h-full flex flex-col overflow-hidden' : 'px-3 md:px-5 mt-0.5 mb-3 md:mt-2 md:mb-6 w-full'}>
       <Swiper
         modules={[Autoplay, Pagination]}
         spaceBetween={12}
@@ -59,11 +59,12 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
           1024: { slidesPerView: 1, spaceBetween: 0 }
         }}
         className={`rounded-md overflow-hidden shadow-sm w-full offer-banner-swiper${noPadding ? ' offer-banner-sidebar' : ''}`}
+        style={noPadding ? { height: '100%' } : undefined}
       >
         {banners.map((banner, index) => (
           <SwiperSlide
             key={banner._id || banner.id || index}
-            className="relative h-full cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden"
+            className={`relative cursor-pointer active:scale-[0.98] transition-transform duration-200 overflow-hidden${noPadding ? ' !h-full' : ' h-full'}`}
           >
             <div 
               className="w-full h-full cursor-pointer"
@@ -124,8 +125,7 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
           }
           .offer-banner-sidebar {
             aspect-ratio: unset !important;
-            height: 100%;
-            min-height: 200px;
+            height: 100% !important;
           }
         }
         @media (min-width: 1024px) {
@@ -134,7 +134,7 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
           }
           .offer-banner-sidebar {
             aspect-ratio: unset !important;
-            height: 100%;
+            height: 100% !important;
           }
         }
         .offer-banner-swiper .swiper-pagination-bullet-active {
