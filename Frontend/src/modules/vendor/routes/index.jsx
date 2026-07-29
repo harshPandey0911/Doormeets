@@ -173,8 +173,8 @@ const VendorRoutes = () => {
               <Route path="/training" element={<ProtectedRoute userType="vendor"><Training /></ProtectedRoute>} />
               <Route path="/training/test" element={<ProtectedRoute userType="vendor"><MCQTest /></ProtectedRoute>} />
               <Route path="/training/result" element={<ProtectedRoute userType="vendor"><TrainingResult /></ProtectedRoute>} />
-              <Route path="/privacy-policy" element={<ProtectedRoute userType="vendor" allowDesktopGuest={true}><PrivacyPolicy /></ProtectedRoute>} />
-              <Route path="/terms-and-conditions" element={<ProtectedRoute userType="vendor" allowDesktopGuest={true}><TermsAndConditions /></ProtectedRoute>} />
+              <Route path="/privacy-policy" element={<PublicRoute userType="vendor"><PrivacyPolicy /></PublicRoute>} />
+              <Route path="/terms-and-conditions" element={<PublicRoute userType="vendor"><TermsAndConditions /></PublicRoute>} />
             </Routes>
           </PageTransition>
         </Suspense>

@@ -228,8 +228,8 @@ const UserRoutes = () => {
                 <Route path="/cancellation-policy" element={<ProtectedRoute userType="user"><CancellationPolicy /></ProtectedRoute>} />
                 <Route path="/painting" element={<ProtectedRoute userType="user"><PaintingConsultation /></ProtectedRoute>} />
                 <Route path="/painting/:layoutId" element={<ProtectedRoute userType="user"><PaintingLayoutDetails /></ProtectedRoute>} />
-                <Route path="/privacy-policy" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><PrivacyPolicy /></ProtectedRoute>} />
-                <Route path="/terms-and-conditions" element={<ProtectedRoute userType="user" allowDesktopGuest={true}><TermsAndConditions /></ProtectedRoute>} />
+                <Route path="/privacy-policy" element={<PublicRoute userType="user"><PrivacyPolicy /></PublicRoute>} />
+                <Route path="/terms-and-conditions" element={<PublicRoute userType="user"><TermsAndConditions /></PublicRoute>} />
               </Routes>
             </PageTransition>
           </Suspense>
