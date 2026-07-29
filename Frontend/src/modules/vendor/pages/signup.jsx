@@ -11,15 +11,23 @@ import loginIllustration from '../../../assets/images/loginpage.png';
 
 const VendorSignup = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    professionIds: []
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('vendorSignupDraft');
+      return saved ? JSON.parse(saved) : { name: '', phone: '', professionIds: [] };
+    } catch {
+      return { name: '', phone: '', professionIds: [] };
+    }
   });
   const [professions, setProfessions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProfessions, setLoadingProfessions] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Save draft form data to sessionStorage on change
+  useEffect(() => {
+    sessionStorage.setItem('vendorSignupDraft', JSON.stringify(formData));
+  }, [formData]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -63,9 +71,11 @@ const VendorSignup = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Format Full Name to allow only letters and spaces
+    const cleanValue = name === 'name' ? value.replace(/[^a-zA-Z\s]/g, '') : value;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: cleanValue
     }));
   };
 
@@ -82,12 +92,12 @@ const VendorSignup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || formData.name.length < 2) {
-      toast.error('Please enter a valid name');
+    if (!formData.name || !/^[a-zA-Z\s]{2,}$/.test(formData.name.trim())) {
+      toast.error('Full Name should contain only letters (at least 2 characters)');
       return;
     }
-    if (!formData.phone || formData.phone.length !== 10) {
-      toast.error('Please enter a valid 10-digit phone number');
+    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) {
+      toast.error('Please enter a valid 10-digit phone number starting with 6, 7, 8, or 9');
       return;
     }
     if (!formData.professionIds || formData.professionIds.length === 0) {
@@ -190,7 +200,11 @@ const VendorSignup = () => {
                       type="tel"
                       required
                       value={formData.phone}
-                      onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val.length > 0 && !/^[6-9]/.test(val)) return;
+                        setFormData(p => ({ ...p, phone: val.slice(0, 10) }));
+                      }}
                       className="block w-full pl-16 pr-4 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                       placeholder="98765 43210"
                     />

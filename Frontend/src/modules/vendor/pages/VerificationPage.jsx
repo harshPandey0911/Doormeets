@@ -221,10 +221,14 @@ const VerificationPage = () => {
 
         // Prepopulate basic documents if they exist
         if (vendorData.aadhar) {
-          setAadharName(vendorData.aadhar.name || '');
+          const formattedName = (vendorData.aadhar.name || '').replace(/[^a-zA-Z\s]/g, '');
+          setAadharName(formattedName);
           setAadharNumber(vendorData.aadhar.number || '');
           setAadharFront(vendorData.aadhar.document || '');
           setAadharBack(vendorData.aadhar.backDocument || '');
+        } else if (vendorData.name) {
+          const formattedVendorName = vendorData.name.replace(/[^a-zA-Z\s]/g, '');
+          setAadharName(formattedVendorName);
         }
         if (vendorData.pan) {
           setPanNumber(vendorData.pan.number || '');
@@ -352,8 +356,13 @@ const VerificationPage = () => {
   const handleSubmitBasicDocs = async (e) => {
     e.preventDefault();
 
-    if (!aadharName || !aadharName.trim()) {
-      toast.error('Please enter the name as on your Aadhaar card');
+    const trimmedName = (aadharName || '').trim();
+    if (!trimmedName || trimmedName.length < 2) {
+      toast.error('Please enter a valid name as on your Aadhaar card (min 2 letters)');
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(trimmedName)) {
+      toast.error('Aadhaar name can only contain letters and spaces');
       return;
     }
     if (!aadharNumber || aadharNumber.length !== 12) {
@@ -503,7 +512,22 @@ const VerificationPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
+    <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center relative">
+      {/* Close X Button to return to Vendor Login */}
+      <button
+        onClick={() => {
+          localStorage.removeItem('vendorAccessToken');
+          localStorage.removeItem('vendorRefreshToken');
+          localStorage.removeItem('vendorData');
+          navigate('/vendor/login');
+        }}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all z-50 cursor-pointer text-base font-bold"
+        aria-label="Close to Login"
+        title="Back to Vendor Login"
+      >
+        ✕
+      </button>
+
       <div className="max-w-4xl w-full mx-auto space-y-8">
 
         {/* Step Indicator Header */}
@@ -561,8 +585,28 @@ const VerificationPage = () => {
                       type="text"
                       required
                       value={aadharName}
-                      onChange={(e) => setAadharName(e.target.value)}
-                      placeholder="Name as printed on Aadhaar"
+                      onChange={(e) => {
+                        // Allow only letters and single space between words (no leading space, no double space)
+                        const formatted = e.target.value
+                          .replace(/[^a-zA-Z\s]/g, '')
+                          .replace(/^\s+/g, '')
+                          .replace(/\s{2,}/g, ' ');
+                        setAadharName(formatted);
+                      }}
+                      onBlur={() => {
+                        // Capitalize each word nicely on blur
+                        if (aadharName) {
+                          const titleCase = aadharName
+                            .trim()
+                            .replace(/\s+/g, ' ')
+                            .toLowerCase()
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                          setAadharName(titleCase);
+                        }
+                      }}
+                      placeholder="e.g. John Doe (Letters only)"
                       className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B33A35]/20 focus:border-[#B33A35] transition-all bg-white"
                     />
                   </div>
@@ -613,7 +657,7 @@ const VerificationPage = () => {
                 </div>
               </div>
 
-              {/* PAN Card Section */}
+              {/* PAN Section */}
               <div className="bg-gray-50/50 p-4 sm:p-6 rounded-2xl border border-gray-100 space-y-4">
                 <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-[#B33A35]/10 text-[#B33A35] flex items-center justify-center text-[10px] font-black">2</span>
@@ -626,7 +670,7 @@ const VerificationPage = () => {
                     required
                     maxLength={10}
                     value={panNumber}
-                    onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
+                    onChange={(e) => setPanNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
                     placeholder="10-character PAN Number"
                     className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B33A35]/20 focus:border-[#B33A35] transition-all bg-white uppercase"
                   />

@@ -76,9 +76,10 @@ const Signup = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    const cleanValue = name === 'name' ? value.replace(/[^a-zA-Z\s]/g, '') : value;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: cleanValue
     }));
   };
 
@@ -331,7 +332,11 @@ const Signup = () => {
                           type="tel"
                           required
                           value={formData.phoneNumber}
-                          onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            if (val.length > 0 && !/^[6-9]/.test(val)) return;
+                            setFormData(prev => ({ ...prev, phoneNumber: val.slice(0, 10) }));
+                          }}
                           className="block w-full pl-16 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                           placeholder="9876543210"
                         />

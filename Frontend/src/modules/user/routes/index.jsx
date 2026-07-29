@@ -16,6 +16,17 @@ const lazyLoad = (importFunc) => {
   return lazy(() => {
     return Promise.resolve(importFunc()).catch((error) => {
       console.error('User Module - Lazy Load Error:', error);
+
+      // Auto-reload once if dynamic import fails due to new deployment or missing chunk
+      const isChunkError = /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk/i.test(error?.message || '');
+      const hasReloaded = sessionStorage.getItem('chunk_reload_done');
+
+      if (isChunkError && !hasReloaded) {
+        sessionStorage.setItem('chunk_reload_done', 'true');
+        window.location.reload();
+        return new Promise(() => {});
+      }
+
       return Promise.resolve({
         default: () => (
           <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
