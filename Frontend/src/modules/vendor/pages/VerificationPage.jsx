@@ -11,7 +11,9 @@ import {
   FiArrowRight,
   FiArrowLeft,
   FiFileText,
-  FiCalendar
+  FiCalendar,
+  FiMaximize,
+  FiMinimize
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import api from '../../../services/api';
@@ -65,8 +67,44 @@ const VerificationPage = () => {
 
   // Refs for tracking HTML5 and YouTube watch times
   const playerRef = React.useRef(null);
+  const videoContainerRef = React.useRef(null);
   const lastHtml5Time = React.useRef(0);
   const maxHtml5Time = React.useRef(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullScreen = (e) => {
+    if (e) e.stopPropagation();
+    const elem = videoContainerRef.current;
+    if (!elem) return;
+
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    } else {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchGraceDays = async () => {
@@ -113,14 +151,21 @@ const VerificationPage = () => {
     }
   }, [step, video]);
 
+const extractYouTubeId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const cleanUrl = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(cleanUrl)) return cleanUrl;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = cleanUrl.match(regExp);
+  return (match && match[1] && match[1].length === 11) ? match[1] : null;
+};
+
   // Track YouTube watch progress
   useEffect(() => {
-    if (step !== 3 || !video) return;
+    if (step !== 3 || !video || !video.videoUrl) return;
 
-    const isYoutube = video.videoUrl.includes('youtube.com') || video.videoUrl.includes('youtu.be');
-    if (!isYoutube) return;
-
-    const ytId = video.videoUrl.split(/[?&=/]/).filter(s => s.length === 11)[0] || video.videoUrl;
+    const ytId = extractYouTubeId(video.videoUrl);
+    if (!ytId) return;
 
     let interval;
     let checkYT;
@@ -145,7 +190,9 @@ const VerificationPage = () => {
         playerVars: {
           rel: 0,
           modestbranding: 1,
-          controls: 1
+          controls: 1,
+          fs: 1,
+          playsinline: 1
         },
         events: {
           onReady: (event) => {
@@ -210,6 +257,12 @@ const VerificationPage = () => {
     return () => {
       if (interval) clearInterval(interval);
       if (checkYT) clearInterval(checkYT);
+      if (playerRef.current && typeof playerRef.current.destroy === 'function') {
+        try {
+          playerRef.current.destroy();
+        } catch (e) {}
+        playerRef.current = null;
+      }
     };
   }, [step, video]);
 
@@ -559,22 +612,16 @@ const VerificationPage = () => {
       <div className="max-w-4xl w-full mx-auto space-y-8">
 
         {/* Step Indicator Header */}
-        {step <= 4 && (
-          <div className="mb-12 text-center max-w-xl mx-auto">
+        {step <= 2 && (
+          <div className="mb-8 sm:mb-12 text-center max-w-md mx-auto px-2">
             <div className="flex items-center justify-center">
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 1 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>1</div>
-              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 2 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 2 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>2</div>
-              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 3 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 3 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>3</div>
-              <div className={`h-1 w-12 md:w-20 -ml-2 -mr-2 transition-all ${step >= 4 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
-              <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold text-white z-10 transition-all ${step >= 4 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>4</div>
+              <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full font-bold text-white text-xs sm:text-base z-10 transition-all ${step >= 1 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>1</div>
+              <div className={`h-1 w-16 sm:w-24 -ml-2 -mr-2 transition-all ${step >= 2 ? 'bg-[#B33A35]' : 'bg-gray-300'}`}></div>
+              <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full font-bold text-white text-xs sm:text-base z-10 transition-all ${step >= 2 ? 'bg-[#B33A35] shadow-lg shadow-[#B33A35]/20' : 'bg-gray-300'}`}>2</div>
             </div>
-            <div className="grid grid-cols-4 mt-3 text-[10px] md:text-xs font-bold text-gray-500">
-              <span className={step >= 1 ? 'text-[#B33A35]' : ''}>Identity Docs</span>
-              <span className={step >= 2 ? 'text-[#B33A35]' : ''}>Police Verif.</span>
-              <span className={step >= 3 ? 'text-[#B33A35]' : ''}>Training Video</span>
-              <span className={step >= 4 ? 'text-[#B33A35]' : ''}>Evaluation</span>
+            <div className="grid grid-cols-2 mt-2 sm:mt-3 text-xs font-bold text-gray-500 max-w-[220px] sm:max-w-[280px] mx-auto">
+              <span className={`text-center ${step >= 1 ? 'text-[#B33A35]' : ''}`}>Identity Docs</span>
+              <span className={`text-center ${step >= 2 ? 'text-[#B33A35]' : ''}`}>Police Verif.</span>
             </div>
           </div>
         )}
@@ -890,14 +937,14 @@ const VerificationPage = () => {
 
         {/* STEP 3: Training Video */}
         {step === 3 && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-8 animate-fade-in max-w-3xl mx-auto">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <FiPlayCircle className="text-3xl text-[#B33A35]" />
-              <h2 className="text-2xl font-bold text-gray-800">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-4 sm:p-8 animate-fade-in max-w-3xl mx-auto">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+              <FiPlayCircle className="text-2xl sm:text-3xl text-[#B33A35] shrink-0" />
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-800 text-center">
                 Mandatory Training Video {videos.length > 1 ? `(${currentVideoIndex + 1}/${videos.length})` : ''}
               </h2>
             </div>
-            <p className="text-center text-gray-500 mb-6">
+            <p className="text-center text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
               {videos[currentVideoIndex]?.title
                 ? `Video ${currentVideoIndex + 1}: ${videos[currentVideoIndex].title}`
                 : 'Please watch the training video before taking the MCQ test.'}
@@ -905,7 +952,7 @@ const VerificationPage = () => {
 
             {/* Video Selector Pills for Multiple Videos */}
             {videos.length > 1 && (
-              <div className="flex items-center justify-center gap-2 mb-6 overflow-x-auto pb-2 hide-scrollbar">
+              <div className="flex items-center justify-start sm:justify-center gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 px-1 scrollbar-none max-w-full">
                 {videos.map((v, idx) => (
                   <button
                     key={v._id || idx}
@@ -916,7 +963,7 @@ const VerificationPage = () => {
                       setCanSubmitVideo(v.isWatched || false);
                       setSecondsLeft(v.durationSeconds || 30);
                     }}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                    className={`shrink-0 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       idx === currentVideoIndex
                         ? 'bg-[#B33A35] text-white shadow-md'
                         : v.isWatched
@@ -931,10 +978,23 @@ const VerificationPage = () => {
               </div>
             )}
 
-            <div className="aspect-video bg-gray-900 rounded-xl overflow-hidden relative group flex items-center justify-center mb-8">
+            <div
+              ref={videoContainerRef}
+              className="aspect-video bg-gray-900 rounded-xl overflow-hidden relative group flex items-center justify-center mb-6 sm:mb-8"
+            >
+              {/* Fullscreen Button */}
+              <button
+                type="button"
+                onClick={toggleFullScreen}
+                className="absolute top-3 right-3 z-30 p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-md transition-all cursor-pointer shadow-lg"
+                title={isFullscreen ? "Exit Fullscreen" : "Full Screen"}
+              >
+                {isFullscreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
+              </button>
+
               {video?.videoUrl ? (
-                video.videoUrl.includes('youtube.com') || video.videoUrl.includes('youtu.be') ? (
-                  <div id="yt-player" className="w-full h-full" />
+                extractYouTubeId(video.videoUrl) ? (
+                  <div id="yt-player" key={extractYouTubeId(video.videoUrl)} className="w-full h-full" />
                 ) : (
                   <video
                     key={video.videoUrl}
@@ -950,10 +1010,13 @@ const VerificationPage = () => {
                 <>
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all flex items-center justify-center">
                     <button
-                      onClick={handleVideoWatched}
-                      className="w-16 h-16 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center backdrop-blur-sm transition-all transform hover:scale-110"
+                      onClick={(e) => {
+                        handleVideoWatched();
+                        toggleFullScreen(e);
+                      }}
+                      className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center backdrop-blur-sm transition-all transform hover:scale-110"
                     >
-                      <FiPlayCircle className="text-white text-4xl" />
+                      <FiPlayCircle className="text-white text-3xl sm:text-4xl" />
                     </button>
                   </div>
                   <img
@@ -965,7 +1028,7 @@ const VerificationPage = () => {
               )}
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -977,7 +1040,7 @@ const VerificationPage = () => {
                     setStep(2);
                   }
                 }}
-                className="px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition cursor-pointer flex items-center gap-1.5 text-xs"
+                className="w-full sm:w-auto px-5 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition cursor-pointer flex items-center justify-center gap-1.5 text-xs"
               >
                 <FiArrowLeft /> {currentVideoIndex > 0 ? `Previous Video` : 'Back'}
               </button>
@@ -985,7 +1048,7 @@ const VerificationPage = () => {
                 type="button"
                 disabled={!canSubmitVideo && !videoWatched && !videos[currentVideoIndex]?.isWatched}
                 onClick={handleVideoWatched}
-                className="py-3 px-8 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors shadow-lg cursor-pointer active:scale-95 text-xs flex items-center gap-1.5"
+                className="w-full sm:w-auto py-3 px-6 sm:px-8 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors shadow-lg cursor-pointer active:scale-95 text-xs flex items-center justify-center gap-1.5 text-center"
               >
                 {currentVideoIndex < videos.length - 1
                   ? (secondsLeft > 0 && !videos[currentVideoIndex]?.isWatched ? `Watched Video (${secondsLeft}s)` : `Next Video (${currentVideoIndex + 2}/${videos.length}) →`)
@@ -1023,27 +1086,27 @@ const VerificationPage = () => {
 
       {/* Level Assignment Modal */}
       {levelInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <div className="bg-white border border-gray-100 rounded-3xl p-8 w-full max-w-md text-center shadow-2xl animate-scale-up">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-gradient-to-br from-yellow-400 to-orange-400 text-white text-4xl shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-5 w-full max-w-xs sm:max-w-sm text-center shadow-2xl animate-scale-up">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-gradient-to-br from-yellow-400 to-orange-400 text-white text-2xl shadow-md">
               {levelInfo.level === 'L1' || levelInfo.level === 1 ? '🥇' : levelInfo.level === 'L2' || levelInfo.level === 2 ? '🥈' : '📚'}
             </div>
 
-            <h3 className="text-gray-900 font-extrabold text-2xl mb-2">
+            <h3 className="text-gray-900 font-extrabold text-lg sm:text-xl mb-1">
               {levelInfo.passed ? '🎉 Congratulations!' : '📚 Keep Learning!'}
             </h3>
 
-            <p className="text-gray-600 text-sm mb-6">
+            <p className="text-gray-500 text-xs sm:text-sm mb-3">
               You scored <span className="font-bold text-gray-800">{levelInfo.score}%</span> on the MCQ Test.
             </p>
 
-            <div className={`p-5 rounded-2xl border mb-6 text-left ${levelInfo.level === 'L1' || levelInfo.level === 1
+            <div className={`p-3 rounded-xl border mb-4 text-left ${levelInfo.level === 'L1' || levelInfo.level === 1
                 ? 'bg-amber-50/50 border-amber-200'
                 : levelInfo.level === 'L2' || levelInfo.level === 2
                   ? 'bg-blue-50/50 border-blue-200'
                   : 'bg-red-50/50 border-red-200'
               }`}>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-full text-white ${levelInfo.level === 'L1' || levelInfo.level === 1
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full text-white inline-block ${levelInfo.level === 'L1' || levelInfo.level === 1
                   ? 'bg-amber-500'
                   : levelInfo.level === 'L2' || levelInfo.level === 2
                     ? 'bg-blue-500'
@@ -1055,7 +1118,7 @@ const VerificationPage = () => {
                     ? adminLevelConfig?.L2?.badge || adminLevelConfig?.L2?.name || 'Level 2 — Standard'
                     : adminLevelConfig?.L3?.badge || adminLevelConfig?.L3?.name || 'Level 3 — Basic'}
               </span>
-              <p className="text-gray-700 text-sm mt-3 font-medium leading-relaxed">
+              <p className="text-gray-700 text-xs mt-2 font-medium leading-relaxed">
                 {levelInfo.level === 'L1' || levelInfo.level === 1
                   ? "You've been certified as a Premium vendor! You will receive priority job allocation."
                   : levelInfo.level === 'L2' || levelInfo.level === 2
@@ -1070,14 +1133,14 @@ const VerificationPage = () => {
                   setLevelInfo(null);
                   handleSubscriptionComplete();
                 }}
-                className="w-full py-3.5 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                className="w-full py-2.5 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold rounded-xl transition-all shadow-md cursor-pointer text-xs sm:text-sm active:scale-95"
               >
                 Proceed to Review
               </button>
             ) : (
               <button
                 onClick={() => setLevelInfo(null)}
-                className="w-full py-3.5 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                className="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer text-xs sm:text-sm active:scale-95"
               >
                 Okay
               </button>

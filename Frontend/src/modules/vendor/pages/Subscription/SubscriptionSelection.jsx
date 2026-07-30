@@ -176,57 +176,59 @@ const SubscriptionSelection = ({ isVerificationFlow = false, onComplete }) => {
   return (
     <div className="min-h-screen bg-[#f8fafc] pt-8 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8 relative">
+        <div className="text-center relative max-w-xl mx-auto mb-6">
           {/* Back Button */}
           <button
             onClick={handleBackToLogin}
-            className="absolute top-2 left-0 flex items-center gap-2 text-slate-500 hover:text-[#9634f7] font-bold transition-all z-20 group"
+            className="absolute top-0 left-0 flex items-center gap-1.5 text-slate-500 hover:text-[#B33A35] font-bold transition-all z-20 group"
           >
-            <div className="p-2 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-[#9634f7] transition-all">
-              <FiArrowLeft className="w-5 h-5" />
+            <div className="p-1.5 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-[#B33A35] transition-all">
+              <FiArrowLeft className="w-4 h-4" />
             </div>
-            <span className="hidden sm:inline">Back to Login</span>
+            <span className="hidden sm:inline text-xs">Back to Login</span>
           </button>
 
-          <Logo className="h-12 mx-auto mb-8" />
-          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl tracking-tight">
+          <Logo className="h-10 mx-auto mb-3" />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Choose Your Growth Plan
           </h1>
-          <p className="mt-4 text-xl text-slate-500 max-w-2xl mx-auto">
+          <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
             Get approved and start receiving high-quality leads from Doormeets today.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch max-w-5xl mx-auto">
           {plans.map((plan, index) => (
             <div 
               key={plan._id}
-              className={`relative bg-white rounded-2xl shadow-xl p-5 border transition-all duration-300 flex flex-col ${
-                index === 1 ? 'border-[#9634f7] scale-105 z-10' : 'border-slate-100 hover:border-slate-200'
+              className={`relative bg-white rounded-2xl shadow-lg p-4 sm:p-5 border transition-all duration-300 flex flex-col ${
+                plan.isPopular ? 'border-[#B33A35] scale-102 z-10' : 'border-slate-100 hover:border-slate-200'
               }`}
             >
-              {index === 1 && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#9634f7] text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
+              {plan.isPopular && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#B33A35] text-white px-3 py-0.5 rounded-full text-[11px] font-bold shadow-md uppercase tracking-wider">
                   MOST POPULAR
                 </div>
               )}
 
-              <div className="mb-4">
-                <h3 className="text-2xl font-medium text-slate-900 mb-2">{plan.name}</h3>
+              <div className="mb-3">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">{plan.name}</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-slate-900">₹{plan.price}</span>
-                  <span className="text-slate-500 font-medium">/{plan.duration} days</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{plan.price}</span>
+                  <span className="text-slate-500 font-medium text-xs">/{plan.duration} days</span>
                 </div>
-                <p className="mt-4 text-slate-500 text-sm">{plan.description}</p>
+                {plan.description && (
+                  <p className="mt-2 text-slate-500 text-xs leading-normal">{plan.description}</p>
+                )}
               </div>
 
-              <div className="flex-grow space-y-2 mb-6">
+              <div className="flex-grow space-y-2 mb-4">
                 {plan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div className="bg-purple-50 rounded-full p-1 mt-0.5">
-                      <FiCheck className="text-purple-600 w-4 h-4" />
+                  <div key={idx} className="flex items-start gap-2">
+                    <div className="bg-red-50 rounded-full p-1 mt-0.5 shrink-0">
+                      <FiCheck className="text-[#B33A35] w-3.5 h-3.5" />
                     </div>
-                    <span className="text-slate-600 text-sm leading-relaxed">{feature}</span>
+                    <span className="text-slate-600 text-xs leading-snug">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -234,11 +236,11 @@ const SubscriptionSelection = ({ isVerificationFlow = false, onComplete }) => {
               <button
                 onClick={() => handleSubscribe(plan)}
                 disabled={processingPayment}
-                className={`w-full py-3 rounded-xl font-semibold text-white transition-all transform hover:-translate-y-1 shadow-lg flex items-center justify-center gap-2 bg-[#9634f7] hover:bg-[#8529db] disabled:opacity-50`}
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-white text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-1.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 cursor-pointer active:scale-95 text-center"
               >
                 {processingPayment ? 'Processing...' : (
                   <>
-                    Get Started <FiArrowRight className="w-5 h-5" />
+                    Get Started <FiArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -246,18 +248,18 @@ const SubscriptionSelection = ({ isVerificationFlow = false, onComplete }) => {
           ))}
         </div>
 
-        <div className="mt-16 bg-white rounded-3xl p-10 shadow-lg border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="bg-purple-50 p-4 rounded-2xl">
-              <FiShield className="w-10 h-10 text-purple-600" />
+        <div className="mt-8 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 max-w-5xl mx-auto">
+          <div className="flex items-center gap-4">
+            <div className="bg-red-50 p-3 rounded-xl">
+              <FiShield className="w-6 h-6 text-[#B33A35]" />
             </div>
             <div>
-              <h4 className="text-xl font-bold text-slate-900">Secure Payments</h4>
-              <p className="text-slate-500">Your transactions are encrypted and processed securely via Razorpay.</p>
+              <h4 className="text-sm font-bold text-slate-900">Secure Payments</h4>
+              <p className="text-xs text-slate-500">Your transactions are encrypted and processed securely via Razorpay.</p>
             </div>
           </div>
           <div className="flex gap-4">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="h-8 grayscale opacity-50" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="h-6 grayscale opacity-50" />
           </div>
         </div>
       </div>

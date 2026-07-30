@@ -141,13 +141,13 @@ const TrainingModule = ({ formData, setFormData, onNext, onBack }) => {
 
         {/* Multiple videos indicator pills */}
         {videos.length > 1 && !videoWatched && (
-          <div className="flex items-center justify-center gap-2 mb-6 overflow-x-auto pb-2 hide-scrollbar">
+          <div className="flex items-center justify-start sm:justify-center gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 px-1 scrollbar-none max-w-full">
             {videos.map((v, idx) => (
               <button
                 key={v._id || idx}
                 type="button"
                 onClick={() => setCurrentVideoIndex(idx)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                   idx === currentVideoIndex
                     ? 'bg-purple-600 text-white shadow-md'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -163,22 +163,28 @@ const TrainingModule = ({ formData, setFormData, onNext, onBack }) => {
           <div className="space-y-6">
             <div className="aspect-video bg-gray-900 rounded-xl overflow-hidden relative group flex items-center justify-center">
               {currentVideo?.videoUrl ? (
-                currentVideo.videoUrl.includes('youtube.com') || currentVideo.videoUrl.includes('youtu.be') ? (
-                  <iframe
-                    src={`https://www.youtube.com/embed/${currentVideo.videoUrl.split(/[?&=/]/).filter(s => s.length === 11)[0] || currentVideo.videoUrl}`}
-                    className="w-full h-full"
-                    frameBorder="0"
-                    allowFullScreen
-                    title={currentVideo.title}
-                  />
-                ) : (
-                  <video
-                    key={currentVideo.videoUrl}
-                    src={currentVideo.videoUrl}
-                    controls
-                    className="w-full h-full object-cover"
-                  />
-                )
+                (() => {
+                  const url = currentVideo.videoUrl.trim();
+                  const ytMatch = /^[a-zA-Z0-9_-]{11}$/.test(url) ? url : url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+                  return ytMatch ? (
+                    <iframe
+                      key={ytMatch}
+                      src={`https://www.youtube.com/embed/${ytMatch}`}
+                      className="w-full h-full"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={currentVideo.title}
+                    />
+                  ) : (
+                    <video
+                      key={currentVideo.videoUrl}
+                      src={currentVideo.videoUrl}
+                      controls
+                      className="w-full h-full object-cover"
+                    />
+                  );
+                })()
               ) : (
                 <>
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all flex items-center justify-center">

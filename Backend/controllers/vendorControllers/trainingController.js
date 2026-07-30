@@ -425,10 +425,8 @@ const submitTest = async (req, res) => {
       vendorUpdate['training.nextAttemptAllowedAt'] = nextAllowed;
     } else {
       vendorUpdate['training.nextAttemptAllowedAt'] = null;
-      // Move vendor to training_pending so admin can review & approve
-      if (vendor.approvalStatus !== 'approved') {
-        vendorUpdate.approvalStatus = 'training_pending';
-      }
+      // Mark vendor as approved once training is passed
+      vendorUpdate.approvalStatus = 'approved';
     }
 
     await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdate });

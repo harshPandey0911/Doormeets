@@ -103,8 +103,9 @@ const VendorSubscriptionManagement = () => {
         price: plan.price,
         duration: plan.duration,
         description: plan.description || '',
-        features: plan.features.join(', '),
-        isActive: plan.isActive
+        features: Array.isArray(plan.features) ? plan.features.join(', ') : plan.features || '',
+        isActive: plan.isActive === true || (plan.isActive !== false && plan.status !== 'hide'),
+        isPopular: !!plan.isPopular
       });
     } else {
       setCurrentPlan(null);
@@ -114,7 +115,8 @@ const VendorSubscriptionManagement = () => {
         duration: '',
         description: '',
         features: '',
-        isActive: true
+        isActive: true,
+        isPopular: false
       });
     }
     setIsModalOpen(true);
@@ -124,7 +126,8 @@ const VendorSubscriptionManagement = () => {
     e.preventDefault();
     const data = {
       ...formData,
-      features: formData.features.split(',').map(f => f.trim()).filter(f => f !== '')
+      status: formData.isActive ? 'active' : 'hide',
+      features: typeof formData.features === 'string' ? formData.features.split(',').map(f => f.trim()).filter(f => f !== '') : formData.features
     };
 
     try {
@@ -151,6 +154,23 @@ const VendorSubscriptionManagement = () => {
       } catch (error) {
         toast.error('Failed to delete plan');
       }
+    }
+  };
+
+  const handleToggleStatus = async (plan, e) => {
+    if (e) e.stopPropagation();
+    try {
+      const currentActive = plan.isActive === true || (plan.isActive !== false && plan.status !== 'hide');
+      const updatedStatus = !currentActive;
+      await vendorSubscriptionService.updatePlan(plan._id, {
+        ...plan,
+        isActive: updatedStatus,
+        status: updatedStatus ? 'active' : 'hide'
+      });
+      toast.success(`Plan marked as ${updatedStatus ? 'ACTIVE' : 'INACTIVE'}`);
+      fetchPlans();
+    } catch (error) {
+      toast.error('Failed to update plan status');
     }
   };
 
@@ -234,9 +254,19 @@ const VendorSubscriptionManagement = () => {
                 <div className="p-6 border-b border-gray-50 bg-gray-50/50">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${plan.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleStatus(plan, e)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center gap-1.5 hover:scale-105 active:scale-95 ${
+                        plan.isActive
+                          ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
+                          : 'bg-red-100 text-red-700 border border-red-300 hover:bg-red-200'
+                      }`}
+                      title={`Click to toggle status (Currently ${plan.isActive ? 'Active' : 'Inactive'})`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${plan.isActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                       {plan.isActive ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
+                    </button>
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-extrabold text-gray-900">₹{plan.price}</span>
@@ -467,17 +497,50 @@ const VendorSubscriptionManagement = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
-                  className="w-5 h-5 rounded border-gray-300 text-[#347989] focus:ring-[#347989]"
-                />
-                <label htmlFor="isActive" className="text-sm font-semibold text-gray-700 cursor-pointer">
-                  Make this plan active for vendors
-                </label>
+              <div 
+                onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
+                className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer select-none hover:bg-gray-100/80 transition-all"
+              >
+                <div>
+                  <span className="text-sm font-bold text-gray-800 block">
+                    Plan Status ({formData.isActive ? 'ACTIVE' : 'INACTIVE'})
+                  </span>
+                  <span className="text-xs text-gray-500">Enable or disable this plan for vendor subscription</span>
+                </div>
+                <div
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                    formData.isActive ? 'bg-[#347989]' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div 
+                onClick={() => setFormData(prev => ({ ...prev, isPopular: !prev.isPopular }))}
+                className="flex items-center justify-between p-3.5 bg-amber-50/50 rounded-xl border border-amber-200 cursor-pointer select-none hover:bg-amber-100/50 transition-all"
+              >
+                <div>
+                  <span className="text-sm font-bold text-gray-800 block">
+                    Mark as "Most Popular"
+                  </span>
+                  <span className="text-xs text-gray-500">Display "MOST POPULAR" highlighted badge on vendor plans</span>
+                </div>
+                <div
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                    formData.isPopular ? 'bg-amber-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.isPopular ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </div>
               </div>
 
               <div className="pt-4 flex gap-3">

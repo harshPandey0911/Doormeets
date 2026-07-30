@@ -302,15 +302,28 @@ const AllVendors = () => {
   };
 
   const getStatusBadge = (status) => {
+    const s = (status || 'pending').toLowerCase();
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      under_review: 'bg-amber-100 text-amber-800 border-amber-300',
+      training_completed: 'bg-purple-100 text-purple-800 border-purple-300',
+      training_pending: 'bg-amber-100 text-amber-800 border-amber-300',
       approved: 'bg-green-100 text-green-800 border-green-300',
       rejected: 'bg-red-100 text-red-800 border-red-300'
     };
 
+    const labelMap = {
+      pending: 'Signup Only',
+      under_review: 'Under Review',
+      training_completed: 'Training Completed',
+      training_pending: 'Under Review',
+      approved: 'Approved',
+      rejected: 'Rejected'
+    };
+
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.pending}`}>
-        {status === 'pending' ? 'Signup Only' : (status.charAt(0).toUpperCase() + status.slice(1))}
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[s] || styles.pending}`}>
+        {labelMap[s] || (status ? status.replace('_', ' ').toUpperCase() : 'PENDING')}
       </span>
     );
   };
@@ -548,12 +561,6 @@ const AllVendors = () => {
                     : (Array.isArray(selectedVendor.service) && selectedVendor.service.length > 0
                         ? selectedVendor.service.join(', ')
                         : (selectedVendor.service || 'N/A'))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Years of Experience</label>
-                <div className="text-gray-900">
-                  {selectedVendor.experience || 0} Years
                 </div>
               </div>
               <div>

@@ -2,6 +2,7 @@ const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
 const VendorBill = require('../../models/VendorBill');
 const City = require('../../models/City');
+const Profession = require('../../models/Profession');
 const { validationResult } = require('express-validator');
 const { VENDOR_STATUS, BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
@@ -80,11 +81,15 @@ const getAllVendors = async (req, res) => {
 
     const latestAttemptMap = {};
     attempts.forEach(att => {
+      if (!att || !att.vendorId) return;
       const vid = att.vendorId.toString();
       if (!latestAttemptMap[vid]) {
         latestAttemptMap[vid] = att;
       }
     });
+
+    // Automatically upgrade any vendor with completed training / training_pending status to approved
+    await Vendor.updateMany({ approvalStatus: 'training_pending' }, { $set: { approvalStatus: 'approved' } });
 
     const vendorsWithTraining = vendors.map(v => {
       const vObj = v.toObject();
@@ -98,8 +103,14 @@ const getAllVendors = async (req, res) => {
         const levelNum = att.levelAssigned === 'L1' ? 1 : att.levelAssigned === 'L2' ? 2 : 3;
         vObj.training.assignedLevel = levelNum;
       }
+      if (vObj.approvalStatus === 'training_pending' || (vObj.training && vObj.training.status === 'completed' && vObj.approvalStatus === 'pending')) {
+        vObj.approvalStatus = 'approved';
+      }
       return vObj;
     });
+
+    // Get total count
+    const total = await Vendor.countDocuments(query);
 
     res.status(200).json({
       success: true,
