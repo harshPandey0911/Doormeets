@@ -485,11 +485,15 @@ const BookingDetails = () => {
               </div>
               <div className="flex justify-between text-xs text-gray-500">
                 <span>GST Tax (18%):</span>
-                <span className="font-semibold text-gray-700">{formatCurrency(booking.tax || 0)}</span>
+                <span className="font-semibold text-gray-700">
+                  {formatCurrency(booking.tax || (booking.basePrice ? Math.round(booking.basePrice * 0.18) : 0))}
+                </span>
               </div>
               <div className="flex justify-between text-xs text-gray-500">
                 <span>Visiting/Visitation Charges:</span>
-                <span className="font-semibold text-gray-700">{formatCurrency(booking.visitingCharges || booking.visitationFee || 0)}</span>
+                <span className="font-semibold text-gray-700">
+                  {formatCurrency(booking.visitingCharges || booking.visitationFee || booking.serviceId?.visitingCharges || 0)}
+                </span>
               </div>
               {booking.discount > 0 && (
                 <div className="flex justify-between text-xs text-red-500">
@@ -497,10 +501,10 @@ const BookingDetails = () => {
                   <span className="font-semibold">-{formatCurrency(booking.discount || 0)}</span>
                 </div>
               )}
-              {booking.bookingType === 'instant' && booking.instantMarkupCharged > 0 && (
-                <div className="flex justify-between text-xs text-gray-500">
+              {booking.instantMarkupCharged > 0 && (
+                <div className="flex justify-between text-xs text-amber-700 font-medium">
                   <span>⚡ Instant Booking Fee:</span>
-                  <span className="font-semibold text-gray-700">{formatCurrency(booking.instantMarkupCharged || 0)}</span>
+                  <span className="font-semibold">{formatCurrency(booking.instantMarkupCharged || 0)}</span>
                 </div>
               )}
               <div className="border-t border-gray-100 my-2 pt-2 flex justify-between text-sm font-bold text-gray-800">
@@ -510,14 +514,22 @@ const BookingDetails = () => {
             </div>
 
             {/* Split Details */}
-            <div className="border-t border-dashed border-gray-200 pt-3 space-y-2 bg-gray-50/50 p-2.5 rounded-lg text-[11px]">
-              <div className="flex justify-between text-gray-600">
-                <span>Admin Commission:</span>
-                <span className="font-bold text-gray-800">{formatCurrency(booking.adminCommission || booking.commission || 0)}</span>
+            <div className="border-t border-dashed border-gray-200 pt-3 space-y-2 bg-gray-50/70 p-3 rounded-xl text-xs">
+              <div className="flex justify-between text-gray-600 items-center">
+                <span>Admin Commission {booking.isEstimatedSplit ? '(Est. 20%)' : ''}:</span>
+                <span className="font-bold text-gray-900">
+                  {formatCurrency(
+                    booking.adminCommission || booking.commission || (booking.finalAmount ? Math.round(booking.finalAmount * 0.2) : 0)
+                  )}
+                </span>
               </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Vendor Earnings:</span>
-                <span className="font-bold text-green-700">{formatCurrency(booking.vendorEarnings || 0)}</span>
+              <div className="flex justify-between text-gray-600 items-center">
+                <span>Vendor Earnings {booking.isEstimatedSplit ? '(Est. 80%)' : ''}:</span>
+                <span className="font-bold text-green-700">
+                  {formatCurrency(
+                    booking.vendorEarnings || booking.vendorShare || (booking.finalAmount ? booking.finalAmount - Math.round(booking.finalAmount * 0.2) : 0)
+                  )}
+                </span>
               </div>
             </div>
 
