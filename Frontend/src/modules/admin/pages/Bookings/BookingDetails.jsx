@@ -317,11 +317,15 @@ const BookingDetails = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] uppercase font-bold text-gray-400">Service Category</p>
-                <p className="text-sm font-semibold text-gray-700">{booking.categoryId?.name || 'N/A'}</p>
+                <p className="text-sm font-semibold text-gray-700">
+                  {booking.categoryId?.title || booking.categoryId?.name || booking.serviceCategory || booking.serviceId?.category || booking.serviceId?.categoryId?.title || booking.serviceId?.categoryId?.name || 'N/A'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] uppercase font-bold text-gray-400">Sub-Category</p>
-                <p className="text-sm font-semibold text-gray-700">{booking.subCategoryId?.name || 'N/A'}</p>
+                <p className="text-sm font-semibold text-gray-700">
+                  {booking.subCategoryId?.title || booking.subCategoryId?.name || booking.subCategory || booking.serviceId?.subCategory || booking.serviceId?.subCategoryId?.title || booking.serviceId?.subCategoryId?.name || 'N/A'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] uppercase font-bold text-gray-400">Specific Service</p>

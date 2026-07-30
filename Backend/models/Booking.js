@@ -37,6 +37,11 @@ const bookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor'
   }],
+  subCategoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SubCategory',
+    default: null
+  },
 
   // ==========================================
   // WAVE-BASED ALERTING
@@ -531,12 +536,25 @@ const bookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate unique booking number
+// Generate unique 8-character booking number (e.g., BK8X492A)
 bookingSchema.pre('save', async function (next) {
   if (this.isNew && !this.bookingNumber) {
-    const timestamp = Date.now().toString().slice(-8);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    this.bookingNumber = `BK${timestamp}${random}`;
+    let unique = false;
+    let newBookingNo = '';
+    let attempts = 0;
+    while (!unique && attempts < 10) {
+      attempts++;
+      const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+      newBookingNo = `BK${randomStr}`;
+      const existing = await mongoose.model('Booking').findOne({ bookingNumber: newBookingNo });
+      if (!existing) {
+        unique = true;
+      }
+    }
+    if (!unique) {
+      newBookingNo = `BK${Date.now().toString().slice(-6)}`;
+    }
+    this.bookingNumber = newBookingNo;
   }
 
   // Refund loyalty points and wallet applied if cancelled or search failed

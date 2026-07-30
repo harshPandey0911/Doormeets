@@ -113,8 +113,16 @@ const getBookingById = async (req, res) => {
     const booking = await Booking.findById(id)
       .populate('userId', 'name phone email addresses')
       .populate('vendorId', 'name businessName phone email address')
-      .populate('serviceId', 'title description iconUrl images')
-      .populate('categoryId', 'title slug')
+      .populate({
+        path: 'serviceId',
+        select: 'title description iconUrl images categoryId subCategoryId category subCategory',
+        populate: [
+          { path: 'subCategoryId', select: 'title name' },
+          { path: 'categoryId', select: 'title name' }
+        ]
+      })
+      .populate('categoryId', 'title name slug')
+      .populate('subCategoryId', 'title name')
       .populate('workerId', 'name phone rating totalJobs completedJobs');
 
     if (!booking) {
