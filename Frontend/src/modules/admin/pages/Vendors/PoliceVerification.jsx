@@ -57,6 +57,25 @@ const PoliceVerification = () => {
     }
   };
 
+  const handleDownloadDocument = async (e, url, filename = 'document.jpg') => {
+    if (e) e.preventDefault();
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      window.open(url, '_blank');
+    }
+  };
+
   const handleFileChange = (e, setter) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -327,14 +346,14 @@ const PoliceVerification = () => {
                   alt="PV Certificate"
                   className="w-full h-80 object-contain rounded-2xl border border-gray-150"
                 />
-                <a
-                  href={selectedVendor.policeVerification.documentUrl}
-                  download
-                  className="mt-3 inline-flex items-center gap-2 text-sm text-blue-600 font-bold hover:text-blue-700"
+                <button
+                  type="button"
+                  onClick={(e) => handleDownloadDocument(e, selectedVendor.policeVerification.documentUrl, `Police_Verification_${selectedVendor.name || 'Vendor'}.jpg`)}
+                  className="mt-3 inline-flex items-center gap-2 text-sm text-red-600 font-bold hover:text-red-700 cursor-pointer"
                 >
                   <FiDownload className="w-4 h-4" />
                   Download Certificate
-                </a>
+                </button>
               </div>
             ) : adminUploadedDoc ? (
               <div className="relative rounded-2xl overflow-hidden border border-gray-250 bg-gray-50 flex flex-col items-center justify-center p-4">

@@ -67,16 +67,43 @@ const getAllVendors = async (req, res) => {
     // Get vendors
     const vendors = await Vendor.find(query)
       .select('-password')
+      .populate('professions', 'name title')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Get total count
-    const total = await Vendor.countDocuments(query);
+    // Fetch latest TrainingAttempt data for vendors to populate training results
+    const TrainingAttempt = require('../../models/TrainingAttempt');
+    const vendorIds = vendors.map(v => v._id);
+    const attempts = await TrainingAttempt.find({ vendorId: { $in: vendorIds }, completedAt: { $ne: null } })
+      .sort({ completedAt: -1 });
+
+    const latestAttemptMap = {};
+    attempts.forEach(att => {
+      const vid = att.vendorId.toString();
+      if (!latestAttemptMap[vid]) {
+        latestAttemptMap[vid] = att;
+      }
+    });
+
+    const vendorsWithTraining = vendors.map(v => {
+      const vObj = v.toObject();
+      const att = latestAttemptMap[v._id.toString()];
+      if (att) {
+        if (!vObj.training) vObj.training = {};
+        vObj.training.status = 'completed';
+        vObj.training.score = att.score;
+        vObj.training.correctAnswers = att.correctAnswers;
+        vObj.training.totalQuestions = att.totalQuestions;
+        const levelNum = att.levelAssigned === 'L1' ? 1 : att.levelAssigned === 'L2' ? 2 : 3;
+        vObj.training.assignedLevel = levelNum;
+      }
+      return vObj;
+    });
 
     res.status(200).json({
       success: true,
-      data: vendors,
+      data: vendorsWithTraining,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -144,10 +171,26 @@ const getVendorDetails = async (req, res) => {
       totalRevenue: earningsResult[0]?.totalRevenue || 0
     }];
 
+    // Fetch latest TrainingAttempt if exists
+    const TrainingAttempt = require('../../models/TrainingAttempt');
+    const latestAttempt = await TrainingAttempt.findOne({ vendorId: vendor._id, completedAt: { $ne: null } })
+      .sort({ completedAt: -1 });
+
+    const vendorObj = vendor.toObject();
+    if (latestAttempt) {
+      if (!vendorObj.training) vendorObj.training = {};
+      vendorObj.training.status = 'completed';
+      vendorObj.training.score = latestAttempt.score;
+      vendorObj.training.correctAnswers = latestAttempt.correctAnswers;
+      vendorObj.training.totalQuestions = latestAttempt.totalQuestions;
+      const levelNum = latestAttempt.levelAssigned === 'L1' ? 1 : latestAttempt.levelAssigned === 'L2' ? 2 : 3;
+      vendorObj.training.assignedLevel = levelNum;
+    }
+
     res.status(200).json({
       success: true,
       data: {
-        vendor,
+        vendor: vendorObj,
         stats: bookingStats[0] || {
           totalBookings: 0,
           completedBookings: 0,

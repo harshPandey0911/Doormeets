@@ -53,6 +53,43 @@ const BottomNav = React.memo(() => {
   const { cartCount } = useCart();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Detect mobile keyboard opening/closing via visualViewport or focus events
+  useEffect(() => {
+    const handleFocus = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        setIsKeyboardVisible(true);
+      }
+    };
+    const handleBlur = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        setIsKeyboardVisible(false);
+      }
+    };
+
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.85;
+        setIsKeyboardVisible(isKeyboard);
+      }
+    };
+
+    window.addEventListener('focusin', handleFocus);
+    window.addEventListener('focusout', handleBlur);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
   const navItems = useMemo(() => [
     { id: 'home', label: 'Home', icon: FiHome, filledIcon: HiHome, path: '/user/home' },
     // { id: 'categories', label: 'Category', icon: FiGrid, filledIcon: HiViewGrid, path: '/user/categories' },
@@ -96,6 +133,10 @@ const BottomNav = React.memo(() => {
   const handleTabClick = (path) => {
     navigate(path);
   };
+
+  if (isKeyboardVisible) {
+    return null;
+  }
 
   return (
     <nav

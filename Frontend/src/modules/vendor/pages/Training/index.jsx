@@ -235,20 +235,30 @@ const TrainingPage = () => {
               {activeVideo === video._id && (
                 <div className="border-t border-white/20">
                   <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                    <iframe
-                      src={getYouTubeEmbedUrl(video.videoUrl)}
-                      className="absolute inset-0 w-full h-full"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      title={video.title}
-                      onLoad={() => handleVideoPlay(video)}
-                    />
+                    {video.videoUrl?.includes('youtube.com') || video.videoUrl?.includes('youtu.be') ? (
+                      <iframe
+                        src={getYouTubeEmbedUrl(video.videoUrl)}
+                        className="absolute inset-0 w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={video.title}
+                        onLoad={() => handleVideoPlay(video)}
+                      />
+                    ) : (
+                      <video
+                        src={video.videoUrl}
+                        controls
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onPlay={() => handleVideoPlay(video)}
+                        onEnded={() => handleMarkWatched(video._id, video.durationSeconds || 300, true)}
+                      />
+                    )}
                   </div>
                   {!video.isWatched && (
                     <div className="p-3 flex gap-2">
                       <button
-                        onClick={() => handleMarkWatched(video._id, watchTimers[video._id] || 0, true)}
+                        onClick={() => handleMarkWatched(video._id, watchTimers[video._id] || video.durationSeconds || 300, true)}
                         className="flex-1 py-2 bg-green-500/20 border border-green-400/30 text-green-300 rounded-xl text-sm font-semibold hover:bg-green-500/30 transition-colors"
                       >
                         ✅ Mark as Watched

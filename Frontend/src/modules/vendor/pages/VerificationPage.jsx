@@ -43,6 +43,8 @@ const VerificationPage = () => {
 
   // Step 3: Training Video
   const [video, setVideo] = useState(null);
+  const [videos, setVideos] = useState([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [videoWatched, setVideoWatched] = useState(false);
 
   // State for tracking overall step
@@ -278,7 +280,12 @@ const VerificationPage = () => {
             try {
               const videoRes = await api.get('/vendors/training/videos');
               if (videoRes.data?.success && videoRes.data?.data?.length > 0) {
-                setVideo(videoRes.data.data[0]);
+                const allVideos = videoRes.data.data;
+                setVideos(allVideos);
+                const unwatchedIdx = allVideos.findIndex(v => v.isRequired && !v.isWatched);
+                const activeIdx = unwatchedIdx !== -1 ? unwatchedIdx : 0;
+                setCurrentVideoIndex(activeIdx);
+                setVideo(allVideos[activeIdx]);
                 const totalRequired = videoRes.data.totalRequired || 0;
                 const totalWatched = videoRes.data.totalWatched || 0;
                 if (totalRequired === 0 || totalWatched >= totalRequired) {
@@ -466,12 +473,33 @@ const VerificationPage = () => {
 
   const handleVideoWatched = async () => {
     try {
-      if (video) {
-        await api.post('/vendors/training/watch', { videoId: video._id, fullyWatched: true });
+      const currentVid = videos[currentVideoIndex] || video;
+      if (currentVid) {
+        await api.post('/vendors/training/watch', { videoId: currentVid._id, fullyWatched: true });
+        setVideos(prev => prev.map((v, i) => i === currentVideoIndex ? { ...v, isWatched: true } : v));
       }
-      setVideoWatched(true);
-      setStep(4); // Move to MCQ Test
-      toast.success('Video completed. Moving to MCQ Test.');
+
+      // Find if there is another unwatched video
+      const nextUnwatchedIdx = videos.findIndex((v, i) => i > currentVideoIndex && v.isRequired && !v.isWatched);
+      if (nextUnwatchedIdx !== -1) {
+        setCurrentVideoIndex(nextUnwatchedIdx);
+        setVideo(videos[nextUnwatchedIdx]);
+        setCanSubmitVideo(false);
+        setSecondsLeft(videos[nextUnwatchedIdx]?.durationSeconds || 30);
+        toast.success(`Video completed! Moving to Video ${nextUnwatchedIdx + 1} of ${videos.length}`);
+      } else if (currentVideoIndex < videos.length - 1) {
+        // Move to next sequential video
+        const nextIdx = currentVideoIndex + 1;
+        setCurrentVideoIndex(nextIdx);
+        setVideo(videos[nextIdx]);
+        setCanSubmitVideo(videos[nextIdx]?.isWatched || false);
+        setSecondsLeft(videos[nextIdx]?.durationSeconds || 30);
+        toast.success(`Moving to Video ${nextIdx + 1} of ${videos.length}`);
+      } else {
+        setVideoWatched(true);
+        setStep(4); // Move to MCQ Test
+        toast.success('All training videos completed. Moving to MCQ Test.');
+      }
     } catch (error) {
       console.error('Failed to mark video watched', error);
       toast.error('Failed to update training status. Please try again.');
@@ -863,11 +891,45 @@ const VerificationPage = () => {
         {/* STEP 3: Training Video */}
         {step === 3 && (
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-8 animate-fade-in max-w-3xl mx-auto">
-            <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="flex items-center justify-center gap-3 mb-2">
               <FiPlayCircle className="text-3xl text-[#B33A35]" />
-              <h2 className="text-2xl font-bold text-gray-800">Mandatory Training Video</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Mandatory Training Video {videos.length > 1 ? `(${currentVideoIndex + 1}/${videos.length})` : ''}
+              </h2>
             </div>
-            <p className="text-center text-gray-500 mb-8">Please watch this short training video before taking the MCQ test.</p>
+            <p className="text-center text-gray-500 mb-6">
+              {videos[currentVideoIndex]?.title
+                ? `Video ${currentVideoIndex + 1}: ${videos[currentVideoIndex].title}`
+                : 'Please watch the training video before taking the MCQ test.'}
+            </p>
+
+            {/* Video Selector Pills for Multiple Videos */}
+            {videos.length > 1 && (
+              <div className="flex items-center justify-center gap-2 mb-6 overflow-x-auto pb-2 hide-scrollbar">
+                {videos.map((v, idx) => (
+                  <button
+                    key={v._id || idx}
+                    type="button"
+                    onClick={() => {
+                      setCurrentVideoIndex(idx);
+                      setVideo(videos[idx]);
+                      setCanSubmitVideo(v.isWatched || false);
+                      setSecondsLeft(v.durationSeconds || 30);
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                      idx === currentVideoIndex
+                        ? 'bg-[#B33A35] text-white shadow-md'
+                        : v.isWatched
+                        ? 'bg-green-100 text-green-700 border border-green-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span>Video {idx + 1}</span>
+                    {v.isWatched && <FiCheckCircle className="text-green-600 inline" />}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="aspect-video bg-gray-900 rounded-xl overflow-hidden relative group flex items-center justify-center mb-8">
               {video?.videoUrl ? (
@@ -875,6 +937,7 @@ const VerificationPage = () => {
                   <div id="yt-player" className="w-full h-full" />
                 ) : (
                   <video
+                    key={video.videoUrl}
                     src={video.videoUrl}
                     controls
                     className="w-full h-full object-cover"
@@ -905,18 +968,28 @@ const VerificationPage = () => {
             <div className="flex justify-between items-center">
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  if (currentVideoIndex > 0) {
+                    const prevIdx = currentVideoIndex - 1;
+                    setCurrentVideoIndex(prevIdx);
+                    setVideo(videos[prevIdx]);
+                  } else {
+                    setStep(2);
+                  }
+                }}
                 className="px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-50 transition cursor-pointer flex items-center gap-1.5 text-xs"
               >
-                <FiArrowLeft /> Back
+                <FiArrowLeft /> {currentVideoIndex > 0 ? `Previous Video` : 'Back'}
               </button>
               <button
                 type="button"
-                disabled={!canSubmitVideo && !videoWatched}
+                disabled={!canSubmitVideo && !videoWatched && !videos[currentVideoIndex]?.isWatched}
                 onClick={handleVideoWatched}
                 className="py-3 px-8 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors shadow-lg cursor-pointer active:scale-95 text-xs flex items-center gap-1.5"
               >
-                {secondsLeft > 0 && !videoWatched ? `I have watched the video (${secondsLeft}s)` : "I have watched the video"}
+                {currentVideoIndex < videos.length - 1
+                  ? (secondsLeft > 0 && !videos[currentVideoIndex]?.isWatched ? `Watched Video (${secondsLeft}s)` : `Next Video (${currentVideoIndex + 2}/${videos.length}) →`)
+                  : (secondsLeft > 0 && !videos[currentVideoIndex]?.isWatched && !videoWatched ? `Watched Video (${secondsLeft}s)` : "Complete Training & Take MCQ Test")}
               </button>
             </div>
           </div>

@@ -1,9 +1,27 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiX } from "react-icons/fi";
 
 const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   const mouseDownTarget = useRef(null);
+
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      if (mainEl) mainEl.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      if (mainEl) mainEl.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      if (mainEl) mainEl.style.overflow = "";
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

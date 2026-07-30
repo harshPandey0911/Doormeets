@@ -406,6 +406,10 @@ const submitTest = async (req, res) => {
     const levelNumber = levelAssigned === 'L1' ? 1 : levelAssigned === 'L2' ? 2 : 3;
     const vendorUpdate = {
       'training.status': passed ? 'completed' : 'failed',
+      'training.score': scorePercent,
+      'training.totalQuestions': totalQuestions,
+      'training.correctAnswers': correctCount,
+      'training.assignedLevel': levelNumber,
       'training.completedAt': passed ? new Date() : null,
       'training.attemptCount': newAttemptNumber,
       'training.lastAttemptAt': new Date(),
