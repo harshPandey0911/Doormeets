@@ -404,7 +404,7 @@ const FeaturedSectionsManager = ({ cityId }) => {
               Featured Sections
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              "Order Again" ke niche brands/categories sections manage karo
+              Manage custom featured brand and category sections displayed below "Order Again"
             </p>
           </div>
           <button

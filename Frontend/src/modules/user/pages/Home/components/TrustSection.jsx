@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const TrustSection = ({ items = [] }) => {
+const TrustSection = ({ items = [], title }) => {
   const [selectedItem, setSelectedItem] = useState(null);
 
   if (!items || items.length === 0) return null;
 
   return (
     <div className="w-full px-3 md:px-5 mt-2 mb-6">
+      {title && (
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2">
+          {title}
+        </h3>
+      )}
       {/* Single box containing all dynamic items stacked vertically */}
       <div 
         className="rounded-md p-4 shadow-sm border space-y-1 bg-white dark:bg-zinc-900"

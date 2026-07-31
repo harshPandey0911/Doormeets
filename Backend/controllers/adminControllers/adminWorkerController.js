@@ -21,8 +21,8 @@ const getAllWorkers = async (req, res) => {
     // Build query
     const query = {};
 
-    // CITY ADMIN FILTER: Restrict workers to assigned cities
-    if (req.user && (req.user.role === 'CITY_ADMIN' || req.user.role === 'admin')) {
+    // CITY ADMIN FILTER: Restrict workers to assigned cities only if user is CITY_ADMIN
+    if (req.user && req.user.role === 'CITY_ADMIN') {
       if (req.user.assignedCities && req.user.assignedCities.length > 0) {
         const cities = await City.find({ _id: { $in: req.user.assignedCities } });
         const cityNames = cities.map(c => new RegExp(`^${c.name}$`, 'i'));
@@ -65,6 +65,7 @@ const getAllWorkers = async (req, res) => {
     const workers = await Worker.find(query)
       .select('-password')
       .populate('serviceCategories', 'title slug')
+      .populate('vendorId', 'name businessName phone email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -449,7 +450,7 @@ const getAllWorkerJobs = async (req, res) => {
   try {
     const { status, page = 1, limit = 20, search, type } = req.query;
 
-    const query = { workerId: { $exists: true, $ne: null } };
+    const query = {};
     if (status) {
       query.status = status;
     }
@@ -483,6 +484,7 @@ const getAllWorkerJobs = async (req, res) => {
     const jobs = await Booking.find(query)
       .select('-workPhotos -reachedPhotos -serviceImages -reviewImages -potentialVendors -workDoneDetails')
       .populate('workerId', 'name phone profileImage')
+      .populate('vendorId', 'name businessName phone email')
       .populate('userId', 'name phone')
       .populate('serviceId', 'title iconUrl')
       .sort({ createdAt: -1 })

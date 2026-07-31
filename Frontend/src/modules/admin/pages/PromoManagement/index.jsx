@@ -107,6 +107,8 @@ const PromoManagement = () => {
     if (!formData.code.trim()) return toast.error('Promo code is required');
     if (!formData.discountValue) return toast.error('Discount value is required');
     if (!formData.expiryDate) return toast.error('Expiry date is required');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (formData.expiryDate < todayStr) return toast.error('Expiry date cannot be a past date');
 
     if (formData.discountType === 'percentage' && Number(formData.discountValue) > 100) {
       return toast.error('Percentage discount value cannot exceed 100%');
@@ -208,7 +210,9 @@ const PromoManagement = () => {
             </thead>
             <tbody>
               {promos.map((promo) => {
-                const isExpired = new Date(promo.expiryDate) < new Date();
+                const exp = new Date(promo.expiryDate);
+                exp.setHours(23, 59, 59, 999);
+                const isExpired = exp < new Date();
                 return (
                   <tr key={promo._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="p-4">
@@ -385,6 +389,7 @@ const PromoManagement = () => {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Expiry Date *</label>
                     <input
                       type="date"
+                      min={new Date().toISOString().split('T')[0]}
                       className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                       value={formData.expiryDate}
                       onChange={(e) => setFormData({...formData, expiryDate: e.target.value})}

@@ -30,12 +30,33 @@ exports.getBookingReport = async (req, res) => {
           from: 'userservices',
           localField: 'serviceId',
           foreignField: '_id',
-          as: 'service'
+          as: 'serviceObj'
         }
       },
-      { $unwind: '$service' },
-      { $group: { _id: '$service.title', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
+      {
+        $lookup: {
+          from: 'subcategories',
+          localField: 'subCategoryId',
+          foreignField: '_id',
+          as: 'subCatObj'
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $ifNull: [
+              { $arrayElemAt: ['$serviceObj.title', 0] },
+              { $arrayElemAt: ['$subCatObj.title', 0] },
+              '$serviceName',
+              '$serviceCategory',
+              'Other Services'
+            ]
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
     ]);
 
     // Monthly trends
@@ -150,7 +171,7 @@ exports.getWorkerReport = async (req, res) => {
     // CITY ADMIN FILTER: Restrict to assigned cities
     const City = require('../../models/City');
     let cityMatch = {};
-    if (req.user && (req.user.role === 'CITY_ADMIN' || req.user.role === 'admin' || req.userRole === 'CITY_ADMIN')) {
+    if (req.user && (req.user.role === 'CITY_ADMIN' || req.userRole === 'CITY_ADMIN')) {
       if (req.user.assignedCities && req.user.assignedCities.length > 0) {
         const cities = await City.find({ _id: { $in: req.user.assignedCities } });
         const cityNames = cities.map(c => new RegExp(`^${c.name}$`, 'i'));
@@ -222,6 +243,7 @@ exports.getWorkerReport = async (req, res) => {
     // Fetch all workers and their booking aggregates
     const allWorkersData = await Worker.find(availabilityQueryMatch)
       .select('name phone vendorId status approvalStatus')
+      .populate('vendorId', 'name businessName phone email')
       .lean();
 
     const workerIds = allWorkersData.map(w => w._id);
@@ -242,11 +264,14 @@ exports.getWorkerReport = async (req, res) => {
     const allWorkersList = allWorkersData.map(worker => {
       const stats = statsMap.get(worker._id.toString()) || { totalBookings: 0, avgRating: 0 };
       const isActiveStatus = worker.status !== 'inactive' && worker.status !== 'suspended';
+      const vendorObj = typeof worker.vendorId === 'object' ? worker.vendorId : null;
       return {
         _id: worker._id,
         name: worker.name,
         phone: worker.phone,
-        association: worker.vendorId ? 'Vendor-Linked' : 'Independent',
+        association: vendorObj ? (vendorObj.name || vendorObj.businessName || 'Vendor-Linked') : 'Independent',
+        vendorName: vendorObj ? (vendorObj.name || vendorObj.businessName) : null,
+        vendorBusinessName: vendorObj ? vendorObj.businessName : null,
         totalBookings: stats.totalBookings,
         avgRating: stats.avgRating ? parseFloat(stats.avgRating.toFixed(2)) : 0,
         status: isActiveStatus ? 'Active' : 'Blocked'
@@ -381,12 +406,33 @@ exports.getRevenueReport = async (req, res) => {
           from: 'userservices',
           localField: 'serviceId',
           foreignField: '_id',
-          as: 'service'
+          as: 'serviceObj'
         }
       },
-      { $unwind: '$service' },
-      { $group: { _id: '$service.title', revenue: { $sum: '$finalAmount' } } },
-      { $sort: { revenue: -1 } }
+      {
+        $lookup: {
+          from: 'subcategories',
+          localField: 'subCategoryId',
+          foreignField: '_id',
+          as: 'subCatObj'
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $ifNull: [
+              { $arrayElemAt: ['$serviceObj.title', 0] },
+              { $arrayElemAt: ['$subCatObj.title', 0] },
+              '$serviceName',
+              '$serviceCategory',
+              'Other Services'
+            ]
+          },
+          revenue: { $sum: { $ifNull: ['$finalAmount', '$totalAmount', 0] } }
+        }
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 10 }
     ]);
 
     res.status(200).json({

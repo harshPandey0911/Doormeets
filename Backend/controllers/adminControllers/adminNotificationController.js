@@ -238,7 +238,7 @@ const getBroadcastHistory = async (req, res) => {
     });
   } catch (error) {
     console.error('[Admin Notif] getBroadcastHistory error:', error);
-    res.status(500).json({ success: false, message: 'History fetch karne mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to fetch notification history' });
   }
 };
 
@@ -264,7 +264,7 @@ const searchUsers = async (req, res) => {
     res.status(200).json({ success: true, data: users });
   } catch (error) {
     console.error('[Admin Notif] searchUsers error:', error);
-    res.status(500).json({ success: false, message: 'User search mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to search users' });
   }
 };
 
@@ -290,7 +290,7 @@ const searchVendors = async (req, res) => {
     res.status(200).json({ success: true, data: vendors });
   } catch (error) {
     console.error('[Admin Notif] searchVendors error:', error);
-    res.status(500).json({ success: false, message: 'Vendor search mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to search vendors' });
   }
 };
 
@@ -418,7 +418,7 @@ const searchWorkers = async (req, res) => {
     res.status(200).json({ success: true, data: workers });
   } catch (error) {
     console.error('[Admin Notif] searchWorkers error:', error);
-    res.status(500).json({ success: false, message: 'Worker search mein error aaya' });
+    res.status(500).json({ success: false, message: 'Failed to search workers' });
   }
 };
 

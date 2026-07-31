@@ -221,10 +221,29 @@ const WorkerJobs = () => {
                       #{job.bookingNumber || job._id.slice(-6).toUpperCase()}
                     </td>
                     <td className="px-4 py-3">
-                      <div>
-                        <p className="font-bold text-gray-900 text-xs">{job.workerId?.name || 'Unassigned'}</p>
-                        <p className="text-[10px] text-gray-400">{job.workerId?.phone || ''}</p>
-                      </div>
+                      {job.workerId?.name ? (
+                        <div>
+                          <p className="font-bold text-gray-900 text-xs flex items-center gap-1">
+                            <FiUser className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                            <span>{job.workerId.name}</span>
+                          </p>
+                          <p className="text-[10px] text-gray-400 pl-4">{job.workerId.phone || ''}</p>
+                        </div>
+                      ) : job.vendorId?.name || job.vendorId?.businessName ? (
+                        <div>
+                          <p className="font-bold text-emerald-800 text-xs flex items-center gap-1">
+                            <FiBriefcase className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                            <span>{job.vendorId.name || job.vendorId.businessName}</span>
+                          </p>
+                          <p className="text-[10px] text-emerald-600 font-semibold pl-4">
+                            {job.vendorId.businessName ? `Vendor (${job.vendorId.businessName})` : 'Vendor'}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-bold">
+                          Unassigned
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div>

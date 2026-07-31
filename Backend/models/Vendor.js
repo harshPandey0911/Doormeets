@@ -470,6 +470,10 @@ const vendorSchema = new mongoose.Schema({
     ref: 'ShopOwner',
     default: null
   },
+  referralRewardProcessed: {
+    type: Boolean,
+    default: false
+  },
   referredByVendor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor',

@@ -73,8 +73,18 @@ const getShopOwnerDetails = async (req, res) => {
       .select('name phone approvalStatus createdAt');
 
     // Fetch transaction logs
-    const transactions = await Transaction.find({ shopOwnerId: shopOwner._id })
+    const rawTransactions = await Transaction.find({ shopOwnerId: shopOwner._id })
       .sort({ createdAt: -1 });
+
+    // Deduplicate transaction entries with exact same description and timestamp
+    const seenKeys = new Set();
+    const transactions = rawTransactions.filter(tx => {
+      const timeSec = Math.floor(new Date(tx.createdAt).getTime() / 1000);
+      const key = `${tx.type}_${tx.amount}_${tx.description}_${timeSec}`;
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
 
     res.status(200).json({
       success: true,

@@ -931,7 +931,7 @@ const Home = () => {
                       homeContent?.trustItems && homeContent.trustItems.length > 0 && (
                         <motion.section key="trustItems" variants={itemVariants}>
                           <Suspense fallback={<div className="h-10 bg-gray-50 animate-pulse rounded-xl mx-4 my-2" />}>
-                            <TrustSection items={homeContent.trustItems} />
+                            <TrustSection items={homeContent.trustItems} title={homeContent?.sectionHeaders?.trustTitle} />
                           </Suspense>
                         </motion.section>
                       )
@@ -951,7 +951,7 @@ const Home = () => {
                               <ServiceCategories
                                 categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)}
                                 onCategoryClick={handleCategoryClick}
-                                title="Categories"
+                                title={homeContent?.sectionHeaders?.sectionsTitle || "Categories"}
                                 subtitle="Premium Home Services"
                                 showSeeAll={false}
                                 onSeeAllClick={() => navigate('/user/categories')}
@@ -964,7 +964,7 @@ const Home = () => {
                                 className="text-[22px] font-extrabold tracking-tight leading-[1.2]"
                                 style={{ color: 'var(--text-primary)' }}
                               >
-                                Categories
+                                {homeContent?.sectionHeaders?.sectionsTitle || "Categories"}
                               </h2>
                             </div>
 

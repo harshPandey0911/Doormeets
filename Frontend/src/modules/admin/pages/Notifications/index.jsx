@@ -42,7 +42,7 @@ const NotificationPreview = ({ title, body, imageUrl, actionUrl }) => (
               {title || 'Notification Title'}
             </p>
             <p className="text-xs text-gray-600 mt-0.5 leading-snug line-clamp-2">
-              {body || 'Notification message yahan dikhegi...'}
+              {body || 'Notification message will appear here...'}
             </p>
             {imageUrl && (
               <img
@@ -62,7 +62,7 @@ const NotificationPreview = ({ title, body, imageUrl, actionUrl }) => (
         </div>
       </div>
     </div>
-    <p className="text-center text-gray-500 text-[10px] mt-3">Yahi dikhega users ko</p>
+    <p className="text-center text-gray-500 text-[10px] mt-3">Live preview for recipients</p>
   </div>
 );
 
@@ -75,11 +75,11 @@ const ImageUploader = ({ value, onChange }) => {
 
   const handleFile = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
-      toast.error('Sirf image file select karo (jpg, png, webp)');
+      toast.error('Please select an image file (JPG, PNG, WebP)');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image 5MB se choti honi chahiye');
+      toast.error('Image size must be less than 5MB');
       return;
     }
     setUploading(true);
@@ -91,13 +91,13 @@ const ImageUploader = ({ value, onChange }) => {
       });
       if (res.data.success && res.data.imageUrl) {
         onChange(res.data.imageUrl);
-        toast.success('Image upload ho gayi!');
+        toast.success('Image uploaded successfully!');
       } else {
         toast.error('Upload failed');
       }
     } catch (e) {
       console.error('Image upload error:', e);
-      toast.error('Upload nahi hua, URL paste karo');
+      toast.error('Upload failed. Please paste an image URL instead.');
     } finally {
       setUploading(false);
     }
@@ -165,9 +165,9 @@ const ImageUploader = ({ value, onChange }) => {
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-gray-700">
-                {dragging ? 'Chhod do!' : 'Image upload karo'}
+                {dragging ? 'Drop image here!' : 'Upload Image'}
               </p>
-              <p className="text-xs text-gray-400 mt-0.5">Drag & drop ya click karo • JPG, PNG, WebP • max 5MB</p>
+              <p className="text-xs text-gray-400 mt-0.5">Drag & drop or click to upload • JPG, PNG, WebP • max 5MB</p>
             </div>
           </>
         )}
@@ -183,7 +183,7 @@ const ImageUploader = ({ value, onChange }) => {
       {/* URL paste option */}
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-gray-100" />
-        <span className="text-[10px] text-gray-400 font-medium">ya URL paste karo</span>
+        <span className="text-[10px] text-gray-400 font-medium">or paste image URL</span>
         <div className="flex-1 h-px bg-gray-100" />
       </div>
       <input
@@ -199,12 +199,12 @@ const ImageUploader = ({ value, onChange }) => {
 };
 
 const TARGET_OPTIONS = [
-  { id: 'all_users', label: 'All Users', icon: FiUsers, color: 'blue', desc: 'Sabhi registered users ko' },
-  { id: 'specific_user', label: 'Specific User', icon: FiUser, color: 'indigo', desc: 'Ek specific user ko' },
-  { id: 'all_vendors', label: 'All Vendors', icon: FiUsers, color: 'purple', desc: 'Sabhi vendors/partners ko' },
-  { id: 'specific_vendor', label: 'Specific Vendor', icon: FiUserCheck, color: 'violet', desc: 'Ek specific vendor ko' },
-  { id: 'all_workers', label: 'All Workers', icon: FiUsers, color: 'teal', desc: 'Sabhi active workers ko' },
-  { id: 'specific_worker', label: 'Specific Worker', icon: FiUser, color: 'emerald', desc: 'Ek specific worker ko' },
+  { id: 'all_users', label: 'All Users', icon: FiUsers, color: 'blue', desc: 'To all registered users' },
+  { id: 'specific_user', label: 'Specific User', icon: FiUser, color: 'indigo', desc: 'To a specific user' },
+  { id: 'all_vendors', label: 'All Vendors', icon: FiUsers, color: 'purple', desc: 'To all vendors and partners' },
+  { id: 'specific_vendor', label: 'Specific Vendor', icon: FiUserCheck, color: 'violet', desc: 'To a specific vendor' },
+  { id: 'all_workers', label: 'All Workers', icon: FiUsers, color: 'teal', desc: 'To all active workers' },
+  { id: 'specific_worker', label: 'Specific Worker', icon: FiUser, color: 'emerald', desc: 'To a specific worker' },
 ];
 
 // ─── Search Dropdown Component ────────────────────────────────────────────────
@@ -307,7 +307,7 @@ const ResultBanner = ({ result, onClose }) => (
       <FiCheckCircle className="text-green-600 text-lg" />
     </div>
     <div className="flex-1">
-      <p className="font-bold text-green-800 text-sm">Notification Successfully Bheji Gayi! 🎉</p>
+      <p className="font-bold text-green-800 text-sm">Notification Sent Successfully! 🎉</p>
       {result.stats && (
         <div className="flex items-center gap-4 mt-2">
           <div className="flex items-center gap-1">
@@ -603,11 +603,11 @@ const Notifications = () => {
 
   // ─── Send notification ──
   const handleSend = async () => {
-    if (!form.title.trim()) { toast.error('Title required hai'); return; }
-    if (!form.body.trim()) { toast.error('Message required hai'); return; }
-    if (target === 'specific_user' && !selectedUser) { toast.error('User select karo'); return; }
-    if (target === 'specific_vendor' && !selectedVendor) { toast.error('Vendor select karo'); return; }
-    if (target === 'specific_worker' && !selectedWorker) { toast.error('Worker select karo'); return; }
+    if (!form.title.trim()) { toast.error('Title is required'); return; }
+    if (!form.body.trim()) { toast.error('Message is required'); return; }
+    if (target === 'specific_user' && !selectedUser) { toast.error('Please select a user'); return; }
+    if (target === 'specific_vendor' && !selectedVendor) { toast.error('Please select a vendor'); return; }
+    if (target === 'specific_worker' && !selectedWorker) { toast.error('Please select a worker'); return; }
 
     setSending(true);
     setSendResult(null);
@@ -646,7 +646,7 @@ const Notifications = () => {
 
       if (res.data.success) {
         setSendResult(res.data);
-        toast.success('Notification bheji gayi!');
+        toast.success('Notification sent successfully!');
         // Clear persisted form only on successful send
         const clearedForm = { title: '', body: '', imageUrl: '', actionUrl: '' };
         setForm(clearedForm);
@@ -762,7 +762,7 @@ const Notifications = () => {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                 <h2 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                   <FiUsers className="text-purple-500" />
-                  Step 1: Target Chunho
+                  Step 1: Select Target
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {TARGET_OPTIONS.map(opt => {
@@ -808,9 +808,9 @@ const Notifications = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-3"
                     >
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">User Search karo</label>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Search User</label>
                       <SearchDropdown
-                        placeholder="Naam ya phone number likhho..."
+                        placeholder="Enter name or phone number..."
                         onSearch={searchUsers}
                         onSelect={setSelectedUser}
                         results={userResults}
@@ -828,9 +828,9 @@ const Notifications = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-3"
                     >
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Vendor Search karo</label>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Search Vendor</label>
                       <SearchDropdown
-                        placeholder="Business naam ya phone number..."
+                        placeholder="Enter business name or phone number..."
                         onSearch={searchVendors}
                         onSelect={setSelectedVendor}
                         results={vendorResults}
@@ -848,9 +848,9 @@ const Notifications = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="mt-3"
                     >
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Worker Search karo</label>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Search Worker</label>
                       <SearchDropdown
-                        placeholder="Worker naam ya phone number..."
+                        placeholder="Enter worker name or phone number..."
                         onSearch={searchWorkers}
                         onSelect={setSelectedWorker}
                         results={workerResults}
@@ -879,7 +879,7 @@ const Notifications = () => {
                       type="text"
                       value={form.title}
                       onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                      placeholder='e.g. "Barish ho rhi hai ☔"'
+                      placeholder='e.g. "Special Offer 🎁"'
                       maxLength={80}
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
@@ -893,7 +893,7 @@ const Notifications = () => {
                     <textarea
                       value={form.body}
                       onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-                      placeholder='e.g. "Ghar baithe chai pee lo, hum aate hain!"'
+                      placeholder='e.g. "Book your next service now and get 20% off!"'
                       maxLength={200}
                       rows={3}
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
@@ -914,7 +914,7 @@ const Notifications = () => {
 
                    <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-1">
-                      <FiLink className="text-gray-400" /> Redirect Options <span className="text-gray-400 font-normal">(User click pe kahan jaye)</span>
+                      <FiLink className="text-gray-400" /> Redirect Options <span className="text-gray-400 font-normal">(Target page on notification click)</span>
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5">
                       {/* Category Select */}
@@ -957,12 +957,12 @@ const Notifications = () => {
                       type="text"
                       value={form.actionUrl}
                       onChange={e => setForm(f => ({ ...f, actionUrl: e.target.value }))}
-                      placeholder="/category/plumbing ya /subcategory/ac-service ya custom URL..."
+                      placeholder="/category/plumbing or /subcategory/ac-service or custom URL..."
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
                       <FiInfo className="text-[10px]" />
-                      Category/Subcategory choose karne par Redirect URL apne aap fill ho jayega.
+                      Selecting a category/subcategory automatically populates the redirect URL.
                     </p>
                   </div>
                 </div>
@@ -981,12 +981,12 @@ const Notifications = () => {
                 {sending ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Bhej raha hai...
+                    Sending...
                   </>
                 ) : (
                   <>
                     <FiSend className="text-lg" />
-                    Notification Bhejo
+                    Send Notification
                     {target === 'all_users' && ' → All Users'}
                     {target === 'all_vendors' && ' → All Vendors'}
                     {target === 'all_workers' && ' → All Workers'}
@@ -1001,7 +1001,7 @@ const Notifications = () => {
               <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
                 <FiAlertCircle className="text-amber-500 text-sm mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-amber-700 leading-relaxed">
-                  Yeh notification users ko tab bhi milegi jab app <strong>band ho</strong> ya <strong>background mein ho</strong> — FCM (Firebase Cloud Messaging) use karta hai, exactly Zomato ki tarah.
+                  Push notifications will reach users even when the app is <strong>closed</strong> or in the <strong>background</strong> via FCM (Firebase Cloud Messaging).
                 </p>
               </div>
             </div>
@@ -1070,7 +1070,7 @@ const Notifications = () => {
                   {notifications.length > 0 && (
                     <button
                       onClick={async () => {
-                        if (window.confirm('Saare notifications delete karein?')) {
+                        if (window.confirm('Are you sure you want to delete all notifications?')) {
                           try {
                             await api.delete('/notifications/delete-all');
                             setNotifications([]);
@@ -1098,7 +1098,7 @@ const Notifications = () => {
               ) : filteredNotifications.length === 0 ? (
                 <div className="p-12 text-center">
                   <FiBell className="text-5xl text-gray-200 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400">Koi notification nahi mili</p>
+                  <p className="text-sm text-gray-400">No notifications found</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50">
@@ -1159,7 +1159,7 @@ const Notifications = () => {
               <div className="p-4 border-b border-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FiClock className="text-purple-500" />
-                  <h2 className="text-sm font-bold text-gray-800">Pehle Bheji Gayi Notifications</h2>
+                  <h2 className="text-sm font-bold text-gray-800">Sent Notifications History</h2>
                 </div>
                 <button
                   onClick={fetchHistory}
@@ -1178,12 +1178,12 @@ const Notifications = () => {
               ) : history.length === 0 ? (
                 <div className="p-12 text-center">
                   <FiSend className="text-5xl text-gray-200 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400">Abhi tak koi notification nahi bheji gayi</p>
+                  <p className="text-sm text-gray-400">No notifications sent yet</p>
                   <button
                     onClick={() => setActiveTab('send')}
                     className="mt-4 px-5 py-2 bg-purple-600 text-white text-sm font-semibold rounded-xl hover:bg-purple-700 transition-colors"
                   >
-                    Pehli Notification Bhejo →
+                    Send First Notification →
                   </button>
                 </div>
               ) : (

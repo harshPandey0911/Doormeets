@@ -18,7 +18,11 @@ exports.getAllReviews = async (req, res) => {
     } = req.query;
 
     const query = {};
-    if (status) query.status = status;
+    if (status) {
+      query.status = status;
+    } else {
+      query.status = { $ne: 'deleted' };
+    }
     if (rating) query.rating = parseInt(rating);
     if (vendorId) query.vendorId = vendorId;
     if (serviceId) query.serviceId = serviceId;
@@ -59,9 +63,17 @@ exports.getAllReviews = async (req, res) => {
     const reviews = await Review.find(query)
       .populate('userId', 'name phone email profilePhoto')
       .populate('vendorId', 'businessName name phone')
-      .populate('serviceId', 'title iconUrl')
+      .populate('serviceId', 'title iconUrl name')
       .populate('workerId', 'name phone')
-      .populate('bookingId', 'bookingNumber status')
+      .populate({
+        path: 'bookingId',
+        select: 'bookingNumber status serviceName vendorId serviceId subCategoryId',
+        populate: [
+          { path: 'vendorId', select: 'businessName name phone' },
+          { path: 'serviceId', select: 'title iconUrl name' },
+          { path: 'subCategoryId', select: 'title name' }
+        ]
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -102,16 +114,52 @@ exports.updateReviewStatus = async (req, res) => {
       });
     }
 
-    const review = await Review.findByIdAndUpdate(
+    let review = await Review.findByIdAndUpdate(
       id,
       { status },
       { new: true }
     );
 
+    // Fallback: If not found in Review model by id, try finding by bookingId
+    if (!review) {
+      review = await Review.findOneAndUpdate(
+        { bookingId: id },
+        { status },
+        { new: true }
+      );
+    }
+
+    // Fallback 2: If still not found, check if a Booking exists with this ID and create/update Review
+    if (!review) {
+      const booking = await Booking.findById(id);
+      if (booking && booking.rating) {
+        review = await Review.create({
+          bookingId: booking._id,
+          userId: booking.userId,
+          serviceId: booking.serviceId,
+          vendorId: booking.vendorId,
+          workerId: booking.workerId,
+          rating: booking.rating,
+          review: booking.review || '',
+          images: booking.reviewImages || [],
+          status,
+          createdAt: booking.reviewedAt || booking.updatedAt
+        });
+      }
+    }
+
     if (!review) {
       return res.status(404).json({
         success: false,
         message: 'Review not found'
+      });
+    }
+
+    // Sync with Booking model if booking exists
+    if (review.bookingId) {
+      await Booking.findByIdAndUpdate(review.bookingId, {
+        isReviewHidden: status === 'hidden',
+        isReviewDeleted: status === 'deleted'
       });
     }
 

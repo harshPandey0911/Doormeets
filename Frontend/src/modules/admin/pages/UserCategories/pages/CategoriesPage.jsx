@@ -12,7 +12,7 @@ import { z } from "zod";
 
 // Define Zod schema
 const categorySchema = z.object({
-  title: z.string().min(2, "Category title must be at least 2 characters"),
+  title: z.string().min(2, "Category title must be at least 2 characters").max(50, "Category title cannot exceed 50 characters"),
   slug: z.string().optional(),
   homeIconUrl: z.string().optional(),
   bannerImage: z.string().optional().nullable(),
@@ -888,11 +888,17 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
 
         <div className="space-y-4">
           <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">Title</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-base font-bold text-gray-900">Title</label>
+              <span className={`text-xs ${form.title?.length >= 50 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                {form.title?.length || 0}/50
+              </span>
+            </div>
             <input
+              maxLength={50}
               value={form.title}
               onChange={(e) => {
-                const title = e.target.value;
+                const title = e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
                 setForm((p) => ({ ...p, title, slug: slugify(title) }));
               }}
               placeholder="e.g. Electricity, Salon for Women"
@@ -981,7 +987,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
                   }}
                   className="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer"
                 />
-                <p className="text-[10px] text-gray-400 mt-1">Wide image recommended (1200×400). Shown as cover on category page.</p>
+                <p className="text-[10px] text-gray-500 mt-1">Recommended size: 1000 × 400 px. Shown as cover on category page.</p>
               </div>
             </div>
           </div>

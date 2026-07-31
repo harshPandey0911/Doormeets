@@ -193,7 +193,7 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
               <input
                 maxLength={50}
                 value={form.title}
-                onChange={e => setForm(p => ({ ...p, title: e.target.value.slice(0, 50) }))}
+                onChange={e => setForm(p => ({ ...p, title: e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50) }))}
                 placeholder="e.g. AC Filter Cleaning"
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
