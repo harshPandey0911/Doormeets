@@ -68,6 +68,7 @@ const BookingTrack = () => {
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const [sheetTouchStart, setSheetTouchStart] = useState(null);
   const [sheetTouchEnd, setSheetTouchEnd] = useState(null);
+  const [isAddressExpanded, setIsAddressExpanded] = useState(false);
 
   const pendingAddons = useMemo(() => {
     if (!booking) return [];
@@ -857,30 +858,64 @@ const BookingTrack = () => {
           )}
         </div>
 
-        {/* Address Info - Full Address */}
-        <div className="bg-gray-50 rounded-xl px-3 py-2 flex items-start gap-2.5 mb-2 border border-gray-100/80">
-          <div className="w-6.5 h-6.5 rounded-full bg-white flex items-center justify-center shadow-xs text-teal-600 border border-gray-100 shrink-0 mt-0.5">
-            <FiMapPin className="w-3.5 h-3.5" />
+        {/* Address Info - Expandable Location Card */}
+        <div 
+          onClick={() => setIsAddressExpanded(prev => !prev)}
+          className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100/80 mb-2 cursor-pointer hover:bg-gray-100/80 transition-colors select-none group"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="w-6.5 h-6.5 rounded-full bg-white flex items-center justify-center shadow-xs text-teal-600 border border-gray-100 shrink-0">
+                <FiMapPin className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-900 text-[10px] uppercase tracking-wider leading-tight">Your Location</h3>
+                {!isAddressExpanded && (
+                  <p className="text-xs text-gray-600 font-medium truncate mt-0.5">
+                    {(() => {
+                      const addr = booking?.address;
+                      if (!addr) return 'Loading destination...';
+                      if (typeof addr === 'string') return addr;
+                      const parts = [
+                        addr.houseNo || addr.flatNo || addr.buildingName,
+                        addr.addressLine1 || addr.street,
+                        addr.addressLine2 || addr.landmark || addr.area,
+                        addr.city,
+                        addr.state,
+                        addr.pincode
+                      ].filter(Boolean);
+                      return parts.join(', ');
+                    })()}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-gray-600 shrink-0">
+              {isAddressExpanded ? <FiChevronUp className="w-3.5 h-3.5 text-teal-600" /> : <FiChevronDown className="w-3.5 h-3.5" />}
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 text-[10px] uppercase tracking-wider leading-tight">Your Location</h3>
-            <p className="text-xs text-gray-600 font-medium leading-snug break-words mt-0.5">
-              {(() => {
-                const addr = booking?.address;
-                if (!addr) return 'Loading destination...';
-                if (typeof addr === 'string') return addr;
-                const parts = [
-                  addr.houseNo || addr.flatNo || addr.buildingName,
-                  addr.addressLine1 || addr.street,
-                  addr.addressLine2 || addr.landmark || addr.area,
-                  addr.city,
-                  addr.state,
-                  addr.pincode
-                ].filter(Boolean);
-                return parts.join(', ');
-              })()}
-            </p>
-          </div>
+
+          {/* Full Expanded Address View */}
+          {isAddressExpanded && (
+            <div className="mt-2 pt-2 border-t border-gray-200/60 pl-9 pr-1">
+              <p className="text-xs text-gray-700 font-medium leading-relaxed break-words">
+                {(() => {
+                  const addr = booking?.address;
+                  if (!addr) return 'Loading destination...';
+                  if (typeof addr === 'string') return addr;
+                  const parts = [
+                    addr.houseNo || addr.flatNo || addr.buildingName,
+                    addr.addressLine1 || addr.street,
+                    addr.addressLine2 || addr.landmark || addr.area,
+                    addr.city,
+                    addr.state,
+                    addr.pincode
+                  ].filter(Boolean);
+                  return parts.join(', ');
+                })()}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Arrival OTP - Ultra Compact */}
@@ -1055,12 +1090,17 @@ const BookingTrack = () => {
             </div>
 
             {(() => {
+              const cleanPhone = (phoneStr) => {
+                if (!phoneStr) return '';
+                const firstNo = String(phoneStr).split(/[,/;\s]+/)[0].trim();
+                return firstNo.replace(/(?!^\+)[^\d]/g, '');
+              };
               const currentStatus = (booking?.status || '').toLowerCase().replace(/_/g, ' ').trim();
               const journeyActive = ['journey started', 'journey_started', 'journey', 'visited', 'in progress', 'in_progress', 'work done', 'work_done'].includes(currentStatus);
               if (journeyActive && provider.phone) {
                 return (
                   <a
-                    href={`tel:${provider.phone}`}
+                    href={`tel:${cleanPhone(provider.phone)}`}
                     className="w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-xs"
                   >
                     <FiPhone className="w-3.5 h-3.5" />
@@ -1068,7 +1108,7 @@ const BookingTrack = () => {
                 );
               }
               // Show customer care before journey starts
-              const carePhone = supportPhone || '+919999999999';
+              const carePhone = cleanPhone(supportPhone || '+919999999999');
               return (
                 <a
                   href={`tel:${carePhone}`}

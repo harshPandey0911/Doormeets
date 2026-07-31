@@ -905,9 +905,14 @@ const BookingDetails = () => {
 
                   {/* Call Button */}
                   {(() => {
-                    const currentStatus = (booking.status || '').toLowerCase().replace(/_/g, ' ').trim();
+                    const cleanPhone = (phoneStr) => {
+                      if (!phoneStr) return '';
+                      const firstNo = String(phoneStr).split(/[,/;\s]+/)[0].trim();
+                      return firstNo.replace(/(?!^\+)[^\d]/g, '');
+                    };
+                    const currentStatus = (booking?.status || '').toLowerCase().replace(/_/g, ' ').trim();
                     const journeyActive = ['journey started', 'journey_started', 'journey', 'visited', 'in progress', 'in_progress', 'work done', 'work_done'].includes(currentStatus);
-                    const vendorPhone = booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone;
+                    const vendorPhone = cleanPhone(booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone);
                     if (journeyActive && vendorPhone) {
                       return (
                         <a
@@ -918,7 +923,7 @@ const BookingDetails = () => {
                         </a>
                       );
                     }
-                    const carePhone = supportInfo.phone || '+919999999999';
+                    const carePhone = cleanPhone(supportInfo.phone || '+919999999999');
                     return (
                       <a
                         href={`tel:${carePhone}`}
