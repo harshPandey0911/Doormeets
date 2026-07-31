@@ -248,6 +248,29 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Rating (⭐)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                max="5"
+                value={form.rating || 4.8}
+                onChange={e => setForm(p => ({ ...p, rating: e.target.value }))}
+                placeholder="4.8"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Reviews Count</label>
+              <input
+                type="text"
+                value={form.reviewsCount || '1.2k'}
+                onChange={e => setForm(p => ({ ...p, reviewsCount: e.target.value }))}
+                placeholder="1.2k"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+            </div>
             <div className="sm:col-start-4">
               <button
                 type="submit"

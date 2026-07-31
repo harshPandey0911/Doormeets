@@ -4,7 +4,7 @@ import { ref, onValue, off } from 'firebase/database';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleMap, useJsApiLoader, DirectionsRenderer, OverlayView, PolylineF } from '@react-google-maps/api';
-import { FiArrowLeft, FiNavigation, FiMapPin, FiCrosshair, FiPhone, FiUser, FiStar, FiShield, FiKey, FiCheckCircle, FiLoader, FiDollarSign, FiMaximize, FiMinimize, FiClock } from 'react-icons/fi';
+import { FiArrowLeft, FiNavigation, FiMapPin, FiCrosshair, FiPhone, FiUser, FiStar, FiShield, FiKey, FiCheckCircle, FiLoader, FiDollarSign, FiMaximize, FiMinimize, FiClock, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { bookingService } from '../../../../services/bookingService';
 import { paymentService } from '../../../../services/paymentService';
 import { configService } from '../../../../services/configService';
@@ -65,6 +65,9 @@ const BookingTrack = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [addonCashSelected, setAddonCashSelected] = useState(false);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const [sheetTouchStart, setSheetTouchStart] = useState(null);
+  const [sheetTouchEnd, setSheetTouchEnd] = useState(null);
 
   const pendingAddons = useMemo(() => {
     if (!booking) return [];
@@ -795,9 +798,48 @@ const BookingTrack = () => {
 
       </div>
 
-      {/* Bottom Status Card - Highly Compact */}
-      <div ref={bottomCardRef} className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-[0_-6px_25px_rgba(0,0,0,0.1)] z-20 px-4 pt-2.5 pb-4 transition-transform duration-300 ${isFullScreen ? 'translate-y-full' : ''}`}>
-        <div className="w-8 h-1 bg-gray-200 rounded-full mx-auto mb-2.5"></div>
+      {/* Bottom Status Card - Interactive Bottom Sheet */}
+      <div 
+        ref={bottomCardRef} 
+        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-6px_30px_rgba(0,0,0,0.18)] z-20 px-4 pt-1 pb-6 transition-all duration-300 ${
+          isFullScreen ? 'translate-y-full' : ''
+        } ${
+          isSheetExpanded ? 'max-h-[85vh] overflow-y-auto' : 'max-h-[350px] overflow-hidden'
+        }`}
+      >
+        {/* Interactive Drag Handle Bar */}
+        <div 
+          onClick={() => setIsSheetExpanded(prev => !prev)}
+          onTouchStart={(e) => {
+            const touch = e.touches[0];
+            setSheetTouchStart(touch.clientY);
+          }}
+          onTouchMove={(e) => {
+            const touch = e.touches[0];
+            setSheetTouchEnd(touch.clientY);
+          }}
+          onTouchEnd={() => {
+            if (!sheetTouchStart || !sheetTouchEnd) return;
+            const diff = sheetTouchStart - sheetTouchEnd;
+            if (diff > 40) {
+              setIsSheetExpanded(true);
+            } else if (diff < -40) {
+              setIsSheetExpanded(false);
+            }
+            setSheetTouchStart(null);
+            setSheetTouchEnd(null);
+          }}
+          className="w-full py-2.5 -mt-1 flex flex-col items-center justify-center cursor-pointer group active:scale-95 transition-all select-none"
+        >
+          <div className="w-10 h-1.5 bg-gray-300 group-hover:bg-gray-400 rounded-full transition-colors"></div>
+          <span className="text-[9px] font-bold text-gray-400 mt-1 flex items-center gap-0.5 group-hover:text-gray-600">
+            {isSheetExpanded ? (
+              <><span>Collapse sheet</span> <FiChevronDown className="w-3 h-3 text-teal-600" /></>
+            ) : (
+              <><span>Swipe up or tap to expand</span> <FiChevronUp className="w-3 h-3 text-teal-600" /></>
+            )}
+          </span>
+        </div>
 
         {/* Status Row */}
         <div className="flex items-center justify-between mb-2">

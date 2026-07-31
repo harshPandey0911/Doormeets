@@ -338,9 +338,10 @@ module.exports = {
   toggleAdminStatus: async (req, res) => {
     try {
       const { id } = req.params;
+      const currentAdminId = req.user?.id || req.user?._id;
 
-      if (id === req.user.id) {
-        return res.status(400).json({ success: false, message: 'Cannot block yourself' });
+      if (id.toString() === currentAdminId?.toString()) {
+        return res.status(400).json({ success: false, message: 'Cannot deactivate yourself' });
       }
 
       const admin = await Admin.findById(id);
@@ -349,7 +350,7 @@ module.exports = {
       }
 
       if (admin.email === 'admin@admin.com') {
-        return res.status(400).json({ success: false, message: 'Cannot block primary super admin' });
+        return res.status(400).json({ success: false, message: 'Cannot deactivate primary super admin' });
       }
 
       admin.isActive = !admin.isActive;
@@ -357,8 +358,8 @@ module.exports = {
 
       res.status(200).json({
         success: true,
-        message: `Admin ${admin.isActive ? 'unblocked' : 'blocked'} successfully`,
-        data: { isActive: admin.isActive }
+        message: `Admin ${admin.isActive ? 'activated' : 'deactivated'} successfully`,
+        data: admin
       });
     } catch (error) {
       console.error('Toggle status error:', error);

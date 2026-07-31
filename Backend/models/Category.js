@@ -137,6 +137,16 @@ const categorySchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  rating: {
+    type: Number,
+    default: 4.8,
+    min: 0,
+    max: 5
+  },
+  ratingCount: {
+    type: String,
+    default: '9.3 M bookings'
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',

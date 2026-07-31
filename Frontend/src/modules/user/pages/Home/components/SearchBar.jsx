@@ -67,7 +67,7 @@ const SearchBar = ({ onInputClick }) => {
               className="text-sm md:text-[15.5px] tracking-normal font-normal flex items-center whitespace-nowrap overflow-hidden w-full"
               style={{ color: 'var(--text-muted)' }}
             >
-              Search for&nbsp;<span className="font-normal" style={{ color: 'var(--text-secondary)' }}>'{displayedText}'</span>
+              Search for&nbsp;<span className="font-normal" style={{ color: 'var(--text-secondary)' }}>'{displayedText.trimEnd()}'</span>
               <span className="animate-pulse ml-0.5 font-light" style={{ color: 'var(--text-muted)' }}>|</span>
             </span>
           </div>

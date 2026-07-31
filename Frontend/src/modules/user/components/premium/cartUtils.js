@@ -7,7 +7,23 @@ export const toAssetUrl = (url) => {
 };
 
 export const buildCartItemData = ({ service, category = null, brand = null }) => {
-  const price = service?.discountPrice ?? service?.basePrice ?? service?.price ?? 0;
+  const discount = Number(service?.discountPrice);
+  const base = Number(service?.basePrice || service?.price || 0);
+
+  let price = base;
+  let originalPrice = null;
+
+  if (discount > 0 && discount < base) {
+    price = discount;
+    originalPrice = base > 0 ? base : null;
+  } else if (base > 0) {
+    price = base;
+    originalPrice = null;
+  } else if (discount > 0) {
+    price = discount;
+    originalPrice = null;
+  }
+
   return {
     serviceId: service?.id || service?._id,
     categoryId: category?.id || category?._id || service?.categoryId || null,
@@ -21,11 +37,11 @@ export const buildCartItemData = ({ service, category = null, brand = null }) =>
     sectionTitle: brand?.title || brand?.businessName || service?.brand?.title || '',
     sectionIcon: toAssetUrl(brand?.iconUrl || brand?.icon || service?.brand?.icon || ''),
     price,
-    originalPrice: service?.basePrice || null,
+    originalPrice,
     unitPrice: price,
     serviceCount: 1,
     rating: service?.rating || 4.8,
-    reviews: service?.reviews || service?.reviewCount || 0,
+    reviews: service?.reviews || service?.reviewsCount || service?.ratingCount || '1.2k',
     vendorId: service?.vendorId || brand?.vendorId || null,
     isPriceDisclosed: service?.isPriceDisclosed !== false,
     serviceType: service?.serviceType || 'package_base',
@@ -34,7 +50,7 @@ export const buildCartItemData = ({ service, category = null, brand = null }) =>
       title: service?.title || '',
       subtitle: service?.description || '',
       price,
-      originalPrice: service?.basePrice || null,
+      originalPrice,
       duration: service?.duration || '',
       description: service?.description || '',
       imageUrl: toAssetUrl(service?.icon || service?.image || ''),

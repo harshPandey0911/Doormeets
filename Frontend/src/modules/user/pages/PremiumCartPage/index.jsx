@@ -233,7 +233,7 @@ const PremiumCartPage = () => {
                               >
                                 ₹{(item.unitPrice || (item.price / (item.serviceCount || 1))) * (item.serviceCount || 1)}
                               </span>
-                              {item.originalPrice && (
+                              {(item.originalPrice && Number(item.originalPrice) > Number(item.unitPrice || (item.price / (item.serviceCount || 1)))) && (
                                 <span
                                   className="text-[11px] sm:text-xs line-through"
                                   style={{ color: 'var(--text-muted)' }}

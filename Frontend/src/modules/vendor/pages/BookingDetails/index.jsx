@@ -2247,10 +2247,10 @@ export default function BookingDetails() {
                                           {canCancel && (
                                             <button
                                               onClick={handleCancelBooking}
-                                              className="w-full py-1.5 rounded-lg font-bold text-[11px] text-red-600 border border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                                              className="w-full py-2 rounded-lg font-bold text-xs text-red-600 border border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-1.5 transition-all active:scale-95"
                                             >
-                                              <FiXCircle className="w-3.5 h-3.5 text-red-500" />
-                                              Cancel Booking
+                                              <FiXCircle className="w-4 h-4 text-red-500 animate-pulse" />
+                                              Cancel Booking {cancelCountdown > 0 ? `(${formatTime(cancelCountdown)})` : ''}
                                             </button>
                                           )}
                                         </div>
@@ -2931,54 +2931,16 @@ export default function BookingDetails() {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            {booking.cancelRequestStatus === 'pending' && booking.status !== 'cancelled' ? (
+            {booking.cancelRequestStatus === 'pending' && booking.status !== 'cancelled' && (
               <div className="w-full py-4 rounded-xl font-bold text-sm bg-amber-50 text-amber-700 border border-amber-200 text-center animate-pulse mb-1">
                 Cancellation Request Pending Admin Approval
               </div>
-            ) : (
-              !['cancelled', 'completed', 'work_done'].includes(booking.status?.toLowerCase()) && canCancel && (
-                <button
-                  onClick={handleCancelBooking}
-                  className="w-full py-2.5 rounded-lg font-bold text-xs text-red-600 border border-red-200 bg-red-50/50 hover:bg-red-50 flex items-center justify-center gap-2 transition-all active:scale-95 mb-1"
-                >
-                  <FiXCircle className="w-4 h-4 text-red-500 animate-pulse" />
-                  Cancel Booking ({formatTime(cancelCountdown)})
-                </button>
-              )
             )}
-
-
 
             {booking.status === 'awaiting_payment' && ['online', 'razorpay'].includes(booking.paymentMethod) && !booking.assignedTo && (
               <div className="w-full p-4 rounded-xl text-center text-amber-700 bg-amber-50 border border-amber-200 font-semibold text-sm">
                 ⏳ Waiting for Customer Payment...
                 <p className="text-xs font-normal text-amber-600 mt-1">Once the customer completes the online payment, you can assign workers and start the job.</p>
-              </div>
-            )}
-
-            {(booking.status === 'confirmed' || booking.status === 'accepted' || (booking.assignedTo && booking.workerResponse === 'rejected')) && (
-              <div className="flex gap-2.5 mt-2.5">
-                <button
-                  onClick={handleAssignToSelf}
-                  className="flex-1 py-2.5 rounded-lg font-semibold text-xs border transition-all active:scale-95"
-                  style={{
-                    borderColor: themeColors.button,
-                    color: themeColors.button,
-                    background: 'white',
-                  }}
-                >
-                  Do it Myself
-                </button>
-                <button
-                  onClick={handleAssignWorker}
-                  className="flex-1 py-2.5 rounded-lg font-semibold text-xs text-white transition-all active:scale-95 px-4"
-                  style={{
-                    background: themeColors.button,
-                    boxShadow: `0 4px 12px ${themeColors.button}30`,
-                  }}
-                >
-                  {booking.workerResponse === 'rejected' ? 'Reassign' : 'Assign'}
-                </button>
               </div>
             )}
 

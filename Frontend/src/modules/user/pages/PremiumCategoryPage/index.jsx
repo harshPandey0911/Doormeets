@@ -1038,8 +1038,12 @@ const PremiumCategoryPage = () => {
               <span className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center">
                 <FiStar className="fill-white text-white w-3 h-3" />
               </span>
-              <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>4.80</span>
-              <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>(9.3 M bookings)</span>
+              <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                {activeCategory?.rating ? Number(activeCategory.rating).toFixed(2) : (activeCategory?.avgRating ? Number(activeCategory.avgRating).toFixed(2) : '4.80')}
+              </span>
+              <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                ({activeCategory?.ratingCount || activeCategory?.bookingsCount || '9.3 M bookings'})
+              </span>
             </div>
             <p className="mt-4 text-[13px] leading-relaxed font-medium" style={{ color: 'var(--text-secondary)' }}>
               {activeCategory?.description || `Our ${activeCategory?.title?.toLowerCase()} caters to everyone, providing a fun and comfortable atmosphere with premium, certified home expert styling and custom packages.`}

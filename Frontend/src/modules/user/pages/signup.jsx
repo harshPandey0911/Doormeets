@@ -74,23 +74,114 @@ const Signup = () => {
     }
   }, [step]);
 
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    phoneNumber: '',
+    referralCode: ''
+  });
+  const [touched, setTouched] = useState({});
+
+  const validateField = (fieldName, value, currentFormData = formData, refCode = referralCode) => {
+    let errorMsg = '';
+
+    if (fieldName === 'name') {
+      const trimmed = value ? value.trim() : '';
+      if (!trimmed) {
+        errorMsg = 'Full name is required';
+      } else if (trimmed.length < 2) {
+        errorMsg = 'Name must be at least 2 characters';
+      } else if (!/^[a-zA-Z\s]+$/.test(trimmed)) {
+        errorMsg = 'Name can only contain letters and spaces';
+      }
+    }
+
+    if (fieldName === 'email') {
+      const trimmed = value ? value.trim() : '';
+      if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        errorMsg = 'Please enter a valid email address';
+      }
+    }
+
+    if (fieldName === 'phoneNumber') {
+      if (!verificationToken) {
+        const trimmed = value ? value.trim() : '';
+        if (!trimmed) {
+          errorMsg = 'Phone number is required';
+        } else if (!/^[6-9]\d{9}$/.test(trimmed)) {
+          errorMsg = 'Please enter a valid 10-digit phone number';
+        }
+      }
+    }
+
+    if (fieldName === 'referralCode') {
+      const trimmed = refCode ? refCode.trim() : '';
+      if (trimmed && !/^[A-Za-z0-9-]{4,15}$/.test(trimmed)) {
+        errorMsg = 'Invalid referral code format';
+      }
+    }
+
+    return errorMsg;
+  };
+
+  const handleBlur = (fieldName) => {
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+    let val = formData[fieldName];
+    if (fieldName === 'referralCode') val = referralCode;
+    const err = validateField(fieldName, val);
+    setErrors(prev => ({ ...prev, [fieldName]: err }));
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const cleanValue = name === 'name' ? value.replace(/[^a-zA-Z\s]/g, '') : value;
-    setFormData(prev => ({
-      ...prev,
-      [name]: cleanValue
-    }));
+    let newFormData = { ...formData };
+    if (name === 'name') {
+      let clean = value.replace(/[^a-zA-Z\s]/g, '');
+      clean = clean.replace(/  +/g, ' ');
+      const formatted = clean.toLowerCase().replace(/(^\w|\s\w)/g, (m) => m.toUpperCase());
+      newFormData.name = formatted;
+      setFormData(newFormData);
+    } else {
+      newFormData[name] = value;
+      setFormData(newFormData);
+    }
+
+    if (touched[name]) {
+      const err = validateField(name, newFormData[name], newFormData);
+      setErrors(prev => ({ ...prev, [name]: err }));
+    }
+  };
+
+  const handleNameBlur = () => {
+    handleBlur('name');
+    if (formData.name) {
+      const trimmed = formData.name.trim().replace(/\s+/g, ' ');
+      const formatted = trimmed.toLowerCase().replace(/(^\w|\s\w)/g, (m) => m.toUpperCase());
+      setFormData(prev => ({ ...prev, name: formatted }));
+    }
   };
 
   const handleDetailsSubmit = async (e) => {
     e.preventDefault();
 
-    // Zod Validation
-    const validationResult = signupSchema.safeParse(formData);
+    const nameErr = validateField('name', formData.name);
+    const emailErr = validateField('email', formData.email);
+    const phoneErr = validateField('phoneNumber', formData.phoneNumber);
+    const refErr = validateField('referralCode', referralCode);
 
-    if (!validationResult.success) {
-      validationResult.error.errors.forEach(err => toast.error(err.message));
+    const newErrors = {
+      name: nameErr,
+      email: emailErr,
+      phoneNumber: phoneErr,
+      referralCode: refErr
+    };
+
+    setErrors(newErrors);
+    setTouched({ name: true, email: true, phoneNumber: true, referralCode: true });
+
+    if (nameErr || emailErr || phoneErr || refErr) {
+      const firstError = nameErr || phoneErr || emailErr || refErr;
+      toast.error(firstError);
       return;
     }
 
@@ -277,8 +368,12 @@ const Signup = () => {
                     <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
                       Full Name
                     </label>
-                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <div className={`relative rounded-2xl border overflow-hidden transition-all ${
+                      errors.name && touched.name 
+                        ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
+                        : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                    }`}>
+                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.name && touched.name ? 'text-red-400' : 'text-gray-400'}`}>
                         <FiUser />
                       </div>
                       <input
@@ -287,12 +382,20 @@ const Signup = () => {
                         name="name"
                         type="text"
                         required
+                        autoComplete="name"
+                        autoCapitalize="words"
                         value={formData.name}
                         onChange={handleInputChange}
+                        onBlur={handleNameBlur}
                         className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
-                        placeholder="Enter your name"
+                        placeholder="Enter your full name"
                       />
                     </div>
+                    {errors.name && touched.name && (
+                      <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+                        <span>•</span> {errors.name}
+                      </p>
+                    )}
                   </div>
 
                   {/* Email */}
@@ -300,20 +403,31 @@ const Signup = () => {
                     <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
                       Email <span className="text-gray-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
                     </label>
-                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <div className={`relative rounded-2xl border overflow-hidden transition-all ${
+                      errors.email && touched.email 
+                        ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
+                        : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                    }`}>
+                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.email && touched.email ? 'text-red-400' : 'text-gray-400'}`}>
                         <FiMail />
                       </div>
                       <input
                         id="email"
                         name="email"
                         type="email"
+                        autoComplete="email"
                         value={formData.email}
                         onChange={handleInputChange}
+                        onBlur={() => handleBlur('email')}
                         className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                         placeholder="you@example.com"
                       />
                     </div>
+                    {errors.email && touched.email && (
+                      <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+                        <span>•</span> {errors.email}
+                      </p>
+                    )}
                   </div>
 
                   {/* Phone Number */}
@@ -322,25 +436,52 @@ const Signup = () => {
                       <label htmlFor="phoneNumber" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
                         Phone Number
                       </label>
-                      <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                      <div className={`relative rounded-2xl border overflow-hidden transition-all ${
+                        errors.phoneNumber && touched.phoneNumber 
+                          ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
+                          : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                      }`}>
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <span className="text-gray-500 font-medium text-sm border-r border-gray-200 pr-3">+91</span>
+                          <span className={`font-medium text-sm border-r pr-3 ${errors.phoneNumber && touched.phoneNumber ? 'text-red-500 border-red-200' : 'text-gray-500 border-gray-200'}`}>+91</span>
                         </div>
                         <input
                           id="phoneNumber"
                           name="phoneNumber"
                           type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
                           required
                           value={formData.phoneNumber}
                           onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '');
-                            if (val.length > 0 && !/^[6-9]/.test(val)) return;
-                            setFormData(prev => ({ ...prev, phoneNumber: val.slice(0, 10) }));
+                            let raw = e.target.value;
+                            let digits = raw.replace(/\D/g, '');
+                            if (digits.length > 10 && digits.startsWith('91')) {
+                              digits = digits.slice(2);
+                            } else if (digits.length > 10 && digits.startsWith('0')) {
+                              digits = digits.slice(1);
+                            } else if (digits.length === 11 && digits.startsWith('0')) {
+                              digits = digits.slice(1);
+                            }
+                            if (digits.length > 10) {
+                              digits = digits.slice(-10);
+                            }
+                            const updatedVal = /^[6-9]/.test(digits) ? digits.slice(0, 10) : '';
+                            setFormData(prev => ({ ...prev, phoneNumber: updatedVal }));
+                            if (touched.phoneNumber) {
+                              const err = validateField('phoneNumber', updatedVal, { ...formData, phoneNumber: updatedVal });
+                              setErrors(prev => ({ ...prev, phoneNumber: err }));
+                            }
                           }}
+                          onBlur={() => handleBlur('phoneNumber')}
                           className="block w-full pl-16 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                           placeholder="9876543210"
                         />
                       </div>
+                      {errors.phoneNumber && touched.phoneNumber && (
+                        <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+                          <span>•</span> {errors.phoneNumber}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -349,8 +490,12 @@ const Signup = () => {
                     <label htmlFor="referralCode" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
                       Referral Code <span className="text-gray-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
                     </label>
-                    <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <div className={`relative rounded-2xl border overflow-hidden transition-all ${
+                      errors.referralCode && touched.referralCode 
+                        ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
+                        : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                    }`}>
+                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.referralCode && touched.referralCode ? 'text-red-400' : 'text-gray-400'}`}>
                         <FiGift />
                       </div>
                       <input
@@ -358,11 +503,24 @@ const Signup = () => {
                         name="referralCode"
                         type="text"
                         value={referralCode}
-                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          setReferralCode(val);
+                          if (touched.referralCode) {
+                            const err = validateField('referralCode', val, formData, val);
+                            setErrors(prev => ({ ...prev, referralCode: err }));
+                          }
+                        }}
+                        onBlur={() => handleBlur('referralCode')}
                         className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                         placeholder="DM-XXXXXX"
                       />
                     </div>
+                    {errors.referralCode && touched.referralCode && (
+                      <p className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+                        <span>•</span> {errors.referralCode}
+                      </p>
+                    )}
                   </div>
 
                   <button

@@ -128,6 +128,14 @@ const StatsCard = ({ title, value, subtitle, icon: Icon, color, trend }) => {
 
 // Data Table Component
 const DataTable = ({ data, columns, loading }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Reset to page 1 when dataset or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [data]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -145,35 +153,81 @@ const DataTable = ({ data, columns, loading }) => {
     );
   }
 
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+  const currentData = data.slice(startIndex, endIndex);
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            {columns.map((col, idx) => (
-              <th key={idx} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                {col.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {data.slice(0, 20).map((row, idx) => (
-            <tr key={idx} className="hover:bg-gray-50 transition-colors">
-              {columns.map((col, cidx) => (
-                <td key={cidx} className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                  {col.render ? col.render(row[col.key], row) : row[col.key]}
-                </td>
+    <div className="space-y-0">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              {columns.map((col, idx) => (
+                <th key={idx} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  {col.header}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-      {data.length > 20 && (
-        <div className="text-center py-3 text-sm text-gray-500 bg-gray-50 border-t">
-          Showing 20 of {data.length} records. Download CSV for full data.
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {currentData.map((row, idx) => (
+              <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                {columns.map((col, cidx) => (
+                  <td key={cidx} className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                    {col.render ? col.render(row[col.key], row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination Controls Footer */}
+      <div className="p-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3 text-sm text-gray-600">
+          <span>
+            Showing <strong className="font-semibold text-gray-900">{startIndex + 1}</strong> to <strong className="font-semibold text-gray-900">{endIndex}</strong> of <strong className="font-semibold text-gray-900">{data.length}</strong> records
+          </span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="px-2.5 py-1 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={10}>10 per page</option>
+            <option value={20}>20 per page</option>
+            <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
+          </select>
         </div>
-      )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 disabled:opacity-40 hover:bg-gray-50 transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-xs font-bold text-gray-600 px-2">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-700 disabled:opacity-40 hover:bg-gray-50 transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -602,14 +656,12 @@ const PaymentReports = () => {
         />
 
         {/* Footer */}
-        <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-          <p className="text-sm text-gray-500">
-            Showing {Math.min(reportData.length, 20)} of {reportData.length} records
-          </p>
+        {/* Footer Export Bar */}
+        <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end">
           <button
             onClick={() => downloadReport(activeReport)}
             disabled={downloadingReport === activeReport || reportData.length === 0}
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center disabled:opacity-50"
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center disabled:opacity-50 cursor-pointer"
           >
             <FiDownload className="mr-2" />
             Export Full Report (CSV)
