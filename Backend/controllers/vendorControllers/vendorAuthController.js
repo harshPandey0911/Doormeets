@@ -393,13 +393,18 @@ const register = async (req, res) => {
     let referredByVendor = null;
     if (req.body.referralCode) {
       const inputRefCode = req.body.referralCode.trim().toUpperCase();
-      if (inputRefCode.startsWith('SH-')) {
-        const ShopOwner = require('../../models/ShopOwner');
-        const shop = await ShopOwner.findOne({ referralCode: inputRefCode });
-        if (shop) referredByShopOwner = shop._id;
-      } else if (inputRefCode.startsWith('VN-')) {
+      const ShopOwner = require('../../models/ShopOwner');
+      
+      // Look up Shop Owner first
+      const shop = await ShopOwner.findOne({ referralCode: inputRefCode });
+      if (shop) {
+        referredByShopOwner = shop._id;
+      } else {
+        // Look up Vendor next
         const referrerVendor = await Vendor.findOne({ referralCode: inputRefCode });
-        if (referrerVendor) referredByVendor = referrerVendor._id;
+        if (referrerVendor) {
+          referredByVendor = referrerVendor._id;
+        }
       }
     }
 

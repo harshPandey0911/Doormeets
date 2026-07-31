@@ -156,7 +156,11 @@ const Login = () => {
                       required
                       placeholder="Enter 10-digit number"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val.length > 0 && !/^[6-9]/.test(val)) return;
+                        setPhone(val.slice(0, 10));
+                      }}
                       className="block w-full pl-10 pr-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                   </div>
@@ -235,7 +239,11 @@ const Login = () => {
                         required
                         placeholder="Enter registered 10-digit number"
                         value={forgotPhone}
-                        onChange={(e) => setForgotPhone(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          if (val.length > 0 && !/^[6-9]/.test(val)) return;
+                          setForgotPhone(val.slice(0, 10));
+                        }}
                         className="block w-full pl-10 pr-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       />
                     </div>

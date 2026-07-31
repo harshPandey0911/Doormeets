@@ -288,7 +288,7 @@ const SubCategoriesPage = ({ selectedCity, filterTemplateId }) => {
                   onChange={(e) => setFormData({...formData, hasBrand: e.target.checked})}
                 />
                 <label htmlFor="hasBrand" className="text-sm font-medium text-gray-700 select-none cursor-pointer">
-                  Has Brands (Is subcategory ke liye brand enable karein)
+                  Has Brands
                 </label>
               </div>
               <div>

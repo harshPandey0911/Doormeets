@@ -141,8 +141,8 @@ const AllShopOwners = () => {
 
   const handleAddShopOwnerSubmit = async (e) => {
     e.preventDefault();
-    if (!newShopOwner.name || newShopOwner.name.length < 2) {
-      toast.error('Please enter a valid name (min 2 chars)');
+    if (!newShopOwner.name || !/^[a-zA-Z\s]{2,}$/.test(newShopOwner.name.trim())) {
+      toast.error('Name should contain only letters (min 2 chars)');
       return;
     }
     if (!newShopOwner.phone || newShopOwner.phone.length !== 10) {
@@ -544,7 +544,10 @@ const AllShopOwners = () => {
                       required
                       placeholder="Shop Owner full name"
                       value={newShopOwner.name}
-                      onChange={(e) => setNewShopOwner({ ...newShopOwner, name: e.target.value })}
+                      onChange={(e) => {
+                        const cleanVal = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                        setNewShopOwner({ ...newShopOwner, name: cleanVal });
+                      }}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-gray-700 transition"
                     />
                   </div>

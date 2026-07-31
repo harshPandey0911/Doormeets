@@ -37,6 +37,10 @@ const AddVendor = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!name.trim() || !/^[a-zA-Z\s]{2,}$/.test(name.trim())) {
+      setError('Full Name should contain only letters (at least 2 characters).');
+      return;
+    }
     if (selectedProfessions.length === 0) {
       setError('Please select at least one profession.');
       return;
@@ -50,7 +54,7 @@ const AddVendor = () => {
       const response = await api.post(
         '/shop/vendors/add',
         { 
-          name, 
+          name: name.trim(), 
           phone, 
           professionIds: selectedProfessions.map(p => p._id),
           professionId: selectedProfessions[0]?._id // backwards compatibility
@@ -112,7 +116,10 @@ const AddVendor = () => {
                   required
                   placeholder="e.g. Ramesh Kumar"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    const cleanVal = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                    setName(cleanVal);
+                  }}
                   className="block w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
@@ -185,7 +192,7 @@ const AddVendor = () => {
                 }}
                 className="block w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer"
               >
-                <option value="">Select a profession...</option>
+                <option value="" disabled hidden>Select a profession...</option>
                 {professions
                   .filter(prof => !selectedProfessions.some(p => p._id === prof._id))
                   .map((prof) => (

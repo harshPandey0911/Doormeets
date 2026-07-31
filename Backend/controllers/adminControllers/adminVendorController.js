@@ -226,7 +226,7 @@ const approveVendor = async (req, res) => {
         }
 
         // Credit Vendor
-        const vendorBalanceBefore = vendor.wallet?.credits || 0;
+        const vendorBalanceBefore = (vendor.wallet?.credits || 0) * 10; // Convert credits to Rupees for transaction ledger
         vendor.wallet = vendor.wallet || { credits: 0, dues: 0 };
         vendor.wallet.credits += vendorReward / 10;
 
