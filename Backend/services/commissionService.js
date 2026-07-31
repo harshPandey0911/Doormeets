@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Settings = require('../models/Settings');
 const Transaction = require('../models/Transaction');
+const Vendor = require('../models/Vendor');
 
 /**
  * Centrally processes booking completion, computes commission & records transaction ledger entries.
@@ -13,6 +14,11 @@ async function processBookingCompletion(bookingId) {
     if (!booking) {
       console.error(`[CommissionService] Booking not found: ${bookingId}`);
       return { success: false, message: 'Booking not found' };
+    }
+
+    if (booking.status !== 'completed') {
+      console.log(`[CommissionService] Booking #${bookingId} is not completed (current status: ${booking.status}). Skipping commission processing.`);
+      return { success: false, message: 'Booking is not completed' };
     }
 
     if (booking.commissionStatus && booking.commissionStatus !== 'none') {
@@ -136,6 +142,8 @@ async function processBookingCompletion(bookingId) {
           instantShare = settings.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
         }
 
+        let partsPayout = 0;
+
         // Check if there is a generated VendorBill for this booking to aggregate addon prices
         try {
           const VendorServiceCatalog = require('../models/VendorServiceCatalog');
@@ -159,7 +167,7 @@ async function processBookingCompletion(bookingId) {
               });
             }
 
-            // Add vendorPayoutBase for selected parts
+            // Calculate vendorPayoutBase for selected parts (credited directly to partsPayout)
             if (bill.parts && bill.parts.length > 0) {
               const partCatalogIds = bill.parts.map(p => p.catalogId).filter(Boolean);
               const partCatalogItems = await VendorPartsCatalog.find({ _id: { $in: partCatalogIds } });
@@ -170,7 +178,7 @@ async function processBookingCompletion(bookingId) {
                 if (p.catalogId) {
                   const catalogItem = partCatalogMap[p.catalogId.toString()];
                   if (catalogItem && catalogItem.vendorPayoutBase > 0) {
-                    basePayout += catalogItem.vendorPayoutBase * (p.quantity || 1);
+                    partsPayout += catalogItem.vendorPayoutBase * (p.quantity || 1);
                   }
                 }
               });
@@ -180,24 +188,31 @@ async function processBookingCompletion(bookingId) {
           console.error('[CommissionService] Error aggregating addon prices:', err);
         }
 
-        // vPayoutBase is base - acceptanceFee (instantShare is handled separately below)
-        const vPayoutBase = Math.max(0, basePayout - acceptanceFee);
+        // Retrieve vendor level
+        const vendorDoc = await Vendor.findById(booking.vendorId);
+        const currentLevel = vendorDoc ? String(vendorDoc.currentLevel || '').toUpperCase() : 'L3';
 
-        // Platform commission percentage: use pricing commission (default 25%)
-        const vCommPct = pricing ? (pricing.commissionPercentage ?? 25) : 25;
-        const vSgstPct = 2.5;
-        const vCgstPct = 2.5;
-        const levelWiseChargePct = 0; // Currently 0%
+        // Payout configuration
+        const platformCommPct = pricing ? (pricing.platformCommission ?? 0) : 0;
+        let levelCommPct = 20; // default L3
+        if (currentLevel === 'L1') levelCommPct = pricing ? (pricing.l1Commission ?? 10) : 10;
+        else if (currentLevel === 'L2') levelCommPct = pricing ? (pricing.l2Commission ?? 15) : 15;
+        else if (currentLevel === 'L3') levelCommPct = pricing ? (pricing.l3Commission ?? 20) : 20;
 
-        const platformCommission = vPayoutBase * (vCommPct / 100);
-        const sgst = vPayoutBase * (vSgstPct / 100);
-        const cgst = vPayoutBase * (vCgstPct / 100);
-        const levelCharge = vPayoutBase * (levelWiseChargePct / 100);
+        const sgstPct = pricing ? (pricing.vendorSgstPercentage ?? 2.5) : 2.5;
+        const cgstPct = pricing ? (pricing.vendorCgstPercentage ?? 2.5) : 2.5;
 
-        const totalDeductions = platformCommission + sgst + cgst + levelCharge;
-        
-        const baseVendorShare = Math.max(0, vPayoutBase - totalDeductions);
-        vendorShare = parseFloat((baseVendorShare + instantShare).toFixed(2));
+        // Calculations on basePayout
+        const platformCommissionAmount = basePayout * (platformCommPct / 100);
+        const sgstAmount = basePayout * (sgstPct / 100);
+        const cgstAmount = basePayout * (cgstPct / 100);
+
+        // Level commission basis (after-tax base)
+        const levelCommissionBasis = Math.max(0, basePayout - sgstAmount - cgstAmount - platformCommissionAmount);
+        const levelCommissionAmount = levelCommissionBasis * (levelCommPct / 100);
+
+        const baseVendorShare = Math.max(0, levelCommissionBasis - levelCommissionAmount);
+        vendorShare = parseFloat((baseVendorShare + instantShare + partsPayout).toFixed(2));
         adminCommission = parseFloat((amount - vendorShare).toFixed(2));
       } else if (booking.bookingType === 'instant' && settings) {
         const markupFee = settings.instantBookingMarkup !== undefined ? settings.instantBookingMarkup : 99;
@@ -258,7 +273,6 @@ async function processBookingCompletion(bookingId) {
 
     // 6. Update Vendor's wallet balance (Sole source of wallet updates now!)
     if (vendorId) {
-      const Vendor = require('../models/Vendor');
       const vendor = await Vendor.findById(vendorId);
       if (vendor) {
         if (!vendor.wallet) {

@@ -209,68 +209,7 @@ const CashCollectionModal = ({
                 </div>
               )}
 
-              {/* Extra Items Section */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Extra Services / Items</h4>
-                  <button
-                    onClick={handleAddItem}
-                    className="flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md hover:bg-red-100 transition-colors"
-                  >
-                    <FiPlus className="w-3 h-3 text-red-600" />
-                    Add Extra
-                  </button>
-                </div>
-
-                {extraItems.length === 0 ? (
-                  <div className="text-center py-4 border-2 border-dashed border-gray-100 rounded-xl">
-                    <p className="text-[11px] text-gray-400">No extra charges added yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {extraItems.map((item, index) => (
-                      <div key={index} className="flex gap-1.5 items-start animate-in slide-in-from-right-2 duration-200">
-                        <div className="flex-1 space-y-1.5">
-                          <input
-                            type="text"
-                            placeholder="Service name"
-                            className="w-full px-2.5 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-red-400 transition-all"
-                            value={item.title}
-                            onChange={(e) => handleUpdateItem(index, 'title', e.target.value)}
-                          />
-                          <div className="flex gap-1.5">
-                            <div className="relative flex-1">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</span>
-                              <input
-                                type="number"
-                                placeholder="Price"
-                                className="w-full pl-6 pr-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-red-400"
-                                value={item.price}
-                                onChange={(e) => handleUpdateItem(index, 'price', e.target.value)}
-                              />
-                            </div>
-                            <div className="w-16">
-                              <input
-                                type="number"
-                                placeholder="Qty"
-                                className="w-full px-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-red-400"
-                                value={item.qty}
-                                onChange={(e) => handleUpdateItem(index, 'qty', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveItem(index)}
-                          className="p-1.5 text-red-400 hover:bg-red-50 rounded-md mt-0.5"
-                        >
-                          <FiTrash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Extra Items Section Removed */}
             </>
           ) : (
             <div className="py-2 text-center">

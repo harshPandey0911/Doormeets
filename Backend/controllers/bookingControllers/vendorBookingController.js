@@ -2058,24 +2058,17 @@ const completeSelfJob = async (req, res) => {
         }
       }
 
-      let vendorServiceEarning = 0;
+      let basePayout = 0;
       if (packageVendorPayout > 0) {
-        vendorServiceEarning = packageVendorPayout;
+        basePayout = packageVendorPayout;
       } else if (pricing) {
-        vendorServiceEarning = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
+        basePayout = pricing.vendorPayoutBase !== undefined && pricing.vendorPayoutBase !== null ? pricing.vendorPayoutBase : 0;
       } else {
-        vendorServiceEarning = parseFloat((originalBase * (serviceSplitPct / 100)).toFixed(2));
+        basePayout = parseFloat((originalBase * (serviceSplitPct / 100)).toFixed(2));
       }
 
-      // Add vendor's instant booking markup share if applicable
-      let vendorInstantMarkupShare = 0;
-      if (booking.bookingType === 'instant') {
-        vendorInstantMarkupShare = settings?.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
-        vendorServiceEarning = parseFloat((vendorServiceEarning + vendorInstantMarkupShare).toFixed(2));
-      }
-
-      // Add extra services vendor earnings (using catalog vendorPayoutBase if configured)
-      let extraServicesEarning = 0;
+      // Add extra services vendor earnings base payouts
+      let extraServicesBase = 0;
       const VendorServiceCatalog = require('../../models/VendorServiceCatalog');
       if (billDetails?.services && Array.isArray(billDetails.services)) {
         for (const item of billDetails.services) {
@@ -2094,19 +2087,72 @@ const completeSelfJob = async (req, res) => {
           }
           const qty = Number(item.quantity) || 1;
           if (catalogItem && catalogItem.vendorPayoutBase !== undefined && catalogItem.vendorPayoutBase > 0) {
-            extraServicesEarning += catalogItem.vendorPayoutBase * qty;
+            extraServicesBase += catalogItem.vendorPayoutBase * qty;
           } else if (itemPricing && itemPricing.vendorPayoutBase !== undefined && itemPricing.vendorPayoutBase !== null) {
-            extraServicesEarning += itemPricing.vendorPayoutBase * qty;
+            extraServicesBase += itemPricing.vendorPayoutBase * qty;
           } else {
             const unitPrice = catalogItem ? catalogItem.price : (Number(item.price) || 0);
-            extraServicesEarning += parseFloat(((unitPrice * qty) * (serviceSplitPct / 100)).toFixed(2));
+            extraServicesBase += parseFloat(((unitPrice * qty) * (serviceSplitPct / 100)).toFixed(2));
           }
         }
       }
-      vendorServiceEarning = parseFloat((vendorServiceEarning + extraServicesEarning).toFixed(2));
+      basePayout = parseFloat((basePayout + extraServicesBase).toFixed(2));
 
-      // Parts earnings
-      const vendorPartsEarning = parseFloat((totalPartsBase * (partsSplitPct / 100)).toFixed(2));
+      // Retrieve vendor level
+      const vendorDoc = await Vendor.findById(vendorId);
+      const currentLevel = vendorDoc ? String(vendorDoc.currentLevel || '').toUpperCase() : 'L3';
+
+      // Payout configuration
+      const platformCommPct = pricing ? (pricing.platformCommission ?? 0) : 0;
+      let levelCommPct = 20; // default L3
+      if (currentLevel === 'L1') levelCommPct = pricing ? (pricing.l1Commission ?? 10) : 10;
+      else if (currentLevel === 'L2') levelCommPct = pricing ? (pricing.l2Commission ?? 15) : 15;
+      else if (currentLevel === 'L3') levelCommPct = pricing ? (pricing.l3Commission ?? 20) : 20;
+
+      const sgstPct = pricing ? (pricing.vendorSgstPercentage ?? 2.5) : 2.5;
+      const cgstPct = pricing ? (pricing.vendorCgstPercentage ?? 2.5) : 2.5;
+
+      // Calculations on basePayout
+      const platformCommissionAmount = basePayout * (platformCommPct / 100);
+      const sgstAmount = basePayout * (sgstPct / 100);
+      const cgstAmount = basePayout * (cgstPct / 100);
+
+      // Level commission basis (after-tax base)
+      const levelCommissionBasis = Math.max(0, basePayout - sgstAmount - cgstAmount - platformCommissionAmount);
+      const levelCommissionAmount = levelCommissionBasis * (levelCommPct / 100);
+
+      const baseVendorShare = Math.max(0, levelCommissionBasis - levelCommissionAmount);
+
+      let vendorInstantMarkupShare = 0;
+      if (booking.bookingType === 'instant') {
+        vendorInstantMarkupShare = settings?.instantBookingVendorShare !== undefined ? settings.instantBookingVendorShare : 50;
+      }
+
+      vendorServiceEarning = parseFloat((baseVendorShare + vendorInstantMarkupShare).toFixed(2));
+
+      // Parts earnings: Add vendorPayoutBase directly from catalog
+      let calculatedPartsEarning = 0;
+      try {
+        const VendorPartsCatalog = require('../../models/VendorPartsCatalog');
+        if (billParts && billParts.length > 0) {
+          for (const p of billParts) {
+            if (p.catalogId) {
+              const catalogItem = await VendorPartsCatalog.findById(p.catalogId);
+              if (catalogItem && catalogItem.vendorPayoutBase !== undefined && catalogItem.vendorPayoutBase !== null) {
+                calculatedPartsEarning += catalogItem.vendorPayoutBase * (p.quantity || 1);
+              } else {
+                calculatedPartsEarning += (p.price * (p.quantity || 1)) * (partsSplitPct / 100);
+              }
+            } else {
+              calculatedPartsEarning += (p.price * (p.quantity || 1)) * (partsSplitPct / 100);
+            }
+          }
+        }
+      } catch (partsErr) {
+        console.error('Error calculating parts vendor earning:', partsErr);
+        calculatedPartsEarning = parseFloat((totalPartsBase * (partsSplitPct / 100)).toFixed(2));
+      }
+      const vendorPartsEarning = parseFloat(calculatedPartsEarning.toFixed(2));
 
       const vendorTotalEarning = parseFloat((vendorServiceEarning + vendorPartsEarning).toFixed(2));
       const companyRevenue = parseFloat((grandTotal - vendorTotalEarning).toFixed(2));

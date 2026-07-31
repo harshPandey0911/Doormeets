@@ -97,15 +97,7 @@ const LiveBookingCard = ({ hasBottomNav }) => {
     }
   };
 
-  // Auto-show rating modal when work is marked done
-  useEffect(() => {
-    if (activeBooking && activeBooking.status?.toUpperCase() === 'WORK_DONE' && !activeBooking.rating && !showRatingModal) {
-      const dismissed = localStorage.getItem(`rating_dismissed_live_${activeBooking._id}`);
-      if (!dismissed) {
-        setShowRatingModal(true);
-      }
-    }
-  }, [activeBooking]);
+  // Auto-show rating modal when work is marked done removed
 
   const handleRateSubmit = async (ratingData) => {
     try {

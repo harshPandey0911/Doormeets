@@ -229,7 +229,7 @@ const BookingDetails = () => {
   // Auto-show rating modal when booking is completed or work is done
   useEffect(() => {
     if (booking) {
-      const isCompleted = ['completed', 'work_done'].includes(booking.status?.toLowerCase());
+      const isCompleted = booking.status?.toLowerCase() === 'completed';
       const isRated = !!booking.rating;
       const isDismissed = localStorage.getItem(`rating_dismissed_${id}`);
 

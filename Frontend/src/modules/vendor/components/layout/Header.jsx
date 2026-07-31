@@ -187,8 +187,8 @@ const Header = memo(({
                     )}
                   </motion.div>
                 </button>
-                <span className="hidden min-[400px]:inline-block text-[9px] font-bold text-gray-500 uppercase tracking-tighter w-12">
-                  {isOnline ? 'Offline' : 'Online'}
+                <span className="hidden min-[400px]:inline-block text-[9px] font-bold text-gray-500 uppercase tracking-tighter w-12 font-bold text-emerald-600">
+                  {isOnline ? 'Online' : 'Offline'}
                 </span>
               </div>
             )}

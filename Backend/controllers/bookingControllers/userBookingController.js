@@ -772,6 +772,13 @@ const createBooking = async (req, res) => {
           try {
             await BookingRequest.insertMany(bookingRequests, { ordered: false });
             console.log(`[CreateBooking] Created ${bookingRequests.length} BookingRequest entries`);
+
+            // Alert vendors via Socket/FCM
+            const { getScheduler } = require('../../services/bookingScheduler');
+            const scheduler = getScheduler();
+            if (scheduler) {
+              await scheduler.notifyVendors(booking, booking.potentialVendors);
+            }
           } catch (err) {
             // Ignore duplicate key errors (if retrying)
             if (err.code !== 11000) console.error('[CreateBooking] BookingRequest insert error:', err);
