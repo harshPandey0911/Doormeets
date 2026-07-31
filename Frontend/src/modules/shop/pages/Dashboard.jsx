@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { MdAccountBalanceWallet, MdPeople, MdHourglassEmpty, MdCheckCircle, MdContentCopy, MdQrCodeScanner, MdShare } from 'react-icons/md';
+import { MdAccountBalanceWallet, MdPeople, MdHourglassEmpty, MdCheckCircle, MdContentCopy, MdQrCodeScanner, MdShare, MdEdit } from 'react-icons/md';
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -8,6 +8,10 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [inviteLinkText, setInviteLinkText] = useState('');
+  const [isEditingReferral, setIsEditingReferral] = useState(false);
+  const [referralCodeInput, setReferralCodeInput] = useState('');
+  const [savingReferral, setSavingReferral] = useState(false);
+  const [referralError, setReferralError] = useState('');
 
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -21,6 +25,9 @@ const Dashboard = () => {
         setData(response.data.data);
         if (response.data.data?.inviteLink) {
           setInviteLinkText(response.data.data.inviteLink);
+        }
+        if (response.data.data?.referralCode) {
+          setReferralCodeInput(response.data.data.referralCode);
         }
       } else {
         setError('Failed to fetch dashboard data.');
@@ -64,6 +71,107 @@ const Dashboard = () => {
       const text = `Join Doormeets as Vendor! Register using my link to get customer bookings: ${inviteLinkText}`;
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
       window.open(whatsappUrl, '_blank');
+    }
+  };
+
+  const handleSaveReferralCode = async () => {
+    if (!referralCodeInput.trim()) {
+      setReferralError('Referral code cannot be empty.');
+      return;
+    }
+    setSavingReferral(true);
+    setReferralError('');
+    try {
+      const token = localStorage.getItem('shopAccessToken');
+      const response = await axios.put(
+        `${API_URL}/shop/referral-code`,
+        { referralCode: referralCodeInput },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.success) {
+        setInviteLinkText(response.data.data.inviteLink);
+        setReferralCodeInput(response.data.data.referralCode);
+        
+        // Update localStorage for ShopLayout header
+        const shopUserStr = localStorage.getItem('shopUser');
+        if (shopUserStr) {
+          try {
+            const shopUserObj = JSON.parse(shopUserStr);
+            shopUserObj.referralCode = response.data.data.referralCode;
+            localStorage.setItem('shopUser', JSON.stringify(shopUserObj));
+          } catch (e) {
+            console.error('Error updating shopUser in localStorage:', e);
+          }
+        }
+        
+        setData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            referralCode: response.data.data.referralCode,
+            inviteLink: response.data.data.inviteLink,
+            inviteQrCodeDataUrl: response.data.data.inviteQrCodeDataUrl
+          };
+        });
+        
+        setIsEditingReferral(false);
+        // Reload to sync layout headers instantly
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+      setReferralError(err.response?.data?.message || 'Failed to update referral code.');
+    } finally {
+      setSavingReferral(false);
+    }
+  };
+
+  const handleSaveInviteLinkDirect = async () => {
+    if (!inviteLinkText.trim()) {
+      setReferralError('Link cannot be empty.');
+      return;
+    }
+
+    setSavingReferral(true);
+    setReferralError('');
+    try {
+      const token = localStorage.getItem('shopAccessToken');
+      const response = await axios.put(
+        `${API_URL}/shop/referral-code`,
+        { inviteLink: inviteLinkText },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.success) {
+        setInviteLinkText(response.data.data.inviteLink);
+        setReferralCodeInput(response.data.data.referralCode);
+        
+        const shopUserStr = localStorage.getItem('shopUser');
+        if (shopUserStr) {
+          try {
+            const shopUserObj = JSON.parse(shopUserStr);
+            shopUserObj.referralCode = response.data.data.referralCode;
+            localStorage.setItem('shopUser', JSON.stringify(shopUserObj));
+          } catch (e) {
+            console.error('Error updating shopUser in localStorage:', e);
+          }
+        }
+        
+        setData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            referralCode: response.data.data.referralCode,
+            inviteLink: response.data.data.inviteLink,
+            inviteQrCodeDataUrl: response.data.data.inviteQrCodeDataUrl
+          };
+        });
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+      setReferralError(err.response?.data?.message || 'Failed to update referral code.');
+    } finally {
+      setSavingReferral(false);
     }
   };
 
@@ -147,29 +255,117 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-4">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Your Invite Link</label>
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={inviteLinkText}
-                onChange={(e) => setInviteLinkText(e.target.value)}
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none text-gray-600 truncate"
-              />
-              <button
-                onClick={handleCopy}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-2xl font-semibold flex items-center space-x-2 transition cursor-pointer active:scale-95 shrink-0"
-              >
-                <MdContentCopy className="w-5 h-5" />
-                <span>{copied ? 'Copied!' : 'Copy'}</span>
-              </button>
-              <button
-                onClick={handleShare}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-2xl font-semibold flex items-center space-x-2 transition cursor-pointer active:scale-95 shrink-0"
-              >
-                <MdShare className="w-5 h-5" />
-                <span>Share</span>
-              </button>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Your Invite Link</label>
+              {!isEditingReferral && (
+                <button
+                  onClick={() => {
+                    setReferralError('');
+                    setIsEditingReferral(true);
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-500 font-bold flex items-center space-x-1 transition cursor-pointer"
+                >
+                  <MdEdit className="w-3.5 h-3.5" />
+                  <span>Customize Code</span>
+                </button>
+              )}
             </div>
+
+            {isEditingReferral ? (
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="bg-gray-100 text-gray-500 px-4 py-3 rounded-2xl text-xs font-semibold border border-gray-200 select-none">
+                    .../register?ref=
+                  </div>
+                  <input
+                    type="text"
+                    value={referralCodeInput}
+                    onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                    placeholder="ENTER-CUSTOM-CODE"
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm font-bold tracking-wider focus:outline-none text-gray-800 focus:border-blue-500 transition-all"
+                  />
+                </div>
+                {referralError && (
+                  <p className="text-xs font-semibold text-rose-600 px-1">{referralError}</p>
+                )}
+                <div className="flex space-x-2 justify-end">
+                  <button
+                    onClick={() => {
+                      setIsEditingReferral(false);
+                      setReferralCodeInput(data?.referralCode || '');
+                      setReferralError('');
+                    }}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer"
+                    disabled={savingReferral}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveReferralCode}
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer"
+                    disabled={savingReferral}
+                  >
+                    {savingReferral ? 'Saving...' : 'Save Code'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={inviteLinkText}
+                    onChange={(e) => {
+                      setInviteLinkText(e.target.value);
+                      setReferralError('');
+                    }}
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none text-gray-700 font-medium focus:border-blue-500 transition-all focus:bg-white"
+                    placeholder="http://localhost:5173/vendor/register?ref=YOUR_CODE"
+                  />
+                  {inviteLinkText === data?.inviteLink ? (
+                    <>
+                      <button
+                        onClick={handleCopy}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-2xl font-semibold flex items-center space-x-2 transition cursor-pointer active:scale-95 shrink-0"
+                      >
+                        <MdContentCopy className="w-5 h-5" />
+                        <span>{copied ? 'Copied!' : 'Copy'}</span>
+                      </button>
+                      <button
+                        onClick={handleShare}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-2xl font-semibold flex items-center space-x-2 transition cursor-pointer active:scale-95 shrink-0"
+                      >
+                        <MdShare className="w-5 h-5" />
+                        <span>Share</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setInviteLinkText(data?.inviteLink || '');
+                          setReferralError('');
+                        }}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-5 py-3 rounded-2xl font-semibold transition cursor-pointer active:scale-95 shrink-0"
+                        disabled={savingReferral}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveInviteLinkDirect}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-2xl font-semibold transition cursor-pointer active:scale-95 shrink-0"
+                        disabled={savingReferral}
+                      >
+                        {savingReferral ? 'Saving...' : 'Save'}
+                      </button>
+                    </>
+                  )}
+                </div>
+                {referralError && (
+                  <p className="text-xs font-semibold text-rose-600 px-1">{referralError}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

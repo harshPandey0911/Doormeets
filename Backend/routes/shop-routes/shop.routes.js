@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { register, login, getProfile, forgotPasswordSendOtp, forgotPasswordReset } = require('../../controllers/shopControllers/shopAuthController');
 const { deleteShopOwnerAccount } = require('../../controllers/adminControllers/deletedAccountsController');
-const { getDashboardDetails } = require('../../controllers/shopControllers/shopDashboardController');
+const { getDashboardDetails, updateReferralCode } = require('../../controllers/shopControllers/shopDashboardController');
 const { addVendor } = require('../../controllers/shopControllers/shopVendorController');
 const { authenticate } = require('../../middleware/authMiddleware');
 
@@ -16,6 +16,7 @@ router.delete('/auth/profile', authenticate, deleteShopOwnerAccount);
 
 // Dashboard stats & Referred vendors
 router.get('/dashboard', authenticate, getDashboardDetails);
+router.put('/referral-code', authenticate, updateReferralCode);
 
 // Add vendor
 router.post('/vendors/add', authenticate, addVendor);

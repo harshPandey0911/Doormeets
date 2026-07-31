@@ -38,6 +38,10 @@ const shopOwnerSchema = new mongoose.Schema({
     sparse: true,
     index: true
   },
+  inviteLink: {
+    type: String,
+    trim: true
+  },
   wallet: {
     balance: {
       type: Number,

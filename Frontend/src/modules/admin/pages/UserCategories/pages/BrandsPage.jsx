@@ -593,9 +593,19 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity, filterTemplateId }) => 
                     onChange={(e) => {
                       const catId = String(cat.id);
                       if (e.target.checked) {
-                        setForm(prev => ({ ...prev, categoryIds: [...prev.categoryIds, catId] }));
+                        // mutually exclusive select: only keep this category, clear subcategories
+                        setForm(prev => ({ 
+                          ...prev, 
+                          categoryIds: [catId],
+                          subCategoryIds: [] 
+                        }));
                       } else {
-                        setForm(prev => ({ ...prev, categoryIds: prev.categoryIds.filter((id) => id !== catId) }));
+                        // deselect
+                        setForm(prev => ({ 
+                          ...prev, 
+                          categoryIds: [],
+                          subCategoryIds: [] 
+                        }));
                       }
                     }}
                     className="rounded text-primary-600 focus:ring-primary-500"
@@ -606,34 +616,40 @@ const BrandsPage = ({ catalog, setCatalog, selectedCity, filterTemplateId }) => 
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">SubCategories (Optional)</label>
-            <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50">
-              {subCategories
-                .filter(sub => form.categoryIds.includes(String(sub.categoryId?._id || sub.categoryId || "")) && sub.hasBrand)
-                .map((sub) => (
-                <label key={sub._id || sub.id} className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.subCategoryIds.includes(String(sub._id || sub.id))}
-                    onChange={(e) => {
-                      const subId = String(sub._id || sub.id);
-                      if (e.target.checked) {
-                        setForm(prev => ({ ...prev, subCategoryIds: [...prev.subCategoryIds, subId] }));
-                      } else {
-                        setForm(prev => ({ ...prev, subCategoryIds: prev.subCategoryIds.filter((id) => id !== subId) }));
-                      }
-                    }}
-                    className="rounded text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700">{sub.title}</span>
-                </label>
-              ))}
-              {subCategories.filter(sub => form.categoryIds.includes(String(sub.categoryId?._id || sub.categoryId || ""))).length === 0 && (
-                <span className="text-sm text-gray-500 italic p-1">No subcategories available for selected categories.</span>
-              )}
-            </div>
-          </div>
+          {(() => {
+            const availableSubCats = subCategories.filter(
+              sub => form.categoryIds.includes(String(sub.categoryId?._id || sub.categoryId || ""))
+            );
+            if (availableSubCats.length === 0) return null;
+            return (
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">SubCategories (Optional)</label>
+                <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50">
+                  {availableSubCats.map((sub) => (
+                    <label key={sub._id || sub.id} className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.subCategoryIds.includes(String(sub._id || sub.id))}
+                        onChange={(e) => {
+                          const subId = String(sub._id || sub.id);
+                          if (e.target.checked) {
+                            setForm(prev => ({ ...prev, subCategoryIds: [...prev.subCategoryIds, subId] }));
+                          } else {
+                            setForm(prev => ({ ...prev, subCategoryIds: prev.subCategoryIds.filter((id) => id !== subId) }));
+                          }
+                        }}
+                        className="rounded text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700 font-semibold">{sub.title}</span>
+                      <span className="text-xs text-gray-400 ml-1">
+                        (under {sub.categoryId?.title || 'Unknown'})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Brand Icon</label>

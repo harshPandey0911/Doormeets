@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck, FiX } from 'react-icons/fi';
+import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../theme';
 import { register } from '../services/authService';
@@ -14,9 +14,9 @@ const VendorSignup = () => {
   const [formData, setFormData] = useState(() => {
     try {
       const saved = sessionStorage.getItem('vendorSignupDraft');
-      return saved ? JSON.parse(saved) : { name: '', phone: '', professionIds: [] };
+      return saved ? JSON.parse(saved) : { name: '', phone: '', professionIds: [], referralCode: '' };
     } catch {
-      return { name: '', phone: '', professionIds: [] };
+      return { name: '', phone: '', professionIds: [], referralCode: '' };
     }
   });
   const [professions, setProfessions] = useState([]);
@@ -140,7 +140,8 @@ const VendorSignup = () => {
         name: formData.name,
         phone: formData.phone,
         professionIds: formData.professionIds,
-        professionId: formData.professionIds[0] // Fallback for backward compatibility
+        professionId: formData.professionIds[0], // Fallback for backward compatibility
+        referralCode: formData.referralCode
       };
       const response = await register(payload);
       if (response.success) {
@@ -236,6 +237,30 @@ const VendorSignup = () => {
                       }}
                       className="block w-full pl-16 pr-4 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                       placeholder="98765 43210"
+                    />
+                  </div>
+                </div>
+
+                {/* Referral Code */}
+                <div>
+                  <label htmlFor="referralCode" className="block text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5 flex justify-between items-center">
+                    <span>Referral Code</span>
+                    <span className="text-[10px] text-gray-400 font-normal normal-case">Optional</span>
+                  </label>
+                  <div className="relative rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35] transition-all">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                      <FiGift className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="referralCode"
+                      name="referralCode"
+                      type="text"
+                      value={formData.referralCode || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setFormData(p => ({ ...p, referralCode: val }));
+                      }}
+                      className="block w-full pl-10 pr-4 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                     />
                   </div>
                 </div>
