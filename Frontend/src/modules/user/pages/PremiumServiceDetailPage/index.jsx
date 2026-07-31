@@ -172,15 +172,26 @@ const PremiumServiceDetailPage = () => {
     // Only add the individual item to cart directly
 
     // If there are packages or other services in the cart, clear them to keep individual services mutually exclusive
-    const hasPackagesOrOther = cartItems.some(item => 
-      String(getCartItemServiceId(item)) !== String(service?._id || service?.id) || 
-      item.title.includes('Package') || item.title.includes(service?.title)
-    );
+    const hasPackagesOrOther = cartItems.some(item => {
+      const itemServiceId = getCartItemServiceId(item);
+      const isSameService = String(itemServiceId) === String(service?._id || service?.id);
+      if (!isSameService) return true;
+
+      // If it is the same service, check if it's a package or the main service itself
+      const isSubItem = service.serviceGroups?.some(group => 
+        group.items?.some(sub => sub.title === item.title)
+      );
+      return !isSubItem;
+    });
+
     if (hasPackagesOrOther) {
       await clearCart();
     }
 
-    const existing = cartItems.find(entry => entry.title === subItem.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
+    const existing = hasPackagesOrOther
+      ? null
+      : cartItems.find(entry => entry.title === subItem.title && String(getCartItemServiceId(entry)) === String(service?._id || service?.id));
+
     if (existing) {
       await updateItem(existing._id || existing.id, (existing.serviceCount || 1) + 1);
     } else {
@@ -2041,15 +2052,16 @@ const PremiumServiceDetailPage = () => {
             </div>
 
 
-            {(!service.packages || service.packages.length === 0) && (!variants || variants.length === 0) && (
+            {(!service.packages || service.packages.length === 0) && (
               <div className="pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={handleAdd}
-                  className="w-full py-4 rounded-2xl font-black text-white text-xs shadow-lg transition-transform hover:scale-[1.01] uppercase tracking-wider cursor-pointer"
+                  className="w-full py-4 rounded-2xl font-black text-white text-xs shadow-lg transition-transform hover:scale-[1.01] uppercase tracking-wider cursor-pointer flex items-center justify-between px-6"
                   style={{ background: 'linear-gradient(to right, var(--primary), var(--primary-dark, #e08a30))' }}
                 >
-                  Add to Cart
+                  <span className="text-sm font-black">₹{finalPrice}</span>
+                  <span>{variants.length > 0 ? 'Select & Add to Cart' : 'Add to Cart'}</span>
                 </button>
               </div>
             )}

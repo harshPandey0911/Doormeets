@@ -119,7 +119,6 @@ const _buildVendorQuery = (filters = {}) => {
     approvalStatus: VENDOR_STATUS.APPROVED,
     isActive: true,
     isOnline: true, // Only fetch online vendors for bookings
-    currentSocketId: { $ne: null }, // MUST be actively connected
     availability: { $in: ['AVAILABLE', 'BUSY'] },
     ...queryFilters
   };

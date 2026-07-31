@@ -196,6 +196,7 @@ const Wallet = () => {
     }
     switch (txn.type) {
       case 'cash_collected':
+      case 'cash_collection':
         return <FiArrowDown className="w-5 h-5 text-red-500" />;
       case 'earnings_credit':
         return <FiArrowUp className="w-5 h-5 text-green-500" />;
@@ -221,6 +222,7 @@ const Wallet = () => {
     }
     switch (txn.type) {
       case 'cash_collected':
+      case 'cash_collection':
         return 'Cash Collected';
       case 'earnings_credit':
         return 'Earnings Credited';
@@ -455,7 +457,7 @@ const Wallet = () => {
                     className="bg-white rounded-md p-3.5 shadow-2xs border-l-4 cursor-pointer hover:bg-gray-50 transition-colors"
                     style={{
                       borderLeftColor:
-                        txn.type === 'cash_collected' ? '#DC2626' :
+                        ['cash_collected', 'cash_collection'].includes(txn.type) ? '#DC2626' :
                           isIncentive ? '#10B981' :
                             txn.type === 'settlement' ? '#10B981' :
                               txn.type === 'withdrawal' ? '#8B5CF6' :
@@ -468,7 +470,7 @@ const Wallet = () => {
                         className="w-10 h-10 md:w-11 md:h-11 rounded-md flex items-center justify-center"
                         style={{
                           background:
-                            txn.type === 'cash_collected' ? '#FEE2E2' :
+                            ['cash_collected', 'cash_collection'].includes(txn.type) ? '#FEE2E2' :
                               isIncentive ? '#D1FAE5' :
                                 txn.type === 'settlement' ? '#D1FAE5' :
                                   txn.type === 'withdrawal' ? '#EDE9FE' :
@@ -484,11 +486,11 @@ const Wallet = () => {
                           <p className="font-bold text-gray-900 text-xs md:text-sm">
                             {getTransactionLabel(txn)}
                           </p>
-                          <p className={`text-base font-bold whitespace-nowrap flex-shrink-0 ml-2 text-right ${['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee', 'credit_deduct'].includes(txn.type)
+                          <p className={`text-base font-bold whitespace-nowrap flex-shrink-0 ml-2 text-right ${['cash_collected', 'cash_collection', 'tds_deduction', 'withdrawal', 'platform_fee', 'credit_deduct'].includes(txn.type)
                             ? 'text-red-600'
                             : 'text-green-600'
                             }`}>
-                            {['cash_collected', 'tds_deduction', 'withdrawal', 'platform_fee', 'credit_deduct'].includes(txn.type) ? '-' : '+'}{txn.type.startsWith('credit_') ? Math.abs(txn.amount).toLocaleString() : (Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-[10px]">Credits</span>
+                            {['cash_collected', 'cash_collection', 'tds_deduction', 'withdrawal', 'platform_fee', 'credit_deduct'].includes(txn.type) ? '-' : '+'}{txn.type.startsWith('credit_') ? Math.abs(txn.amount).toLocaleString() : (Math.abs(txn.amount) / 10).toLocaleString()} <span className="text-[10px]">Credits</span>
                           </p>
                         </div>
 
