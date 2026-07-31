@@ -221,6 +221,10 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: 'Your privacy policy content here.'
   },
+  termsAndConditions: {
+    type: String,
+    default: 'Your terms and conditions content here.'
+  },
   isOnlinePaymentEnabled: {
     type: Boolean,
     default: true

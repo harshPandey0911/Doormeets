@@ -396,6 +396,9 @@ const VendorLogin = () => {
               </p>
             )}
             <p className="mt-2 text-center text-[10px] text-gray-400 font-normal">
+              By continuing, you agree to Doormeets' <Link to="/vendor/terms-and-conditions" className="text-gray-500 hover:text-gray-700 underline font-medium">Terms & Conditions</Link> & <Link to="/vendor/privacy-policy" className="text-gray-500 hover:text-gray-700 underline font-medium">Privacy Policy</Link>
+            </p>
+            <p className="mt-1 text-center text-[10px] text-gray-400 font-normal">
               &copy; {new Date().getFullYear()} Doormeets. All rights reserved.
             </p>
           </div>

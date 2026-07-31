@@ -24,6 +24,10 @@ const subscriptionPlanSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
+  isPopular: {
+    type: Boolean,
+    default: false
+  },
   status: {
     type: String,
     enum: ['active', 'hide'],

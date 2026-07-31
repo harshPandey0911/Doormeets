@@ -6,7 +6,12 @@ const SubscriptionPlan = require('../../models/SubscriptionPlan');
 const getAllPlans = async (req, res) => {
   try {
     const plans = await SubscriptionPlan.find().sort({ price: 1 });
-    res.status(200).json({ success: true, data: plans });
+    const normalizedPlans = plans.map(p => {
+      const pObj = p.toObject();
+      pObj.isActive = pObj.isActive === true || (pObj.isActive !== false && pObj.status !== 'hide');
+      return pObj;
+    });
+    res.status(200).json({ success: true, data: normalizedPlans });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -17,7 +22,11 @@ const getAllPlans = async (req, res) => {
  */
 const createPlan = async (req, res) => {
   try {
-    const plan = await SubscriptionPlan.create(req.body);
+    const payload = { ...req.body };
+    if (payload.isActive !== undefined) {
+      payload.status = payload.isActive ? 'active' : 'hide';
+    }
+    const plan = await SubscriptionPlan.create(payload);
     res.status(201).json({ success: true, data: plan });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -29,7 +38,11 @@ const createPlan = async (req, res) => {
  */
 const updatePlan = async (req, res) => {
   try {
-    const plan = await SubscriptionPlan.findByIdAndUpdate(req.params.id, req.body, {
+    const updateData = { ...req.body };
+    if (updateData.isActive !== undefined) {
+      updateData.status = updateData.isActive ? 'active' : 'hide';
+    }
+    const plan = await SubscriptionPlan.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });

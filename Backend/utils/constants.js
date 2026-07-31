@@ -89,6 +89,8 @@ const VENDOR_STATUS = {
   APPROVED: 'approved',
   REJECTED: 'rejected',
   SUSPENDED: 'suspended',
+  UNDER_REVIEW: 'under_review',
+  TRAINING_COMPLETED: 'training_completed',
   TRAINING_PENDING: 'training_pending', // Docs approved, training not yet done
   TRAINING_FAILED: 'training_failed'    // Failed training (score < 50%)
 };

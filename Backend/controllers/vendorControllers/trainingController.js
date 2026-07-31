@@ -406,6 +406,10 @@ const submitTest = async (req, res) => {
     const levelNumber = levelAssigned === 'L1' ? 1 : levelAssigned === 'L2' ? 2 : 3;
     const vendorUpdate = {
       'training.status': passed ? 'completed' : 'failed',
+      'training.score': scorePercent,
+      'training.totalQuestions': totalQuestions,
+      'training.correctAnswers': correctCount,
+      'training.assignedLevel': levelNumber,
       'training.completedAt': passed ? new Date() : null,
       'training.attemptCount': newAttemptNumber,
       'training.lastAttemptAt': new Date(),
@@ -421,10 +425,8 @@ const submitTest = async (req, res) => {
       vendorUpdate['training.nextAttemptAllowedAt'] = nextAllowed;
     } else {
       vendorUpdate['training.nextAttemptAllowedAt'] = null;
-      // Move vendor to training_pending so admin can review & approve
-      if (vendor.approvalStatus !== 'approved') {
-        vendorUpdate.approvalStatus = 'training_pending';
-      }
+      // Mark vendor as approved once training is passed
+      vendorUpdate.approvalStatus = 'approved';
     }
 
     await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdate });

@@ -31,7 +31,7 @@ const AllVendors = () => {
       try {
         const response = await categoryService.getAll();
         if (response.success) {
-          setCategories(response.categories || []);
+          setCategories(response.categories || response.data || []);
         }
       } catch (error) {
         console.error('Error loading categories:', error);
@@ -53,6 +53,8 @@ const AllVendors = () => {
           phone: vendor.phone,
           businessName: vendor.businessName,
           service: vendor.service,
+          categories: vendor.categories || [],
+          professions: vendor.professions || [],
           subCategories: vendor.subCategories || [],
           brands: vendor.brands || [],
           approvalStatus: vendor.approvalStatus,
@@ -90,22 +92,63 @@ const AllVendors = () => {
     }
   };
 
+  const handleDownloadDocument = async (e, url, filename = 'document.jpg') => {
+    if (e) e.preventDefault();
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      window.open(url, '_blank');
+    }
+  };
+
   const filteredVendors = useMemo(() => {
     // Helper to resolve ObjectIds to titles
-    const resolveServiceNames = (services) => {
-      if (!Array.isArray(services)) return services;
-      return services.map(s => {
-        if (/^[0-9a-fA-F]{24}$/.test(s)) {
-          const cat = categories.find(c => c.id === s || c._id === s);
-          return cat ? cat.title : s;
+    const resolveServiceNames = (vendor) => {
+      if (!vendor) return [];
+      const rawServices = [
+        ...(Array.isArray(vendor.service) ? vendor.service : (vendor.service ? [vendor.service] : [])),
+        ...(Array.isArray(vendor.categories) ? vendor.categories : (vendor.categories ? [vendor.categories] : []))
+      ];
+
+      if (vendor.professions && Array.isArray(vendor.professions)) {
+        vendor.professions.forEach(p => {
+          if (typeof p === 'object' && p !== null && (p.title || p.name)) {
+            rawServices.push(p.title || p.name);
+          } else if (typeof p === 'string') {
+            rawServices.push(p);
+          }
+        });
+      }
+
+      if (rawServices.length === 0) return [];
+
+      const resolved = rawServices.map(s => {
+        if (!s) return null;
+        if (typeof s === 'object' && (s.title || s.name)) return s.title || s.name;
+        const sStr = String(s);
+        if (/^[0-9a-fA-F]{24}$/.test(sStr)) {
+          const cat = categories.find(c => String(c.id || c._id) === sStr);
+          return cat ? (cat.title || cat.name) : sStr;
         }
-        return s;
+        return sStr;
       });
+
+      return [...new Set(resolved.filter(Boolean))];
     };
 
     return vendors.map(vendor => ({
       ...vendor,
-      resolvedService: resolveServiceNames(vendor.service)
+      resolvedService: resolveServiceNames(vendor)
     })).filter(vendor => {
       const serviceString = Array.isArray(vendor.resolvedService)
         ? vendor.resolvedService.join(' ')
@@ -114,9 +157,9 @@ const AllVendors = () => {
       const matchesStatus = filterStatus === 'all' || vendor.approvalStatus === filterStatus;
 
       const matchesSearch =
-        vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendor.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendor.phone.includes(searchQuery) ||
+        (vendor.name && vendor.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (vendor.email && vendor.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (vendor.phone && vendor.phone.includes(searchQuery)) ||
         serviceString.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (vendor.businessName && vendor.businessName.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesStatus && matchesSearch;
@@ -251,20 +294,36 @@ const AllVendors = () => {
   };
 
   const handleViewDetails = (vendor) => {
-    setSelectedVendor(vendor);
+    setSelectedVendor({
+      ...vendor,
+      resolvedService: vendor.resolvedService || resolveServiceNames(vendor)
+    });
     setIsViewModalOpen(true);
   };
 
   const getStatusBadge = (status) => {
+    const s = (status || 'pending').toLowerCase();
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      under_review: 'bg-amber-100 text-amber-800 border-amber-300',
+      training_completed: 'bg-purple-100 text-purple-800 border-purple-300',
+      training_pending: 'bg-amber-100 text-amber-800 border-amber-300',
       approved: 'bg-green-100 text-green-800 border-green-300',
       rejected: 'bg-red-100 text-red-800 border-red-300'
     };
 
+    const labelMap = {
+      pending: 'Signup Only',
+      under_review: 'Under Review',
+      training_completed: 'Training Completed',
+      training_pending: 'Under Review',
+      approved: 'Approved',
+      rejected: 'Rejected'
+    };
+
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[status] || styles.pending}`}>
-        {status === 'pending' ? 'Signup Only' : (status.charAt(0).toUpperCase() + status.slice(1))}
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles[s] || styles.pending}`}>
+        {labelMap[s] || (status ? status.replace('_', ' ').toUpperCase() : 'PENDING')}
       </span>
     );
   };
@@ -488,30 +547,20 @@ const AllVendors = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-                <div className="text-gray-900">{selectedVendor.email}</div>
+                <div className="text-gray-900">{selectedVendor.email || 'N/A'}</div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
-                <div className="text-gray-900">{selectedVendor.phone}</div>
+                <div className="text-gray-900">{selectedVendor.phone || 'N/A'}</div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Service Category</label>
-                <div className="text-gray-900">
-                  {Array.isArray(selectedVendor.service) 
-                    ? selectedVendor.service.map(s => {
-                        if (/^[0-9a-fA-F]{24}$/.test(s)) {
-                          const cat = categories.find(c => c.id === s || c._id === s);
-                          return cat ? cat.title : s;
-                        }
-                        return s;
-                      }).join(', ') 
-                    : (selectedVendor.service || 'N/A')}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Years of Experience</label>
-                <div className="text-gray-900">
-                  {selectedVendor.experience || 0} Years
+                <div className="text-gray-900 font-semibold text-blue-700">
+                  {Array.isArray(selectedVendor.resolvedService) && selectedVendor.resolvedService.length > 0
+                    ? selectedVendor.resolvedService.join(', ')
+                    : (Array.isArray(selectedVendor.service) && selectedVendor.service.length > 0
+                        ? selectedVendor.service.join(', ')
+                        : (selectedVendor.service || 'N/A'))}
                 </div>
               </div>
               <div>
@@ -537,7 +586,7 @@ const AllVendors = () => {
             </div>
 
             {/* Training Test Results */}
-            {selectedVendor.training && selectedVendor.training.status === 'completed' && (
+            {selectedVendor.training && (selectedVendor.training.status === 'completed' || selectedVendor.trainingScore > 0 || selectedVendor.training?.score > 0) && (
               <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 mt-6">
                 <h4 className="text-sm font-bold text-purple-900 mb-3 flex items-center gap-2">
                   <FiAward className="text-purple-600" />
@@ -546,20 +595,22 @@ const AllVendors = () => {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs text-purple-600 mb-1">Score</label>
-                    <div className="font-bold text-purple-900">{selectedVendor.training.score}%</div>
+                    <div className="font-bold text-purple-900">
+                      {selectedVendor.training.score ?? selectedVendor.trainingScore ?? 0}%
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs text-purple-600 mb-1">Correct Answers</label>
                     <div className="font-bold text-purple-900">
-                      {selectedVendor.training.correctAnswers} / {selectedVendor.training.totalQuestions}
+                      {selectedVendor.training.correctAnswers || 0} / {selectedVendor.training.totalQuestions || 0}
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs text-purple-600 mb-1">Assigned Level</label>
                     <div className="font-bold text-purple-900">
-                      Level {selectedVendor.training.assignedLevel} 
+                      Level {selectedVendor.training.assignedLevel || (selectedVendor.currentLevel === 'L1' ? 1 : selectedVendor.currentLevel === 'L2' ? 2 : 3)} 
                       <span className="text-xs font-normal text-purple-700 ml-1">
-                        ({selectedVendor.training.assignedLevel === 1 ? 'Expert' : selectedVendor.training.assignedLevel === 2 ? 'Professional' : 'Beginner'})
+                        ({(selectedVendor.training.assignedLevel || (selectedVendor.currentLevel === 'L1' ? 1 : selectedVendor.currentLevel === 'L2' ? 2 : 3)) === 1 ? 'Expert' : (selectedVendor.training.assignedLevel || (selectedVendor.currentLevel === 'L1' ? 1 : selectedVendor.currentLevel === 'L2' ? 2 : 3)) === 2 ? 'Professional' : 'Beginner'})
                       </span>
                     </div>
                   </div>
@@ -579,14 +630,14 @@ const AllVendors = () => {
                       alt="Aadhar Front"
                       className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
                     />
-                    <a
-                      href={selectedVendor.documents.aadhar}
-                      download
-                      className="mt-2 inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                    <button
+                      type="button"
+                      onClick={(e) => handleDownloadDocument(e, selectedVendor.documents.aadhar, `Aadhar_Front_${selectedVendor.name || 'Vendor'}.jpg`)}
+                      className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 cursor-pointer"
                     >
                       <FiDownload className="w-4 h-4" />
                       Download
-                    </a>
+                    </button>
                   </div>
                 )}
                 {selectedVendor.documents.aadharBack && (
@@ -597,14 +648,14 @@ const AllVendors = () => {
                       alt="Aadhar Back"
                       className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
                     />
-                    <a
-                      href={selectedVendor.documents.aadharBack}
-                      download
-                      className="mt-2 inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                    <button
+                      type="button"
+                      onClick={(e) => handleDownloadDocument(e, selectedVendor.documents.aadharBack, `Aadhar_Back_${selectedVendor.name || 'Vendor'}.jpg`)}
+                      className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 cursor-pointer"
                     >
                       <FiDownload className="w-4 h-4" />
                       Download
-                    </a>
+                    </button>
                   </div>
                 )}
                 {selectedVendor.documents.pan && (
@@ -615,14 +666,14 @@ const AllVendors = () => {
                       alt="PAN"
                       className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
                     />
-                    <a
-                      href={selectedVendor.documents.pan}
-                      download
-                      className="mt-2 inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                    <button
+                      type="button"
+                      onClick={(e) => handleDownloadDocument(e, selectedVendor.documents.pan, `PAN_${selectedVendor.name || 'Vendor'}.jpg`)}
+                      className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 cursor-pointer"
                     >
                       <FiDownload className="w-4 h-4" />
                       Download
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>

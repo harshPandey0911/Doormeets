@@ -123,64 +123,127 @@ const TrainingModule = ({ formData, setFormData, onNext, onBack }) => {
     return null;
   }
 
-  const currentVideo = videos.length > 0 ? videos[0] : null;
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const currentVideo = videos.length > 0 ? videos[currentVideoIndex] || videos[0] : null;
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden mt-8 border border-gray-100">
       <div className="p-8">
         <div className="flex items-center justify-center gap-3 mb-2">
           <FiAward className="text-3xl text-purple-600" />
-          <h2 className="text-2xl font-bold text-gray-800 text-center">Vendor Training</h2>
+          <h2 className="text-2xl font-bold text-gray-800 text-center">
+            Vendor Training {videos.length > 1 ? `(${currentVideoIndex + 1}/${videos.length})` : ''}
+          </h2>
         </div>
-        <p className="text-center text-gray-500 mb-8">Watch the video and answer a few questions to complete your profile.</p>
+        <p className="text-center text-gray-500 mb-6">
+          {currentVideo?.title ? `Video ${currentVideoIndex + 1}: ${currentVideo.title}` : 'Watch the video and answer a few questions to complete your profile.'}
+        </p>
+
+        {/* Multiple videos indicator pills */}
+        {videos.length > 1 && !videoWatched && (
+          <div className="flex items-center justify-start sm:justify-center gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 px-1 scrollbar-none max-w-full">
+            {videos.map((v, idx) => (
+              <button
+                key={v._id || idx}
+                type="button"
+                onClick={() => setCurrentVideoIndex(idx)}
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                  idx === currentVideoIndex
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <span>Video {idx + 1}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {!videoWatched ? (
           <div className="space-y-6">
             <div className="aspect-video bg-gray-900 rounded-xl overflow-hidden relative group flex items-center justify-center">
-              {/* Placeholder for YouTube Video */}
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                <button 
-                  onClick={() => {
-                    setVideoWatched(true);
-                    if (questions.length === 0) {
-                      calculateResults();
-                    }
-                  }}
-                  className="w-16 h-16 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center backdrop-blur-sm transition-all transform hover:scale-110"
-                >
-                  <FiPlayCircle className="text-white text-4xl" />
-                </button>
-              </div>
-              <img 
-                src={currentVideo?.thumbnailUrl || "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"} 
-                alt="Training Video Thumbnail" 
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute bottom-4 left-4 right-4 text-white">
-                <h3 className="font-bold text-lg drop-shadow-md">{currentVideo?.title || 'Professional Guidelines'}</h3>
-                <p className="text-sm opacity-90 drop-shadow-md">{currentVideo?.description || 'Watch this video to proceed'}</p>
-              </div>
+              {currentVideo?.videoUrl ? (
+                (() => {
+                  const url = currentVideo.videoUrl.trim();
+                  const ytMatch = /^[a-zA-Z0-9_-]{11}$/.test(url) ? url : url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+                  return ytMatch ? (
+                    <iframe
+                      key={ytMatch}
+                      src={`https://www.youtube.com/embed/${ytMatch}`}
+                      className="w-full h-full"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={currentVideo.title}
+                    />
+                  ) : (
+                    <video
+                      key={currentVideo.videoUrl}
+                      src={currentVideo.videoUrl}
+                      controls
+                      className="w-full h-full object-cover"
+                    />
+                  );
+                })()
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                    <button 
+                      onClick={() => {
+                        if (currentVideoIndex < videos.length - 1) {
+                          setCurrentVideoIndex(prev => prev + 1);
+                        } else {
+                          setVideoWatched(true);
+                          if (questions.length === 0) calculateResults();
+                        }
+                      }}
+                      className="w-16 h-16 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center backdrop-blur-sm transition-all transform hover:scale-110"
+                    >
+                      <FiPlayCircle className="text-white text-4xl" />
+                    </button>
+                  </div>
+                  <img 
+                    src={currentVideo?.thumbnailUrl || "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"} 
+                    alt="Training Video Thumbnail" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h3 className="font-bold text-lg drop-shadow-md">{currentVideo?.title || 'Professional Guidelines'}</h3>
+                    <p className="text-sm opacity-90 drop-shadow-md">{currentVideo?.description || 'Watch this video to proceed'}</p>
+                  </div>
+                </>
+              )}
             </div>
             
             <div className="flex justify-between items-center">
               <button
                 type="button"
-                onClick={onBack}
+                onClick={() => {
+                  if (currentVideoIndex > 0) {
+                    setCurrentVideoIndex(prev => prev - 1);
+                  } else {
+                    onBack();
+                  }
+                }}
                 className="py-2 px-6 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
               >
-                Back
+                {currentVideoIndex > 0 ? 'Previous Video' : 'Back'}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setVideoWatched(true);
-                  if (questions.length === 0) {
-                    calculateResults();
+                  if (currentVideoIndex < videos.length - 1) {
+                    setCurrentVideoIndex(prev => prev + 1);
+                  } else {
+                    setVideoWatched(true);
+                    if (questions.length === 0) {
+                      calculateResults();
+                    }
                   }
                 }}
                 className="py-2 px-6 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-md"
               >
-                I have watched the video
+                {currentVideoIndex < videos.length - 1 ? `Next Video (${currentVideoIndex + 2}/${videos.length}) →` : 'I have watched the video'}
               </button>
             </div>
           </div>

@@ -21,10 +21,8 @@ const getRazorpayInstance = () => {
 const getActivePlans = async (req, res) => {
   try {
     const plans = await SubscriptionPlan.find({
-      $or: [
-        { status: 'active' },
-        { isActive: true, status: { $exists: false } }
-      ]
+      isActive: { $ne: false },
+      status: { $ne: 'hide' }
     }).sort({ price: 1 });
     res.status(200).json({ success: true, data: plans });
   } catch (error) {

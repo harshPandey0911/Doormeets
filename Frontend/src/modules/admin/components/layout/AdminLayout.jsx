@@ -86,6 +86,7 @@ const AdminLayout = () => {
     const handleAdminBookingRequest = (data) => {
       console.log('💼 Admin Booking Request received:', data);
       window.dispatchEvent(new CustomEvent('adminBookingUpdated'));
+      const toastId = `admin-req-${data.bookingId || data.bookingNumber || Date.now()}`;
       toast.custom((t) => (
         <div className="bg-white dark:bg-gray-800 border-2 border-blue-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3 max-w-sm pointer-events-auto transition-all animate-slide-up">
           <span className="text-2xl">💼</span>
@@ -105,6 +106,7 @@ const AdminLayout = () => {
           <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
         </div>
       ), {
+        id: toastId,
         duration: Infinity,
         position: 'top-right'
       });
@@ -116,6 +118,7 @@ const AdminLayout = () => {
     const handleAdminBookingRejected = (data) => {
       console.log('💼 Admin Booking Rejection received:', data);
       window.dispatchEvent(new CustomEvent('adminBookingUpdated'));
+      const toastId = `admin-reject-${data.bookingId || data.bookingNumber || Date.now()}`;
       toast.custom((t) => (
         <div className="bg-white dark:bg-gray-800 border-2 border-red-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3 max-w-sm pointer-events-auto transition-all animate-slide-up">
           <span className="text-2xl">❌</span>
@@ -127,7 +130,7 @@ const AdminLayout = () => {
                 toast.dismiss(t.id);
                 navigate(`/admin/bookings/${data.bookingId}`);
               }}
-              className="mt-2 px-3 py-1.5 bg-red-650 hover:bg-red-750 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
+              className="mt-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition-colors shadow-sm"
             >
               Reassign Vendor Now
             </button>
@@ -135,6 +138,7 @@ const AdminLayout = () => {
           <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
         </div>
       ), {
+        id: toastId,
         duration: Infinity,
         position: 'top-right'
       });
@@ -144,6 +148,7 @@ const AdminLayout = () => {
     const handleBookingEscalation = (data) => {
       console.log('🚨 Booking Escalation/Cancellation received:', data);
       window.dispatchEvent(new CustomEvent('adminBookingUpdated'));
+      const toastId = `admin-escalate-${data.bookingId || data.bookingNumber || Date.now()}`;
       toast.custom((t) => (
         <div className="bg-white dark:bg-gray-800 border-2 border-red-500 rounded-2xl p-4 shadow-2xl flex items-start gap-3 max-w-sm pointer-events-auto transition-all animate-slide-up">
           <span className="text-2xl">⚠️</span>
@@ -190,6 +195,7 @@ const AdminLayout = () => {
           <button onClick={() => toast.dismiss(t.id)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
         </div>
       ), {
+        id: toastId,
         duration: Infinity,
         position: 'top-right'
       });

@@ -303,7 +303,10 @@ const Wallet = () => {
               <p className="text-gray-500 text-xs">Last 7 Days</p>
             </div>
             <div className="text-right">
-              <h2 className="text-xl md:text-2xl font-black text-gray-900">{(displayCredits + (wallet.totalCashCollected / 10)).toLocaleString()} <span className="text-xs font-bold text-gray-500">Credits</span></h2>
+              <h2 className="text-xl md:text-2xl font-black text-gray-900">{(() => {
+                const total = Number(rawCredits || 0) + Number(wallet.totalCashCollected || 0) / 10;
+                return Number.isInteger(total) ? total : total.toFixed(2);
+              })()} <span className="text-xs font-bold text-gray-500">Credits</span></h2>
             </div>
           </div>
 

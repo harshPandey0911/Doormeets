@@ -2,6 +2,7 @@ const Vendor = require('../../models/Vendor');
 const Booking = require('../../models/Booking');
 const VendorBill = require('../../models/VendorBill');
 const City = require('../../models/City');
+const Profession = require('../../models/Profession');
 const { validationResult } = require('express-validator');
 const { VENDOR_STATUS, BOOKING_STATUS, PAYMENT_STATUS } = require('../../utils/constants');
 const { createNotification } = require('../notificationControllers/notificationController');
@@ -67,16 +68,53 @@ const getAllVendors = async (req, res) => {
     // Get vendors
     const vendors = await Vendor.find(query)
       .select('-password')
+      .populate('professions', 'name title')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
+
+    // Fetch latest TrainingAttempt data for vendors to populate training results
+    const TrainingAttempt = require('../../models/TrainingAttempt');
+    const vendorIds = vendors.map(v => v._id);
+    const attempts = await TrainingAttempt.find({ vendorId: { $in: vendorIds }, completedAt: { $ne: null } })
+      .sort({ completedAt: -1 });
+
+    const latestAttemptMap = {};
+    attempts.forEach(att => {
+      if (!att || !att.vendorId) return;
+      const vid = att.vendorId.toString();
+      if (!latestAttemptMap[vid]) {
+        latestAttemptMap[vid] = att;
+      }
+    });
+
+    // Automatically upgrade any vendor with completed training / training_pending status to approved
+    await Vendor.updateMany({ approvalStatus: 'training_pending' }, { $set: { approvalStatus: 'approved' } });
+
+    const vendorsWithTraining = vendors.map(v => {
+      const vObj = v.toObject();
+      const att = latestAttemptMap[v._id.toString()];
+      if (att) {
+        if (!vObj.training) vObj.training = {};
+        vObj.training.status = 'completed';
+        vObj.training.score = att.score;
+        vObj.training.correctAnswers = att.correctAnswers;
+        vObj.training.totalQuestions = att.totalQuestions;
+        const levelNum = att.levelAssigned === 'L1' ? 1 : att.levelAssigned === 'L2' ? 2 : 3;
+        vObj.training.assignedLevel = levelNum;
+      }
+      if (vObj.approvalStatus === 'training_pending' || (vObj.training && vObj.training.status === 'completed' && vObj.approvalStatus === 'pending')) {
+        vObj.approvalStatus = 'approved';
+      }
+      return vObj;
+    });
 
     // Get total count
     const total = await Vendor.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: vendors,
+      data: vendorsWithTraining,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -144,10 +182,26 @@ const getVendorDetails = async (req, res) => {
       totalRevenue: earningsResult[0]?.totalRevenue || 0
     }];
 
+    // Fetch latest TrainingAttempt if exists
+    const TrainingAttempt = require('../../models/TrainingAttempt');
+    const latestAttempt = await TrainingAttempt.findOne({ vendorId: vendor._id, completedAt: { $ne: null } })
+      .sort({ completedAt: -1 });
+
+    const vendorObj = vendor.toObject();
+    if (latestAttempt) {
+      if (!vendorObj.training) vendorObj.training = {};
+      vendorObj.training.status = 'completed';
+      vendorObj.training.score = latestAttempt.score;
+      vendorObj.training.correctAnswers = latestAttempt.correctAnswers;
+      vendorObj.training.totalQuestions = latestAttempt.totalQuestions;
+      const levelNum = latestAttempt.levelAssigned === 'L1' ? 1 : latestAttempt.levelAssigned === 'L2' ? 2 : 3;
+      vendorObj.training.assignedLevel = levelNum;
+    }
+
     res.status(200).json({
       success: true,
       data: {
-        vendor,
+        vendor: vendorObj,
         stats: bookingStats[0] || {
           totalBookings: 0,
           completedBookings: 0,

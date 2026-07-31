@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck, FiGift } from 'react-icons/fi';
+import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../theme';
 import { register } from '../services/authService';
@@ -23,11 +23,36 @@ const VendorSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProfessions, setLoadingProfessions] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
+  const [modalType, setModalType] = useState(null); // 'terms' | 'privacy' | null
+  const [legalContent, setLegalContent] = useState({ terms: '', privacy: '' });
+  const [fetchingLegal, setFetchingLegal] = useState(false);
 
   // Save draft form data to sessionStorage on change
   useEffect(() => {
     sessionStorage.setItem('vendorSignupDraft', JSON.stringify(formData));
   }, [formData]);
+
+  const openModal = async (type) => {
+    setModalType(type);
+    if ((type === 'terms' && legalContent.terms) || (type === 'privacy' && legalContent.privacy)) return;
+    
+    setFetchingLegal(true);
+    try {
+      const res = await api.get('/public/settings');
+      if (res.data?.success && res.data?.settings) {
+        setLegalContent({
+          terms: res.data.settings.termsAndConditions || 'Terms and Conditions not configured.',
+          privacy: res.data.settings.privacyPolicy || 'Privacy Policy not configured.'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load legal policy settings:', err);
+      toast.error('Could not load content');
+    } finally {
+      setFetchingLegal(false);
+    }
+  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -102,6 +127,10 @@ const VendorSignup = () => {
     }
     if (!formData.professionIds || formData.professionIds.length === 0) {
       toast.error('Please select at least one profession');
+      return;
+    }
+    if (!agreedToTerms) {
+      toast.error('Please accept the Terms & Conditions and Privacy Policy to continue');
       return;
     }
 
@@ -304,10 +333,39 @@ const VendorSignup = () => {
                   )}
                 </div>
 
+                {/* Terms and Privacy Policy Agreement */}
+                <div className="flex items-start gap-2 pt-1">
+                  <input
+                    id="agreedToTerms"
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 rounded border-gray-300 text-[#B33A35] focus:ring-[#B33A35]"
+                  />
+                  <label htmlFor="agreedToTerms" className="text-[11px] text-gray-600 leading-snug">
+                    I agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => openModal('terms')}
+                      className="text-[#B33A35] font-bold hover:underline"
+                    >
+                      Terms & Conditions
+                    </button>{' '}
+                    and{' '}
+                    <button
+                      type="button"
+                      onClick={() => openModal('privacy')}
+                      className="text-[#B33A35] font-bold hover:underline"
+                    >
+                      Privacy Policy
+                    </button>
+                  </label>
+                </div>
+
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 mt-1.5 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
+                  className="w-full py-3 mt-1 bg-[#B33A35] hover:bg-[#9E2E2A] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-all duration-300 text-center flex justify-center items-center gap-2 shadow-lg shadow-[#B33A35]/20 cursor-pointer active:scale-[0.98]"
                 >
                   {isLoading ? (
                     <LogoLoader fullScreen={false} inline={true} size="w-5 h-5" />
@@ -337,6 +395,47 @@ const VendorSignup = () => {
         </div>
 
       </div>
+
+      {/* Dynamic Legal Policy Modal */}
+      {modalType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-gray-900 text-base">
+                {modalType === 'terms' ? 'Terms & Conditions' : 'Privacy Policy'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModalType(null)}
+                className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-gray-600 shadow-xs border border-gray-200 transition-all active:scale-95"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto text-xs text-gray-700 leading-relaxed font-normal whitespace-pre-wrap">
+              {fetchingLegal ? (
+                <div className="py-12 text-center text-gray-400">Loading policy details...</div>
+              ) : (
+                (modalType === 'terms' ? legalContent.terms : legalContent.privacy) || 'No details available.'
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3 border-t border-gray-100 flex justify-end bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setModalType(null)}
+                className="px-5 py-2 bg-[#B33A35] text-white text-xs font-bold rounded-xl hover:bg-[#9E2E2A] transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

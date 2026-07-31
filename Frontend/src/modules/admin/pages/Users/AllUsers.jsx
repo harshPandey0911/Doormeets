@@ -155,8 +155,10 @@ const AllUsers = () => {
                     <td className="px-4 py-3">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5 text-gray-600 text-[11px]">
-                          <FiMail className="w-3 h-3" />
-                          <span>{user.email}</span>
+                          <FiMail className="w-3 h-3 text-gray-400" />
+                          <span className={user.email && user.email.trim() ? '' : 'text-gray-400 italic'}>
+                            {user.email && user.email.trim() ? user.email : 'N/A'}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-600 text-[11px]">
                           <FiPhone className="w-3 h-3" />

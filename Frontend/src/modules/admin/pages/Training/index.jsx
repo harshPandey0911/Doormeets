@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast';
 import {
   FiVideo, FiHelpCircle, FiUsers, FiBarChart2, FiPlus, FiEdit2,
   FiTrash2, FiCheck, FiX, FiRefreshCw, FiZap, FiAlertTriangle,
-  FiChevronDown, FiChevronUp, FiStar, FiActivity
+  FiChevronDown, FiChevronUp, FiStar, FiActivity, FiUpload
 } from 'react-icons/fi';
 import {
   getTrainingStats, listVideos, createVideo, updateVideo, deleteVideo,
@@ -11,6 +11,7 @@ import {
   listAttempts, assignRetraining, freezeVendor, unfreezeVendor
 } from '../../../../services/adminTrainingService';
 import { getSettings, updateSettings } from '../../services/settingsService';
+import { uploadToCloudinary } from '../../../../utils/cloudinaryUpload';
 
 // ────────────────────── CONSTANTS ──────────────────────
 const TABS = [
@@ -27,17 +28,31 @@ const LEVEL_COLORS = {
 };
 
 // ────────────────────── MODAL COMPONENT ──────────────────────
-const Modal = ({ title, onClose, children }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={onClose}>
-    <div className="bg-white border border-gray-200 rounded-3xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-gray-900 font-bold text-lg">{title}</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><FiX size={20} /></button>
+const Modal = ({ title, onClose, children }) => {
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    if (mainEl) mainEl.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      if (mainEl) mainEl.style.overflow = "";
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white border border-gray-200 rounded-3xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-gray-900 font-bold text-lg">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><FiX size={20} /></button>
+        </div>
+        {children}
       </div>
-      {children}
     </div>
-  </div>
-);
+  );
+};
 
 // ────────────────────── STATS TAB ──────────────────────
 const StatsTab = ({ stats }) => {
@@ -101,6 +116,8 @@ const VideosTab = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingVideo, setEditingVideo] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [form, setForm] = useState({ title: '', description: '', videoUrl: '', videoSource: 'youtube', durationSeconds: 300, isRequired: true, order: 0 });
 
   useEffect(() => { loadVideos(); }, []);
@@ -124,6 +141,34 @@ const VideosTab = () => {
     setEditingVideo(video);
     setForm({ title: video.title, description: video.description, videoUrl: video.videoUrl, videoSource: video.videoSource, durationSeconds: video.durationSeconds, isRequired: video.isRequired, order: video.order });
     setShowModal(true);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      return toast.error('Please select a valid video file (MP4, WEBM, MOV, etc.)');
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const url = await uploadToCloudinary(file, 'training_videos', (progress) => {
+        setUploadProgress(progress);
+      });
+      setForm(f => ({
+        ...f,
+        videoUrl: url,
+        videoSource: 'cloudinary'
+      }));
+      toast.success('Video uploaded successfully!');
+    } catch (err) {
+      console.error('Video upload failed', err);
+      toast.error(err?.message || 'Failed to upload video file');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -171,7 +216,7 @@ const VideosTab = () => {
               <div className="flex items-start justify-between gap-2 flex-wrap">
                 <h4 className="text-gray-900 font-bold text-base">{video.title}</h4>
                 <div className="flex gap-2">
-                  {video.isRequired && <span className="text-xs bg-orange-100 text-orange-700 font-semibold border border-orange-200 rounded-full px-2.5 py-0.5">Required</span>}
+                  {video.isRequired && <span className="text-xs bg-red-50 text-red-600 font-semibold border border-red-200 rounded-full px-2.5 py-0.5">Required</span>}
                   {!video.isActive && <span className="text-xs bg-red-100 text-red-700 font-semibold border border-red-200 rounded-full px-2.5 py-0.5">Inactive</span>}
                 </div>
               </div>
@@ -194,43 +239,115 @@ const VideosTab = () => {
       {showModal && (
         <Modal title={editingVideo ? 'Edit Video' : 'Add Training Video'} onClose={() => setShowModal(false)}>
           <div className="space-y-4">
-            {[
-              { label: 'Title *', key: 'title', type: 'text', placeholder: 'e.g. Customer Service Excellence' },
-              { label: 'Description', key: 'description', type: 'textarea', placeholder: 'Brief description...' },
-              { label: 'YouTube Video ID or URL *', key: 'videoUrl', type: 'text', placeholder: 'dQw4w9WgXcQ or full URL' },
-              { label: 'Duration (seconds)', key: 'durationSeconds', type: 'number', placeholder: '300' },
-              { label: 'Display Order', key: 'order', type: 'number', placeholder: '1' }
-            ].map(field => (
-              <div key={field.key}>
-                <label className="block text-gray-700 text-sm font-bold mb-1.5">{field.label}</label>
-                {field.type === 'textarea' ? (
-                  <textarea
-                    value={form[field.key]}
-                    onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
-                    placeholder={field.placeholder}
-                    rows={3}
-                    className="w-full bg-white border border-gray-300 focus:border-[#347989] focus:ring-2 focus:ring-[#347989]/20 rounded-xl px-4 py-2.5 text-gray-900 text-sm outline-none resize-none transition-all"
-                  />
-                ) : (
-                  <input
-                    type={field.type}
-                    value={form[field.key]}
-                    onChange={e => setForm(f => ({ ...f, [field.key]: field.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value }))}
-                    placeholder={field.placeholder}
-                    className="w-full bg-white border border-gray-300 focus:border-[#347989] focus:ring-2 focus:ring-[#347989]/20 rounded-xl px-4 py-2.5 text-gray-900 text-sm outline-none transition-all"
-                  />
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-1.5">Title *</label>
+              <input
+                type="text"
+                value={form.title}
+                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="e.g. Customer Service Excellence"
+                className="w-full bg-white border border-gray-300 focus:border-[#347989] focus:ring-2 focus:ring-[#347989]/20 rounded-xl px-4 py-2.5 text-gray-900 text-sm outline-none transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-1.5">Description</label>
+              <textarea
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Brief description..."
+                rows={3}
+                className="w-full bg-white border border-gray-300 focus:border-[#347989] focus:ring-2 focus:ring-[#347989]/20 rounded-xl px-4 py-2.5 text-gray-900 text-sm outline-none resize-none transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-1.5">Upload Video File or Enter URL *</label>
+              
+              {/* File Upload Box */}
+              <div className="mb-3 p-4 border-2 border-dashed border-gray-300 hover:border-[#347989] rounded-2xl bg-gray-50/70 flex flex-col items-center justify-center transition-colors">
+                <input
+                  type="file"
+                  accept="video/*"
+                  id="training-video-file-input"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+                <label htmlFor="training-video-file-input" className="cursor-pointer flex flex-col items-center w-full">
+                  <div className="w-10 h-10 rounded-full bg-[#347989]/10 text-[#347989] flex items-center justify-center mb-2">
+                    <FiUpload size={20} />
+                  </div>
+                  <span className="text-xs font-bold text-gray-700">
+                    {uploading ? `Uploading Video... ${uploadProgress}%` : '📁 Click to Upload Video File'}
+                  </span>
+                  <span className="text-[10px] text-gray-400 mt-0.5">Supports MP4, WEBM, MOV (Direct Cloudinary Upload)</span>
+                </label>
+
+                {uploading && (
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-3 overflow-hidden">
+                    <div
+                      className="bg-[#347989] h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
                 )}
               </div>
-            ))}
+
+              <div className="relative flex items-center mb-3">
+                <div className="flex-grow border-t border-gray-200"></div>
+                <span className="flex-shrink mx-3 text-[10px] text-gray-400 font-bold uppercase tracking-wider">OR ENTER YOUTUBE / VIDEO URL</span>
+                <div className="flex-grow border-t border-gray-200"></div>
+              </div>
+
+              <input
+                type="text"
+                value={form.videoUrl}
+                onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
+                placeholder="https://... or dQw4w9WgXcQ"
+                className="w-full bg-white border border-gray-300 focus:border-[#347989] focus:ring-2 focus:ring-[#347989]/20 rounded-xl px-4 py-2.5 text-gray-900 text-sm outline-none transition-all"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-1.5">Duration (seconds)</label>
+                <input
+                  type="number"
+                  value={form.durationSeconds}
+                  onChange={e => setForm(f => ({ ...f, durationSeconds: parseInt(e.target.value) || 0 }))}
+                  placeholder="300"
+                  className="w-full bg-white border border-gray-300 focus:border-[#347989] focus:ring-2 focus:ring-[#347989]/20 rounded-xl px-4 py-2.5 text-gray-900 text-sm outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-1.5">Display Order</label>
+                <input
+                  type="number"
+                  value={form.order}
+                  onChange={e => setForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))}
+                  placeholder="1"
+                  className="w-full bg-white border border-gray-300 focus:border-[#347989] focus:ring-2 focus:ring-[#347989]/20 rounded-xl px-4 py-2.5 text-gray-900 text-sm outline-none transition-all"
+                />
+              </div>
+            </div>
+
             <div className="flex items-center gap-3 mt-2">
               <button
+                type="button"
                 onClick={() => setForm(f => ({ ...f, isRequired: !f.isRequired }))}
-                className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${form.isRequired ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+                className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${form.isRequired ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}
               >
                 {form.isRequired ? '✓ Required Video' : 'Optional Video'}
               </button>
             </div>
-            <button onClick={handleSave} className="w-full py-3.5 mt-4 rounded-xl text-white font-bold transition-transform hover:-translate-y-0.5 shadow-md" style={{ backgroundColor: '#347989' }}>
+
+            <button
+              onClick={handleSave}
+              disabled={uploading}
+              className="w-full py-3.5 mt-4 rounded-xl text-white font-bold transition-transform hover:-translate-y-0.5 shadow-md disabled:opacity-50"
+              style={{ backgroundColor: '#347989' }}
+            >
               {editingVideo ? 'Update Video' : 'Create Video'}
             </button>
           </div>
@@ -293,9 +410,9 @@ const QuestionsTab = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Deactivate this question?')) return;
-    try { await deleteQuestion(id); toast.success('Deactivated'); loadQuestions(); }
-    catch { toast.error('Failed'); }
+    if (!window.confirm('Are you sure you want to permanently delete this question?')) return;
+    try { await deleteQuestion(id); toast.success('Question deleted successfully'); loadQuestions(); }
+    catch { toast.error('Failed to delete question'); }
   };
 
   const DIFF_COLORS = { easy: 'text-green-600 bg-green-50 border-green-200', medium: 'text-yellow-600 bg-yellow-50 border-yellow-200', hard: 'text-red-600 bg-red-50 border-red-200' };
@@ -684,8 +801,14 @@ const AdminTrainingPage = () => {
               <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full">
                 <input
                   type="number"
-                  value={timeLimit}
-                  onChange={e => setTimeLimit(parseInt(e.target.value) || 0)}
+                  value={timeLimit === '' || timeLimit === 0 ? (timeLimit === '' ? '' : '0') : timeLimit}
+                  onFocus={e => { if (e.target.value === '0') setTimeLimit(''); }}
+                  onBlur={e => { if (e.target.value === '') setTimeLimit(0); }}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '') setTimeLimit('');
+                    else setTimeLimit(parseInt(val, 10) || 0);
+                  }}
                   min="1"
                   className="bg-transparent text-gray-900 font-bold text-sm outline-none w-full text-center"
                 />
@@ -699,8 +822,14 @@ const AdminTrainingPage = () => {
               <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full">
                 <input
                   type="number"
-                  value={minL1Score}
-                  onChange={e => setMinL1Score(parseInt(e.target.value) || 0)}
+                  value={minL1Score === '' || minL1Score === 0 ? (minL1Score === '' ? '' : '0') : minL1Score}
+                  onFocus={e => { if (e.target.value === '0') setMinL1Score(''); }}
+                  onBlur={e => { if (e.target.value === '') setMinL1Score(0); }}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '') setMinL1Score('');
+                    else setMinL1Score(parseInt(val, 10) || 0);
+                  }}
                   min="0"
                   max="100"
                   className="bg-transparent text-gray-900 font-bold text-sm outline-none w-full text-center"
@@ -715,8 +844,14 @@ const AdminTrainingPage = () => {
               <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full">
                 <input
                   type="number"
-                  value={minL2Score}
-                  onChange={e => setMinL2Score(parseInt(e.target.value) || 0)}
+                  value={minL2Score === '' || minL2Score === 0 ? (minL2Score === '' ? '' : '0') : minL2Score}
+                  onFocus={e => { if (e.target.value === '0') setMinL2Score(''); }}
+                  onBlur={e => { if (e.target.value === '') setMinL2Score(0); }}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '') setMinL2Score('');
+                    else setMinL2Score(parseInt(val, 10) || 0);
+                  }}
                   min="0"
                   max="100"
                   className="bg-transparent text-gray-900 font-bold text-sm outline-none w-full text-center"

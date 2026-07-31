@@ -1,8 +1,26 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Modal = ({ isOpen, onClose, title, children, size = "md", className = "" }) => {
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      if (mainEl) mainEl.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      if (mainEl) mainEl.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      if (mainEl) mainEl.style.overflow = "";
+    };
+  }, [isOpen]);
+
   const sizeClasses = {
     sm: "max-w-md",
     md: "max-w-xl",

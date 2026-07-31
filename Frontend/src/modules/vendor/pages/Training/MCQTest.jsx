@@ -165,72 +165,52 @@ const MCQTest = ({ onComplete = null }) => {
   if (isEmbedded) {
     return (
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <div className="flex items-center gap-2 text-gray-700">
-            <FiBookOpen size={18} className="text-[#9634f7]" />
-            <span className="font-semibold text-sm">Question {currentQ + 1} of {questions.length}</span>
+        <div className="p-4 sm:p-6">
+          {/* Header Row: Question Counter & Timer Badge */}
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+              Question {currentQ + 1} of {questions.length}
+            </span>
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold font-mono ${
+              timeUrgent
+                ? 'bg-red-100 text-red-600 animate-pulse'
+                : timeWarning
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-[#B33A35]/10 text-[#B33A35]'
+            }`}>
+              <FiClock size={13} />
+              <span>{formatTime(timeLeft)}</span>
+            </div>
           </div>
 
-          {/* Timer */}
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-mono font-bold text-sm ${
-            timeUrgent
-              ? 'bg-red-100 text-red-600 animate-pulse'
-              : timeWarning
-              ? 'bg-yellow-100 text-yellow-700'
-              : 'bg-purple-50 text-[#9634f7]'
-          }`}>
-            <FiClock size={15} />
-            {formatTime(timeLeft)}
-          </div>
-
-          <div className="text-sm text-gray-500">
-            <span className="font-semibold text-[#9634f7]">{answeredCount}</span>/{questions.length} answered
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="h-1.5 bg-gray-100">
-          <div
-            className="h-full transition-all duration-500 rounded-r-full"
-            style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #9634f7, #c084fc)' }}
-          />
-        </div>
-
-        <div className="p-6">
-          {/* Question */}
+          {/* Question (No circle div wrapper) */}
           {currentQuestion && (
             <div className="mb-6">
-              <div className="flex items-start gap-3 mb-5">
-                <div className="w-8 h-8 rounded-full bg-[#9634f7] flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                  {currentQ + 1}
-                </div>
-                <p className="text-gray-800 text-base font-medium leading-relaxed pt-1">
-                  {currentQuestion.question}
-                </p>
-              </div>
+              <h3 className="text-gray-900 text-base sm:text-lg font-bold leading-snug mb-5">
+                {currentQ + 1}. {currentQuestion.question}
+              </h3>
 
               {/* Options */}
-              <div className="space-y-3 ml-11">
+              <div className="space-y-3">
                 {currentQuestion.options.map((option, optIdx) => {
                   const isSelected = answers[currentQuestion._id] === optIdx;
                   return (
                     <button
                       key={optIdx}
                       onClick={() => handleAnswer(currentQuestion._id, optIdx)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
+                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
                         isSelected
-                          ? 'border-[#9634f7] bg-purple-50 shadow-md shadow-purple-100'
-                          : 'border-gray-200 bg-white hover:border-[#9634f7]/40 hover:bg-purple-50/30'
+                          ? 'border-[#B33A35] bg-[#B33A35]/5 shadow-sm'
+                          : 'border-gray-200 bg-white hover:border-[#B33A35]/40 hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                          isSelected ? 'border-[#9634f7] bg-[#9634f7]' : 'border-gray-300'
+                          isSelected ? 'border-[#B33A35] bg-[#B33A35]' : 'border-gray-300'
                         }`}>
                           {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                         </div>
-                        <span className={`text-sm font-medium ${isSelected ? 'text-[#9634f7]' : 'text-gray-700'}`}>
+                        <span className={`text-sm font-semibold ${isSelected ? 'text-[#B33A35]' : 'text-gray-700'}`}>
                           {option.text}
                         </span>
                       </div>
@@ -241,39 +221,14 @@ const MCQTest = ({ onComplete = null }) => {
             </div>
           )}
 
-          {/* Question dot navigator */}
-          <div className="flex flex-wrap gap-2 justify-center mb-6">
-            {questions.map((q, idx) => (
-              <button
-                key={q._id}
-                onClick={() => {
-                  if (idx > currentQ && answers[currentQuestion._id] === undefined) {
-                    toast.error('Please answer the current question first!');
-                    return;
-                  }
-                  setCurrentQ(idx);
-                }}
-                className={`w-8 h-8 rounded-full text-xs font-bold transition-all border ${
-                  idx === currentQ
-                    ? 'bg-[#9634f7] text-white border-[#9634f7] scale-110'
-                    : answers[q._id] !== undefined
-                    ? 'bg-green-100 border-green-400 text-green-700'
-                    : 'bg-gray-100 border-gray-300 text-gray-500 hover:border-[#9634f7] hover:text-[#9634f7]'
-                }`}
-              >
-                {idx + 1}
-              </button>
-            ))}
-          </div>
-
           {/* Navigation */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 mt-6">
             <button
               onClick={() => setCurrentQ(q => Math.max(0, q - 1))}
               disabled={currentQ === 0}
-              className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-gray-200 transition-all"
+              className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-gray-200 transition-all text-xs sm:text-sm cursor-pointer"
             >
-              <FiArrowLeft size={18} /> Previous
+              <FiArrowLeft size={16} /> Previous
             </button>
 
             {currentQ < questions.length - 1 ? (
@@ -285,22 +240,20 @@ const MCQTest = ({ onComplete = null }) => {
                   }
                   setCurrentQ(q => q + 1);
                 }}
-                className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md"
-                style={{ background: 'linear-gradient(135deg, #9634f7, #c084fc)' }}
+                className="flex-1 py-3 rounded-xl bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md text-xs sm:text-sm cursor-pointer active:scale-95"
               >
-                Next <FiArrowRight size={18} />
+                Next <FiArrowRight size={16} />
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex-1 py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                className="flex-1 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 text-xs sm:text-sm cursor-pointer active:scale-95"
               >
                 {submitting ? (
                   <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Submitting...</>
                 ) : (
-                  <><FiSend size={18} /> Submit Test</>
+                  <><FiSend size={16} /> Submit Test</>
                 )}
               </button>
             )}

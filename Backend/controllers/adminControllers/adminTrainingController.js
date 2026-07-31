@@ -139,7 +139,7 @@ const deleteVideo = async (req, res) => {
 const listQuestions = async (req, res) => {
   try {
     const { isActive, difficulty, page = 1, limit = 50 } = req.query;
-    const query = {};
+    const query = { isActive: { $ne: false } };
     if (isActive !== undefined) query.isActive = isActive === 'true';
     if (difficulty) query.difficulty = difficulty;
 
@@ -245,18 +245,14 @@ const updateQuestion = async (req, res) => {
 
 /**
  * DELETE /api/admin/training/questions/:id
- * Soft-delete
+ * Hard-delete question permanently
  */
 const deleteQuestion = async (req, res) => {
   try {
-    const question = await TrainingQuestion.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const question = await TrainingQuestion.findByIdAndDelete(req.params.id);
     if (!question) return res.status(404).json({ success: false, message: 'Question not found' });
 
-    res.status(200).json({ success: true, message: 'Question deactivated' });
+    res.status(200).json({ success: true, message: 'Question deleted permanently' });
   } catch (error) {
     console.error('[AdminTraining] deleteQuestion error:', error);
     res.status(500).json({ success: false, message: 'Failed to delete question' });

@@ -52,13 +52,51 @@ const BottomNav = memo(() => {
     }
   };
 
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Detect mobile keyboard opening/closing via visualViewport or focus events
+  useEffect(() => {
+    const handleFocus = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        setIsKeyboardVisible(true);
+      }
+    };
+    const handleBlur = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        setIsKeyboardVisible(false);
+      }
+    };
+
+    const handleResize = () => {
+      if (window.visualViewport) {
+        // If visualViewport height shrinks significantly compared to window innerHeight, keyboard is open
+        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.85;
+        setIsKeyboardVisible(isKeyboard);
+      }
+    };
+
+    window.addEventListener('focusin', handleFocus);
+    window.addEventListener('focusout', handleBlur);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
   // Hide nav when specific routes are active (booking alerts, maps)
   const hideNavRoutes = [
     '/vendor/booking-alert/',
     '/vendor/booking/',
   ];
 
-  const shouldHideNav = hideNavRoutes.some(route =>
+  const shouldHideNav = isKeyboardVisible || hideNavRoutes.some(route =>
     location.pathname.includes(route) &&
     (location.pathname.includes('/map') || location.pathname.includes('/alert/'))
   );

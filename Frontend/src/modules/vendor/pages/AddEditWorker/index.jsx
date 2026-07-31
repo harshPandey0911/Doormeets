@@ -192,6 +192,42 @@ const AddEditWorker = () => {
   };
 
   const handleInputChange = (field, value) => {
+    // 1. Full Name: letters & spaces only
+    if (field === 'name') {
+      const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
+      setFormData(prev => ({ ...prev, name: lettersOnly }));
+      if (errors.name) setErrors(prev => ({ ...prev, name: null }));
+      return;
+    }
+
+    // 2. Mobile Number: digits only, 10-digits max, starting with 6-9
+    if (field === 'phone') {
+      const digits = value.replace(/[^0-9]/g, '');
+      if (digits.length > 0 && !/^[6-9]/.test(digits)) return;
+      const cleanPhone = digits.slice(0, 10);
+      setFormData(prev => ({ ...prev, phone: cleanPhone }));
+      if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
+      return;
+    }
+
+    // 3. Email Address
+    if (field === 'email') {
+      setFormData(prev => ({ ...prev, email: value.trim() }));
+      if (errors.email) setErrors(prev => ({ ...prev, email: null }));
+      return;
+    }
+
+    // 4. Aadhar Number: 12-digits numeric
+    if (field === 'aadhar.number') {
+      const numericValue = value.replace(/[^0-9]/g, '').slice(0, 12);
+      setFormData(prev => ({
+        ...prev,
+        aadhar: { ...prev.aadhar, number: numericValue }
+      }));
+      if (errors['aadhar.number']) setErrors(prev => ({ ...prev, ['aadhar.number']: null }));
+      return;
+    }
+
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setFormData(prev => ({
@@ -209,6 +245,10 @@ const AddEditWorker = () => {
       const serviceCategories = prev.serviceCategories.includes(val)
         ? prev.serviceCategories.filter(c => c !== val)
         : [...prev.serviceCategories, val];
+
+      if (errors.serviceCategories && serviceCategories.length > 0) {
+        setErrors(err => ({ ...err, serviceCategories: null }));
+      }
 
       return {
         ...prev,
@@ -251,31 +291,46 @@ const AddEditWorker = () => {
 
 
   const handleSubmit = async () => {
-    // Zod Validation depending on mode
-    const schema = isEdit ? editWorkerSchema : addWorkerSchema;
+    setErrors({});
+    const newErrors = {};
 
-    // Construct validation object
-    const validationData = {
-      name: formData.name,
-      phone: formData.phone,
-      serviceCategories: formData.serviceCategories,
-      ...(isEdit ? {} : { aadhar: { number: formData.aadhar.number } })
-    };
-
-    const validationResult = schema.safeParse(validationData);
-
-    if (!validationResult.success) {
-      toast.error(validationResult.error.errors[0].message);
-      return;
+    // Validate Name
+    if (!formData.name || !/^[a-zA-Z\s]{2,}$/.test(formData.name.trim())) {
+      newErrors.name = 'Full Name must contain only letters (min 2 characters)';
     }
 
-    // Additional manual check for Aadhar doc on 'new'
-    if (!isEdit && !formData.aadhar.frontDocument && !aadharFrontFile) {
-      toast.error("Aadhar Front Side document is required");
-      return;
+    // Validate Phone
+    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) {
+      newErrors.phone = 'Enter valid 10-digit mobile number starting with 6-9';
     }
-    if (!isEdit && !formData.aadhar.backDocument && !aadharBackFile) {
-      toast.error("Aadhar Back Side document is required");
+
+    // Validate Email (optional)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    // Validate Service Categories
+    if (!formData.serviceCategories || formData.serviceCategories.length === 0) {
+      newErrors.serviceCategories = 'Select at least one work category';
+    }
+
+    // Validate Aadhar on new worker
+    if (!isEdit) {
+      if (!formData.aadhar.number || !/^\d{12}$/.test(formData.aadhar.number)) {
+        newErrors['aadhar.number'] = 'Aadhar number must be exactly 12 digits';
+      }
+      if (!formData.aadhar.frontDocument && !aadharFrontFile) {
+        newErrors['aadhar.front'] = 'Aadhar Front Side document is required';
+      }
+      if (!formData.aadhar.backDocument && !aadharBackFile) {
+        newErrors['aadhar.back'] = 'Aadhar Back Side document is required';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstErrorKey = Object.keys(newErrors)[0];
+      toast.error(newErrors[firstErrorKey]);
       return;
     }
 
@@ -434,30 +489,40 @@ const AddEditWorker = () => {
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Details</h4>
 
               <div className="space-y-2.5">
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Full Name *"
-                  className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.name ? 'border-red-500' : 'border-gray-100'}`}
-                />
+                <div>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Full Name *"
+                    className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.name ? 'border-red-500' : 'border-gray-100'}`}
+                  />
+                  {errors.name && <p className="text-red-500 text-[10px] mt-1 font-semibold">{errors.name}</p>}
+                </div>
 
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Mobile Number *"
-                  className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.phone ? 'border-red-500' : 'border-gray-100'}`}
-                  maxLength={10}
-                />
+                <div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="Mobile Number *"
+                    className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.phone ? 'border-red-500' : 'border-gray-100'}`}
+                    maxLength={10}
+                  />
+                  {errors.phone && <p className="text-red-500 text-[10px] mt-1 font-semibold">{errors.phone}</p>}
+                </div>
 
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="Email Address (Optional)"
-                  className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? 'border-red-500' : 'border-gray-100'}`}
-                />
+                <div>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Email Address (Optional)"
+                    className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? 'border-red-500' : 'border-gray-100'}`}
+                  />
+                  {errors.email && <p className="text-red-500 text-[10px] mt-1 font-semibold">{errors.email}</p>}
+                </div>
               </div>
             </div>
 
@@ -565,14 +630,18 @@ const AddEditWorker = () => {
               !isEdit && (
                 <div className="bg-white rounded-md p-3.5 shadow-2xs border border-gray-100 space-y-2.5">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide">Identity Proof (Aadhar)</h4>
-                  <input
-                    type="text"
-                    value={formData.aadhar.number}
-                    onChange={(e) => handleInputChange('aadhar.number', e.target.value)}
-                    placeholder="Aadhar Number *"
-                    className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors['aadhar.number'] ? 'border-red-500' : 'border-gray-100'}`}
-                    maxLength={12}
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formData.aadhar.number}
+                      onChange={(e) => handleInputChange('aadhar.number', e.target.value)}
+                      placeholder="Aadhar Number *"
+                      className={`w-full px-3.5 py-2 bg-gray-50 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors['aadhar.number'] ? 'border-red-500' : 'border-gray-100'}`}
+                      maxLength={12}
+                    />
+                    {errors['aadhar.number'] && <p className="text-red-500 text-[10px] mt-1 font-semibold">{errors['aadhar.number']}</p>}
+                  </div>
 
                   {/* File Upload Grid (Front & Back) */}
                   <div className="grid grid-cols-2 gap-2.5">
