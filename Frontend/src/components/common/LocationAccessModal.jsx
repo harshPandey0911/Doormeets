@@ -99,75 +99,71 @@ const LocationAccessModal = ({
 
         {/* Modal */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          initial={{ scale: 0.95, opacity: 0, y: 10 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl"
+          exit={{ scale: 0.95, opacity: 0, y: 10 }}
+          className="relative bg-white w-full max-w-[310px] sm:max-w-[330px] rounded-2xl p-5 shadow-2xl border border-gray-100/80 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Decorative Header */}
-          <div
-            className="h-32 relative flex items-center justify-center overflow-hidden"
-            style={{ background: `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)` }}
+          {/* Close Icon */}
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-2xl" />
+            <FiX className="w-4 h-4" />
+          </button>
+
+          <div className="flex flex-col items-center text-center">
+            {/* Sleek Compact Icon */}
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm border border-gray-100"
+              style={{
+                backgroundColor: locationDisabled ? '#fff7ed' : `${themeColor}12`,
+                color: locationDisabled ? '#f97316' : themeColor,
+                borderColor: locationDisabled ? '#ffedd5' : `${themeColor}30`
+              }}
+            >
+              <content.icon className="w-6 h-6" />
             </div>
 
-            <motion.div
-              animate={locationDisabled ? { rotate: [0, 10, -10, 0] } : { y: [0, -5, 0] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className={`w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center relative z-10 ${locationDisabled ? 'text-orange-500' : ''}`}
-              style={{ color: locationDisabled ? '#f97316' : themeColor }}
-            >
-              <content.icon className="w-8 h-8" />
-            </motion.div>
-          </div>
-
-          <div className="p-8 pt-6 text-center">
-            <h3 className="text-2xl font-black text-gray-900 mb-2">{content.title}</h3>
-            <p className="text-sm text-gray-500 mb-8 font-medium">{content.subtitle}</p>
+            <h3 className="text-base font-extrabold text-gray-900 mb-1 leading-tight">{content.title}</h3>
+            <p className="text-xs text-gray-500 mb-4 leading-normal font-medium px-1">{content.subtitle}</p>
 
             {/* Actions */}
-            <div className="space-y-3">
+            <div className="w-full space-y-2">
               {locationDisabled ? (
                 <button
                   onClick={handleOpenSettings}
-                  className="w-full py-4 rounded-2xl bg-orange-500 text-white font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 relative overflow-hidden group mb-4"
-                  style={{ boxShadow: '0 10px 25px -5px rgba(249, 115, 22, 0.4)' }}
+                  className="w-full py-2.5 rounded-xl bg-orange-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                  OPEN SYSTEM SETTINGS
-                  <FiSettings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                  <FiSettings className="w-3.5 h-3.5" />
+                  OPEN SETTINGS
                 </button>
               ) : (
                 <button
                   onClick={handleRequestLocation}
                   disabled={requesting}
-                  className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 relative overflow-hidden group"
+                  className="w-full py-2.5 rounded-xl text-white font-bold text-xs shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
                   style={{
                     backgroundColor: themeColor,
-                    boxShadow: `0 10px 25px -5px ${themeColor}55`
+                    boxShadow: `0 4px 12px ${themeColor}35`
                   }}
                 >
                   {requesting ? (
-                    <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
                       ALLOW LOCATION ACCESS
-                      <FiNavigation className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      <FiNavigation className="w-3.5 h-3.5" />
                     </>
                   )}
-
-                  {/* Shine effect */}
-                  <div className="absolute inset-x-0 top-0 h-1/2 bg-white/10 skew-y-[-10deg] -translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                 </button>
               )}
 
               {onManualSearch && (
                 <button
                   onClick={onManualSearch}
-                  className="w-full py-3 rounded-2xl border border-gray-100 text-gray-400 font-bold text-xs hover:text-gray-600 transition-colors uppercase tracking-widest"
+                  className="w-full py-1.5 text-[11px] text-gray-400 hover:text-gray-600 font-semibold transition-colors"
                 >
                   Enter Location Manually
                 </button>
@@ -175,24 +171,12 @@ const LocationAccessModal = ({
 
               <button
                 onClick={onClose}
-                className="w-full py-2 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                className="w-full py-1 text-[11px] font-semibold text-gray-400 hover:text-gray-600 transition-colors"
               >
                 Maybe Later
               </button>
             </div>
-
-            <p className="mt-6 text-[10px] text-gray-400">
-              Your location is protected and used only for service accuracy.
-            </p>
           </div>
-
-          {/* Close tiny button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-          >
-            <FiX className="w-4 h-4" />
-          </button>
         </motion.div>
       </div>
     </AnimatePresence>
