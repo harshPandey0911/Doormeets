@@ -322,7 +322,7 @@ const OfferBanners = () => {
                     <input type="file" className="hidden" accept="image/*,video/*" onChange={(e) => handleImageChange(e, 'mobile')} />
                   </label>
                 )}
-                <p className="text-[10px] text-gray-400 mt-2">Recommended aspect ratio 16:9.</p>
+                <p className="text-[10px] text-gray-500 font-medium mt-2">Recommended size: 1000 × 400 px (Aspect ratio 2.5:1 / 16:9)</p>
               </div>
             </div>
           </div>

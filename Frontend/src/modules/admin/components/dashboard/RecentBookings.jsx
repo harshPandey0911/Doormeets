@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiEye } from 'react-icons/fi';
 import { formatCurrency } from '../../utils/adminHelpers';
@@ -19,9 +19,8 @@ const statusBadge = (status) => {
   return map[s] || 'bg-gray-100 text-gray-700';
 };
 
-const RecentBookings = ({ bookings = [], onViewBooking }) => {
+const RecentBookings = ({ bookings = [], onViewBooking, itemsPerPage = 5 }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const sorted = useMemo(() => {
     const copy = [...bookings];
@@ -33,73 +32,107 @@ const RecentBookings = ({ bookings = [], onViewBooking }) => {
     return copy;
   }, [bookings]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [bookings.length]);
+
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return sorted.slice(start, start + itemsPerPage);
-  }, [sorted, currentPage]);
+  }, [sorted, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(sorted.length / itemsPerPage) || 1;
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-      <h3 className="text-lg font-bold text-gray-800 mb-6">Recent Bookings</h3>
-      <div className="space-y-4">
-        {paginated.map((b, index) => (
-          <motion.div
-            key={b.id || index}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.06 }}
-            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-2">
-                <h4 className="font-semibold text-gray-800 truncate">{b.id}</h4>
-                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusBadge(b.status)}`}>
-                  {(b.status || 'OTHER').toString().replace('_', ' ')}
-                </span>
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col justify-between h-full">
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-gray-800">Recent Bookings</h3>
+          {sorted.length > 0 && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+              Total: {sorted.length}
+            </span>
+          )}
+        </div>
+        <div className="space-y-4">
+          {paginated.map((b, index) => (
+            <motion.div
+              key={b.id || index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <h4 className="font-semibold text-gray-800 truncate">{b.id}</h4>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusBadge(b.status)}`}>
+                    {(b.status || 'OTHER').toString().replace('_', ' ')}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 truncate">{b.user?.name || 'Customer'}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(b.createdAt || b.acceptedAt || b.assignedAt || b.visitedAt || b.completedAt || Date.now()).toLocaleString()} •{' '}
+                  {b.serviceType || 'Service'}
+                </p>
               </div>
-              <p className="text-sm text-gray-600 truncate">{b.user?.name || 'Customer'}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(b.createdAt || b.acceptedAt || b.assignedAt || b.visitedAt || b.completedAt || Date.now()).toLocaleString()} •{' '}
-                {b.serviceType || 'Service'}
-              </p>
-            </div>
-            <div className="flex items-center gap-4 flex-shrink-0 ml-4">
-              <div className="text-right">
-                <p className="font-bold text-gray-800">{formatCurrency(b.price || 0)}</p>
+              <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                <div className="text-right">
+                  <p className="font-bold text-gray-800">{formatCurrency(b.price || 0)}</p>
+                </div>
+                {onViewBooking && (
+                  <button
+                    onClick={() => onViewBooking(b)}
+                    className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    <FiEye className="text-gray-600" />
+                  </button>
+                )}
               </div>
-              {onViewBooking && (
-                <button
-                  onClick={() => onViewBooking(b)}
-                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  <FiEye className="text-gray-600" />
-                </button>
-              )}
-            </div>
-          </motion.div>
-        ))}
-        {sorted.length === 0 && <p className="text-gray-500 text-sm">No bookings found.</p>}
+            </motion.div>
+          ))}
+          {sorted.length === 0 && <p className="text-gray-500 text-sm">No bookings found.</p>}
+        </div>
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold"
-          >
-            Prev
-          </button>
-          <p className="text-sm text-gray-600">
-            Page <span className="font-semibold">{currentPage}</span> / {totalPages}
+        <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
+          <p className="text-xs text-gray-500">
+            Showing <span className="font-semibold text-gray-800">{(currentPage - 1) * itemsPerPage + 1}</span>-
+            <span className="font-semibold text-gray-800">
+              {Math.min(currentPage * itemsPerPage, sorted.length)}
+            </span>{' '}
+            of <span className="font-semibold text-gray-800">{sorted.length}</span>
           </p>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold"
-          >
-            Next
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -2048,7 +2048,12 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">Image</label>
+            <div className="flex flex-wrap items-center justify-between mb-2 gap-1">
+              <label className="block text-base font-bold text-gray-900">Image</label>
+              <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                Recommended Size: 1000 × 400 px
+              </span>
+            </div>
             <div className="space-y-3">
               <input
                 type="file"

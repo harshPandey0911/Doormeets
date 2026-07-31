@@ -184,10 +184,16 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Service Title</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-gray-600">Service Title</label>
+                <span className={`text-[10px] ${form.title?.length >= 50 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                  {form.title?.length || 0}/50
+                </span>
+              </div>
               <input
+                maxLength={50}
                 value={form.title}
-                onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                onChange={e => setForm(p => ({ ...p, title: e.target.value.slice(0, 50) }))}
                 placeholder="e.g. AC Filter Cleaning"
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />

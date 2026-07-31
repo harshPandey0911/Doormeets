@@ -1062,6 +1062,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const handleSubmit = async () => {
     if (!formData.categoryId) { alert('Please select a Category'); setActiveStep(0); return; }
     if (!formData.title?.trim()) { alert('Please enter a Service Title'); setActiveStep(0); return; }
+    if (formData.title.trim().length > 50) { alert('Service Title cannot exceed 50 characters'); setActiveStep(0); return; }
 
     const firstBanner = pageBlocks.find(b => b.blockType === 'banner_slider')?.data?.banners?.[0];
     const firstBannerUrl = typeof firstBanner === 'object' ? firstBanner.url : firstBanner;
@@ -1695,9 +1696,20 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       })()}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Service Title *</label>
-                      <input type="text" className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
-                        value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Room Deep Cleaning" />
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-semibold text-gray-700">Service Title *</label>
+                        <span className={`text-xs ${formData.title?.length >= 50 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                          {formData.title?.length || 0}/50
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={50}
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                        value={formData.title}
+                        onChange={e => setFormData({ ...formData, title: e.target.value.slice(0, 50) })}
+                        placeholder="e.g. Room Deep Cleaning"
+                      />
                     </div>
                      <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
