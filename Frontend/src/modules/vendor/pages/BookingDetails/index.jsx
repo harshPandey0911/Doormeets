@@ -1547,7 +1547,7 @@ export default function BookingDetails() {
 
   const handleCompleteWork = verifyAndCompleteJob;
 
-  const handleApproveWork = () => {
+  const handleApproveWorkDone = () => {
     setConfirmDialog({
       isOpen: true,
       title: 'Approve Work',
@@ -2684,7 +2684,7 @@ export default function BookingDetails() {
                     <FiX className="inline w-4 h-4 mr-1" /> Reject Work
                   </button>
                   <button
-                    onClick={handleApproveWork}
+                    onClick={handleApproveWorkDone}
                     className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-sm shadow-md shadow-green-200 active:scale-95 transition-transform"
                   >
                     <FiCheckCircle className="inline w-4 h-4 mr-1" /> Approve Work
