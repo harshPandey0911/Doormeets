@@ -43,7 +43,7 @@ const WorkerReport = () => {
   const COLORS = ['#10B981', '#EF4444', '#F59E0B', '#2874F0', '#6366F1'];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 select-none">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Workers by Bookings */}
         <CardShell className="bg-white p-4">
@@ -141,13 +141,22 @@ const WorkerReport = () => {
                     <td className="px-4 py-3 text-xs font-bold text-gray-900">{worker.name}</td>
                     <td className="px-4 py-3 text-xs text-gray-600">{worker.phone}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                        worker.association === 'Vendor-Linked'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {worker.association}
-                      </span>
+                      {worker.association !== 'Independent' ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-green-100 text-green-700 w-fit">
+                            {worker.vendorName || worker.association}
+                          </span>
+                          {worker.vendorBusinessName && (
+                            <span className="text-[10px] text-gray-400 font-semibold pl-1">
+                              {worker.vendorBusinessName}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 w-fit">
+                          Independent
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs font-bold text-gray-900">{worker.totalBookings}</td>
                     <td className="px-4 py-3">

@@ -113,7 +113,13 @@ const CustomerGrowthAreaChart = ({ timelineData = [], bookings = [], period = 'm
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v) => `${Math.round(Number(v || 0) / 1000)}k`}
+              allowDecimals={false}
+              tickFormatter={(v) => {
+                const val = Number(v || 0);
+                if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+                if (val >= 1000) return `${(val / 1000).toFixed(1)}k`;
+                return `${val}`;
+              }}
               width={50}
             />
             <Tooltip content={<CustomTooltip />} />

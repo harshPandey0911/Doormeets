@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { publicCatalogService } from '../../../../services/catalogService';
-import { FiArrowLeft, FiMapPin, FiShield, FiInfo, FiPlus, FiLayers, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiMapPin, FiShield, FiInfo, FiPlus, FiLayers, FiCheckCircle, FiStar } from 'react-icons/fi';
 import { useCart } from '../../../../context/CartContext';
 import { toast } from 'react-hot-toast';
 
@@ -85,7 +85,22 @@ const CategoryPage = () => {
   const handleAdd = async (service) => {
     if (!service) return;
     try {
-      const price = service.discountPrice || service.basePrice || service.price || 0;
+      const discount = Number(service?.discountPrice);
+      const base = Number(service?.basePrice || service?.price || 0);
+      let calculatedPrice = base;
+      let calculatedOriginalPrice = null;
+
+      if (discount > 0 && discount < base) {
+        calculatedPrice = discount;
+        calculatedOriginalPrice = base > 0 ? base : null;
+      } else if (base > 0) {
+        calculatedPrice = base;
+        calculatedOriginalPrice = null;
+      } else if (discount > 0) {
+        calculatedPrice = discount;
+        calculatedOriginalPrice = null;
+      }
+
       const cartItemData = {
         serviceId: service.id || service._id,
         categoryId: category?.id,
@@ -98,17 +113,17 @@ const CategoryPage = () => {
         sectionId: selectedBrand?.id || service.brandId || null,
         sectionTitle: selectedBrand?.title || service.brand?.title || '',
         sectionIcon: toAssetUrl(selectedBrand?.iconUrl || selectedBrand?.icon || service.brand?.icon || ''),
-        price: price,
-        originalPrice: service.basePrice || null,
-        unitPrice: price,
+        price: calculatedPrice,
+        originalPrice: calculatedOriginalPrice,
+        unitPrice: calculatedPrice,
         serviceCount: 1,
         vendorId: service.vendorId || selectedBrand?.vendorId || null,
         isPriceDisclosed: service.isPriceDisclosed !== false,
         card: {
           title: service.title,
           subtitle: service.description || '',
-          price: price,
-          originalPrice: service.basePrice || null,
+          price: calculatedPrice,
+          originalPrice: calculatedOriginalPrice,
           duration: service.duration || '',
           description: service.description || '',
           imageUrl: toAssetUrl(service.icon || ''),
@@ -373,6 +388,11 @@ const CategoryPage = () => {
                   <div className="flex-1 pr-4">
                     <div className="flex items-center gap-2 mb-0.5">
                       <h3 className="font-black text-gray-900 text-[15px] leading-snug">{svc.title}</h3>
+                      <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
+                        <FiStar className="fill-amber-400 text-amber-400 w-3 h-3" />
+                        {svc.rating ? Number(svc.rating).toFixed(1) : '4.8'}
+                        <span className="text-gray-400 text-[10px] font-normal">({svc.reviewsCount || svc.ratingCount || '1.2k'})</span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       {svc.isPriceDisclosed !== false ? (

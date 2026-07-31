@@ -451,7 +451,13 @@ const getEarningsBreakdown = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // 2. Fetch PricingConfigs in batch to avoid N+1 queries
+    // 2. Fetch Settings for dynamic Level Names & PricingConfigs in batch
+    const Settings = require('../../models/Settings');
+    const settingsDoc = await Settings.findOne({ type: 'global' }).lean();
+    const l1Name = settingsDoc?.levelConfig?.L1?.name || 'Level 1 (Expert)';
+    const l2Name = settingsDoc?.levelConfig?.L2?.name || 'Level 2 (Professional)';
+    const l3Name = settingsDoc?.levelConfig?.L3?.name || 'Level 3 (Beginner)';
+
     const serviceIds = bookings.map(b => b.serviceId).filter(Boolean);
     const PricingConfig = require('../../models/PricingConfig');
     const pricings = await PricingConfig.find({ serviceId: { $in: serviceIds } });
@@ -545,7 +551,13 @@ const getEarningsBreakdown = async (req, res) => {
         levelCommissionAmount,
         totalCommissionEarned,
         netVendorPayout,
-        vendorLevel: booking.vendorId ? (booking.vendorId.level || 'L1') : 'L1'
+        vendorLevel: (() => {
+          const raw = booking.vendorId ? (booking.vendorId.level || booking.vendorId.training?.assignedLevel || '1') : '1';
+          const str = String(raw).toUpperCase();
+          if (str.includes('2') || str.includes('L2')) return l2Name;
+          if (str.includes('3') || str.includes('L3')) return l3Name;
+          return l1Name;
+        })()
       };
 
       // Filter by taxType if specified

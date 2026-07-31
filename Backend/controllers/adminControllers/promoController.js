@@ -19,6 +19,9 @@ exports.createPromo = async (req, res) => {
       return res.status(400).json({ success: false, message: 'A promo code with this name already exists.' });
     }
 
+    const expDate = new Date(expiryDate);
+    expDate.setHours(23, 59, 59, 999);
+
     const promo = await PromoCode.create({
       code: uppercaseCode,
       discountType,
@@ -27,7 +30,7 @@ exports.createPromo = async (req, res) => {
       appliesTo: appliesTo || 'all',
       serviceId: serviceId || null,
       categoryId: categoryId || null,
-      expiryDate: new Date(expiryDate),
+      expiryDate: expDate,
       usageLimit: usageLimit ? Number(usageLimit) : null,
       maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : null,
       maxDiscountQty: maxDiscountQty ? Number(maxDiscountQty) : null
@@ -83,7 +86,11 @@ exports.updatePromo = async (req, res) => {
 
     if (discountType) updateFields.discountType = discountType;
     if (discountValue !== undefined) updateFields.discountValue = Number(discountValue);
-    if (expiryDate) updateFields.expiryDate = new Date(expiryDate);
+    if (expiryDate) {
+      const expDate = new Date(expiryDate);
+      expDate.setHours(23, 59, 59, 999);
+      updateFields.expiryDate = expDate;
+    }
     if (minOrderValue !== undefined) updateFields.minOrderValue = Number(minOrderValue);
     if (usageLimit !== undefined) updateFields.usageLimit = usageLimit ? Number(usageLimit) : null;
     if (maxDiscountAmount !== undefined) updateFields.maxDiscountAmount = maxDiscountAmount ? Number(maxDiscountAmount) : null;
@@ -130,8 +137,10 @@ exports.applyPromo = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid or inactive promo code.' });
     }
 
-    // Check Expiry Date
-    if (new Date(promo.expiryDate) < new Date()) {
+    // Check Expiry Date (valid until 11:59:59.999 PM of the expiry date)
+    const promoExp = new Date(promo.expiryDate);
+    promoExp.setHours(23, 59, 59, 999);
+    if (promoExp < new Date()) {
       return res.status(400).json({ success: false, message: 'This promo code has expired.' });
     }
 

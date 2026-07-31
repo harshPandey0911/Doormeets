@@ -461,9 +461,47 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
 
     try {
       const payload = { ...patch };
+
+      if (patch.curatedServices !== undefined) {
+        payload.curated = patch.curatedServices;
+        delete payload.curatedServices;
+      }
+      if (patch.newAndNoteworthy !== undefined) {
+        payload.noteworthy = patch.newAndNoteworthy;
+        delete payload.newAndNoteworthy;
+      }
+      if (patch.mostBooked !== undefined) {
+        payload.booked = patch.mostBooked;
+        delete payload.mostBooked;
+      }
+      if (patch.promoCarousel !== undefined) {
+        payload.promos = patch.promoCarousel;
+        delete payload.promoCarousel;
+      }
+
       if (selectedCity) payload.cityId = selectedCity;
       const res = await homeContentService.update(payload);
-      if (res.success) {
+      if (res.success && res.homeContent) {
+        const hc = res.homeContent;
+        const addIds = (items) => (items || []).map((item, idx) => ({
+          ...item,
+          id: item.id || (item._id ? item._id.toString() : `item-${Date.now()}-${idx}`)
+        }));
+
+        const updatedHome = {
+          ...next.home,
+          ...(hc.curated ? { curatedServices: addIds(hc.curated) } : {}),
+          ...(hc.noteworthy ? { newAndNoteworthy: addIds(hc.noteworthy) } : {}),
+          ...(hc.booked ? { mostBooked: addIds(hc.booked) } : {}),
+          ...(hc.promos ? { promoCarousel: addIds(hc.promos) } : {})
+        };
+        const updatedCatalog = { ...next, home: updatedHome };
+        setCatalog(updatedCatalog);
+        saveCatalog(updatedCatalog);
+
+        publicCatalogService.invalidateCache();
+        toast.success("Saved successfully!");
+      } else if (res.success) {
         publicCatalogService.invalidateCache();
         toast.success("Saved successfully!");
       } else {
@@ -2048,7 +2086,12 @@ const HomePage = ({ catalog, setCatalog, selectedCity }) => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-base font-bold text-gray-900 mb-2">Image</label>
+            <div className="flex flex-wrap items-center justify-between mb-2 gap-1">
+              <label className="block text-base font-bold text-gray-900">Image</label>
+              <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                Recommended Size: 1000 × 400 px
+              </span>
+            </div>
             <div className="space-y-3">
               <input
                 type="file"

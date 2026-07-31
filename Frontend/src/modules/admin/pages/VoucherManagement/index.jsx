@@ -107,6 +107,8 @@ const VoucherManagement = () => {
     if (!formData.code.trim()) return toast.error('Voucher code is required');
     if (formData.value === '') return toast.error('Value is required');
     if (!formData.expiryDate) return toast.error('Expiry date is required');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (formData.expiryDate < todayStr) return toast.error('Expiry date cannot be a past date');
 
     if (formData.type === 'service_discount' && formData.discountType === 'percentage' && Number(formData.value) > 100) {
       return toast.error('Percentage discount cannot exceed 100%');
@@ -200,7 +202,9 @@ const VoucherManagement = () => {
             </thead>
             <tbody>
               {vouchers.map((voucher) => {
-                const isExpired = new Date(voucher.expiryDate) < new Date();
+                const exp = new Date(voucher.expiryDate);
+                exp.setHours(23, 59, 59, 999);
+                const isExpired = exp < new Date();
                 return (
                   <tr key={voucher._id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="p-4">
@@ -402,6 +406,7 @@ const VoucherManagement = () => {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Expiry Date *</label>
                     <input
                       type="date"
+                      min={new Date().toISOString().split('T')[0]}
                       className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                       value={formData.expiryDate}
                       onChange={(e) => setFormData({...formData, expiryDate: e.target.value})}

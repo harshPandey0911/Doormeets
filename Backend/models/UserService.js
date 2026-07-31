@@ -72,6 +72,16 @@ const userServiceSchema = new mongoose.Schema({
   isPriceDisclosed: {
     type: Boolean,
     default: true
+  },
+  rating: {
+    type: Number,
+    default: 4.8,
+    min: 0,
+    max: 5
+  },
+  reviewsCount: {
+    type: String,
+    default: '1.2k'
   }
 }, {
   timestamps: true

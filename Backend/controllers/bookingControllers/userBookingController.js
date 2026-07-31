@@ -504,6 +504,7 @@ const createBooking = async (req, res) => {
       vendorId: null, // Will be assigned when vendor accepts
       serviceId,
       categoryId: finalCategory?._id || categoryId,
+      subCategoryId: service.subCategoryId || null,
       serviceName: service.title,
       serviceCategory: reqServiceCategory || finalCategory?.title || service.category || 'General',
       // Visual Identity Fields

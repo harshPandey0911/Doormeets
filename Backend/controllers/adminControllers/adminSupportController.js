@@ -120,6 +120,16 @@ const replyToTicket = async (req, res) => {
     }
 
     if (status) {
+      const STATUS_ORDER = ['open', 'in_progress', 'waiting_on_user', 'resolved', 'closed'];
+      const currentIndex = STATUS_ORDER.indexOf(ticket.status);
+      const newIndex = STATUS_ORDER.indexOf(status);
+
+      if (currentIndex !== -1 && newIndex !== -1 && newIndex < currentIndex) {
+        return res.status(400).json({
+          success: false,
+          message: `Ticket status cannot be reverted from "${ticket.status.replace(/_/g, ' ').toUpperCase()}" back to "${status.replace(/_/g, ' ').toUpperCase()}"`
+        });
+      }
       ticket.status = status;
     } else if (message && ticket.status === 'open') {
       ticket.status = 'in_progress';
@@ -154,6 +164,17 @@ const updateTicketStatus = async (req, res) => {
     const ticket = await Ticket.findById(id);
     if (!ticket) {
       return res.status(404).json({ success: false, message: 'Ticket not found' });
+    }
+
+    const STATUS_ORDER = ['open', 'in_progress', 'waiting_on_user', 'resolved', 'closed'];
+    const currentIndex = STATUS_ORDER.indexOf(ticket.status);
+    const newIndex = STATUS_ORDER.indexOf(status);
+
+    if (currentIndex !== -1 && newIndex !== -1 && newIndex < currentIndex) {
+      return res.status(400).json({
+        success: false,
+        message: `Ticket status cannot be reverted from "${ticket.status.replace(/_/g, ' ').toUpperCase()}" back to "${status.replace(/_/g, ' ').toUpperCase()}"`
+      });
     }
 
     ticket.status = status;

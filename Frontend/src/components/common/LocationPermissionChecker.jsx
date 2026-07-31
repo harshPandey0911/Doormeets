@@ -5,6 +5,11 @@ import flutterBridge from '../../utils/flutterBridge';
 
 export const LocationPermissionChecker = () => {
     useEffect(() => {
+        // Do not trigger location checks or toasts on admin routes
+        if (window.location.pathname.startsWith('/admin')) {
+            return;
+        }
+
         const checkPermission = async (isManualTrigger = false) => {
             const hasGrantedPreviously = localStorage.getItem('location_granted') === 'true';
 

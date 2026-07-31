@@ -61,17 +61,33 @@ const AdminSupport = () => {
     }
   };
 
+  const STATUS_OPTIONS = [
+    { id: 'open', label: 'OPEN' },
+    { id: 'in_progress', label: 'IN PROGRESS' },
+    { id: 'waiting_on_user', label: 'WAITING ON USER' },
+    { id: 'resolved', label: 'RESOLVED' },
+    { id: 'closed', label: 'CLOSED' }
+  ];
+
   const handleStatusChange = async (newStatus) => {
     if (!selectedTicket) return;
+    const currentIdx = STATUS_OPTIONS.findIndex(s => s.id === selectedTicket.status);
+    const newIdx = STATUS_OPTIONS.findIndex(s => s.id === newStatus);
+
+    if (currentIdx !== -1 && newIdx !== -1 && newIdx < currentIdx) {
+      toast.error('Ticket status cannot be moved backward.');
+      return;
+    }
+
     try {
       const res = await supportService.updateTicketStatus(selectedTicket._id, newStatus);
       if (res.success) {
-        toast.success(`Ticket marked as ${newStatus}`);
+        toast.success(`Ticket marked as ${newStatus.replace(/_/g, ' ')}`);
         setSelectedTicket(res.ticket);
         fetchTickets();
       }
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(error.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -164,13 +180,17 @@ const AdminSupport = () => {
                   <select
                     value={selectedTicket.status}
                     onChange={(e) => handleStatusChange(e.target.value)}
-                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm uppercase"
+                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm uppercase cursor-pointer"
                   >
-                    <option value="open">Open</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="waiting_on_user">Waiting on User</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
+                    {STATUS_OPTIONS.map((opt, optIdx) => {
+                      const currentIdx = STATUS_OPTIONS.findIndex(s => s.id === selectedTicket.status);
+                      const isPast = currentIdx !== -1 && optIdx < currentIdx;
+                      return (
+                        <option key={opt.id} value={opt.id} disabled={isPast} className={isPast ? 'text-gray-400 bg-gray-100' : ''}>
+                          {opt.label}
+                        </option>
+                      );
+                    })}
                   </select>
                   <button 
                     onClick={() => setSelectedTicket(null)}

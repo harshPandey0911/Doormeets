@@ -184,10 +184,16 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Service Title</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-gray-600">Service Title</label>
+                <span className={`text-[10px] ${form.title?.length >= 50 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                  {form.title?.length || 0}/50
+                </span>
+              </div>
               <input
+                maxLength={50}
                 value={form.title}
-                onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                onChange={e => setForm(p => ({ ...p, title: e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50) }))}
                 placeholder="e.g. AC Filter Cleaning"
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
@@ -239,6 +245,29 @@ const BrandServicesModal = ({ isOpen, onClose, brand, subCategories = [] }) => {
                 value={form.gstPercentage}
                 onChange={e => setForm(p => ({ ...p, gstPercentage: e.target.value }))}
                 placeholder="18"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Rating (⭐)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                max="5"
+                value={form.rating || 4.8}
+                onChange={e => setForm(p => ({ ...p, rating: e.target.value }))}
+                placeholder="4.8"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Reviews Count</label>
+              <input
+                type="text"
+                value={form.reviewsCount || '1.2k'}
+                onChange={e => setForm(p => ({ ...p, reviewsCount: e.target.value }))}
+                placeholder="1.2k"
                 className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>

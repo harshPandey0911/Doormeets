@@ -21,7 +21,7 @@ const BottomCheckoutBar = ({ total, originalTotal, buttonText = 'Checkout', onCl
           <div className="text-[9px] font-medium uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>Total payable</div>
           <div className="flex items-baseline gap-1.5 mt-0.5 font-black text-base" style={{ color: 'var(--text-primary)' }}>
             <span>₹{total}</span>
-            {originalTotal && (
+            {originalTotal && Number(originalTotal) > Number(total) && (
               <span className="text-[11px] line-through font-normal" style={{ color: 'var(--text-muted)' }}>₹{originalTotal}</span>
             )}
           </div>

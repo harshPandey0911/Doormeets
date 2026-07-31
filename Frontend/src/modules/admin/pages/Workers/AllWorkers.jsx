@@ -331,13 +331,24 @@ const AllWorkers = () => {
                     </td>
                     <td className="px-4 py-3">
                       {worker.vendorId ? (
-                        <div className="flex items-center gap-1 text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-lg text-[10px] font-medium w-fit">
-                          <FiBriefcase className="w-3 h-3" />
-                          <span>Vendor-Linked</span>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5 text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-bold w-fit shadow-2xs">
+                            <FiBriefcase className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                            <span>
+                              {typeof worker.vendorId === 'object' && (worker.vendorId.name || worker.vendorId.businessName)
+                                ? (worker.vendorId.name || worker.vendorId.businessName)
+                                : 'Vendor-Linked'}
+                            </span>
+                          </div>
+                          {typeof worker.vendorId === 'object' && worker.vendorId.businessName && worker.vendorId.name && (
+                            <span className="text-[10px] text-gray-400 font-semibold pl-1">
+                              {worker.vendorId.businessName}
+                            </span>
+                          )}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-lg text-[10px] font-medium w-fit">
-                          <FiUser className="w-3 h-3" />
+                        <div className="flex items-center gap-1.5 text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-bold w-fit shadow-2xs">
+                          <FiUser className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
                           <span>Labour (Independent)</span>
                         </div>
                       )}

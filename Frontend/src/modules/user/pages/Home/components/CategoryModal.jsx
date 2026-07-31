@@ -379,6 +379,22 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
 
     // Add to cart logic
     try {
+      const discount = Number(service?.discountPrice);
+      const base = Number(service?.basePrice || service?.price || 0);
+      let calculatedPrice = base;
+      let calculatedOriginalPrice = null;
+
+      if (discount > 0 && discount < base) {
+        calculatedPrice = discount;
+        calculatedOriginalPrice = base > 0 ? base : null;
+      } else if (base > 0) {
+        calculatedPrice = base;
+        calculatedOriginalPrice = null;
+      } else if (discount > 0) {
+        calculatedPrice = discount;
+        calculatedOriginalPrice = null;
+      }
+
       const cartItemData = {
         serviceId: service.id || service._id,
         categoryId: category?.id,
@@ -386,26 +402,25 @@ const CategoryModal = React.memo(({ isOpen, onClose, category, location, cartCou
         description: service.description || '',
         icon: toAssetUrl(service.icon || ''),
         category: category?.title,
-        categoryTitle: category?.title || '', // Explicit field
-        categoryIcon: toAssetUrl(category?.homeIconUrl || category?.iconUrl || ''), // Explicit field
-        // Brand info — stored as sectionTitle/sectionIcon for booking flow
-        sectionId: selectedBrand?.id || selectedBrand?._id || null, // VITAL: Added for plan benefits
+        categoryTitle: category?.title || '',
+        categoryIcon: toAssetUrl(category?.homeIconUrl || category?.iconUrl || ''),
+        sectionId: selectedBrand?.id || selectedBrand?._id || null,
         sectionTitle: selectedBrand?.title || '',
         sectionIcon: toAssetUrl(selectedBrand?.iconUrl || selectedBrand?.icon || ''),
-        price: service.discountPrice || service.basePrice,
-        originalPrice: service.discountPrice ? service.basePrice : null,
-        unitPrice: service.discountPrice || service.basePrice,
+        price: calculatedPrice,
+        originalPrice: calculatedOriginalPrice,
+        unitPrice: calculatedPrice,
         serviceCount: 1,
-        rating: "4.8",
-        reviews: "1k+",
+        rating: service.rating || "4.8",
+        reviews: service.reviewsCount || service.ratingCount || "1.2k",
         vendorId: service.vendorId || selectedBrand?.vendorId || null,
         isPriceDisclosed: service.isPriceDisclosed !== false,
         isConsultation,
         card: {
           title: isConsultation ? `${service.title} (Consultation)` : service.title,
           subtitle: service.description || '',
-          price: service.discountPrice || service.basePrice,
-          originalPrice: service.discountPrice ? service.basePrice : null,
+          price: calculatedPrice,
+          originalPrice: calculatedOriginalPrice,
           duration: service.duration || '',
           description: service.description || '',
           imageUrl: toAssetUrl(service.icon || ''),

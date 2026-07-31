@@ -150,6 +150,21 @@ const PricingMatrixPage = ({ selectedCity, filterTemplateId, filterTemplateCode 
         }
       }
 
+      if (isSubscription) {
+        if (!formData.packageTitle?.trim()) {
+          alert("Please select a Subscription Plan!");
+          return;
+        }
+        if (formData.customerPrice === '' || formData.customerPrice === null || Number(formData.customerPrice) < 0) {
+          alert("Subscription Price (₹) is required and must be 0 or greater!");
+          return;
+        }
+        if (formData.originalPrice !== '' && formData.originalPrice !== null && Number(formData.originalPrice) < Number(formData.customerPrice)) {
+          alert("Original Price (₹) cannot be less than Subscription Price (₹)!");
+          return;
+        }
+      }
+
       const payload = {
         ...formData,
         // Send optional brandId as null if brand is disabled

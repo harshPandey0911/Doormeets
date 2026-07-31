@@ -66,16 +66,22 @@ const ReviewsPage = () => {
   }, []);
 
   const handleStatusUpdate = async (id, newStatus) => {
+    // Optimistic local state update
+    setReviews(prev => prev.map(r => r._id === id ? { ...r, status: newStatus } : r));
     try {
       const response = await reviewService.updateReviewStatus(id, newStatus);
       if (response.success) {
         toast.success(`Review status updated to ${newStatus}`);
         fetchReviews();
         fetchStats();
+      } else {
+        toast.error(response.message || 'Failed to update status');
+        fetchReviews();
       }
     } catch (error) {
       console.error('Update status error:', error);
       toast.error('Failed to update status');
+      fetchReviews();
     }
   };
 
@@ -204,12 +210,25 @@ const ReviewsPage = () => {
                     <td className="px-4 py-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-[10px]">
-                          <FiBriefcase className="text-slate-400 w-3 h-3" />
-                          <span className="font-bold text-slate-700">{review.vendorId?.businessName || 'N/A'}</span>
+                          <FiBriefcase className="text-slate-400 w-3 h-3 flex-shrink-0" />
+                          <span className="font-bold text-slate-700">
+                            {review.vendorId?.businessName ||
+                             review.vendorId?.name ||
+                             review.bookingId?.vendorId?.businessName ||
+                             review.bookingId?.vendorId?.name ||
+                             (review.workerId?.name ? `Worker: ${review.workerId.name}` : 'Independent / Direct')}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px]">
-                          <FiBox className="text-slate-400 w-3 h-3" />
-                          <span className="text-slate-600">{review.serviceId?.title || 'N/A'}</span>
+                          <FiBox className="text-slate-400 w-3 h-3 flex-shrink-0" />
+                          <span className="text-slate-600">
+                            {review.serviceId?.title ||
+                             review.serviceId?.name ||
+                             review.bookingId?.serviceName ||
+                             review.bookingId?.serviceId?.title ||
+                             review.bookingId?.subCategoryId?.title ||
+                             'General Service'}
+                          </span>
                         </div>
                       </div>
                     </td>

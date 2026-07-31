@@ -80,10 +80,11 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (query.trim().length >= 2) {
+      const cleanQuery = query.trim();
+      if (cleanQuery.length >= 1) {
         setLoading(true);
         try {
-          const lowerQ = query.toLowerCase();
+          const lowerQ = cleanQuery.toLowerCase();
 
           // 1. Search Categories (Local)
           const categoryMatches = categories.filter(c =>
@@ -91,7 +92,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
           ).map(c => ({ ...c, isCategory: true }));
 
           // 2. Search Services (API)
-          const response = await publicCatalogService.getServices({ search: query });
+          const response = await publicCatalogService.getServices({ search: cleanQuery });
           let serviceMatches = [];
 
           if (response.success) {

@@ -91,17 +91,6 @@
   --color-blue-800: #8a2420;
   --color-blue-900: #741d1a;
 
-  /* Keep orange family mapped to brand shades */
-  --color-orange-50:  var(--primary-hover);
-  --color-orange-100: var(--primary-hover);
-  --color-orange-200: var(--primary-hover);
-  --color-orange-300: var(--primary-hover);
-  --color-orange-400: var(--primary-hover);
-  --color-orange-500: var(--primary);
-  --color-orange-600: var(--primary);
-  --color-orange-700: var(--primary-hover);
-  --color-orange-800: var(--primary-hover);
-  --color-orange-900: var(--primary-hover);
   /* Map font weights to standard values */
   --font-weight-medium:   500;
   --font-weight-semibold: 600;
@@ -572,4 +561,18 @@ html {
 * {
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Disable text selection globally on all charts, SVGs and analytics graphs */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-legend-wrapper,
+.recharts-tooltip-wrapper,
+.recharts-cartesian-axis,
+.recharts-text,
+svg {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
 }

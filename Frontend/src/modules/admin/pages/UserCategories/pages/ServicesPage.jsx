@@ -1062,7 +1062,54 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
   const handleSubmit = async () => {
     if (!formData.categoryId) { alert('Please select a Category'); setActiveStep(0); return; }
     if (!formData.title?.trim()) { alert('Please enter a Service Title'); setActiveStep(0); return; }
+    if (formData.title.trim().length > 50) { alert('Service Title cannot exceed 50 characters'); setActiveStep(0); return; }
 
+    if (serviceType === 'subscription_base') {
+      if (!packages || packages.length === 0) {
+        alert('Please add at least one Subscription Plan for Subscription-based service');
+        setActiveStep(1);
+        return;
+      }
+
+      for (let i = 0; i < packages.length; i++) {
+        const pkg = packages[i];
+        if (!pkg.title || !pkg.title.trim()) {
+          alert(`Plan #${i + 1}: Plan Title is required`);
+          setActiveStep(1);
+          return;
+        }
+        if (pkg.title.trim().length > 50) {
+          alert(`Plan #${i + 1} (${pkg.title}): Title cannot exceed 50 characters`);
+          setActiveStep(1);
+          return;
+        }
+        if (!pkg.duration || !pkg.duration.toString().trim()) {
+          alert(`Plan #${i + 1} (${pkg.title}): Validity / Duration is required (e.g. 30 Days)`);
+          setActiveStep(1);
+          return;
+        }
+        if (pkg.visitsCredits === undefined || pkg.visitsCredits === null || Number(pkg.visitsCredits) < 1) {
+          alert(`Plan #${i + 1} (${pkg.title}): Number of Visits / Credits must be at least 1`);
+          setActiveStep(1);
+          return;
+        }
+        if (pkg.price !== undefined && pkg.price !== '' && Number(pkg.price) < 0) {
+          alert(`Plan #${i + 1} (${pkg.title}): Price cannot be negative`);
+          setActiveStep(1);
+          return;
+        }
+        if (pkg.originalPrice !== undefined && pkg.originalPrice !== '' && Number(pkg.originalPrice) < Number(pkg.price || 0)) {
+          alert(`Plan #${i + 1} (${pkg.title}): Original Price cannot be less than Plan Price`);
+          setActiveStep(1);
+          return;
+        }
+        if (pkg.bookingDiscount !== undefined && pkg.bookingDiscount !== '' && (Number(pkg.bookingDiscount) < 0 || Number(pkg.bookingDiscount) > 100)) {
+          alert(`Plan #${i + 1} (${pkg.title}): Extra Booking Discount must be between 0% and 100%`);
+          setActiveStep(1);
+          return;
+        }
+      }
+    }
     const firstBanner = pageBlocks.find(b => b.blockType === 'banner_slider')?.data?.banners?.[0];
     const firstBannerUrl = typeof firstBanner === 'object' ? firstBanner.url : firstBanner;
 
@@ -1315,6 +1362,21 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
       return;
     }
 
+    if (isSubscription) {
+      if (!pricingForm.packageTitle?.trim()) {
+        alert("Please select a Subscription Plan");
+        return;
+      }
+      if (pricingForm.customerPrice === '' || pricingForm.customerPrice === null || Number(pricingForm.customerPrice) < 0) {
+        alert("Subscription Price (₹) is required and must be a valid positive amount");
+        return;
+      }
+      if (pricingForm.originalPrice && Number(pricingForm.originalPrice) < Number(pricingForm.customerPrice)) {
+        alert("Original Price (₹) cannot be less than Subscription Price (₹)");
+        return;
+      }
+    }
+
     if (Number(pricingForm.vendorPayoutBase || 0) > Number(pricingForm.customerPrice || 0)) {
       alert(`Vendor Payout Base (₹${pricingForm.vendorPayoutBase}) cannot be greater than Customer Price (₹${pricingForm.customerPrice})`);
       return;
@@ -1492,7 +1554,13 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     return true;
   });
 
-  const typeColors = { minute_base: 'bg-blue-100 text-blue-700', package_base: 'bg-emerald-100 text-emerald-700', image_base: 'bg-purple-100 text-purple-700', multi_visit: 'bg-orange-100 text-orange-700', subscription_base: 'bg-violet-100 text-violet-700' };
+  const typeColors = {
+    minute_base: { backgroundColor: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' },
+    package_base: { backgroundColor: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' },
+    image_base: { backgroundColor: '#faf5ff', color: '#6b21a8', borderColor: '#e9d5ff' },
+    multi_visit: { backgroundColor: '#fff7ed', color: '#c2410c', borderColor: '#ffedd5' },
+    subscription_base: { backgroundColor: '#f5f3ff', color: '#6d28d9', borderColor: '#ddd6fe' }
+  };
   const typeLabels = { minute_base: '⏱ Minute Base', package_base: '📦 Package', image_base: '📸 Image Quote', multi_visit: '🔄 Multi-Visit', subscription_base: '💳 Subscription' };
 
   const getServiceTypeInfo = (srv) => {
@@ -1504,44 +1572,44 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
         if (template.code === 'NORMAL_SERVICE') {
           return {
             label: '🛠️ Normal Service',
-            color: 'bg-indigo-100 text-indigo-700'
+            style: { backgroundColor: '#eef2ff', color: '#4338ca', borderColor: '#c7d2fe' }
           };
         }
         if (template.code === 'MINUTE_BASED') {
           return {
             label: '⏱ Minute Base',
-            color: 'bg-blue-100 text-blue-700'
+            style: { backgroundColor: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' }
           };
         }
         if (template.code === 'PACKAGE_BASED' || template.code === 'SERVICE_PAGE') {
           return {
             label: '📦 Package',
-            color: 'bg-emerald-100 text-emerald-700'
+            style: { backgroundColor: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' }
           };
         }
         if (template.code === 'IMAGE_CONSULTANT') {
           return {
             label: '📸 Image Quote',
-            color: 'bg-purple-100 text-purple-700'
+            style: { backgroundColor: '#faf5ff', color: '#6b21a8', borderColor: '#e9d5ff' }
           };
         }
         if (template.code === 'MULTI_VISIT') {
           return {
             label: '🔄 Multi-Visit',
-            color: 'bg-orange-100 text-orange-700'
+            style: { backgroundColor: '#fff7ed', color: '#c2410c', borderColor: '#ffedd5' }
           };
         }
         if (template.code === 'SUBSCRIPTION_BASED') {
           return {
             label: '💳 Subscription',
-            color: 'bg-violet-100 text-violet-700'
+            style: { backgroundColor: '#f5f3ff', color: '#6d28d9', borderColor: '#ddd6fe' }
           };
         }
       }
     }
     return {
       label: typeLabels[srv.serviceType] || '📦 Package',
-      color: typeColors[srv.serviceType] || 'bg-gray-100 text-gray-600'
+      style: typeColors[srv.serviceType] || { backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#e5e7eb' }
     };
   };
 
@@ -1580,7 +1648,10 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                     <td className="p-4 font-bold text-gray-800">{srv.title}</td>
                     <td className="p-4 text-gray-600 text-sm">{srv.categoryId?.title || 'Unknown'} &gt; {srv.subCategoryId?.title || '—'}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${typeInfo.color}`}>
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-xs"
+                        style={typeInfo.style}
+                      >
                         {typeInfo.label}
                       </span>
                     </td>
@@ -1695,9 +1766,20 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       })()}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Service Title *</label>
-                      <input type="text" className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
-                        value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Room Deep Cleaning" />
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-semibold text-gray-700">Service Title *</label>
+                        <span className={`text-xs ${formData.title?.length >= 50 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                          {formData.title?.length || 0}/50
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={50}
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                        value={formData.title}
+                        onChange={e => setFormData({ ...formData, title: e.target.value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50) })}
+                        placeholder="e.g. Room Deep Cleaning"
+                      />
                     </div>
                      <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
@@ -2391,13 +2473,19 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
-                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Plan Title *</label>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-[10px] font-bold text-gray-600">Plan Title *</label>
+                                    <span className={`text-[10px] ${plan.title?.length >= 50 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                                      {plan.title?.length || 0}/50
+                                    </span>
+                                  </div>
                                   <input
                                     type="text"
+                                    maxLength={50}
                                     placeholder="e.g. Monthly Plan"
                                     className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
-                                    value={plan.title}
-                                    onChange={e => updatePackage(idx, 'title', e.target.value)}
+                                    value={plan.title || ''}
+                                    onChange={e => updatePackage(idx, 'title', e.target.value.slice(0, 50))}
                                     required
                                   />
                                 </div>
@@ -2405,10 +2493,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                   <label className="block text-[10px] font-bold text-gray-600 mb-1">Validity / Duration *</label>
                                   <input
                                     type="text"
+                                    maxLength={50}
                                     placeholder="e.g. 30 Days, 90 Days, 365 Days, 15 Days"
                                     className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
                                     value={plan.duration || ''}
-                                    onChange={e => updatePackage(idx, 'duration', e.target.value)}
+                                    onChange={e => updatePackage(idx, 'duration', e.target.value.slice(0, 50))}
                                     required
                                   />
                                 </div>
@@ -2422,7 +2511,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                     placeholder="e.g. 4"
                                     className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none font-semibold"
                                     value={plan.visitsCredits ?? 4}
-                                    onChange={e => updatePackage(idx, 'visitsCredits', parseInt(e.target.value) || 0)}
+                                    onChange={e => updatePackage(idx, 'visitsCredits', Math.max(1, parseInt(e.target.value) || 0))}
                                     required
                                     min="1"
                                   />
@@ -2431,10 +2520,11 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                   <label className="block text-[10px] font-bold text-gray-600 mb-1">Visit Interval / Frequency</label>
                                   <input
                                     type="text"
+                                    maxLength={50}
                                     placeholder="e.g. Every 15 days, Every 2 months"
                                     className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
                                     value={plan.visitFrequency || ''}
-                                    onChange={e => updatePackage(idx, 'visitFrequency', e.target.value)}
+                                    onChange={e => updatePackage(idx, 'visitFrequency', e.target.value.slice(0, 50))}
                                   />
                                 </div>
                                 <div>
@@ -2444,7 +2534,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                                     placeholder="e.g. 10"
                                     className="w-full p-2 border border-gray-300 rounded-lg text-xs bg-white outline-none"
                                     value={plan.bookingDiscount ?? 0}
-                                    onChange={e => updatePackage(idx, 'bookingDiscount', parseInt(e.target.value) || 0)}
+                                    onChange={e => updatePackage(idx, 'bookingDiscount', Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
                                     min="0"
                                     max="100"
                                   />

@@ -113,9 +113,18 @@ const getBookingById = async (req, res) => {
     const booking = await Booking.findById(id)
       .populate('userId', 'name phone email addresses')
       .populate('vendorId', 'name businessName phone email address')
-      .populate('serviceId', 'title description iconUrl images')
-      .populate('categoryId', 'title slug')
-      .populate('workerId', 'name phone rating totalJobs completedJobs');
+      .populate({
+        path: 'serviceId',
+        select: 'title description iconUrl images categoryId subCategoryId category subCategory visitingCharges basePrice tax',
+        populate: [
+          { path: 'subCategoryId', select: 'title name' },
+          { path: 'categoryId', select: 'title name' }
+        ]
+      })
+      .populate('categoryId', 'title name slug')
+      .populate('subCategoryId', 'title name')
+      .populate('workerId', 'name phone rating totalJobs completedJobs')
+      .populate('vendorBillId');
 
     if (!booking) {
       return res.status(404).json({
@@ -124,9 +133,42 @@ const getBookingById = async (req, res) => {
       });
     }
 
+    const bObj = booking.toObject();
+
+    // 1. Fill missing tax and visiting charges if 0
+    if (!bObj.visitingCharges && bObj.serviceId?.visitingCharges) {
+      bObj.visitingCharges = bObj.serviceId.visitingCharges;
+    }
+    if (!bObj.tax && bObj.basePrice) {
+      bObj.tax = Math.round(bObj.basePrice * 0.18);
+    }
+
+    // 2. Fetch VendorBill if available for single source of truth
+    const VendorBill = require('../../models/VendorBill');
+    const bill = bObj.vendorBillId || (await VendorBill.findOne({ bookingId: bObj._id }).lean());
+
+    if (bill) {
+      bObj.adminCommission = bill.companyRevenue !== undefined ? bill.companyRevenue : bObj.adminCommission;
+      bObj.vendorShare = bill.vendorTotalEarning !== undefined ? bill.vendorTotalEarning : bObj.vendorShare;
+      bObj.vendorEarnings = bObj.vendorShare;
+      bObj.vendorBill = bill;
+    }
+
+    // 3. Fallback calculation if commission/vendorShare still not populated
+    if (!bObj.adminCommission && !bObj.vendorShare && bObj.finalAmount > 0) {
+      const Settings = require('../../models/Settings');
+      const settings = await Settings.findOne({ type: 'global' }).lean();
+      const commPct = settings?.commissionPercentage !== undefined ? settings.commissionPercentage : 20;
+
+      bObj.adminCommission = Math.round(bObj.finalAmount * (commPct / 100));
+      bObj.vendorShare = bObj.finalAmount - bObj.adminCommission;
+      bObj.vendorEarnings = bObj.vendorShare;
+      bObj.isEstimatedSplit = true;
+    }
+
     res.status(200).json({
       success: true,
-      data: booking
+      data: bObj
     });
   } catch (error) {
     console.error('Get booking error:', error);

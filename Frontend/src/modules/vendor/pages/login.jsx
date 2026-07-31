@@ -271,16 +271,33 @@ const VendorLogin = () => {
                       <input
                         ref={phoneInputRef}
                         type="tel"
-                        inputMode="numeric"
+                        inputMode="tel"
                         autoComplete="tel"
+                        name="phone"
                         id="phone"
                         className="block w-full pl-16 pr-4 py-2.5 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
                         placeholder="98765 43210"
                         value={phoneNumber}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          if (val.length > 0 && !/^[6-9]/.test(val)) return;
-                          setPhoneNumber(val.slice(0, 10));
+                          let raw = e.target.value;
+                          let digits = raw.replace(/\D/g, '');
+                          if (digits.length > 10 && digits.startsWith('91')) {
+                            digits = digits.slice(2);
+                          } else if (digits.length > 10 && digits.startsWith('0')) {
+                            digits = digits.slice(1);
+                          } else if (digits.length === 11 && digits.startsWith('0')) {
+                            digits = digits.slice(1);
+                          }
+                          if (digits.length > 10) {
+                            digits = digits.slice(-10);
+                          }
+                          if (digits.length === 0) {
+                            setPhoneNumber('');
+                            return;
+                          }
+                          if (/^[6-9]/.test(digits)) {
+                            setPhoneNumber(digits.slice(0, 10));
+                          }
                         }}
                       />
                     </div>

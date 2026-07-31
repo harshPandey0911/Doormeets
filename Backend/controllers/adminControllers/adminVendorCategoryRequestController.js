@@ -15,7 +15,7 @@ const getAllRequests = async (req, res) => {
       query.status = status;
     }
 
-    const [requests, total, pendingCount] = await Promise.all([
+    const [requests, total, pendingCount, approvedCount, rejectedCount] = await Promise.all([
       VendorCategoryRequest.find(query)
         .populate('vendorId', 'name businessName phone email')
         .populate('reviewedBy', 'name email')
@@ -23,14 +23,18 @@ const getAllRequests = async (req, res) => {
         .skip(skip)
         .limit(parseInt(limit))
         .lean(),
-      VendorCategoryRequest.countDocuments(query),
-      VendorCategoryRequest.countDocuments({ status: 'pending' })
+      VendorCategoryRequest.countDocuments({}),
+      VendorCategoryRequest.countDocuments({ status: 'pending' }),
+      VendorCategoryRequest.countDocuments({ status: 'approved' }),
+      VendorCategoryRequest.countDocuments({ status: 'rejected' })
     ]);
 
     res.status(200).json({
       success: true,
       total,
       pendingCount,
+      approvedCount,
+      rejectedCount,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
       requests: requests.map(r => ({

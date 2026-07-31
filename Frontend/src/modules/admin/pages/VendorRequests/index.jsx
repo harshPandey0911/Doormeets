@@ -32,9 +32,13 @@ const StatusBadge = ({ status }) => {
 const VendorRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('');
   const [total, setTotal] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [approvedCount, setApprovedCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Action modal state
   const [actionModal, setActionModal] = useState(null); // { request, type: 'approve'|'reject' }
@@ -44,11 +48,13 @@ const VendorRequests = () => {
   const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await vendorRequestService.getAllRequests({ status: activeTab, limit: 50 });
+      const res = await vendorRequestService.getAllRequests({ status: activeTab, limit: 100 });
       if (res.success) {
         setRequests(res.requests || []);
         setTotal(res.total || 0);
         setPendingCount(res.pendingCount || 0);
+        setApprovedCount(res.approvedCount || 0);
+        setRejectedCount(res.rejectedCount || 0);
       }
     } catch (err) {
       console.error(err);
@@ -58,7 +64,10 @@ const VendorRequests = () => {
     }
   }, [activeTab]);
 
-  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchRequests();
+  }, [fetchRequests]);
 
   const openAction = (request, type) => {
     setActionModal({ request, type });
@@ -157,84 +166,138 @@ const VendorRequests = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {requests.map(req => (
-            <div key={req.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-start justify-between gap-4">
-                {/* Main Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <h3 className="text-lg font-black text-gray-900">{req.categoryName}</h3>
-                    <StatusBadge status={req.status} />
-                  </div>
+          {(() => {
+            const totalPages = Math.ceil(requests.length / itemsPerPage) || 1;
+            const currentRequests = requests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-                  {/* Vendor Info */}
-                  {req.vendor && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-                        <FiUser className="w-3.5 h-3.5 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-800">{req.vendor.name}</p>
-                        {req.vendor.businessName && (
-                          <p className="text-xs text-gray-400">{req.vendor.businessName}</p>
+            return (
+              <>
+                {currentRequests.map(req => (
+                  <div key={req.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Main Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                          <h3 className="text-lg font-black text-gray-900">{req.categoryName}</h3>
+                          <StatusBadge status={req.status} />
+                        </div>
+
+                        {/* Vendor Info */}
+                        {req.vendor && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                              <FiUser className="w-3.5 h-3.5 text-gray-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-800">{req.vendor.name}</p>
+                              {req.vendor.businessName && (
+                                <p className="text-xs text-gray-400">{req.vendor.businessName}</p>
+                              )}
+                            </div>
+                          </div>
                         )}
+
+                        {/* Reason */}
+                        {req.reason && (
+                          <div className="flex items-start gap-2 bg-gray-50 rounded-xl p-3 mb-2">
+                            <FiMessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-gray-600 leading-relaxed">{req.reason}</p>
+                          </div>
+                        )}
+
+                        {/* Admin Note */}
+                        {req.adminNote && (
+                          <div className="flex items-start gap-2 bg-blue-50 rounded-xl p-3 mb-2">
+                            <FiMessageSquare className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-blue-700 leading-relaxed">
+                              <span className="font-bold">Your note: </span>{req.adminNote}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Dates */}
+                        <div className="flex items-center gap-4 text-xs text-gray-400">
+                          <div className="flex items-center gap-1">
+                            <FiCalendar className="w-3 h-3" />
+                            <span>Submitted: {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          </div>
+                          {req.reviewedAt && (
+                            <div className="flex items-center gap-1">
+                              <FiCheckCircle className="w-3 h-3" />
+                              <span>Reviewed: {new Date(req.reviewedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Reason */}
-                  {req.reason && (
-                    <div className="flex items-start gap-2 bg-gray-50 rounded-xl p-3 mb-2">
-                      <FiMessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-gray-600 leading-relaxed">{req.reason}</p>
+                      {/* Action Buttons — only for pending */}
+                      {req.status === 'pending' && (
+                        <div className="flex flex-col gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => openAction(req, 'approve')}
+                            className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition active:scale-95"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => openAction(req, 'reject')}
+                            className="px-4 py-2 bg-red-50 text-red-600 text-sm font-bold rounded-xl hover:bg-red-100 transition active:scale-95 border border-red-200"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
-
-                  {/* Admin Note */}
-                  {req.adminNote && (
-                    <div className="flex items-start gap-2 bg-blue-50 rounded-xl p-3 mb-2">
-                      <FiMessageSquare className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-blue-700 leading-relaxed">
-                        <span className="font-bold">Your note: </span>{req.adminNote}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Dates */}
-                  <div className="flex items-center gap-4 text-xs text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <FiCalendar className="w-3 h-3" />
-                      <span>Submitted: {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                    </div>
-                    {req.reviewedAt && (
-                      <div className="flex items-center gap-1">
-                        <FiCheckCircle className="w-3 h-3" />
-                        <span>Reviewed: {new Date(req.reviewedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                      </div>
-                    )}
                   </div>
-                </div>
+                ))}
 
-                {/* Action Buttons — only for pending */}
-                {req.status === 'pending' && (
-                  <div className="flex flex-col gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => openAction(req, 'approve')}
-                      className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition active:scale-95"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => openAction(req, 'reject')}
-                      className="px-4 py-2 bg-red-50 text-red-600 text-sm font-bold rounded-xl hover:bg-red-100 transition active:scale-95 border border-red-200"
-                    >
-                      Reject
-                    </button>
+                {/* Pagination Bar */}
+                {requests.length > itemsPerPage && (
+                  <div className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl p-4 shadow-sm mt-4">
+                    <div className="text-xs font-semibold text-gray-500">
+                      Showing <span className="font-bold text-gray-800">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
+                      <span className="font-bold text-gray-800">{Math.min(currentPage * itemsPerPage, requests.length)}</span> of{' '}
+                      <span className="font-bold text-gray-800">{requests.length}</span> requests
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      >
+                        Previous
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-7 h-7 rounded-lg text-xs font-bold transition ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-          ))}
+              </>
+            );
+          })()}
         </div>
       )}
 

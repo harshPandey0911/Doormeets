@@ -137,7 +137,7 @@ const RevenueReport = () => {
               <BarChart data={data?.revenueByService} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
                 <XAxis type="number" axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} tick={{ fontSize: 11 }} />
-                <YAxis dataKey="_id" type="category" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 10 }} width={80} />
+                <YAxis dataKey="_id" type="category" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 10 }} width={110} />
                 <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
                 <Bar dataKey="revenue" fill="#2874F0" radius={[0, 4, 4, 0]}>
                   {data?.revenueByService?.map((entry, index) => (

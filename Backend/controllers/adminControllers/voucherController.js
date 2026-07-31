@@ -20,6 +20,9 @@ exports.createVoucher = async (req, res) => {
       return res.status(400).json({ success: false, message: 'A gift card or voucher with this code already exists.' });
     }
 
+    const expDate = new Date(expiryDate);
+    expDate.setHours(23, 59, 59, 999);
+
     const voucher = await Voucher.create({
       code: uppercaseCode,
       type,
@@ -29,7 +32,7 @@ exports.createVoucher = async (req, res) => {
       categoryId: type === 'service_discount' ? (categoryId || null) : null,
       maxDiscountQty: type === 'service_discount' && maxDiscountQty ? Number(maxDiscountQty) : null,
       minOrderValue: Number(minOrderValue || 0),
-      expiryDate: new Date(expiryDate),
+      expiryDate: expDate,
       usageLimit: usageLimit ? Number(usageLimit) : null,
       oneTimePerUser: oneTimePerUser !== undefined ? oneTimePerUser : true
     });
@@ -87,7 +90,11 @@ exports.updateVoucher = async (req, res) => {
     if (discountType) updateFields.discountType = discountType;
     if (maxDiscountQty !== undefined) updateFields.maxDiscountQty = maxDiscountQty ? Number(maxDiscountQty) : null;
     if (minOrderValue !== undefined) updateFields.minOrderValue = Number(minOrderValue);
-    if (expiryDate) updateFields.expiryDate = new Date(expiryDate);
+    if (expiryDate) {
+      const expDate = new Date(expiryDate);
+      expDate.setHours(23, 59, 59, 999);
+      updateFields.expiryDate = expDate;
+    }
     if (usageLimit !== undefined) updateFields.usageLimit = usageLimit ? Number(usageLimit) : null;
 
     const updatedVoucher = await Voucher.findByIdAndUpdate(
@@ -132,8 +139,10 @@ exports.redeemVoucher = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Invalid or inactive gift voucher code.' });
     }
 
-    // Check Expiry Date
-    if (new Date(voucher.expiryDate) < new Date()) {
+    // Check Expiry Date (valid until 11:59:59.999 PM of the expiry date)
+    const voucherExp = new Date(voucher.expiryDate);
+    voucherExp.setHours(23, 59, 59, 999);
+    if (voucherExp < new Date()) {
       return res.status(400).json({ success: false, message: 'This gift voucher has expired.' });
     }
 

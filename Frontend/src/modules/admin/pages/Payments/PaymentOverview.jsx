@@ -548,11 +548,15 @@ const PaymentOverview = () => {
                 className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:border-blue-500 w-full sm:w-56"
               >
                 <option value="all">All Vendors</option>
-                {vendors.map(v => (
-                  <option key={v.vendorId?._id || v.vendorId} value={v.vendorId?._id || v.vendorId}>
-                    {v.vendorId?.businessName || v.vendorId?.name || 'Unknown Vendor'}
-                  </option>
-                ))}
+                {vendors.map(v => {
+                  const vId = v._id || v.vendorId?._id || v.vendorId;
+                  const vName = v.businessName || v.name || v.vendorId?.businessName || v.vendorId?.name || 'Unknown Vendor';
+                  return (
+                    <option key={vId} value={vId}>
+                      {vName}
+                    </option>
+                  );
+                })}
               </select>
 
               <button
@@ -616,7 +620,9 @@ const PaymentOverview = () => {
                         <td className="py-3 px-4">
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold text-gray-800">{row.vendor?.businessName || row.vendor?.name || '—'}</span>
-                            <span className="text-xs text-indigo-600 font-bold uppercase">{row.vendorLevel} Vendor</span>
+                            <span className="text-xs text-indigo-600 font-bold">
+                              {row.vendorLevel || 'Level 1'}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3 px-4 font-medium text-gray-700">{formatCurrency(row.customerPay)}</td>
