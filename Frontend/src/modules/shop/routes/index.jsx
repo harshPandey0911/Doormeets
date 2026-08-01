@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ShopLayout from '../components/ShopLayout';
 import Login from '../pages/Login';
@@ -25,6 +25,18 @@ const PublicShopRoute = ({ children }) => {
 };
 
 const ShopRoutes = () => {
+  useEffect(() => {
+    // Set shop owner portal favicon dynamically
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.type = 'image/png';
+      link.rel = 'shortcut icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = '/doormeets-logo.png';
+  }, []);
+
   return (
     <Routes>
       <Route path="/login" element={
