@@ -312,6 +312,7 @@ const MyBookings = () => {
           <div className="max-w-[1360px] mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => {
                   if (location.key !== 'default') {
                     navigate(-1);
@@ -319,18 +320,19 @@ const MyBookings = () => {
                     navigate('/user/home');
                   }
                 }}
-                className="w-10 h-10 md:w-11 md:h-11 bg-white dark:bg-zinc-900 rounded-xl flex items-center justify-center shadow-sm border border-border-color cursor-pointer text-dark-text"
+                className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center shadow-sm border cursor-pointer transition-colors"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
                 <FiArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-xl md:text-2xl font-bold text-dark-text tracking-tight">My Bookings</h1>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>My Bookings</h1>
             </div>
             <NotificationBell />
           </div>
         </header>
 
         {/* Filter Tabs */}
-        <div className="bg-white dark:bg-zinc-900 border-b border-border-color fixed top-[54px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full">
+        <div className="border-b fixed top-[54px] left-0 right-0 z-30 shadow-[0_4px_20px_-16px_rgba(0,0,0,0.1)] w-full" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
           <div className="max-w-[1360px] mx-auto flex overflow-x-auto px-4 md:px-6 lg:px-8 py-1.5 md:py-2 gap-1.5 md:gap-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {[
               { id: 'all', label: 'All Bookings' },
@@ -342,11 +344,12 @@ const MyBookings = () => {
               <button
                 key={tab.id}
                 onClick={() => setFilter(tab.id)}
-                className={`px-3 md:px-5 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${filter === tab.id
-                  ? 'border-transparent text-white shadow-md active:scale-95'
-                  : 'bg-white dark:bg-zinc-900 border-border-color text-secondary-text hover:bg-gray-100 hover:border-border-color'
-                  }`}
-                style={filter === tab.id ? { backgroundColor: themeColors.button } : {}}
+                className="px-3 md:px-5 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer"
+                style={
+                  filter === tab.id
+                    ? { backgroundColor: themeColors.button, color: '#ffffff', borderColor: 'transparent' }
+                    : { backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }
+                }
               >
                 {tab.label}
               </button>
@@ -359,32 +362,32 @@ const MyBookings = () => {
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-border-color shadow-sm animate-pulse">
-                    <div className="flex justify-between mb-4 border-b border-divider pb-4">
+                  <div key={i} className="rounded-2xl p-5 border shadow-sm animate-pulse" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                    <div className="flex justify-between mb-4 border-b pb-4" style={{ borderColor: 'var(--border)' }}>
                       <div className="space-y-2">
-                        <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                        <div className="h-5 w-48 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-3 w-20 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
+                        <div className="h-5 w-48 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
                       </div>
-                      <div className="h-6 w-24 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+                      <div className="h-6 w-24 rounded-full" style={{ backgroundColor: 'var(--border)' }}></div>
                     </div>
-                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-4 mb-5 p-3 rounded-xl bg-gray-100 dark:bg-gray-900/50 border border-border-color">
-                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800"></div>
+                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-4 mb-5 p-3 rounded-xl border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                      <div className="w-8 h-8 rounded-full" style={{ backgroundColor: 'var(--border)' }}></div>
                       <div className="space-y-1.5 py-1">
-                        <div className="h-2.5 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                        <div className="h-3.5 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-2.5 w-16 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
+                        <div className="h-3.5 w-32 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800"></div>
+                      <div className="w-8 h-8 rounded-full" style={{ backgroundColor: 'var(--border)' }}></div>
                       <div className="space-y-1.5 py-1">
-                        <div className="h-2.5 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                        <div className="h-3.5 w-40 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-2.5 w-16 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
+                        <div className="h-3.5 w-40 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
                       </div>
                     </div>
-                    <div className="flex justify-between pt-4 border-t border-border-color">
+                    <div className="flex justify-between pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                       <div className="space-y-1">
-                        <div className="h-2.5 w-16 bg-gray-200 dark:bg-gray-800 rounded"></div>
-                        <div className="h-6 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                        <div className="h-2.5 w-16 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
+                        <div className="h-6 w-24 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
                       </div>
-                      <div className="h-9 w-28 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+                      <div className="h-9 w-28 rounded-lg" style={{ backgroundColor: 'var(--border)' }}></div>
                     </div>
                   </div>
               ))}
@@ -395,11 +398,11 @@ const MyBookings = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-24 text-center px-6"
             >
-              <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center mb-6 border border-border-color shadow-sm">
-                <FiClock className="w-8 h-8 text-secondary-text" />
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 border shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                <FiClock className="w-8 h-8" style={{ color: 'var(--text-secondary)' }} />
               </div>
-              <h3 className="text-dark-text text-lg font-bold mb-2">No Bookings Found</h3>
-              <p className="text-secondary-text text-sm max-w-xs leading-relaxed">
+              <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>No Bookings Found</h3>
+              <p className="text-sm max-w-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                 {filter === 'all'
                   ? "Looks like you haven't booked any services yet. Explore our services to get started!"
                   : `You don't have any ${filter.replace('-', ' ')} bookings at the moment.`}
@@ -440,10 +443,11 @@ const MyBookings = () => {
                         bookingService.getById(bId).catch(() => {});
                       }
                     }}
-                    className="group flex gap-3 md:gap-4 bg-white dark:bg-zinc-900 rounded-md p-2.5 md:p-4 border border-border-color shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
+                    className="group flex gap-3 md:gap-4 rounded-md p-2.5 md:p-4 border shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/35 active:scale-[0.99] transition-all duration-300 cursor-pointer w-full relative"
+                    style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                   >
                     {/* Booking Image */}
-                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-md overflow-hidden shrink-0 border border-border-color bg-white dark:bg-zinc-900 flex items-center justify-center">
+                    <div className="w-16 h-16 md:w-24 md:h-24 rounded-md overflow-hidden shrink-0 border flex items-center justify-center" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
                       <img 
                         src={bookingImage} 
                         alt={booking.serviceName || 'Service'} 
@@ -456,7 +460,7 @@ const MyBookings = () => {
                       <div className="space-y-1">
                         {/* Booking ID & Category */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-medium text-secondary-text">
+                          <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
                             #{booking.bookingNumber || (booking._id || booking.id).substring(0, 8)}
                           </span>
                           {booking.serviceCategory && (
@@ -467,15 +471,15 @@ const MyBookings = () => {
                         </div>
  
                         {/* Booking Title */}
-                        <h3 className="text-sm md:text-base font-semibold text-dark-text leading-tight truncate group-hover:text-brand transition-colors">
+                        <h3 className="text-sm md:text-base font-semibold leading-tight truncate group-hover:text-brand transition-colors" style={{ color: 'var(--text-primary)' }}>
                           {booking.serviceName || 'Service Request'}
                         </h3>
  
                         {/* Rating block matching mockup */}
-                        <div className="flex items-center gap-1 text-[11px] md:text-xs text-secondary-text font-medium leading-none">
+                        <div className="flex items-center gap-1 text-[11px] md:text-xs font-medium leading-none" style={{ color: 'var(--text-secondary)' }}>
                           <FiStar className="text-amber-500 fill-amber-500 w-3 h-3 md:w-3.5 md:h-3.5" />
                           <span>{booking.rating || booking.bookedItems?.[0]?.rating || '4.5'}</span>
-                          <span className="text-secondary-text opacity-70 font-normal">({booking.review ? 'Reviewed' : '1.2k reviews'})</span>
+                          <span className="opacity-70 font-normal" style={{ color: 'var(--text-muted)' }}>({booking.review ? 'Reviewed' : '1.2k reviews'})</span>
                         </div>
                       </div>
  
@@ -493,9 +497,9 @@ const MyBookings = () => {
                             Write a review
                           </button>
                         ) : (
-                          <div className="text-[10px] text-secondary-text font-semibold flex items-center gap-1">
-                            <span className="text-dark-text">{formatDate(booking.scheduledDate)}</span>
-                            <span className="text-border-color">•</span>
+                          <div className="text-[10px] font-semibold flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                            <span style={{ color: 'var(--text-primary)' }}>{formatDate(booking.scheduledDate)}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>•</span>
                             <span>{booking.scheduledTime || booking.timeSlot?.start || 'N/A'}</span>
                           </div>
                         )}
@@ -514,11 +518,11 @@ const MyBookings = () => {
                       {/* Pricing and Arrow */}
                       <div className="flex items-center gap-2 mt-2">
                         <div className="text-right">
-                           <p className="text-sm md:text-base font-semibold text-dark-text">
+                           <p className="text-sm md:text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
                             ₹{(booking.finalAmount || booking.totalAmount || 0).toLocaleString('en-IN')}
                           </p>
                         </div>
-                        <FiChevronRight className="w-5 h-5 text-secondary-text group-hover:text-brand transition-colors" />
+                        <FiChevronRight className="w-5 h-5 group-hover:text-brand transition-colors" style={{ color: 'var(--text-secondary)' }} />
                       </div>
                     </div>
                   </motion.div>

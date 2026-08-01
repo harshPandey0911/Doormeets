@@ -45,32 +45,32 @@ const MyPlan = () => {
     }
     if (lower.includes('diamond')) {
       return {
-        container: 'bg-indigo-50 border-indigo-100 text-indigo-900',
+        container: 'bg-indigo-50 dark:bg-indigo-950/70 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200',
         badge: 'bg-emerald-500 text-white',
-        includes: 'text-indigo-600',
-        check: 'text-indigo-500',
-        price: 'text-indigo-900',
-        button: 'bg-indigo-600 text-white hover:bg-indigo-700'
-      }
+        includes: 'text-indigo-600 dark:text-indigo-300',
+        check: 'text-indigo-500 dark:text-indigo-400',
+        price: 'text-indigo-900 dark:text-indigo-100',
+        button: 'bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700'
+      };
     }
     if (lower.includes('gold')) {
       return {
-        container: 'bg-[#FEF9C3] border-yellow-200 text-[#854D0E]',
+        container: 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200',
         badge: 'bg-[#22C55E] text-white',
-        includes: 'text-[#854D0E] opacity-70',
-        check: 'text-[#854D0E]',
-        price: 'text-[#854D0E]',
-        button: 'bg-[#854D0E] text-white hover:bg-amber-900'
+        includes: 'text-amber-700 dark:text-amber-300 opacity-80',
+        check: 'text-amber-600 dark:text-amber-400',
+        price: 'text-amber-950 dark:text-amber-100',
+        button: 'bg-amber-700 dark:bg-amber-600 text-white hover:bg-amber-800'
       };
     }
     if (lower.includes('silver')) {
       return {
-        container: 'bg-[#F1F5F9] border-slate-200 text-slate-800',
+        container: 'bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-slate-200',
         badge: 'bg-[#22C55E] text-white',
-        includes: 'text-slate-500',
-        check: 'text-slate-400',
-        price: 'text-slate-900',
-        button: 'bg-slate-800 text-white hover:bg-slate-900'
+        includes: 'text-slate-500 dark:text-slate-400',
+        check: 'text-slate-400 dark:text-slate-500',
+        price: 'text-slate-900 dark:text-slate-100',
+        button: 'bg-slate-800 dark:bg-zinc-800 text-white hover:bg-slate-900 dark:hover:bg-zinc-700 border border-slate-700 dark:border-zinc-700'
       };
     }
 
@@ -116,24 +116,26 @@ const MyPlan = () => {
   };
 
   return (
-    <div className="min-h-screen bg-light-bg pb-12">
+    <div className="min-h-screen pb-12" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
-      <header className="bg-transparent border-b border-border-color sticky top-0 z-30">
+      <header className="sticky top-0 z-30 border-b backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
         <div className="px-4 py-4 flex items-center gap-3 max-w-7xl mx-auto">
           <button
+            type="button"
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-800/10 rounded-full transition-colors"
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border cursor-pointer transition-colors"
+            style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
           >
-            <FiArrowLeft className="w-5 h-5 text-dark-text" />
+            <FiArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-semibold text-dark-text">Subscription Plans</h1>
+          <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Subscription Plans</h1>
         </div>
       </header>
 
       <main className="px-4 py-8 max-w-7xl mx-auto">
-        <div className="mb-8 bg-card-bg/40 backdrop-blur-sm p-6 sm:p-8 rounded-md border border-border-color shadow-sm">
-          <h2 className="text-xl sm:text-2xl font-semibold text-dark-text mb-2 tracking-tight">Pick Your Membership</h2>
-          <p className="text-secondary-text font-normal text-xs sm:text-sm max-w-2xl leading-relaxed">
+        <div className="mb-8 p-6 sm:p-8 rounded-2xl border shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+          <h2 className="text-xl sm:text-2xl font-bold mb-2 tracking-tight" style={{ color: 'var(--text-primary)' }}>Pick Your Membership</h2>
+          <p className="font-medium text-xs sm:text-sm max-w-2xl leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             Choose a plan that fits your home. Higher plans automatically include benefits from the tiers below them.
           </p>
         </div>

@@ -18,16 +18,16 @@ const SubCategoryCard = ({ subCategory, onClick }) => (
     onClick={() => onClick(subCategory)}
     className="group flex flex-col items-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
   >
-    <div className="w-20 h-20 rounded-[24px] bg-gray-50 border border-gray-100 shadow-sm flex items-center justify-center mb-2 overflow-hidden relative group-hover:border-[#9634f7] group-hover:shadow-md transition-all">
+    <div className="w-20 h-20 rounded-[24px] border shadow-sm flex items-center justify-center mb-2 overflow-hidden relative group-hover:border-[#9634f7] group-hover:shadow-md transition-all" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
       <div className="absolute inset-0 bg-gradient-to-tr from-[#9634f7] to-[#1fd8d1] opacity-0 group-hover:opacity-10 transition-opacity" />
       {subCategory.iconUrl ? (
         <img src={toAssetUrl(subCategory.iconUrl)} alt={subCategory.title} className="w-full h-full object-cover" />
       ) : (
-        <FiLayers className="w-8 h-8 text-gray-300 group-hover:text-[#9634f7] transition-colors" />
+        <FiLayers className="w-8 h-8 text-gray-400 group-hover:text-[#9634f7] transition-colors" />
       )}
     </div>
     <div className="text-center">
-      <h3 className="text-xs font-bold text-gray-800 line-clamp-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#9634f7] group-hover:to-[#1fd8d1] transition-all">
+      <h3 className="text-xs font-bold line-clamp-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#9634f7] group-hover:to-[#1fd8d1] transition-all" style={{ color: 'var(--text-primary)' }}>
         {subCategory.title}
       </h3>
     </div>
@@ -36,26 +36,26 @@ const SubCategoryCard = ({ subCategory, onClick }) => (
 
 const BrandCard = ({ brand, onClick, onInfoClick }) => (
   <div onClick={() => onClick(brand)} className="flex flex-col items-center cursor-pointer group active:scale-95 transition-all relative">
-    <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mb-2 group-hover:bg-gray-100 transition-colors shadow-sm overflow-hidden border border-gray-100 relative">
+    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-2 shadow-sm overflow-hidden border relative" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
       {brand.icon ? (
         <img src={toAssetUrl(brand.icon)} alt={brand.title} className="w-14 h-14 object-contain group-hover:scale-110 transition-transform" loading="lazy" />
       ) : (
-        <FiLayers className="w-8 h-8 text-gray-300" />
+        <FiLayers className="w-8 h-8 text-gray-400" />
       )}
       {brand.badge && (
-        <span className="absolute top-0 right-0 bg-purple-100 text-purple-700 text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg">
+        <span className="absolute top-0 right-0 bg-purple-500/20 text-purple-400 text-[9px] font-bold px-1.5 py-0.5 rounded-bl-lg">
           {brand.badge}
         </span>
       )}
     </div>
-    <p className="text-[11px] font-black text-gray-900 text-center leading-tight line-clamp-1 px-1">{brand.title}</p>
+    <p className="text-[11px] font-bold text-center leading-tight line-clamp-1 px-1" style={{ color: 'var(--text-primary)' }}>{brand.title}</p>
     <div className="flex flex-col items-center mt-0.5">
-      <span className="text-[10px] font-bold text-emerald-600">₹{brand.price || 0}</span>
+      <span className="text-[10px] font-bold text-emerald-500">₹{brand.price || 0}</span>
       <div className="flex items-center gap-1">
-        <span className="text-[8px] font-medium text-gray-400 truncate max-w-[70px]">by {brand.vendor?.businessName || brand.vendor?.name || 'Pro'}</span>
+        <span className="text-[8px] font-medium truncate max-w-[70px]" style={{ color: 'var(--text-muted)' }}>by {brand.vendor?.businessName || brand.vendor?.name || 'Pro'}</span>
         <button
           onClick={(e) => { e.stopPropagation(); onInfoClick(brand.vendor); }}
-          className="text-blue-500 hover:text-blue-600 transition-colors"
+          className="text-blue-400 hover:text-blue-500 transition-colors"
         >
           <FiInfo className="w-2.5 h-2.5" />
         </button>
@@ -345,9 +345,9 @@ const CategoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="p-4 border-b">
-        <button onClick={handleBack} className="flex items-center gap-3">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+      <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+        <button onClick={handleBack} className="flex items-center gap-3 cursor-pointer" style={{ color: 'var(--text-primary)' }}>
           <FiArrowLeft className="w-5 h-5" />
           <span className="font-bold">Back</span>
         </button>
@@ -355,7 +355,7 @@ const CategoryPage = () => {
 
       <div className="p-4">
         <div className="flex items-center gap-3 mb-4">
-          <h1 className="text-xl font-bold">{category.title}</h1>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{category?.title}</h1>
           {loading && <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin ml-auto"></div>}
         </div>
 

@@ -961,10 +961,10 @@ const PremiumCategoryPage = () => {
           <div className="space-y-6">
             {[1, 2].map((i) => (
               <div key={i} className="animate-pulse space-y-4">
-                <div className="h-6 w-36 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                <div className="h-6 w-36 rounded-md" style={{ backgroundColor: 'var(--card-bg)' }} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[1, 2].map((j) => (
-                    <div key={j} className="h-32 rounded-3xl bg-gray-100 dark:bg-zinc-900" />
+                    <div key={j} className="h-32 rounded-3xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }} />
                   ))}
                 </div>
               </div>
@@ -1308,10 +1308,10 @@ const PremiumCategoryPage = () => {
                 <div className="space-y-6">
                   {[1, 2].map((i) => (
                     <div key={i} className="animate-pulse space-y-4 py-6">
-                      <div className="h-6 w-36 rounded-md bg-gray-200 dark:bg-zinc-800" />
+                      <div className="h-6 w-36 rounded-md" style={{ backgroundColor: 'var(--card-bg)' }} />
                       <div className="space-y-4">
-                        <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
-                        <div className="h-28 rounded-xl bg-gray-100 dark:bg-zinc-900" />
+                        <div className="h-28 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }} />
+                        <div className="h-28 rounded-xl border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }} />
                       </div>
                     </div>
                   ))}

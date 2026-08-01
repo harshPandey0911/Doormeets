@@ -117,16 +117,16 @@ const NotificationBell = ({ notificationCount = 0, onClick, targetUrl, userType 
     >
       {/* 1. Subtle Circular Border */}
       <div
-        className="absolute inset-0 rounded-full z-0 border transition-colors duration-200 bg-white dark:bg-zinc-900"
+        className="absolute inset-0 rounded-full z-0 border transition-colors duration-200 bg-card-bg"
         style={{ borderColor: 'var(--border)' }}
       />
 
       {/* 2. Inner Button */}
       <button
-        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden transition-colors duration-200 bg-white dark:bg-zinc-900"
+        className="relative z-10 w-full h-full rounded-full flex items-center justify-center overflow-hidden transition-colors duration-200 bg-card-bg"
       >
         <div ref={bellRef} className="flex items-center justify-center">
-          <FiBell className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5 text-dark-text" />
+          <FiBell className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5 text-dark-text" style={{ color: 'var(--text-primary)' }} />
         </div>
       </button>
 

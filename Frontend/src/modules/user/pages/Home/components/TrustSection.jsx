@@ -16,8 +16,8 @@ const TrustSection = ({ items = [], title }) => {
       )}
       {/* Single box containing all dynamic items stacked vertically */}
       <div 
-        className="rounded-md p-4 shadow-sm border space-y-1 bg-white dark:bg-zinc-900"
-        style={{ borderColor: 'var(--border)' }}
+        className="rounded-md p-4 shadow-sm border space-y-1"
+        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
       >
         {items.map((item, index) => {
           const hasLongDescription = item.description && item.description.length > 80;

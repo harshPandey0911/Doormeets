@@ -124,16 +124,14 @@ const Cart = () => {
     return sum + (unitOriginalPrice * (item.serviceCount || 1));
   }, 0);
   return (
-    <div className="min-h-screen pb-32 relative bg-white">
-      {/* Refined Premium Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(circle at top, #FFFFFF 0%, #F8F9FA 100%)'
-          }}
-        />
-        {/* Elegant Dot Grid Pattern */}
-        <div className="absolute inset-0 opacity-[0.02]"
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Background Decorative Gradient Blobs */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#B33A35]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 right-0 w-80 h-80 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
+      
+      {/* Background Grid Pattern */}
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none select-none">
+        <div className="w-full h-full"
           style={{
             backgroundImage: `radial-gradient(${themeColors?.brand?.teal || '#B33A35'} 0.8px, transparent 0.8px)`,
             backgroundSize: '32px 32px'
@@ -142,20 +140,22 @@ const Cart = () => {
       </div>
 
       <div className="relative z-10">
-        {/* Modern Glassmorphism Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/40 border-b border-black/[0.03] px-4 py-4 flex items-center justify-between">
+        {/* Header */}
+        <header className="sticky top-0 z-40 backdrop-blur-xl border-b px-4 py-4 flex items-center justify-between" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={handleBack}
-              className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm border border-black/[0.02]"
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border cursor-pointer transition-colors"
+              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             >
-              <FiArrowLeft className="w-5 h-5 text-black" />
+              <FiArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2">
               <FiShoppingCart className="w-5 h-5" style={{ color: themeColors.button }} />
-              <h1 className="text-xl font-extrabold text-black">Your Cart</h1>
+              <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Your Cart</h1>
               {cartCount > 0 && (
-                <span className="bg-gray-100 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full border" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}>
                   {cartCount}
                 </span>
               )}
@@ -165,37 +165,49 @@ const Cart = () => {
         </header>
 
         {/* Cart Items - Grouped by Category */}
-        <main className="px-4 py-4" style={{ paddingBottom: cartItems.length > 0 ? '70px' : '100px' }}>
+        <main className="px-4 py-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto" style={{ paddingBottom: cartItems.length > 0 ? '70px' : '100px' }}>
           {loading ? (
             <div className="space-y-6">
               {[1, 2].map(i => (
-                <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 animate-pulse">
+                <div key={i} className="rounded-2xl shadow-sm border p-4 animate-pulse" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                   {/* Category Header Skeleton */}
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
+                    <div className="w-12 h-12 rounded-xl" style={{ backgroundColor: 'var(--border)' }}></div>
                     <div className="space-y-2">
-                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                      <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-32 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
+                      <div className="h-3 w-24 rounded" style={{ backgroundColor: 'var(--border)' }}></div>
                     </div>
                   </div>
                   {/* Items Skeleton */}
                   <div className="space-y-3">
-                    <div className="h-10 w-full bg-gray-100 rounded"></div>
-                    <div className="h-10 w-full bg-gray-100 rounded"></div>
+                    <div className="h-10 w-full rounded" style={{ backgroundColor: 'var(--background)' }}></div>
+                    <div className="h-10 w-full rounded" style={{ backgroundColor: 'var(--background)' }}></div>
                   </div>
                   {/* Buttons Skeleton */}
                   <div className="flex gap-2 mt-4">
-                    <div className="flex-1 h-10 bg-gray-200 rounded-xl"></div>
-                    <div className="flex-1 h-10 bg-gray-300 rounded-xl"></div>
+                    <div className="flex-1 h-10 rounded-xl" style={{ backgroundColor: 'var(--border)' }}></div>
+                    <div className="flex-1 h-10 rounded-xl" style={{ backgroundColor: 'var(--border)' }}></div>
                   </div>
                 </div>
               ))}
             </div>
           ) : cartItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <FiShoppingCart className="w-16 h-16 text-gray-300 mb-4" />
-              <p className="text-gray-500 text-lg font-medium">Your cart is empty</p>
-              <p className="text-gray-400 text-sm mt-2">Add services to get started</p>
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="w-full max-w-md rounded-3xl p-8 border border-dashed text-center flex flex-col items-center shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 border shadow-inner" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                  <FiShoppingCart className="w-8 h-8" style={{ color: 'var(--text-secondary)' }} />
+                </div>
+                <h3 className="text-base md:text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Your cart is empty</h3>
+                <p className="text-xs md:text-sm font-medium mb-6 max-w-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Add a service from home, category or brand page.</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/user/home')}
+                  className="px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold text-white shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  style={{ backgroundColor: themeColors.button }}
+                >
+                  Browse services
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -207,9 +219,10 @@ const Cart = () => {
                 return (
                   <div
                     key={category}
-                    className="bg-white rounded-2xl shadow-md border border-gray-100"
+                    className="rounded-2xl shadow-md border"
                     style={{
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                      backgroundColor: 'var(--card-bg)',
+                      borderColor: 'var(--border)',
                       padding: '16px'
                     }}
                   >
@@ -249,14 +262,14 @@ const Cart = () => {
 
                         {/* Category Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-bold text-black mb-1">{category}</h3>
-                          <p className="text-sm text-gray-600">
+                          <h3 className="text-base font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{category}</h3>
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                             {serviceCount} {serviceCount === 1 ? 'service' : 'services'}
                             {items.some(i => i.isPriceDisclosed !== false) && (
                               <> • ₹{categoryTotal.toLocaleString('en-IN')}</>
                             )}
                             {items.some(i => i.isPriceDisclosed === false) && (
-                              <span className="text-[10px] ml-1 bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 uppercase font-black tracking-tighter">Partial</span>
+                              <span className="text-[10px] ml-1 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter border" style={{ backgroundColor: 'var(--background)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>Partial</span>
                             )}
                           </p>
                         </div>
@@ -264,38 +277,42 @@ const Cart = () => {
 
                       {/* Delete Category Button */}
                       <button
+                        type="button"
                         onClick={() => handleDeleteCategory(category)}
-                        className="p-2 hover:bg-red-50 rounded-full transition-colors shrink-0"
+                        className="p-2 rounded-full transition-colors shrink-0 cursor-pointer"
+                        style={{ color: '#ef4444' }}
                       >
-                        <FiTrash2 className="w-5 h-5 text-red-500" />
+                        <FiTrash2 className="w-5 h-5" />
                       </button>
                     </div>
 
                     {/* Services List */}
                     <div className="mb-4 space-y-2">
                       {items.map((item) => (
-                        <div key={item._id || item.id} className="flex items-start justify-between py-2 border-b border-gray-100 last:border-0">
+                        <div key={item._id || item.id} className="flex items-start justify-between py-2 border-b last:border-0" style={{ borderColor: 'var(--border)' }}>
                           <div className="flex-1">
-                            <p className="text-sm text-gray-800 font-medium">
+                            <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                               {item.title} X {item.serviceCount || 1}
                             </p>
                             {item.description && (
-                              <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{item.description}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-sm font-semibold text-black">
+                            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
                               {item.isPriceDisclosed !== false ? (
                                 <>₹{(item.price || 0).toLocaleString('en-IN')}</>
                               ) : (
-                                <span className="text-[10px] text-gray-400 font-black uppercase tracking-tighter bg-gray-50 px-2 py-0.5 rounded border border-gray-100">Not Disclosed</span>
+                                <span className="text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded border" style={{ backgroundColor: 'var(--background)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>Not Disclosed</span>
                               )}
                             </span>
                             <button
+                              type="button"
                               onClick={() => handleDelete(item._id || item.id)}
-                              className="p-1 hover:bg-red-50 rounded transition-colors"
+                              className="p-1 rounded transition-colors cursor-pointer"
+                              style={{ color: '#ef4444' }}
                             >
-                              <FiTrash2 className="w-4 h-4 text-red-500" />
+                              <FiTrash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
@@ -305,25 +322,20 @@ const Cart = () => {
                     {/* Action Buttons */}
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => handleAddServices(category)}
-                        className="flex-1 px-4 py-2.5 bg-white border-2 border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-95"
+                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all active:scale-95 cursor-pointer"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                       >
                         Add Services
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleCategoryCheckout(category)}
-                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all active:scale-95 shadow-md"
+                        className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all active:scale-95 shadow-md cursor-pointer"
                         style={{
                           backgroundColor: themeColors.button,
-                          boxShadow: `0 2px 6px ${themeColors.brand.teal}4D`
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = themeColors.brand.teal;
-                          e.target.style.boxShadow = `0 4px 12px ${themeColors.brand.teal}66`;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = themeColors.button;
-                          e.target.style.boxShadow = `0 2px 6px ${themeColors.brand.teal}4D`;
+                          boxShadow: `0 2px 6px ${themeColors.button}4D`
                         }}
                       >
                         Book
@@ -336,6 +348,7 @@ const Cart = () => {
           )}
         </main>
 
+        <BottomNav />
       </div>
     </div>
   );

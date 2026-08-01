@@ -76,66 +76,69 @@ const MyRating = () => {
   };
 
   return (
-    <div className="min-h-screen bg-light-bg pb-24">
+    <div className="min-h-screen pb-24" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
-      <header className="bg-transparent backdrop-blur-xl border-b border-border-color sticky top-0 z-30 w-full">
-        <div className="max-w-5xl mx-auto px-4 pt-4 pb-3 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b backdrop-blur-xl w-full" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+        <div className="max-w-5xl mx-auto px-4 pt-3.5 pb-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-orange-50/10 rounded-full transition-colors"
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border cursor-pointer transition-colors"
+              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             >
-              <FiArrowLeft className="w-5 h-5 text-dark-text" />
+              <FiArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-xl font-bold text-dark-text tracking-tight">My Reviews</h1>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>My Reviews</h1>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="max-w-5xl mx-auto px-4 py-4">
         {isLoading && pagination.page === 1 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <FiLoader className="w-10 h-10 text-[#B33A35] animate-spin mb-4" />
-            <p className="text-gray-500 font-medium">Fetching your reviews...</p>
+            <p className="font-medium text-sm" style={{ color: 'var(--text-secondary)' }}>Fetching your reviews...</p>
           </div>
         ) : ratings.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
             {ratings.map((rating, idx) => (
               <div
                 key={rating._id || idx}
-                className="bg-card-bg rounded-md p-5 shadow-sm border border-border-color space-y-4 hover:shadow-md transition-shadow"
+                className="rounded-xl p-3.5 shadow-xs border space-y-2.5 hover:shadow-md transition-all"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-md bg-orange-500/10 flex items-center justify-center overflow-hidden border border-orange-500/20">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex gap-2.5 min-w-0 flex-1">
+                    <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0 overflow-hidden border border-orange-500/20">
                       {rating.vendorId?.profilePhoto ? (
                         <img src={rating.vendorId.profilePhoto} alt={rating.vendorId.name} className="w-full h-full object-cover" />
                       ) : (
-                        <FiUser className="w-6 h-6 text-orange-400" />
+                        <FiUser className="w-5 h-5 text-amber-500" />
                       )}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-dark-text tracking-tight">{rating.vendorId?.businessName || rating.vendorId?.name || 'Service Provider'}</h4>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-xs sm:text-sm tracking-tight truncate" style={{ color: 'var(--text-primary)' }}>{rating.vendorId?.businessName || rating.vendorId?.name || 'Service Provider'}</h4>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <div className="flex">
+                        <div className="flex shrink-0">
                           {[1, 2, 3, 4, 5].map((s) => (
                             <FiStar
                               key={s}
-                              className={`w-3 h-3 ${s <= rating.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200/40'}`}
+                              className={`w-3 h-3 ${s <= rating.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-400/30'}`}
                             />
                           ))}
                         </div>
-                        <span className="text-[10px] font-bold text-secondary-text uppercase">{formatDate(rating.reviewedAt)}</span>
+                        <span className="text-[10px] font-bold uppercase truncate" style={{ color: 'var(--text-muted)' }}>{formatDate(rating.reviewedAt)}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
-                    <span className="text-[10px] font-bold text-[#B33A35] uppercase">{rating.serviceName || rating.serviceId?.title}</span>
+                  <div className="bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20 max-w-[140px] shrink-0">
+                    <span className="text-[9.5px] font-bold text-[#B33A35] uppercase tracking-wider block truncate">{rating.serviceName || rating.serviceId?.title}</span>
                   </div>
                 </div>
 
                 {rating.review && (
-                  <p className="text-secondary-text text-sm leading-relaxed font-medium pl-2 border-l-4 border-[#B33A35]/20">
+                  <p className="text-xs sm:text-xs leading-relaxed font-medium pl-2.5 border-l-3 border-[#B33A35]/30 italic" style={{ color: 'var(--text-secondary)' }}>
                     "{rating.review}"
                   </p>
                 )}
@@ -143,17 +146,18 @@ const MyRating = () => {
                 {rating.reviewImages && rating.reviewImages.length > 0 && (
                   <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                     {rating.reviewImages.map((img, i) => (
-                      <img key={i} src={img} className="w-20 h-20 rounded-md object-cover shrink-0 border border-border-color" alt="Review" />
+                      <img key={i} src={img} className="w-16 h-16 rounded-lg object-cover shrink-0 border" style={{ borderColor: 'var(--border)' }} alt="Review" />
                     ))}
                   </div>
                 )}
 
-                <div className="pt-3 border-t border-border-color flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FiBriefcase className="w-3 h-3 text-secondary-text" />
-                    <span className="text-[10px] font-bold text-secondary-text">Booking #{rating.bookingNumber}</span>
+                <div className="pt-2 border-t flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
+                  <div className="flex items-center gap-1.5">
+                    <FiBriefcase className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />
+                    <span className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>Booking #{rating.bookingNumber || rating.bookingId}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => navigate(`/user/booking/${rating._id}`)}
                     className="text-[11px] font-bold text-[#B33A35] hover:underline cursor-pointer"
                   >

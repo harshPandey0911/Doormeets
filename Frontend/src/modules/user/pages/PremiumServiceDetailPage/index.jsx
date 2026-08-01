@@ -862,10 +862,10 @@ const PremiumServiceDetailPage = () => {
         <Navbar locationLabel="Loading Service..." cartCount={cartCount} onSearchClick={() => { }} onLocationClick={() => navigate('/user/home')} />
         <div className="mx-auto max-w-3xl px-4 py-12">
           <div className="animate-pulse space-y-6">
-            <div className="h-64 bg-gray-200 dark:bg-zinc-800 rounded-3xl w-full"></div>
-            <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded-xl w-3/4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded-lg w-1/2"></div>
-            <div className="h-32 bg-gray-200 dark:bg-zinc-800 rounded-2xl w-full"></div>
+            <div className="h-64 rounded-3xl w-full border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}></div>
+            <div className="h-8 rounded-xl w-3/4" style={{ backgroundColor: 'var(--card-bg)' }}></div>
+            <div className="h-4 rounded-lg w-1/2" style={{ backgroundColor: 'var(--card-bg)' }}></div>
+            <div className="h-32 rounded-2xl w-full border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}></div>
           </div>
         </div>
       </div>
@@ -900,13 +900,13 @@ const PremiumServiceDetailPage = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <FiCheckCircle className="text-green-500 w-5 h-5 shrink-0" />
-                <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || "What's Included"}</h4>
+                <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.title || "What's Included"}</h4>
               </div>
               <div className="space-y-3">
                 {visibleItems.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 items-start p-3.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800 transition-all hover:bg-slate-50">
+                  <div key={idx} className="flex gap-3 items-start p-3.5 rounded-2xl border transition-all" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                     <FiCheckCircle className="text-emerald-500 w-4 h-4 shrink-0 mt-0.5" />
-                    <span className="text-xs lg:text-[13.5px] font-semibold text-slate-650 dark:text-zinc-350 leading-relaxed">
+                    <span className="text-xs lg:text-[13.5px] font-semibold leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                       {item}
                     </span>
                   </div>
@@ -936,7 +936,7 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'How it works'}</h4>
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.title || 'How it works'}</h4>
             </div>
             <div className="space-y-2 mt-2.5">
               {stepsList.map((step, idx) => {
@@ -946,8 +946,8 @@ const PremiumServiceDetailPage = () => {
                   <div key={idx} className="flex gap-3 items-start text-[10px] lg:text-[13px]">
                     <span className="text-[#B33A35] text-xs lg:text-[13.5px] font-black shrink-0 mt-0.5">{idx + 1}.</span>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-slate-800 dark:text-zinc-200">{title}</div>
-                      {desc && <p className="text-gray-400 mt-0.5 leading-normal lg:text-[11.5px]">{desc}</p>}
+                      <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</div>
+                      {desc && <p className="mt-0.5 leading-normal lg:text-[11.5px]" style={{ color: 'var(--text-secondary)' }}>{desc}</p>}
                     </div>
                   </div>
                 );
@@ -962,14 +962,14 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>
                 {data.title || `${data.duration || ''} Warranty`}
               </h4>
             </div>
             {data.title && data.duration && (
-              <p className="text-[10px] text-gray-400 font-semibold mt-0.5 pl-6">{data.duration} Warranty</p>
+              <p className="text-[10px] font-semibold mt-0.5 pl-6" style={{ color: 'var(--text-muted)' }}>{data.duration} Warranty</p>
             )}
-            <p className="text-[10px] lg:text-[12.5px] text-gray-400 leading-relaxed font-normal mt-1">
+            <p className="text-[10px] lg:text-[12.5px] leading-relaxed font-normal mt-1" style={{ color: 'var(--text-secondary)' }}>
               {data.description}
             </p>
           </div>
@@ -982,9 +982,9 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiInfo className="text-amber-500 w-4 h-4 shrink-0" />
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'Please Note'}</h4>
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.title || 'Please Note'}</h4>
             </div>
-            <ul className="list-inside list-disc space-y-1.5 text-[10px] lg:text-[13px] leading-relaxed font-normal text-gray-400">
+            <ul className="list-inside list-disc space-y-1.5 text-[10px] lg:text-[13px] leading-relaxed font-normal" style={{ color: 'var(--text-secondary)' }}>
               {notesList.map((note, idx) => (
                 <li key={idx}>{note}</li>
               ))}
@@ -1007,25 +1007,25 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2 mb-3">
               <FiStar className="text-amber-400 w-4 h-4 shrink-0" />
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">Customer Reviews</h4>
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>Customer Reviews</h4>
             </div>
             {/* Rating Summary Card */}
-            <div className="flex items-center gap-3 p-3 bg-amber-50/60 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30 mb-3">
+            <div className="flex items-center gap-3 p-3 rounded-xl border mb-3" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
               <div className="text-center">
                 <div className="text-2xl font-black text-amber-500">{serviceRating}</div>
                 <div className="flex gap-0.5 justify-center mt-0.5">
                   {[1,2,3,4,5].map(s => (
-                    <FiStar key={s} className={`w-3 h-3 ${s <= Math.round(serviceRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                    <FiStar key={s} className={`w-3 h-3 ${s <= Math.round(serviceRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-zinc-600'}`} />
                   ))}
                 </div>
-                <p className="text-[9px] text-gray-400 mt-0.5 font-semibold">{serviceReviewCount ? `${serviceReviewCount} reviews` : 'Rating'}</p>
+                <p className="text-[9px] mt-0.5 font-semibold" style={{ color: 'var(--text-muted)' }}>{serviceReviewCount ? `${serviceReviewCount} reviews` : 'Rating'}</p>
               </div>
               <div className="flex-1 space-y-1">
                 {[5,4,3,2,1].map(star => (
                   <div key={star} className="flex items-center gap-1.5">
-                    <span className="text-[9px] text-gray-400 w-2">{star}</span>
+                    <span className="text-[9px] w-2" style={{ color: 'var(--text-muted)' }}>{star}</span>
                     <FiStar className="w-2.5 h-2.5 fill-amber-400 text-amber-400 shrink-0" />
-                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-amber-400 rounded-full"
                         style={{ width: star === Math.round(serviceRating) ? '70%' : star < Math.round(serviceRating) ? '40%' : '10%' }}
@@ -1040,10 +1040,10 @@ const PremiumServiceDetailPage = () => {
                 {filteredReviews.map((rev, idx) => (
                   <div key={idx} className="border-b last:border-0 pb-2 last:pb-0 text-[10px]" style={{ borderColor: 'var(--border)' }}>
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-slate-800 dark:text-zinc-200 lg:text-xs">{rev.userName || rev.name || 'Customer'}</span>
+                      <span className="font-semibold lg:text-xs" style={{ color: 'var(--text-primary)' }}>{rev.userName || rev.name || 'Customer'}</span>
                       <span className="text-amber-400 text-[9px] lg:text-xs font-bold">{rev.rating || 5}★</span>
                     </div>
-                    {rev.comment && <p className="text-gray-400 mt-1 leading-normal lg:text-xs">{rev.comment}</p>}
+                    {rev.comment && <p className="mt-1 leading-normal lg:text-xs" style={{ color: 'var(--text-secondary)' }}>{rev.comment}</p>}
                   </div>
                 ))}
               </div>
@@ -1055,7 +1055,7 @@ const PremiumServiceDetailPage = () => {
         if (!data.beforeImage && !data.afterImage) return null;
         return (
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
-            {data.title && <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title}</h4>}
+            {data.title && <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.title}</h4>}
             <div className="grid grid-cols-2 gap-4">
               {data.beforeImage && (
                 <div className="relative aspect-square rounded-md overflow-hidden bg-gray-100 border" style={{ borderColor: 'var(--border)' }}>
@@ -1077,8 +1077,8 @@ const PremiumServiceDetailPage = () => {
         if (!data.heading && !data.text) return null;
         return (
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
-            <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.heading}</h4>
-            <p className="text-[10px] text-gray-400 leading-relaxed font-normal whitespace-pre-line">{data.text}</p>
+            <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.heading}</h4>
+            <p className="text-[10.5px] lg:text-[12.5px] leading-relaxed font-normal whitespace-pre-line mt-1" style={{ color: 'var(--text-secondary)' }}>{data.text}</p>
           </div>
         );
       }
@@ -1089,7 +1089,7 @@ const PremiumServiceDetailPage = () => {
         const visibleImages = imagesList.slice(0, 6);
         return (
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
-            <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">Gallery</h4>
+            <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>Gallery</h4>
             <div className="grid grid-cols-3 gap-2">
               {visibleImages.map((img, imgIdx) => {
                 const isLast = imgIdx === 5 && total > 6;
@@ -1121,29 +1121,30 @@ const PremiumServiceDetailPage = () => {
         if (faqsList.length === 0) return null;
         return (
           <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
-            <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">FAQ</h4>
+            <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>FAQ</h4>
             <div className="space-y-3">
               {faqsList.map((faq, idx) => {
                 const isOpen = expandedFaqIndex === idx;
                 return (
                   <div
                     key={idx}
-                    className="border-b last:border-b-0 border-gray-100 dark:border-zinc-800 pb-3 last:pb-0 transition-all duration-200"
+                    className="border-b last:border-b-0 pb-3 last:pb-0 transition-all duration-200"
+                    style={{ borderColor: 'var(--border)' }}
                   >
                     <button
                       type="button"
                       onClick={() => setExpandedFaqIndex(isOpen ? null : idx)}
                       className="w-full flex items-center justify-between gap-3 text-left py-2 focus:outline-none cursor-pointer group"
                     >
-                      <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 transition-colors group-hover:text-[#B33A35]">
+                      <span className="text-xs font-bold transition-colors group-hover:text-[#B33A35]" style={{ color: 'var(--text-primary)' }}>
                         {faq.question}
                       </span>
-                      <span className="p-1 rounded-full bg-slate-50 dark:bg-zinc-800 shrink-0 text-slate-500 transition-transform duration-200">
+                      <span className="p-1.5 rounded-full shrink-0 transition-transform duration-200 border" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}>
                         {isOpen ? <FiChevronUp className="w-3.5 h-3.5" /> : <FiChevronDown className="w-3.5 h-3.5" />}
                       </span>
                     </button>
                     {isOpen && (
-                      <div className="mt-2 text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-zinc-400 pl-1 transition-all">
+                      <div className="mt-2 text-[11px] leading-relaxed font-medium pl-1 transition-all" style={{ color: 'var(--text-secondary)' }}>
                         {faq.answer}
                       </div>
                     )}
@@ -1160,30 +1161,31 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2 mb-3">
               <FiFileText className="text-emerald-500 w-5 h-5 shrink-0" />
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'View Rate Card'}</h4>
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.title || 'View Rate Card'}</h4>
             </div>
             {data.linkUrl ? (
               <a
                 href={toAssetUrl(data.linkUrl)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-between w-full p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl hover:bg-emerald-100/50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer group shadow-xs"
+                className="inline-flex items-center justify-between w-full p-4 border rounded-2xl transition-all cursor-pointer group shadow-xs"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
                     <FiFileText className="w-5 h-5" />
                   </div>
                   <div className="text-left min-w-0">
-                    <p className="text-xs font-bold text-emerald-800 dark:text-emerald-400 truncate">{data.linkLabel || 'Download PDF'}</p>
-                    <p className="text-[10px] text-emerald-600 dark:text-emerald-500/80 truncate mt-0.5">Click to view rate card details</p>
+                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 truncate">{data.linkLabel || 'Download PDF'}</p>
+                    <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>Click to view rate card details</p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-zinc-900 px-3 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 group-hover:scale-105 transition-transform shrink-0 whitespace-nowrap">
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 px-3 py-2 rounded-xl border border-emerald-500/20 group-hover:scale-105 transition-transform shrink-0 whitespace-nowrap" style={{ backgroundColor: 'var(--background)' }}>
                   Open File
                 </span>
               </a>
             ) : (
-              <p className="text-[10px] text-gray-400 font-normal">Rate card details not uploaded yet.</p>
+              <p className="text-[10px] font-normal" style={{ color: 'var(--text-muted)' }}>Rate card details not uploaded yet.</p>
             )}
           </div>
         );
@@ -1196,7 +1198,7 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">🏷️</span>
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{blockTitle}</h4>
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{blockTitle}</h4>
             </div>
             {brandItems.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -1204,14 +1206,14 @@ const PremiumServiceDetailPage = () => {
                   <span
                     key={idx}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] lg:text-xs font-bold border"
-                    style={{ backgroundColor: 'rgba(139, 92, 246, 0.06)', color: '#7c3aed', borderColor: 'rgba(139, 92, 246, 0.2)' }}
+                    style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa', borderColor: 'rgba(139, 92, 246, 0.3)' }}
                   >
                     {typeof brand === 'object' ? (brand.title || brand.name || brand._id) : brand}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-400 font-normal">Add brands in Page Builder to display here.</p>
+              <p className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>Add brands in Page Builder to display here.</p>
             )}
           </div>
         );
@@ -1221,20 +1223,21 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">⚖️</span>
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'Compare Plans'}</h4>
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.title || 'Compare Plans'}</h4>
             </div>
             {data.linkUrl ? (
               <a
                 href={toAssetUrl(data.linkUrl)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-between w-full p-3.5 bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl hover:bg-indigo-100/50 transition-all cursor-pointer group"
+                className="inline-flex items-center justify-between w-full p-3.5 border rounded-2xl transition-all cursor-pointer group"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
               >
-                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{data.linkLabel || 'View Comparison'}</span>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{data.linkLabel || 'View Comparison'}</span>
                 <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">→</span>
               </a>
             ) : (
-              <div className="p-3 bg-slate-50 dark:bg-zinc-800/40 rounded-xl text-xs text-gray-500 font-medium">
+              <div className="p-3 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
                 {data.linkLabel || 'Detailed plan comparison available'}
               </div>
             )}
@@ -1256,7 +1259,7 @@ const PremiumServiceDetailPage = () => {
             {headingTitle && (
               <div className="flex items-center gap-2">
                 <span className="text-lg">🎁</span>
-                <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{headingTitle}</h4>
+                <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{headingTitle}</h4>
               </div>
             )}
             {data.linkUrl ? (
@@ -1276,13 +1279,13 @@ const PremiumServiceDetailPage = () => {
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-red-500 text-base">✕</span>
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || "Not Included"}</h4>
+              <h4 className="text-sm lg:text-base font-bold" style={{ color: 'var(--text-primary)' }}>{data.title || "Not Included"}</h4>
             </div>
             <ul className="space-y-2">
               {notIncludedItems.map((item, idx) => (
                 <li key={idx} className="flex gap-2 items-start text-[10px] lg:text-[13px]">
-                  <span className="text-red-400 font-black shrink-0 mt-0.5">✕</span>
-                  <span className="text-gray-500 dark:text-zinc-400 leading-relaxed">{item}</span>
+                  <span className="text-red-400 font-bold shrink-0 mt-0.5">✕</span>
+                  <span className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{item}</span>
                 </li>
               ))}
             </ul>
@@ -2090,7 +2093,7 @@ const PremiumServiceDetailPage = () => {
                 <div key={block._id || idx} className="w-full">
                   {content}
                   {idx < arr.length - 1 && (
-                    <div className="border-b border-gray-100 dark:border-zinc-850 my-2.5 w-full" />
+                    <div className="border-b my-2.5 w-full" style={{ borderColor: 'var(--border)' }} />
                   )}
                 </div>
               ))}
@@ -2638,8 +2641,8 @@ const PremiumServiceDetailPage = () => {
                               ) : (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }}
-                                  className="text-[9px] md:text-[10px] font-bold px-3 md:px-4 py-1 md:py-1.5 rounded-[4px] border transition-colors cursor-pointer"
-                                  style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35', borderColor: 'rgba(179, 58, 53, 0.2)' }}
+                                  className="text-[9px] md:text-[10px] font-bold px-3 md:px-4 py-1 md:py-1.5 rounded-md border transition-all cursor-pointer hover:scale-105 shadow-xs"
+                                  style={{ backgroundColor: 'var(--card-bg)', color: '#B33A35', borderColor: 'var(--border)' }}
                                 >
                                   Add +
                                 </button>
@@ -2678,8 +2681,8 @@ const PremiumServiceDetailPage = () => {
                             ) : (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleIncreaseSubItem(item); }}
-                                className="text-[10px] font-bold px-4 py-1.5 rounded-[4px] border transition-colors cursor-pointer"
-                                style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35', borderColor: 'rgba(179, 58, 53, 0.2)' }}
+                                className="text-[10px] font-bold px-4 py-1.5 rounded-md border transition-all cursor-pointer hover:scale-105 shadow-xs"
+                                style={{ backgroundColor: 'var(--card-bg)', color: '#B33A35', borderColor: 'var(--border)' }}
                               >
                                 Add +
                               </button>
@@ -2911,24 +2914,27 @@ const PremiumServiceDetailPage = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed inset-0 m-auto w-[90%] max-w-lg h-fit max-h-[80vh] bg-white dark:bg-zinc-900 rounded-3xl z-50 shadow-2xl p-6 flex flex-col gap-4 border dark:border-zinc-800"
+              className="fixed inset-0 m-auto w-[90%] max-w-lg h-fit max-h-[80vh] rounded-3xl z-50 shadow-2xl p-6 flex flex-col gap-4 border"
+              style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
             >
-              <div className="flex justify-between items-center border-b pb-3 dark:border-zinc-800 shrink-0">
-                <h3 className="text-base font-black text-slate-800 dark:text-zinc-150">
+              <div className="flex justify-between items-center border-b pb-3 shrink-0" style={{ borderColor: 'var(--border)' }}>
+                <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
                   {includedModalTitle}
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setIncludedModalItems([])}
-                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-850 rounded-full text-gray-500 transition-colors"
+                  className="p-1.5 rounded-full text-gray-500 transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   <FiX className="w-5 h-5" />
                 </button>
               </div>
               <div className="space-y-3 overflow-y-auto pr-1 py-1 flex-1">
                 {includedModalItems.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 items-start p-3.5 bg-slate-50/50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                  <div key={idx} className="flex gap-3 items-start p-3.5 rounded-2xl border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
                     <FiCheckCircle className="text-emerald-500 w-4 h-4 shrink-0 mt-0.5" />
-                    <span className="text-xs font-semibold text-slate-650 dark:text-zinc-350 leading-relaxed">
+                    <span className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                       {item}
                     </span>
                   </div>
