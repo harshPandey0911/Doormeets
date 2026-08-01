@@ -217,6 +217,22 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  twitterUrl: {
+    type: String,
+    default: '#'
+  },
+  instagramUrl: {
+    type: String,
+    default: '#'
+  },
+  youtubeUrl: {
+    type: String,
+    default: '#'
+  },
+  linkedinUrl: {
+    type: String,
+    default: '#'
+  },
   privacyPolicy: {
     type: String,
     default: 'Your privacy policy content here.'

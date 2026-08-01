@@ -31,22 +31,30 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
     <header className="w-full bg-transparent px-3 md:px-5 pt-3 pb-1 md:pt-6 md:pb-2">
       <div className="w-full max-w-[1600px] mx-auto flex items-start justify-between px-0 md:px-10">
 
-        {/* Left Side: Location Selector & Bold Heading */}
-        <div className="flex flex-col min-w-0">
-          <div
-            onClick={onLocationClick}
-            className="flex items-center gap-1 cursor-pointer select-none text-[11px] md:text-sm lg:text-[15px] transition-colors capitalize font-medium opacity-90"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span>{displayLocation}</span>
-            <FiChevronDown className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 shrink-0 opacity-80" style={{ color: 'var(--text-secondary)' }} />
+        {/* Left Side: Logo, Location Selector & Bold Heading */}
+        <div className="flex items-center gap-2.5 md:gap-4 min-w-0">
+          <img
+            src="/doormeets-logo.png"
+            alt="Doormeets Logo"
+            className="w-9 h-9 md:w-12 md:h-12 rounded-lg md:rounded-xl object-cover cursor-pointer active:scale-95 transition-all shadow-sm shrink-0"
+            onClick={() => navigate('/user/home')}
+          />
+          <div className="flex flex-col min-w-0">
+            <div
+              onClick={onLocationClick}
+              className="flex items-center gap-1 cursor-pointer select-none text-[11px] md:text-sm lg:text-[15px] transition-colors capitalize font-medium opacity-90"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <span>{displayLocation}</span>
+              <FiChevronDown className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 shrink-0 opacity-80" style={{ color: 'var(--text-secondary)' }} />
+            </div>
+            <h1
+              className="text-[14px] xs:text-[16px] sm:text-lg md:text-[22px] font-bold leading-tight tracking-tight mt-0.5 md:mt-1.5 whitespace-nowrap"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              What you are looking for today
+            </h1>
           </div>
-          <h1
-            className="text-[15px] xs:text-[17px] sm:text-lg md:text-[22px] font-bold leading-tight tracking-tight mt-0.5 md:mt-1.5 whitespace-nowrap"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            What you are looking for today
-          </h1>
         </div>
 
         {/* Middle Search Bar on Desktop */}
