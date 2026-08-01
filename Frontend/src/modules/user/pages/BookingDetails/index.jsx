@@ -722,11 +722,7 @@ const BookingDetails = () => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
-                  if (location.key !== 'default') {
-                    navigate(-1);
-                  } else {
-                    navigate('/user/my-bookings', { replace: true });
-                  }
+                  navigate('/user/my-bookings');
                 }}
                 className="w-10 h-10 bg-card-bg rounded-xl flex items-center justify-center shadow-sm border border-border-color"
               >
@@ -752,9 +748,15 @@ const BookingDetails = () => {
 
             {/* Cancelled/Rejected status message */}
             {['cancelled', 'rejected'].includes(booking.status?.toLowerCase()) && (
-              <div className="bg-red-50 rounded-md p-3 border border-red-100 flex items-center gap-2.5 text-red-700">
-                <FiXCircle className="w-4 h-4 shrink-0" />
-                <p className="font-medium text-xs">This booking has been {booking.status.toLowerCase()}.</p>
+              <div className="bg-red-50/90 rounded-xl p-3.5 border border-red-200/80 space-y-2 text-red-800 shadow-xs">
+                <div className="flex items-center gap-2 font-bold text-xs text-red-700">
+                  <FiXCircle className="w-4 h-4 shrink-0 text-red-600" />
+                  <span>This booking was {booking.status.toLowerCase()}{booking.cancelledBy ? ` by ${booking.cancelledBy}` : ''}.</span>
+                </div>
+                <div className="pl-6 text-xs text-red-700 font-medium leading-relaxed bg-white/80 rounded-lg p-2.5 border border-red-100/90">
+                  <span className="font-bold text-red-800 block mb-0.5">Cancellation Reason:</span>
+                  <span>{booking.cancellationReason || booking.cancelReason || booking.cancellationDetails?.reason || booking.cancelNotes || booking.cancellation?.reason || booking.reason || 'No specific reason provided'}</span>
+                </div>
               </div>
             )}
 
@@ -903,9 +905,14 @@ const BookingDetails = () => {
 
                   {/* Call Button */}
                   {(() => {
-                    const currentStatus = (booking.status || '').toLowerCase().replace(/_/g, ' ').trim();
+                    const cleanPhone = (phoneStr) => {
+                      if (!phoneStr) return '';
+                      const firstNo = String(phoneStr).split(/[,/;\s]+/)[0].trim();
+                      return firstNo.replace(/(?!^\+)[^\d]/g, '');
+                    };
+                    const currentStatus = (booking?.status || '').toLowerCase().replace(/_/g, ' ').trim();
                     const journeyActive = ['journey started', 'journey_started', 'journey', 'visited', 'in progress', 'in_progress', 'work done', 'work_done'].includes(currentStatus);
-                    const vendorPhone = booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone;
+                    const vendorPhone = cleanPhone(booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone);
                     if (journeyActive && vendorPhone) {
                       return (
                         <a
@@ -916,7 +923,7 @@ const BookingDetails = () => {
                         </a>
                       );
                     }
-                    const carePhone = supportInfo.phone || '+919999999999';
+                    const carePhone = cleanPhone(supportInfo.phone || '+919999999999');
                     return (
                       <a
                         href={`tel:${carePhone}`}

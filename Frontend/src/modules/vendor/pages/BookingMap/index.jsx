@@ -378,9 +378,22 @@ const BookingMap = () => {
             fullRoutePathRef.current = result.routes[0].overview_path;
             setRoutePath(result.routes[0].overview_path);
 
-            // Center on current location
-            map.setCenter(currentLocation);
-            map.setZoom(15);
+            // Fit route in view centered in top portion above bottom sheet card
+            if (currentLocation && coords && window.google) {
+              const bounds = new window.google.maps.LatLngBounds();
+              bounds.extend(new window.google.maps.LatLng(currentLocation));
+              bounds.extend(new window.google.maps.LatLng(coords));
+
+              const minLat = Math.min(currentLocation.lat, coords.lat);
+              const maxLat = Math.max(currentLocation.lat, coords.lat);
+              const latSpan = Math.max(Math.abs(maxLat - minLat), 0.005);
+              const centerLng = (currentLocation.lng + coords.lng) / 2;
+
+              bounds.extend(new window.google.maps.LatLng(minLat - (latSpan * 1.8), centerLng));
+              bounds.extend(new window.google.maps.LatLng(maxLat + (latSpan * 0.5), centerLng));
+
+              map.fitBounds(bounds, { top: 100, right: 50, bottom: 350, left: 50 });
+            }
           } else {
             setRouteError('Could not calculate a driving route to this location.');
           }

@@ -68,6 +68,7 @@ const BookingTrack = () => {
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const [sheetTouchStart, setSheetTouchStart] = useState(null);
   const [sheetTouchEnd, setSheetTouchEnd] = useState(null);
+  const [isAddressExpanded, setIsAddressExpanded] = useState(false);
 
   const pendingAddons = useMemo(() => {
     if (!booking) return [];
@@ -89,22 +90,28 @@ const BookingTrack = () => {
   // Fit both rider + destination into visible area above the bottom card
   const fitRouteInView = (mapInstance, origin, destination) => {
     if (!mapInstance || !origin || !destination || !window.google) return;
-    const bottomCardHeight = bottomCardRef.current?.offsetHeight || 300;
+    const bottomCardHeight = bottomCardRef.current?.offsetHeight || 320;
     const bounds = new window.google.maps.LatLngBounds();
     bounds.extend(new window.google.maps.LatLng(origin));
     bounds.extend(new window.google.maps.LatLng(destination));
 
-    // Generate a dummy offset point to the south to force map visualization higher up
+    // Calculate Lat & Lng span
     const minLat = Math.min(origin.lat, destination.lat);
-    const latSpan = Math.max(Math.abs(origin.lat - destination.lat), 0.005);
-    const dummyLat = minLat - (latSpan * 0.7); // Create 70% extra space below
-    bounds.extend(new window.google.maps.LatLng(dummyLat, (origin.lng + destination.lng) / 2));
+    const maxLat = Math.max(origin.lat, destination.lat);
+    const latSpan = Math.max(Math.abs(maxLat - minLat), 0.005);
+    const centerLng = (origin.lng + destination.lng) / 2;
+
+    // Create offset points south and north so the route sits right in the vertical center of the upper visible map area
+    const dummyLatSouth = minLat - (latSpan * 1.8);
+    const dummyLatNorth = maxLat + (latSpan * 0.5);
+    bounds.extend(new window.google.maps.LatLng(dummyLatSouth, centerLng));
+    bounds.extend(new window.google.maps.LatLng(dummyLatNorth, centerLng));
 
     mapInstance.fitBounds(bounds, {
-      top: 80,
-      right: 40,
-      bottom: bottomCardHeight,
-      left: 40
+      top: 100,
+      right: 50,
+      bottom: bottomCardHeight + 30,
+      left: 50
     });
   };
 
@@ -650,7 +657,7 @@ const BookingTrack = () => {
       {/* Top Floating Header - Always Visible */}
       <div className="absolute top-3 left-3 right-3 z-20 flex justify-between items-start pointer-events-none">
         <button
-          onClick={() => navigate(`/user/booking/${id}`)}
+          onClick={() => navigate('/user/my-bookings')}
           className="pointer-events-auto bg-white/90 backdrop-blur-md p-2.5 rounded-full shadow-lg text-gray-700 hover:bg-white transition-all active:scale-95"
         >
           <FiArrowLeft className="w-4 h-4" />
@@ -829,16 +836,9 @@ const BookingTrack = () => {
             setSheetTouchStart(null);
             setSheetTouchEnd(null);
           }}
-          className="w-full py-2.5 -mt-1 flex flex-col items-center justify-center cursor-pointer group active:scale-95 transition-all select-none"
+          className="w-full py-2 -mt-1 flex flex-col items-center justify-center cursor-pointer group active:scale-95 transition-all select-none"
         >
           <div className="w-10 h-1.5 bg-gray-300 group-hover:bg-gray-400 rounded-full transition-colors"></div>
-          <span className="text-[9px] font-bold text-gray-400 mt-1 flex items-center gap-0.5 group-hover:text-gray-600">
-            {isSheetExpanded ? (
-              <><span>Collapse sheet</span> <FiChevronDown className="w-3 h-3 text-teal-600" /></>
-            ) : (
-              <><span>Swipe up or tap to expand</span> <FiChevronUp className="w-3 h-3 text-teal-600" /></>
-            )}
-          </span>
         </div>
 
         {/* Status Row */}
@@ -858,22 +858,64 @@ const BookingTrack = () => {
           )}
         </div>
 
-        {/* Address Info - Ultra Compact */}
-        <div className="bg-gray-50 rounded-lg px-2.5 py-1.5 flex items-center gap-2 mb-2 border border-gray-100/80">
-          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-xs text-teal-600 border border-gray-100 shrink-0">
-            <FiMapPin className="w-3 h-3" />
+        {/* Address Info - Expandable Location Card */}
+        <div 
+          onClick={() => setIsAddressExpanded(prev => !prev)}
+          className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100/80 mb-2 cursor-pointer hover:bg-gray-100/80 transition-colors select-none group"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="w-6.5 h-6.5 rounded-full bg-white flex items-center justify-center shadow-xs text-teal-600 border border-gray-100 shrink-0">
+                <FiMapPin className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-900 text-[10px] uppercase tracking-wider leading-tight">Your Location</h3>
+                {!isAddressExpanded && (
+                  <p className="text-xs text-gray-600 font-medium truncate mt-0.5">
+                    {(() => {
+                      const addr = booking?.address;
+                      if (!addr) return 'Loading destination...';
+                      if (typeof addr === 'string') return addr;
+                      const parts = [
+                        addr.houseNo || addr.flatNo || addr.buildingName,
+                        addr.addressLine1 || addr.street,
+                        addr.addressLine2 || addr.landmark || addr.area,
+                        addr.city,
+                        addr.state,
+                        addr.pincode
+                      ].filter(Boolean);
+                      return parts.join(', ');
+                    })()}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-gray-600 shrink-0">
+              {isAddressExpanded ? <FiChevronUp className="w-3.5 h-3.5 text-teal-600" /> : <FiChevronDown className="w-3.5 h-3.5" />}
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 text-[10px] leading-tight">Your Location</h3>
-            <p className="text-[10px] text-gray-500 line-clamp-1 leading-normal">
-              {(() => {
-                const addr = booking?.address;
-                if (!addr) return 'Loading destination...';
-                if (typeof addr === 'string') return addr;
-                return `${addr.addressLine1 || ''}, ${addr.city || ''} ${addr.pincode || ''}`;
-              })()}
-            </p>
-          </div>
+
+          {/* Full Expanded Address View */}
+          {isAddressExpanded && (
+            <div className="mt-2 pt-2 border-t border-gray-200/60 pl-9 pr-1">
+              <p className="text-xs text-gray-700 font-medium leading-relaxed break-words">
+                {(() => {
+                  const addr = booking?.address;
+                  if (!addr) return 'Loading destination...';
+                  if (typeof addr === 'string') return addr;
+                  const parts = [
+                    addr.houseNo || addr.flatNo || addr.buildingName,
+                    addr.addressLine1 || addr.street,
+                    addr.addressLine2 || addr.landmark || addr.area,
+                    addr.city,
+                    addr.state,
+                    addr.pincode
+                  ].filter(Boolean);
+                  return parts.join(', ');
+                })()}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Arrival OTP - Ultra Compact */}
@@ -1048,12 +1090,17 @@ const BookingTrack = () => {
             </div>
 
             {(() => {
+              const cleanPhone = (phoneStr) => {
+                if (!phoneStr) return '';
+                const firstNo = String(phoneStr).split(/[,/;\s]+/)[0].trim();
+                return firstNo.replace(/(?!^\+)[^\d]/g, '');
+              };
               const currentStatus = (booking?.status || '').toLowerCase().replace(/_/g, ' ').trim();
               const journeyActive = ['journey started', 'journey_started', 'journey', 'visited', 'in progress', 'in_progress', 'work done', 'work_done'].includes(currentStatus);
               if (journeyActive && provider.phone) {
                 return (
                   <a
-                    href={`tel:${provider.phone}`}
+                    href={`tel:${cleanPhone(provider.phone)}`}
                     className="w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-xs"
                   >
                     <FiPhone className="w-3.5 h-3.5" />
@@ -1061,7 +1108,7 @@ const BookingTrack = () => {
                 );
               }
               // Show customer care before journey starts
-              const carePhone = supportPhone || '+919999999999';
+              const carePhone = cleanPhone(supportPhone || '+919999999999');
               return (
                 <a
                   href={`tel:${carePhone}`}

@@ -890,11 +890,12 @@ const PremiumServiceDetailPage = () => {
     switch (block.blockType) {
       case 'whats_included': {
         const itemsList = data.items || [];
+        if (itemsList.length === 0) return null;
         const limit = isMobile ? 2 : 4;
         const visibleItems = itemsList.slice(0, limit);
         const hasMore = itemsList.length > limit;
         return (
-          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full flex flex-col justify-start w-full">
+          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col justify-start w-full">
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <FiCheckCircle className="text-green-500 w-5 h-5 shrink-0" />
@@ -927,15 +928,17 @@ const PremiumServiceDetailPage = () => {
         );
       }
       case 'process':
-      case 'how_it_works':
+      case 'how_it_works': {
+        const stepsList = data.steps || [];
+        if (stepsList.length === 0) return null;
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'How it works'}</h4>
             </div>
-            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 mt-3.5 pb-4">
-              {(data.steps || []).map((step, idx) => {
+            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 mt-2.5">
+              {stepsList.map((step, idx) => {
                 const title = typeof step === 'object' ? step.title : step;
                 const desc = typeof step === 'object' ? step.desc : '';
                 return (
@@ -951,9 +954,11 @@ const PremiumServiceDetailPage = () => {
             </div>
           </div>
         );
-      case 'warranty':
+      }
+      case 'warranty': {
+        if (!data.description && !data.duration) return null;
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.duration || ''} Warranty</h4>
@@ -963,29 +968,35 @@ const PremiumServiceDetailPage = () => {
             </p>
           </div>
         );
-      case 'please_note':
+      }
+      case 'please_note': {
+        const notesList = data.notes || [];
+        if (notesList.length === 0) return null;
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiInfo className="text-amber-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'Please Note'}</h4>
             </div>
             <ul className="list-inside list-disc space-y-1.5 text-[10px] lg:text-[13px] leading-relaxed font-normal text-gray-400">
-              {(data.notes || []).map((note, idx) => (
+              {notesList.map((note, idx) => (
                 <li key={idx}>{note}</li>
               ))}
             </ul>
           </div>
         );
-      case 'reviews':
+      }
+      case 'reviews': {
+        const reviewsList = data.reviews || [];
+        if (reviewsList.length === 0) return null;
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">User feedback</h4>
             </div>
             <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
-              {(data.reviews || []).map((rev, idx) => (
+              {reviewsList.map((rev, idx) => (
                 <div key={idx} className="border-b last:border-0 pb-2 last:pb-0 text-[10px]">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-slate-800 dark:text-zinc-200 lg:text-xs">{rev.userName || 'Anonymous'}</span>
@@ -997,9 +1008,11 @@ const PremiumServiceDetailPage = () => {
             </div>
           </div>
         );
-      case 'before_after':
+      }
+      case 'before_after': {
+        if (!data.beforeImage && !data.afterImage) return null;
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             {data.title && <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title}</h4>}
             <div className="grid grid-cols-2 gap-4">
               {data.beforeImage && (
@@ -1017,19 +1030,23 @@ const PremiumServiceDetailPage = () => {
             </div>
           </div>
         );
-      case 'heading_text':
+      }
+      case 'heading_text': {
+        if (!data.heading && !data.text) return null;
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.heading}</h4>
             <p className="text-[10px] text-gray-400 leading-relaxed font-normal whitespace-pre-line">{data.text}</p>
           </div>
         );
+      }
       case 'image_gallery': {
         const imagesList = data.images || [];
+        if (imagesList.length === 0) return null;
         const total = imagesList.length;
         const visibleImages = imagesList.slice(0, 6);
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">Gallery</h4>
             <div className="grid grid-cols-3 gap-2">
               {visibleImages.map((img, imgIdx) => {
@@ -1057,12 +1074,14 @@ const PremiumServiceDetailPage = () => {
           </div>
         );
       }
-      case 'faq':
+      case 'faq': {
+        const faqsList = data.faqs || [];
+        if (faqsList.length === 0) return null;
         return (
-          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-6 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">FAQ</h4>
             <div className="space-y-3">
-              {(data.faqs || []).map((faq, idx) => {
+              {faqsList.map((faq, idx) => {
                 const isOpen = expandedFaqIndex === idx;
                 return (
                   <div
@@ -1092,9 +1111,11 @@ const PremiumServiceDetailPage = () => {
             </div>
           </div>
         );
-      case 'rate_card':
+      }
+      case 'rate_card': {
+        if (!data.linkUrl && !data.pdfUrl) return null;
         return (
-          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] h-full w-full">
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2 mb-3">
               <FiFileText className="text-emerald-500 w-5 h-5 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'View Rate Card'}</h4>
@@ -1124,6 +1145,7 @@ const PremiumServiceDetailPage = () => {
             )}
           </div>
         );
+      }
       default:
         return null;
     }
@@ -1907,16 +1929,19 @@ const PremiumServiceDetailPage = () => {
         )}
       </AnimatePresence>
           {/* Mobile Dynamic Blocks Renderer */}
-          {/* Mobile Dynamic Blocks Renderer */}
-          <div className="flex flex-col gap-2.5 w-full mt-10 pb-24">
-            {pageBlocks.filter(b => b.isVisible && b.blockType !== 'banner_slider').map((block, idx, arr) => (
-              <div key={idx} className="w-full">
-                {renderBlockContent(block, true)}
-                {idx < arr.length - 1 && (
-                  <div className="border-b border-gray-100 dark:border-zinc-850 mt-5 mb-2.5 w-full" />
-                )}
-              </div>
-            ))}
+          <div className="flex flex-col gap-2 w-full mt-6 pb-24">
+            {pageBlocks
+              .filter(b => b.isVisible && b.blockType !== 'banner_slider')
+              .map(block => ({ block, content: renderBlockContent(block, true) }))
+              .filter(item => item.content !== null)
+              .map(({ block, content }, idx, arr) => (
+                <div key={block._id || idx} className="w-full">
+                  {content}
+                  {idx < arr.length - 1 && (
+                    <div className="border-b border-gray-100 dark:border-zinc-850 my-2.5 w-full" />
+                  )}
+                </div>
+              ))}
           </div>
       </div>
 
