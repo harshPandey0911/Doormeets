@@ -169,8 +169,48 @@ const updateReferralCode = async (req, res) => {
   }
 };
 
+const Transaction = require('../../models/Transaction');
+
+/**
+ * Get Credit/Wallet history for shop owner (their own transactions)
+ */
+const getCreditHistory = async (req, res) => {
+  try {
+    const shopOwner = await ShopOwner.findById(req.user.id);
+    if (!shopOwner) {
+      return res.status(404).json({ success: false, message: 'Shop owner not found.' });
+    }
+
+    const rawTransactions = await Transaction.find({ shopOwnerId: shopOwner._id })
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    // Deduplicate transaction entries with exact same description and timestamp
+    const seenKeys = new Set();
+    const transactions = rawTransactions.filter(tx => {
+      const timeSec = Math.floor(new Date(tx.createdAt).getTime() / 1000);
+      const key = `${tx.type}_${tx.amount}_${tx.description}_${timeSec}`;
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        walletBalance: shopOwner.wallet?.balance || 0,
+        transactions
+      }
+    });
+  } catch (error) {
+    console.error('Get shop owner credit history error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch credit history.' });
+  }
+};
+
 module.exports = {
   getDashboardDetails,
-  updateReferralCode
+  updateReferralCode,
+  getCreditHistory
 };
 

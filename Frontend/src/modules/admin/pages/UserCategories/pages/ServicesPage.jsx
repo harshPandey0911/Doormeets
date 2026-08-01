@@ -1125,7 +1125,10 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     const firstBanner = pageBlocks.find(b => b.blockType === 'banner_slider')?.data?.banners?.[0];
     const firstBannerUrl = typeof firstBanner === 'object' ? firstBanner.url : firstBanner;
 
-    const finalCityIds = formData.allCities ? [] : formData.cityIds;
+    let finalCityIds = formData.allCities ? [] : formData.cityIds;
+    if (selectedCity && !formData.allCities && finalCityIds.length === 0) {
+      finalCityIds = [selectedCity];
+    }
     const payload = {
       ...formData,
       iconUrl: firstBannerUrl || formData.iconUrl || '',
@@ -1276,7 +1279,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
     } else {
       setEditingPricingConfigIdx(null);
       setPricingForm({
-        cityId: '',
+        cityId: selectedCity || '',
         brandId: '',
         variantId: '',
         subCategoryId: '',
@@ -1874,31 +1877,6 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
 
 
 
-                    {/* City Availability */}
-                    <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                      <label className="block text-base font-bold text-gray-900 mb-3">🏙️ City Availability</label>
-                      <div className="flex items-center gap-3 mb-3">
-                        <input id="allCitiesToggle" type="checkbox" checked={formData.allCities}
-                          onChange={e => setFormData(p => ({ ...p, allCities: e.target.checked, cityIds: e.target.checked ? [] : p.cityIds }))}
-                          className="h-4 w-4 accent-green-600" />
-                        <label htmlFor="allCitiesToggle" className="text-sm font-semibold text-gray-800">Available in All Cities</label>
-                      </div>
-                      {!formData.allCities && (
-                        <div className="flex flex-wrap gap-2">
-                          {cities.map(city => {
-                            const cid = city._id || city.id;
-                            const isSelected = formData.cityIds.includes(cid);
-                            return (
-                              <button key={cid} type="button"
-                                onClick={() => setFormData(p => ({ ...p, cityIds: isSelected ? p.cityIds.filter(id => id !== cid) : [...p.cityIds, cid] }))}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${isSelected ? 'bg-green-100 border-green-300 text-green-700' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
-                                {city.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )}
 
