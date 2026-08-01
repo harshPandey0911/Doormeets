@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { MdDashboard, MdPersonAdd, MdLogout, MdStore } from 'react-icons/md';
 
@@ -6,6 +6,18 @@ const ShopLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const shopOwner = JSON.parse(localStorage.getItem('shopUser') || '{}');
+
+  useEffect(() => {
+    // Set shop side favicon dynamically
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.type = 'image/png';
+      link.rel = 'shortcut icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = '/doormeets-logo.png';
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('shopAccessToken');
