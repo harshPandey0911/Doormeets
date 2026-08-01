@@ -363,21 +363,35 @@ const BookingDetails = () => {
           {/* Booked Items (If any) */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
             <h3 className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3">Booked Items</h3>
-            {booking.items && booking.items.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {booking.items.map((item, index) => (
-                  <div key={index} className="py-2.5 flex justify-between items-center text-xs">
-                    <div>
-                      <p className="font-bold text-gray-700">{item.name || item.title || 'Item'}</p>
-                      <p className="text-gray-400">Quantity: {item.quantity || 1}</p>
-                    </div>
-                    <span className="font-bold text-gray-800">{formatCurrency(item.price || 0)}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-500 italic">No specific items listed. Basic service selected.</p>
-            )}
+            {(() => {
+              const hasBookedItems = booking.bookedItems && booking.bookedItems.length > 0;
+              const renderItems = hasBookedItems 
+                ? booking.bookedItems 
+                : [{ 
+                    name: booking.serviceId?.title || booking.serviceName || booking.subCategoryId?.title || 'Basic Service', 
+                    price: booking.basePrice || 0, 
+                    quantity: 1 
+                  }];
+              
+              return (
+                <div className="divide-y divide-gray-100">
+                  {renderItems.map((item, index) => {
+                    const title = item.card?.title || item.name || item.title || 'Item';
+                    const price = item.card?.price ?? item.price ?? 0;
+                    const qty = item.quantity || 1;
+                    return (
+                      <div key={index} className="py-2.5 flex justify-between items-center text-xs">
+                        <div>
+                          <p className="font-bold text-gray-700">{title}</p>
+                          <p className="text-gray-400">Quantity: {qty}</p>
+                        </div>
+                        <span className="font-bold text-gray-800">{formatCurrency(price * qty)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Address & Geographic Details */}
@@ -489,12 +503,14 @@ const BookingDetails = () => {
                   {formatCurrency(booking.tax || (booking.basePrice ? Math.round(booking.basePrice * 0.18) : 0))}
                 </span>
               </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Visiting/Visitation Charges:</span>
-                <span className="font-semibold text-gray-700">
-                  {formatCurrency(booking.visitingCharges || booking.visitationFee || booking.serviceId?.visitingCharges || 0)}
-                </span>
-              </div>
+              {parseFloat(booking.visitingCharges || booking.visitationFee || booking.serviceId?.visitingCharges || 0) > 0 && (
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Visiting/Visitation Charges:</span>
+                  <span className="font-semibold text-gray-700">
+                    {formatCurrency(booking.visitingCharges || booking.visitationFee || booking.serviceId?.visitingCharges || 0)}
+                  </span>
+                </div>
+              )}
               {booking.discount > 0 && (
                 <div className="flex justify-between text-xs text-red-500">
                   <span>Discounts Applied:</span>
