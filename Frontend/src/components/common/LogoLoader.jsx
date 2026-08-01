@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const LOGO_URL = '/cleaning-expert-logo.png';
+const LOGO_URL = '/doormeets-logo.png';
 
 /**
  * LogoLoader Component — Doormeets branded loader
@@ -47,7 +47,7 @@ const LogoLoader = ({ fullScreen = false, overlay = false, inline = false, size 
           {!inline && (
             <motion.div
               className="absolute inset-0 rounded-full border-2"
-              style={{ borderColor: 'rgba(255, 140, 0, 0.4)' }}
+              style={{ borderColor: 'rgba(37, 99, 235, 0.4)' }}
               animate={{
                 scale: [1, 1.4],
                 opacity: [0.6, 0]

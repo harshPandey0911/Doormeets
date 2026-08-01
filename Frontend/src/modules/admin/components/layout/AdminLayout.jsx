@@ -62,6 +62,18 @@ const AdminLayout = () => {
   }, []);
 
   useEffect(() => {
+    // Set admin side favicon dynamically
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.type = 'image/png';
+      link.rel = 'shortcut icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = '/doormeets-logo.png';
+  }, []);
+
+  useEffect(() => {
     if (!socket) return;
 
     const handleSOSAlert = (data) => {

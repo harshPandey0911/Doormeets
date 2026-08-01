@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud, FiAward, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud, FiAward, FiEye, FiEyeOff, FiTwitter, FiInstagram, FiYoutube, FiLinkedin } from 'react-icons/fi';
 import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus } from '../../services/settingsService';
 import { supportService } from '../../services/supportService';
 import { cityService } from '../../services/cityService';
@@ -72,7 +72,11 @@ const AdminSettings = () => {
     supportPhone: '',
     supportWhatsapp: '',
     privacyPolicy: '',
-    termsAndConditions: ''
+    termsAndConditions: '',
+    twitterUrl: '',
+    instagramUrl: '',
+    youtubeUrl: '',
+    linkedinUrl: ''
   });
   const [supportLoading, setSupportLoading] = useState(false);
   const [privacyLoading, setPrivacyLoading] = useState(false);
@@ -296,7 +300,11 @@ const AdminSettings = () => {
             supportPhone: res.settings.supportPhone || '',
             supportWhatsapp: res.settings.supportWhatsapp || '',
             privacyPolicy: res.settings.privacyPolicy || '',
-            termsAndConditions: res.settings.termsAndConditions || ''
+            termsAndConditions: res.settings.termsAndConditions || '',
+            twitterUrl: res.settings.twitterUrl || '',
+            instagramUrl: res.settings.instagramUrl || '',
+            youtubeUrl: res.settings.youtubeUrl || '',
+            linkedinUrl: res.settings.linkedinUrl || ''
           });
           // Load about settings
           if (res.settings.aboutPageConfig) {
@@ -1377,6 +1385,46 @@ const AdminSettings = () => {
                         maxLength={10}
                         placeholder="e.g. 9876543210"
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Twitter URL</label>
+                      <div className="relative">
+                        <FiTwitter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input type="text" name="twitterUrl" value={supportSettings.twitterUrl} onChange={handleSupportChange}
+                          placeholder="e.g. https://twitter.com/..."
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Instagram URL</label>
+                      <div className="relative">
+                        <FiInstagram className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input type="text" name="instagramUrl" value={supportSettings.instagramUrl} onChange={handleSupportChange}
+                          placeholder="e.g. https://instagram.com/..."
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">YouTube URL</label>
+                      <div className="relative">
+                        <FiYoutube className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input type="text" name="youtubeUrl" value={supportSettings.youtubeUrl} onChange={handleSupportChange}
+                          placeholder="e.g. https://youtube.com/..."
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">LinkedIn URL</label>
+                      <div className="relative">
+                        <FiLinkedin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input type="text" name="linkedinUrl" value={supportSettings.linkedinUrl} onChange={handleSupportChange}
+                          placeholder="e.g. https://linkedin.com/..."
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-blue-500 transition-all" />
+                      </div>
                     </div>
                   </div>
                   <div className="flex justify-end pt-2">

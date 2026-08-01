@@ -9,7 +9,7 @@ const Logo = forwardRef(({ className = "h-12 w-auto", iconOnly = false, ...props
   return (
     <img
       ref={ref}
-      src="/cleaning-expert-logo.png"
+      src="/doormeets-logo.png"
       alt="Doormeets"
       className={className}
       {...props}

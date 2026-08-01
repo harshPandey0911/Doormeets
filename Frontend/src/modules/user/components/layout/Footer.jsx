@@ -80,14 +80,16 @@ const Footer = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Social links</h3>
             <div className="flex items-center gap-3">
               {[
-                { Icon: FiTwitter, href: "#" },
-                { Icon: FiInstagram, href: "#" },
-                { Icon: FiYoutube, href: "#" },
-                { Icon: FiLinkedin, href: "#" }
+                { Icon: FiTwitter, href: settings?.twitterUrl || "#" },
+                { Icon: FiInstagram, href: settings?.instagramUrl || "#" },
+                { Icon: FiYoutube, href: settings?.youtubeUrl || "#" },
+                { Icon: FiLinkedin, href: settings?.linkedinUrl || "#" }
               ].map(({ Icon, href }, i) => (
                 <a
                   key={i}
                   href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-9 h-9 rounded-full border flex items-center justify-center hover:bg-[#B33A35] hover:text-white transition-colors"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                 >
