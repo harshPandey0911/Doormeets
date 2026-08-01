@@ -1748,7 +1748,7 @@ const BookingDetails = () => {
           </div>
 
           {/* RIGHT COLUMN: Summary and Actions (Sidebar) */}
-          {((booking.paymentStatus === 'pending' && booking.status !== 'cancelled') || (['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType !== 'scheduled')) && (
+          {((booking.paymentStatus === 'pending' && booking.status !== 'cancelled') || (['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType === 'scheduled')) && (
             <div className="lg:sticky lg:top-24 space-y-3 md:space-y-6">
               {/* Booking Actions Sidebar panel */}
               <div className="bg-card-bg rounded-md p-3 md:p-5 border border-border-color shadow-xs md:shadow-sm space-y-2.5 md:space-y-4">
@@ -1765,8 +1765,8 @@ const BookingDetails = () => {
                   </button>
                 )}
 
-                {/* Reschedule Option (Hidden for scheduled bookings here since it's above) */}
-                {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType !== 'scheduled' && (
+                {/* Reschedule Option (Hidden for instant bookings) */}
+                {['confirmed', 'assigned'].includes(booking.status?.toLowerCase()) && booking.bookingType === 'scheduled' && (
                   <button
                     onClick={() => navigate(`/user/reschedule-booking/${booking._id || booking.id}`)}
                     className="w-full py-2 md:py-3 border border-border-color text-dark-text hover:bg-divider text-[10px] md:text-xs font-bold uppercase tracking-wider md:tracking-widest rounded-md transition-all active:scale-[0.98]"
