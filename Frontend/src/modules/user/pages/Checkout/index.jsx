@@ -755,7 +755,7 @@ const Checkout = () => {
           console.error('[Checkout] Polling error:', err);
         }
       }
-    }, 3000);
+    }, 2000);
 
     return () => {
       clearInterval(pollInterval);

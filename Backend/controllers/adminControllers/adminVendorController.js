@@ -88,9 +88,6 @@ const getAllVendors = async (req, res) => {
       }
     });
 
-    // Automatically upgrade any vendor with completed training / training_pending status to approved
-    await Vendor.updateMany({ approvalStatus: 'training_pending' }, { $set: { approvalStatus: 'approved' } });
-
     const vendorsWithTraining = vendors.map(v => {
       const vObj = v.toObject();
       const att = latestAttemptMap[v._id.toString()];
@@ -102,9 +99,6 @@ const getAllVendors = async (req, res) => {
         vObj.training.totalQuestions = att.totalQuestions;
         const levelNum = att.levelAssigned === 'L1' ? 1 : att.levelAssigned === 'L2' ? 2 : 3;
         vObj.training.assignedLevel = levelNum;
-      }
-      if (vObj.approvalStatus === 'training_pending' || (vObj.training && vObj.training.status === 'completed' && vObj.approvalStatus === 'pending')) {
-        vObj.approvalStatus = 'approved';
       }
       return vObj;
     });
