@@ -110,6 +110,13 @@ const OfferBannerSlider = ({ banners, noPadding = false }) => {
                 />
               </>
             )}
+            {(banner.text || banner.title || banner.subtitle) && (
+              <div className="absolute bottom-3 left-3 right-3 z-10 pointer-events-none">
+                <span className="inline-block px-3 py-1.5 bg-black/60 backdrop-blur-md text-white text-xs md:text-sm font-bold rounded-lg border border-white/20 shadow-md">
+                  {banner.text || banner.title || banner.subtitle}
+                </span>
+              </div>
+            )}
             </div>
           </SwiperSlide>
         ))}

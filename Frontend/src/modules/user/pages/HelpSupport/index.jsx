@@ -68,6 +68,27 @@ const HelpSupport = () => {
     fetchMyTickets();
   }, []);
 
+  // Lock body & root scroll when modal is active
+  useEffect(() => {
+    if (showContactForm || selectedTicket) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+      document.documentElement.style.height = '100vh';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.height = '';
+      document.documentElement.style.height = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.height = '';
+      document.documentElement.style.height = '';
+    };
+  }, [showContactForm, selectedTicket]);
+
   // FAQ Categories
   const categories = [
     {
@@ -266,9 +287,9 @@ const HelpSupport = () => {
 
       <main className="px-4 pt-4">
         {/* Quick Actions */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-dark-text tracking-tight mb-3">Contact Us</h2>
-          <div className="grid grid-cols-1 gap-3">
+        <div className="mb-4">
+          <h2 className="text-base font-bold text-dark-text tracking-tight mb-2.5">Contact Us</h2>
+          <div className="grid grid-cols-1 gap-2">
             {quickActions.map(action => {
               let href = null;
               if (action.id === 'chat' && supportInfo.whatsapp) {
@@ -288,19 +309,19 @@ const HelpSupport = () => {
                   target={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? '_blank' : undefined}
                   rel={href && !href.startsWith('mailto:') && !href.startsWith('tel:') ? 'noopener noreferrer' : undefined}
                   onClick={!href ? action.action : undefined}
-                  className="bg-card-bg rounded-md p-4 shadow-sm hover:shadow-md transition-all active:scale-98 border border-border-color flex items-center gap-4 w-full cursor-pointer"
+                  className="bg-card-bg rounded-xl p-2.5 shadow-xs hover:shadow-sm transition-all active:scale-98 border border-border-color flex items-center gap-3 w-full cursor-pointer"
                 >
                   <div
-                    className="w-12 h-12 rounded-md flex items-center justify-center shrink-0"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                     style={{ backgroundColor: `${action.color}15` }}
                   >
-                    <action.icon className="w-6 h-6" style={{ color: action.color }} />
+                    <action.icon className="w-4.5 h-4.5" style={{ color: action.color }} />
                   </div>
-                  <div className="flex-1 text-left">
-                    <h3 className="font-semibold text-dark-text">{action.title}</h3>
-                    <p className="text-sm text-secondary-text">{action.subtitle}</p>
+                  <div className="flex-1 text-left min-w-0 pr-1">
+                    <h3 className="font-bold text-xs text-dark-text leading-tight">{action.title}</h3>
+                    <p className="text-[11px] text-secondary-text truncate mt-0.5">{action.subtitle}</p>
                   </div>
-                  <FiChevronRight className="w-5 h-5 text-secondary-text" />
+                  <FiChevronRight className="w-4 h-4 text-secondary-text shrink-0" />
                 </Component>
               );
             })}
@@ -310,37 +331,37 @@ const HelpSupport = () => {
         {/* Submit a Request Button */}
         <button
           onClick={() => setShowContactForm(true)}
-          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-md p-3.5 font-bold shadow-md hover:shadow-lg transition-all active:scale-98 mb-6 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl p-2.5 text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-98 mb-4 flex items-center justify-center gap-2 cursor-pointer"
         >
-          <FiSend className="w-5 h-5" />
+          <FiSend className="w-4 h-4" />
           Submit a Request
         </button>
 
         {/* My Support Tickets */}
         {searchQuery === '' && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-dark-text tracking-tight mb-3">My Support Requests</h2>
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-dark-text tracking-tight mb-2.5">My Support Requests</h2>
             
             {loadingTickets ? (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#B33A35]"></div>
+              <div className="flex justify-center py-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#B33A35]"></div>
               </div>
             ) : tickets.length === 0 ? (
-              <div className="bg-card-bg border border-border-color rounded-md p-4 text-center text-sm text-secondary-text">
+              <div className="bg-card-bg border border-border-color rounded-xl p-3 text-center text-xs text-secondary-text">
                 You haven't submitted any support requests yet.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {tickets.map(ticket => (
                   <div 
                     key={ticket._id}
                     onClick={() => setSelectedTicket(ticket)}
-                    className="bg-card-bg rounded-md p-4 shadow-sm hover:shadow-md transition-all border border-border-color cursor-pointer flex justify-between items-center"
+                    className="bg-card-bg rounded-xl p-2.5 shadow-xs hover:shadow-sm transition-all border border-border-color cursor-pointer flex justify-between items-center"
                   >
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-bold text-gray-400">#{ticket.ticketNumber}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-bold text-gray-400">#{ticket.ticketNumber}</span>
+                        <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full uppercase ${
                           ticket.status === 'resolved' || ticket.status === 'closed' 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-blue-100 text-blue-800'
@@ -348,10 +369,10 @@ const HelpSupport = () => {
                           {ticket.status.replace('_', ' ')}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-dark-text text-sm">{ticket.subject}</h3>
-                      <p className="text-xs text-secondary-text mt-1">Updated: {new Date(ticket.updatedAt).toLocaleDateString()}</p>
+                      <h3 className="font-bold text-dark-text text-xs">{ticket.subject}</h3>
+                      <p className="text-[10px] text-secondary-text mt-0.5">Updated: {new Date(ticket.updatedAt).toLocaleDateString()}</p>
                     </div>
-                    <FiChevronRight className="w-5 h-5 text-secondary-text" />
+                    <FiChevronRight className="w-4 h-4 text-secondary-text shrink-0" />
                   </div>
                 ))}
               </div>
@@ -362,39 +383,39 @@ const HelpSupport = () => {
         {/* FAQ Categories */}
         {searchQuery === '' && (
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-dark-text tracking-tight mb-3">Browse by Category</h2>
-            <div className="space-y-3">
+            <h2 className="text-base font-bold text-dark-text tracking-tight mb-2.5">Browse by Category</h2>
+            <div className="space-y-2">
               {categories.map(category => (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id === selectedCategory ? null : category.id)}
-                  className="w-full bg-card-bg rounded-md p-4 shadow-sm hover:shadow-md transition-all border border-border-color cursor-pointer"
+                  className="w-full bg-card-bg rounded-xl p-2.5 shadow-xs hover:shadow-sm transition-all border border-border-color cursor-pointer text-left"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <div
-                        className="w-10 h-10 rounded-md flex items-center justify-center"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                         style={{ backgroundColor: `${category.color}15` }}
                       >
-                        <category.icon className="w-5 h-5" style={{ color: category.color }} />
+                        <category.icon className="w-4 h-4" style={{ color: category.color }} />
                       </div>
-                      <h3 className="font-semibold text-dark-text">{category.title}</h3>
+                      <h3 className="font-bold text-xs text-dark-text">{category.title}</h3>
                     </div>
                     <FiChevronRight
-                      className={`w-5 h-5 text-secondary-text transition-transform ${selectedCategory === category.id ? 'rotate-90' : ''}`}
+                      className={`w-4 h-4 text-secondary-text transition-transform ${selectedCategory === category.id ? 'rotate-90' : ''}`}
                     />
                   </div>
 
                   {/* Expanded Questions */}
                   {selectedCategory === category.id && (
-                    <div className="mt-4 space-y-3 border-t border-border-color pt-4">
+                    <div className="mt-3 space-y-2.5 border-t border-border-color pt-3">
                       {category.questions.map((item, idx) => (
                         <div key={idx} className="text-left">
-                          <div className="flex items-start gap-2 mb-2">
-                            <FiHelpCircle className="w-4 h-4 text-[#B33A35] mt-0.5 shrink-0" />
-                            <p className="font-medium text-dark-text text-sm">{item.q}</p>
+                          <div className="flex items-start gap-1.5 mb-1">
+                            <FiHelpCircle className="w-3.5 h-3.5 text-[#B33A35] mt-0.5 shrink-0" />
+                            <p className="font-semibold text-dark-text text-xs">{item.q}</p>
                           </div>
-                          <p className="text-sm text-secondary-text ml-6">{item.a}</p>
+                          <p className="text-xs text-secondary-text ml-5 leading-relaxed">{item.a}</p>
                         </div>
                       ))}
                     </div>
@@ -447,65 +468,72 @@ const HelpSupport = () => {
 
       {/* Contact Form Modal */}
       {showContactForm && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-card-bg border border-border-color rounded-md w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
-            <div className="sticky top-0 bg-card-bg border-b border-border-color px-6 py-4 rounded-t-md">
+        <div 
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 touch-none"
+          onTouchMove={(e) => {
+            if (e.target === e.currentTarget) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <div className="bg-card-bg border border-border-color rounded-2xl sm:rounded-2xl w-full max-w-sm sm:max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
+            <div className="sticky top-0 bg-card-bg border-b border-border-color px-4 sm:px-6 py-3 sm:py-4 rounded-t-2xl z-10">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-dark-text">Submit a Request</h2>
+                <h2 className="text-base sm:text-xl font-bold text-dark-text">Submit a Request</h2>
                 <button
                   onClick={() => setShowContactForm(false)}
-                  className="p-2 hover:bg-gray-800/10 rounded-full transition-colors cursor-pointer text-dark-text"
+                  className="p-1.5 sm:p-2 hover:bg-gray-800/10 rounded-full transition-colors cursor-pointer text-dark-text"
                 >
-                  <FiArrowLeft className="w-5 h-5" />
+                  <FiArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleContactSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleContactSubmit} className="p-4 sm:p-6 space-y-2.5 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-dark-text mb-2">Name</label>
+                <label className="block text-xs sm:text-sm font-semibold text-dark-text mb-1 sm:mb-2">Name</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-border-color bg-card-bg text-dark-text text-xs sm:text-sm focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none transition-all"
                   placeholder="Your name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-text mb-2">Email</label>
+                <label className="block text-xs sm:text-sm font-semibold text-dark-text mb-1 sm:mb-2">Email</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-border-color bg-card-bg text-dark-text text-xs sm:text-sm focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none transition-all"
                   placeholder="your.email@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-text mb-2">Subject</label>
+                <label className="block text-xs sm:text-sm font-semibold text-dark-text mb-1 sm:mb-2">Subject</label>
                 <input
                   type="text"
                   required
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-border-color bg-card-bg text-dark-text text-xs sm:text-sm focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none transition-all"
                   placeholder="Brief description of your issue"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-text mb-2">Message</label>
+                <label className="block text-xs sm:text-sm font-semibold text-dark-text mb-1 sm:mb-2">Message</label>
                 <textarea
                   required
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  rows={6}
-                  className="w-full px-4 py-3 rounded-md border border-border-color bg-card-bg text-dark-text focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none resize-none"
+                  rows={3}
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-border-color bg-card-bg text-dark-text text-xs sm:text-sm focus:border-[#B33A35] focus:ring-2 focus:ring-[#B33A35]/15 outline-none resize-none sm:rows-6 transition-all"
                   placeholder="Describe your issue in detail..."
                 />
               </div>
@@ -513,9 +541,9 @@ const HelpSupport = () => {
               <button
                 type="submit"
                 disabled={isSubmitLoading}
-                className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-md p-3.5 font-bold shadow-md hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] text-white rounded-xl py-2.5 sm:py-3.5 px-4 text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 mt-2"
               >
-                {isSubmitLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><FiSend className="w-5 h-5" />Submit Request</>}
+                {isSubmitLoading ? <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><FiSend className="w-4 h-4 sm:w-5 sm:h-5" />Submit Request</>}
               </button>
             </form>
           </div>

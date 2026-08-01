@@ -243,34 +243,46 @@ const BlockDataEditor = ({ block, onChange }) => {
                 </div>
                 <button type="button" onClick={() => onListChange(items.filter((_, idx) => idx !== i))} className="text-red-500 font-bold px-2">✕</button>
               </div>
-              <div className="flex items-center gap-4 text-xs font-semibold text-gray-600">
-                <span className="text-gray-400">Type:</span>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`media-type-${i}`}
-                    checked={itemType === 'image'}
-                    onChange={() => {
-                      const n = [...items];
-                      n[i] = typeof item === 'object' ? { ...item, type: 'image' } : { url: item, type: 'image' };
-                      onListChange(n);
-                    }}
-                  />
-                  Image
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`media-type-${i}`}
-                    checked={itemType === 'video'}
-                    onChange={() => {
-                      const n = [...items];
-                      n[i] = typeof item === 'object' ? { ...item, type: 'video' } : { url: item, type: 'video' };
-                      onListChange(n);
-                    }}
-                  />
-                  Video
-                </label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <input
+                  className={inputCls}
+                  value={(typeof item === 'object' ? item.title : '') || ''}
+                  onChange={e => {
+                    const n = [...items];
+                    n[i] = typeof item === 'object' ? { ...item, title: e.target.value } : { url: item, type: 'image', title: e.target.value };
+                    onListChange(n);
+                  }}
+                  placeholder="Banner Title / Text overlay (e.g. 20% OFF)"
+                />
+                <div className="flex items-center gap-4 text-xs font-semibold text-gray-600">
+                  <span className="text-gray-400">Type:</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`media-type-${i}`}
+                      checked={itemType === 'image'}
+                      onChange={() => {
+                        const n = [...items];
+                        n[i] = typeof item === 'object' ? { ...item, type: 'image' } : { url: item, type: 'image' };
+                        onListChange(n);
+                      }}
+                    />
+                    Image
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`media-type-${i}`}
+                      checked={itemType === 'video'}
+                      onChange={() => {
+                        const n = [...items];
+                        n[i] = typeof item === 'object' ? { ...item, type: 'video' } : { url: item, type: 'video' };
+                        onListChange(n);
+                      }}
+                    />
+                    Video
+                  </label>
+                </div>
               </div>
             </div>
           );
@@ -542,8 +554,8 @@ const BlockDataEditor = ({ block, onChange }) => {
       return (
         <div className="space-y-3">
           <div><label className={labelCls}>Section Title</label><input className={inputCls} value={data.title ?? 'Brands We Service'} onChange={e => update('title', e.target.value)} /></div>
-          <p className="text-xs text-gray-500">Brands are linked from the Brands section. Enter Brand IDs to display:</p>
-          <EditableList items={data.brandIds || []} onChange={v => update('brandIds', v)} placeholder="Brand ID..." />
+          <p className="text-xs text-gray-500">Add Brand Names or Brand IDs to display on the user service page:</p>
+          <EditableList items={data.items || data.brandIds || []} onChange={v => { update('items', v); update('brandIds', v); }} placeholder="e.g. Asian Paints, Jaquar, Hindware..." />
         </div>
       );
 
@@ -604,8 +616,8 @@ const BlockDataEditor = ({ block, onChange }) => {
               </label>
             </div>
             {data.imageUrl && (
-              <div className="mt-2 w-32 aspect-[3/1] rounded-lg overflow-hidden border border-gray-200 bg-white">
-                <img src={data.imageUrl} alt="" className="w-full h-full object-cover" />
+              <div className="mt-2 max-w-[200px] max-h-36 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 p-1">
+                <img src={data.imageUrl} alt="Preview" className="w-full h-full object-contain rounded-md" />
               </div>
             )}
           </div>

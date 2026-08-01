@@ -78,7 +78,8 @@ const PremiumServiceDetailPage = () => {
         return bannerBlock.data.banners.map(item => {
           const itemUrl = typeof item === 'object' ? item.url : item;
           const itemType = typeof item === 'object' ? (item.type || 'image') : 'image';
-          return { url: toAssetUrl(itemUrl), type: itemType };
+          const itemTitle = typeof item === 'object' ? item.title : '';
+          return { url: toAssetUrl(itemUrl), type: itemType, title: itemTitle };
         });
       }
     }
@@ -937,7 +938,7 @@ const PremiumServiceDetailPage = () => {
               <FiClock className="text-amber-500 w-4 h-4 shrink-0" />
               <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'How it works'}</h4>
             </div>
-            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 mt-2.5">
+            <div className="space-y-2 mt-2.5">
               {stepsList.map((step, idx) => {
                 const title = typeof step === 'object' ? step.title : step;
                 const desc = typeof step === 'object' ? step.desc : '';
@@ -956,14 +957,19 @@ const PremiumServiceDetailPage = () => {
         );
       }
       case 'warranty': {
-        if (!data.description && !data.duration) return null;
+        if (!data.description && !data.duration && !data.title) return null;
         return (
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
             <div className="flex items-center gap-2">
               <FiShield className="text-blue-500 w-4 h-4 shrink-0" />
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.duration || ''} Warranty</h4>
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">
+                {data.title || `${data.duration || ''} Warranty`}
+              </h4>
             </div>
-            <p className="text-[10px] lg:text-[12.5px] text-gray-400 leading-relaxed font-normal">
+            {data.title && data.duration && (
+              <p className="text-[10px] text-gray-400 font-semibold mt-0.5 pl-6">{data.duration} Warranty</p>
+            )}
+            <p className="text-[10px] lg:text-[12.5px] text-gray-400 leading-relaxed font-normal mt-1">
               {data.description}
             </p>
           </div>
@@ -987,25 +993,61 @@ const PremiumServiceDetailPage = () => {
         );
       }
       case 'reviews': {
-        const reviewsList = data.reviews || [];
-        if (reviewsList.length === 0) return null;
+        const showCount = data.showCount || 5;
+        const minRating = data.minRating || 1;
+        // Use service rating summary data
+        const serviceRating = service?.rating || 4.5;
+        const serviceReviewCount = service?.reviewCount || 0;
+        // Filter reviews from service if available, else show rating summary card
+        const allReviews = service?.reviews || [];
+        const filteredReviews = allReviews
+          .filter(r => (r.rating || 5) >= minRating)
+          .slice(0, showCount);
         return (
           <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
-            <div className="flex items-center gap-2">
-              <FiStar className="text-purple-500 w-4 h-4 shrink-0" />
-              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">User feedback</h4>
+            <div className="flex items-center gap-2 mb-3">
+              <FiStar className="text-amber-400 w-4 h-4 shrink-0" />
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">Customer Reviews</h4>
             </div>
-            <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
-              {reviewsList.map((rev, idx) => (
-                <div key={idx} className="border-b last:border-0 pb-2 last:pb-0 text-[10px]">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-800 dark:text-zinc-200 lg:text-xs">{rev.userName || 'Anonymous'}</span>
-                    <span className="text-gray-400 text-[9px] lg:text-xs">{rev.rating || 5}★</span>
-                  </div>
-                  <p className="text-gray-400 mt-1 leading-normal lg:text-xs">{rev.comment}</p>
+            {/* Rating Summary Card */}
+            <div className="flex items-center gap-3 p-3 bg-amber-50/60 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30 mb-3">
+              <div className="text-center">
+                <div className="text-2xl font-black text-amber-500">{serviceRating}</div>
+                <div className="flex gap-0.5 justify-center mt-0.5">
+                  {[1,2,3,4,5].map(s => (
+                    <FiStar key={s} className={`w-3 h-3 ${s <= Math.round(serviceRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                  ))}
                 </div>
-              ))}
+                <p className="text-[9px] text-gray-400 mt-0.5 font-semibold">{serviceReviewCount ? `${serviceReviewCount} reviews` : 'Rating'}</p>
+              </div>
+              <div className="flex-1 space-y-1">
+                {[5,4,3,2,1].map(star => (
+                  <div key={star} className="flex items-center gap-1.5">
+                    <span className="text-[9px] text-gray-400 w-2">{star}</span>
+                    <FiStar className="w-2.5 h-2.5 fill-amber-400 text-amber-400 shrink-0" />
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-amber-400 rounded-full"
+                        style={{ width: star === Math.round(serviceRating) ? '70%' : star < Math.round(serviceRating) ? '40%' : '10%' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+            {filteredReviews.length > 0 && (
+              <div className="space-y-2.5">
+                {filteredReviews.map((rev, idx) => (
+                  <div key={idx} className="border-b last:border-0 pb-2 last:pb-0 text-[10px]" style={{ borderColor: 'var(--border)' }}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-slate-800 dark:text-zinc-200 lg:text-xs">{rev.userName || rev.name || 'Customer'}</span>
+                      <span className="text-amber-400 text-[9px] lg:text-xs font-bold">{rev.rating || 5}★</span>
+                    </div>
+                    {rev.comment && <p className="text-gray-400 mt-1 leading-normal lg:text-xs">{rev.comment}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       }
@@ -1136,13 +1178,114 @@ const PremiumServiceDetailPage = () => {
                     <p className="text-[10px] text-emerald-600 dark:text-emerald-500/80 truncate mt-0.5">Click to view rate card details</p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30 group-hover:scale-105 transition-transform">
-                  Open File →
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-zinc-900 px-3 py-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 group-hover:scale-105 transition-transform shrink-0 whitespace-nowrap">
+                  Open File
                 </span>
               </a>
             ) : (
               <p className="text-[10px] text-gray-400 font-normal">Rate card details not uploaded yet.</p>
             )}
+          </div>
+        );
+      }
+      case 'brands': {
+        const brandItems = data.items || data.brandTitles || data.brandIds || [];
+        const blockTitle = data.title || 'Brands We Service';
+        
+        return (
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">🏷️</span>
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{blockTitle}</h4>
+            </div>
+            {brandItems.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {brandItems.map((brand, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] lg:text-xs font-bold border"
+                    style={{ backgroundColor: 'rgba(139, 92, 246, 0.06)', color: '#7c3aed', borderColor: 'rgba(139, 92, 246, 0.2)' }}
+                  >
+                    {typeof brand === 'object' ? (brand.title || brand.name || brand._id) : brand}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 font-normal">Add brands in Page Builder to display here.</p>
+            )}
+          </div>
+        );
+      }
+      case 'comparison': {
+        return (
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">⚖️</span>
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || 'Compare Plans'}</h4>
+            </div>
+            {data.linkUrl ? (
+              <a
+                href={toAssetUrl(data.linkUrl)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-between w-full p-3.5 bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl hover:bg-indigo-100/50 transition-all cursor-pointer group"
+              >
+                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{data.linkLabel || 'View Comparison'}</span>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform">→</span>
+              </a>
+            ) : (
+              <div className="p-3 bg-slate-50 dark:bg-zinc-800/40 rounded-xl text-xs text-gray-500 font-medium">
+                {data.linkLabel || 'Detailed plan comparison available'}
+              </div>
+            )}
+          </div>
+        );
+      }
+      case 'offer_image': {
+        if (!data.imageUrl) return null;
+        const headingTitle = data.title || data.altText;
+        const offerContent = (
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-[280px] sm:max-w-[320px] max-h-[220px] sm:max-h-[260px] rounded-xl overflow-hidden border shadow-sm transition-transform hover:scale-[1.01]" style={{ borderColor: 'var(--border)' }}>
+              <img src={toAssetUrl(data.imageUrl)} alt={data.altText || 'Special Offer'} className="w-full h-full object-cover" />
+            </div>
+          </div>
+        );
+        return (
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full space-y-3">
+            {headingTitle && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎁</span>
+                <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{headingTitle}</h4>
+              </div>
+            )}
+            {data.linkUrl ? (
+              <a href={toAssetUrl(data.linkUrl)} target="_blank" rel="noreferrer" className="block w-full cursor-pointer">
+                {offerContent}
+              </a>
+            ) : (
+              <div className="w-full">{offerContent}</div>
+            )}
+          </div>
+        );
+      }
+      case 'whats_not_included': {
+        const notIncludedItems = data.items || [];
+        if (notIncludedItems.length === 0) return null;
+        return (
+          <div className="lg:p-5 lg:bg-white lg:dark:bg-zinc-900 lg:border lg:border-gray-100 lg:dark:border-zinc-800 lg:rounded-md lg:shadow-[0_4px_20px_rgba(0,0,0,0.01)] w-full">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-red-500 text-base">✕</span>
+              <h4 className="text-sm lg:text-base font-black text-slate-800 dark:text-zinc-200">{data.title || "Not Included"}</h4>
+            </div>
+            <ul className="space-y-2">
+              {notIncludedItems.map((item, idx) => (
+                <li key={idx} className="flex gap-2 items-start text-[10px] lg:text-[13px]">
+                  <span className="text-red-400 font-black shrink-0 mt-0.5">✕</span>
+                  <span className="text-gray-500 dark:text-zinc-400 leading-relaxed">{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         );
       }
@@ -1182,7 +1325,16 @@ const PremiumServiceDetailPage = () => {
           />
         )}
         {/* Soft Linear Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
+
+        {/* Banner Title Overlay */}
+        {serviceImages[activeImageIndex]?.title && (
+          <div className="absolute bottom-10 left-5 right-5 z-20 pointer-events-none">
+            <span className="inline-block px-3 py-1 bg-black/60 backdrop-blur-md text-white text-xs font-bold rounded-lg border border-white/20 shadow-md">
+              {serviceImages[activeImageIndex].title}
+            </span>
+          </div>
+        )}
 
         {/* Play Button Overlay (only if video is paused/exists) */}
         {serviceImages[activeImageIndex]?.type === 'video' && !isPlaying && (
@@ -1992,9 +2144,9 @@ const PremiumServiceDetailPage = () => {
         </div>
 
         {/* Hero Section Grid */}
-        <div className="grid grid-cols-12 gap-8 items-start mb-8 mt-8">
+        <div className="grid grid-cols-12 gap-6 lg:gap-8 items-start mb-8 mt-4 md:mt-6">
           {/* Left: Main Image/Video & Thumbnails */}
-          <div className="col-span-8 space-y-4">
+          <div className="col-span-12 md:col-span-7 lg:col-span-8 space-y-4">
             <div className="relative w-full aspect-[1.8/1] rounded-md md:rounded-lg overflow-hidden shadow-sm border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
               {serviceImages[activeImageIndex]?.type === 'video' ? (
                 <video
@@ -2012,6 +2164,13 @@ const PremiumServiceDetailPage = () => {
                   alt={service.title}
                   className="h-full w-full object-cover transition-all duration-300"
                 />
+              )}
+              {serviceImages[activeImageIndex]?.title && (
+                <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none">
+                  <span className="inline-block px-3.5 py-1.5 bg-black/65 backdrop-blur-md text-white text-xs lg:text-sm font-bold rounded-xl border border-white/20 shadow-lg">
+                    {serviceImages[activeImageIndex].title}
+                  </span>
+                </div>
               )}
             </div>
 
@@ -2058,12 +2217,12 @@ const PremiumServiceDetailPage = () => {
           </div>
 
           {/* Right: Title, Badge, Star, Description & Features Grid */}
-          <div className="col-span-4 space-y-5 pt-2">
+          <div className="col-span-12 md:col-span-5 lg:col-span-4 space-y-5 pt-2">
             <div className="space-y-2">
               <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', color: '#B33A35' }}>
                 {category?.title || 'Mens and kids salon'}
               </span>
-              <h1 className="text-3xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>
+              <h1 className="text-2xl md:text-2xl lg:text-3xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>
                 {service.title ? service.title.charAt(0).toUpperCase() + service.title.slice(1).toLowerCase() : ''}
               </h1>
               <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
@@ -2092,7 +2251,7 @@ const PremiumServiceDetailPage = () => {
             )}
 
             {/* CART Sidebar widget */}
-            <div className="border rounded-md p-6 shadow-sm space-y-6 mt-4 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
+            <div className="border rounded-md p-4 md:p-6 shadow-sm space-y-4 md:space-y-6 mt-4 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
               <h4 className="text-xs font-black uppercase tracking-wider border-b pb-3" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>Cart</h4>
               
               {cartItems.length > 0 ? (

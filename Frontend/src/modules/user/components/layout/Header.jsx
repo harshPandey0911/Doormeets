@@ -49,7 +49,7 @@ const Header = ({ location, onLocationClick, onSearchClick }) => {
               <FiChevronDown className="w-3.5 h-3.5 md:w-4.5 md:h-4.5 shrink-0 opacity-80" style={{ color: 'var(--text-secondary)' }} />
             </div>
             <h1
-              className="text-[14px] xs:text-[16px] sm:text-lg md:text-[22px] font-bold leading-tight tracking-tight mt-0.5 md:mt-1.5 whitespace-nowrap"
+              className="text-[12px] sm:text-base md:text-[22px] font-bold leading-tight tracking-tight mt-0.5 md:mt-1.5 truncate max-w-[180px] sm:max-w-none"
               style={{ color: 'var(--text-primary)' }}
             >
               What you are looking for today

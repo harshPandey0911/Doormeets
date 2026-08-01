@@ -122,12 +122,21 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
 
     onClose();
 
+    // 1. If item is a Category, navigate to Category page or trigger Category click
     if (item.isCategory) {
       onCategoryClick(item);
       return;
     }
 
-    let catId = item.categoryId || item.targetCategoryId || item.categoryId;
+    // 2. If item is a Service, navigate directly to Service Detail Page
+    const serviceSlugOrId = item.slug || item.id || item._id;
+    if (serviceSlugOrId) {
+      navigate(`/user/service/${serviceSlugOrId}`);
+      return;
+    }
+
+    // 3. Fallback: try resolving by category
+    let catId = item.categoryId || item.targetCategoryId;
     let category = null;
 
     if (catId) {
@@ -139,16 +148,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
     }
 
     if (category) {
-      const initialBrand = item.brandId ? {
-        id: item.brandId,
-        title: item.brandName || item.category,
-        iconUrl: item.brandIcon || item.icon
-      } : (item.id && !item.isCategory ? item : null);
-
-      onCategoryClick({
-        ...category,
-        initialBrand: initialBrand
-      });
+      onCategoryClick(category);
     }
   };
 

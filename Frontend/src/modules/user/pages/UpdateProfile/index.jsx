@@ -10,10 +10,10 @@ import { apiCache } from '../../../../utils/apiCache';
 
 import { z } from "zod";
 
-// Zod schema
+// Zod schema (Email is optional, only validated if provided)
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address").refine(val => val.includes('@'), "Invalid email address"),
+  email: z.string().optional().refine(val => !val || val.length === 0 || (val.includes('@') && z.string().email().safeParse(val).success), "Please enter a valid email address"),
 });
 
 const UpdateProfile = () => {
@@ -247,8 +247,8 @@ const UpdateProfile = () => {
 
       if (response.success) {
         toast.success('Profile updated successfully!');
-        // authService.updateProfile already updates localStorage with response.user
-        // but let's ensure we have the latest data
+        // Clear cached profile to ensure fresh fetch across app
+        apiCache.delete('user:profile');
         if (response.user) {
           const storedUserData = localStorage.getItem('userData');
           if (storedUserData) {
@@ -409,9 +409,9 @@ const UpdateProfile = () => {
             <label className="block text-sm font-semibold text-dark-text mb-2">
               Phone Number
             </label>
-            <div className="relative">
+            <div className="relative flex items-center">
               <div
-                className="absolute left-3 top-1/2 transform -translate-y-1/2"
+                className="absolute left-3.5 z-10 flex items-center justify-center pointer-events-none"
                 style={{ color: themeColors.button }}
               >
                 <FiPhone className="w-5 h-5" />
@@ -424,10 +424,10 @@ const UpdateProfile = () => {
                 className="w-full pl-11 pr-4 py-3 rounded-xl border border-border-color bg-card-bg/60 text-secondary-text cursor-not-allowed"
                 placeholder="Phone number cannot be changed"
               />
-              <p className="text-xs text-secondary-text mt-1 ml-1">
-                Phone number cannot be changed for security reasons
-              </p>
             </div>
+            <p className="text-xs text-secondary-text mt-1.5 ml-1">
+              Phone number cannot be changed for security reasons
+            </p>
           </div>
         </div>
 

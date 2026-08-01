@@ -24,6 +24,7 @@ const Wallet = () => {
   const [page, setPage] = useState(1);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
   const [loyaltyHistory, setLoyaltyHistory] = useState([]);
   const [bookings, setBookings] = useState([]);
 
@@ -221,61 +222,56 @@ const Wallet = () => {
           </div>
         </header>
 
-        <main className="max-w-[1360px] mx-auto px-4 md:px-8 lg:px-12 py-6 md:py-10">
+        <main className="max-w-[1360px] mx-auto px-3 md:px-8 lg:px-12 py-3 md:py-6">
           {/* Referral Banner */}
-          <div className="bg-gray-100 rounded-xl p-4 mb-4 relative overflow-hidden">
-            <div className="relative z-10">
-              <h2 className="text-lg font-bold text-black mb-1">Refer your friends and earn</h2>
-              <p className="text-sm text-gray-700">They get ₹100 and you get ₹100</p>
+          <div className="bg-gray-100 rounded-xl p-3 mb-3 relative overflow-hidden flex items-center justify-between">
+            <div className="relative z-10 pr-16">
+              <h2 className="text-sm font-bold text-black leading-tight">Refer your friends and earn</h2>
+              <p className="text-xs text-gray-600 mt-0.5">They get ₹100 and you get ₹100</p>
             </div>
             {/* Gift Box Illustration */}
-            <div className="absolute right-4 top-2 z-0">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-0 opacity-90 scale-75 origin-right">
               <div className="relative">
-                <div className="w-20 h-20 bg-purple-400 rounded-lg flex items-center justify-center transform rotate-12 shadow-md">
-                  <div className="w-16 h-16 bg-pink-300 rounded-lg flex items-center justify-center">
-                    <span className="text-3xl">🎁</span>
+                <div className="w-14 h-14 bg-purple-400 rounded-lg flex items-center justify-center transform rotate-12 shadow-md">
+                  <div className="w-11 h-11 bg-pink-300 rounded-lg flex items-center justify-center">
+                    <span className="text-xl">🎁</span>
                   </div>
                 </div>
-                {/* Sparkles */}
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300 rounded-full"></div>
-                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-yellow-200 rounded-full"></div>
-                <div className="absolute top-4 -left-2 w-2 h-2 bg-white rounded-full opacity-80"></div>
-                <div className="absolute bottom-4 -right-2 w-2 h-2 bg-white rounded-full opacity-80"></div>
               </div>
             </div>
           </div>
 
           {/* Main Balance & Loyalty Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             {/* Wallet Balance Card */}
-            <div className="bg-gradient-to-r from-teal-800 to-teal-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-12 -mt-12"></div>
+            <div className="bg-gradient-to-r from-teal-800 to-teal-700 rounded-xl p-4 text-white shadow-md relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full -mr-10 -mt-10"></div>
               <div className="relative z-10">
-                <p className="text-teal-250 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  <MdAccountBalanceWallet className="w-4 h-4" /> Wallet Balance
+                <p className="text-teal-250 text-[11px] font-semibold uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <MdAccountBalanceWallet className="w-3.5 h-3.5" /> Wallet Balance
                 </p>
-                <h2 className="text-3xl font-extrabold text-white">
+                <h2 className="text-2xl font-extrabold text-white">
                   ₹{walletBalance.toLocaleString('en-IN')}
                 </h2>
-                <p className="text-[10px] text-teal-100 mt-2 font-medium">Use for quick checkouts and refunds</p>
+                <p className="text-[9.5px] text-teal-100 mt-1 font-medium">Use for quick checkouts and refunds</p>
               </div>
             </div>
 
             {/* Loyalty Points Card */}
             <div
               onClick={() => setShowLoyaltyModal(true)}
-              className="bg-gradient-to-r from-teal-900 to-emerald-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.99] transition-all group"
+              className="bg-gradient-to-r from-teal-900 to-emerald-800 rounded-xl p-4 text-white shadow-md relative overflow-hidden cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all group"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform"></div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full -mr-10 -mt-10 group-hover:scale-110 transition-transform"></div>
               <div className="relative z-10">
-                <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <p className="text-emerald-300 text-[11px] font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
                   <span>🎁</span> Loyalty Points
                 </p>
-                <h2 className="text-3xl font-extrabold text-emerald-100 flex items-baseline gap-2">
-                  {loyaltyPoints.toLocaleString('en-IN')} <span className="text-sm font-normal text-emerald-300">points</span>
+                <h2 className="text-2xl font-extrabold text-emerald-100 flex items-baseline gap-1.5">
+                  {loyaltyPoints.toLocaleString('en-IN')} <span className="text-xs font-normal text-emerald-300">points</span>
                 </h2>
-                <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/10">
-                  <span className="text-[10px] text-emerald-200 font-medium">1 point = ₹1 discount at checkout</span>
+                <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-white/10">
+                  <span className="text-[9.5px] text-emerald-200 font-medium">1 point = ₹1 discount at checkout</span>
                   <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-emerald-100 font-bold group-hover:bg-white/20 transition-colors">History →</span>
                 </div>
               </div>
@@ -283,11 +279,11 @@ const Wallet = () => {
           </div>
 
           {/* Redeem Gift Card / Voucher Card */}
-          <div className="bg-white rounded-2xl p-5 mb-6 border border-gray-100 shadow-xs relative overflow-hidden">
-            <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-1.5">
+          <div className="bg-white rounded-xl p-3.5 mb-4 border border-gray-100 shadow-xs relative overflow-hidden">
+            <h3 className="text-xs font-bold text-gray-900 mb-1 flex items-center gap-1.5">
               <span>🎁</span> Redeem Gift Card / Voucher
             </h3>
-            <p className="text-xs text-gray-500 mb-3.5 leading-relaxed">
+            <p className="text-[11px] text-gray-500 mb-2.5 leading-relaxed">
               Have a unique gift card code? Type it below to instantly credit cash to your wallet balance.
             </p>
             <form onSubmit={handleRedeemVoucher} className="flex gap-2">
@@ -297,33 +293,33 @@ const Wallet = () => {
                 value={voucherCode}
                 onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                 disabled={claiming}
-                className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all uppercase"
+                className="flex-1 min-w-0 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-hidden focus:border-indigo-500 transition-all uppercase"
               />
               <button
                 type="submit"
                 disabled={claiming || !voucherCode.trim()}
-                className="px-5 py-2.5 bg-black hover:bg-slate-800 disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl text-sm font-bold shadow-xs transition-all shrink-0"
+                className="px-4 py-2 bg-brand hover:bg-brand-dark disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-all shadow-xs shrink-0 cursor-pointer active:scale-95"
               >
-                {claiming ? 'Claiming...' : 'Claim'}
+                {claiming ? 'Claiming...' : 'Claim Code'}
               </button>
             </form>
           </div>
 
           {/* Analytics Cards */}
-          <div className="grid grid-cols-1 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="grid grid-cols-1 gap-3 mb-4">
+            <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-xs flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <div>
-                  <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Total Spent</p>
-                  <p className="text-xs text-gray-400 mt-0.5 font-medium">All booking expenses through platform</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Spent</p>
+                  <p className="text-[10px] text-gray-400 leading-tight font-medium truncate">All booking expenses through platform</p>
                 </div>
               </div>
-              <p className="text-xl font-black text-gray-900 font-mono">
+              <p className="text-sm font-semibold text-gray-900 shrink-0">
                 ₹{transactions
                   .filter(t => ['payment', 'withdrawal', 'platform_fee', 'convenience_fee', 'gst', 'worker_payment', 'cash_collected'].includes(t.type))
                   .reduce((sum, t) => sum + t.amount, 0)
@@ -370,38 +366,39 @@ const Wallet = () => {
                   return (
                     <div
                       key={item.id || index}
-                      className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                      onClick={() => setSelectedTx(item)}
+                      className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-xl shadow-xs hover:shadow-md hover:border-gray-200 cursor-pointer active:scale-[0.99] transition-all"
                     >
-                      <div className="flex items-center gap-3 flex-1">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${typeStyle.bg}`}
+                          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${typeStyle.bg}`}
                         >
-                          <span className={`text-lg font-bold ${typeStyle.color}`}>
+                          <span className={`text-base font-bold ${typeStyle.color}`}>
                             {item.type === 'penalty' ? '!' : typeStyle.sign}
                           </span>
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900 line-clamp-1">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-xs font-bold text-gray-900 truncate">
                             {item.description || item.title || 'Transaction'}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <p className="text-xs text-gray-500">{formattedDate}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-[10.5px] text-gray-500 font-medium">{formattedDate}</p>
                             {item.type && (
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${typeStyle.bg} ${typeStyle.color}`}>
+                              <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold capitalize ${typeStyle.bg} ${typeStyle.color}`}>
                                 {item.type === 'refund' ? 'refunded' : item.type}
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p
-                          className={`text-sm font-bold ${typeStyle.color}`}
+                          className={`text-xs font-black ${typeStyle.color}`}
                         >
                           {typeStyle.sign}₹{item.amount.toLocaleString('en-IN')}
                         </p>
                         {item.balanceAfter !== undefined && (
-                          <p className="text-[10px] text-gray-400 mt-0.5">
+                          <p className="text-[9.5px] text-gray-400 mt-0.5">
                             Bal: ₹{item.balanceAfter.toLocaleString('en-IN')}
                           </p>
                         )}
@@ -527,6 +524,86 @@ const Wallet = () => {
                 className="px-5 py-2.5 bg-black hover:bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all"
               >
                 Close Ledger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Details Modal */}
+      {selectedTx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-gray-100 flex flex-col animate-slideUp">
+            {/* Modal Header */}
+            <div className="px-4 py-3 bg-gradient-to-r from-teal-900 to-emerald-800 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📄</span>
+                <div>
+                  <h3 className="font-extrabold text-sm leading-tight">Transaction Details</h3>
+                  <p className="text-[10px] text-emerald-250 opacity-90">Full information & reference</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTx(null)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center"
+              >
+                <FiX className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-3.5 space-y-2.5 max-h-[75vh] overflow-y-auto">
+              <div className="text-center p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold block mb-0.5">Amount</span>
+                <span className={`text-2xl font-black ${['credit', 'refund', 'topup', 'referral', 'cashback', 'cash_collected'].includes(selectedTx.type) ? 'text-green-600' : 'text-red-600'}`}>
+                  {['payment', 'debit', 'withdrawal', 'penalty', 'fine'].includes(selectedTx.type) ? '-' : '+'}₹{selectedTx.amount?.toLocaleString('en-IN')}
+                </span>
+                <div className="mt-1">
+                  <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-gray-200 text-gray-700">
+                    {selectedTx.type}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div>
+                  <label className="text-[9.5px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Description / Title</label>
+                  <p className="font-semibold text-gray-800 leading-snug bg-slate-50 p-2.5 rounded-xl border border-gray-100 text-[11.5px] whitespace-pre-wrap">
+                    {selectedTx.description || selectedTx.title || 'No description available'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-gray-100">
+                    <label className="text-[9.5px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Date & Time</label>
+                    <p className="font-bold text-gray-800 text-[11px]">
+                      {new Date(selectedTx.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  {selectedTx.balanceAfter !== undefined && (
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-gray-100">
+                      <label className="text-[9.5px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Balance After</label>
+                      <p className="font-bold text-gray-800 text-[11px]">₹{selectedTx.balanceAfter?.toLocaleString('en-IN')}</p>
+                    </div>
+                  )}
+                </div>
+
+                {selectedTx._id && (
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-gray-100">
+                    <label className="text-[9.5px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Transaction ID</label>
+                    <p className="font-mono text-[10px] text-gray-600 break-all font-medium">{selectedTx._id}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setSelectedTx(null)}
+                className="px-4 py-1.5 bg-black hover:bg-slate-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-xs active:scale-95 transition-all cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>

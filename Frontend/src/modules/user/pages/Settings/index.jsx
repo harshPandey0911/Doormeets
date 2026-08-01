@@ -79,8 +79,25 @@ const Settings = () => {
     }
   };
 
-  const handlePrivacyClick = () => {
-    navigate('/user/privacy-policy');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [privacyText, setPrivacyText] = useState('');
+
+  const openPrivacyModal = async () => {
+    setShowPrivacyModal(true);
+    if (!privacyText) {
+      try {
+        const { configService } = await import('../../../../services/configService');
+        const res = await configService.getSettings();
+        if (res.success && res.settings?.privacyPolicy) {
+          setPrivacyText(res.settings.privacyPolicy);
+        } else {
+          setPrivacyText('Your data security and privacy is our top priority. We only collect essential name, address and phone data to match you with verified service partners.');
+        }
+      } catch (error) {
+        console.error('Failed to load privacy settings:', error);
+        setPrivacyText('Your data security and privacy is our top priority. We only collect essential name, address and phone data to match you with verified service partners.');
+      }
+    }
   };
 
   return (
@@ -168,7 +185,7 @@ const Settings = () => {
         {/* Privacy & Data Section */}
         <div className="space-y-4 mb-6">
           <button
-            onClick={handlePrivacyClick}
+            onClick={openPrivacyModal}
             className="w-full bg-card-bg rounded-md border border-border-color p-4 flex items-center justify-between hover:bg-gray-800/10 active:scale-[0.98] transition-all cursor-pointer"
           >
             <div className="flex items-center gap-3">
@@ -181,6 +198,42 @@ const Settings = () => {
           </button>
         </div>
       </main>
+
+      {/* Privacy Policy Modal / Drawer */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 dark:border-zinc-800 flex flex-col max-h-[85vh] animate-slideUp">
+            {/* Modal Header */}
+            <div className="px-5 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between border-b border-gray-800">
+              <div className="flex items-center gap-2.5">
+                <FiShield className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-base leading-tight">Privacy & Data Policy</h3>
+              </div>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-3 text-xs leading-relaxed text-slate-700 dark:text-zinc-300 whitespace-pre-wrap font-normal">
+              {privacyText || 'Loading Privacy Policy...'}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3.5 border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 flex justify-end">
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="px-5 py-2 bg-black dark:bg-zinc-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* BottomNav hidden on this page */}
     </div>
