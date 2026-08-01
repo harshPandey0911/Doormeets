@@ -397,10 +397,10 @@ const EditProfile = () => {
       <main className="px-4 py-6">
         <div className="space-y-6">
           {/* Profile Photo - Integrated */}
-          <div className="flex flex-col items-center justify-center mb-6">
+          <div className="flex flex-col items-center justify-center mb-4">
             <div className="relative group">
               <div
-                className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-xl cursor-pointer"
+                className="w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-md cursor-pointer"
                 style={{ background: '#f0f0f0' }}
                 onClick={() => handleImageClick('photo')}
               >
@@ -412,17 +412,17 @@ const EditProfile = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
-                    <FiUser className="w-12 h-12" />
+                    <FiUser className="w-9 h-9" />
                   </div>
                 )}
               </div>
 
               <div
                 onClick={() => handleImageClick('photo')}
-                className="absolute bottom-1 right-1 p-2 rounded-full cursor-pointer shadow-lg transition-transform active:scale-95 hover:scale-105"
+                className="absolute bottom-0 right-0 p-1.5 rounded-full cursor-pointer shadow-md transition-transform active:scale-95 hover:scale-105"
                 style={{ background: themeColors.button }}
               >
-                <FiCamera className="w-5 h-5 text-white" />
+                <FiCamera className="w-4 h-4 text-white" />
                 <input
                   id="photo-upload"
                   type="file"
@@ -432,19 +432,19 @@ const EditProfile = () => {
                 />
               </div>
             </div>
-            <p className="text-gray-500 text-xs mt-3 font-medium">Tap icon to change photo</p>
+            <p className="text-gray-400 text-[10.5px] mt-1.5 font-medium">Tap icon to change photo</p>
           </div>
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
               <div
-                className="p-2 rounded-lg"
+                className="p-1.5 rounded-md"
                 style={{
                   background: `linear-gradient(135deg, ${themeColors.icon}25 0%, ${themeColors.icon}15 100%)`,
                 }}
               >
-                <FiUser className="w-4 h-4" style={{ color: themeColors.icon }} />
+                <FiUser className="w-3.5 h-3.5" style={{ color: themeColors.icon }} />
               </div>
               <span>Name <span className="text-red-500">*</span></span>
             </label>
@@ -453,23 +453,23 @@ const EditProfile = () => {
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Enter your name"
-              className={`w-full px-4 py-3 bg-white rounded-xl border focus:outline-none focus:ring-2 ${errors.name ? 'border-red-500' : 'border-gray-200'
+              className={`w-full px-3.5 py-2.5 bg-white text-xs font-medium rounded-lg border focus:outline-none focus:ring-2 ${errors.name ? 'border-red-500' : 'border-gray-200'
                 }`}
               style={{ focusRingColor: themeColors.button }}
             />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-red-500 text-[11px] mt-1">{errors.name}</p>}
           </div>
 
           {/* Business Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
               <div
-                className="p-2 rounded-lg"
+                className="p-1.5 rounded-md"
                 style={{
                   background: `linear-gradient(135deg, ${themeColors.icon}25 0%, ${themeColors.icon}15 100%)`,
                 }}
               >
-                <FiBriefcase className="w-4 h-4" style={{ color: themeColors.icon }} />
+                <FiBriefcase className="w-3.5 h-3.5" style={{ color: themeColors.icon }} />
               </div>
               <span>Business Name</span>
             </label>
@@ -478,23 +478,23 @@ const EditProfile = () => {
               value={formData.businessName}
               onChange={(e) => handleInputChange('businessName', e.target.value)}
               placeholder="Enter business name"
-              className={`w-full px-4 py-3 bg-white rounded-xl border focus:outline-none focus:ring-2 ${errors.businessName ? 'border-red-500' : 'border-gray-200'
+              className={`w-full px-3.5 py-2.5 bg-white text-xs font-medium rounded-lg border focus:outline-none focus:ring-2 ${errors.businessName ? 'border-red-500' : 'border-gray-200'
                 }`}
               style={{ focusRingColor: themeColors.button }}
             />
-            {errors.businessName && <p className="text-red-500 text-sm mt-1">{errors.businessName}</p>}
+            {errors.businessName && <p className="text-red-500 text-[11px] mt-1">{errors.businessName}</p>}
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
               <div
-                className="p-2 rounded-lg"
+                className="p-1.5 rounded-md"
                 style={{
                   background: `linear-gradient(135deg, ${themeColors.icon}25 0%, ${themeColors.icon}15 100%)`,
                 }}
               >
-                <FiPhone className="w-4 h-4" style={{ color: themeColors.icon }} />
+                <FiPhone className="w-3.5 h-3.5" style={{ color: themeColors.icon }} />
               </div>
               <span>Phone Number <span className="text-red-500">*</span></span>
             </label>
@@ -503,23 +503,23 @@ const EditProfile = () => {
               value={formData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
               placeholder="Enter phone number"
-              className={`w-full px-4 py-3 bg-white rounded-xl border focus:outline-none focus:ring-2 ${errors.phone ? 'border-red-500' : 'border-gray-200'
+              className={`w-full px-3.5 py-2.5 bg-white text-xs font-medium rounded-lg border focus:outline-none focus:ring-2 ${errors.phone ? 'border-red-500' : 'border-gray-200'
                 }`}
               style={{ focusRingColor: themeColors.button }}
             />
-            {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+            {errors.phone && <p className="text-red-500 text-[11px] mt-1">{errors.phone}</p>}
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
               <div
-                className="p-2 rounded-lg"
+                className="p-1.5 rounded-md"
                 style={{
                   background: `linear-gradient(135deg, ${themeColors.icon}25 0%, ${themeColors.icon}15 100%)`,
                 }}
               >
-                <FiMail className="w-4 h-4" style={{ color: themeColors.icon }} />
+                <FiMail className="w-3.5 h-3.5" style={{ color: themeColors.icon }} />
               </div>
               <span>Email</span>
             </label>
@@ -528,11 +528,11 @@ const EditProfile = () => {
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="Enter email address"
-              className={`w-full px-4 py-3 bg-white rounded-xl border focus:outline-none focus:ring-2 ${errors.email ? 'border-red-500' : 'border-gray-200'
+              className={`w-full px-3.5 py-2.5 bg-white text-xs font-medium rounded-lg border focus:outline-none focus:ring-2 ${errors.email ? 'border-red-500' : 'border-gray-200'
                 }`}
               style={{ focusRingColor: themeColors.button }}
             />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-red-500 text-[11px] mt-1">{errors.email}</p>}
           </div>
 
           {/* Address */}

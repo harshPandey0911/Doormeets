@@ -348,14 +348,15 @@ const PremiumServiceDetailPage = () => {
             return (
               <div
                 key={variant._id || idx}
-                className="shrink-0 w-[140px] xs:w-[148px] sm:w-[165px] md:w-[195px] lg:w-[220px] rounded-md border p-2.5 md:p-3.5 flex flex-col justify-between transition-all select-none group shadow-xs bg-white dark:bg-zinc-900"
+                className="shrink-0 w-[140px] xs:w-[148px] sm:w-[165px] md:w-[195px] lg:w-[220px] rounded-xl border p-2.5 md:p-3.5 flex flex-col justify-between transition-all select-none group shadow-xs"
                 style={{
+                  backgroundColor: 'var(--card-bg)',
                   borderColor: 'var(--border)'
                 }}
               >
                 <div>
                   {/* Top Card Image */}
-                  <div className="w-full h-[110px] sm:h-[125px] md:h-[145px] lg:h-[160px] rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 relative mb-2.5">
+                  <div className="w-full h-[110px] sm:h-[125px] md:h-[145px] lg:h-[160px] rounded-lg overflow-hidden relative mb-2.5 border" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
                     <img
                       src={variantImage}
                       alt={variant.title}
@@ -365,7 +366,7 @@ const PremiumServiceDetailPage = () => {
 
                   {/* Title */}
                   <h4
-                    className="font-semibold text-[12px] md:text-[13.5px] lg:text-[14.5px] line-clamp-2 leading-[1.3] mb-2 min-h-[32px]"
+                    className="font-bold text-[12px] md:text-[13.5px] lg:text-[14.5px] line-clamp-2 leading-[1.3] mb-2 min-h-[32px]"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     {variant.title}
@@ -373,27 +374,29 @@ const PremiumServiceDetailPage = () => {
                 </div>
 
                 {/* Price + Add Action */}
-                <div className="flex items-center justify-between pt-1 border-t w-full" style={{ borderColor: 'var(--border)' }}>
+                <div className="flex items-center justify-between pt-2 border-t w-full" style={{ borderColor: 'var(--border)' }}>
                   <div className="font-extrabold text-[13px]" style={{ color: 'var(--text-primary)' }}>
                     ₹{(variant.extraPrice || 0) * (qty || 1)}
                   </div>
 
                   {isSelected ? (
-                    <div className="flex items-center gap-0.5 rounded-md bg-white dark:bg-zinc-900 border border-[#B33A35] px-1 py-0.5 text-[#B33A35] shadow-xs">
+                    <div className="flex items-center gap-0.5 rounded-lg border border-[#B33A35] px-1 py-0.5 text-[#B33A35] shadow-xs" style={{ backgroundColor: 'var(--card-bg)' }}>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, -1); }}
-                        className="w-4.5 h-4.5 flex items-center justify-center font-bold text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer"
+                        className="w-4.5 h-4.5 flex items-center justify-center font-bold text-xs rounded-md cursor-pointer transition-colors"
+                        style={{ color: '#B33A35' }}
                       >
                         −
                       </button>
-                      <span className="font-bold text-xs min-w-[12px] text-center">
+                      <span className="font-bold text-xs min-w-[12px] text-center" style={{ color: 'var(--text-primary)' }}>
                         {qty}
                       </span>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
-                        className="w-4.5 h-4.5 flex items-center justify-center font-bold text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer"
+                        className="w-4.5 h-4.5 flex items-center justify-center font-bold text-xs rounded-md cursor-pointer transition-colors"
+                        style={{ color: '#B33A35' }}
                       >
                         +
                       </button>
@@ -402,7 +405,8 @@ const PremiumServiceDetailPage = () => {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, 1); }}
-                      className="px-2.5 py-0.5 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#B33A35] font-bold text-[11px] hover:border-[#B33A35] hover:bg-red-50/40 dark:hover:bg-red-950/20 transition-all cursor-pointer shadow-xs active:scale-95"
+                      className="px-3 py-1 rounded-lg border text-[#B33A35] font-bold text-[11px] hover:border-[#B33A35] transition-all cursor-pointer shadow-xs active:scale-95"
+                      style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                     >
                       Add
                     </button>
@@ -1674,75 +1678,75 @@ const PremiumServiceDetailPage = () => {
 
         {/* Subscriptions Section */}
         {service?.serviceType === 'subscription_base' && service?.packages?.length > 0 && (
-          <section className="mt-5 md:mt-8 space-y-3 md:space-y-4">
+          <section className="mt-4 md:mt-6 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Choose Subscription Plan</h2>
+              <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Choose Subscription Plan</h2>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {service.packages.map((pkg, idx) => (
                 <div
                   key={idx}
                   onClick={() => setSelectedPackage(pkg)}
-                  className={`p-5 rounded-[28px] border-2 cursor-pointer transition-all flex flex-col gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] ${selectedPackage?.title === pkg.title ? 'border-[#B33A35] shadow-[0_8px_30px_rgba(179,58,53,0.08)]' : 'border-border-color hover:border-red-200'
+                  className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col gap-2.5 shadow-xs ${selectedPackage?.title === pkg.title ? 'border-[#B33A35]' : 'border-border-color hover:border-[#B33A35]/40'
                     }`}
                   style={
                     selectedPackage?.title === pkg.title
-                      ? { backgroundColor: 'rgba(179, 58, 53, 0.03)' }
-                      : { backgroundColor: 'var(--card-bg)' }
+                      ? { backgroundColor: 'rgba(179, 58, 53, 0.08)' }
+                      : { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }
                   }
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="font-bold text-base leading-tight text-[#B33A35]">{pkg.title}</h3>
-                        {pkg.isPopular && <span className="text-[9px] font-bold uppercase bg-[#B33A35] text-white px-2.5 py-0.5 rounded-full">Recommended Plan</span>}
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <h3 className="font-bold text-sm sm:text-base leading-tight text-[#B33A35]">{pkg.title}</h3>
+                        {pkg.isPopular && <span className="text-[9px] font-bold uppercase bg-[#B33A35] text-white px-2 py-0.5 rounded-full">Recommended Plan</span>}
                       </div>
-                      <div className="text-[11px] font-semibold text-gray-500 flex items-center gap-1"><FiClock /> Validity: {pkg.duration || '30 Days'}</div>
+                      <div className="text-[10.5px] font-medium flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}><FiClock className="w-3 h-3" /> Validity: {pkg.duration || '30 Days'}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="font-extrabold text-lg text-[#B33A35]">₹{pkg.price}</div>
-                      {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                      <div className="font-extrabold text-base sm:text-lg text-[#B33A35]">₹{pkg.price}</div>
+                      {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-[10.5px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
                     </div>
                   </div>
  
                   {/* Predefined benefits displays */}
-                  <div className="grid grid-cols-2 gap-2 p-3 bg-red-50/10 dark:bg-[#B33A35]/5 rounded-2xl border border-red-100/10 dark:border-[#B33A35]/10 text-xs font-semibold text-gray-700 dark:text-zinc-300">
-                    <div className="flex items-center gap-1.5">
-                      <FiCheckCircle className="text-[#B33A35] shrink-0 w-3.5 h-3.5" />
-                      <span>{pkg.visitsCredits || 4} Visits {pkg.visitFrequency ? `(${pkg.visitFrequency})` : 'Included'}</span>
+                  <div className="grid grid-cols-2 gap-x-2.5 gap-y-1.5 p-2.5 rounded-xl border text-[11px] font-medium" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-start gap-1.5 min-w-0">
+                      <FiCheckCircle className="text-[#B33A35] shrink-0 w-3 h-3 mt-0.5" />
+                      <span className="leading-snug break-words" style={{ color: 'var(--text-primary)' }}>{pkg.visitsCredits || 4} Visits {pkg.visitFrequency ? `(${pkg.visitFrequency})` : 'Included'}</span>
                     </div>
                     {pkg.bookingDiscount > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3.5 h-3.5" />
-                        <span>{pkg.bookingDiscount}% Extra Discount</span>
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3 h-3 mt-0.5" />
+                        <span className="leading-snug break-words" style={{ color: 'var(--text-primary)' }}>{pkg.bookingDiscount}% Extra Discount</span>
                       </div>
                     )}
                     {pkg.freeInspection && (
-                      <div className="flex items-center gap-1.5">
-                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3.5 h-3.5" />
-                        <span>Free Inspection/Checkup</span>
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3 h-3 mt-0.5" />
+                        <span className="leading-snug break-words" style={{ color: 'var(--text-primary)' }}>Free Inspection/Checkup</span>
                       </div>
                     )}
                     {pkg.prioritySupport && (
-                      <div className="flex items-center gap-1.5">
-                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3.5 h-3.5" />
-                        <span>Priority Support</span>
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3 h-3 mt-0.5" />
+                        <span className="leading-snug break-words" style={{ color: 'var(--text-primary)' }}>Priority Support</span>
                       </div>
                     )}
                     {pkg.memberPricing && (
-                      <div className="flex items-center gap-1.5">
-                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3.5 h-3.5" />
-                        <span>Special Member Prices</span>
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        <FiCheckCircle className="text-[#B33A35] shrink-0 w-3 h-3 mt-0.5" />
+                        <span className="leading-snug break-words" style={{ color: 'var(--text-primary)' }}>Special Member Prices</span>
                       </div>
                     )}
                   </div>
  
-                  {pkg.description && <p className="text-[11px] font-normal leading-relaxed text-gray-500">{pkg.description}</p>}
+                  {pkg.description && <p className="text-[10.5px] font-normal leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{pkg.description}</p>}
  
-                  <div className="flex justify-end pt-1">
+                  <div className="flex justify-end pt-0.5">
                     <button
                       type="button"
-                      className={`text-xs font-bold px-5 py-1.5 rounded-full border transition-all ${selectedPackage?.title === pkg.title
+                      className={`text-[11px] font-bold px-4 py-1.5 rounded-xl border transition-all ${selectedPackage?.title === pkg.title
                         ? 'text-white bg-[#B33A35] border-[#B33A35]'
                         : 'text-[#B33A35] border-[#B33A35] hover:bg-red-50/50'
                         }`}
@@ -2582,8 +2586,8 @@ const PremiumServiceDetailPage = () => {
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                className="relative z-10 w-full max-w-md md:max-w-lg rounded-t-xl md:rounded-xl p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto bg-white dark:bg-zinc-900"
-                style={{ borderColor: 'var(--border)' }}
+                className="relative z-10 w-full max-w-md md:max-w-lg rounded-t-xl md:rounded-xl p-6 shadow-2xl border flex flex-col gap-5 max-h-[85vh] overflow-y-auto pointer-events-auto"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
               >
                 <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: 'var(--border)' }}>
                   <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -2591,7 +2595,8 @@ const PremiumServiceDetailPage = () => {
                   </h3>
                   <button
                     onClick={() => setActiveCategoryModal(null)}
-                    className="p-1.5 hover:bg-red-50/50 dark:hover:bg-zinc-800 rounded-full text-gray-500 cursor-pointer"
+                    className="p-1.5 rounded-full text-gray-500 cursor-pointer"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     <FiX className="w-5 h-5" />
                   </button>
@@ -2608,8 +2613,8 @@ const PremiumServiceDetailPage = () => {
                         /* Image Card Layout */
                         <div
                           key={item._id}
-                          className="rounded-md border overflow-hidden flex transition-all select-none h-[90px] md:h-[110px] bg-white dark:bg-zinc-900"
-                          style={{ borderColor: 'var(--border)' }}
+                          className="rounded-md border overflow-hidden flex transition-all select-none h-[90px] md:h-[110px]"
+                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
                         >
                           {/* Left Image */}
                           <div className="w-24 md:w-28 shrink-0 overflow-hidden h-[90px] md:h-[110px]">

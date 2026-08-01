@@ -21,11 +21,15 @@ const MyRatings = () => {
       if (response.success) {
         if (page === 1) {
           setRatings(response.data);
-          sessionStorage.setItem('vendor_my_ratings_cache', JSON.stringify({
-            data: response.data,
-            stats: response.stats,
-            pagination: response.pagination
-          }));
+          try {
+            sessionStorage.setItem('vendor_my_ratings_cache', JSON.stringify({
+              data: response.data,
+              stats: response.stats,
+              pagination: response.pagination
+            }));
+          } catch (e) {
+            console.warn('sessionStorage quota exceeded, unable to cache ratings:', e);
+          }
         } else {
           setRatings(prev => [...prev, ...response.data]);
         }
@@ -145,8 +149,8 @@ const MyRatings = () => {
           {ratings.length > 0 ? (
             ratings.map((rating, idx) => (
               <div key={idx} className="bg-white rounded-md p-3 shadow-2xs border border-gray-100 space-y-2.5">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-2.5">
+                <div className="flex justify-between items-start flex-wrap gap-2">
+                  <div className="flex gap-2.5 min-w-0 flex-1">
                     <div className="w-8 h-8 md:w-9 md:h-9 rounded-md bg-teal-50 flex items-center justify-center overflow-hidden border border-teal-100/50 shrink-0">
                       {rating.userId?.profilePhoto ? (
                         <img src={rating.userId.profilePhoto} alt={rating.userId.name} className="w-full h-full object-cover" />
@@ -154,10 +158,10 @@ const MyRatings = () => {
                         <FiUser className="w-4 h-4 text-teal-400" />
                       )}
                     </div>
-                    <div>
-                      <h4 className="text-xs md:text-sm font-bold text-gray-900 leading-snug">{rating.userId?.name || 'Customer'}</h4>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className="flex">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs md:text-sm font-bold text-gray-900 leading-snug truncate">{rating.userId?.name || 'Customer'}</h4>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <div className="flex shrink-0">
                           {[1, 2, 3, 4, 5].map((s) => (
                             <FiStar
                               key={s}
@@ -165,12 +169,12 @@ const MyRatings = () => {
                             />
                           ))}
                         </div>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase">{formatDate(rating.reviewedAt)}</span>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase shrink-0">{formatDate(rating.reviewedAt)}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100 shrink-0">
-                    <span className="text-[9px] font-bold text-gray-500 uppercase">{rating.serviceId?.title || rating.serviceName}</span>
+                  <div className="bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100 max-w-full">
+                    <span className="text-[9px] font-bold text-gray-500 uppercase leading-snug break-words">{rating.serviceId?.title || rating.serviceName}</span>
                   </div>
                 </div>
 

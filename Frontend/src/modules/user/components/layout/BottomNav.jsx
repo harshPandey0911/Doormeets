@@ -53,7 +53,23 @@ const BottomNav = React.memo(() => {
   const { cartCount } = useCart();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Detect open modals or body lock
+  useEffect(() => {
+    const checkModalState = () => {
+      const isLocked = document.body.style.overflow === 'hidden' || document.body.style.position === 'fixed';
+      const hasBackdrop = !!document.querySelector('.fixed.inset-0.z-50, .fixed.inset-0.z-\\[50\\]');
+      setIsModalOpen(isLocked || hasBackdrop);
+    };
+
+    checkModalState();
+    const observer = new MutationObserver(checkModalState);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'], childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Detect mobile keyboard opening/closing via visualViewport or focus events
   useEffect(() => {
@@ -134,7 +150,7 @@ const BottomNav = React.memo(() => {
     navigate(path);
   };
 
-  if (isKeyboardVisible) {
+  if (isKeyboardVisible || isModalOpen) {
     return null;
   }
 

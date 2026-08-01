@@ -1447,7 +1447,7 @@ const Home = () => {
       </motion.div>
 
       {/* Bottom Navigation */}
-      {!isAddressModalOpen && !groupCategorySheet.open && <BottomNav />}
+      {!isAddressModalOpen && !isCategoryModalOpen && !isSearchOpen && !groupCategorySheet.open && <BottomNav />}
 
       {/* Category Modal */}
       <CategoryModal

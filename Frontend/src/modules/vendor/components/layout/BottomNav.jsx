@@ -63,17 +63,28 @@ const BottomNav = memo(() => {
     };
     const handleBlur = (e) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
-        setIsKeyboardVisible(false);
+        // Small timeout to check if focus moved to another input
+        setTimeout(() => {
+          const activeTag = document.activeElement ? document.activeElement.tagName : '';
+          if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
+            setIsKeyboardVisible(false);
+          }
+        }, 100);
       }
     };
 
     const handleResize = () => {
       if (window.visualViewport) {
-        // If visualViewport height shrinks significantly compared to window innerHeight, keyboard is open
         const isKeyboard = window.visualViewport.height < window.innerHeight * 0.85;
-        setIsKeyboardVisible(isKeyboard);
+        if (isKeyboard) setIsKeyboardVisible(true);
       }
     };
+
+    // Initial check in case focused on mount
+    const activeTag = document.activeElement ? document.activeElement.tagName : '';
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
+      setIsKeyboardVisible(true);
+    }
 
     window.addEventListener('focusin', handleFocus);
     window.addEventListener('focusout', handleBlur);

@@ -349,16 +349,16 @@ const Wallet = () => {
                   });
 
                   // Determine styles based on transaction type
-                  let typeStyle = { color: 'text-gray-400', bg: 'bg-gray-500/10', icon: '•', sign: '' };
+                  let typeStyle = { color: 'text-emerald-400', bg: 'bg-emerald-500/15', sign: '↓', displaySymbol: '+' };
 
-                  if (['credit', 'refund', 'topup', 'referral', 'cashback', 'cash_collected'].includes(item.type)) {
-                    // User requested cash_collected in GREEN
-                    const signToUse = ['credit', 'refund', 'topup', 'referral', 'cashback'].includes(item.type) ? '+' : '';
-                    typeStyle = { color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: '↓', sign: signToUse };
+                  if (['credit', 'refund', 'topup', 'referral', 'cashback'].includes(item.type)) {
+                    typeStyle = { color: 'text-emerald-400', bg: 'bg-emerald-500/20', sign: '+', displaySymbol: '+' };
+                  } else if (item.type === 'cash_collected' || item.type === 'online_collection') {
+                    typeStyle = { color: 'text-emerald-400', bg: 'bg-emerald-500/20', sign: '↓', displaySymbol: '₹' };
                   } else if (['payment', 'debit', 'withdrawal'].includes(item.type)) {
-                    typeStyle = { color: 'text-rose-500', bg: 'bg-rose-500/10', icon: '↑', sign: '-' };
+                    typeStyle = { color: 'text-rose-400', bg: 'bg-rose-500/20', sign: '-', displaySymbol: '-' };
                   } else if (['penalty', 'fine', 'cancellation_fee'].includes(item.type)) {
-                    typeStyle = { color: 'text-amber-500', bg: 'bg-amber-500/10', icon: '!', sign: '-' };
+                    typeStyle = { color: 'text-amber-400', bg: 'bg-amber-500/20', sign: '!', displaySymbol: '!' };
                   }
 
                   return (
@@ -370,10 +370,11 @@ const Wallet = () => {
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${typeStyle.bg}`}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${typeStyle.bg}`}
+                          style={{ borderColor: 'var(--border)' }}
                         >
-                          <span className={`text-base font-bold ${typeStyle.color}`}>
-                            {item.type === 'penalty' ? '!' : typeStyle.sign}
+                          <span className={`text-base font-extrabold ${typeStyle.color}`}>
+                            {typeStyle.displaySymbol}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0 pr-2">

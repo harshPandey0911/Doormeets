@@ -38,11 +38,13 @@ const LogoLoader = ({ fullScreen = false, overlay = false, inline = false, size 
           }}
           className={`relative ${inline ? 'w-8 h-8' : size} flex items-center justify-center`}
         >
-          <img
-            src={LOGO_URL}
-            alt="Doormeets"
-            className="w-full h-full object-contain"
-          />
+          <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center border shadow-xs" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
+            <img
+              src={LOGO_URL}
+              alt="Doormeets"
+              className="w-full h-full object-cover rounded-full"
+            />
+          </div>
           {/* Subtle ripple effect */}
           {!inline && (
             <motion.div
