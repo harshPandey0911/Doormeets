@@ -3242,10 +3242,9 @@ const refundVendorLeadFee = async (bookingId, specificVendorId = null) => {
 
     // 2. Find if there is a 'lead_deduct' transaction for this booking and vendor
     const txn = await CreditTransaction.findOne({
-      bookingId: booking._id,
+      referenceId: booking._id,
       vendorId: vendorId,
-      type: 'lead_deduct',
-      status: 'completed'
+      type: 'lead_deduct'
     });
 
     if (!txn) {
@@ -3255,7 +3254,7 @@ const refundVendorLeadFee = async (bookingId, specificVendorId = null) => {
 
     // 3. Check if we already refunded this booking for this vendor
     const existingRefund = await CreditTransaction.findOne({
-      bookingId: booking._id,
+      referenceId: booking._id,
       vendorId: vendorId,
       type: 'refund'
     });
