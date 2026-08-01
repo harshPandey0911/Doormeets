@@ -1381,11 +1381,19 @@ const assignWorker = async (req, res) => {
         scheduledTime: booking.scheduledTime,
       });
 
-      // Notify User in real-time
+      // Notify User in real-time with full assigned worker details
       io.to(`user_${booking.userId}`).emit('booking_updated', {
         bookingId: booking._id,
         status: booking.status,
-        message: 'Professional assigned to your booking'
+        message: `${worker.name} assigned to your booking`,
+        workerId: {
+          _id: worker._id,
+          name: worker.name,
+          phone: worker.phone,
+          rating: worker.rating || 0,
+          totalJobs: worker.totalJobs || 0,
+          profilePhoto: worker.profilePhoto
+        }
       });
     }
 

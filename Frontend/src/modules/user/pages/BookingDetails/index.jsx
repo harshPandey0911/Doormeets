@@ -328,6 +328,22 @@ const BookingDetails = () => {
     }
   }, [socket, id]);
 
+  // Auto-refresh polling for active bookings (keeps page data updated in real-time)
+  useEffect(() => {
+    if (!id || !booking) return;
+    const isCompletedOrCancelled = ['completed', 'cancelled', 'rejected'].includes(booking.status?.toLowerCase());
+    
+    // Poll every 5 seconds if booking is active
+    const pollInterval = setInterval(() => {
+      if (!document.hidden) {
+        apiCache.invalidate(`user:booking:${id}`);
+        loadBooking();
+      }
+    }, isCompletedOrCancelled ? 15000 : 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [id, booking?.status]);
+
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case 'confirmed':
@@ -843,7 +859,7 @@ const BookingDetails = () => {
             )}
 
             {/* Service Partner Card — Enhanced */}
-            {(booking.workerId || booking.assignedTo || booking.vendorId) && ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done'].includes(booking.status?.toLowerCase()) && (
+            {(booking.workerId || booking.assignedTo || booking.vendorId) && ['accepted', 'confirmed', 'assigned', 'journey_started', 'visited', 'in_progress', 'work_done', 'completed'].includes(booking.status?.toLowerCase()) && (
               <div className="bg-card-bg rounded-md shadow-xs md:shadow-sm border border-border-color overflow-hidden">
                 {/* Top bar */}
                 <div className="px-3.5 md:px-5 py-2.5 md:py-3 flex justify-between items-center border-b border-border-color bg-light-bg/50">
@@ -911,7 +927,7 @@ const BookingDetails = () => {
                       return firstNo.replace(/(?!^\+)[^\d]/g, '');
                     };
                     const currentStatus = (booking?.status || '').toLowerCase().replace(/_/g, ' ').trim();
-                    const journeyActive = ['journey started', 'journey_started', 'journey', 'visited', 'in progress', 'in_progress', 'work done', 'work_done'].includes(currentStatus);
+                    const journeyActive = ['assigned', 'accepted', 'confirmed', 'journey started', 'journey_started', 'journey', 'visited', 'in progress', 'in_progress', 'work done', 'work_done'].includes(currentStatus);
                     const vendorPhone = cleanPhone(booking.workerId?.phone || booking.assignedTo?.phone || booking.vendorId?.phone);
                     if (journeyActive && vendorPhone) {
                       return (
