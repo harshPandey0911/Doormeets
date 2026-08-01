@@ -870,7 +870,7 @@ const PremiumCategoryPage = () => {
               };
 
               return (
-                <div key={comboItem.id || comboIdx} className="p-3.5 border rounded-md shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-2.5 bg-white dark:bg-zinc-900" style={{ borderColor: 'var(--border)' }}>
+                <div key={comboItem.id || comboIdx} className="p-3.5 border rounded-2xl shadow-xs space-y-2.5" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}>
                   {/* Discount tag badge */}
                   <div className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
                     <span>🏷️</span>
