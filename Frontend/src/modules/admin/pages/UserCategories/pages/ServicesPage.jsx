@@ -1860,18 +1860,7 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">What you get (Features)</label>
-                        <p className="text-xs text-gray-500 mb-2">List the items included in this service</p>
-                        <EditableList items={features} onChange={setFeatures} placeholder="e.g. 30 Mins full body massage" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">How it works (Process Steps)</label>
-                        <p className="text-xs text-gray-500 mb-2">List the steps involved in service delivery</p>
-                        <EditableList items={steps} onChange={setSteps} placeholder="e.g. Therapist arrives with products" />
-                      </div>
-                    </div>
+
 
                     {/* City Availability */}
                     <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">

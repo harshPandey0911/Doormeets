@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+﻿import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -374,7 +374,7 @@ const PremiumServiceDetailPage = () => {
                 {/* Price + Add Action */}
                 <div className="flex items-center justify-between pt-1 border-t w-full" style={{ borderColor: 'var(--border)' }}>
                   <div className="font-extrabold text-[13px]" style={{ color: 'var(--text-primary)' }}>
-                    ₹{(variant.extraPrice || 0) * (qty || 1)}
+                    Γé╣{(variant.extraPrice || 0) * (qty || 1)}
                   </div>
 
                   {isSelected ? (
@@ -384,7 +384,7 @@ const PremiumServiceDetailPage = () => {
                         onClick={(e) => { e.stopPropagation(); updateVariantQuantity(variant, -1); }}
                         className="w-4.5 h-4.5 flex items-center justify-center font-bold text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-md cursor-pointer"
                       >
-                        −
+                        ΓêÆ
                       </button>
                       <span className="font-bold text-xs min-w-[12px] text-center">
                         {qty}
@@ -660,7 +660,7 @@ const PremiumServiceDetailPage = () => {
               dynamicFieldsPayload.push({
                 name: `Group: ${group.title}`,
                 label: group.title,
-                value: `${selectedItem.title} (₹${selectedItem.price})`
+                value: `${selectedItem.title} (Γé╣${selectedItem.price})`
               });
             }
           }
@@ -733,7 +733,7 @@ const PremiumServiceDetailPage = () => {
       dynamicFieldsPayload.push({
         name: 'Selected Variants',
         label: 'Selected Variants',
-        value: selectedVariants.map(v => `${v.title} (x${v.quantity || 1})${v.extraPrice > 0 ? ` (+₹${v.extraPrice * (v.quantity || 1)})` : ''}`).join(', ')
+        value: selectedVariants.map(v => `${v.title} (x${v.quantity || 1})${v.extraPrice > 0 ? ` (+Γé╣${v.extraPrice * (v.quantity || 1)})` : ''}`).join(', ')
       });
     }
 
@@ -768,7 +768,7 @@ const PremiumServiceDetailPage = () => {
                 selectedIds.forEach(id => {
                   const selectedItem = group.items?.find(i => i._id?.toString() === id.toString());
                   if (selectedItem) {
-                    itemTitles.push(`${selectedItem.title} (₹${selectedItem.price})`);
+                    itemTitles.push(`${selectedItem.title} (Γé╣${selectedItem.price})`);
                   }
                 });
                 if (itemTitles.length > 0) {
@@ -808,7 +808,7 @@ const PremiumServiceDetailPage = () => {
               selectedIds.forEach(id => {
                 const selectedItem = group.items?.find(i => i._id?.toString() === id.toString());
                 if (selectedItem) {
-                  itemTitles.push(`${selectedItem.title} (₹${selectedItem.price})`);
+                  itemTitles.push(`${selectedItem.title} (Γé╣${selectedItem.price})`);
                 }
               });
               if (itemTitles.length > 0) {
@@ -1000,7 +1000,7 @@ const PremiumServiceDetailPage = () => {
                 <div key={idx} className="border-b last:border-0 pb-2 last:pb-0 text-[10px]">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-slate-800 dark:text-zinc-200 lg:text-xs">{rev.userName || 'Anonymous'}</span>
-                    <span className="text-gray-400 text-[9px] lg:text-xs">{rev.rating || 5}★</span>
+                    <span className="text-gray-400 text-[9px] lg:text-xs">{rev.rating || 5}Γÿà</span>
                   </div>
                   <p className="text-gray-400 mt-1 leading-normal lg:text-xs">{rev.comment}</p>
                 </div>
@@ -1137,7 +1137,7 @@ const PremiumServiceDetailPage = () => {
                   </div>
                 </div>
                 <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30 group-hover:scale-105 transition-transform">
-                  Open File →
+                  Open File ΓåÆ
                 </span>
               </a>
             ) : (
@@ -1154,7 +1154,7 @@ const PremiumServiceDetailPage = () => {
   return (
     <div className="h-auto pb-12 lg:pb-16" style={{ backgroundColor: 'var(--background)' }}>
       {/* 1. MOBILE FLOW */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         {/* Header Image Section with Full-Bleed style on mobile */}
         <div
           className="relative w-full h-[180px] md:h-[320px] lg:h-[460px] overflow-hidden bg-gray-100 shadow-sm select-none"
@@ -1224,7 +1224,7 @@ const PremiumServiceDetailPage = () => {
         )}
       </div>
 
-      <div className="w-full px-3.5 pt-4 md:pt-6 pb-4">
+      <div className="mx-auto max-w-lg lg:max-w-2xl px-5 pt-4 md:pt-6 pb-4">
         {/* Title, Rating, and Description */}
         <div className="space-y-2">
           <h1 className="text-base font-semibold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
@@ -1307,7 +1307,7 @@ const PremiumServiceDetailPage = () => {
               <FiClock className="text-brand" /> Select Massage Duration
             </h2>
             <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              Standard base charge is <span className="font-semibold text-brand">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
+              Standard base charge is <span className="font-semibold text-brand">Γé╣{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at Γé╣{(service.pricePerMinute || 0)} per 10 Mins.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {durationOptions.map((mins) => {
@@ -1331,7 +1331,7 @@ const PremiumServiceDetailPage = () => {
                     }
                   >
                     <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
-                    <span className="text-xs mt-1 font-medium" style={{ color: selectedDuration === mins ? 'var(--primary)' : 'var(--text-muted)' }}>₹{currentDurationPrice.toFixed(0)}</span>
+                    <span className="text-xs mt-1 font-medium" style={{ color: selectedDuration === mins ? 'var(--primary)' : 'var(--text-muted)' }}>Γé╣{currentDurationPrice.toFixed(0)}</span>
                   </button>
                 );
               })}
@@ -1404,8 +1404,8 @@ const PremiumServiceDetailPage = () => {
 
                     <div className="flex flex-col items-end shrink-0 gap-2">
                       <div className="text-right">
-                        <div className="font-semibold text-sm text-brand">₹{pkg.price}</div>
-                        {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-[11px] text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                        <div className="font-semibold text-sm text-brand">Γé╣{pkg.price}</div>
+                        {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-[11px] text-gray-400 line-through">Γé╣{pkg.originalPrice}</div>}
                       </div>
                       <button
                         type="button"
@@ -1432,7 +1432,7 @@ const PremiumServiceDetailPage = () => {
                             : { borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'transparent' }
                         }
                       >
-                        {addedCount > 0 ? 'Added ✓' : 'Select'}
+                        {addedCount > 0 ? 'Added Γ£ô' : 'Select'}
                       </button>
                     </div>
                   </div>
@@ -1480,7 +1480,7 @@ const PremiumServiceDetailPage = () => {
 
                     return (
                       <div key={i} className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                        <span className="text-emerald-500 font-bold">✓</span>
+                        <span className="text-emerald-500 font-bold">Γ£ô</span>
                         <span>
                           {incItem.serviceGroupTitle}:{' '}
                           <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{displayItemTitle}</span>
@@ -1503,10 +1503,10 @@ const PremiumServiceDetailPage = () => {
 
                     return (
                       <div key={i} className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                        <span className="text-emerald-500 font-bold">✓</span>
+                        <span className="text-emerald-500 font-bold">Γ£ô</span>
                         <span>
                           {group.title}:{' '}
-                          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{matched.title} (₹{matched.price})</span>
+                          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{matched.title} (Γé╣{matched.price})</span>
                         </span>
                       </div>
                     );
@@ -1545,8 +1545,8 @@ const PremiumServiceDetailPage = () => {
                       <div className="text-[11px] font-semibold text-gray-500 flex items-center gap-1"><FiClock /> Validity: {pkg.duration || '30 Days'}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="font-extrabold text-lg text-[#B33A35]">₹{pkg.price}</div>
-                      {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                      <div className="font-extrabold text-lg text-[#B33A35]">Γé╣{pkg.price}</div>
+                      {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-xs text-gray-400 line-through">Γé╣{pkg.originalPrice}</div>}
                     </div>
                   </div>
  
@@ -1842,7 +1842,7 @@ const PremiumServiceDetailPage = () => {
                             className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4.5 h-4.5 rounded-full text-[9px] font-bold shadow-md z-10"
                             style={{ backgroundColor: 'var(--primary)', color: '#fff' }}
                           >
-                            ✓
+                            Γ£ô
                           </span>
                         )}
                         {variant.iconUrl ? (
@@ -1858,7 +1858,7 @@ const PremiumServiceDetailPage = () => {
                                 : { borderColor: color.text, color: color.text }
                               }
                             >
-                              {isSelected ? '✓' : <FiPlus className="w-2.5 h-2.5" />}
+                              {isSelected ? 'Γ£ô' : <FiPlus className="w-2.5 h-2.5" />}
                             </span>
                           </div>
                         )}
@@ -1875,7 +1875,7 @@ const PremiumServiceDetailPage = () => {
                             : { color: color.text, backgroundColor: 'rgba(255,255,255,0.6)' }
                           }
                         >
-                          {variant.extraPrice > 0 ? `+₹${variant.extraPrice}` : 'Free'}
+                          {variant.extraPrice > 0 ? `+Γé╣${variant.extraPrice}` : 'Free'}
                         </span>
                       </button>
                     );
@@ -1895,12 +1895,12 @@ const PremiumServiceDetailPage = () => {
                 >
                   <div className="flex justify-between" style={{ color: isDark ? '#CBD5E1' : '#6B7280' }}>
                     <span>Base price</span>
-                    <span className="font-semibold" style={{ color: isDark ? '#F8FAFC' : '#1F2937' }}>₹{calculatedPrice}</span>
+                    <span className="font-semibold" style={{ color: isDark ? '#F8FAFC' : '#1F2937' }}>Γé╣{calculatedPrice}</span>
                   </div>
                   {selectedVariants.map((v, i) => (
                     <div key={i} className="flex justify-between" style={{ color: isDark ? '#CBD5E1' : '#6B7280' }}>
                       <span>{v.title}</span>
-                      <span className="font-semibold text-brand">+₹{v.extraPrice}</span>
+                      <span className="font-semibold text-brand">+Γé╣{v.extraPrice}</span>
                     </div>
                   ))}
                   <div
@@ -1911,7 +1911,7 @@ const PremiumServiceDetailPage = () => {
                     }}
                   >
                     <span className="font-bold">Total</span>
-                    <span className="font-bold text-base text-brand">₹{finalPrice}</span>
+                    <span className="font-bold text-base text-brand">Γé╣{finalPrice}</span>
                   </div>
                 </div>
 
@@ -1921,7 +1921,7 @@ const PremiumServiceDetailPage = () => {
                   className="w-full py-3.5 rounded-2xl font-semibold text-white text-sm shadow-lg transition-transform hover:scale-[1.01]"
                   style={{ background: 'linear-gradient(to right, var(--primary), var(--primary-dark, #e08a30))' }}
                 >
-                  Add to Cart — ₹{finalPrice}
+                  Add to Cart ΓÇö Γé╣{finalPrice}
                 </button>
               </div>
             </motion.div>
@@ -1955,7 +1955,7 @@ const PremiumServiceDetailPage = () => {
                   {cartItems.length} item{cartItems.length > 1 ? 's' : ''} in cart
                 </div>
                 <div className="text-xl font-bold mt-0.5" style={{ color: '#B33A35' }}>
-                  ₹{cartItems.reduce((acc, item) => acc + Number(item.price || 0), 0)}
+                  Γé╣{cartItems.reduce((acc, item) => acc + Number(item.price || 0), 0)}
                 </div>
               </div>
               <button type="button" onClick={() => navigate('/user/cart')} className="rounded-md bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-[1.02] flex items-center gap-1.5">
@@ -1980,7 +1980,7 @@ const PremiumServiceDetailPage = () => {
       )}
     </div>
       
-      <div className="hidden md:block w-full max-w-[1280px] mx-auto px-4 md:px-6 pt-20 md:pt-24 pb-6 font-sans">
+      <div className="hidden lg:block w-full max-w-[1280px] mx-auto px-6 pt-28 pb-6 font-sans">
         {/* Top Navbar */}
         <div className="mb-6">
           <Navbar 
@@ -2038,7 +2038,7 @@ const PremiumServiceDetailPage = () => {
                         <div className="w-full h-full relative bg-black flex items-center justify-center">
                           <video src={img.url} className="w-full h-full object-cover opacity-60" muted />
                           <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] bg-black/30">
-                            ▶
+                            Γû╢
                           </span>
                         </div>
                       ) : (
@@ -2085,7 +2085,7 @@ const PremiumServiceDetailPage = () => {
                   className="w-full py-4 rounded-2xl font-black text-white text-xs shadow-lg transition-transform hover:scale-[1.01] uppercase tracking-wider cursor-pointer flex items-center justify-between px-6"
                   style={{ background: 'linear-gradient(to right, var(--primary), var(--primary-dark, #e08a30))' }}
                 >
-                  <span className="text-sm font-black">₹{finalPrice}</span>
+                  <span className="text-sm font-black">Γé╣{finalPrice}</span>
                   <span>{variants.length > 0 ? 'Select & Add to Cart' : 'Add to Cart'}</span>
                 </button>
               </div>
@@ -2125,7 +2125,7 @@ const PremiumServiceDetailPage = () => {
                           </div>
 
                           <span className="text-xs font-bold shrink-0 min-w-[50px] text-right" style={{ color: 'var(--text-primary)' }}>
-                            ₹{itemPrice}
+                            Γé╣{itemPrice}
                           </span>
                         </div>
                       );
@@ -2137,7 +2137,7 @@ const PremiumServiceDetailPage = () => {
                     onClick={() => navigate('/user/cart')}
                     className="w-full py-4 bg-[#B33A35] hover:bg-[#9E2E2A] text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-[#B33A35]/15 transition-all flex items-center justify-between px-6 cursor-pointer active:scale-[0.98]"
                   >
-                    <span className="text-sm font-black">₹{cartItems.reduce((acc, item) => acc + Number(item.price || 0), 0)}</span>
+                    <span className="text-sm font-black">Γé╣{cartItems.reduce((acc, item) => acc + Number(item.price || 0), 0)}</span>
                     <span className="h-4 w-[1px] bg-white/30 mx-2" />
                     <span className="uppercase tracking-wider flex items-center gap-1.5">View Cart <FiShoppingBag /></span>
                   </button>
@@ -2302,8 +2302,8 @@ const PremiumServiceDetailPage = () => {
 
                         <div className="flex flex-col items-end shrink-0 gap-3">
                           <div className="text-right">
-                            <div className="font-extrabold text-sm text-[#B33A35]">₹{pkg.price}</div>
-                            {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-xs text-gray-400 line-through">₹{pkg.originalPrice}</div>}
+                            <div className="font-extrabold text-sm text-[#B33A35]">Γé╣{pkg.price}</div>
+                            {pkg.originalPrice && Number(pkg.originalPrice) > Number(pkg.price) && <div className="text-xs text-gray-400 line-through">Γé╣{pkg.originalPrice}</div>}
                           </div>
                           <button
                             type="button"
@@ -2314,7 +2314,7 @@ const PremiumServiceDetailPage = () => {
                                 : 'border-[#B33A35] text-[#B33A35] hover:bg-red-50/50'
                             }`}
                           >
-                            {addedCount > 0 ? 'Added ✓' : 'Select'}
+                            {addedCount > 0 ? 'Added Γ£ô' : 'Select'}
                           </button>
                         </div>
                       </div>
@@ -2342,7 +2342,7 @@ const PremiumServiceDetailPage = () => {
                   <FiClock className="text-brand" /> Select Massage Duration
                 </h2>
                 <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  Standard base charge is <span className="font-semibold text-brand">₹{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at ₹{(service.pricePerMinute || 0)} per 10 Mins.
+                  Standard base charge is <span className="font-semibold text-brand">Γé╣{(service.basePrice || 0)} for {service.minimumMinutes || 30} Mins</span>. Extra duration will be charged at Γé╣{(service.pricePerMinute || 0)} per 10 Mins.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {durationOptions.map((mins) => {
@@ -2366,7 +2366,7 @@ const PremiumServiceDetailPage = () => {
                         }
                       >
                         <span className="text-xs font-semibold">{formatDurationText(mins)}</span>
-                        <span className="text-xs mt-1 font-medium" style={{ color: selectedDuration === mins ? 'var(--primary)' : 'var(--text-muted)' }}>₹{currentDurationPrice.toFixed(0)}</span>
+                        <span className="text-xs mt-1 font-medium" style={{ color: selectedDuration === mins ? 'var(--primary)' : 'var(--text-muted)' }}>Γé╣{currentDurationPrice.toFixed(0)}</span>
                       </button>
                     );
                   })}
@@ -2469,7 +2469,7 @@ const PremiumServiceDetailPage = () => {
                               </div>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-xs md:text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                              <span className="font-bold text-xs md:text-sm" style={{ color: 'var(--primary)' }}>Γé╣{item.price}</span>
                               {qty > 0 ? (
                                 <div className="flex items-center gap-1.5 md:gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-1.5 md:px-2 py-0.5">
                                   <button onClick={(e) => { e.stopPropagation(); handleDecreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-xs md:text-sm hover:scale-110 active:scale-95 px-1 cursor-pointer">-</button>
@@ -2509,7 +2509,7 @@ const PremiumServiceDetailPage = () => {
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>₹{item.price}</span>
+                            <span className="font-bold text-sm" style={{ color: 'var(--primary)' }}>Γé╣{item.price}</span>
                             {qty > 0 ? (
                               <div className="flex items-center gap-2 border border-violet-200 dark:border-zinc-700 bg-violet-50/50 dark:bg-zinc-800/40 rounded-lg px-2 py-0.5 shrink-0">
                                 <button onClick={(e) => { e.stopPropagation(); handleDecreaseSubItem(item); }} className="text-[#B33A35] font-extrabold text-sm hover:scale-110 active:scale-95 px-1.5 cursor-pointer">-</button>
@@ -2646,7 +2646,7 @@ const PremiumServiceDetailPage = () => {
                                       </span>
                                     </div>
                                     <span className="text-xs font-bold text-gray-800 dark:text-zinc-200">
-                                      ₹{item.price}
+                                      Γé╣{item.price}
                                     </span>
                                   </div>
                                 );
@@ -2711,7 +2711,7 @@ const PremiumServiceDetailPage = () => {
             onClick={() => setLightboxIndex(-1)}
             className="absolute top-6 right-6 text-white text-3xl font-bold bg-white/10 hover:bg-white/20 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
           >
-            ×
+            ├ù
           </button>
           <div className="relative max-w-4xl max-h-[85vh] px-4 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             {lightboxIndex > 0 && (
@@ -2719,7 +2719,7 @@ const PremiumServiceDetailPage = () => {
                 onClick={() => setLightboxIndex(prev => prev - 1)}
                 className="absolute left-4 z-10 text-white text-3xl font-black bg-black/40 hover:bg-black/60 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               >
-                ‹
+                ΓÇ╣
               </button>
             )}
             <img src={lightboxImages[lightboxIndex]} alt="" className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform duration-200" />
@@ -2728,7 +2728,7 @@ const PremiumServiceDetailPage = () => {
                 onClick={() => setLightboxIndex(prev => prev + 1)}
                 className="absolute right-4 z-10 text-white text-3xl font-black bg-black/40 hover:bg-black/60 w-12 h-12 rounded-full flex items-center justify-center transition-colors"
               >
-                ›
+                ΓÇ║
               </button>
             )}
           </div>
@@ -2818,7 +2818,7 @@ const PremiumServiceDetailPage = () => {
                 )}
                 <p className="whitespace-pre-wrap">{activeItemDescModal.description}</p>
                 <div className="pt-2 border-t font-black text-sm" style={{ color: '#B33A35', borderColor: 'var(--border)' }}>
-                  Price: ₹{activeItemDescModal.price}
+                  Price: Γé╣{activeItemDescModal.price}
                 </div>
               </div>
             </motion.div>

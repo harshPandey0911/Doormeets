@@ -1397,11 +1397,11 @@ const BookingDetails = () => {
                                   <span>Original Booking : {originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
                                   {isPlanBenefit ? (
                                     <div className="flex items-center gap-2">
-                                      <span className="line-through text-secondary-text opacity-50 text-xs">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                      <span className="line-through text-secondary-text opacity-50 text-xs">₹{originalBase.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                       <span className="text-emerald-500 font-bold text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">FREE</span>
                                     </div>
                                   ) : (
-                                    <span className="font-medium text-dark-text">₹{(originalBase + originalGST).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span className="font-medium text-dark-text">₹{originalBase.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                   )}
                                 </div>
 
@@ -1412,6 +1412,13 @@ const BookingDetails = () => {
                                     <span className="font-mono text-xs text-dark-text">₹{(parseFloat(s.total) || ((parseFloat(s.price) || 0) * (parseFloat(s.quantity) || 1))).toFixed(2)}</span>
                                   </div>
                                 ))}
+
+                                {(originalGST + extraServiceGST) > 0 && (
+                                  <div className="flex justify-between items-center text-secondary-text border-t border-dashed border-border-color pt-1 mt-1 text-xs">
+                                    <span>GST (18%)</span>
+                                    <span className="font-mono">₹{(originalGST + extraServiceGST).toFixed(2)}</span>
+                                  </div>
+                                )}
 
                                 {/* Service Subtotal */}
                                 <div className="flex justify-between font-bold text-dark-text pt-1 text-xs md:text-sm">
@@ -1450,6 +1457,13 @@ const BookingDetails = () => {
                                       <span className="font-mono text-xs text-dark-text">₹{(c.price * c.quantity).toFixed(2)}</span>
                                     </div>
                                   ))}
+
+                                  {partsGST > 0 && (
+                                    <div className="flex justify-between items-center text-secondary-text border-t border-dashed border-border-color pt-1 mt-1 text-xs">
+                                      <span>GST (18%)</span>
+                                      <span className="font-mono">₹{partsGST.toFixed(2)}</span>
+                                    </div>
+                                  )}
 
                                   {/* Parts Subtotal */}
                                   <div className="flex justify-between font-bold text-dark-text pt-1 text-xs md:text-sm">

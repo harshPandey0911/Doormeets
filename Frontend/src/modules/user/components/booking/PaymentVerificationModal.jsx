@@ -186,11 +186,11 @@ const PaymentVerificationModal = ({ isOpen, onClose, booking, onPayOnline, onPay
                     <span>{originalServiceFromBill?.name || booking.serviceName || 'Service'}</span>
                     {isPlanBenefit ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="line-through text-secondary-text">₹{(originalBase + originalGST).toFixed(2)}</span>
+                        <span className="line-through text-secondary-text">₹{originalBase.toFixed(2)}</span>
                         <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 rounded">FREE</span>
                       </div>
                     ) : (
-                      <span className="font-medium font-mono">₹{(originalBase + originalGST).toFixed(2)}</span>
+                      <span className="font-medium font-mono">₹{originalBase.toFixed(2)}</span>
                     )}
                   </div>
                   {services.map((s, idx) => (
