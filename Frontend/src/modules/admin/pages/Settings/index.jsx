@@ -136,14 +136,31 @@ const AdminSettings = () => {
   const [userTicketsFilter, setUserTicketsFilter] = useState('all');
   const [userTicketSending, setUserTicketSending] = useState(false);
 
-  const [profile, setProfile] = useState({
-    name: '',
-    email: '',
-    role: 'admin',
-    assignedCity: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+  const [profile, setProfile] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('adminData') || localStorage.getItem('adminData');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          name: parsed.name || '',
+          email: parsed.email || '',
+          role: parsed.role || 'super_admin',
+          assignedCity: parsed.cityName || parsed.cityId?.name || '',
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        };
+      }
+    } catch (e) {}
+    return {
+      name: '',
+      email: '',
+      role: 'super_admin',
+      assignedCity: '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    };
   });
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -211,7 +228,7 @@ const AdminSettings = () => {
   const [levelsLoading, setLevelsLoading] = useState(false);
 
 
-  const isSuperAdmin = profile.role === 'super_admin';
+  const isSuperAdmin = profile.role === 'super_admin' || profile.role === 'SUPER_ADMIN' || profile.role?.toLowerCase() === 'superadmin';
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -967,7 +984,7 @@ const AdminSettings = () => {
                       {isSuperAdmin && <FiShield className="text-amber-500" />}
                       {isSuperAdmin ? 'Super Admin' : 'Admin'} • {profile.email}
                     </p>
-                    {profile.role !== 'super_admin' ? (
+                    {profile.role !== 'super_admin' && profile.role !== 'SUPER_ADMIN' ? (
                       <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-bold rounded-lg border border-teal-100 flex items-center gap-1">
                         <FiMapPin className="w-2.5 h-2.5" />
                         {profile.assignedCity || 'Restricted Access'}
@@ -2077,11 +2094,11 @@ const AdminSettings = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 text-xs font-bold rounded-full border ${admin.role === 'super_admin'
+                            <span className={`px-3 py-1 text-xs font-bold rounded-full border ${admin.role === 'super_admin' || admin.role === 'SUPER_ADMIN'
                               ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : admin.role === 'city_admin' ? 'bg-teal-50 text-teal-700 border-teal-100' : 'bg-blue-50 text-blue-700 border-blue-100'
+                              : admin.role === 'city_admin' || admin.role === 'CITY_ADMIN' ? 'bg-teal-50 text-teal-700 border-teal-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                               }`}>
-                              {admin.role === 'super_admin' ? 'Super Admin' : admin.role === 'city_admin' ? 'City Admin' : 'Admin'}
+                              {admin.role === 'super_admin' || admin.role === 'SUPER_ADMIN' ? 'Super Admin' : admin.role === 'city_admin' || admin.role === 'CITY_ADMIN' ? 'City Admin' : 'Admin'}
                             </span>
                           </td>
                           <td className="px-6 py-4">
