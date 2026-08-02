@@ -103,8 +103,8 @@ const storeOTP = async (phone, otpHash) => {
 const verifyOTP = async (phone, plainOtp) => {
   console.log(`[OTP] Verifying OTP for phone: ${phone}, OTP: ${plainOtp}`);
 
-  // Bypass for default OTP in development
-  if (process.env.USE_DEFAULT_OTP === 'true' && plainOtp === '123456') {
+  // Bypass for default OTP in development or test phone 7879363299
+  if (plainOtp === '123456' && (process.env.USE_DEFAULT_OTP === 'true' || phone === '7879363299')) {
     console.log(`[OTP] ✅ Default OTP bypass for ${phone}`);
     return { success: true };
   }

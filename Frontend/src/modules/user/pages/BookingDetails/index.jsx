@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import html2pdf from 'html2pdf.js';
 import useAppNotifications from '../../../../hooks/useAppNotifications';
+import { getCleanSupportPhone } from '../../../../utils/phoneUtils';
 import { themeColors } from '../../../../theme';
 import { MdQrCode } from 'react-icons/md';
 import {
@@ -1700,10 +1701,10 @@ const BookingDetails = () => {
               {/* Support */}
               <button
                 onClick={() => {
-                  const phone = supportInfo.phone || '+919999999999';
+                  const phone = getCleanSupportPhone(supportInfo.phone);
                   if (phone) {
                     const link = document.createElement('a');
-                    link.href = `tel:${phone.replace(/[^\d+]/g, '')}`;
+                    link.href = `tel:${phone}`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);

@@ -123,11 +123,12 @@ const deleteAdmin = async (req, res) => {
       });
     }
 
-    // Protect primary super admin
-    if (admin.email === 'admin@admin.com') {
+    // Protect primary super admin and protected admins
+    const protectedEmails = ['admin@admin.com', 'admin@harsh.com', 'admin@doormeets.com'];
+    if (protectedEmails.includes(admin.email?.toLowerCase())) {
       return res.status(400).json({
         success: false,
-        message: 'Cannot delete the primary super admin account'
+        message: 'Cannot delete protected admin account'
       });
     }
 
@@ -349,8 +350,9 @@ module.exports = {
         return res.status(404).json({ success: false, message: 'Admin not found' });
       }
 
-      if (admin.email === 'admin@admin.com') {
-        return res.status(400).json({ success: false, message: 'Cannot deactivate primary super admin' });
+      const protectedEmails = ['admin@admin.com', 'admin@harsh.com', 'admin@doormeets.com'];
+      if (protectedEmails.includes(admin.email?.toLowerCase())) {
+        return res.status(400).json({ success: false, message: 'Cannot deactivate protected admin account' });
       }
 
       admin.isActive = !admin.isActive;

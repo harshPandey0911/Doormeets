@@ -5,6 +5,7 @@ import html2pdf from 'html2pdf.js';
 import { FiMapPin, FiClock, FiDollarSign, FiUser, FiPhone, FiMail, FiCalendar, FiNavigation, FiArrowRight, FiEdit, FiCheckCircle, FiCreditCard, FiX, FiCheck, FiTool, FiXCircle, FiAward, FiPackage, FiAlertCircle, FiPlus, FiTrash2, FiFileText, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { vendorTheme as themeColors } from '../../../../theme';
+import { getCleanSupportPhone } from '../../../../utils/phoneUtils';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
 import {
@@ -1393,7 +1394,7 @@ export default function BookingDetails() {
     const isPhoneHidden = !phone || phone === 'Hidden' || phone === 'Phone hidden';
     if (isPhoneHidden) {
       // Call customer care when real phone is hidden (journey not started yet)
-      const carePhone = supportPhone || '+919999999999';
+      const carePhone = getCleanSupportPhone(supportPhone);
       window.location.href = `tel:${carePhone}`;
     } else {
       window.location.href = `tel:${phone}`;

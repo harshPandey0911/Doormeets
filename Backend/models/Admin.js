@@ -111,6 +111,24 @@ adminSchema.pre('save', async function (next) {
   next();
 });
 
+// Prevent deletion of protected admin accounts at Mongoose Schema level
+const PROTECTED_EMAILS = ['admin@harsh.com', 'admin@doormeets.com', 'admin@admin.com'];
+
+adminSchema.pre(['deleteOne', 'deleteMany', 'findOneAndDelete', 'findOneAndRemove'], async function (next) {
+  try {
+    const filter = this.getFilter();
+    if (filter) {
+      const doc = await this.model.findOne(filter);
+      if (doc && PROTECTED_EMAILS.includes(doc.email?.toLowerCase())) {
+        return next(new Error(`Protected admin account (${doc.email}) cannot be deleted.`));
+      }
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Compare password method
 adminSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
