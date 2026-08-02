@@ -169,20 +169,20 @@ pricingConfigSchema.post('save', async function(doc) {
   try {
     const ServiceBrandPricing = mongoose.model('ServiceBrandPricing');
     const gstPct = doc.gstPercentage || 18;
-    const price = doc.customerPrice || 0;
+    const price = Number(doc.customerPrice) || 0;
     
     let taxableAmount = 0;
     let gstAmount = 0;
-    let finalCustomerPrice = 0;
+    let finalCustomerPrice = price;
     
     if (doc.gstIncluded) {
       finalCustomerPrice = price;
-      gstAmount = price * (gstPct / 100);
-      taxableAmount = price - gstAmount;
+      gstAmount = Number(((price * (gstPct / 100))).toFixed(2));
+      taxableAmount = Number((price - gstAmount).toFixed(2));
     } else {
       taxableAmount = price;
-      gstAmount = price * (gstPct / 100);
-      finalCustomerPrice = price + gstAmount;
+      gstAmount = Number(((price * (gstPct / 100))).toFixed(2));
+      finalCustomerPrice = Number((price + gstAmount).toFixed(2));
     }
 
     // New Price Matrix model calculations for vendorProfit sync
@@ -221,7 +221,7 @@ pricingConfigSchema.post('save', async function(doc) {
         gstPercentage: gstPct,
         gstAmount: Number(gstAmount.toFixed(2)),
         vendorProfit: Number(vendorProfit.toFixed(2)),
-        finalCustomerPrice: Number(finalCustomerPrice.toFixed(2)),
+        finalCustomerPrice: finalCustomerPrice,
         isActive: true
       },
       { upsert: true, new: true }
