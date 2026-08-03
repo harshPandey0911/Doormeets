@@ -176,6 +176,17 @@ const createBooking = async (req, res) => {
           categories: { $in: searchArray }
         };
         
+        // Filter vendors by Zone (if targetZoneId resolved or passed)
+        const targetZoneId = zoneId || req.body.zoneId || null;
+        if (targetZoneId) {
+          vendorQuery.$or = [
+            { zoneId: targetZoneId },
+            { zoneIds: targetZoneId },
+            { zoneId: { $exists: false } },
+            { zoneId: null }
+          ];
+        }
+
         if (isConsultation) {
           vendorQuery.isConsultant = true;
         }

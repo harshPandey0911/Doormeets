@@ -142,6 +142,7 @@ const EditProfile = () => {
             phone: v.phone || '',
             email: v.email || '',
             address: addressData,
+            zoneName: typeof v.zoneId === 'object' ? v.zoneId?.name : (v.zoneName || null),
             serviceCategories: Array.isArray(v.service) ? v.service : (v.service ? [v.service] : []),
             profilePhoto: v.profilePhoto || '',
             aadharDocument: v.aadharDocument || (v.aadhar && v.aadhar.document) || '',
@@ -561,13 +562,19 @@ const EditProfile = () => {
               ) : null}
             </div>
 
-            <button
-              onClick={() => setIsAddressModalOpen(true)}
-              className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm border border-blue-100 hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
-            >
-              <FiMapPin className="w-4 h-4" />
-              Build/Change Location on Map
-            </button>
+            <div className="p-3.5 bg-purple-50/80 rounded-xl border border-purple-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📍</span>
+                <div>
+                  <p className="text-xs font-bold text-purple-900">
+                    Assigned Operating Zone: {formData.zoneName ? formData.zoneName : 'All Zones (Global)'}
+                  </p>
+                  <p className="text-[10.5px] text-purple-600 font-medium mt-0.5">
+                    Location & zone are managed by Admin and cannot be edited manually.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
           </div>

@@ -43,6 +43,7 @@ export const categoryService = {
     if (params.showOnHome !== undefined) queryParams.append('showOnHome', params.showOnHome);
     if (params.isPopular !== undefined) queryParams.append('isPopular', params.isPopular);
     if (params.cityId) queryParams.append('cityId', params.cityId);
+    if (params.zoneId) queryParams.append('zoneId', params.zoneId);
 
     const response = await api.get(`/admin/categories${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
     return response.data;
@@ -299,16 +300,26 @@ export const homeContentService = {
  * Now with caching for faster data retrieval
  */
 export const publicCatalogService = {
-  // Get all active categories (cached for 5 minutes)
-  getCategories: async (cityId) => {
-    const cacheKey = `public:categories:${cityId || 'default'}`;
+  // Get all active categories (cached for 30 seconds)
+  getCategories: async (zoneId) => {
+    const lat = localStorage.getItem('user_lat');
+    const lng = localStorage.getItem('user_lng');
+
+    const queryParams = new URLSearchParams();
+    if (zoneId) queryParams.append('zoneId', zoneId);
+    if (lat && lng) {
+      queryParams.append('lat', lat);
+      queryParams.append('lng', lng);
+    }
+
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const cacheKey = `public:categories:${zoneId || 'default'}:${lat || '0'}:${lng || '0'}`;
     const cached = apiCache.get(cacheKey);
     if (cached) return cached;
 
-    const query = cityId ? `?cityId=${cityId}` : '';
-    const response = await api.get(`/public/categories${query}`);
+    const response = await api.get(`/public/categories${queryString}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 30); // Reduced to 30 seconds for better responsiveness
+      apiCache.set(cacheKey, response.data, 30);
     }
     return response.data;
   },
@@ -424,10 +435,12 @@ export const publicCatalogService = {
 
   // Get consolidated home data (cached for 2 minutes)
   getHomeData: async (cityId) => {
+    const zoneId = localStorage.getItem('user_zone_id');
     const lat = localStorage.getItem('user_lat');
     const lng = localStorage.getItem('user_lng');
 
     const queryParams = new URLSearchParams();
+    if (zoneId) queryParams.append('zoneId', zoneId);
     if (cityId) queryParams.append('cityId', cityId);
     if (lat && lng) {
       queryParams.append('lat', lat);
@@ -435,7 +448,7 @@ export const publicCatalogService = {
     }
 
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    const cacheKey = `public:homeData:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+    const cacheKey = `public:homeData:${zoneId || cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
     const cached = apiCache.get(cacheKey);
     if (cached) return cached;
 
@@ -461,6 +474,17 @@ export const publicCatalogService = {
 /**
  * Category Template API calls
  */
+export const zoneService = {
+  getAll: async () => {
+    const response = await api.get('/admin/zones');
+    return response.data;
+  },
+  resolveByCoordinates: async (lat, lng) => {
+    const response = await api.get(`/public/zones/resolve?lat=${lat}&lng=${lng}`);
+    return response.data;
+  }
+};
+
 export const categoryTemplateService = {
   getAll: async () => {
     const response = await api.get('/admin/category-templates');

@@ -18,16 +18,17 @@ const AllVendors = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [zones, setZones] = useState([]);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [subCategoriesData, setSubCategoriesData] = useState({});
   const [brandsData, setBrandsData] = useState({});
-  const [editFormData, setEditFormData] = useState({ isActive: true, service: [], subCategories: [], brands: [], currentLevel: 'L3' });
+  const [editFormData, setEditFormData] = useState({ isActive: true, service: [], subCategories: [], brands: [], currentLevel: 'L3', zoneId: '' });
   const navigate = useNavigate();
 
   // Load vendors from backend
   useEffect(() => {
     loadVendors();
-    const fetchCategories = async () => {
+    const fetchCategoriesAndZones = async () => {
       try {
         const response = await categoryService.getAll();
         if (response.success) {
@@ -36,8 +37,17 @@ const AllVendors = () => {
       } catch (error) {
         console.error('Error loading categories:', error);
       }
+      try {
+        const { zoneService } = await import('../../../../services/catalogService');
+        const zRes = await zoneService.getAll();
+        if (zRes.success) {
+          setZones(zRes.zones || zRes.data || []);
+        }
+      } catch (zErr) {
+        console.error('Error loading zones:', zErr);
+      }
     };
-    fetchCategories();
+    fetchCategoriesAndZones();
   }, []);
 
   const loadVendors = async () => {
@@ -57,6 +67,8 @@ const AllVendors = () => {
           professions: vendor.professions || [],
           subCategories: vendor.subCategories || [],
           brands: vendor.brands || [],
+          zoneId: vendor.zoneId || null,
+          zoneName: typeof vendor.zoneId === 'object' ? vendor.zoneId?.name : (vendor.zoneName || null),
           approvalStatus: vendor.approvalStatus,
           city: vendor.address?.city || 'Not specified',
           aadhar: vendor.aadhar?.number,
@@ -207,12 +219,18 @@ const AllVendors = () => {
 
   const handleEditClick = (vendor) => {
     setSelectedVendor(vendor);
+    const existingZoneIds = Array.isArray(vendor.zoneIds) 
+      ? vendor.zoneIds.map(z => typeof z === 'object' ? z._id : z)
+      : (vendor.zoneId ? [typeof vendor.zoneId === 'object' ? vendor.zoneId._id : vendor.zoneId] : []);
+
     setEditFormData({
       isActive: vendor.isActive,
       service: Array.isArray(vendor.service) ? vendor.service : (vendor.service ? [vendor.service] : []),
       subCategories: Array.isArray(vendor.subCategories) ? vendor.subCategories : [],
       brands: Array.isArray(vendor.brands) ? vendor.brands : [],
-      currentLevel: vendor.currentLevel || 'L3'
+      currentLevel: vendor.currentLevel || 'L3',
+      zoneId: vendor.zoneId ? (typeof vendor.zoneId === 'object' ? vendor.zoneId._id : vendor.zoneId) : '',
+      zoneIds: existingZoneIds
     });
     setExpandedCategory(null);
     setIsEditModalOpen(true);
@@ -254,9 +272,23 @@ const AllVendors = () => {
     try {
       const response = await adminVendorService.updateVendor(selectedVendor.id, editFormData);
       if (response.success) {
+        const assignedZoneNames = zones
+          .filter(z => (editFormData.zoneIds || []).includes(z._id || z.id))
+          .map(z => z.name);
+
         setVendors(prev => prev.map(v => 
           v.id === selectedVendor.id 
-            ? { ...v, isActive: editFormData.isActive, service: editFormData.service, subCategories: editFormData.subCategories, brands: editFormData.brands, currentLevel: editFormData.currentLevel }
+            ? { 
+                ...v, 
+                isActive: editFormData.isActive, 
+                service: editFormData.service, 
+                subCategories: editFormData.subCategories, 
+                brands: editFormData.brands, 
+                currentLevel: editFormData.currentLevel, 
+                zoneId: editFormData.zoneIds?.[0] || null, 
+                zoneIds: editFormData.zoneIds || [],
+                zoneName: assignedZoneNames.length > 0 ? assignedZoneNames.join(', ') : null 
+              }
             : v
         ));
         toast.success('Vendor updated successfully');
@@ -417,7 +449,14 @@ const AllVendors = () => {
                           </div>
                           <p className="text-[10px] text-gray-500">{vendor.phone}</p>
                           <p className="text-[10px] text-gray-400">{vendor.email}</p>
-                          <p className="text-[10px] font-semibold text-blue-600 mt-0.5">{vendor.city}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-[10px] font-semibold text-blue-600">{vendor.city}</span>
+                            {vendor.zoneName && (
+                              <span className="px-1.5 py-0.2 bg-purple-50 text-purple-700 text-[9px] font-bold rounded border border-purple-200">
+                                📍 {vendor.zoneName}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -583,6 +622,12 @@ const AllVendors = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-1">City</label>
                 <div className="text-gray-900">{selectedVendor.city}</div>
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Assigned Service Zone</label>
+                <div className="text-sm font-bold text-purple-700">
+                  {selectedVendor.zoneName ? `📍 ${selectedVendor.zoneName}` : 'All Zones (Global)'}
+                </div>
+              </div>
             </div>
 
             {/* Training Test Results */}
@@ -744,6 +789,61 @@ const AllVendors = () => {
               <option value="L3">Level 3 — Basic / Beginner (Under 50% Rating)</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">Directly upgrades/downgrades vendor ranking level manually.</p>
+          </div>
+
+          {/* Assigned Service Zones (Multi-Select) */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-gray-700">Assigned Operating Zones</label>
+              <span className="text-xs text-purple-600 font-medium">Select 1 or multiple zones</span>
+            </div>
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2 max-h-48 overflow-y-auto">
+              <label className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-white rounded transition-colors">
+                <input
+                  type="checkbox"
+                  checked={!editFormData.zoneIds || editFormData.zoneIds.length === 0}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setEditFormData(prev => ({ ...prev, zoneIds: [], zoneId: '' }));
+                    }
+                  }}
+                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                />
+                <span className="text-xs font-bold text-gray-800">All Zones (Global Vendor)</span>
+              </label>
+              <div className="border-t border-gray-200 my-1" />
+              {zones.map(z => {
+                const zId = z._id || z.id;
+                const isChecked = (editFormData.zoneIds || []).includes(zId);
+                return (
+                  <label key={zId} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-white rounded transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        setEditFormData(prev => {
+                          const currentIds = prev.zoneIds || [];
+                          let updated;
+                          if (e.target.checked) {
+                            updated = [...currentIds, zId];
+                          } else {
+                            updated = currentIds.filter(id => id !== zId);
+                          }
+                          return {
+                            ...prev,
+                            zoneIds: updated,
+                            zoneId: updated.length > 0 ? updated[0] : ''
+                          };
+                        });
+                      }}
+                      className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                    />
+                    <span className="text-xs font-semibold text-gray-700">{z.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Check all the zones where this vendor should be able to receive booking requests.</p>
           </div>
 
           {/* Categories */}

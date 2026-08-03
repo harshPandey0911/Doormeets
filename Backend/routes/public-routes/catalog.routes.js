@@ -14,7 +14,8 @@ const {
   getPublicProfessions,
   getPublicTrainingData,
   registerInterest,
-  getPublicServiceDynamicDetails
+  getPublicServiceDynamicDetails,
+  resolveZoneByCoordinates
 } = require('../../controllers/publicControllers/catalogController');
 
 // Public routes - no authentication required
@@ -29,6 +30,7 @@ router.get('/home-content', getPublicHomeContent);
 router.get('/home-data', getPublicHomeData);
 router.get('/booking-hierarchy', getPublicBookingHierarchy);
 router.get('/professions', getPublicProfessions);
+router.get('/zones/resolve', resolveZoneByCoordinates);
 
 // Authenticated user category interest registration
 router.post('/categories/:categoryId/interested', authenticate, isUser, registerInterest);

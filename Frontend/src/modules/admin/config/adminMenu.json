@@ -26,6 +26,17 @@
     ]
   },
   {
+    "title": "Zone Management",
+    "route": "/admin/zone",
+    "section": "ZONE MANAGEMENT",
+    "allowedRoles": [
+      "super_admin",
+      "admin",
+      "city_admin"
+    ],
+    "children": []
+  },
+  {
     "title": "Vendors",
     "route": "/admin/vendors",
     "section": "VENDOR MANAGEMENT",
@@ -36,7 +47,6 @@
     ],
     "children": [
       "All Vendors",
-      "Vendor's Zone",
       "Manual Assignment",
       "Vendor Bookings",
       "Vendor Analytics",

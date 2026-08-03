@@ -160,6 +160,7 @@ export const ensureIds = (catalog) => {
       homeOrder: Number.isFinite(c.homeOrder) ? c.homeOrder : 0,
       // Preserve additional fields
       cityIds: c.cityIds || [],
+      zoneIds: c.zoneIds || [],
       description: c.description || "",
       imageUrl: c.imageUrl || "",
       status: c.status || "active",

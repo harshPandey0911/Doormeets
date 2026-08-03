@@ -8,14 +8,20 @@ const { SERVICE_STATUS } = require('../../utils/constants');
  */
 const getAllCategories = async (req, res) => {
   try {
-    const { status, showOnHome, isPopular, cityId } = req.query;
+    const { status, showOnHome, isPopular, cityId, zoneId } = req.query;
 
     // Build query
     const query = { status: { $ne: 'deleted' } };
     if (status) query.status = status;
     if (showOnHome !== undefined) query.showOnHome = showOnHome === 'true';
     if (isPopular !== undefined) query.isPopular = isPopular === 'true';
-    if (cityId) {
+    if (zoneId) {
+      query.$or = [
+        { zoneIds: zoneId },
+        { zoneIds: { $exists: false } },
+        { zoneIds: { $size: 0 } }
+      ];
+    } else if (cityId) {
       query.$or = [
         { cityIds: cityId },
         { cityIds: { $exists: false } },
@@ -57,6 +63,7 @@ const getAllCategories = async (req, res) => {
         status: cat.status,
         isPopular: cat.isPopular,
         cityIds: cat.cityIds || [],
+        zoneIds: cat.zoneIds || [],
         metaTitle: cat.metaTitle,
         metaDescription: cat.metaDescription,
         categoryType: cat.categoryType,
@@ -122,6 +129,8 @@ const getCategoryById = async (req, res) => {
         imageUrl: category.imageUrl,
         status: category.status,
         isPopular: category.isPopular,
+        cityIds: category.cityIds || [],
+        zoneIds: category.zoneIds || [],
         metaTitle: category.metaTitle,
         metaDescription: category.metaDescription,
         categoryType: category.categoryType,
@@ -192,6 +201,7 @@ const createCategory = async (req, res) => {
       metaTitle,
       metaDescription,
       cityIds,
+      zoneIds,
       categoryType,
       isGroupCategory,
       mappedCategories,
@@ -325,6 +335,7 @@ const createCategory = async (req, res) => {
       metaTitle: metaTitle?.trim() || null,
       metaDescription: metaDescription?.trim() || null,
       cityIds: cityIds || [],
+      zoneIds: zoneIds || [],
       categoryType: categoryType || 'service',
       templateId: templateId || null,
       enableBrands: enableBrands !== undefined ? Boolean(enableBrands) : false,
@@ -369,6 +380,7 @@ const createCategory = async (req, res) => {
         enableMultiVisit: category.enableMultiVisit || false,
         enablePricingMatrix: category.enablePricingMatrix !== false,
         cityIds: category.cityIds || [],
+        zoneIds: category.zoneIds || [],
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         isGroupCategory: category.isGroupCategory || false,
         mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
@@ -439,6 +451,7 @@ const updateCategory = async (req, res) => {
       metaTitle,
       metaDescription,
       cityIds: updateCityIds,
+      zoneIds: updateZoneIds,
       categoryType,
       templateId,
       enableBrands,
@@ -529,6 +542,11 @@ const updateCategory = async (req, res) => {
       category.cityIds = updateCityIds;
       category.markModified('cityIds'); // Explicitly mark modified for array
     }
+    const finalZonesToUpdate = updateZoneIds !== undefined ? updateZoneIds : req.body.zoneIds;
+    if (finalZonesToUpdate !== undefined) {
+      category.zoneIds = finalZonesToUpdate;
+      category.markModified('zoneIds'); // Explicitly mark modified for array
+    }
     if (isGroupCategory !== undefined) category.isGroupCategory = Boolean(isGroupCategory);
     if (mappedCategories !== undefined) {
       category.mappedCategories = Array.isArray(mappedCategories) ? mappedCategories : [];
@@ -567,6 +585,7 @@ const updateCategory = async (req, res) => {
         categoryType: category.categoryType,
         vendorId: category.vendorId,
         cityIds: (category.cityIds || []).map(id => id.toString()),
+        zoneIds: (category.zoneIds || []).map(id => id.toString()),
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         isGroupCategory: category.isGroupCategory || false,
         mappedCategories: (category.mappedCategories || []).map(id => id.toString()),

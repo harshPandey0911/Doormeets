@@ -109,6 +109,12 @@ const categorySchema = new mongoose.Schema({
     ref: 'City',
     index: true
   }],
+  // Zones where this category is specifically available (Empty = Global / All zones in city)
+  zoneIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    index: true
+  }],
   // Additional backend fields
   description: {
     type: String,

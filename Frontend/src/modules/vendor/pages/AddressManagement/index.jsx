@@ -1,202 +1,99 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiMapPin, FiSave, FiSearch, FiHome } from 'react-icons/fi';
-import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
-import { toast } from 'react-hot-toast';
+import { FiArrowLeft, FiMapPin, FiCheckCircle } from 'react-icons/fi';
+import { GoogleMap, useJsApiLoader, Polygon, Marker } from '@react-google-maps/api';
 import { vendorTheme as themeColors } from '../../../../theme';
 import vendorService from '../../../../services/vendorService';
 import Header from '../../components/layout/Header';
 import BottomNav from '../../components/layout/BottomNav';
-import LocationPicker from '../../../user/pages/Checkout/components/LocationPicker';
 
 const libraries = ['places', 'geometry'];
 
+const mapContainerStyle = {
+  width: '100%',
+  height: '280px',
+  borderRadius: '12px'
+};
+
+const defaultCenter = {
+  lat: 22.7196,
+  lng: 75.8577
+};
+
 const AddressManagement = () => {
   const navigate = useNavigate();
-  const [address, setAddress] = useState(''); // Display address
+  const [address, setAddress] = useState('');
   const [houseNumber, setHouseNumber] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState(null); // { lat, lng, address, components... }
-  const [autocomplete, setAutocomplete] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [vendorLocation, setVendorLocation] = useState(null);
   const [zoneStatus, setZoneStatus] = useState(null);
 
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries
   });
 
-  // Load saved address from backend
   useEffect(() => {
-    const loadAddress = async () => {
+    const loadData = async () => {
       try {
         const response = await vendorService.getProfile();
-        // Check if response has vendor data
-        if (response.success && response.vendor?.address) {
-          const addr = response.vendor.address;
+        if (response.success && response.vendor) {
+          const v = response.vendor;
+          const addr = v.address;
 
-          let displayAddress = '';
-          let location = null;
-          let houseNum = '';
-
-          if (typeof addr === 'string') {
-            displayAddress = addr;
-          } else {
-            // It's an object
-            houseNum = addr.addressLine1 || '';
-            displayAddress = addr.fullAddress ||
-              addr.address ||
-              '';
-
-            // If we have city/pincode but no fullAddress, try to construct
-            if (!displayAddress && addr.city) {
-              displayAddress = [addr.city, addr.state, addr.pincode].filter(Boolean).join(', ');
+          if (addr) {
+            let displayAddress = typeof addr === 'string' ? addr : (addr.fullAddress || [addr.city, addr.state].filter(Boolean).join(', '));
+            setAddress(displayAddress);
+            if (typeof addr === 'object' && addr.addressLine1) {
+              setHouseNumber(addr.addressLine1);
             }
-
-            if (addr.lat && addr.lng) {
-              location = {
-                lat: parseFloat(addr.lat),
-                lng: parseFloat(addr.lng),
-                address: displayAddress
-              };
+            if (typeof addr === 'object' && addr.lat && addr.lng) {
+              setVendorLocation({ lat: parseFloat(addr.lat), lng: parseFloat(addr.lng) });
             }
           }
 
-          setAddress(displayAddress);
-          setSearchQuery(displayAddress);
-          setHouseNumber(houseNum);
-          if (location) {
-            setSelectedLocation(location);
-          }
-          if (response.vendor?.zoneStatus) {
-            setZoneStatus(response.vendor.zoneStatus);
+          if (v.zoneStatus) {
+            setZoneStatus(v.zoneStatus);
           }
         }
       } catch (error) {
-        console.error('Error loading address:', error);
+        console.error('Error loading vendor profile & zone:', error);
       }
     };
-    loadAddress();
+    loadData();
   }, []);
 
-  const checkZone = async (lat, lng) => {
-    try {
-      const response = await vendorService.checkZoneStatus(lat, lng);
-      if (response.success) {
-        setZoneStatus(response.zoneStatus);
-      }
-    } catch (error) {
-      console.error('Error checking zone status:', error);
+  // Format GeoJSON polygon [[[lng, lat], [lng, lat]...]] to Google Maps path [{lat, lng}, {lat, lng}...]
+  const polygonPath = useMemo(() => {
+    if (!zoneStatus?.coordinates?.coordinates || !Array.isArray(zoneStatus.coordinates.coordinates[0])) {
+      return null;
     }
-  };
+    const ring = zoneStatus.coordinates.coordinates[0];
+    return ring.map(([lng, lat]) => ({ lat: Number(lat), lng: Number(lng) }));
+  }, [zoneStatus]);
 
-  const handleLocationSelect = (location) => {
-    setSelectedLocation(location);
-    // setAddress(location.address); 
-    // Usually user selects from map -> we update search query & address field
-    setSearchQuery(location.address);
-    setAddress(location.address);
-    if (location.lat && location.lng) {
-      checkZone(location.lat, location.lng);
+  // Calculate Map center from polygon or vendor location
+  const mapCenter = useMemo(() => {
+    if (vendorLocation) return vendorLocation;
+    if (polygonPath && polygonPath.length > 0) {
+      let latSum = 0, lngSum = 0;
+      polygonPath.forEach(pt => { latSum += pt.lat; lngSum += pt.lng; });
+      return { lat: latSum / polygonPath.length, lng: lngSum / polygonPath.length };
     }
-  };
+    return defaultCenter;
+  }, [vendorLocation, polygonPath]);
 
-  const onPlaceChanged = () => {
-    if (autocomplete !== null) {
-      const place = autocomplete.getPlace();
-      if (place.geometry) {
-        const location = {
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-          address: place.formatted_address,
-          components: place.address_components
-        };
-        setSelectedLocation(location);
-        setAddress(place.formatted_address);
-        setSearchQuery(place.formatted_address);
-        checkZone(location.lat, location.lng);
-      }
-    }
-  };
-
-  const onAutocompleteLoad = (autocompleteInstance) => {
-    setAutocomplete(autocompleteInstance);
-  };
-
-  const handleSave = async () => {
-    if (!address && !searchQuery) {
-      toast.error('Please enter an address');
-      return;
-    }
-
-    setLoading(true);
-
-    // Prepare full address object similar to `AddressSelectionModal`
-    let city = '';
-    let state = '';
-    let pincode = '';
-    let addressLine2 = '';
-
-    // If we have components from Google API (either via map click or autocomplete)
-    if (selectedLocation && selectedLocation.components) {
-      selectedLocation.components.forEach(comp => {
-        if (comp.types.includes('locality')) city = comp.long_name;
-        if (comp.types.includes('administrative_area_level_1')) state = comp.long_name;
-        if (comp.types.includes('postal_code')) pincode = comp.long_name;
-        if (comp.types.includes('sublocality')) addressLine2 = comp.long_name;
-      });
-    }
-
-    // Robust text-parsing fallback for city if Google Places API is not loaded/fails
-    if (!city) {
-      const addrString = ((selectedLocation && selectedLocation.address) || address || searchQuery || '').toLowerCase();
-      if (addrString.includes('indore')) city = 'Indore';
-      else if (addrString.includes('ujjain')) city = 'Ujjain';
-      else if (addrString.includes('bhopal')) city = 'Bhopal';
-      else if (addrString.includes('dewas')) city = 'Dewas';
-      else city = 'Indore'; // Default fallback city
-    }
-    if (!state) {
-      state = 'Madhya Pradesh';
-    }
-
-    // We can also re-use existing logic from updateProfile controller which expects an object
-    // consistent with what EditProfile sends.
-    const addrData = {
-      fullAddress: (selectedLocation && selectedLocation.address) || address || searchQuery,
-      addressLine1: houseNumber,
-      addressLine2: addressLine2,
-      city: city,
-      state: state,
-      pincode: pincode || '452001',
-      lat: selectedLocation ? (selectedLocation.lat || 22.7196) : 22.7196,
-      lng: selectedLocation ? (selectedLocation.lng || 75.8577) : 75.8577
-    };
-
-    try {
-      const response = await vendorService.updateProfile({
-        address: addrData
-      });
-
-      if (response.success) {
-        toast.success('Address saved successfully!');
-        if (response.zoneStatus) {
-          setZoneStatus(response.zoneStatus);
-        }
-        setTimeout(() => {
-          //   navigate('/vendor/profile'); // Stay here or go back settings? User preference.
-          //   Let's just show success. Or maybe go back.
-        }, 500);
-      } else {
-        toast.error(response.message || 'Failed to save address');
-      }
-    } catch (error) {
-      console.error('Error saving address:', error);
-      toast.error(error.response?.data?.message || 'Failed to save address');
-    } finally {
-      setLoading(false);
-    }
+  const polygonOptions = {
+    fillColor: '#8b5cf6',
+    fillOpacity: 0.25,
+    strokeColor: '#6d28d9',
+    strokeOpacity: 0.9,
+    strokeWeight: 3,
+    clickable: false,
+    draggable: false,
+    editable: false,
+    geodesic: false,
+    zIndex: 1
   };
 
   return (
@@ -208,146 +105,83 @@ const AddressManagement = () => {
       />
 
       <main className="px-3.5 py-4 max-w-lg mx-auto">
-        {/* Info Card - Same logic as Modal */}
-        <div className="rounded-md p-2.5 mb-3 border shadow-2xs" style={{ backgroundColor: `${themeColors.brand.teal}0D`, borderColor: `${themeColors.brand.teal}1A` }}>
-          <div className="flex items-start gap-2.5">
-            <FiMapPin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: themeColors.button }} />
+        {/* Info Card */}
+        <div className="rounded-xl p-4 mb-4 border shadow-sm bg-purple-50/80 border-purple-200">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">📍</span>
             <div>
-              <h3 className="font-bold mb-0.5 text-xs" style={{ color: themeColors.button }}>Set Business Location</h3>
-              <p className="text-[10px] leading-normal font-medium" style={{ color: `${themeColors.brand.teal}CC` }}>
-                Place the pin accurately on the map to help customers locate you easily.
+              <h3 className="font-bold mb-1 text-sm text-purple-900 flex items-center gap-1.5">
+                Assigned Operating Zone: <span className="text-purple-700 font-extrabold">{zoneStatus?.zoneName || 'All Zones (Global)'}</span>
+              </h3>
+              <p className="text-xs leading-relaxed font-medium text-purple-700">
+                Your assigned operating zone boundary is displayed on the map below. Jobs in this zone will be allocated to you.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Map Section */}
-        <div className="bg-white rounded-md shadow-2xs overflow-hidden mb-3 border border-gray-100">
-          <LocationPicker
-            onLocationSelect={handleLocationSelect}
-            initialPosition={selectedLocation}
-          />
-        </div>
-
-        {/* Form Inputs Container */}
-        <div className="bg-white rounded-md p-3 shadow-2xs border border-gray-100 space-y-3">
-
-          {/* Address Autocomplete */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">
-              Street Address / Area
-            </label>
-            {isLoaded ? (
-              <Autocomplete
-                onLoad={onAutocompleteLoad}
-                onPlaceChanged={onPlaceChanged}
-                options={{
-                  componentRestrictions: { country: 'in' },
-                  fields: ['formatted_address', 'geometry', 'name', 'address_components']
-                }}
-              >
-                <div className="relative">
-                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
-                  <input
-                    type="text"
-                    placeholder="Search for area, street name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border rounded-md text-xs focus:outline-none transition-colors"
-                    style={{ borderColor: '#e5e7eb' }}
-                    onFocus={(e) => e.target.style.borderColor = themeColors.button}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                  />
-                </div>
-              </Autocomplete>
-            ) : (
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 z-10" />
-                <input
-                  type="text"
-                  placeholder="Enter area, street name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border rounded-md text-xs focus:outline-none transition-colors"
-                  style={{ borderColor: '#e5e7eb' }}
-                  onFocus={(e) => e.target.style.borderColor = themeColors.button}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* House Number */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">
-              Shop / Building Number
-            </label>
-            <div className="relative">
-              <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="e.g. Shop 101, Complex B"
-                value={houseNumber}
-                onChange={(e) => setHouseNumber(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-md text-xs focus:outline-none transition-colors"
-                style={{ borderColor: '#e5e7eb' }}
-                onFocus={(e) => e.target.style.borderColor = themeColors.button}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              />
-            </div>
-          </div>
-
-          {/* Zone Status Banner */}
-          {zoneStatus && (
-            <div 
-              className="p-3 rounded-lg border text-xs font-semibold leading-relaxed"
-              style={{
-                backgroundColor: zoneStatus.inZone ? '#f0fdf4' : '#fffbeb',
-                borderColor: zoneStatus.inZone ? '#bbf7d0' : '#fef3c7',
-                color: zoneStatus.inZone ? '#166534' : '#92400e'
+        {/* Google Map showing Polygon Zone */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4 p-1">
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              center={mapCenter}
+              zoom={13}
+              options={{
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: true,
+                zoomControl: true,
+                gestureHandling: 'greedy'
               }}
             >
-              {zoneStatus.inZone ? (
-                <p className="flex items-center gap-1.5 m-0">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  Active Service Area: <strong>{zoneStatus.zoneName}</strong>
-                </p>
-              ) : (
-                <div className="space-y-1">
-                  <p className="flex items-center gap-1.5 m-0 text-red-600">
-                    <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                    Outside Service Zones
-                  </p>
-                  {zoneStatus.nearestZone && (
-                    <p className="m-0 text-[11px] font-medium text-slate-500">
-                      Nearest Zone: <strong>{zoneStatus.nearestZone.name}</strong> (~{zoneStatus.nearestZone.distanceKm} km away)
-                    </p>
-                  )}
-                </div>
-              )}
+              {polygonPath && <Polygon paths={polygonPath} options={polygonOptions} />}
+              {vendorLocation && <Marker position={vendorLocation} title="Your Business Location" />}
+            </GoogleMap>
+          ) : loadError ? (
+            <div className="h-64 bg-gray-100 flex items-center justify-center text-red-500 font-semibold text-xs">
+              Error loading Google Maps
+            </div>
+          ) : (
+            <div className="h-64 bg-gray-50 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-3 border-purple-600 border-t-transparent" />
             </div>
           )}
+        </div>
 
-          {/* Coordinates Display (Optional, for transparency) */}
-          {selectedLocation && (
-            <p className="text-[10px] text-gray-400 font-bold">
-              Lat/Lng: {selectedLocation.lat?.toFixed(5)}, {selectedLocation.lng?.toFixed(5)}
+        {/* Form Inputs Container (Read Only Display) */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              Registered Business Address
+            </label>
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 font-medium text-xs text-gray-800 leading-relaxed">
+              {address || 'No address set'}
+              {houseNumber ? ` (${houseNumber})` : ''}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              Active Service Zone Boundary
+            </label>
+            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+              <FiCheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{zoneStatus?.zoneName || 'All Zones (Global)'} (Geofence Active)</span>
+            </div>
+          </div>
+
+          {vendorLocation && (
+            <p className="text-[10px] text-gray-400 font-semibold">
+              Coordinates: {vendorLocation.lat?.toFixed(5)}, {vendorLocation.lng?.toFixed(5)}
             </p>
           )}
 
-          {/* Save Button */}
-          <button
-            onClick={handleSave}
-            disabled={!searchQuery || loading}
-            className="w-full py-2.5 rounded-md font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-1 shadow-xs"
-            style={{
-              background: themeColors.button,
-              boxShadow: `0 4px 12px ${themeColors.button}30`
-            }}
-          >
-            <FiSave className="w-4 h-4" />
-            {loading ? 'Saving...' : 'Save Business Address'}
-          </button>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-center">
+            <p className="text-xs text-gray-500 font-medium">
+              If you need to update your operating zone, please contact platform support or your city admin.
+            </p>
+          </div>
         </div>
       </main>
 

@@ -226,7 +226,8 @@ const PremiumCategoryPage = () => {
   useEffect(() => {
     const loadCategory = async () => {
       try {
-        const catRes = await publicCatalogService.getCategories(cityId);
+        const zoneId = localStorage.getItem('user_zone_id');
+        const catRes = await publicCatalogService.getCategories(zoneId || cityId);
         let categoriesList = catRes?.success && Array.isArray(catRes.categories) ? catRes.categories : [];
         
         if (!categoriesList.length) {
@@ -286,9 +287,11 @@ const PremiumCategoryPage = () => {
       setSubCategories(subs);
 
       // Load all services inside category
+      const zoneId = localStorage.getItem('user_zone_id');
       const serviceRes = await publicCatalogService.getServices({
         categoryId: activeCategoryId,
-        cityId
+        cityId,
+        zoneId
       });
 
       if (serviceRes?.success && Array.isArray(serviceRes.services)) {

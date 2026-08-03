@@ -26,7 +26,6 @@ const Vendors = () => {
 
   const navTabs = [
     { name: 'All Vendors', path: '/admin/vendors/all', icon: FiUsers },
-    { name: "Vendor's Zone", path: '/admin/vendors/zone', icon: FiMapPin },
     { name: 'Manual Assignment', path: '/admin/vendors/manual', icon: FiAlertTriangle },
     { name: 'Vendor Bookings', path: '/admin/vendors/bookings', icon: FiBriefcase },
     { name: 'Vendor Analytics', path: '/admin/vendors/analytics', icon: FiActivity },
@@ -72,7 +71,6 @@ const Vendors = () => {
         <Routes>
           <Route path="/" element={<Navigate to="all" replace />} />
           <Route path="all" element={<AllVendors />} />
-          <Route path="zone" element={<VendorsZone />} />
           <Route path="manual" element={<ManualAssignment />} />
           <Route path="bookings" element={<VendorBookings />} />
           <Route path="analytics" element={<VendorAnalytics />} />

@@ -10,7 +10,11 @@ const {
   getBookingAnalytics,
   assignVendor,
   approveCancelBooking,
-  rejectCancelBooking
+  rejectCancelBooking,
+  getUpcomingBookings,
+  getCompletedBookings,
+  getCancelledBookings,
+  getRefundedBookings
 } = require('../../controllers/bookingControllers/adminBookingController');
 
 // Validation rules

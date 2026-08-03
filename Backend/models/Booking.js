@@ -341,6 +341,11 @@ const bookingSchema = new mongoose.Schema({
   },
   // Timestamps
   acceptedAt: { type: Date, default: null },
+  acceptedDistanceKm: { type: Number, default: null },
+  acceptLocation: {
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null }
+  },
   assignedAt: { type: Date, default: null },
   startedAt: { type: Date, default: null },
   journeyStartedAt: { type: Date, default: null },

@@ -7,7 +7,7 @@ import Modal from "../components/Modal";
 import ModeSelector from "../components/ModeSelector";
 import { ensureIds, saveCatalog, slugify, toAssetUrl } from "../utils";
 
-import { categoryService, serviceService, professionService, publicCatalogService, categoryTemplateService } from "../../../../../services/catalogService";
+import { categoryService, serviceService, professionService, publicCatalogService, categoryTemplateService, zoneService } from "../../../../../services/catalogService";
 import { z } from "zod";
 
 // Define Zod schema
@@ -36,9 +36,10 @@ const categorySchema = z.object({
   sacCode: z.string().optional().nullable(),
 });
 
-const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filterTemplateId, filterTemplateCode }) => {
+const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = [], filterTemplateId, filterTemplateCode }) => {
   const [editingId, setEditingId] = useState(null);
   const [templates, setTemplates] = useState([]);
+  const [zones, setZones] = useState([]);
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -63,6 +64,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     status: "active",
     allCities: true,        // true = available in all cities
     cityIds: [],            // specific city IDs when allCities is false
+    allZones: true,         // true = available in all zones
+    zoneIds: [],            // specific zone IDs when allZones is false
     isGroupCategory: false, // Group category toggle
     mappedCategories: [],   // IDs of mapped child categories
     minWalletBalance: 0,
@@ -85,16 +88,18 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
   const [fetching, setFetching] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Fetch categories from API on mount
+  // Fetch categories & zones from API on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setFetching(true);
         const params = {};
+        if (selectedZone) params.zoneId = selectedZone;
 
         const response = await categoryService.getAll(params);
         const profRes = await professionService.getAll();
         const tempRes = await categoryTemplateService.getAll();
+        const zoneRes = await zoneService.getAll();
         
         if (profRes.success) {
           setProfessions(profRes.data || []);
@@ -102,6 +107,13 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
 
         if (tempRes.success) {
           setTemplates(tempRes.templates || []);
+        }
+
+        if (zoneRes.success) {
+          const fetchedZones = zoneRes.zones || zoneRes.data || [];
+          setZones(fetchedZones.length > 0 ? fetchedZones : (propZones || []));
+        } else {
+          setZones(propZones || []);
         }
 
         if (response.success && response.categories) {
@@ -134,6 +146,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             interestedCount: cat.interestedCount || 0,
             homeOrder: cat.homeOrder || 0,
             cityIds: (cat.cityIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
+            zoneIds: (cat.zoneIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
             isGroupCategory: cat.isGroupCategory || false,
             mappedCategories: (cat.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
             minWalletBalance: cat.minWalletBalance || 0,
@@ -154,7 +167,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
     };
 
     fetchCategories();
-  }, [filterTemplateId]); // Fetch when template changes
+  }, [filterTemplateId, selectedZone]); // Fetch when template or selectedZone changes
 
   useEffect(() => {
     if (!editing) {
@@ -180,8 +193,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         categoryType: "service",
         professionId: "",
         status: "active",
-        allCities: !selectedCity,
-        cityIds: selectedCity ? [selectedCity] : [],
+        allZones: !selectedZone,
+        zoneIds: selectedZone ? [selectedZone] : [],
         isGroupCategory: false,
         mappedCategories: [],
         minWalletBalance: 0,
@@ -190,7 +203,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       return;
     }
     const safe = ensureIds({ ...catalog, categories: [editing] }).categories[0];
-    const existingCityIds = (safe.cityIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)));
+    const existingZoneIds = (safe.zoneIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)));
     setForm({
       title: safe.title || "",
       slug: safe.slug || "",
@@ -213,14 +226,14 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       categoryType: safe.categoryType || "service",
       professionId: "",
       status: safe.status || "active",
-      allCities: existingCityIds.length === 0,
-      cityIds: existingCityIds,
+      allZones: existingZoneIds.length === 0,
+      zoneIds: existingZoneIds.length > 0 ? existingZoneIds : (selectedZone ? [selectedZone] : []),
       isGroupCategory: safe.isGroupCategory || false,
       mappedCategories: (safe.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
       minWalletBalance: safe.minWalletBalance || 0,
       sacCode: safe.sacCode || "",
     });
-  }, [editing, selectedCity]);
+  }, [editing, selectedZone]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -248,8 +261,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       categoryType: "service",
       professionId: "",
       status: "active",
-      allCities: !selectedCity,
-      cityIds: selectedCity ? [selectedCity] : [],
+      allZones: !selectedZone,
+      zoneIds: selectedZone ? [selectedZone] : [],
       isGroupCategory: false,
       mappedCategories: [],
       minWalletBalance: 0,
@@ -343,10 +356,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         homeOrder = maxOrder + 1;
       }
 
-      // Determine cityIds from form
-      let finalCityIds = form.allCities ? [] : form.cityIds;
-      if (selectedCity && !form.allCities && finalCityIds.length === 0) {
-        finalCityIds = [selectedCity];
+      // Determine zoneIds from form
+      let finalZoneIds = form.allZones ? [] : (form.zoneIds || []);
+      if (selectedZone && !form.allZones && finalZoneIds.length === 0) {
+        finalZoneIds = [selectedZone];
       }
 
       const categoryData = {
@@ -371,21 +384,17 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         homeOrder,
         categoryType,
         status,
-        cityIds: finalCityIds,
-        updateCityIds: finalCityIds,
+        cityIds: [],
+        updateCityIds: [],
+        zoneIds: finalZoneIds,
+        updateZoneIds: finalZoneIds,
         isGroupCategory: Boolean(form.isGroupCategory),
         mappedCategories: form.isGroupCategory ? (form.mappedCategories || []) : [],
         minWalletBalance: Number(minWalletBalance) || 0,
         sacCode: sacCode || null,
       };
 
-      if (editingId && !editingId.startsWith('ucat-')) {
-        const existingCat = categories.find(c => c.id === editingId);
-        if (selectedCity && !form.allCities && form.cityIds.length === 0) {
-          categoryData.cityIds = [selectedCity];
-          categoryData.updateCityIds = [selectedCity];
-        }
-      }
+      console.log('📌 CategoriesPage upsert sending categoryData:', categoryData);
 
       const mapSavedCategory = (cat) => {
         // Merge with existing local category to preserve fields missing from API response
@@ -415,7 +424,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
           vendorId: cat.vendorId ?? existing?.vendorId ?? null,
           status: cat.status || existing?.status || "active",
           interestedCount: cat.interestedCount ?? existing?.interestedCount ?? 0,
-          cityIds: (cat.cityIds || existing?.cityIds || []).filter(Boolean).map(id => typeof id === 'object' ? (id._id || String(id)) : String(id)),
+          cityIds: (cat.cityIds || []).filter(Boolean).map(id => typeof id === 'object' ? (id._id || String(id)) : String(id)),
+          zoneIds: form.allZones ? [] : ((cat.zoneIds && cat.zoneIds.length > 0) ? cat.zoneIds : (categoryData.zoneIds || [])).filter(Boolean).map(id => typeof id === 'object' ? (id._id || String(id)) : String(id)),
           isGroupCategory: cat.isGroupCategory !== undefined ? cat.isGroupCategory : (existing?.isGroupCategory || false),
           mappedCategories: (cat.mappedCategories || existing?.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
           sacCode: cat.sacCode ?? existing?.sacCode ?? "",
@@ -476,6 +486,55 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       setCatalog(next);
       saveCatalog(next);
       publicCatalogService.invalidateCache();
+
+      // Refetch updated categories from API to ensure DB state sync
+      try {
+        const freshParams = {};
+        if (selectedZone) freshParams.zoneId = selectedZone;
+        const freshRes = await categoryService.getAll(freshParams);
+        if (freshRes.success && freshRes.categories) {
+          const freshMapped = freshRes.categories.map(cat => ({
+            id: cat.id,
+            title: cat.title,
+            slug: cat.slug,
+            homeIconUrl: cat.homeIconUrl || "",
+            bannerImage: cat.bannerImage || "",
+            description: cat.description || "",
+            homeBadge: cat.homeBadge || "",
+            hasSaleBadge: cat.hasSaleBadge || false,
+            hasBrands: cat.hasBrands ?? true,
+            hasSubCategory: cat.hasSubCategory ?? true,
+            hasBrand: cat.hasBrand ?? true,
+            templateId: cat.templateId
+              ? (typeof cat.templateId === 'object' ? (cat.templateId._id || cat.templateId.id || cat.templateId.toString()) : String(cat.templateId))
+              : null,
+            enableBrands: cat.enableBrands || false,
+            brandRequired: cat.brandRequired || false,
+            enableConsultantBooking: cat.enableConsultantBooking || false,
+            enableWarranty: cat.enableWarranty || false,
+            enableMultiVisit: cat.enableMultiVisit || false,
+            enablePricingMatrix: cat.enablePricingMatrix !== false,
+            showOnHome: cat.showOnHome !== false,
+            categoryType: cat.categoryType || "service",
+            vendorId: cat.vendorId || null,
+            status: cat.status || "active",
+            interestedCount: cat.interestedCount || 0,
+            homeOrder: cat.homeOrder || 0,
+            cityIds: (cat.cityIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
+            zoneIds: (cat.zoneIds || []).filter(Boolean).map(id => (typeof id === 'object' ? (id._id || id.id || String(id)) : String(id))),
+            isGroupCategory: cat.isGroupCategory || false,
+            mappedCategories: (cat.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
+            minWalletBalance: cat.minWalletBalance || 0,
+            sacCode: cat.sacCode || "",
+          }));
+          const freshNext = { ...catalog, categories: freshMapped };
+          setCatalog(freshNext);
+          saveCatalog(freshNext);
+        }
+      } catch (rErr) {
+        console.error('Refetch categories post update error:', rErr);
+      }
+
       toast.success(editingId ? "Category updated successfully" : "Category created successfully");
       reset();
     } catch (error) {
@@ -665,10 +724,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       return catTemplateId === filterIdStr;
     });
   }
-  if (selectedCity) {
+  if (selectedZone) {
     filteredCategories = filteredCategories.filter(c => {
-      if (!c.cityIds || c.cityIds.length === 0) return true;
-      return c.cityIds.some(id => String(id) === String(selectedCity) || String(id._id) === String(selectedCity));
+      if (!c.zoneIds || c.zoneIds.length === 0) return true;
+      return c.zoneIds.some(id => String(id) === String(selectedZone) || String(id._id) === String(selectedZone));
     });
   }
 
@@ -694,7 +753,36 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
             </button>
             <button
               onClick={() => {
-                reset();
+                setEditingId(null);
+                setForm({
+                  title: "",
+                  slug: "",
+                  homeIconUrl: "",
+                  bannerImage: "",
+                  description: "",
+                  homeBadge: "",
+                  hasSaleBadge: false,
+                  hasBrands: true,
+                  hasSubCategory: true,
+                  hasBrand: true,
+                  templateId: filterTemplateId || "",
+                  enableBrands: false,
+                  brandRequired: false,
+                  enableConsultantBooking: false,
+                  enableWarranty: false,
+                  enableMultiVisit: false,
+                  enablePricingMatrix: true,
+                  showOnHome: true,
+                  categoryType: "service",
+                  professionId: "",
+                  status: "active",
+                  allZones: !selectedZone,
+                  zoneIds: selectedZone ? [selectedZone] : [],
+                  isGroupCategory: false,
+                  mappedCategories: [],
+                  minWalletBalance: 0,
+                  sacCode: "",
+                });
                 setIsModalOpen(true);
               }}
               className="px-4 py-2 text-white rounded-lg font-semibold transition-all flex items-center gap-2 shadow-md hover:shadow-lg relative z-10"
@@ -717,7 +805,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
 
         {filteredCategories.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            {selectedCity ? 'No categories for this city. Try "All Cities" or add one.' : 'No categories yet'}
+            {selectedZone ? 'No categories for this zone. Try "All Zones" or add one.' : 'No categories yet'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -727,7 +815,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-12">#</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 w-20">Icon</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Cities</th>
+                  <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Zones</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-gray-700">Badge</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-gray-700 w-20">
                     Order
@@ -777,16 +865,21 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
                         <div className="text-xs text-gray-500 mt-1">{c.slug || "—"}</div>
                       </div>
                     </td>
-                    {/* Cities column */}
+                    {/* Zones column */}
                     <td className="py-4 px-4">
                       <div className="flex flex-wrap gap-1 max-w-[160px]">
-                        {(!c.cityIds || c.cityIds.length === 0)
-                          ? <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">All Cities</span>
-                          : c.cityIds.filter(Boolean).map(cid => (
-                              <span key={cid} className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                                {(cities.find(ci => (ci?._id || ci?.id) === cid) || {}).name || (typeof cid === 'string' ? cid.slice(-4) : String(cid))}
-                              </span>
-                            ))
+                        {(!c.zoneIds || c.zoneIds.length === 0)
+                          ? <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Global (All Zones)</span>
+                          : c.zoneIds.filter(Boolean).map(zid => {
+                              const idStr = typeof zid === 'object' ? (zid._id || zid.id || String(zid)) : String(zid);
+                              const availableZones = zones.length > 0 ? zones : propZones;
+                              const zoneObj = availableZones.find(z => String(z._id || z.id) === idStr) || (typeof zid === 'object' ? zid : null);
+                              return (
+                                <span key={idStr} className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                                  {zoneObj?.name || `Zone (${idStr.slice(-4)})`}
+                                </span>
+                              );
+                            })
                         }
                       </div>
                     </td>
@@ -1029,53 +1122,67 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
 
 
 
-          {/* City Assignment */}
-          <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-            <label className="block text-base font-bold text-gray-900 mb-3">🏙️ City Availability</label>
+
+
+          {/* Zone Assignment */}
+          <div className="border border-purple-200 rounded-xl p-4 bg-purple-50/50">
+            <label className="block text-base font-bold text-gray-900 mb-3">📍 Zone Specificity (Geofencing)</label>
             <div className="flex items-center gap-3 mb-3">
               <input
-                id="allCitiesToggle"
+                id="allZonesToggle"
                 type="checkbox"
-                checked={form.allCities}
-                onChange={(e) => setForm(p => ({ ...p, allCities: e.target.checked, cityIds: e.target.checked ? [] : p.cityIds }))}
-                className="h-4 w-4 accent-green-600"
+                checked={form.allZones}
+                onChange={(e) => {
+                  const isChecked = e.target.checked;
+                  setForm(p => ({
+                    ...p,
+                    allZones: isChecked,
+                    zoneIds: isChecked ? [] : (selectedZone ? [selectedZone] : p.zoneIds)
+                  }));
+                }}
+                className="h-4 w-4 accent-purple-600"
               />
-              <label htmlFor="allCitiesToggle" className="text-sm font-semibold text-gray-800">
-                Available in All Cities (no city restriction)
+              <label htmlFor="allZonesToggle" className="text-sm font-semibold text-gray-800">
+                Global / All Zones (no geofence restriction)
               </label>
             </div>
-            {!form.allCities && (
+            {!form.allZones && (
               <div className="space-y-2">
-                <p className="text-xs text-gray-500 mb-2">Select which cities this category is available in:</p>
-                <div className="flex flex-wrap gap-2">
-                  {cities.map(city => {
-                    const cid = city._id || city.id;
-                    const isSelected = form.cityIds.includes(cid);
-                    return (
-                      <button
-                        key={cid}
-                        type="button"
-                        onClick={() => {
-                          setForm(p => ({
-                            ...p,
-                            cityIds: isSelected
-                              ? p.cityIds.filter(id => id !== cid)
-                              : [...p.cityIds, cid]
-                          }));
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                          isSelected
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
-                        }`}
-                      >
-                        {isSelected ? '✓ ' : ''}{city.name}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.cityIds.length === 0 && (
-                  <p className="text-xs text-amber-600 font-semibold">⚠️ Select at least one city, or enable "All Cities"</p>
+                <p className="text-xs text-gray-500 mb-2">Select specific Zones where this category will render:</p>
+                {zones.length === 0 ? (
+                  <p className="text-xs text-gray-400 font-medium">No zones configured yet in Vendors Zone manager.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {zones.map(zone => {
+                      const zid = String(zone._id || zone.id);
+                      const isSelected = (form.zoneIds || []).some(id => String(id) === zid);
+                      return (
+                        <button
+                          key={zid}
+                          type="button"
+                          onClick={() => {
+                            setForm(p => {
+                              const newZoneIds = isSelected
+                                ? (p.zoneIds || []).filter(id => String(id) !== zid)
+                                : [...(p.zoneIds || []), zid];
+                              return {
+                                ...p,
+                                allZones: newZoneIds.length === 0,
+                                zoneIds: newZoneIds
+                              };
+                            });
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
+                            isSelected
+                              ? 'bg-purple-600 text-white border-purple-600 shadow-md'
+                              : 'bg-white text-gray-600 border-gray-300 hover:border-purple-400'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' : ''}{zone.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}
