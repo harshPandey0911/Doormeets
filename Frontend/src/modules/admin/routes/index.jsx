@@ -81,6 +81,7 @@ const AdminRoutes = () => {
           <Route path="users/*" element={<Users />} />
           <Route path="vendors/*" element={<Vendors />} />
           <Route path="workers/*" element={<Workers />} />
+          <Route path="zone" element={<VendorsZone />} />
           <Route path="vendors-zone" element={<VendorsZone />} />
           <Route path="vendor-subscriptions/*" element={<VendorSubscriptionManagement />} />
           <Route path="bookings" element={<Bookings />} />

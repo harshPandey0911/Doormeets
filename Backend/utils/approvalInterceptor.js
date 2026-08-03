@@ -37,7 +37,7 @@ const handleCityAdminApproval = async (req, res, { requestType, proposedData, ci
     }
 
     const city = await City.findById(resolvedCityId).select('name');
-    
+
     // Create the proposal request
     const request = await CityAdminRequest.create({
       requestedBy: admin._id,

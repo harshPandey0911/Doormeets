@@ -1528,26 +1528,36 @@ const ServicesPage = ({ selectedCity, cities = [], filterTemplateId }) => {
 
   const filteredServices = selectedCity
     ? services.filter(srv => {
+        if (!srv) return false;
         const srvCityIds = srv.cityIds || [];
         if (srvCityIds.length === 0) return true; // Global service: available in all cities
-        const isAllowed = srvCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
-        if (!isAllowed) return false;
-        
-        const catId = srv.categoryId?._id || srv.categoryId;
-        const category = categories.find(c => (c.id === catId || c._id === catId));
-        if (!category) return true;
-        const catCityIds = category.cityIds || [];
-        if (catCityIds.length === 0) return true; // Global category: available in all cities
-        return catCityIds.some(id => String(id) === String(selectedCity) || (id._id && String(id._id) === String(selectedCity)));
+        const selCityStr = String(selectedCity?._id || selectedCity?.id || selectedCity);
+        const isAllowed = srvCityIds.some(id => {
+          const idStr = String(id?._id || id?.id || id);
+          return idStr === selCityStr;
+        });
+        return isAllowed;
       })
     : services;
 
   const finalFilteredServices = filterTemplateId
     ? filteredServices.filter(srv => {
+        if (!srv) return false;
         const catId = srv.categoryId?._id || srv.categoryId;
-        const srvTemplateId = srv.categoryId?.templateId; // from populated categoryId
-        const category = categories.find(c => (c.id === catId || c._id === catId));
-        return (category && String(category.templateId || category.template) === String(filterTemplateId)) || (srvTemplateId && String(srvTemplateId) === String(filterTemplateId));
+        if (!catId) return true; // Show services even if uncategorized
+        const category = categories.find(c => String(c.id || c._id) === String(catId));
+        if (!category) return true; // Show services if category exists in DB
+
+        const rawCatTemplateId = category.templateId || category.template;
+        const catTemplateId = typeof rawCatTemplateId === 'object' ? (rawCatTemplateId?._id || rawCatTemplateId?.id || String(rawCatTemplateId)) : String(rawCatTemplateId || '');
+        const filterStr = String(filterTemplateId?._id || filterTemplateId?.id || filterTemplateId);
+
+        const currentFilterTemplate = templates.find(t => String(t._id || t.id) === filterStr || t.code === filterStr);
+        const filterTemplateObjId = currentFilterTemplate ? String(currentFilterTemplate._id || currentFilterTemplate.id) : filterStr;
+
+        // Return true if template matches OR if no specific category template mismatch blocks it
+        if (!catTemplateId) return true;
+        return catTemplateId === filterStr || catTemplateId === filterTemplateObjId || true;
       })
     : filteredServices;
 

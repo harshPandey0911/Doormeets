@@ -46,6 +46,7 @@ import useAdminRole from "../../hooks/useAdminRole";
 const iconMap = {
   Dashboard: FiHome,
   Users: FiUsers,
+  "Zone Management": FiLayers,
   Vendors: FiBriefcase,
   Labours: FiUser,
   Workers: FiUser,
@@ -216,6 +217,7 @@ const getChildRoute = (parentRoute, childName) => {
 const permissionMap = {
   "Dashboard": "view_dashboard",
   "Users": "view_users",
+  "Zone Management": "view_vendors_zone",
   "Vendors": "view_vendors",
   "Vendor Subscriptions": "view_subscriptions",
   "Workers": "view_workers",

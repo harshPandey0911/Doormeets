@@ -238,23 +238,16 @@ const Home = () => {
                   localStorage.setItem('user_lat', latitude);
                   localStorage.setItem('user_lng', longitude);
 
-                  if (city) {
-                    setDetectedCityName(city);
-                    localStorage.setItem('currentCity', city);
-
-                    // Immediate update of selected city if supported
-                    if (cities && cities.length > 0) {
-                      const matchedCity = cities.find(c =>
-                        c.name.toLowerCase() === city.toLowerCase() ||
-                        c.name.toLowerCase().includes(city.toLowerCase()) ||
-                        city.toLowerCase().includes(c.name.toLowerCase())
-                      );
-                      if (matchedCity) {
-                        selectCity(matchedCity);
-                      } else {
-                        selectCity(null);
-                      }
+                  // Resolve zone by coordinates
+                  try {
+                    const { zoneService } = await import('../../../../services/catalogService');
+                    const zRes = await zoneService.resolveByCoordinates(latitude, longitude);
+                    if (zRes.success && zRes.zone && zRes.zone.id) {
+                      localStorage.setItem('user_zone_id', zRes.zone.id);
+                      localStorage.setItem('user_zone_name', zRes.zone.name);
                     }
+                  } catch (zErr) {
+                    console.error('Auto detect zone error:', zErr);
                   }
                 }
               } catch (error) {
@@ -420,17 +413,17 @@ const Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const cityId = currentCity?._id || currentCity?.id;
+        const zoneId = localStorage.getItem('user_zone_id');
         const lat = localStorage.getItem('user_lat');
         const lng = localStorage.getItem('user_lng');
-        const cacheKey = `public:homeData:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+        const cacheKey = `public:homeData:${zoneId || 'default'}:${lat || '0'}:${lng || '0'}`;
         const hasCached = apiCache.get(cacheKey);
 
         if (!hasCached) {
           setLoading(true);
         }
 
-        const response = await publicCatalogService.getHomeData(cityId);
+        const response = await publicCatalogService.getCategories(zoneId);
 
         if (response.success) {
           if (response.categories) {
@@ -683,7 +676,7 @@ const Home = () => {
   };
 
   const handleLocationClick = () => {
-    setIsAddressModalOpen(true);
+    navigate('/user/select-location');
   };
 
   const triggerLocalNotification = async () => {

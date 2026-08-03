@@ -18,10 +18,44 @@ const { calculateDistance } = require('../../services/locationService');
  */
 const getPublicCategories = async (req, res) => {
   try {
-    const { cityId } = req.query;
+    const { cityId, zoneId, lat, lng } = req.query;
 
-    // Build query (ignore cityId filter to make catalog global/overall)
+    let targetZoneId = zoneId || null;
+
+    // If lat & lng are passed, find matching zone via 2dsphere / point-in-polygon
+    if (!targetZoneId && lat && lng) {
+      try {
+        const Zone = require('../../models/Zone');
+        const matchedZone = await Zone.findOne({
+          isActive: true,
+          coordinates: {
+            $geoIntersects: {
+              $geometry: {
+                type: 'Point',
+                coordinates: [parseFloat(lng), parseFloat(lat)]
+              }
+            }
+          }
+        }).select('_id').lean();
+        if (matchedZone) {
+          targetZoneId = matchedZone._id.toString();
+        }
+      } catch (zoneErr) {
+        console.error('Zone lookup error:', zoneErr);
+      }
+    }
+
+    // Build query
     const query = { status: { $in: ['active', 'coming_soon'] } };
+
+    // Purely filter by Zone if zoneId resolved or passed (otherwise global/all zones)
+    if (targetZoneId) {
+      query.$or = [
+        { zoneIds: targetZoneId },
+        { zoneIds: { $exists: false } },
+        { zoneIds: { $size: 0 } }
+      ];
+    }
 
     // Find all DB-active category titles (admin status is the source of truth)
     const dbActiveCategories = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
@@ -56,7 +90,7 @@ const getPublicCategories = async (req, res) => {
     });
 
     const categories = await Category.find(query)
-      .select('title slug homeIconUrl bannerImage homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers isGroupCategory mappedCategories')
+      .select('title slug homeIconUrl bannerImage homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers isGroupCategory mappedCategories zoneIds cityIds')
       .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status', match: { status: { $in: ['active', 'coming_soon'] } } })
       .sort({ homeOrder: 1, createdAt: -1 })
       .lean();
@@ -1866,6 +1900,53 @@ const getPublicServiceDynamicDetails = async (req, res) => {
   }
 };
 
+/**
+ * Resolve Zone by coordinates (Point-in-Polygon)
+ * GET /api/public/zones/resolve?lat=...&lng=...
+ */
+const resolveZoneByCoordinates = async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) {
+      return res.status(400).json({ success: false, message: 'lat and lng coordinates are required' });
+    }
+
+    const Zone = require('../../models/Zone');
+    const zone = await Zone.findOne({
+      isActive: true,
+      coordinates: {
+        $geoIntersects: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [parseFloat(lng), parseFloat(lat)]
+          }
+        }
+      }
+    }).select('_id name isActive').lean();
+
+    if (!zone) {
+      return res.status(200).json({
+        success: true,
+        matched: false,
+        zone: null,
+        message: 'No active service zone covers this location'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      matched: true,
+      zone: {
+        id: zone._id.toString(),
+        name: zone.name
+      }
+    });
+  } catch (error) {
+    console.error('Resolve zone error:', error);
+    res.status(500).json({ success: false, message: 'Failed to resolve zone.' });
+  }
+};
+
 module.exports = {
   getPublicCategories,
   getPublicSubCategories,
@@ -1878,5 +1959,6 @@ module.exports = {
   getPublicProfessions,
   getPublicTrainingData,
   registerInterest,
-  getPublicServiceDynamicDetails
+  getPublicServiceDynamicDetails,
+  resolveZoneByCoordinates
 };

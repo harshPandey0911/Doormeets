@@ -82,19 +82,28 @@ const updateOfferBanner = async (req, res) => {
 
     let updateData = { title, link, targetCategoryId: targetCategoryId || null, slug: slug || null, priority, isActive, mediaType };
 
-    if (image && image.startsWith('data:')) {
-      // Upload new image
-      const uploadRes = await cloudinaryService.uploadFile(image, { folder: 'banners/offers' });
-      if (uploadRes.success) {
-        updateData.imageUrl = uploadRes.url;
+    if (image) {
+      if (image.startsWith('data:')) {
+        // Upload new base64 image
+        const uploadRes = await cloudinaryService.uploadFile(image, { folder: 'banners/offers' });
+        if (uploadRes.success) {
+          updateData.imageUrl = uploadRes.url;
+        }
+      } else {
+        // Direct Cloudinary / HTTP URL passed from frontend
+        updateData.imageUrl = image;
       }
     }
 
-    if (mobileImage && mobileImage.startsWith('data:')) {
-      // Upload new mobile image
-      const uploadMobileRes = await cloudinaryService.uploadFile(mobileImage, { folder: 'banners/offers' });
-      if (uploadMobileRes.success) {
-        updateData.mobileImageUrl = uploadMobileRes.url;
+    if (mobileImage) {
+      if (mobileImage.startsWith('data:')) {
+        // Upload new base64 mobile image
+        const uploadMobileRes = await cloudinaryService.uploadFile(mobileImage, { folder: 'banners/offers' });
+        if (uploadMobileRes.success) {
+          updateData.mobileImageUrl = uploadMobileRes.url;
+        }
+      } else {
+        updateData.mobileImageUrl = mobileImage;
       }
     }
 

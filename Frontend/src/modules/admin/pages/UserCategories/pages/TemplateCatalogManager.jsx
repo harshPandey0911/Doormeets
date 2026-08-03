@@ -10,7 +10,7 @@ import BrandsPage from "./BrandsPage";
 import ServicesPage from "./ServicesPage";
 import PricingMatrixPage from "./PricingMatrixPage";
 
-const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) => {
+const TemplateCatalogManager = ({ catalog, setCatalog, selectedZone, zones }) => {
   const { code } = useParams();
   console.log("TemplateCatalogManager mount - code:", code);
   const navigate = useNavigate();
@@ -139,44 +139,43 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
 
   return (
     <div className="space-y-6">
-      {/* Header Panel */}
-      <div className="bg-white rounded-2xl p-6 border border-gray-150 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/admin/user-categories/home")}
-            className="p-3 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl transition-colors border border-gray-200"
-            title="Back to Templates"
-          >
-            <FiArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className={`p-2 rounded-lg border flex items-center justify-center ${templateMeta.bg}`}>
-                <TemplateIcon className={`w-5 h-5 ${templateMeta.color}`} />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">{template.name}</h2>
-              <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded bg-blue-50 border border-blue-100 text-blue-700">
-                {template.code.replace("_", " ")}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Manage categories, services, and pricing specific to this template.</p>
+      {/* Template Catalog Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-6 rounded-3xl text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 px-3 py-1 rounded-full">
+              Category Template
+            </span>
+            <span className="text-xs font-mono text-slate-400">({template.code})</span>
+          </div>
+          <h1 className="text-2xl font-black mt-2 tracking-tight">{template.name} Catalog</h1>
+          <p className="text-xs text-slate-400 mt-1 max-w-xl">
+            {template.description || `Manage all categories, services, and pricing specific to ${template.name}.`}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 bg-white/10 p-3 rounded-2xl border border-white/10 backdrop-blur-md">
+          <FiSliders className="w-5 h-5 text-indigo-400" />
+          <div className="text-xs">
+            <p className="font-bold text-slate-200">Scoped Template Mode</p>
+            <p className="text-[10px] text-slate-400">Filtering only items bound to this template</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs Menu */}
-      <div className="bg-white p-2 rounded-2xl border border-gray-150 shadow-sm flex flex-wrap gap-1.5">
+      {/* Sub-tab Navigation */}
+      <div className="flex gap-2 border-b border-slate-200 pb-3 flex-wrap">
         {tabItems.map((tab) => {
           const Icon = tab.icon;
-          const active = activeTab === tab.id;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all ${
-                active
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/10 scale-[1.02]"
-                  : "bg-transparent text-gray-600 hover:bg-gray-50"
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -186,26 +185,26 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
         })}
       </div>
 
-      {/* Workspace Panel */}
+      {/* Tab Content */}
       <motion.div
         key={activeTab}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
+        transition={{ duration: 0.2 }}
       >
         {activeTab === "categories" && (
           <CategoriesPage
             catalog={catalog}
             setCatalog={setCatalog}
-            selectedCity={selectedCity}
-            cities={cities}
+            selectedZone={selectedZone}
+            zones={zones}
             filterTemplateId={template._id}
             filterTemplateCode={template.code}
           />
         )}
         {activeTab === "subcategories" && (
           <SubCategoriesPage
-            selectedCity={selectedCity}
+            selectedZone={selectedZone}
             filterTemplateId={template._id}
           />
         )}
@@ -213,7 +212,7 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
           <BrandsPage
             catalog={catalog}
             setCatalog={setCatalog}
-            selectedCity={selectedCity}
+            selectedZone={selectedZone}
             filterTemplateId={template._id}
           />
         )}
@@ -221,14 +220,14 @@ const TemplateCatalogManager = ({ catalog, setCatalog, selectedCity, cities }) =
           <ServicesPage
             catalog={catalog}
             setCatalog={setCatalog}
-            selectedCity={selectedCity}
-            cities={cities}
+            selectedZone={selectedZone}
+            zones={zones}
             filterTemplateId={template._id}
           />
         )}
         {activeTab === "pricing" && (
           <PricingMatrixPage
-            selectedCity={selectedCity}
+            selectedZone={selectedZone}
             filterTemplateId={template._id}
             filterTemplateCode={template.code}
           />

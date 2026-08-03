@@ -299,16 +299,26 @@ export const homeContentService = {
  * Now with caching for faster data retrieval
  */
 export const publicCatalogService = {
-  // Get all active categories (cached for 5 minutes)
-  getCategories: async (cityId) => {
-    const cacheKey = `public:categories:${cityId || 'default'}`;
+  // Get all active categories (cached for 30 seconds)
+  getCategories: async (zoneId) => {
+    const lat = localStorage.getItem('user_lat');
+    const lng = localStorage.getItem('user_lng');
+
+    const queryParams = new URLSearchParams();
+    if (zoneId) queryParams.append('zoneId', zoneId);
+    if (lat && lng) {
+      queryParams.append('lat', lat);
+      queryParams.append('lng', lng);
+    }
+
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const cacheKey = `public:categories:${zoneId || 'default'}:${lat || '0'}:${lng || '0'}`;
     const cached = apiCache.get(cacheKey);
     if (cached) return cached;
 
-    const query = cityId ? `?cityId=${cityId}` : '';
-    const response = await api.get(`/public/categories${query}`);
+    const response = await api.get(`/public/categories${queryString}`);
     if (response.data.success) {
-      apiCache.set(cacheKey, response.data, 30); // Reduced to 30 seconds for better responsiveness
+      apiCache.set(cacheKey, response.data, 30);
     }
     return response.data;
   },
@@ -461,6 +471,17 @@ export const publicCatalogService = {
 /**
  * Category Template API calls
  */
+export const zoneService = {
+  getAll: async () => {
+    const response = await api.get('/admin/zones');
+    return response.data;
+  },
+  resolveByCoordinates: async (lat, lng) => {
+    const response = await api.get(`/public/zones/resolve?lat=${lat}&lng=${lng}`);
+    return response.data;
+  }
+};
+
 export const categoryTemplateService = {
   getAll: async () => {
     const response = await api.get('/admin/category-templates');
