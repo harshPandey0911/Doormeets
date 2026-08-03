@@ -67,7 +67,33 @@
   --color-warning:        var(--warning);
   --color-error:          var(--error);
   --color-info:           var(--info);
+}
 
+/* ============================================
+   BROWSER AUTOFILL OVERRIDE (LIGHT & DARK)
+   ============================================ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-background-clip: text !important;
+  transition: background-color 999999s ease-in-out 0s !important;
+}
+
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover, 
+[data-theme="dark"] input:-webkit-autofill:focus, 
+[data-theme="dark"] input:-webkit-autofill:active,
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-background-clip: text !important;
+  caret-color: #ffffff !important;
+}
+
+@theme {
   /* Override cyan and blue palettes globally to match the red brand color #b33a35 */
   --color-cyan-50:  #fff5f5;
   --color-cyan-100: #ffe3e3;

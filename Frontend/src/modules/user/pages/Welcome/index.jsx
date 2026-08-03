@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../../../../context/ThemeContext';
 
 import welcomePage from '../../../../assets/images/pages/welcomePage.png';
 import welcomePage2 from '../../../../assets/images/pages/welcomePage2.png';
@@ -26,6 +27,7 @@ const slides = [
 
 const Welcome = () => {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
@@ -171,19 +173,20 @@ const Welcome = () => {
         }
 
         .bottom-card {
-          background-color: #FFFFFF;
+          background-color: ${isDark ? '#18181b' : '#FFFFFF'};
           border-top-left-radius: 0px;
           border-top-right-radius: 0px;
           padding: 40px 32px;
           display: flex;
           flex-direction: column;
           gap: 24px;
-          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 -4px 20px rgba(0, 0, 0, ${isDark ? '0.3' : '0.05'});
           z-index: 10;
+          transition: background-color 0.3s ease;
         }
 
         .bottom-card-title {
-          color: #1C1C1E;
+          color: ${isDark ? '#FFFFFF' : '#1C1C1E'};
           font-size: clamp(16px, 4.8vw, 20px);
           font-weight: 600;
           line-height: 1.3;
@@ -195,7 +198,7 @@ const Welcome = () => {
         }
 
         .bottom-card-desc {
-          color: #5A5D75;
+          color: ${isDark ? '#a1a1aa' : '#5A5D75'};
           font-size: 14px;
           font-weight: 400;
           line-height: 1.6;
@@ -229,7 +232,7 @@ const Welcome = () => {
           width: 8px;
           height: 8px;
           border-radius: 50%;
-          background-color: rgba(0, 0, 0, 0.15);
+          background-color: ${isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)'};
           transition: all 0.3s ease;
         }
 
@@ -276,12 +279,12 @@ const Welcome = () => {
         }
       `}</style>
 
-      <div className="onboarding-root" style={{ backgroundColor: currentSlide.bgColor }}>
+      <div className="onboarding-root" style={{ backgroundColor: isDark ? '#09090b' : currentSlide.bgColor }}>
         {/* Skip button at top right */}
         <button 
           className="skip-btn" 
           onClick={handleSkip} 
-          style={{ color: currentSlide.textColor }}
+          style={{ color: isDark ? '#f4f4f5' : currentSlide.textColor }}
         >
           Skip
         </button>
