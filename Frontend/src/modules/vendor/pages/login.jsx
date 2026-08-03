@@ -102,16 +102,18 @@ const VendorLogin = () => {
         setIsLoading(false);
         toast.error(response.message || 'Failed to send OTP');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Login OTP Error:', err);
       setIsLoading(false);
-      const errorMessage = error.response?.data?.message || 'Failed to send OTP. Please try again.';
-      toast.error(errorMessage);
       
-      // Auto-redirect to signup if user not found (404)
-      if (error.response?.status === 404) {
+      if (err.response?.status === 404) {
+        toast.error('Number not registered. Please register first.');
         setTimeout(() => {
           navigate('/vendor/signup', { state: { phone: cleanPhone } });
         }, 1500);
+      } else {
+        const errorMessage = err.response?.data?.message || 'Failed to send OTP. Please try again.';
+        toast.error(errorMessage);
       }
     }
   };

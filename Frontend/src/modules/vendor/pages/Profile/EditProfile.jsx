@@ -704,22 +704,22 @@ const EditProfile = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-8 flex gap-3">
+        <div className="mt-5 flex gap-2.5">
           <button
             onClick={() => navigate('/vendor/profile')}
-            className="flex-1 py-4 rounded-xl font-semibold text-gray-700 bg-white border-2 border-gray-200 transition-all active:scale-95"
+            className="flex-1 py-2.5 rounded-lg font-bold text-xs text-gray-700 bg-white border border-gray-200 transition-all active:scale-95 cursor-pointer"
             style={{
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
             }}
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-1 py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all active:scale-95"
+            className="flex-1 py-2.5 rounded-lg font-bold text-xs text-white flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
             style={{
               background: themeColors.button,
-              boxShadow: `0 4px 12px ${themeColors.button}40`,
+              boxShadow: `0 3px 10px ${themeColors.button}35`,
             }}
           >
             {uploading ? 'Saving...' : 'Save Changes'}
