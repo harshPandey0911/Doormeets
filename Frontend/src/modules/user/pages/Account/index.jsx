@@ -31,7 +31,9 @@ import {
   FiZap,
   FiCheckCircle,
   FiMoon,
-  FiSun
+  FiSun,
+  FiSmartphone,
+  FiCheck
 } from 'react-icons/fi';
 import { MdAccountBalanceWallet } from 'react-icons/md';
 import NotificationBell from '../../components/common/NotificationBell';
@@ -41,7 +43,8 @@ const PROFILE_CACHE_KEY = 'user:profile';
 
 const Account = () => {
   const navigate = useNavigate();
-  const { toggleTheme, isDark } = useTheme();
+  const { themeMode, setThemeMode, isDark } = useTheme();
+  const [showAppearanceModal, setShowAppearanceModal] = useState(false);
 
   // Initialize instantly from localStorage (no loader on first render)
   const [userProfile, setUserProfile] = useState(() => {
@@ -471,10 +474,10 @@ const Account = () => {
                 <h3 className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-2.5 pl-1">Preferences</h3>
                 <div className="bg-card-bg rounded-md border border-border-color shadow-sm overflow-hidden">
                   <MenuItem
-                    icon={isDark ? FiSun : FiMoon}
-                    label={isDark ? "Dark Mode" : "Light Mode"}
-                    badge={isDark ? "Dark" : "Light"}
-                    onClick={toggleTheme}
+                    icon={isDark ? FiMoon : FiSun}
+                    label="Appearance"
+                    badge={themeMode === 'system' ? 'System' : (isDark ? 'Dark' : 'Light')}
+                    onClick={() => setShowAppearanceModal(true)}
                   />
                   <MenuItem
                     icon={FiMapPin}
@@ -540,6 +543,107 @@ const Account = () => {
           </div>
         </motion.main>
       </div>
+
+      {/* Appearance Selection Bottom Sheet Modal */}
+      {showAppearanceModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fadeIn p-0 md:p-4 md:items-center">
+          <div
+            className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-5 shadow-2xl border animate-slideUp space-y-3"
+            style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)' }}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  Appearance
+                </h3>
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  Customize how Doormeets looks on your device
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAppearanceModal(false)}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold cursor-pointer hover:opacity-80 active:scale-95 transition-all"
+                style={{ backgroundColor: 'var(--background)', color: 'var(--text-primary)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 3 Option Cards - Compact */}
+            <div className="space-y-2 pt-1">
+              {[
+                {
+                  id: 'system',
+                  title: 'System Default',
+                  description: 'Follow your device settings.',
+                  icon: FiSmartphone,
+                  iconBg: 'bg-blue-500/10 text-blue-500 dark:bg-blue-400/10 dark:text-blue-400'
+                },
+                {
+                  id: 'light',
+                  title: 'Light Mode',
+                  description: 'Always use light appearance.',
+                  icon: FiSun,
+                  iconBg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-400/10 dark:text-amber-400'
+                },
+                {
+                  id: 'dark',
+                  title: 'Dark Mode',
+                  description: 'Always use dark appearance.',
+                  icon: FiMoon,
+                  iconBg: 'bg-purple-500/10 text-purple-500 dark:bg-purple-400/10 dark:text-purple-400'
+                }
+              ].map((option) => {
+                const Icon = option.icon;
+                const isSelected = themeMode === option.id;
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => {
+                      setThemeMode(option.id);
+                      setTimeout(() => setShowAppearanceModal(false), 180);
+                    }}
+                    className={`w-full rounded-xl py-2.5 px-3 flex items-center justify-between transition-all duration-300 cursor-pointer text-left border ${
+                      isSelected
+                        ? 'border-[#B33A35] ring-1 ring-[#B33A35]/30'
+                        : 'border-border-color'
+                    }`}
+                    style={{ backgroundColor: 'var(--card-bg)' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${option.iconBg}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold block leading-tight" style={{ color: 'var(--text-primary)' }}>
+                          {option.title}
+                        </span>
+                        <span className="text-[11px] mt-0.5 block font-normal leading-tight" style={{ color: 'var(--text-secondary)' }}>
+                          {option.description}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all ${
+                        isSelected
+                          ? 'bg-[#B33A35] text-white shadow-xs scale-100'
+                          : 'border-2 border-gray-300 dark:border-zinc-700 bg-transparent'
+                      }`}
+                    >
+                      {isSelected && <FiCheck className="w-2.5 h-2.5 stroke-[3]" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

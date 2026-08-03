@@ -3,35 +3,87 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved || 'light';
+  const [themeMode, setThemeModeState] = useState(() => {
+    const hasChosen = localStorage.getItem('hasChosenThemeMode');
+    if (hasChosen === 'true') {
+      const savedMode = localStorage.getItem('themeMode');
+      if (savedMode && ['system', 'light', 'dark'].includes(savedMode)) {
+        return savedMode;
+      }
+    }
+    return 'system';
+  });
+
+  const [effectiveTheme, setEffectiveTheme] = useState(() => {
+    if (themeMode === 'system') {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return themeMode;
   });
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.setAttribute('data-theme', 'dark');
-      root.classList.add('dark');
-    } else {
-      root.removeAttribute('data-theme');
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    // Clean up theme classes/attributes on unmount (e.g. when leaving user module to admin/vendor/worker)
-    return () => {
-      root.removeAttribute('data-theme');
-      root.classList.remove('dark');
+    const updateTheme = () => {
+      const active = themeMode === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : themeMode;
+      setEffectiveTheme(active);
+
+      const root = document.documentElement;
+      if (active === 'dark') {
+        root.setAttribute('data-theme', 'dark');
+        root.classList.add('dark');
+      } else {
+        root.removeAttribute('data-theme');
+        root.classList.remove('dark');
+      }
+      localStorage.setItem('theme', active);
+      localStorage.setItem('themeMode', themeMode);
     };
-  }, [theme]);
+
+    updateTheme();
+
+    const handleChange = () => {
+      if (themeMode === 'system') {
+        updateTheme();
+      }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleChange);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else if (mediaQuery.removeListener) {
+        mediaQuery.removeListener(handleChange);
+      }
+    };
+  }, [themeMode]);
+
+  const setThemeMode = (mode) => {
+    if (['system', 'light', 'dark'].includes(mode)) {
+      localStorage.setItem('hasChosenThemeMode', 'true');
+      setThemeModeState(mode);
+    }
+  };
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setThemeModeState((prev) => (effectiveTheme === 'light' ? 'dark' : 'light'));
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, isDark: theme === 'dark' }}>
+    <ThemeContext.Provider
+      value={{
+        theme: effectiveTheme,
+        themeMode,
+        setThemeMode,
+        toggleTheme,
+        isDark: effectiveTheme === 'dark'
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

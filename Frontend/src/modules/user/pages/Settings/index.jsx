@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiBell, FiMail, FiPhone, FiMessageCircle, FiShield, FiChevronRight, FiLogOut, FiTrash2 } from 'react-icons/fi';
+import { FiArrowLeft, FiBell, FiMail, FiPhone, FiMessageCircle, FiShield, FiChevronRight, FiLogOut, FiTrash2, FiSmartphone, FiSun, FiMoon, FiCheck } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { themeColors } from '../../../../theme';
 import { userAuthService } from '../../../../services/authService';
 import { registerFCMToken, removeFCMToken } from '../../../../services/pushNotificationService';
+import { useTheme } from '../../../../context/ThemeContext';
 import BottomNav from '../../components/layout/BottomNav';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { themeMode, setThemeMode, isDark } = useTheme();
 
   // State for notification toggles
   const [notifications, setNotifications] = useState({
@@ -100,10 +102,34 @@ const Settings = () => {
     }
   };
 
+  const appearanceOptions = [
+    {
+      id: 'system',
+      title: 'System Default',
+      description: 'Follow your device settings.',
+      icon: FiSmartphone,
+      iconBg: 'bg-blue-500/10 text-blue-500 dark:bg-blue-400/10 dark:text-blue-400'
+    },
+    {
+      id: 'light',
+      title: 'Light Mode',
+      description: 'Always use light appearance.',
+      icon: FiSun,
+      iconBg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-400/10 dark:text-amber-400'
+    },
+    {
+      id: 'dark',
+      title: 'Dark Mode',
+      description: 'Always use dark appearance.',
+      icon: FiMoon,
+      iconBg: 'bg-purple-500/10 text-purple-500 dark:bg-purple-400/10 dark:text-purple-400'
+    }
+  ];
+
   return (
-    <div className="min-h-screen pb-20" style={{ backgroundColor: 'var(--background)' }}>
+    <div className="min-h-screen pb-20 transition-colors" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b backdrop-blur-xl" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
+      <header className="sticky top-0 z-30 border-b backdrop-blur-xl transition-colors" style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center gap-3">
             <button

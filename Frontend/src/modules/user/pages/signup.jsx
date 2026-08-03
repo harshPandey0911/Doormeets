@@ -331,11 +331,17 @@ const Signup = () => {
             <span>✕</span>
           </button>
 
-          {/* Illustration - covers pure card with subtle zoom */}
+          {/* Preloaded Dual Illustrations for 0ms instant theme switching */}
           <img
-            src={isDark ? "/loginpageDark.png" : loginIllustration}
-            alt="Signup Illustration"
-            className="w-full h-full object-cover scale-105 transition-all duration-300"
+            src={loginIllustration}
+            alt="Signup Illustration Light"
+            className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'hidden' : 'block'}`}
+            style={{ transform: 'scale(1.05)' }}
+          />
+          <img
+            src="/loginpageDark.png"
+            alt="Signup Illustration Dark"
+            className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'block' : 'hidden'}`}
             style={{ transform: 'scale(1.05)' }}
           />
         </div>

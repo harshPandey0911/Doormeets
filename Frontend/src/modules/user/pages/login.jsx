@@ -195,11 +195,17 @@ const Login = () => {
             <span>✕</span>
           </button>
 
-          {/* Illustration - covers pure card with subtle zoom */}
+          {/* Preloaded Dual Illustrations for 0ms instant theme switching */}
           <img
-            src={isDark ? "/loginpageDark.png" : loginIllustration}
-            alt="Login Illustration"
-            className="w-full h-full object-cover scale-105 transition-all duration-300"
+            src={loginIllustration}
+            alt="Login Illustration Light"
+            className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'hidden' : 'block'}`}
+            style={{ transform: 'scale(1.05)' }}
+          />
+          <img
+            src="/loginpageDark.png"
+            alt="Login Illustration Dark"
+            className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'block' : 'hidden'}`}
             style={{ transform: 'scale(1.05)' }}
           />
         </div>
@@ -241,7 +247,7 @@ const Login = () => {
                           WebkitTextFillColor: isDark ? '#ffffff' : '#111827',
                           caretColor: isDark ? '#ffffff' : '#111827'
                         }}
-                        placeholder="98765 43210"
+                        placeholder="Enter 10-digit number"
                         value={phoneNumber}
                         onChange={(e) => {
                           let raw = e.target.value;
