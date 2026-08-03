@@ -174,15 +174,16 @@ const Welcome = () => {
 
         .bottom-card {
           background-color: ${isDark ? '#18181b' : '#FFFFFF'};
-          border-top-left-radius: 0px;
-          border-top-right-radius: 0px;
+          border-top: ${isDark ? '1px solid #27272a' : 'none'};
+          border-top-left-radius: 24px;
+          border-top-right-radius: 24px;
           padding: 40px 32px;
           display: flex;
           flex-direction: column;
           gap: 24px;
-          box-shadow: 0 -4px 20px rgba(0, 0, 0, ${isDark ? '0.3' : '0.05'});
+          box-shadow: ${isDark ? '0 -4px 25px rgba(0, 0, 0, 0.4)' : '0 -4px 20px rgba(0, 0, 0, 0.05)'};
           z-index: 10;
-          transition: background-color 0.3s ease;
+          transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .bottom-card-title {
@@ -232,7 +233,7 @@ const Welcome = () => {
           width: 8px;
           height: 8px;
           border-radius: 50%;
-          background-color: ${isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)'};
+          background-color: ${isDark ? '#3f3f46' : 'rgba(0, 0, 0, 0.15)'};
           transition: all 0.3s ease;
         }
 
@@ -317,8 +318,12 @@ const Welcome = () => {
               <img
                 src={currentSlide.image}
                 alt={currentSlide.title}
-                className="slide-image"
+                className="slide-image transition-all duration-300"
                 draggable="false"
+                style={{
+                  filter: isDark ? 'invert(0.92) hue-rotate(180deg) contrast(105%)' : 'none',
+                  mixBlendMode: isDark ? 'screen' : 'normal'
+                }}
               />
             </motion.div>
           </AnimatePresence>
