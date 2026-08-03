@@ -7,6 +7,7 @@ import { userAuthService } from '../../../services/authService';
 import Logo from '../../../components/common/Logo';
 import LogoLoader from '../../../components/common/LogoLoader';
 import loginIllustration from '../../../assets/images/loginpage.png';
+import { useTheme } from '../../../context/ThemeContext';
 
 import { z } from "zod";
 
@@ -20,6 +21,7 @@ const signupSchema = z.object({
 const Signup = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isDark } = useTheme();
   const [step, setStep] = useState('details'); // 'details' or 'otp'
   const [formData, setFormData] = useState({
     name: '',
@@ -315,35 +317,42 @@ const Signup = () => {
   const brandColor = '#B33A35';
 
   return (
-    <div className="min-h-[100dvh] bg-[#F4F5F8] md:bg-gray-100 flex flex-col justify-start md:justify-center md:py-12 md:px-6 lg:px-8 relative overflow-x-hidden font-['Montserrat']">
-      <div className="w-full max-w-md mx-auto bg-white md:rounded-3xl md:shadow-2xl md:border md:border-gray-100 overflow-hidden flex flex-col min-h-[100dvh] md:min-h-0 relative animate-fade-in">
+    <div className={`min-h-[100dvh] flex flex-col justify-start md:justify-center md:py-12 md:px-6 lg:px-8 relative overflow-x-hidden font-['Montserrat'] transition-colors ${isDark ? 'bg-zinc-950 text-white' : 'bg-[#F4F5F8] md:bg-gray-100 text-gray-900'}`}>
+      <div className={`w-full max-w-md mx-auto md:rounded-3xl md:shadow-2xl overflow-hidden flex flex-col min-h-[100dvh] md:min-h-0 relative animate-fade-in transition-colors ${isDark ? 'bg-zinc-900 border-0 md:border md:border-zinc-800' : 'bg-white border-0 md:border md:border-gray-100'}`}>
         
         {/* Top Section: Header Banner with Illustration */}
-        <div className="w-full bg-[#F4F5F8] py-7 px-6 relative flex items-center justify-center select-none border-b border-gray-100">
+        <div className={`w-full h-[220px] relative flex items-center justify-center select-none border-b overflow-hidden transition-colors ${isDark ? 'bg-zinc-800/80 border-zinc-800' : 'bg-[#F4F5F8] border-gray-100'}`}>
           {/* Close X Button */}
           <button
             onClick={() => navigate('/user')}
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors z-20 cursor-pointer text-base"
+            className={`absolute top-4 right-4 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-colors z-20 cursor-pointer text-base ${isDark ? 'bg-zinc-800/90 text-zinc-300 hover:text-white hover:bg-zinc-700' : 'bg-white/90 text-gray-500 hover:text-gray-800'}`}
             aria-label="Close"
           >
             <span>✕</span>
           </button>
 
-          {/* Illustration */}
+          {/* Preloaded Dual Illustrations for 0ms instant theme switching */}
           <img
             src={loginIllustration}
-            alt="Signup Illustration"
-            className="mx-auto mt-3 h-[200px] w-auto object-contain"
+            alt="Signup Illustration Light"
+            className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'hidden' : 'block'}`}
+            style={{ transform: 'scale(1.05)' }}
+          />
+          <img
+            src="/loginpageDark.png"
+            alt="Signup Illustration Dark"
+            className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'block' : 'hidden'}`}
+            style={{ transform: 'scale(1.05)' }}
           />
         </div>
 
         {/* Bottom Section: Form Fields */}
-        <div className="flex-1 bg-white px-7 py-6 flex flex-col justify-between">
+        <div className={`flex-1 px-7 py-6 flex flex-col justify-between transition-colors ${isDark ? 'bg-zinc-900 text-white' : 'bg-white text-gray-900'}`}>
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
+            <h2 className={`text-2xl font-semibold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {step === 'details' ? 'Sign up' : 'Verify phone'}
             </h2>
-            <p className="mt-1.5 text-sm text-gray-500 font-normal">
+            <p className="mt-1.5 text-sm text-gray-500 dark:text-zinc-400 font-normal">
               {step === 'details'
                 ? 'Join Doormeets to start booking services'
                 : `We've sent a 6-digit code to +91 ${formData.phoneNumber}`
@@ -357,7 +366,7 @@ const Signup = () => {
                     <button
                       type="button"
                       onClick={() => navigate('/user/login')}
-                      className="flex items-center text-xs font-semibold text-gray-500 hover:text-[#B33A35] transition-colors mb-3 cursor-pointer"
+                      className="flex items-center text-xs font-semibold text-gray-500 dark:text-zinc-400 hover:text-[#B33A35] dark:hover:text-red-400 transition-colors mb-3 cursor-pointer"
                     >
                       <FiChevronLeft className="mr-0.5" /> Back to Login
                     </button>
@@ -365,15 +374,15 @@ const Signup = () => {
 
                   {/* Full Name */}
                   <div>
-                    <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                    <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2">
                       Full Name
                     </label>
                     <div className={`relative rounded-2xl border overflow-hidden transition-all ${
                       errors.name && touched.name 
                         ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
-                        : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                        : 'border-gray-200 dark:border-zinc-700 bg-transparent dark:bg-zinc-800/40 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
                     }`}>
-                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.name && touched.name ? 'text-red-400' : 'text-gray-400'}`}>
+                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.name && touched.name ? 'text-red-400' : 'text-gray-400 dark:text-zinc-500'}`}>
                         <FiUser />
                       </div>
                       <input
@@ -387,7 +396,12 @@ const Signup = () => {
                         value={formData.name}
                         onChange={handleInputChange}
                         onBlur={handleNameBlur}
-                        className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                        className={`block w-full pl-10 pr-4 py-3 border-0 text-sm focus:outline-none focus:ring-0 focus:border-0 ${isDark ? 'text-white placeholder-zinc-500' : 'text-gray-900 placeholder-gray-400'}`}
+                        style={{
+                          WebkitBoxShadow: isDark ? '0 0 0 30px #27272a inset' : '0 0 0 30px #ffffff inset',
+                          WebkitTextFillColor: isDark ? '#ffffff' : '#111827',
+                          caretColor: isDark ? '#ffffff' : '#111827'
+                        }}
                         placeholder="Enter your full name"
                       />
                     </div>
@@ -400,15 +414,15 @@ const Signup = () => {
 
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
-                      Email <span className="text-gray-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
+                    <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2">
+                      Email <span className="text-gray-400 dark:text-zinc-500 text-[10px] font-normal normal-case ml-1">(Optional)</span>
                     </label>
                     <div className={`relative rounded-2xl border overflow-hidden transition-all ${
                       errors.email && touched.email 
                         ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
-                        : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                        : 'border-gray-200 dark:border-zinc-700 bg-transparent dark:bg-zinc-800/40 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
                     }`}>
-                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.email && touched.email ? 'text-red-400' : 'text-gray-400'}`}>
+                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.email && touched.email ? 'text-red-400' : 'text-gray-400 dark:text-zinc-500'}`}>
                         <FiMail />
                       </div>
                       <input
@@ -419,7 +433,12 @@ const Signup = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         onBlur={() => handleBlur('email')}
-                        className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                        className={`block w-full pl-10 pr-4 py-3 border-0 text-sm focus:outline-none focus:ring-0 focus:border-0 ${isDark ? 'text-white placeholder-zinc-500' : 'text-gray-900 placeholder-gray-400'}`}
+                        style={{
+                          WebkitBoxShadow: isDark ? '0 0 0 30px #27272a inset' : '0 0 0 30px #ffffff inset',
+                          WebkitTextFillColor: isDark ? '#ffffff' : '#111827',
+                          caretColor: isDark ? '#ffffff' : '#111827'
+                        }}
                         placeholder="you@example.com"
                       />
                     </div>
@@ -433,16 +452,16 @@ const Signup = () => {
                   {/* Phone Number */}
                   {!verificationToken && (
                     <div>
-                      <label htmlFor="phoneNumber" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                      <label htmlFor="phoneNumber" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2">
                         Phone Number
                       </label>
                       <div className={`relative rounded-2xl border overflow-hidden transition-all ${
                         errors.phoneNumber && touched.phoneNumber 
                           ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
-                          : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                          : 'border-gray-200 dark:border-zinc-700 bg-transparent dark:bg-zinc-800/40 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
                       }`}>
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <span className={`font-medium text-sm border-r pr-3 ${errors.phoneNumber && touched.phoneNumber ? 'text-red-500 border-red-200' : 'text-gray-500 border-gray-200'}`}>+91</span>
+                          <span className={`font-medium text-sm border-r pr-3 ${errors.phoneNumber && touched.phoneNumber ? 'text-red-500 border-red-200' : 'text-gray-500 dark:text-zinc-400 border-gray-200 dark:border-zinc-700'}`}>+91</span>
                         </div>
                         <input
                           id="phoneNumber"
@@ -473,7 +492,12 @@ const Signup = () => {
                             }
                           }}
                           onBlur={() => handleBlur('phoneNumber')}
-                          className="block w-full pl-16 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                          className={`block w-full pl-16 pr-4 py-3 border-0 text-sm focus:outline-none focus:ring-0 focus:border-0 ${isDark ? 'text-white placeholder-zinc-500' : 'text-gray-900 placeholder-gray-400'}`}
+                          style={{
+                            WebkitBoxShadow: isDark ? '0 0 0 30px #27272a inset' : '0 0 0 30px #ffffff inset',
+                            WebkitTextFillColor: isDark ? '#ffffff' : '#111827',
+                            caretColor: isDark ? '#ffffff' : '#111827'
+                          }}
                           placeholder="9876543210"
                         />
                       </div>
@@ -487,15 +511,15 @@ const Signup = () => {
 
                   {/* Referral Code */}
                   <div>
-                    <label htmlFor="referralCode" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
-                      Referral Code <span className="text-gray-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
+                    <label htmlFor="referralCode" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2">
+                      Referral Code <span className="text-gray-400 dark:text-zinc-500 text-[10px] font-normal normal-case ml-1">(Optional)</span>
                     </label>
                     <div className={`relative rounded-2xl border overflow-hidden transition-all ${
                       errors.referralCode && touched.referralCode 
                         ? 'border-red-500 bg-red-50/20 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500' 
-                        : 'border-gray-200 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
+                        : 'border-gray-200 dark:border-zinc-700 bg-transparent dark:bg-zinc-800/40 focus-within:border-[#B33A35] focus-within:ring-1 focus-within:ring-[#B33A35]'
                     }`}>
-                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.referralCode && touched.referralCode ? 'text-red-400' : 'text-gray-400'}`}>
+                      <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none ${errors.referralCode && touched.referralCode ? 'text-red-400' : 'text-gray-400 dark:text-zinc-500'}`}>
                         <FiGift />
                       </div>
                       <input
@@ -512,7 +536,12 @@ const Signup = () => {
                           }
                         }}
                         onBlur={() => handleBlur('referralCode')}
-                        className="block w-full pl-10 pr-4 py-3 bg-transparent border-0 text-sm text-gray-900 focus:outline-none focus:ring-0 focus:border-0"
+                        className={`block w-full pl-10 pr-4 py-3 border-0 text-sm focus:outline-none focus:ring-0 focus:border-0 ${isDark ? 'text-white placeholder-zinc-500' : 'text-gray-900 placeholder-gray-400'}`}
+                        style={{
+                          WebkitBoxShadow: isDark ? '0 0 0 30px #27272a inset' : '0 0 0 30px #ffffff inset',
+                          WebkitTextFillColor: isDark ? '#ffffff' : '#111827',
+                          caretColor: isDark ? '#ffffff' : '#111827'
+                        }}
                         placeholder="DM-XXXXXX"
                       />
                     </div>
@@ -543,14 +572,14 @@ const Signup = () => {
                   <button
                     type="button"
                     onClick={() => setStep('details')}
-                    className="flex items-center text-xs font-semibold text-gray-500 hover:text-[#B33A35] transition-colors mb-3 cursor-pointer"
+                    className="flex items-center text-xs font-semibold text-gray-500 dark:text-zinc-400 hover:text-[#B33A35] dark:hover:text-red-400 transition-colors mb-3 cursor-pointer"
                   >
                     <FiChevronLeft className="mr-0.5" /> Edit details
                   </button>
 
                   <form onSubmit={handleOtpSubmit} className="space-y-5">
                     <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3 text-center">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-3 text-center">
                         Enter OTP Code
                       </label>
                       <div className="flex justify-center gap-2.5 py-2">
@@ -564,7 +593,16 @@ const Signup = () => {
                             value={digit}
                             onChange={(e) => handleOtpChange(index, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                            className="w-11 h-12 text-center text-xl font-semibold bg-[#FFF5F5] border border-[#FCD7D9] rounded-xl focus:bg-white focus:border-[#B33A35] focus:ring-1 focus:ring-[#B33A35] outline-none transition-all text-[#B33A35]"
+                            className={`w-11 h-12 text-center text-xl font-semibold border rounded-xl outline-none transition-all ${
+                            isDark 
+                              ? 'bg-zinc-800 border-zinc-700 text-red-400 focus:bg-zinc-800 focus:border-[#B33A35] focus:ring-1 focus:ring-[#B33A35]' 
+                              : 'bg-[#FFF5F5] border-[#FCD7D9] text-[#B33A35] focus:bg-white focus:border-[#B33A35] focus:ring-1 focus:ring-[#B33A35]'
+                          }`}
+                          style={{
+                            WebkitBoxShadow: isDark ? '0 0 0 30px #27272a inset' : '0 0 0 30px #fff5f5 inset',
+                            WebkitTextFillColor: isDark ? '#f87171' : '#B33A35',
+                            caretColor: isDark ? '#f87171' : '#B33A35'
+                          }}
                           />
                         ))}
                       </div>
@@ -587,7 +625,7 @@ const Signup = () => {
                           }
                         }}
                         disabled={resendTimer > 0}
-                        className="text-xs font-semibold text-[#B33A35] hover:text-[#9E2E2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="text-xs font-semibold text-[#B33A35] dark:text-red-400 hover:text-[#9E2E2A] dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         {resendTimer > 0
                           ? `Resend in ${Math.floor(resendTimer / 60)}:${String(resendTimer % 60).padStart(2, '0')}`
@@ -617,16 +655,16 @@ const Signup = () => {
 
           {/* Footer Navigation */}
           <div className="mt-5">
-            <p className="text-center text-sm text-gray-500 font-medium">
+            <p className="text-center text-sm text-gray-500 dark:text-zinc-400 font-medium">
               Already have an account?{' '}
-              <Link to="/user/login" className="text-[#B33A35] hover:text-[#9E2E2A] font-semibold transition-colors">
+              <Link to="/user/login" className="text-[#B33A35] dark:text-red-400 hover:text-[#9E2E2A] dark:hover:text-red-300 font-semibold transition-colors">
                 Sign in
               </Link>
             </p>
-            <p className="mt-2 text-center text-xs text-gray-400 font-normal">
-              By continuing, you agree to Doormeets' <Link to="/user/terms-and-conditions" className="text-gray-500 hover:text-gray-700 underline font-medium">Terms & Conditions</Link> & <Link to="/user/privacy-policy" className="text-gray-500 hover:text-gray-700 underline font-medium">Privacy Policy</Link>
+            <p className="mt-2 text-center text-xs text-gray-400 dark:text-zinc-500 font-normal">
+              By continuing, you agree to Doormeets' <Link to="/user/terms-and-conditions" className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 underline font-medium">Terms & Conditions</Link> & <Link to="/user/privacy-policy" className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 underline font-medium">Privacy Policy</Link>
             </p>
-            <p className="mt-1.5 text-center text-xs text-gray-400 font-normal">
+            <p className="mt-1.5 text-center text-xs text-gray-400 dark:text-zinc-500 font-normal">
               &copy; {new Date().getFullYear()} Doormeets. All rights reserved.
             </p>
           </div>

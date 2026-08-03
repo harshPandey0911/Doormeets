@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, lazy, Suspense, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { themeColors } from '../../../../theme';
 import Header from '../../components/layout/Header';
@@ -366,6 +367,21 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [comingSoonCategory, setComingSoonCategory] = useState(null);
+
+  // Lock background scroll when coming soon modal is open
+  useEffect(() => {
+    if (comingSoonCategory) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [comingSoonCategory]);
   const [groupCategorySheet, setGroupCategorySheet] = useState({ open: false, category: null });
   const [currentStackIndex, setCurrentStackIndex] = useState(0);
   const [pastServices, setPastServices] = useState([]);
@@ -942,7 +958,7 @@ const Home = () => {
                             {/* Mobile: categories full-width (unchanged) */}
                             <div className="block md:hidden">
                               <ServiceCategories
-                                categories={categories.filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)}
+                                categories={categories.filter(c => c.categoryType === 'service' && c.isGroupCategory)}
                                 onCategoryClick={handleCategoryClick}
                                 title={homeContent?.sectionHeaders?.sectionsTitle || "Categories"}
                                 subtitle="Premium Home Services"
@@ -968,7 +984,7 @@ const Home = () => {
                                <div className="w-[480px] lg:w-[520px]">
                                  <div className="grid grid-cols-3 gap-x-4 gap-y-5">
                                    {categories
-                                     .filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)
+                                     .filter(c => c.categoryType === 'service' && c.isGroupCategory)
                                      .map((category, index) => {
                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                                        const cardColors = isDark ? [
@@ -1112,146 +1128,7 @@ const Home = () => {
                       )
                     );
                   case 'upcomingCategories':
-                    return (
-                      homeContent?.isUpcomingCategoriesVisible !== false &&
-                      upcomingCategories.length > 0 && (() => {
-                        const activeCat = upcomingCategories[currentStackIndex] || upcomingCategories[0];
-                        return (
-                          <motion.section key="upcomingCategories" variants={itemVariants} className="px-3 md:px-5 space-y-4 w-full">
-                            <div className="flex items-center justify-between">
-                              <h2
-                                className="text-[19px] md:text-[22px] font-extrabold tracking-tight"
-                                style={{ color: 'var(--text-primary)' }}
-                              >
-                                Upcoming Services
-                              </h2>
-                              <span
-                                className="text-xs font-bold px-2.5 py-1 rounded-full animate-pulse"
-                                style={{ color: 'var(--primary)', backgroundColor: 'rgba(179,58,53,0.12)' }}
-                              >
-                                {upcomingCategories.length} Coming Soon
-                              </span>
-                            </div>
-        
-                            {/* Staggered Card Stack Container */}
-                            <div className="relative pt-2">
-                              {/* Inner Stack Wrapper to align layers with the main card bottom */}
-                              <div className="relative z-10">
-                                {/* Third Layer Card (Deepest) */}
-                                {upcomingCategories.length > 2 && (
-                                  <div className="absolute left-5 right-5 bottom-0 h-full bg-[#B33A35]/25 rounded-[24px] shadow-sm transform translate-y-3 z-0 pointer-events-none border border-white/5" />
-                                )}
-                                
-                                {/* Second Layer Card (Middle) */}
-                                {upcomingCategories.length > 1 && (
-                                  <div className="absolute left-2.5 right-2.5 bottom-0 h-full bg-[#B33A35]/50 rounded-[24px] shadow-md transform translate-y-1.5 z-10 pointer-events-none border border-white/10" />
-                                )}
-        
-                                {/* Main Card (Top) */}
-                                <div 
-                                  onClick={() => {
-                                    if (upcomingCategories.length > 1) {
-                                      setCurrentStackIndex((prev) => (prev + 1) % upcomingCategories.length);
-                                    } else {
-                                      handleCategoryClick(activeCat);
-                                    }
-                                  }}
-                                  className="w-full bg-gradient-to-r from-[#B33A35] to-[#9E2E2A] rounded-[24px] p-5 relative overflow-hidden shadow-[0_12px_28px_rgba(255,159,69,0.22)] border border-white/20 active:scale-[0.98] hover:scale-[1.01] transition-all duration-300 cursor-pointer z-20"
-                                >
-                                  <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-white/30 to-transparent pointer-events-none" />
-                                  <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-[0.5px] pointer-events-none" />
-                                  <div className="absolute -inset-y-12 -left-16 w-32 bg-white/10 blur-xl transform rotate-12 pointer-events-none" />
-        
-                                  <div className="relative z-10 flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-4">
-                                      <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.06)] overflow-hidden shrink-0 border border-white/50">
-                                        {activeCat.icon ? (
-                                          <img 
-                                            src={activeCat.icon} 
-                                            alt={activeCat.title} 
-                                            className="w-9 h-9 object-contain"
-                                          />
-                                        ) : (
-                                          <div className="w-9 h-9 flex items-center justify-center bg-orange-50 rounded-full">
-                                            <svg className="w-5 h-5 text-[#B33A35]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                            </svg>
-                                          </div>
-                                        )}
-                                      </div>
-        
-                                      <div className="space-y-0.5">
-                                        <h3 className="text-lg font-extrabold text-white tracking-tight leading-tight">
-                                          {activeCat.title}
-                                        </h3>
-                                        <p className="text-orange-50 text-[11px] font-semibold opacity-90 leading-tight">
-                                          Launching soon in {currentCity?.name || 'Indore'}
-                                        </p>
-                                      </div>
-                                    </div>
-        
-                                    <button
-                                      type="button"
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        handleCategoryClick(activeCat);
-                                      }}
-                                      className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
-                                        activeCat.isInterested
-                                          ? 'bg-white text-green-500 shadow-md'
-                                          : 'bg-white/25 hover:bg-white/35 text-white active:scale-95'
-                                      }`}
-                                    >
-                                      {activeCat.isInterested ? (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      ) : (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.2">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                        </svg>
-                                      )}
-                                    </button>
-                                  </div>
-        
-                                  <div className="bg-black/10 rounded-[18px] p-3.5 mt-4 flex items-center justify-between text-white text-[11px] font-bold tracking-tight">
-                                    <div className="flex items-center gap-1.5 opacity-95">
-                                      <svg className="w-3.5 h-3.5 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      <span>Status: COMING SOON</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 opacity-95">
-                                      <svg className="w-3.5 h-3.5 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                      </svg>
-                                      <span>{activeCat.interestedCount || 0} Interested</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-        
-                              {upcomingCategories.length > 1 && (
-                                <div className="flex justify-center gap-1.5 mt-4 relative z-20">
-                                  {upcomingCategories.map((_, dotIdx) => (
-                                    <button
-                                      key={dotIdx}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentStackIndex(dotIdx);
-                                      }}
-                                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                                        currentStackIndex === dotIdx ? 'w-5 bg-[#B33A35]' : 'w-1.5 bg-gray-300'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </motion.section>
-                        );
-                      })()
-                    );
+                    return null;
                   case 'orderAgain':
                     return null;
                   case 'featuredSections':
@@ -1472,9 +1349,15 @@ const Home = () => {
         onSave={handleAddressSave}
       />
 
-      {comingSoonCategory && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-md p-6 max-w-sm w-full shadow-2xl relative border border-gray-100 flex flex-col items-center text-center">
+      {comingSoonCategory && createPortal(
+        <div 
+          className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={() => setComingSoonCategory(null)}
+        >
+          <div 
+            className="bg-white rounded-md p-6 max-w-sm w-full shadow-2xl relative border border-gray-100 flex flex-col items-center text-center my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button 
               onClick={() => setComingSoonCategory(null)}
               className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
@@ -1530,7 +1413,8 @@ const Home = () => {
               {comingSoonCategory.isInterested ? "✓ Interest Registered" : "I'm Interested!"}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

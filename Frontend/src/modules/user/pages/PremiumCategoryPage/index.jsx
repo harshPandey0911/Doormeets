@@ -193,13 +193,15 @@ const PremiumCategoryPage = () => {
     const handleScrollSpy = () => {
       if (isScrollingRef.current) return;
       const scrollPosition = window.scrollY + 180; // offset for sticky header/navbar
+      const isDesktop = window.innerWidth >= 1024;
 
       let currentActiveId = activeSubId;
       for (const sub of subCategories) {
         const id = String(sub.id || sub._id);
-        const el = document.getElementById(`subcat-sec-${id}`);
+        const targetId = isDesktop ? `desktop-subcat-sec-${id}` : `subcat-sec-${id}`;
+        const el = document.getElementById(targetId) || document.getElementById(`subcat-sec-${id}`);
         if (el) {
-          const top = el.offsetTop;
+          const top = el.getBoundingClientRect().top + window.scrollY;
           const height = el.offsetHeight;
           if (scrollPosition >= top && scrollPosition < top + height) {
             currentActiveId = id;
@@ -544,7 +546,9 @@ const PremiumCategoryPage = () => {
 
   // Scroll to subcategory helper
   const handleScrollToSub = (subId) => {
-    const element = document.getElementById(`subcat-sec-${subId}`);
+    const isDesktop = window.innerWidth >= 1024;
+    const targetId = isDesktop ? `desktop-subcat-sec-${subId}` : `subcat-sec-${subId}`;
+    const element = document.getElementById(targetId) || document.getElementById(`subcat-sec-${subId}`);
     if (element) {
       isScrollingRef.current = true;
       setActiveSubId(subId); // Ensure active category updates immediately
@@ -1323,7 +1327,7 @@ const PremiumCategoryPage = () => {
                     const subServices = groupedServices[subId] || [];
                     if (subServices.length === 0) return null;
                     return (
-                      <div key={subId} id={`subcat-sec-${subId}`} className="scroll-mt-24 pb-2">
+                      <div key={subId} id={`desktop-subcat-sec-${subId}`} className="scroll-mt-24 pb-2">
                         <h3 className="text-lg font-bold tracking-tight pt-6 pb-4 border-b mb-1" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>{sub.title}</h3>
                         <div className="divide-y divide-gray-100 dark:divide-zinc-800">
                           {subServices.map((service) => (
@@ -1343,7 +1347,7 @@ const PremiumCategoryPage = () => {
                     );
                   })}
                   {groupedServices['other'] && groupedServices['other'].length > 0 && (
-                    <div id="subcat-sec-other" className="scroll-mt-24 pb-2">
+                    <div id="desktop-subcat-sec-other" className="scroll-mt-24 pb-2">
                       <h3 className="text-lg font-bold tracking-tight pt-6 pb-4 border-b mb-1" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>General Services</h3>
                       <div className="divide-y divide-gray-100 dark:divide-zinc-800">
                         {groupedServices['other'].map((service) => (

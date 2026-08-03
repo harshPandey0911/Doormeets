@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck } from 'react-icons/fi';
+import { FiUser, FiPhone, FiBriefcase, FiArrowRight, FiChevronDown, FiCheck, FiGift } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { vendorTheme as themeColors } from '../../../theme';
 import { register } from '../services/authService';
