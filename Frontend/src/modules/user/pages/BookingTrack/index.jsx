@@ -9,6 +9,7 @@ import { bookingService } from '../../../../services/bookingService';
 import { paymentService } from '../../../../services/paymentService';
 import { configService } from '../../../../services/configService';
 import { toast } from 'react-hot-toast';
+import { getCleanSupportPhone } from '../../../../utils/phoneUtils';
 import { useAppNotifications } from '../../../../hooks/useAppNotifications';
 import LogoLoader from '../../../../components/common/LogoLoader';
 import PaymentVerificationModal from '../../components/booking/PaymentVerificationModal';
@@ -1108,7 +1109,7 @@ const BookingTrack = () => {
                 );
               }
               // Show customer care before journey starts
-              const carePhone = cleanPhone(supportPhone || '+919999999999');
+              const carePhone = getCleanSupportPhone(supportPhone);
               return (
                 <a
                   href={`tel:${carePhone}`}

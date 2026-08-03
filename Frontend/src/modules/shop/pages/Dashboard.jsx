@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { MdAccountBalanceWallet, MdPeople, MdHourglassEmpty, MdCheckCircle, MdContentCopy, MdQrCodeScanner, MdShare, MdEdit } from 'react-icons/md';
+import { MdAccountBalanceWallet, MdPeople, MdHourglassEmpty, MdCheckCircle, MdContentCopy, MdQrCodeScanner, MdShare, MdEdit, MdHistory, MdArrowUpward, MdArrowDownward } from 'react-icons/md';
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -12,6 +12,11 @@ const Dashboard = () => {
   const [referralCodeInput, setReferralCodeInput] = useState('');
   const [savingReferral, setSavingReferral] = useState(false);
   const [referralError, setReferralError] = useState('');
+
+  // Credit History state
+  const [creditHistory, setCreditHistory] = useState([]);
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [showCreditHistory, setShowCreditHistory] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -40,9 +45,33 @@ const Dashboard = () => {
     }
   };
 
+  const fetchCreditHistory = async () => {
+    try {
+      setCreditLoading(true);
+      const token = localStorage.getItem('shopAccessToken');
+      const response = await axios.get(`${API_URL}/shop/credit-history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setCreditHistory(response.data.data.transactions || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch credit history:', err);
+    } finally {
+      setCreditLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Fetch credit history when section is expanded
+  useEffect(() => {
+    if (showCreditHistory && creditHistory.length === 0) {
+      fetchCreditHistory();
+    }
+  }, [showCreditHistory]);
 
   const handleCopy = () => {
     if (inviteLinkText) {
@@ -175,6 +204,32 @@ const Dashboard = () => {
     }
   };
 
+  const getTransactionLabel = (type) => {
+    switch (type) {
+      case 'shop_referral_earned': return 'Referral Commission Earned';
+      case 'credit': return 'Credit Added';
+      case 'debit': return 'Debit';
+      case 'withdrawal': return 'Withdrawal / Deducted';
+      case 'refund': return 'Refund';
+      default: return type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Transaction';
+    }
+  };
+
+  const isPositiveTransaction = (type) => {
+    return ['shop_referral_earned', 'credit', 'refund', 'earnings_credit'].includes(type);
+  };
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
@@ -241,6 +296,96 @@ const Dashboard = () => {
             <p className="text-2xl font-bold text-gray-800">{stats.approved}</p>
           </div>
         </div>
+      </div>
+
+      {/* Credit History Section */}
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div
+          className="p-6 border-b border-gray-50 bg-gradient-to-r from-emerald-50/50 to-blue-50/50 flex items-center justify-between cursor-pointer hover:bg-gradient-to-r hover:from-emerald-50/80 hover:to-blue-50/80 transition-all"
+          onClick={() => setShowCreditHistory(!showCreditHistory)}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
+              <MdHistory className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">Credit History</h3>
+              <p className="text-xs text-gray-400 mt-0.5">View all wallet transactions — where money came from and where it went</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+              Balance: ₹{data?.walletBalance || 0}
+            </span>
+            <svg
+              className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${showCreditHistory ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        {showCreditHistory && (
+          <div className="p-6">
+            {creditLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+              </div>
+            ) : creditHistory.length > 0 ? (
+              <div className="space-y-3">
+                {creditHistory.map((tx, idx) => {
+                  const positive = isPositiveTransaction(tx.type);
+                  return (
+                    <div
+                      key={tx._id || idx}
+                      className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:shadow-sm ${
+                        positive
+                          ? 'bg-emerald-50/40 border-emerald-100 hover:bg-emerald-50/70'
+                          : 'bg-rose-50/40 border-rose-100 hover:bg-rose-50/70'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-2.5 rounded-xl ${positive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                          {positive ? <MdArrowDownward className="w-5 h-5" /> : <MdArrowUpward className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-800 text-sm">{getTransactionLabel(tx.type)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 max-w-[300px] truncate">{tx.description}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{formatDate(tx.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-lg font-bold ${positive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {positive ? '+' : '-'}₹{Math.abs(tx.amount)}
+                        </p>
+                        {(tx.balanceAfter !== undefined && tx.balanceAfter !== null) && (
+                          <p className="text-[10px] text-gray-400 mt-0.5">Balance: ₹{tx.balanceAfter}</p>
+                        )}
+                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 uppercase tracking-wider ${
+                          tx.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                          tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                          tx.status === 'failed' ? 'bg-rose-100 text-rose-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {tx.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <MdAccountBalanceWallet className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                <p className="text-gray-500 font-semibold text-sm">No transactions yet</p>
+                <p className="text-xs text-gray-400 mt-1">Your wallet credit & debit history will appear here</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* QR & Invite Section */}

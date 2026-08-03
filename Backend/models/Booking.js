@@ -453,6 +453,8 @@ const bookingSchema = new mongoose.Schema({
   review: { type: String, default: null },
   reviewImages: [{ type: String }],
   reviewedAt: { type: Date, default: null },
+  isReviewHidden: { type: Boolean, default: false },
+  isReviewDeleted: { type: Boolean, default: false },
 
   // ==========================================
   // 12. SETTLEMENT (Worker/User)

@@ -31,31 +31,33 @@ exports.getAllReviews = async (req, res) => {
     const bookingFilter = await getBookingQueryFilter(req.user);
     Object.assign(query, bookingFilter);
 
-    // Auto-migration: If no reviews exist in Review model, check Booking model
-    const reviewCount = await Review.countDocuments();
-    if (reviewCount === 0) {
-      const bookingsWithReviews = await Booking.find({
-        rating: { $exists: true, $ne: null }
-      });
+    // Auto-migration / Sync: Ensure all bookings with rating exist in Review collection
+    const bookingsWithReviews = await Booking.find({
+      rating: { $exists: true, $ne: null }
+    });
 
-      if (bookingsWithReviews.length > 0) {
-        const reviewsToCreate = bookingsWithReviews.map(booking => ({
-          bookingId: booking._id,
-          userId: booking.userId,
-          serviceId: booking.serviceId,
-          vendorId: booking.vendorId,
-          workerId: booking.workerId,
-          rating: booking.rating,
-          review: booking.review || '',
-          images: booking.reviewImages || [],
-          status: 'active',
-          createdAt: booking.reviewedAt || booking.updatedAt
-        }));
-
-        await Review.insertMany(reviewsToCreate, { ordered: false }).catch(err => {
-          console.error('Error during auto-migration of reviews:', err);
-        });
-      }
+    if (bookingsWithReviews.length > 0) {
+      const ops = bookingsWithReviews.map(booking => ({
+        updateOne: {
+          filter: { bookingId: booking._id },
+          update: {
+            $setOnInsert: {
+              bookingId: booking._id,
+              userId: booking.userId,
+              serviceId: booking.serviceId,
+              vendorId: booking.vendorId,
+              workerId: booking.workerId,
+              rating: booking.rating,
+              review: booking.review || '',
+              images: booking.reviewImages || [],
+              status: booking.isReviewHidden ? 'hidden' : (booking.isReviewDeleted ? 'deleted' : 'active'),
+              createdAt: booking.reviewedAt || booking.updatedAt
+            }
+          },
+          upsert: true
+        }
+      }));
+      await Review.bulkWrite(ops).catch(err => console.error('Review sync bulkWrite error:', err));
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);

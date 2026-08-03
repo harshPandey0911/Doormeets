@@ -511,16 +511,31 @@ const Wallet = () => {
                     </div>
 
                     {/* Expanded Content */}
-                    {expandedTxn === txn._id && txn.bookingId && (
+                    {expandedTxn === txn._id && (
                       <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
-                        <p className="text-[10px] font-bold text-gray-800 uppercase tracking-wider mb-1">Booking Details</p>
-                        <div className="bg-gray-50 rounded-md p-2.5 space-y-1">
-                          <p className="text-xs"><span className="text-gray-500">Booking ID:</span> <span className="font-semibold text-gray-900">{txn.bookingId.bookingNumber}</span></p>
-                          <p className="text-xs"><span className="text-gray-500">Service:</span> <span className="font-semibold text-gray-900">{txn.bookingId.serviceName}</span></p>
-                          {txn.bookingId.scheduledDate && (
-                            <p className="text-xs"><span className="text-gray-500">Scheduled Date:</span> <span className="font-semibold text-gray-900">{formatDate(txn.bookingId.scheduledDate)}</span></p>
-                          )}
-                        </div>
+                        {txn.bookingId ? (
+                          <>
+                            <p className="text-[10px] font-bold text-gray-800 uppercase tracking-wider mb-1">Booking Details</p>
+                            <div className="bg-gray-50 rounded-md p-2.5 space-y-1">
+                              <p className="text-xs"><span className="text-gray-500">Booking ID:</span> <span className="font-semibold text-gray-900">{txn.bookingId.bookingNumber}</span></p>
+                              <p className="text-xs"><span className="text-gray-500">Service:</span> <span className="font-semibold text-gray-900">{txn.bookingId.serviceName}</span></p>
+                              {txn.bookingId.scheduledDate && (
+                                <p className="text-xs"><span className="text-gray-500">Scheduled Date:</span> <span className="font-semibold text-gray-900">{formatDate(txn.bookingId.scheduledDate)}</span></p>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-[10px] font-bold text-gray-800 uppercase tracking-wider mb-1">Transaction Details</p>
+                            <div className="bg-gray-50 rounded-md p-2.5 space-y-1">
+                              <p className="text-xs"><span className="text-gray-500">Type:</span> <span className="font-semibold text-gray-900">{getTransactionLabel(txn)}</span></p>
+                              <p className="text-xs"><span className="text-gray-500">Amount:</span> <span className="font-semibold text-gray-900">{txn.type.startsWith('credit_') ? Math.abs(txn.amount) + ' Credits' : '₹' + Math.abs(txn.amount).toLocaleString()}</span></p>
+                              {txn.description && <p className="text-xs"><span className="text-gray-500">Description:</span> <span className="font-semibold text-gray-900">{txn.description}</span></p>}
+                              <p className="text-xs"><span className="text-gray-500">Date:</span> <span className="font-semibold text-gray-900">{formatDate(txn.createdAt)}</span></p>
+                              <p className="text-xs"><span className="text-gray-500">Status:</span> <span className={`font-semibold ${txn.status === 'completed' ? 'text-green-700' : txn.status === 'pending' ? 'text-orange-700' : 'text-gray-700'}`}>{txn.status}</span></p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

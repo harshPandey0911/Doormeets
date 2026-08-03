@@ -388,21 +388,21 @@ const homeContentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure only one home content document exists per city (Force Indore's configuration to be global/universal)
 homeContentSchema.statics.getHomeContent = async function (cityId = null) {
-  // Indore City ID: 6a153cdfb02e3f00051d6156. Serve this configuration globally for all cities.
-  const indoreCityId = '6a153cdfb02e3f00051d6156';
-  
-  let homeContent = await this.findOne({ cityId: indoreCityId });
-  
+  let homeContent = null;
+
+  if (cityId) {
+    homeContent = await this.findOne({ cityId });
+  }
+
   if (!homeContent) {
     homeContent = await this.findOne({ cityId: null });
   }
-  
+
   if (!homeContent) {
-    homeContent = await this.create({ cityId: indoreCityId });
+    homeContent = await this.create({ cityId: cityId || null });
   }
-  
+
   return homeContent;
 };
 

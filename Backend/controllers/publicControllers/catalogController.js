@@ -910,7 +910,7 @@ const getPublicServices = async (req, res) => {
           );
           return {
             ...v,
-            extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : v.extraPrice
+            extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : (v.extraPrice || 0)
           };
         });
       }
@@ -932,7 +932,7 @@ const getPublicServices = async (req, res) => {
 
       return {
         ...svc,
-        basePrice: cheapestPrice, // Present final cheapest price as basePrice for user app
+        basePrice: cheapestPrice, // Present final exact customer price as basePrice for user app
         variants: resolvedVariants,
         gstPercentage: cheapestPricing ? (cheapestPricing.gstPercentage || 18) : 18
       };
@@ -1845,7 +1845,7 @@ const getPublicServiceDynamicDetails = async (req, res) => {
         }
         return {
           ...v,
-          extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : v.extraPrice
+          extraPrice: variantPricing ? (variantPricing.finalCustomerPrice || variantPricing.basePrice) : (v.extraPrice || 0)
         };
       });
       resolvedService.variants = resolvedVariants;

@@ -66,6 +66,17 @@ const sendToUser = async (req, res) => {
     const payload = buildFCMPayload({ title, body, imageUrl, actionUrl });
     await sendNotificationToUser(userId, payload);
 
+    // Real-time socket event emission to user's room for instant UI update
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        io.to(`user_${userId.toString()}`).emit('notification', notification);
+      }
+    } catch (sockErr) {
+      console.log('[Admin Notif] Socket emit user error:', sockErr.message);
+    }
+
     console.log(`[Admin Notif] Sent to user: ${user.name} (${userId})`);
 
     res.status(200).json({
@@ -93,30 +104,36 @@ const sendToAllUsers = async (req, res) => {
 
     const payload = buildFCMPayload({ title, body, imageUrl, actionUrl });
 
-    // Save a single "broadcast" record in DB
-    const notification = await Notification.create({
-      type: 'admin_broadcast',
-      title,
-      message: body,
-      imageUrl: imageUrl || null,
-      actionUrl: actionUrl || null,
-      data: {
-        sentBy: req.user?.id,
-        targetType: 'all_users',
-        isBroadcast: true
-      }
-    });
+    // 1. Fetch all active users
+    const allUsers = await User.find({ isActive: true }).select('_id');
 
-    // Run broadcast async (can take time for large user bases)
+    // 2. Insert notification records for all users in DB so it shows in in-app notification bell
+    if (allUsers.length > 0) {
+      const docsToInsert = allUsers.map(u => ({
+        userId: u._id,
+        type: 'admin_broadcast',
+        title,
+        message: body,
+        imageUrl: imageUrl || null,
+        actionUrl: actionUrl || null,
+        data: {
+          sentBy: req.user?.id,
+          targetType: 'all_users',
+          isBroadcast: true
+        }
+      }));
+      await Notification.insertMany(docsToInsert);
+    }
+
+    // 3. Send FCM Push Notification
     const result = await sendBroadcastToAllUsers(payload);
 
-    console.log(`[Admin Notif] Broadcast to all users: Success=${result.successCount}, Failed=${result.failureCount}`);
+    console.log(`[Admin Notif] Broadcast to all users (${allUsers.length}): Success=${result.successCount}, Failed=${result.failureCount}`);
 
     res.status(200).json({
       success: true,
-      message: `Broadcast "${title}" sent to ${result.totalUsers} users`,
-      stats: result,
-      notificationId: notification._id
+      message: `Broadcast "${title}" sent to ${allUsers.length} users`,
+      stats: result
     });
   } catch (error) {
     console.error('[Admin Notif] sendToAllUsers error:', error);
@@ -154,6 +171,17 @@ const sendToVendor = async (req, res) => {
     const payload = buildFCMPayload({ title, body, imageUrl, actionUrl });
     await sendNotificationToVendor(vendorId, payload);
 
+    // Real-time socket event emission to vendor's room for instant UI update
+    try {
+      const { getIO } = require('../../sockets');
+      const io = getIO();
+      if (io) {
+        io.to(`vendor_${vendorId.toString()}`).emit('notification', notification);
+      }
+    } catch (sockErr) {
+      console.log('[Admin Notif] Socket emit vendor error:', sockErr.message);
+    }
+
     const vendorName = vendor.businessName || vendor.name;
     console.log(`[Admin Notif] Sent to vendor: ${vendorName} (${vendorId})`);
 
@@ -182,28 +210,36 @@ const sendToAllVendors = async (req, res) => {
 
     const payload = buildFCMPayload({ title, body, imageUrl, actionUrl });
 
-    const notification = await Notification.create({
-      type: 'admin_broadcast',
-      title,
-      message: body,
-      imageUrl: imageUrl || null,
-      actionUrl: actionUrl || null,
-      data: {
-        sentBy: req.user?.id,
-        targetType: 'all_vendors',
-        isBroadcast: true
-      }
-    });
+    // 1. Fetch all active vendors
+    const allVendors = await Vendor.find({ isActive: true }).select('_id');
 
+    // 2. Insert notification records for all vendors in DB so it shows in in-app notification bell
+    if (allVendors.length > 0) {
+      const docsToInsert = allVendors.map(v => ({
+        vendorId: v._id,
+        type: 'admin_broadcast',
+        title,
+        message: body,
+        imageUrl: imageUrl || null,
+        actionUrl: actionUrl || null,
+        data: {
+          sentBy: req.user?.id,
+          targetType: 'all_vendors',
+          isBroadcast: true
+        }
+      }));
+      await Notification.insertMany(docsToInsert);
+    }
+
+    // 3. Send FCM Push Notification
     const result = await sendBroadcastToAllVendors(payload);
 
-    console.log(`[Admin Notif] Broadcast to all vendors: Success=${result.successCount}, Failed=${result.failureCount}`);
+    console.log(`[Admin Notif] Broadcast to all vendors (${allVendors.length}): Success=${result.successCount}, Failed=${result.failureCount}`);
 
     res.status(200).json({
       success: true,
-      message: `Broadcast "${title}" sent to ${result.totalVendors} vendors`,
-      stats: result,
-      notificationId: notification._id
+      message: `Broadcast "${title}" sent to ${allVendors.length} vendors`,
+      stats: result
     });
   } catch (error) {
     console.error('[Admin Notif] sendToAllVendors error:', error);
@@ -368,28 +404,36 @@ const sendToAllWorkers = async (req, res) => {
 
     const payload = buildFCMPayload({ title, body, imageUrl, actionUrl });
 
-    const notification = await Notification.create({
-      type: 'admin_broadcast',
-      title,
-      message: body,
-      imageUrl: imageUrl || null,
-      actionUrl: actionUrl || null,
-      data: {
-        sentBy: req.user?.id,
-        targetType: 'all_workers',
-        isBroadcast: true
-      }
-    });
+    // 1. Fetch all active workers
+    const allWorkers = await Worker.find({ status: 'active' }).select('_id');
 
+    // 2. Insert notification records for all workers in DB so it shows in in-app notification bell
+    if (allWorkers.length > 0) {
+      const docsToInsert = allWorkers.map(w => ({
+        workerId: w._id,
+        type: 'admin_broadcast',
+        title,
+        message: body,
+        imageUrl: imageUrl || null,
+        actionUrl: actionUrl || null,
+        data: {
+          sentBy: req.user?.id,
+          targetType: 'all_workers',
+          isBroadcast: true
+        }
+      }));
+      await Notification.insertMany(docsToInsert);
+    }
+
+    // 3. Send FCM Push Notification
     const result = await sendBroadcastToAllWorkers(payload);
 
-    console.log(`[Admin Notif] Broadcast to all workers: Success=${result.successCount}, Failed=${result.failureCount}`);
+    console.log(`[Admin Notif] Broadcast to all workers (${allWorkers.length}): Success=${result.successCount}, Failed=${result.failureCount}`);
 
     res.status(200).json({
       success: true,
-      message: `Broadcast "${title}" sent to ${result.totalWorkers} workers`,
-      stats: result,
-      notificationId: notification._id
+      message: `Broadcast "${title}" sent to ${allWorkers.length} workers`,
+      stats: result
     });
   } catch (error) {
     console.error('[Admin Notif] sendToAllWorkers error:', error);

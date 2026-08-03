@@ -180,8 +180,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
         categoryType: "service",
         professionId: "",
         status: "active",
-        allCities: true,
-        cityIds: [],
+        allCities: !selectedCity,
+        cityIds: selectedCity ? [selectedCity] : [],
         isGroupCategory: false,
         mappedCategories: [],
         minWalletBalance: 0,
@@ -220,7 +220,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       minWalletBalance: safe.minWalletBalance || 0,
       sacCode: safe.sacCode || "",
     });
-  }, [editing]);  const [isModalOpen, setIsModalOpen] = useState(false);
+  }, [editing, selectedCity]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const reset = () => {
     setEditingId(null);
@@ -246,8 +248,8 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       categoryType: "service",
       professionId: "",
       status: "active",
-      allCities: true,
-      cityIds: [],
+      allCities: !selectedCity,
+      cityIds: selectedCity ? [selectedCity] : [],
       isGroupCategory: false,
       mappedCategories: [],
       minWalletBalance: 0,
@@ -342,7 +344,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedCity, cities = [], filter
       }
 
       // Determine cityIds from form
-      const finalCityIds = form.allCities ? [] : form.cityIds;
+      let finalCityIds = form.allCities ? [] : form.cityIds;
+      if (selectedCity && !form.allCities && finalCityIds.length === 0) {
+        finalCityIds = [selectedCity];
+      }
 
       const categoryData = {
         title,

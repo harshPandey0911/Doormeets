@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fa';
 import { configService } from '../../../services/configService';
 import { publicCatalogService } from '../../../services/catalogService';
+import { getCleanSupportPhone } from '../../../utils/phoneUtils';
 
 const toAssetUrl = (url) => {
   if (!url) return '';
@@ -146,7 +147,7 @@ const LandingPage = () => {
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-2">
               <FaPhoneAlt className="text-cyan-400" />
-              <a href={`tel:${settings?.supportPhone || '+919876543210'}`} className="hover:text-white transition-colors">{settings?.supportPhone || '+91 98765 43210'}</a>
+              <a href={`tel:${getCleanSupportPhone(settings?.supportPhone || '+919876543210')}`} className="hover:text-white transition-colors">{settings?.supportPhone ? settings.supportPhone.split(',')[0].trim() : '+91 98765 43210'}</a>
             </span>
             <span className="flex items-center gap-2">
               <FaEnvelope className="text-cyan-400" />
@@ -1031,7 +1032,7 @@ const LandingPage = () => {
               <h5 className="font-bold text-white text-sm mb-6 uppercase tracking-wider">Contact</h5>
               <ul className="space-y-3 text-sm text-slate-500">
                 <li>Support: <a href={`mailto:${settings?.supportEmail || 'support@doormeets.com'}`} className="text-slate-400 hover:text-cyan-400 transition-colors">{settings?.supportEmail || 'support@doormeets.com'}</a></li>
-                <li>Phone: <a href={`tel:${settings?.supportPhone || '+919876543210'}`} className="text-slate-400 hover:text-cyan-400 transition-colors">{settings?.supportPhone || '+91 98765 43210'}</a></li>
+                <li>Phone: <a href={`tel:${getCleanSupportPhone(settings?.supportPhone || '+919876543210')}`} className="text-slate-400 hover:text-cyan-400 transition-colors">{settings?.supportPhone ? settings.supportPhone.split(',')[0].trim() : '+91 98765 43210'}</a></li>
                 <li className="text-xs leading-normal">
                   {settings?.companyAddress ? `${settings.companyAddress}, ${settings.companyCity}` : 'Indore, Madhya Pradesh, India'}
                 </li>

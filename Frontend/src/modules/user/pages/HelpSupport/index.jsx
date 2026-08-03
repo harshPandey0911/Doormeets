@@ -9,6 +9,8 @@ import { toast } from 'react-hot-toast';
 import api from '../../../../services/api';
 import { configService } from '../../../../services/configService';
 
+import { getCleanSupportPhone } from '../../../../utils/phoneUtils';
+
 const HelpSupport = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,12 +185,12 @@ const HelpSupport = () => {
     {
       id: 'call',
       title: 'Call Us',
-      subtitle: supportInfo.phone || 'Not Available',
+      subtitle: supportInfo.phone ? supportInfo.phone.split(',')[0].trim() : 'Not Available',
       icon: FiPhone,
       color: '#F59E0B',
       action: () => {
         if (supportInfo.phone) {
-          window.location.href = `tel:${supportInfo.phone}`;
+          window.location.href = `tel:${getCleanSupportPhone(supportInfo.phone)}`;
         } else {
           toast('Phone support is currently unavailable');
         }
@@ -297,7 +299,7 @@ const HelpSupport = () => {
               } else if (action.id === 'email' && supportInfo.email) {
                 href = `mailto:${supportInfo.email}`;
               } else if (action.id === 'call' && supportInfo.phone) {
-                href = `tel:${supportInfo.phone.replace(/\D/g, '')}`;
+                href = `tel:${getCleanSupportPhone(supportInfo.phone)}`;
               }
 
               const Component = href ? 'a' : 'button';
