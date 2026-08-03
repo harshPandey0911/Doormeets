@@ -93,7 +93,7 @@ const PremiumCartPage = () => {
           borderColor: 'var(--border)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-3 py-2.5 sm:px-4 sm:py-4 flex items-center gap-2.5 sm:gap-3">
+        <div className="max-w-[1360px] mx-auto px-3 py-2.5 sm:px-4 sm:py-4 md:px-8 lg:px-12 flex items-center gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -108,7 +108,7 @@ const PremiumCartPage = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6">
+      <div className="max-w-[1360px] mx-auto px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6 md:px-8 lg:px-12">
 
 
         {/* Empty cart */}

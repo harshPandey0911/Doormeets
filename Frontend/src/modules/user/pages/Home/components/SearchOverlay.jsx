@@ -172,20 +172,19 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
           className="fixed inset-0 z-[9999] flex flex-col"
           style={{ backgroundColor: 'var(--background)' }}
         >
-          <div className="w-full max-w-lg md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto flex flex-col h-full px-4 md:px-6 lg:px-8">
+          <div className="w-full max-w-[1360px] mx-auto flex flex-col h-full px-4 md:px-8 lg:px-12">
             {/* Header */}
             <div
               className="flex items-center gap-3 py-4 border-b"
               style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               <button
+                type="button"
                 onClick={onClose}
-                className="p-2 -ml-2 rounded-full transition-colors"
-                style={{ color: 'var(--text-primary)' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--divider)'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-xs border cursor-pointer transition-all active:scale-95 shrink-0"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
-                <FiArrowLeft className="w-6 h-6" />
+                <FiArrowLeft className="w-5 h-5" />
               </button>
               <div className="flex-1 relative">
                 <FiSearch
