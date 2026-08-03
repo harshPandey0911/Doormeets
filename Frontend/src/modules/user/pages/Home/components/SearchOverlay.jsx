@@ -354,7 +354,7 @@ const SearchOverlay = ({ isOpen, onClose, categories = [], onCategoryClick }) =>
                       </h4>
                       <div className="max-w-4xl grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                         {categories
-                          .filter(c => c.categoryType === 'service' && c.status !== 'coming_soon' && c.isGroupCategory)
+                          .filter(c => c.categoryType === 'service' && c.isGroupCategory)
                           .slice(0, 6)
                           .map((cat, index) => {
                             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
