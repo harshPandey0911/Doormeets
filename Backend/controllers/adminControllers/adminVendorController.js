@@ -69,6 +69,8 @@ const getAllVendors = async (req, res) => {
     const vendors = await Vendor.find(query)
       .select('-password')
       .populate('professions', 'name title')
+      .populate('zoneId', 'name')
+      .populate('zoneIds', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -742,7 +744,7 @@ const deleteVendor = async (req, res) => {
 const updateVendor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isActive, service, subCategories, brands, currentLevel } = req.body;
+    const { isActive, service, subCategories, brands, currentLevel, zoneId, zoneIds } = req.body;
 
     const vendor = await Vendor.findById(id);
 
@@ -755,6 +757,15 @@ const updateVendor = async (req, res) => {
 
     if (isActive !== undefined) {
       vendor.isActive = isActive;
+    }
+
+    if (zoneIds !== undefined) {
+      const zArr = Array.isArray(zoneIds) ? zoneIds : (zoneIds ? [zoneIds] : []);
+      vendor.zoneIds = zArr;
+      vendor.zoneId = zArr.length > 0 ? zArr[0] : null;
+    } else if (zoneId !== undefined) {
+      vendor.zoneId = zoneId || null;
+      vendor.zoneIds = zoneId ? [zoneId] : [];
     }
     
     if (service !== undefined) {

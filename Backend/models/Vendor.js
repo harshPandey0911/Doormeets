@@ -198,6 +198,10 @@ const vendorSchema = new mongoose.Schema({
     ref: 'Zone',
     default: null
   },
+  zoneIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone'
+  }],
   approvalDate: {
     type: Date
   },

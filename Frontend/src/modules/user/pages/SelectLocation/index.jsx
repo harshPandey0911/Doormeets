@@ -94,10 +94,17 @@ const SelectLocationPage = () => {
         if (res.success && res.zone && res.zone.id) {
           localStorage.setItem('user_zone_id', res.zone.id);
           localStorage.setItem('user_zone_name', res.zone.name);
+          localStorage.removeItem('nearest_zone_info');
           toast.success(`Active Zone: ${res.zone.name}`);
         } else {
           localStorage.removeItem('user_zone_id');
           localStorage.removeItem('user_zone_name');
+          // Store nearest zone info for "Not in Zone" UI
+          if (res.nearestZone) {
+            localStorage.setItem('nearest_zone_info', JSON.stringify(res.nearestZone));
+          } else {
+            localStorage.removeItem('nearest_zone_info');
+          }
         }
       } catch (err) {
         console.error('Failed to resolve zone:', err);

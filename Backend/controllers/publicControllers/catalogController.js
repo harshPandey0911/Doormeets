@@ -22,7 +22,7 @@ const getPublicCategories = async (req, res) => {
 
     let targetZoneId = zoneId || null;
 
-    // If lat & lng are passed, find matching zone via 2dsphere / point-in-polygon
+    // Strict point-in-polygon only — NO nearest fallback
     if (!targetZoneId && lat && lng) {
       try {
         const Zone = require('../../models/Zone');
@@ -45,17 +45,25 @@ const getPublicCategories = async (req, res) => {
       }
     }
 
-    // Build query
-    const query = { status: { $in: ['active', 'coming_soon'] } };
+    // If no zone resolved → user is outside all zones → return empty
+    if (!targetZoneId) {
+      return res.status(200).json({
+        success: true,
+        categories: [],
+        outsideZone: true,
+        message: 'You are not in any service zone'
+      });
+    }
 
-    // Purely filter by Zone if zoneId resolved or passed (otherwise global/all zones)
-    if (targetZoneId) {
-      query.$or = [
+    // Build query — zone-specific + global categories
+    const query = {
+      status: { $in: ['active', 'coming_soon'] },
+      $or: [
         { zoneIds: targetZoneId },
         { zoneIds: { $exists: false } },
         { zoneIds: { $size: 0 } }
-      ];
-    }
+      ]
+    };
 
     // Find all DB-active category titles (admin status is the source of truth)
     const dbActiveCategories = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
@@ -91,7 +99,7 @@ const getPublicCategories = async (req, res) => {
 
     const categories = await Category.find(query)
       .select('title slug homeIconUrl bannerImage homeBadge hasSaleBadge homeOrder showOnHome categoryType status interestedUsers isGroupCategory mappedCategories zoneIds cityIds')
-      .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status', match: { status: { $in: ['active', 'coming_soon'] } } })
+      .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status zoneIds', match: { status: { $in: ['active', 'coming_soon'] } } })
       .sort({ homeOrder: 1, createdAt: -1 })
       .lean();
 
@@ -125,7 +133,14 @@ const getPublicCategories = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
         isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).filter(mc => mc && mc._id).map(mc => ({
+        mappedCategories: (cat.mappedCategories || []).filter(mc => {
+          if (!mc || !mc._id) return false;
+          // Zone filter: only include mapped category if it's global or belongs to user's zone
+          const mcZones = mc.zoneIds || [];
+          if (mcZones.length === 0) return true; // Global
+          if (targetZoneId && mcZones.some(z => z.toString() === targetZoneId)) return true;
+          return false;
+        }).map(mc => ({
           id: mc._id.toString(),
           title: mc.title,
           slug: mc.slug,
@@ -135,6 +150,7 @@ const getPublicCategories = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      outsideZone: false,
       categories: initialCategories
     });
   } catch (error) {
@@ -192,7 +208,13 @@ const getPublicSubCategories = async (req, res) => {
     }
 
     const SubCategory = require('../../models/SubCategory');
-    const subCategories = await SubCategory.find({ categoryId, status: 'active' })
+    let targetCatIds = [categoryId];
+
+    if (category.isGroupCategory && Array.isArray(category.mappedCategories) && category.mappedCategories.length > 0) {
+      targetCatIds = [...targetCatIds, ...category.mappedCategories.map(id => id.toString())];
+    }
+
+    const subCategories = await SubCategory.find({ categoryId: { $in: targetCatIds }, status: 'active' })
       .select('title slug iconUrl description')
       .sort({ createdAt: -1 })
       .lean();
@@ -801,7 +823,11 @@ const getPublicServices = async (req, res) => {
         });
       }
 
-      query.categoryId = categoryId;
+      if (category.isGroupCategory && Array.isArray(category.mappedCategories) && category.mappedCategories.length > 0) {
+        query.categoryId = { $in: [categoryId, ...category.mappedCategories.map(id => id.toString())] };
+      } else {
+        query.categoryId = categoryId;
+      }
     } else {
       query.categoryId = { $in: activeCatIds };
     }
@@ -1201,7 +1227,42 @@ const getPublicHomeContent = async (req, res) => {
  */
 const getPublicHomeData = async (req, res) => {
   try {
-    const { cityId } = req.query;
+    const { cityId, zoneId, lat, lng } = req.query;
+
+    let targetZoneId = zoneId || null;
+    // Strict point-in-polygon only — NO nearest fallback
+    if (!targetZoneId && lat && lng) {
+      try {
+        const Zone = require('../../models/Zone');
+        const matchedZone = await Zone.findOne({
+          isActive: true,
+          coordinates: {
+            $geoIntersects: {
+              $geometry: {
+                type: 'Point',
+                coordinates: [parseFloat(lng), parseFloat(lat)]
+              }
+            }
+          }
+        }).select('_id').lean();
+        if (matchedZone) {
+          targetZoneId = matchedZone._id.toString();
+        }
+      } catch (zoneErr) {
+        console.error('Home Zone lookup error:', zoneErr);
+      }
+    }
+
+    // If no zone resolved → user is outside all zones → return empty
+    if (!targetZoneId) {
+      return res.status(200).json({
+        success: true,
+        categories: [],
+        homeContent: null,
+        outsideZone: true,
+        message: 'You are not in any service zone'
+      });
+    }
 
     // 1. Find all DB-active categories first (admin status is source of truth)
     const dbActiveCategoriesForHome = await Category.find({ status: { $in: ['active', 'coming_soon'] } }).select('_id title');
@@ -1243,19 +1304,22 @@ const getPublicHomeData = async (req, res) => {
       }
     });
 
+    // targetZoneId is always set here (early return above handles no-zone case)
+    const categoryQuery = {
+      status: { $in: ['active', 'coming_soon'] },
+      showOnHome: { $ne: false },
+      $or: [
+        { zoneIds: targetZoneId },
+        { zoneIds: { $exists: false } },
+        { zoneIds: { $size: 0 } }
+      ]
+    };
+
     // 2. Fetch categories and home content
     const [categoriesRes, homeContent] = await Promise.all([
-      Category.find({ 
-        status: { $in: ['active', 'coming_soon'] }, 
-        showOnHome: { $ne: false },
-        $or: cityId ? [
-          { cityIds: cityId },
-          { cityIds: { $exists: false } },
-          { cityIds: { $size: 0 } }
-        ] : [{ status: { $in: ['active', 'coming_soon'] } }]
-      })
-        .select('title slug homeIconUrl bannerImage description homeBadge hasSaleBadge categoryType status interestedUsers isGroupCategory mappedCategories')
-        .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status', match: { status: { $in: ['active', 'coming_soon'] } } })
+      Category.find(categoryQuery)
+        .select('title slug homeIconUrl bannerImage description homeBadge hasSaleBadge categoryType status interestedUsers isGroupCategory mappedCategories zoneIds cityIds')
+        .populate({ path: 'mappedCategories', select: 'title slug homeIconUrl status zoneIds', match: { status: { $in: ['active', 'coming_soon'] } } })
         .sort({ homeOrder: 1 })
         .lean(),
       HomeContent.getHomeContent(cityId)
@@ -1290,7 +1354,13 @@ const getPublicHomeData = async (req, res) => {
         interestedCount: cat.interestedUsers ? cat.interestedUsers.length : 0,
         isInterested: userId && cat.interestedUsers ? cat.interestedUsers.some(id => id.toString() === userId.toString()) : false,
         isGroupCategory: cat.isGroupCategory || false,
-        mappedCategories: (cat.mappedCategories || []).filter(mc => mc && mc._id).map(mc => ({
+        mappedCategories: (cat.mappedCategories || []).filter(mc => {
+          if (!mc || !mc._id) return false;
+          const mcZones = mc.zoneIds || [];
+          if (mcZones.length === 0) return true; // Global
+          if (targetZoneId && mcZones.some(z => z.toString() === targetZoneId)) return true;
+          return false;
+        }).map(mc => ({
           id: mc._id.toString(),
           title: mc.title,
           slug: mc.slug,
@@ -1309,7 +1379,6 @@ const getPublicHomeData = async (req, res) => {
       }
     });
 
-    const { lat, lng } = req.query;
     const userLoc = (lat && lng) ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null;
 
     let formattedContent = null;
@@ -1912,24 +1981,66 @@ const resolveZoneByCoordinates = async (req, res) => {
     }
 
     const Zone = require('../../models/Zone');
+    const parsedLng = parseFloat(lng);
+    const parsedLat = parseFloat(lat);
+
+    // Strict point-in-polygon match only — NO fallback
     const zone = await Zone.findOne({
       isActive: true,
       coordinates: {
         $geoIntersects: {
           $geometry: {
             type: 'Point',
-            coordinates: [parseFloat(lng), parseFloat(lat)]
+            coordinates: [parsedLng, parsedLat]
           }
         }
       }
     }).select('_id name isActive').lean();
 
     if (!zone) {
+      // Calculate distance to nearest zone centroid
+      let nearestZone = null;
+      try {
+        const allZones = await Zone.find({ isActive: true }).select('name coordinates').lean();
+        let minDist = Infinity;
+
+        // Haversine distance helper
+        const haversine = (lat1, lng1, lat2, lng2) => {
+          const R = 6371; // Earth radius in km
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLng = (lng2 - lng1) * Math.PI / 180;
+          const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) ** 2;
+          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+
+        allZones.forEach(z => {
+          if (z.coordinates && z.coordinates.coordinates && z.coordinates.coordinates[0]) {
+            // Calculate centroid of polygon
+            const ring = z.coordinates.coordinates[0];
+            let cLng = 0, cLat = 0;
+            ring.forEach(([lng, lat]) => { cLng += lng; cLat += lat; });
+            cLng /= ring.length;
+            cLat /= ring.length;
+
+            const dist = haversine(parsedLat, parsedLng, cLat, cLng);
+            if (dist < minDist) {
+              minDist = dist;
+              nearestZone = { name: z.name, distanceKm: Math.round(dist) };
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Nearest zone calc error:', e.message);
+      }
+
       return res.status(200).json({
         success: true,
         matched: false,
         zone: null,
-        message: 'No active service zone covers this location'
+        nearestZone: nearestZone,
+        message: 'You are not in any service zone'
       });
     }
 

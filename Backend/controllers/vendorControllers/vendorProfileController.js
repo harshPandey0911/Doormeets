@@ -60,23 +60,34 @@ const getProfile = async (req, res) => {
     const completedJobs = await Booking.countDocuments({ vendorId, status: 'completed' });
     const completionRate = totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0;
 
-    let zoneStatus = { inZone: true };
-    if (vendor.zoneId) {
+    let zoneStatus = { inZone: true, zoneName: 'All Zones (Global)', coordinates: null };
+    const targetZones = (vendor.zoneIds && vendor.zoneIds.length > 0) ? vendor.zoneIds : (vendor.zoneId ? [vendor.zoneId] : []);
+
+    if (targetZones.length > 0) {
       const Zone = require('../../models/Zone');
-      const vendorZone = await Zone.findById(vendor.zoneId);
-      if (vendorZone) {
+      const vendorZones = await Zone.find({ _id: { $in: targetZones } }).lean();
+      if (vendorZones.length > 0) {
         zoneStatus.inZone = true;
-        zoneStatus.zoneName = vendorZone.name;
+        zoneStatus.zoneName = vendorZones.map(z => z.name).join(', ');
+        zoneStatus.coordinates = vendorZones[0].coordinates; // Default primary polygon
+        zoneStatus.zones = vendorZones.map(z => ({ id: z._id, name: z.name, coordinates: z.coordinates }));
       }
     } else if (vendor.address && vendor.address.lat && vendor.address.lng) {
-      const { findNearestZone } = require('../../services/zoneService');
-      zoneStatus.inZone = false;
-      const nearestZone = await findNearestZone(parseFloat(vendor.address.lat), parseFloat(vendor.address.lng));
-      if (nearestZone) {
-        zoneStatus.nearestZone = {
-          name: nearestZone.name,
-          distanceKm: nearestZone.distanceKm
-        };
+      const { findZoneByLocation, findNearestZone } = require('../../services/zoneService');
+      const matchedZone = await findZoneByLocation(parseFloat(vendor.address.lat), parseFloat(vendor.address.lng));
+      if (matchedZone) {
+        zoneStatus.inZone = true;
+        zoneStatus.zoneName = matchedZone.name;
+        zoneStatus.coordinates = matchedZone.coordinates;
+      } else {
+        zoneStatus.inZone = false;
+        const nearestZone = await findNearestZone(parseFloat(vendor.address.lat), parseFloat(vendor.address.lng));
+        if (nearestZone) {
+          zoneStatus.nearestZone = {
+            name: nearestZone.name,
+            distanceKm: nearestZone.distanceKm
+          };
+        }
       }
     }
 

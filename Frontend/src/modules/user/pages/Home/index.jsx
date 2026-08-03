@@ -64,6 +64,8 @@ const Home = () => {
   const [houseNumber, setHouseNumber] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLocationSupported, setIsLocationSupported] = useState(true);
+  const [outsideZone, setOutsideZone] = useState(false);
+  const [nearestZoneInfo, setNearestZoneInfo] = useState(null);
   const [detectedCityName, setDetectedCityName] = useState(localStorage.getItem('currentCity') || null);
 
 
@@ -246,6 +248,13 @@ const Home = () => {
                     if (zRes.success && zRes.zone && zRes.zone.id) {
                       localStorage.setItem('user_zone_id', zRes.zone.id);
                       localStorage.setItem('user_zone_name', zRes.zone.name);
+                      localStorage.removeItem('nearest_zone_info');
+                    } else {
+                      localStorage.removeItem('user_zone_id');
+                      localStorage.removeItem('user_zone_name');
+                      if (zRes.nearestZone) {
+                        localStorage.setItem('nearest_zone_info', JSON.stringify(zRes.nearestZone));
+                      }
                     }
                   } catch (zErr) {
                     console.error('Auto detect zone error:', zErr);
@@ -442,6 +451,20 @@ const Home = () => {
         const response = await publicCatalogService.getCategories(zoneId);
 
         if (response.success) {
+          // Check if user is outside all zones
+          if (response.outsideZone) {
+            setOutsideZone(true);
+            setCategories([]);
+            // Try to get nearest zone info from localStorage (set during location selection)
+            const storedNearest = localStorage.getItem('nearest_zone_info');
+            if (storedNearest) {
+              try { setNearestZoneInfo(JSON.parse(storedNearest)); } catch (e) {}
+            }
+            setLoading(false);
+            return;
+          }
+
+          setOutsideZone(false);
           if (response.categories) {
             const mappedCategories = response.categories.map(cat => ({
               id: cat.id,
@@ -792,6 +815,90 @@ const Home = () => {
 
   if (loading) {
     return <LogoLoader />;
+  }
+
+  // Full-screen "Not in Zone" UI — hides all content
+  if (outsideZone) {
+    return (
+      <div className="w-full relative min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+        <motion.div
+          className="backdrop-blur-xl fixed top-0 left-0 right-0 z-50 border-b shadow-[0_1px_0px_rgba(255,255,255,0.04)] transition-all duration-300 w-full"
+          style={{ backgroundColor: 'var(--background)', borderBottomColor: 'var(--border)' }}
+        >
+          <Header
+            location={address}
+            onLocationClick={handleLocationClick}
+            onSearchClick={() => setIsSearchOpen(true)}
+            categories={[]}
+          />
+        </motion.div>
+        <div className="flex flex-col items-center justify-center pt-[120px] pb-20 px-6 text-center min-h-[80vh]">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 120, damping: 14 }}
+            className="flex flex-col items-center"
+          >
+            {/* Animated Location Pin */}
+            <div className="relative w-28 h-28 mb-6">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-100 to-orange-100 rounded-full animate-pulse" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg className="w-14 h-14 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+              </div>
+              {/* Cross overlay */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-20 h-0.5 bg-red-400 rotate-45 rounded-full opacity-60" />
+              </div>
+            </div>
+
+            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              You are not in a service zone
+            </h2>
+            <p className="text-sm max-w-xs mx-auto mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Our services are currently not available at your location.
+            </p>
+
+            {nearestZoneInfo && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl mb-6 mt-2"
+                style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)' }}
+              >
+                <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                </svg>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Nearest zone: <span className="text-blue-600">{nearestZoneInfo.name}</span>
+                  <span className="text-xs font-normal ml-1" style={{ color: 'var(--text-secondary)' }}>({nearestZoneInfo.distanceKm} km away)</span>
+                </span>
+              </motion.div>
+            )}
+
+            {!nearestZoneInfo && <div className="mb-6" />}
+
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleLocationClick}
+              className="px-8 py-3.5 text-white rounded-2xl font-bold shadow-lg transition-all text-base"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+            >
+              📍 Change Location
+            </motion.button>
+
+            <p className="text-xs mt-4 max-w-[280px]" style={{ color: 'var(--text-muted)' }}>
+              Move to a service zone or update your location to see available services
+            </p>
+          </motion.div>
+        </div>
+        <BottomNav />
+      </div>
+    );
   }
 
   return (

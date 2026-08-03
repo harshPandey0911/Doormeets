@@ -8,14 +8,20 @@ const { SERVICE_STATUS } = require('../../utils/constants');
  */
 const getAllCategories = async (req, res) => {
   try {
-    const { status, showOnHome, isPopular, cityId } = req.query;
+    const { status, showOnHome, isPopular, cityId, zoneId } = req.query;
 
     // Build query
     const query = { status: { $ne: 'deleted' } };
     if (status) query.status = status;
     if (showOnHome !== undefined) query.showOnHome = showOnHome === 'true';
     if (isPopular !== undefined) query.isPopular = isPopular === 'true';
-    if (cityId) {
+    if (zoneId) {
+      query.$or = [
+        { zoneIds: zoneId },
+        { zoneIds: { $exists: false } },
+        { zoneIds: { $size: 0 } }
+      ];
+    } else if (cityId) {
       query.$or = [
         { cityIds: cityId },
         { cityIds: { $exists: false } },

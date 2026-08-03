@@ -659,13 +659,41 @@ const acceptBooking = async (req, res) => {
       });
     }
 
-    // Update booking properties
+    // Update booking properties & calculate Live Accept Distance
     booking.vendorId = vendorId;
     booking.acceptedAt = new Date();
     booking.status = statusToSet;
     booking.isSelfJob = isSelfJobToSet;
     booking.assignedByAdmin = booking.assignedByAdmin || false;
     booking.vendorShare = calculatedVendorShare;
+
+    // Live Distance Calculation on Accept
+    try {
+      const { calculateDistance } = require('../../services/locationService');
+      const reqLat = req.body.lat !== undefined ? parseFloat(req.body.lat) : null;
+      const reqLng = req.body.lng !== undefined ? parseFloat(req.body.lng) : null;
+
+      let vLat = reqLat;
+      let vLng = reqLng;
+
+      // Fallback to vendor stored location/address if live GPS not passed in request body
+      if ((vLat === null || isNaN(vLat)) && vendorDoc) {
+        vLat = vendorDoc.location?.lat || vendorDoc.address?.lat || (vendorDoc.geoLocation?.coordinates ? vendorDoc.geoLocation.coordinates[1] : null);
+        vLng = vendorDoc.location?.lng || vendorDoc.address?.lng || (vendorDoc.geoLocation?.coordinates ? vendorDoc.geoLocation.coordinates[0] : null);
+      }
+
+      const uLat = booking.address?.lat;
+      const uLng = booking.address?.lng;
+
+      if (vLat && vLng && uLat && uLng) {
+        const distKm = calculateDistance({ lat: uLat, lng: uLng }, { lat: vLat, lng: vLng });
+        booking.acceptedDistanceKm = parseFloat(distKm.toFixed(2));
+        booking.acceptLocation = { lat: vLat, lng: vLng };
+        console.log(`[AcceptBooking] Calculated live distance: ${booking.acceptedDistanceKm} km for booking ${booking._id}`);
+      }
+    } catch (distErr) {
+      console.error('[AcceptBooking] Live distance calculation error:', distErr);
+    }
 
     await booking.save();
 

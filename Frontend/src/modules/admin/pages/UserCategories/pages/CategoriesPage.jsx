@@ -94,6 +94,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = 
       try {
         setFetching(true);
         const params = {};
+        if (selectedZone) params.zoneId = selectedZone;
 
         const response = await categoryService.getAll(params);
         const profRes = await professionService.getAll();
@@ -109,7 +110,10 @@ const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = 
         }
 
         if (zoneRes.success) {
-          setZones(zoneRes.zones || zoneRes.data || []);
+          const fetchedZones = zoneRes.zones || zoneRes.data || [];
+          setZones(fetchedZones.length > 0 ? fetchedZones : (propZones || []));
+        } else {
+          setZones(propZones || []);
         }
 
         if (response.success && response.categories) {
@@ -163,7 +167,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = 
     };
 
     fetchCategories();
-  }, [filterTemplateId]); // Fetch when template changes
+  }, [filterTemplateId, selectedZone]); // Fetch when template or selectedZone changes
 
   useEffect(() => {
     if (!editing) {
@@ -223,7 +227,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = 
       professionId: "",
       status: safe.status || "active",
       allZones: existingZoneIds.length === 0,
-      zoneIds: existingZoneIds,
+      zoneIds: existingZoneIds.length > 0 ? existingZoneIds : (selectedZone ? [selectedZone] : []),
       isGroupCategory: safe.isGroupCategory || false,
       mappedCategories: (safe.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
       minWalletBalance: safe.minWalletBalance || 0,
@@ -485,7 +489,9 @@ const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = 
 
       // Refetch updated categories from API to ensure DB state sync
       try {
-        const freshRes = await categoryService.getAll({});
+        const freshParams = {};
+        if (selectedZone) freshParams.zoneId = selectedZone;
+        const freshRes = await categoryService.getAll(freshParams);
         if (freshRes.success && freshRes.categories) {
           const freshMapped = freshRes.categories.map(cat => ({
             id: cat.id,
@@ -866,10 +872,11 @@ const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = 
                           ? <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Global (All Zones)</span>
                           : c.zoneIds.filter(Boolean).map(zid => {
                               const idStr = typeof zid === 'object' ? (zid._id || zid.id || String(zid)) : String(zid);
-                              const zoneObj = zones.find(z => String(z._id || z.id) === idStr) || (typeof zid === 'object' ? zid : null);
+                              const availableZones = zones.length > 0 ? zones : propZones;
+                              const zoneObj = availableZones.find(z => String(z._id || z.id) === idStr) || (typeof zid === 'object' ? zid : null);
                               return (
                                 <span key={idStr} className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
-                                  {zoneObj?.name || idStr.slice(-4)}
+                                  {zoneObj?.name || `Zone (${idStr.slice(-4)})`}
                                 </span>
                               );
                             })

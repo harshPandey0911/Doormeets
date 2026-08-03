@@ -43,6 +43,7 @@ export const categoryService = {
     if (params.showOnHome !== undefined) queryParams.append('showOnHome', params.showOnHome);
     if (params.isPopular !== undefined) queryParams.append('isPopular', params.isPopular);
     if (params.cityId) queryParams.append('cityId', params.cityId);
+    if (params.zoneId) queryParams.append('zoneId', params.zoneId);
 
     const response = await api.get(`/admin/categories${queryParams.toString() ? `?${queryParams.toString()}` : ''}`);
     return response.data;
@@ -434,10 +435,12 @@ export const publicCatalogService = {
 
   // Get consolidated home data (cached for 2 minutes)
   getHomeData: async (cityId) => {
+    const zoneId = localStorage.getItem('user_zone_id');
     const lat = localStorage.getItem('user_lat');
     const lng = localStorage.getItem('user_lng');
 
     const queryParams = new URLSearchParams();
+    if (zoneId) queryParams.append('zoneId', zoneId);
     if (cityId) queryParams.append('cityId', cityId);
     if (lat && lng) {
       queryParams.append('lat', lat);
@@ -445,7 +448,7 @@ export const publicCatalogService = {
     }
 
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    const cacheKey = `public:homeData:${cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
+    const cacheKey = `public:homeData:${zoneId || cityId || 'default'}:${lat || '0'}:${lng || '0'}`;
     const cached = apiCache.get(cacheKey);
     if (cached) return cached;
 
