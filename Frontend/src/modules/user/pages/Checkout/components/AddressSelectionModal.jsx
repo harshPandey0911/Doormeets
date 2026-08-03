@@ -98,7 +98,7 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
       />
       <div className="fixed bottom-0 left-0 right-0 md:inset-0 md:flex md:items-center md:justify-center z-50 pointer-events-none">
         <div
-          className={`shadow-2xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'} w-full md:max-w-xl lg:max-w-2xl md:rounded-3xl pointer-events-auto md:border`}
+          className={`shadow-xl ${isClosing ? 'animate-slide-down' : 'animate-slide-up'} w-full md:max-w-xl lg:max-w-2xl rounded-t-2xl md:rounded-2xl pointer-events-auto border transition-all`}
           style={{
             backgroundColor: 'var(--card-bg)',
             borderColor: 'var(--border)',
@@ -106,8 +106,7 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
             maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
-            borderTop: '1px solid var(--border)'
+            overflow: 'hidden'
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -124,14 +123,14 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
             </button>
           </div>
 
-          {/* Info Card - Styled with Brand Colors */}
+          {/* Info Card - Styled with Crisp Category Card Sharpness */}
           <div className="px-4 pt-4 shrink-0">
-            <div className="rounded-xl p-3 mb-2 border" style={{ backgroundColor: 'rgba(0, 166, 166, 0.05)', borderColor: 'rgba(0, 166, 166, 0.15)' }}>
+            <div className="rounded-xl p-3 mb-2 border transition-all" style={{ backgroundColor: 'rgba(179, 58, 53, 0.08)', borderColor: 'rgba(179, 58, 53, 0.25)' }}>
               <div className="flex items-start gap-3">
-                <FiMapPin className="w-5 h-5 mt-0.5 flex-shrink-0" style={{ color: themeColors.button }} />
+                <FiMapPin className="w-5 h-5 mt-0.5 flex-shrink-0 text-[#B33A35]" />
                 <div>
-                  <h3 className="font-semibold mb-1 text-sm" style={{ color: themeColors.button }}>Set Delivery Location</h3>
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  <h3 className="font-semibold mb-0.5 text-sm text-[#B33A35]">Set Delivery Location</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     Place the pin accurately on the map to help the professional find you easily.
                   </p>
                 </div>
@@ -292,11 +291,7 @@ const AddressSelectionModal = ({ isOpen, onClose, address = '', houseNumber = ''
             <button
               onClick={() => onSave(houseNumber, selectedLocation)}
               disabled={!mapAddress}
-              className="w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl mb-12 uppercase tracking-wider text-xs"
-              style={{
-                backgroundColor: themeColors.button,
-                boxShadow: `0 8px 16px ${themeColors.button}30`
-              }}
+              className="w-full py-3.5 rounded-xl font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-md mb-8 uppercase tracking-wider text-xs bg-[#B33A35] hover:brightness-110"
             >
               Verify & Save Address
             </button>
