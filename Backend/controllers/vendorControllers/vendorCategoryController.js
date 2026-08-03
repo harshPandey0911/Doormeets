@@ -57,10 +57,24 @@ const getVendorCategories = async (req, res) => {
       ];
     }
 
-    const categories = await Category.find(query)
-      .select('title slug categoryType imageUrl homeIconUrl description status homeOrder')
+    let categories = await Category.find(query)
+      .select('title slug categoryType imageUrl homeIconUrl description status homeOrder isGroupCategory mappedCategories')
       .sort({ homeOrder: 1, title: 1 })
       .lean();
+
+    // If vendor has individual categories (e.g. "Electrician"), filter out redundant Group Categories (e.g. "Electrician / Plumber / Carpenter")
+    const groupCats = categories.filter(c => c.isGroupCategory);
+    const individualCatIds = new Set(categories.filter(c => !c.isGroupCategory).map(c => c._id.toString()));
+
+    if (individualCatIds.size > 0 && groupCats.length > 0) {
+      categories = categories.filter(c => {
+        if (!c.isGroupCategory) return true;
+        // If all or any mappedCategories are already present individually in vendor's assigned list, hide the group card
+        const mappedStrArr = (c.mappedCategories || []).map(id => id.toString());
+        const hasOverlap = mappedStrArr.some(id => individualCatIds.has(id));
+        return !hasOverlap;
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -88,12 +102,19 @@ const getCategoryBrands = async (req, res) => {
   try {
     const { categoryId } = req.params;
 
+    // Check if requested category is a Group Category
+    const categoryDoc = await Category.findById(categoryId).lean();
+    let targetCatIds = [categoryId];
+    if (categoryDoc && categoryDoc.isGroupCategory && Array.isArray(categoryDoc.mappedCategories) && categoryDoc.mappedCategories.length > 0) {
+      targetCatIds = [...targetCatIds, ...categoryDoc.mappedCategories.map(id => id.toString())];
+    }
+
     const query = {
       status: 'active',
       type: { $ne: 'product' },
       $or: [
-        { categoryIds: categoryId },
-        { categoryId: categoryId }
+        { categoryIds: { $in: targetCatIds } },
+        { categoryId: { $in: targetCatIds } }
       ]
     };
 
@@ -134,8 +155,15 @@ const getBrandServicesAndPricing = async (req, res) => {
   try {
     const { categoryId, brandId } = req.params;
     
+    // Check if requested category is a Group Category
+    const categoryDoc = await Category.findById(categoryId).lean();
+    let targetCatIds = [categoryId];
+    if (categoryDoc && categoryDoc.isGroupCategory && Array.isArray(categoryDoc.mappedCategories) && categoryDoc.mappedCategories.length > 0) {
+      targetCatIds = [...targetCatIds, ...categoryDoc.mappedCategories.map(id => id.toString())];
+    }
+
     const query = {
-      categoryId: categoryId,
+      categoryId: { $in: targetCatIds },
       isActive: true
     };
 
@@ -153,7 +181,30 @@ const getBrandServicesAndPricing = async (req, res) => {
     let servicesWithPricing = pricings
       .filter(p => p.serviceId && p.serviceId.status === 'active');
 
-    // Filter by vendor's allowed subCategories
+    // If no ServiceBrandPricing entries found, fallback to direct Service collection lookup
+    if (servicesWithPricing.length === 0) {
+      const directServicesQuery = {
+        categoryId: { $in: targetCatIds },
+        status: 'active'
+      };
+      if (brandId && brandId !== 'null' && brandId !== 'undefined') {
+        directServicesQuery.brandId = brandId;
+      }
+      const directServices = await Service.find(directServicesQuery)
+        .populate('subCategoryId', 'title slug')
+        .lean();
+
+      servicesWithPricing = directServices.map(s => ({
+        serviceId: s,
+        subCategoryId: s.subCategoryId,
+        finalCustomerPrice: s.price || s.basePrice || 0,
+        vendorProfit: s.vendorPayout || 0,
+        basePrice: s.basePrice || 0,
+        gstAmount: 0
+      }));
+    }
+
+    // Filter by vendor's allowed subCategories if configured
     if (req.user && (req.user.role === 'vendor' || req.userRole === 'vendor')) {
       const allowedSubs = req.user.subCategories || [];
       if (allowedSubs.length > 0) {
@@ -163,13 +214,20 @@ const getBrandServicesAndPricing = async (req, res) => {
           const subId = p.subCategoryId._id.toString();
           return allowedSubs.some(allowed => allowed === subId || (new RegExp(`^${allowed}$`, 'i')).test(subTitle));
         });
-      } else {
-        // If no subcategories assigned, they can only see services without a subcategory
-        servicesWithPricing = servicesWithPricing.filter(p => !p.subCategoryId);
       }
     }
 
-    servicesWithPricing = servicesWithPricing.map(pricing => ({
+    // Deduplicate services by unique serviceId
+    const uniqueServicesMap = new Map();
+    servicesWithPricing.forEach(pricing => {
+      const sId = pricing.serviceId?._id?.toString() || pricing.serviceId?.toString();
+      if (sId && !uniqueServicesMap.has(sId)) {
+        uniqueServicesMap.set(sId, pricing);
+      }
+    });
+    const uniqueServicesList = Array.from(uniqueServicesMap.values());
+
+    const formattedServices = uniqueServicesList.map(pricing => ({
       id: pricing.serviceId._id,
       title: pricing.serviceId.title,
       subCategory: pricing.subCategoryId ? pricing.subCategoryId.title : null,
@@ -186,8 +244,8 @@ const getBrandServicesAndPricing = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      count: servicesWithPricing.length,
-      services: servicesWithPricing
+      count: formattedServices.length,
+      services: formattedServices
     });
   } catch (error) {
     console.error('Get brand services and pricing error:', error);

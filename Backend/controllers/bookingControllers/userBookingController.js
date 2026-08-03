@@ -56,7 +56,8 @@ const createBooking = async (req, res) => {
       redeemLoyaltyPoints,
       applyWallet,
       walletAmountRequested,
-      userGstNumber
+      userGstNumber,
+      zoneId
     } = req.body;
 
     let visitingCharges = reqVisitingCharges !== undefined ? reqVisitingCharges : (reqVisitationFee || 0);
@@ -170,21 +171,29 @@ const createBooking = async (req, res) => {
           });
         }
         
-        // Find vendors who have the category ID or category Title
-        const vendorQuery = {
-          isActive: true,
-          categories: { $in: searchArray }
-        };
-        
+        const categoryMatchConditions = [
+          { categories: { $in: searchArray } },
+          { service: { $in: searchArray } }
+        ];
+
         // Filter vendors by Zone (if targetZoneId resolved or passed)
         const targetZoneId = zoneId || req.body.zoneId || null;
+        const zoneMatchConditions = [
+          { zoneId: targetZoneId },
+          { zoneIds: targetZoneId },
+          { zoneId: { $exists: false } },
+          { zoneId: null }
+        ];
+
+        const vendorQuery = {
+          isActive: true,
+          $and: [
+            { $or: categoryMatchConditions }
+          ]
+        };
+
         if (targetZoneId) {
-          vendorQuery.$or = [
-            { zoneId: targetZoneId },
-            { zoneIds: targetZoneId },
-            { zoneId: { $exists: false } },
-            { zoneId: null }
-          ];
+          vendorQuery.$and.push({ $or: zoneMatchConditions });
         }
 
         if (isConsultation) {
@@ -222,7 +231,7 @@ const createBooking = async (req, res) => {
               brandSearch.push(b.title);
             });
             if (brandSearch.length > 0) {
-              vendorQuery.brands = { $in: brandSearch };
+              vendorQuery.$and.push({ brands: { $in: brandSearch } });
             }
           }
         }
@@ -241,7 +250,6 @@ const createBooking = async (req, res) => {
         const vendorFilters = {
           _id: { $in: qualifiedVendorIds },
           checkCashLimit: paymentMethod === 'cash',
-          city: address.city,
           scheduledDate: scheduledDate,
           timeSlot: timeSlot,
           scheduledTime: scheduledTime,

@@ -182,7 +182,12 @@ const findNearbyVendors = async (centerLocation, radiusKm = 10, filters = {}) =>
     const baseQuery = _buildVendorQuery(filters);
     const zoneQuery = {
       ...baseQuery,
-      zoneId: matchedZone._id
+      $or: [
+        { zoneId: matchedZone._id },
+        { zoneIds: matchedZone._id },
+        { zoneId: { $exists: false } },
+        { zoneId: null }
+      ]
     };
 
     let zoneVendors = await Vendor.find(zoneQuery)

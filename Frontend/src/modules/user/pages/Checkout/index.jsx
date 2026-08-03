@@ -281,6 +281,20 @@ const Checkout = () => {
                 state: defaultAddr.state,
                 pincode: defaultAddr.pincode
               });
+            } else if (localStorage.getItem('currentAddress')) {
+              const savedAddrStr = localStorage.getItem('currentAddress');
+              const savedLat = localStorage.getItem('user_lat');
+              const savedLng = localStorage.getItem('user_lng');
+              setAddress(savedAddrStr);
+              setAddressDetails({
+                address: savedAddrStr,
+                lat: savedLat ? parseFloat(savedLat) : null,
+                lng: savedLng ? parseFloat(savedLng) : null,
+                type: 'home',
+                city: 'Indore',
+                state: 'Madhya Pradesh',
+                pincode: '452001'
+              });
             }
           } else {
             setFetchError(true);
@@ -312,7 +326,7 @@ const Checkout = () => {
             setSlotsEndTime(response.settings?.slotsEndTime || '09:00 PM');
             setSlotIntervalGap(response.settings?.slotIntervalGap || 60);
 
-            // Set Addresses
+            // Set Addresses (Prioritize saved addresses or localStorage current location)
             if (response.user?.addresses?.length > 0) {
               const defaultAddr = response.user.addresses.find(a => a.isDefault) || response.user.addresses[0];
               setAddress(defaultAddr.addressLine1);
@@ -325,6 +339,20 @@ const Checkout = () => {
                 city: defaultAddr.city,
                 state: defaultAddr.state,
                 pincode: defaultAddr.pincode
+              });
+            } else if (localStorage.getItem('currentAddress')) {
+              const savedAddrStr = localStorage.getItem('currentAddress');
+              const savedLat = localStorage.getItem('user_lat');
+              const savedLng = localStorage.getItem('user_lng');
+              setAddress(savedAddrStr);
+              setAddressDetails({
+                address: savedAddrStr,
+                lat: savedLat ? parseFloat(savedLat) : null,
+                lng: savedLng ? parseFloat(savedLng) : null,
+                type: 'home',
+                city: 'Indore',
+                state: 'Madhya Pradesh',
+                pincode: '452001'
               });
             }
 
