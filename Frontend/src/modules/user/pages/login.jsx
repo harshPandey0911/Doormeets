@@ -41,6 +41,14 @@ const Login = () => {
   const phoneInputRef = useRef(null);
   const otpInputRefs = useRef([]);
 
+  // Preload login illustrations immediately
+  useEffect(() => {
+    const imgLight = new Image();
+    imgLight.src = loginIllustration;
+    const imgDark = new Image();
+    imgDark.src = '/loginpageDark.png';
+  }, []);
+
   // Auto-focus logic
   useEffect(() => {
     // Redirect if already logged in
@@ -199,12 +207,16 @@ const Login = () => {
           <img
             src={loginIllustration}
             alt="Login Illustration Light"
+            loading="eager"
+            fetchPriority="high"
             className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'hidden' : 'block'}`}
             style={{ transform: 'scale(1.05)' }}
           />
           <img
             src="/loginpageDark.png"
             alt="Login Illustration Dark"
+            loading="eager"
+            fetchPriority="high"
             className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'block' : 'hidden'}`}
             style={{ transform: 'scale(1.05)' }}
           />
