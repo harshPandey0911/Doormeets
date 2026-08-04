@@ -13,7 +13,8 @@ const USER_ROLES = {
 // Admin Roles (sub-roles within admin)
 const ADMIN_ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
-  CITY_ADMIN: 'CITY_ADMIN'
+  ZONE_ADMIN: 'ZONE_ADMIN',
+  CITY_ADMIN: 'ZONE_ADMIN' // Alias for backward compatibility
 };
 
 // Permission Keys for City Admins

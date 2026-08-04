@@ -428,6 +428,7 @@ const CategoriesPage = ({ catalog, setCatalog, selectedZone, zones: propZones = 
           zoneIds: form.allZones ? [] : ((cat.zoneIds && cat.zoneIds.length > 0) ? cat.zoneIds : (categoryData.zoneIds || [])).filter(Boolean).map(id => typeof id === 'object' ? (id._id || String(id)) : String(id)),
           isGroupCategory: cat.isGroupCategory !== undefined ? cat.isGroupCategory : (existing?.isGroupCategory || false),
           mappedCategories: (cat.mappedCategories || existing?.mappedCategories || []).map(id => typeof id === 'object' ? (id._id || id.id || String(id)) : String(id)),
+          minWalletBalance: cat.minWalletBalance !== undefined ? cat.minWalletBalance : (existing?.minWalletBalance || 0),
           sacCode: cat.sacCode ?? existing?.sacCode ?? "",
         };
       };

@@ -41,9 +41,13 @@ const useAdminRole = () => {
     return role === 'SUPER_ADMIN' || role === 'super_admin';
   }, [role]);
 
-  const isCityAdmin = useMemo(() => {
-    return role === 'CITY_ADMIN' || role === 'admin';
+  const isZoneAdmin = useMemo(() => {
+    return role === 'ZONE_ADMIN' || role === 'zone_admin';
   }, [role]);
+
+  const isCityAdmin = useMemo(() => {
+    return role === 'CITY_ADMIN' || role === 'admin' || isZoneAdmin;
+  }, [role, isZoneAdmin]);
 
   /**
    * Check if admin has a specific permission key
@@ -80,6 +84,7 @@ const useAdminRole = () => {
     role,
     isSuperAdmin,
     isCityAdmin,
+    isZoneAdmin,
     hasPermission,
     canAccessCity,
     assignedCities,

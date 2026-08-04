@@ -130,11 +130,27 @@ const updateZone = async (req, res) => {
  */
 const deleteZone = async (req, res) => {
   try {
-    const zone = await Zone.findByIdAndDelete(req.params.id);
+    const zoneId = req.params.id;
+    const zone = await Zone.findByIdAndDelete(zoneId);
     if (!zone) {
       return res.status(404).json({ success: false, message: 'Zone not found' });
     }
-    res.status(200).json({ success: true, message: 'Zone deleted successfully' });
+
+    // Clean up deleted zone reference from Categories
+    const Category = require('../../models/Category');
+    await Category.updateMany(
+      { zoneIds: zoneId },
+      { $pull: { zoneIds: zoneId } }
+    );
+
+    // Clean up deleted zone reference from Vendors
+    const Vendor = require('../../models/Vendor');
+    await Vendor.updateMany(
+      { zoneIds: zoneId },
+      { $pull: { zoneIds: zoneId } }
+    );
+
+    res.status(200).json({ success: true, message: 'Zone deleted successfully and references cleaned up' });
   } catch (error) {
     console.error('Delete Zone Error:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });

@@ -1,5 +1,6 @@
 const Vendor = require('../../models/Vendor');
-const { createNotification } = require('../notificationControllers/notificationController');
+const { getVendorQueryFilter } = require('../../utils/adminFilterHelper');
+const { handleCityAdminApproval } = require('../../utils/approvalInterceptor');
 
 /**
  * Get all vendors with submitted police verifications
@@ -11,6 +12,9 @@ const getPendingVerifications = async (req, res) => {
     const query = {
       'policeVerification.status': status
     };
+
+    const vendorFilter = await getVendorQueryFilter(req.user);
+    Object.assign(query, vendorFilter);
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -48,6 +52,21 @@ const approveVerification = async (req, res) => {
     if (!vendor) {
       return res.status(404).json({ success: false, message: 'Vendor not found.' });
     }
+
+    // Intercept Zone Admin actions for Super Admin approval
+    const intercepted = await handleCityAdminApproval(req, res, {
+      requestType: 'vendor_approval',
+      zoneId: vendor.zoneId || (vendor.zoneIds && vendor.zoneIds[0]),
+      proposedData: {
+        vendorId: vendor._id,
+        vendorName: vendor.name,
+        businessName: vendor.businessName,
+        phone: vendor.phone,
+        action: 'police_verification_approve'
+      },
+      notes: `Zone Admin requested police verification approval for vendor ${vendor.name}`
+    });
+    if (intercepted) return;
 
     if (vendor.policeVerification?.method === 'admin' && !vendor.policeVerification.documentUrl && !documentUrl) {
       return res.status(400).json({ success: false, message: 'Police verification document is required for Admin method.' });

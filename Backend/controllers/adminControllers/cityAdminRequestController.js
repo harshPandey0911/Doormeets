@@ -100,6 +100,7 @@ const getAllRequests = async (req, res) => {
       CityAdminRequest.find(query)
         .populate('requestedBy', 'name email')
         .populate('cityId', 'name')
+        .populate('zoneId', 'name')
         .populate('reviewedBy', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -171,6 +172,26 @@ const approveRequest = async (req, res) => {
         modelName = 'Brand';
         messageText = 'Request approved. Brand created successfully.';
       }
+    } else if (request.requestType === 'vendor_approval') {
+      const Vendor = require('../../models/Vendor');
+      const vendorId = request.proposedData?.vendorId;
+      if (vendorId) {
+        const vendor = await Vendor.findById(vendorId);
+        if (vendor) {
+          if (request.proposedData?.action === 'police_verification_approve') {
+            vendor.policeVerification = vendor.policeVerification || {};
+            vendor.policeVerification.status = 'approved';
+            vendor.policeVerification.rejectionReason = null;
+          } else {
+            vendor.approvalStatus = 'approved';
+            vendor.approvalDate = new Date();
+          }
+          await vendor.save();
+          createdDoc = vendor;
+        }
+      }
+      modelName = 'Vendor';
+      messageText = 'Request approved. Vendor status updated successfully in Database.';
     } else if (request.requestType === 'delete_vendor') {
       const Vendor = require('../../models/Vendor');
       const vendorId = request.proposedData?.vendorId;

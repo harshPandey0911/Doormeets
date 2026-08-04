@@ -37,9 +37,23 @@ const adminSchema = new mongoose.Schema({
   // Legacy values 'super_admin' and 'admin' are treated as SUPER_ADMIN / CITY_ADMIN for backward compat
   role: {
     type: String,
-    default: 'CITY_ADMIN'
+    default: 'ZONE_ADMIN'
   },
 
+  // Zones this admin is assigned to (empty = Super Admin = all zones)
+  assignedZones: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone'
+  }],
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null
+  },
+  zoneName: {
+    type: String,
+    default: ''
+  },
   // Cities this admin is assigned to (empty = Super Admin = all cities)
   assignedCities: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -146,6 +160,9 @@ adminSchema.methods.isSuperAdmin = function () {
  */
 adminSchema.methods.hasPermission = function (key) {
   if (this.isSuperAdmin()) return true; // Super Admin always has all permissions
+  if (this.role === 'ZONE_ADMIN' || this.role === 'zone_admin' || this.role === 'CITY_ADMIN') {
+    if (key === 'view_vendors' || key === 'view_vendors_zone') return true;
+  }
   const perm = this.permissions.find(p => p.key === key);
   return perm ? perm.enabled : false;
 };
@@ -158,6 +175,17 @@ adminSchema.methods.canAccessCity = function (cityId) {
   if (!cityId) return true; // No city filter means accessible
   const cityStr = cityId.toString();
   return this.assignedCities.some(c => c.toString() === cityStr);
+};
+
+/**
+ * Check if admin can access a specific zone
+ */
+adminSchema.methods.canAccessZone = function (zoneId) {
+  if (this.isSuperAdmin()) return true; // Super Admin can access all zones
+  if (!zoneId) return true;
+  const zoneStr = zoneId.toString();
+  if (this.zoneId && this.zoneId.toString() === zoneStr) return true;
+  return this.assignedZones && this.assignedZones.some(z => z.toString() === zoneStr);
 };
 
 module.exports = mongoose.model('Admin', adminSchema);

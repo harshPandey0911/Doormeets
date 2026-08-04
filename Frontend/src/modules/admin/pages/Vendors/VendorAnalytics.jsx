@@ -107,7 +107,11 @@ const VendorAnalytics = () => {
             </div>
             <div>
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Active Rate</p>
-              <h3 className="text-lg font-bold text-gray-900">{Math.round((data.statusDistribution.find(s => s._id === 'approved')?.count / data.totalVendors) * 100)}%</h3>
+              <h3 className="text-lg font-bold text-gray-900">
+                {data.totalVendors > 0 
+                  ? Math.round(((data.statusDistribution?.find(s => s._id === 'approved')?.count || 0) / data.totalVendors) * 100)
+                  : 0}%
+              </h3>
             </div>
           </div>
         </div>

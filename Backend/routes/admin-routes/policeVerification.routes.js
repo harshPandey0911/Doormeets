@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../../middleware/authMiddleware');
-const { isSuperAdmin } = require('../../middleware/roleMiddleware');
+const { isAdmin } = require('../../middleware/roleMiddleware');
 const { getPendingVerifications, approveVerification, rejectVerification } = require('../../controllers/adminControllers/adminPoliceVerificationController');
 
-// All routes require Super Admin access
+// All routes require Admin access
 router.use(authenticate);
-router.use(isSuperAdmin);
+router.use(isAdmin);
 
 router.get('/', getPendingVerifications);
 router.post('/:id/approve', approveVerification);

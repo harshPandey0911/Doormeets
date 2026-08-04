@@ -22,23 +22,50 @@ const getPublicCategories = async (req, res) => {
 
     let targetZoneId = zoneId || null;
 
-    // Strict point-in-polygon only — NO nearest fallback
+    // Point-in-polygon lookup for user coordinates
     if (!targetZoneId && lat && lng) {
       try {
         const Zone = require('../../models/Zone');
+        const pLng = parseFloat(lng);
+        const pLat = parseFloat(lat);
+
         const matchedZone = await Zone.findOne({
           isActive: true,
           coordinates: {
             $geoIntersects: {
               $geometry: {
                 type: 'Point',
-                coordinates: [parseFloat(lng), parseFloat(lat)]
+                coordinates: [pLng, pLat]
               }
             }
           }
         }).select('_id').lean();
+
         if (matchedZone) {
           targetZoneId = matchedZone._id.toString();
+        } else {
+          // Ray-Casting Fallback
+          const isPointInPolygon = (point, polygonRing) => {
+            const x = point[0], y = point[1];
+            let inside = false;
+            for (let i = 0, j = polygonRing.length - 1; i < polygonRing.length; j = i++) {
+              const xi = polygonRing[i][0], yi = polygonRing[i][1];
+              const xj = polygonRing[j][0], yj = polygonRing[j][1];
+              const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+              if (intersect) inside = !inside;
+            }
+            return inside;
+          };
+
+          const activeZones = await Zone.find({ isActive: true }).select('_id coordinates').lean();
+          for (const z of activeZones) {
+            if (z.coordinates && z.coordinates.coordinates && z.coordinates.coordinates[0]) {
+              if (isPointInPolygon([pLng, pLat], z.coordinates.coordinates[0])) {
+                targetZoneId = z._id.toString();
+                break;
+              }
+            }
+          }
         }
       } catch (zoneErr) {
         console.error('Zone lookup error:', zoneErr);
@@ -1984,8 +2011,21 @@ const resolveZoneByCoordinates = async (req, res) => {
     const parsedLng = parseFloat(lng);
     const parsedLat = parseFloat(lat);
 
-    // Strict point-in-polygon match only — NO fallback
-    const zone = await Zone.findOne({
+    // Ray-Casting Point-in-Polygon helper function (handles any polygon orientation & exact boundaries)
+    const isPointInPolygon = (point, polygonRing) => {
+      const x = point[0], y = point[1];
+      let inside = false;
+      for (let i = 0, j = polygonRing.length - 1; i < polygonRing.length; j = i++) {
+        const xi = polygonRing[i][0], yi = polygonRing[i][1];
+        const xj = polygonRing[j][0], yj = polygonRing[j][1];
+        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    };
+
+    // 1. Try Mongo $geoIntersects
+    let zone = await Zone.findOne({
       isActive: true,
       coordinates: {
         $geoIntersects: {
@@ -1996,6 +2036,19 @@ const resolveZoneByCoordinates = async (req, res) => {
         }
       }
     }).select('_id name isActive').lean();
+
+    // 2. Fallback to Ray-Casting if $geoIntersects returns null
+    if (!zone) {
+      const activeZones = await Zone.find({ isActive: true }).select('_id name isActive coordinates').lean();
+      for (const z of activeZones) {
+        if (z.coordinates && z.coordinates.coordinates && z.coordinates.coordinates[0]) {
+          if (isPointInPolygon([parsedLng, parsedLat], z.coordinates.coordinates[0])) {
+            zone = z;
+            break;
+          }
+        }
+      }
+    }
 
     if (!zone) {
       // Calculate distance to nearest zone centroid

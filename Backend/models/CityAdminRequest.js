@@ -25,16 +25,23 @@ const cityAdminRequestSchema = new mongoose.Schema({
   cityId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'City',
-    required: true
+    default: null
   },
   cityName: {
     type: String
   },
 
+  // Which zone this request is for
+  zoneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Zone',
+    default: null
+  },
+
   // Type of request
   requestType: {
     type: String,
-    enum: ['category', 'brand', 'pricing_override', 'banner', 'homepage_content'],
+    enum: ['category', 'brand', 'pricing_override', 'banner', 'homepage_content', 'vendor_approval', 'vendor_rejection', 'vendor_suspension', 'delete_vendor'],
     required: true
   },
 

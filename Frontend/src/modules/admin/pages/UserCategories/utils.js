@@ -179,7 +179,9 @@ export const ensureIds = (catalog) => {
       enableMultiVisit: c.enableMultiVisit || false,
       enablePricingMatrix: c.enablePricingMatrix !== false,
       isGroupCategory: Boolean(c.isGroupCategory),
-      mappedCategories: Array.isArray(c.mappedCategories) ? c.mappedCategories : []
+      mappedCategories: Array.isArray(c.mappedCategories) ? c.mappedCategories : [],
+      minWalletBalance: c.minWalletBalance || 0,
+      sacCode: c.sacCode || "",
     })),
     services: (catalog.services || []).map((s) => ({
       id: s.id || `usvc-${Date.now()}-${Math.random().toString(16).slice(2)}`,

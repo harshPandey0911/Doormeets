@@ -13,12 +13,10 @@ const { createNotification } = require('../controllers/notificationControllers/n
  * @param {Object} options - { requestType, proposedData, cityId, notes }
  * @returns {Promise<boolean>} - Returns true if intercepted (response sent), false if super admin (continue)
  */
-const handleCityAdminApproval = async (req, res, { requestType, proposedData, cityId, notes = '' }) => {
+const handleCityAdminApproval = async (req, res, { requestType, proposedData, cityId, zoneId, notes = '' }) => {
   try {
     const admin = req.admin || req.user;
     if (!admin) return false;
-
-    console.log('[handleCityAdminApproval] admin role:', admin.role, 'isSuperAdmin method exists:', typeof admin.isSuperAdmin);
 
     const isSuper = admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin';
     if (isSuper) {
@@ -26,24 +24,23 @@ const handleCityAdminApproval = async (req, res, { requestType, proposedData, ci
       return false;
     }
 
-    // It is a CITY_ADMIN, let's validate and queue for approval
-    const resolvedCityId = cityId || (admin.assignedCities && admin.assignedCities[0]);
-    if (!resolvedCityId) {
-      res.status(400).json({
-        success: false,
-        message: 'No city configuration found for proposal submission.'
-      });
-      return true;
-    }
+    // Zone Admin or Scoped Admin - queue for Super Admin approval
+    const resolvedZoneId = zoneId || admin.zoneId || (admin.assignedZones && admin.assignedZones[0]);
+    const resolvedCityId = cityId || (admin.assignedCities && admin.assignedCities[0]) || null;
 
-    const city = await City.findById(resolvedCityId).select('name');
+    let cityName = '';
+    if (resolvedCityId) {
+      const city = await City.findById(resolvedCityId).select('name');
+      cityName = city?.name || '';
+    }
 
     // Create the proposal request
     const request = await CityAdminRequest.create({
       requestedBy: admin._id,
       requestedByName: admin.name,
       cityId: resolvedCityId,
-      cityName: city?.name || '',
+      cityName,
+      zoneId: resolvedZoneId || null,
       requestType,
       proposedData,
       notes: notes || ''
@@ -56,8 +53,8 @@ const handleCityAdminApproval = async (req, res, { requestType, proposedData, ci
         await createNotification({
           adminId: superAdmin._id,
           type: 'city_admin_proposal',
-          title: 'New Proposal Awaiting Approval 📋',
-          message: `${admin.name} submitted a new proposal for ${requestType} in ${city?.name || 'City'}.`,
+          title: 'New Zone Admin Proposal Awaiting Approval 📋',
+          message: `${admin.name} (Zone Admin) submitted a proposal for ${requestType.replace('_', ' ')}.`,
           relatedId: request._id,
           relatedType: 'city_admin_request',
           data: { requestId: request._id }
@@ -67,9 +64,9 @@ const handleCityAdminApproval = async (req, res, { requestType, proposedData, ci
       console.error('[ApprovalInterceptor] Failed to send notification to Super Admin:', notifErr.message);
     }
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: 'Your proposal has been submitted for Super Admin approval.',
+      message: 'Proposal submitted successfully for Super Admin approval.',
       data: request
     });
     return true;

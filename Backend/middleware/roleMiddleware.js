@@ -198,10 +198,11 @@ const isCityAdmin = async (req, res, next) => {
 const hasPermission = (permKey) => {
   return async (req, res, next) => {
     try {
-      // Attach full admin if not already done
-      if (!req.admin) {
-        const Admin = require('../models/Admin');
-        req.admin = await Admin.findById(req.user.id);
+      // Attach full admin if not already done or if req.admin lacks Mongoose methods (due to .lean())
+      const Admin = require('../models/Admin');
+      if (!req.admin || typeof req.admin.hasPermission !== 'function') {
+        const adminDoc = await Admin.findById(req.user.id || req.user._id);
+        req.admin = adminDoc;
       }
 
       if (!req.admin) {
@@ -277,7 +278,7 @@ const canApproveVendors = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Admin not found.' });
     }
 
-    if (req.admin.isSuperAdmin() || req.admin.canApproveVendors) {
+    if (req.admin.isSuperAdmin() || req.admin.canApproveVendors || req.admin.role === 'ZONE_ADMIN' || req.admin.role === 'zone_admin') {
       return next();
     }
 

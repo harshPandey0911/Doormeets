@@ -39,7 +39,6 @@ const PoliceVerification = () => {
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err);
-      toast.error('Failed to load grace days setting.');
     }
   };
 
@@ -132,7 +131,7 @@ const PoliceVerification = () => {
         documentUrl: finalDoc || undefined
       });
       if (res.data?.success) {
-        toast.success('Vendor police verification approved!');
+        toast.success(res.data.message || 'Vendor police verification approved!');
         setAdminUploadedDoc('');
         loadVendors();
         setIsModalOpen(false);

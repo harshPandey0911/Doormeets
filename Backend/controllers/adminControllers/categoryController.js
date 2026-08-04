@@ -32,6 +32,7 @@ const getAllCategories = async (req, res) => {
     const categories = await Category.find(query)
       .select('-__v')
       .populate('vendorId', 'name businessName')
+      .populate('zoneIds', 'name')
       .sort({ homeOrder: 1, createdAt: -1 })
       .lean();
 
@@ -63,7 +64,7 @@ const getAllCategories = async (req, res) => {
         status: cat.status,
         isPopular: cat.isPopular,
         cityIds: cat.cityIds || [],
-        zoneIds: cat.zoneIds || [],
+        zoneIds: (cat.zoneIds || []).filter(Boolean),
         metaTitle: cat.metaTitle,
         metaDescription: cat.metaDescription,
         categoryType: cat.categoryType,
@@ -384,6 +385,7 @@ const createCategory = async (req, res) => {
         interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
         isGroupCategory: category.isGroupCategory || false,
         mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
+        minWalletBalance: category.minWalletBalance || 0,
         sacCode: category.sacCode || null,
         createdAt: category.createdAt,
         updatedAt: category.updatedAt
@@ -535,17 +537,23 @@ const updateCategory = async (req, res) => {
     if (enableWarranty !== undefined) category.enableWarranty = Boolean(enableWarranty);
     if (enableMultiVisit !== undefined) category.enableMultiVisit = Boolean(enableMultiVisit);
     if (enablePricingMatrix !== undefined) category.enablePricingMatrix = Boolean(enablePricingMatrix);
-    if (minWalletBalance !== undefined) category.minWalletBalance = Number(minWalletBalance) || 0;
-    if (sacCode !== undefined) category.sacCode = sacCode || null;
+    if (minWalletBalance !== undefined) {
+      category.minWalletBalance = Number(minWalletBalance);
+      category.markModified('minWalletBalance');
+    }
+    if (sacCode !== undefined) {
+      category.sacCode = sacCode || null;
+      category.markModified('sacCode');
+    }
 
     if (updateCityIds !== undefined) {
       category.cityIds = updateCityIds;
-      category.markModified('cityIds'); // Explicitly mark modified for array
+      category.markModified('cityIds');
     }
     const finalZonesToUpdate = updateZoneIds !== undefined ? updateZoneIds : req.body.zoneIds;
     if (finalZonesToUpdate !== undefined) {
       category.zoneIds = finalZonesToUpdate;
-      category.markModified('zoneIds'); // Explicitly mark modified for array
+      category.markModified('zoneIds');
     }
     if (isGroupCategory !== undefined) category.isGroupCategory = Boolean(isGroupCategory);
     if (mappedCategories !== undefined) {
@@ -555,44 +563,57 @@ const updateCategory = async (req, res) => {
 
     await category.save();
 
+    // Also do a direct DB update to guarantee minWalletBalance and sacCode are persisted
+    const directUpdate = {};
+    if (minWalletBalance !== undefined) directUpdate.minWalletBalance = Number(minWalletBalance);
+    if (sacCode !== undefined) directUpdate.sacCode = sacCode || null;
+    if (Object.keys(directUpdate).length > 0) {
+      await Category.updateOne({ _id: id }, { $set: directUpdate });
+    }
+
+    // Re-read from DB to return accurate data
+    const savedCategory = await Category.findById(id).lean();
+
+    console.log('📌 Category saved. minWalletBalance:', savedCategory.minWalletBalance, 'sacCode:', savedCategory.sacCode);
+
     res.status(200).json({
       success: true,
       message: 'Category updated successfully',
       category: {
-        id: category._id,
-        title: category.title,
-        slug: category.slug,
-        homeIconUrl: category.homeIconUrl,
-        bannerImage: category.bannerImage,
-        homeBadge: category.homeBadge,
-        hasSaleBadge: category.hasSaleBadge,
-        hasBrands: category.hasBrands ?? true,
-        hasSubCategory: category.hasSubCategory ?? true,
-        hasBrand: category.hasBrand ?? true,
-        templateId: category.templateId ? category.templateId.toString() : null,
-        enableBrands: category.enableBrands || false,
-        brandRequired: category.brandRequired || false,
-        enableConsultantBooking: category.enableConsultantBooking || false,
-        enableWarranty: category.enableWarranty || false,
-        enableMultiVisit: category.enableMultiVisit || false,
-        enablePricingMatrix: category.enablePricingMatrix !== false,
-        showOnHome: category.showOnHome,
-        homeOrder: category.homeOrder,
-        description: category.description,
-        imageUrl: category.imageUrl,
-        status: category.status,
-        isPopular: category.isPopular,
-        categoryType: category.categoryType,
-        vendorId: category.vendorId,
-        cityIds: (category.cityIds || []).map(id => id.toString()),
-        zoneIds: (category.zoneIds || []).map(id => id.toString()),
-        interestedCount: category.interestedUsers ? category.interestedUsers.length : 0,
-        isGroupCategory: category.isGroupCategory || false,
-        mappedCategories: (category.mappedCategories || []).map(id => id.toString()),
-        minWalletBalance: category.minWalletBalance || 0,
-        sacCode: category.sacCode || null,
-        createdAt: category.createdAt,
-        updatedAt: category.updatedAt
+        id: savedCategory._id,
+        title: savedCategory.title,
+        slug: savedCategory.slug,
+        homeIconUrl: savedCategory.homeIconUrl,
+        bannerImage: savedCategory.bannerImage,
+        homeBadge: savedCategory.homeBadge,
+        hasSaleBadge: savedCategory.hasSaleBadge,
+        hasBrands: savedCategory.hasBrands ?? true,
+        hasSubCategory: savedCategory.hasSubCategory ?? true,
+        hasBrand: savedCategory.hasBrand ?? true,
+        templateId: savedCategory.templateId ? savedCategory.templateId.toString() : null,
+        enableBrands: savedCategory.enableBrands || false,
+        brandRequired: savedCategory.brandRequired || false,
+        enableConsultantBooking: savedCategory.enableConsultantBooking || false,
+        enableWarranty: savedCategory.enableWarranty || false,
+        enableMultiVisit: savedCategory.enableMultiVisit || false,
+        enablePricingMatrix: savedCategory.enablePricingMatrix !== false,
+        showOnHome: savedCategory.showOnHome,
+        homeOrder: savedCategory.homeOrder,
+        description: savedCategory.description,
+        imageUrl: savedCategory.imageUrl,
+        status: savedCategory.status,
+        isPopular: savedCategory.isPopular,
+        categoryType: savedCategory.categoryType,
+        vendorId: savedCategory.vendorId,
+        cityIds: (savedCategory.cityIds || []).map(id => id.toString()),
+        zoneIds: (savedCategory.zoneIds || []).map(id => id.toString()),
+        interestedCount: savedCategory.interestedUsers ? savedCategory.interestedUsers.length : 0,
+        isGroupCategory: savedCategory.isGroupCategory || false,
+        mappedCategories: (savedCategory.mappedCategories || []).map(id => id.toString()),
+        minWalletBalance: savedCategory.minWalletBalance || 0,
+        sacCode: savedCategory.sacCode || null,
+        createdAt: savedCategory.createdAt,
+        updatedAt: savedCategory.updatedAt
       }
     });
   } catch (error) {

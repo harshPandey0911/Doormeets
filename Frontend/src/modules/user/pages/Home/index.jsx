@@ -110,55 +110,20 @@ const Home = () => {
 
   // Sync detectedCityName with Address on mount/update if not already set
   useEffect(() => {
-    if (address && address !== 'Select Location' && cities && cities.length > 0) {
-      const foundCity = cities.find(c =>
-        address.toLowerCase().includes(c.name.toLowerCase())
-      );
-      if (foundCity) {
-        if (detectedCityName !== foundCity.name) {
-          setDetectedCityName(foundCity.name);
-          localStorage.setItem('currentCity', foundCity.name);
-        }
-      } else {
-        // Address is present but doesn't contain any supported city name
-        // Try to parse ANY city from the address string (e.g. "Bhopal")
-        const parts = address.split(',').map(p => p.trim());
-        // Usually city is 2nd or 3rd to last in Google address strings
-        const cityCandidate = parts.length > 2 ? parts[parts.length - 3] : (parts.length > 1 ? parts[parts.length - 2] : parts[0]);
-
-        if (detectedCityName !== cityCandidate) {
-          setDetectedCityName(cityCandidate);
-          localStorage.setItem('currentCity', cityCandidate);
-        }
-        setIsLocationSupported(false);
+    if (address && address !== 'Select Location') {
+      const parts = address.split(',').map(p => p.trim());
+      const cityCandidate = parts.length > 2 ? parts[parts.length - 3] : (parts.length > 1 ? parts[parts.length - 2] : parts[0]);
+      if (detectedCityName !== cityCandidate) {
+        setDetectedCityName(cityCandidate);
+        localStorage.setItem('currentCity', cityCandidate);
       }
     }
-  }, [address, cities, detectedCityName]);
+  }, [address, detectedCityName]);
 
-  // Validate city whenever detected name or cities list changes
+  // Rely on Geofenced Zone matching rather than hardcoded City List
   useEffect(() => {
-    if (!detectedCityName || !cities || cities.length === 0) return;
-
-    const matchedCity = cities.find(c =>
-      c.name.toLowerCase() === detectedCityName.toLowerCase() ||
-      c.name.toLowerCase().includes(detectedCityName.toLowerCase()) ||
-      detectedCityName.toLowerCase().includes(c.name.toLowerCase())
-    );
-
-    if (matchedCity) {
-      setIsLocationSupported(true);
-      const matchedId = matchedCity._id || matchedCity.id;
-      const currentId = currentCity?._id || currentCity?.id;
-
-      if (!cityLoading && matchedId !== currentId) {
-        selectCity(matchedCity);
-        toast.success(`Location updated to ${matchedCity.name}`);
-      }
-    } else {
-      setIsLocationSupported(false);
-      if (currentCity) selectCity(null);
-    }
-  }, [detectedCityName, cities, currentCity?._id || currentCity?.id, cityLoading]);
+    setIsLocationSupported(true);
+  }, []);
 
 
   const handleAddressSave = (savedHouseNumber, locationObj) => {
@@ -1065,7 +1030,11 @@ const Home = () => {
                             {/* Mobile: categories full-width (unchanged) */}
                             <div className="block md:hidden">
                               <ServiceCategories
-                                categories={categories.filter(c => c.categoryType === 'service' && c.isGroupCategory)}
+                                categories={
+                                  categories.some(c => c.categoryType === 'service' && c.isGroupCategory)
+                                    ? categories.filter(c => c.categoryType === 'service' && c.isGroupCategory)
+                                    : categories.filter(c => c.categoryType === 'service')
+                                }
                                 onCategoryClick={handleCategoryClick}
                                 title={homeContent?.sectionHeaders?.sectionsTitle || "Categories"}
                                 subtitle="Premium Home Services"
@@ -1090,8 +1059,11 @@ const Home = () => {
                                {/* Left: Categories — determines the section height */}
                                <div className="w-[480px] lg:w-[520px]">
                                  <div className="grid grid-cols-3 gap-x-4 gap-y-5">
-                                   {categories
-                                     .filter(c => c.categoryType === 'service' && c.isGroupCategory)
+                                   {(
+                                     categories.some(c => c.categoryType === 'service' && c.isGroupCategory)
+                                       ? categories.filter(c => c.categoryType === 'service' && c.isGroupCategory)
+                                       : categories.filter(c => c.categoryType === 'service')
+                                   )
                                      .map((category, index) => {
                                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
                                        const cardColors = isDark ? [

@@ -5,30 +5,44 @@ const City = require('../models/City');
  * Returns empty objects for SUPER_ADMIN (no restrictions).
  */
 
+const Zone = require('../models/Zone');
+
 /**
  * Get the basic filter configuration for a given admin user
  * @param {Object} admin - The req.user or req.admin object
- * @returns {Promise<{ isCityAdmin: boolean, cityNames: string[], vendorIds: string[], hasAccess: boolean }>}
+ * @returns {Promise<{ isScopedAdmin: boolean, isCityAdmin: boolean, isZoneAdmin: boolean, cityNames: string[], zoneIds: string[], vendorIds: string[], hasAccess: boolean }>}
  */
 const getAdminFilterConfig = async (admin) => {
   if (!admin || admin.role === 'SUPER_ADMIN' || admin.role === 'super_admin') {
-    return { isCityAdmin: false, cityNames: [], vendorIds: [], hasAccess: true };
+    return { isScopedAdmin: false, isCityAdmin: false, isZoneAdmin: false, cityNames: [], zoneIds: [], vendorIds: [], hasAccess: true };
   }
 
-  // It is a CITY_ADMIN
+  const isZoneAdmin = admin.role === 'ZONE_ADMIN' || (admin.assignedZones && admin.assignedZones.length > 0) || !!admin.zoneId;
+  const isCityAdmin = admin.role === 'CITY_ADMIN';
+
   const config = {
-    isCityAdmin: true,
+    isScopedAdmin: true,
+    isCityAdmin,
+    isZoneAdmin,
     cityNames: [],
+    zoneIds: [],
     vendorIds: admin.assignedVendors || [],
     hasAccess: false
   };
 
-  if (admin.assignedCities && admin.assignedCities.length > 0) {
+  if (isZoneAdmin) {
+    const rawZoneIds = [];
+    if (admin.zoneId) rawZoneIds.push(admin.zoneId);
+    if (admin.assignedZones && admin.assignedZones.length > 0) {
+      admin.assignedZones.forEach(z => rawZoneIds.push(z._id || z));
+    }
+    config.zoneIds = rawZoneIds.map(id => id.toString());
+    config.hasAccess = config.zoneIds.length > 0 || config.vendorIds.length > 0;
+  }
+
+  if (isCityAdmin && admin.assignedCities && admin.assignedCities.length > 0) {
     const cities = await City.find({ _id: { $in: admin.assignedCities } });
     config.cityNames = cities.map(c => new RegExp(`^${c.name}$`, 'i'));
-    
-    // Only grant access if they have at least one assigned vendor OR if we are allowing independent workers/bookings
-    // (We will handle the exact logic in the query builders below, but technically they have some access)
     config.hasAccess = true;
   }
 
@@ -37,67 +51,102 @@ const getAdminFilterConfig = async (admin) => {
 
 /**
  * Filter for Vendor collections.
- * STRICT: Must belong to assigned city AND must be in assignedVendors.
- * If assignedVendors is empty, returns a query that matches nothing.
- * @param {Object} admin 
- * @param {String} cityField - The field name for the city (default: 'address.city')
  */
 const getVendorQueryFilter = async (admin, cityField = 'address.city') => {
   const config = await getAdminFilterConfig(admin);
-  if (!config.isCityAdmin) return {};
-
-  if (!config.hasAccess || config.vendorIds.length === 0) {
-    return { _id: null }; // Safe block
-  }
-
-  return {
-    [cityField]: { $in: config.cityNames },
-    _id: { $in: config.vendorIds }
-  };
-};
-
-/**
- * Filter for Worker collections.
- * ALLOWS INDEPENDENT WORKERS: Belongs to assigned city AND (vendorId in assignedVendors OR vendorId is null).
- * @param {Object} admin 
- * @param {String} cityField - The field name for the city (default: 'address.city')
- */
-const getWorkerQueryFilter = async (admin, cityField = 'address.city') => {
-  const config = await getAdminFilterConfig(admin);
-  if (!config.isCityAdmin) return {};
+  if (!config.isScopedAdmin) return {};
 
   if (!config.hasAccess) {
     return { _id: null };
   }
 
+  if (config.isZoneAdmin && config.zoneIds.length > 0) {
+    // 1. Match vendors explicitly mapped to the zoneId or zoneIds array
+    const query = {
+      $or: [
+        { zoneId: { $in: config.zoneIds } },
+        { zoneIds: { $in: config.zoneIds } }
+      ]
+    };
+
+    // 2. Also query zones by name to match vendor city/address string
+    const assignedZonesDocs = await Zone.find({ _id: { $in: config.zoneIds } }).select('name coordinates');
+    const zoneCityNames = assignedZonesDocs.map(z => new RegExp(z.name, 'i'));
+
+    if (zoneCityNames.length > 0) {
+      query.$or.push({ [cityField]: { $in: zoneCityNames } });
+      query.$or.push({ 'address.fullAddress': { $in: zoneCityNames } });
+    }
+
+    if (config.vendorIds.length > 0) {
+      query.$or.push({ _id: { $in: config.vendorIds } });
+    }
+
+    return query;
+  }
+
+  if (config.vendorIds.length === 0 && config.cityNames.length === 0) {
+    return { _id: null };
+  }
+
+  const filters = [];
+  if (config.cityNames.length > 0) filters.push({ [cityField]: { $in: config.cityNames } });
+  if (config.vendorIds.length > 0) filters.push({ _id: { $in: config.vendorIds } });
+
+  return filters.length > 0 ? { $or: filters } : {};
+};
+
+/**
+ * Filter for Worker collections.
+ */
+const getWorkerQueryFilter = async (admin, cityField = 'address.city') => {
+  const config = await getAdminFilterConfig(admin);
+  if (!config.isScopedAdmin) return {};
+
+  if (!config.hasAccess) {
+    return { _id: null };
+  }
+
+  if (config.isZoneAdmin && config.zoneIds.length > 0) {
+    const assignedZonesDocs = await Zone.find({ _id: { $in: config.zoneIds } }).select('name');
+    const zoneNames = assignedZonesDocs.map(z => new RegExp(z.name, 'i'));
+    return {
+      $or: [
+        { [cityField]: { $in: zoneNames } },
+        { 'address.fullAddress': { $in: zoneNames } },
+        { zoneId: { $in: config.zoneIds } }
+      ]
+    };
+  }
+
   return {
-    [cityField]: { $in: config.cityNames },
-    $or: [
-      { vendorId: null },
-      { vendorId: { $in: config.vendorIds } }
-    ]
+    [cityField]: { $in: config.cityNames }
   };
 };
 
 /**
  * Filter for Booking collections.
- * ALLOWS INDEPENDENT BOOKINGS: Belongs to assigned city AND (vendorId in assignedVendors OR vendorId is null).
- * @param {Object} admin 
- * @param {String} cityField - The field name for the city in Booking model (e.g. 'address.city' or if it relies on worker/vendor population, see below)
- * Note: Bookings might not have address.city at root, they have 'city' or 'address'. Assuming 'address.city' or custom.
  */
 const getBookingQueryFilter = async (admin) => {
   const config = await getAdminFilterConfig(admin);
-  if (!config.isCityAdmin) return {};
+  if (!config.isScopedAdmin) return {};
 
   if (!config.hasAccess) {
     return { _id: null };
   }
 
-  // Currently, the existing admin dashboard doesn't easily filter bookings by city if the city is only in the address object string.
-  // Wait, the user previously said "vendor must belong to assigned city", which means the booking's vendor.
-  // But for bookings, the booking itself has a vendorId.
-  // We can just filter by vendorId (and null).
+  if (config.isZoneAdmin && config.zoneIds.length > 0) {
+    const assignedZonesDocs = await Zone.find({ _id: { $in: config.zoneIds } }).select('name');
+    const zoneNames = assignedZonesDocs.map(z => new RegExp(z.name, 'i'));
+    return {
+      $or: [
+        { zoneId: { $in: config.zoneIds } },
+        { 'address.city': { $in: zoneNames } },
+        { 'address.fullAddress': { $in: zoneNames } }
+      ]
+    };
+  }
+
   return {
     $or: [
       { vendorId: null },

@@ -103,7 +103,7 @@ const getChildRoute = (parentRoute, childName) => {
     },
     "/admin/vendors": {
       "All Vendors": "/admin/vendors/all",
-      "Vendor's Zone": "/admin/vendors/zone",
+      "Vendor's Zone": "/admin/zone",
       "Manual Assignment": "/admin/vendors/manual",
       "Vendor Bookings": "/admin/vendors/bookings",
       "Vendor Analytics": "/admin/vendors/analytics",
@@ -292,7 +292,7 @@ const childPermissionMap = {
 const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMode }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { admin, role, isSuperAdmin, isCityAdmin, hasPermission } = useAdminRole();
+  const { admin, role, isSuperAdmin, isCityAdmin, isZoneAdmin, hasPermission } = useAdminRole();
   const [expandedItems, setExpandedItems] = useState({});
   const [isMobile, setIsMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -336,18 +336,15 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMod
     }
 
     return adminMenu.filter(item => {
-      // Basic allowedRoles array check (fallback)
-      const allowedByRole = !item.allowedRoles || item.allowedRoles.includes(role) || item.allowedRoles.includes(role.toLowerCase()) || item.allowedRoles.includes(role.toUpperCase());
-
-      // Super Admin sees everything allowed by their role
+      // Super Admin sees everything
       if (isSuperAdmin) {
-        return allowedByRole;
+        return true;
       }
 
-      // For City Admin, check dynamic permissions
-      if (isCityAdmin) {
-        // Admin Management is NEVER allowed for City Admin, regardless of role array or permissions
-        if (item.title === 'Admin Management') return false;
+      // For City Admin & Zone Admin, check dynamic permissions
+      if (isCityAdmin || isZoneAdmin) {
+        // Admin Management & Approval Dashboard are NEVER allowed for scoped Admins
+        if (item.title === 'Admin Management' || item.title === 'Approval Dashboard') return false;
 
         // If there's a mapped permission key, check it
         const requiredPerm = permissionMap[item.title];
@@ -355,13 +352,15 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMod
           return hasPermission(requiredPerm);
         }
 
-        // If no permission mapped but role allows it, show it (e.g., Dashboard if no perm mapped)
+        // Fallback to allowedRoles for items without specific permission mapping
+        const allowedByRole = !item.allowedRoles || item.allowedRoles.includes(role) || item.allowedRoles.includes(role.toLowerCase()) || item.allowedRoles.includes(role.toUpperCase());
         return allowedByRole;
       }
 
+      const allowedByRole = !item.allowedRoles || item.allowedRoles.includes(role) || item.allowedRoles.includes(role.toLowerCase()) || item.allowedRoles.includes(role.toUpperCase());
       return allowedByRole;
     });
-  }, [role, isSuperAdmin, isCityAdmin, hasPermission, panelMode]);
+  }, [role, isSuperAdmin, isCityAdmin, isZoneAdmin, hasPermission, panelMode]);
 
   // Filter menu items by search query
   const searchedMenu = useMemo(() => {
@@ -397,14 +396,16 @@ const AdminSidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse, panelMod
             pendingSettlements: stats.pendingSettlements || 0,
             scraps: stats.pendingScraps || 0
           });
-          // Fetch vendor request count separately
-          try {
-            const vendorRequestService = (await import('../../services/vendorRequestService')).default;
-            const reqData = await vendorRequestService.getPendingCount();
-            if (reqData.success) {
-              setCounts(prev => ({ ...prev, vendorRequests: reqData.pendingCount || 0 }));
-            }
-          } catch (e) { /* silent */ }
+          // Fetch vendor request count separately if permitted
+          if (hasPermission('view_vendor_requests')) {
+            try {
+              const vendorRequestService = (await import('../../services/vendorRequestService')).default;
+              const reqData = await vendorRequestService.getPendingCount();
+              if (reqData.success) {
+                setCounts(prev => ({ ...prev, vendorRequests: reqData.pendingCount || 0 }));
+              }
+            } catch (e) { /* silent */ }
+          }
         }
       } catch (error) {
         console.error("Error fetching sidebar counts:", error);

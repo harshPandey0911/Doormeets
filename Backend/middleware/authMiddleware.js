@@ -7,7 +7,7 @@ const ShopOwner = require('../models/ShopOwner');
 const { USER_ROLES } = require('../utils/constants');
 
 const authMemoryCache = new Map();
-const CACHE_TTL_MS = 5000; // 5 seconds cache to collapse parallel request queries
+const CACHE_TTL_MS = 100; // 100ms micro-cache to collapse duplicate instant queries without staleness
 
 const getCachedUser = (key) => {
   const cached = authMemoryCache.get(key);
@@ -147,6 +147,9 @@ const authenticate = async (req, res, next) => {
       case 'super_admin':
       case 'admin':
       case 'ADMIN':
+      case 'ZONE_ADMIN':
+      case 'zone_admin':
+      case 'CITY_ADMIN':
         user = await Admin.findById(decoded.userId).select('-password').lean();
         break;
       case USER_ROLES.SHOP_OWNER:
@@ -178,6 +181,9 @@ const authenticate = async (req, res, next) => {
     // Attach user to request
     // NOTE: .lean() removes the virtual .id getter — restore it manually
     req.user = { ...user, id: user._id.toString() };
+    if (decoded.role === USER_ROLES.ADMIN || decoded.role === 'super_admin' || decoded.role === 'admin' || decoded.role === 'ADMIN' || decoded.role === 'ZONE_ADMIN' || decoded.role === 'zone_admin') {
+      req.admin = req.user;
+    }
     req.userId = decoded.userId;
     req.userRole = decoded.role;
 

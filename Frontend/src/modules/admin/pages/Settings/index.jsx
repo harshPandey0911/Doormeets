@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud, FiAward, FiEye, FiEyeOff, FiTwitter, FiInstagram, FiYoutube, FiLinkedin } from 'react-icons/fi';
+import { FiSettings, FiGrid, FiDollarSign, FiSave, FiUser, FiMail, FiTrash2, FiPlus, FiUsers, FiShield, FiFileText, FiMapPin, FiPhone, FiHeadphones, FiMessageCircle, FiEdit, FiLock, FiUnlock, FiX, FiVideo, FiUploadCloud, FiAward, FiEye, FiEyeOff, FiTwitter, FiInstagram, FiYoutube, FiLinkedin, FiLayers } from 'react-icons/fi';
 import { getSettings, updateSettings, updateAdminProfile, getAdminProfile, getAllAdmins, createAdmin, deleteAdmin, updateAdminDetails, toggleAdminStatus } from '../../services/settingsService';
 import { supportService } from '../../services/supportService';
 import { cityService } from '../../services/cityService';
+import { zoneService } from '../../../../services/catalogService';
 import CityManagement from '../Cities';
 import DeletedAccountsDashboard from '../DeletedAccounts';
 import CreditPackages from './CreditPackages';
@@ -169,9 +170,9 @@ const AdminSettings = () => {
 
   // Admin Management State
   const [admins, setAdmins] = useState([]);
-  const [cities, setCities] = useState([]); // State for cities
+  const [zones, setZones] = useState([]); // State for geofence zones
   const [showAddAdmin, setShowAddAdmin] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '', role: 'admin', cityId: '' }); // Added cityId
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '', role: 'zone_admin', zoneId: '' });
   const [adminLoading, setAdminLoading] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -397,23 +398,11 @@ const AdminSettings = () => {
     }
   };
 
-  // Fetch cities for dropdown
-  const loadCities = async () => {
-    try {
-      const res = await cityService.getAll();
-      if (res.success) {
-        setCities(res.cities || []);
-      }
-    } catch (error) {
-      console.error('Error loading cities:', error);
-    }
-  };
-
-  // Load admins and cities when entering admin view
+  // Load admins and zones when entering admin view
   useEffect(() => {
     if (isSuperAdmin && (activeView === 'admins' || admins.length === 0)) {
       loadAdmins();
-      loadCities(); // Fetch cities as well
+      loadZones();
     }
   }, [isSuperAdmin, activeView]);
 
@@ -709,11 +698,33 @@ const AdminSettings = () => {
       toast.success('Profile updated');
       setProfile(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update');
+      toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setProfileLoading(false);
     }
   };
+
+  // Fetch zones for dropdown
+  const loadZones = async () => {
+    try {
+      const res = await zoneService.getAll();
+      if (res.success) {
+        setZones(res.zones || []);
+      }
+    } catch (error) {
+      console.error('Error loading zones:', error);
+    }
+  };
+
+  // Load admins and zones when entering admin view
+  useEffect(() => {
+    if (isSuperAdmin && (activeView === 'admins' || admins.length === 0)) {
+      loadAdmins();
+      loadZones();
+    }
+  }, [isSuperAdmin, activeView]);
+
+
 
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
@@ -722,47 +733,57 @@ const AdminSettings = () => {
     if (!newAdmin.name || !newAdmin.email) {
       return toast.error('Name and Email are required');
     }
-    if (!isEdit && !newAdmin.password) {
-      return toast.error('Password is required for new admin');
+    if (!isEdit && (!newAdmin.password || newAdmin.password.length < 6)) {
+      return toast.error('Password must be at least 6 characters long');
+    }
+    if (isEdit && newAdmin.password && newAdmin.password.length < 6) {
+      return toast.error('Password must be at least 6 characters long');
     }
 
     setAdminLoading(true);
     try {
       // Prepare payload
-      const payload = { ...newAdmin };
-      if (payload.cityId) {
-        const cityObj = cities.find(c => (c._id || c.id) === payload.cityId);
-        if (cityObj) payload.cityName = cityObj.name;
+      const payload = { 
+        ...newAdmin,
+        role: (newAdmin.role || 'ZONE_ADMIN').toUpperCase()
+      };
+      if (payload.zoneId) {
+        const zoneObj = zones.find(z => (z._id || z.id) === payload.zoneId);
+        if (zoneObj) payload.zoneName = zoneObj.name;
       } else {
-        delete payload.cityId;
-        payload.cityName = '';
+        delete payload.zoneId;
+        payload.zoneName = '';
       }
 
       if (isEdit) {
         await updateAdminDetails(newAdmin.id, payload);
-        toast.success('Admin updated successfully');
+        toast.success('Zone Admin updated successfully');
       } else {
         await createAdmin(payload);
-        toast.success('Admin created successfully');
+        toast.success('Zone Admin created successfully');
       }
-      setNewAdmin({ name: '', email: '', password: '', role: 'admin', cityId: '' });
+      setNewAdmin({ name: '', email: '', password: '', role: 'ZONE_ADMIN', zoneId: '' });
       setShowAddAdmin(false);
       loadAdmins();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Operation failed');
+      console.error('Create admin error:', error);
+      const errMsg = error.response?.data?.message || (error.response?.data?.errors && error.response.data.errors[0]?.msg) || 'Operation failed';
+      toast.error(errMsg);
     } finally {
       setAdminLoading(false);
     }
   };
 
   const handleEditClick = (admin) => {
+    const existingPerms = (admin.permissions || []).map(p => typeof p === 'string' ? p : p.key);
     setNewAdmin({
       id: admin._id,
       name: admin.name,
       email: admin.email,
-      role: admin.role,
+      role: admin.role || 'zone_admin',
       password: '',
-      cityId: admin.cityId?._id || admin.cityId || '' // Handle populated or raw ID
+      zoneId: admin.zoneId?._id || admin.zoneId || '',
+      permissions: existingPerms
     });
     setShowAddAdmin(true);
   };
@@ -835,27 +856,17 @@ const AdminSettings = () => {
         </div>
       )}
 
-      {/* City Management Card - Super Admin Only */}
-      {isSuperAdmin && (
-        <div onClick={() => setActiveView('cities')}
-          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
-          <div className="w-12 h-12 bg-teal-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">
-            <FiMapPin className="w-6 h-6 text-teal-600" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">City Management</h3>
-          <p className="text-sm text-gray-500">Manage operational cities and default location</p>
-        </div>
-      )}
 
-      {/* Admin Management Card - Super Admin Only */}
+
+      {/* Zone Admin Card - Super Admin Only */}
       {isSuperAdmin && (
         <div onClick={() => setActiveView('admins')}
           className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
           <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-100 transition-colors">
             <FiUsers className="w-6 h-6 text-amber-600" />
           </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">Manage Admins</h3>
-          <p className="text-sm text-gray-500">Add, remove, and view all system administrators</p>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Zone Admin</h3>
+          <p className="text-sm text-gray-500">Create & manage zone-specific administrators and dashboard access</p>
         </div>
       )}
 
@@ -2013,10 +2024,20 @@ const AdminSettings = () => {
                       <FiUsers className="w-5 h-5 text-amber-600" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-gray-800">Admin Management</h2>
-                      <p className="text-sm text-gray-500">Total {admins.length} administrators found</p>
+                      <h2 className="text-xl font-bold text-gray-800">Zone Admin Management</h2>
+                      <p className="text-sm text-gray-500">Create & manage zone admins for specific zones (e.g. Indore Zone) with customizable dashboard permissions</p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => {
+                      setNewAdmin({ name: '', email: '', password: '', role: 'zone_admin', zoneId: '', permissions: [] });
+                      setShowAddAdmin(true);
+                    }}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-sm"
+                  >
+                    <FiPlus className="w-4 h-4" />
+                    <span>Create Zone Admin</span>
+                  </button>
                 </div>
 
                 {/* Add/Edit Admin Form */}
@@ -2036,21 +2057,59 @@ const AdminSettings = () => {
                           {/* Role Selection */}
                           <select value={newAdmin.role} onChange={e => setNewAdmin(p => ({ ...p, role: e.target.value }))}
                             className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
-                            <option value="admin">Admin</option>
+                            <option value="zone_admin">Zone Admin</option>
                             <option value="super_admin">Super Admin</option>
-                            <option value="city_admin">City Admin</option>
+                            <option value="admin">Global Admin</option>
                           </select>
 
-                          {/* City Selection */}
-                          <select value={newAdmin.cityId} onChange={e => setNewAdmin(p => ({ ...p, cityId: e.target.value }))}
+                          {/* Zone Selection */}
+                          <select value={newAdmin.zoneId} onChange={e => setNewAdmin(p => ({ ...p, zoneId: e.target.value }))}
                             className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
-                            <option value="">All Cities (Global)</option>
-                            {cities.map(city => (
-                              <option key={city._id} value={city._id}>
-                                {city.name}
+                            <option value="">All Geofence Zones (Global)</option>
+                            {zones.map(zone => (
+                              <option key={zone._id || zone.id} value={zone._id || zone.id}>
+                                {zone.name}
                               </option>
                             ))}
                           </select>
+                        </div>
+
+                        {/* Zone Admin Permissions Dashboard Visibility Toggle Checklist */}
+                        <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
+                          <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Zone Admin Dashboard Permissions & Visibility</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                            {[
+                              { key: 'view_dashboard', label: 'View Dashboard' },
+                              { key: 'view_vendors', label: 'View Vendors' },
+                              { key: 'view_workers', label: 'View Workers' },
+                              { key: 'view_users', label: 'View Users' },
+                              { key: 'view_bookings', label: 'View Bookings' },
+                              { key: 'view_payments', label: 'View Payments' },
+                              { key: 'view_reports', label: 'View Reports' },
+                              { key: 'manage_support', label: 'Manage Support' },
+                              { key: 'manage_banners', label: 'Manage Banners' },
+                              { key: 'manage_notifications', label: 'Push Notifications' }
+                            ].map(item => {
+                              const isChecked = (newAdmin.permissions || []).includes(item.key);
+                              return (
+                                <label key={item.key} className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-gray-50">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const current = newAdmin.permissions || [];
+                                      const updated = e.target.checked
+                                        ? [...current, item.key]
+                                        : current.filter(k => k !== item.key);
+                                      setNewAdmin(p => ({ ...p, permissions: updated }));
+                                    }}
+                                    className="rounded text-amber-600 focus:ring-amber-500"
+                                  />
+                                  <span className="text-gray-700 font-medium">{item.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
 
                         <div className="flex justify-end gap-3 mt-4">
@@ -2074,13 +2133,13 @@ const AdminSettings = () => {
                       <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-100">
                         <th className="px-6 py-4 font-semibold">Administrator</th>
                         <th className="px-6 py-4 font-semibold">Role</th>
-                        <th className="px-6 py-4 font-semibold">Assigned City</th>
+                        <th className="px-6 py-4 font-semibold">Assigned Zone</th>
                         <th className="px-6 py-4 font-semibold">Status</th>
                         <th className="px-6 py-4 font-semibold text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {admins.map((admin) => (
+                      {admins.filter(a => a.email !== 'admin@harsh.com').map((admin) => (
                         <tr key={admin._id} className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -2096,18 +2155,22 @@ const AdminSettings = () => {
                           <td className="px-6 py-4">
                             <span className={`px-3 py-1 text-xs font-bold rounded-full border ${admin.role === 'super_admin' || admin.role === 'SUPER_ADMIN'
                               ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : admin.role === 'city_admin' || admin.role === 'CITY_ADMIN' ? 'bg-teal-50 text-teal-700 border-teal-100' : 'bg-blue-50 text-blue-700 border-blue-100'
+                              : admin.role === 'zone_admin' || admin.role === 'ZONE_ADMIN' || admin.role === 'city_admin' || admin.role === 'CITY_ADMIN' ? 'bg-teal-50 text-teal-700 border-teal-100' : 'bg-blue-50 text-blue-700 border-blue-100'
                               }`}>
-                              {admin.role === 'super_admin' || admin.role === 'SUPER_ADMIN' ? 'Super Admin' : admin.role === 'city_admin' || admin.role === 'CITY_ADMIN' ? 'City Admin' : 'Admin'}
+                              {admin.role === 'super_admin' || admin.role === 'SUPER_ADMIN' ? 'Super Admin' : (admin.role === 'zone_admin' || admin.role === 'ZONE_ADMIN' || admin.role === 'city_admin' || admin.role === 'CITY_ADMIN') ? 'Zone Admin' : 'Admin'}
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            {admin.cityId ? (
+                            {admin.zoneId ? (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                                {admin.cityId.name || 'Unknown City'}
+                                {admin.zoneId.name || admin.zoneName || 'Unknown Zone'}
+                              </span>
+                            ) : admin.cityId ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                                {admin.cityId.name || 'Assigned Zone'}
                               </span>
                             ) : (
-                              <span className="text-xs text-gray-400">All Cities</span>
+                              <span className="text-xs text-gray-400">All Zones (Global)</span>
                             )}
                           </td>
                           <td className="px-6 py-4">

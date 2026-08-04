@@ -9,15 +9,12 @@ const {
 } = require('../../controllers/adminControllers/adminReviewController');
 
 // All routes require authentication and admin role with review permission
-router.use(authenticate, isAdmin, hasPermission('view_reviews'));
-
-// Get all reviews
-router.get('/reviews', getAllReviews);
+router.get('/reviews', authenticate, isAdmin, hasPermission('view_reviews'), getAllReviews);
 
 // Get review statistics
-router.get('/reviews/stats', getReviewStats);
+router.get('/reviews/stats', authenticate, isAdmin, hasPermission('view_reviews'), getReviewStats);
 
 // Update review status
-router.patch('/reviews/:id/status', updateReviewStatus);
+router.patch('/reviews/:id/status', authenticate, isAdmin, hasPermission('view_reviews'), updateReviewStatus);
 
 module.exports = router;

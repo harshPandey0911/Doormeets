@@ -96,9 +96,13 @@ exports.getBookingReport = async (req, res) => {
  */
 exports.getVendorReport = async (req, res) => {
   try {
+    const { getVendorQueryFilter, getBookingQueryFilter } = require('../../utils/adminFilterHelper');
+    const vendorFilter = await getVendorQueryFilter(req.user);
+    const bookingFilter = await getBookingQueryFilter(req.user);
+
     // Top vendors by revenue
     const topVendors = await Booking.aggregate([
-      { $match: { status: BOOKING_STATUS.COMPLETED } },
+      { $match: { status: BOOKING_STATUS.COMPLETED, ...bookingFilter } },
       {
         $group: {
           _id: '$vendorId',
@@ -127,23 +131,44 @@ exports.getVendorReport = async (req, res) => {
       }
     ]);
 
-    // Vendor status distribution
+    // Total vendors count
+    const totalVendors = await Vendor.countDocuments(vendorFilter);
+    const totalBookings = await Booking.countDocuments(bookingFilter);
+
+    // Monthly registration trend
+    const monthlyTrend = await Vendor.aggregate([
+      { $match: vendorFilter },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } },
+      { $limit: 6 }
+    ]);
+
+    // Status distribution
     const statusDistribution = await Vendor.aggregate([
+      { $match: vendorFilter },
       { $group: { _id: '$approvalStatus', count: { $sum: 1 } } }
     ]);
 
-    // Vendors by service category
+    // Category distribution
     const categoryDistribution = await Vendor.aggregate([
-      { $group: { _id: '$service', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
+      { $match: vendorFilter },
+      { $group: { _id: '$profession', count: { $sum: 1 } } }
     ]);
 
     res.status(200).json({
       success: true,
       data: {
+        totalVendors,
+        totalBookings,
         topVendors,
         statusDistribution,
-        categoryDistribution
+        categoryDistribution,
+        monthlyTrend
       }
     });
   } catch (error) {
@@ -296,16 +321,20 @@ exports.getWorkerReport = async (req, res) => {
   }
 };
 
+const { getCityOnlyFilter } = require('../../utils/adminFilterHelper');
+
 /**
  * Get Customer/User Report Data
  */
 exports.getCustomerReport = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
+    const cityFilter = await getCityOnlyFilter(req.user);
+    const totalUsers = await User.countDocuments(cityFilter);
     const totalBookings = await Booking.countDocuments();
 
     // User verification status distribution
     const verificationStatus = await User.aggregate([
+      { $match: cityFilter },
       {
         $group: {
           _id: {
@@ -339,7 +368,8 @@ exports.getCustomerReport = async (req, res) => {
           as: 'user'
         }
       },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: false } },
+      { $match: { 'user.address.city': cityFilter['address.city'] || { $exists: true } } },
       {
         $project: {
           name: { $ifNull: ['$user.name', 'Deleted User'] },
@@ -351,6 +381,7 @@ exports.getCustomerReport = async (req, res) => {
 
     // Monthly registration trend
     const monthlyTrend = await User.aggregate([
+      { $match: cityFilter },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },

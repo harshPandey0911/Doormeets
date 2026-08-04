@@ -230,6 +230,22 @@ const approveVendor = async (req, res) => {
       });
     }
 
+    // Intercept Zone Admin actions for Super Admin approval
+    const { handleCityAdminApproval } = require('../../utils/approvalInterceptor');
+    const intercepted = await handleCityAdminApproval(req, res, {
+      requestType: 'vendor_approval',
+      zoneId: vendor.zoneId || (vendor.zoneIds && vendor.zoneIds[0]),
+      proposedData: {
+        vendorId: vendor._id,
+        vendorName: vendor.name,
+        businessName: vendor.businessName,
+        phone: vendor.phone,
+        action: 'approve'
+      },
+      notes: `Zone Admin requested approval for vendor ${vendor.name} (${vendor.businessName})`
+    });
+    if (intercepted) return;
+
     if (vendor.policeVerification?.status !== 'approved') {
       return res.status(400).json({
         success: false,

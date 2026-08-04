@@ -7,9 +7,12 @@ const { PERMISSION_KEYS } = require('../../utils/constants');
  */
 const getAllAdmins = async (req, res) => {
   try {
-    const admins = await Admin.find()
+    // Hide protected root admin account (admin@harsh.com) from admin list view
+    const admins = await Admin.find({ email: { $ne: 'admin@harsh.com' } })
       .select('-password')
       .populate('cityId', 'name')
+      .populate('zoneId', 'name')
+      .populate('assignedZones', 'name')
       .populate('assignedCities', 'name slug')
       .sort({ createdAt: -1 });
 
@@ -30,9 +33,10 @@ const createAdmin = async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const errorMsg = errors.array().map(e => `${e.path || e.param}: ${e.msg}`).join(', ');
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: `Validation failed: ${errorMsg}`,
         errors: errors.array()
       });
     }
@@ -40,6 +44,7 @@ const createAdmin = async (req, res) => {
     const {
       name, email, password, role,
       cityId, cityName,
+      zoneId, zoneName, assignedZones,
       assignedCities, permissions,
       canApproveVendors, canApproveWorkers,
       assignedVendors
@@ -54,20 +59,29 @@ const createAdmin = async (req, res) => {
       });
     }
 
-    // Build permissions array from provided keys
-    const permissionsArray = (permissions || []).map(key => ({
-      key,
-      enabled: true
-    }));
+    // Normalize role string
+    let normalizedRole = (role || 'ZONE_ADMIN').toUpperCase();
+    if (normalizedRole === 'ZONE_ADMIN' || normalizedRole === 'ZONE_ADMIN') normalizedRole = 'ZONE_ADMIN';
+
+    // Build permissions array from provided string or object keys
+    const permissionsArray = (permissions || [])
+      .map(p => {
+        const key = typeof p === 'string' ? p : p?.key;
+        return key ? { key, enabled: true } : null;
+      })
+      .filter(Boolean);
 
     // Create new admin
     const admin = await Admin.create({
       name,
       email,
       password,
-      role: role || 'CITY_ADMIN',
+      role: normalizedRole,
       cityId: cityId || null,
       cityName: cityName || '',
+      zoneId: zoneId || null,
+      zoneName: zoneName || '',
+      assignedZones: assignedZones || (zoneId ? [zoneId] : []),
       assignedCities: assignedCities || [],
       permissions: permissionsArray,
       canApproveVendors: canApproveVendors || false,
@@ -76,16 +90,19 @@ const createAdmin = async (req, res) => {
       createdBySuperAdmin: true
     });
 
-    await admin.populate('assignedCities', 'name slug');
+    await admin.populate(['assignedCities', 'assignedZones', 'zoneId']);
 
     res.status(201).json({
       success: true,
-      message: 'City Admin created successfully',
+      message: 'Admin created successfully',
       data: {
         id: admin._id,
         name: admin.name,
         email: admin.email,
         role: admin.role,
+        zoneId: admin.zoneId,
+        zoneName: admin.zoneName,
+        assignedZones: admin.assignedZones,
         assignedCities: admin.assignedCities,
         permissions: admin.permissions,
         canApproveVendors: admin.canApproveVendors,
@@ -266,7 +283,7 @@ module.exports = {
   updateAdmin: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, password, role, cityId, cityName, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors } = req.body;
+      const { name, email, password, role, cityId, cityName, zoneId, zoneName, assignedZones, assignedCities, canApproveVendors, canApproveWorkers, assignedVendors } = req.body;
 
       // Find admin
       let admin = await Admin.findById(id);
@@ -288,6 +305,9 @@ module.exports = {
       if (password) admin.password = password; // Pre-save hook will hash it
       if (cityId !== undefined) admin.cityId = cityId || null;
       if (cityName !== undefined) admin.cityName = cityName || '';
+      if (zoneId !== undefined) admin.zoneId = zoneId || null;
+      if (zoneName !== undefined) admin.zoneName = zoneName || '';
+      if (assignedZones !== undefined) admin.assignedZones = assignedZones;
       if (assignedCities !== undefined) admin.assignedCities = assignedCities;
       if (canApproveVendors !== undefined) admin.canApproveVendors = canApproveVendors;
       if (canApproveWorkers !== undefined) admin.canApproveWorkers = canApproveWorkers;
@@ -300,7 +320,7 @@ module.exports = {
         }).filter(p => PERMISSION_KEYS.includes(p.key));
       }
 
-      const validRoles = ['SUPER_ADMIN', 'CITY_ADMIN', 'super_admin', 'admin'];
+      const validRoles = ['SUPER_ADMIN', 'CITY_ADMIN', 'ZONE_ADMIN', 'super_admin', 'admin', 'zone_admin', 'city_admin'];
       if (role && validRoles.includes(role)) {
         if (id === req.user.id && role === 'CITY_ADMIN') {
           return res.status(400).json({ success: false, message: 'Cannot demote yourself' });
