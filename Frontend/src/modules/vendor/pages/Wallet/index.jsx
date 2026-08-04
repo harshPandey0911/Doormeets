@@ -342,7 +342,6 @@ const Wallet = () => {
                 <h2 className="text-3xl md:text-4xl font-black">{displayCredits}</h2>
                 <span className="text-blue-200 font-medium text-xs md:text-sm">Credits</span>
               </div>
-              <p className="text-[10px] text-blue-200 mt-0.5">1 Credit = ₹10</p>
             </div>
             
             <div 
