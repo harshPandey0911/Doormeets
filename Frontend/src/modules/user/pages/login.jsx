@@ -7,6 +7,7 @@ import { userAuthService } from '../../../services/authService';
 import Logo from '../../../components/common/Logo';
 import LogoLoader from '../../../components/common/LogoLoader';
 import loginIllustration from '../../../assets/images/loginpage.png';
+import loginIllustrationDark from '../../../assets/images/pages/Home/loginpageDark.png';
 import { useTheme } from '../../../context/ThemeContext';
 
 import { z } from "zod";
@@ -46,7 +47,7 @@ const Login = () => {
     const imgLight = new Image();
     imgLight.src = loginIllustration;
     const imgDark = new Image();
-    imgDark.src = '/loginpageDark.png';
+    imgDark.src = loginIllustrationDark;
   }, []);
 
   // Auto-focus logic
@@ -213,7 +214,7 @@ const Login = () => {
             style={{ transform: 'scale(1.05)' }}
           />
           <img
-            src="/loginpageDark.png"
+            src={loginIllustrationDark}
             alt="Login Illustration Dark"
             loading="eager"
             fetchPriority="high"
