@@ -126,7 +126,7 @@ const Home = () => {
   }, []);
 
 
-  const handleAddressSave = (savedHouseNumber, locationObj) => {
+  const handleAddressSave = async (savedHouseNumber, locationObj) => {
     if (locationObj) {
       const newAddress = locationObj.address;
       setAddress(newAddress);
@@ -135,6 +135,26 @@ const Home = () => {
       if (locationObj.lat && locationObj.lng) {
         localStorage.setItem('user_lat', locationObj.lat);
         localStorage.setItem('user_lng', locationObj.lng);
+
+        // Resolve zone immediately by coordinates
+        try {
+          const { zoneService, publicCatalogService } = await import('../../../../services/catalogService');
+          const zRes = await zoneService.resolveByCoordinates(locationObj.lat, locationObj.lng);
+          publicCatalogService.invalidateCache();
+          if (zRes.success && zRes.zone && zRes.zone.id) {
+            localStorage.setItem('user_zone_id', zRes.zone.id);
+            localStorage.setItem('user_zone_name', zRes.zone.name);
+            localStorage.removeItem('nearest_zone_info');
+          } else {
+            localStorage.removeItem('user_zone_id');
+            localStorage.removeItem('user_zone_name');
+            if (zRes.nearestZone) {
+              localStorage.setItem('nearest_zone_info', JSON.stringify(zRes.nearestZone));
+            }
+          }
+        } catch (zErr) {
+          console.error('Address save zone error:', zErr);
+        }
       }
 
       // Try to parse city from location object (Google Places)
@@ -211,9 +231,14 @@ const Home = () => {
                     const { zoneService } = await import('../../../../services/catalogService');
                     const zRes = await zoneService.resolveByCoordinates(latitude, longitude);
                     if (zRes.success && zRes.zone && zRes.zone.id) {
+                      const oldZoneId = localStorage.getItem('user_zone_id');
                       localStorage.setItem('user_zone_id', zRes.zone.id);
                       localStorage.setItem('user_zone_name', zRes.zone.name);
                       localStorage.removeItem('nearest_zone_info');
+                      if (oldZoneId !== zRes.zone.id) {
+                        apiCache.invalidatePrefix('public:');
+                        setCategories([]);
+                      }
                     } else {
                       localStorage.removeItem('user_zone_id');
                       localStorage.removeItem('user_zone_name');
