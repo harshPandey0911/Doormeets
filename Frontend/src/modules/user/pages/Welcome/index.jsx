@@ -52,17 +52,17 @@ const Welcome = () => {
 
   React.useEffect(() => {
     const hasSeen = localStorage.getItem('hasSeenWelcome') === 'true';
-    if (isDesktop || hasSeen) {
+    if (hasSeen) {
       const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
       if (token) {
         navigate('/user/home', { replace: true });
       } else {
-        navigate(isDesktop ? '/user/home' : '/user/login', { replace: true });
+        navigate('/user/login', { replace: true });
       }
     }
-  }, [isDesktop, navigate]);
+  }, [navigate]);
 
-  if (isDesktop || localStorage.getItem('hasSeenWelcome') === 'true') {
+  if (localStorage.getItem('hasSeenWelcome') === 'true') {
     return null;
   }
 
@@ -175,12 +175,12 @@ const Welcome = () => {
         .bottom-card {
           background-color: ${isDark ? '#18181b' : '#FFFFFF'};
           border-top: ${isDark ? '1px solid #27272a' : 'none'};
-          border-top-left-radius: 24px;
-          border-top-right-radius: 24px;
-          padding: 40px 32px;
+          border-top-left-radius: 20px;
+          border-top-right-radius: 20px;
+          padding: 24px 20px 20px 20px;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 14px;
           box-shadow: ${isDark ? '0 -4px 25px rgba(0, 0, 0, 0.4)' : '0 -4px 20px rgba(0, 0, 0, 0.05)'};
           z-index: 10;
           transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -188,8 +188,8 @@ const Welcome = () => {
 
         .bottom-card-title {
           color: ${isDark ? '#FFFFFF' : '#1C1C1E'};
-          font-size: clamp(16px, 4.8vw, 20px);
-          font-weight: 600;
+          font-size: clamp(15px, 4.2vw, 18px);
+          font-weight: 700;
           line-height: 1.3;
           margin: 0;
           white-space: nowrap;
@@ -200,18 +200,19 @@ const Welcome = () => {
 
         .bottom-card-desc {
           color: ${isDark ? '#a1a1aa' : '#5A5D75'};
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 400;
-          line-height: 1.6;
+          line-height: 1.45;
           margin: 0;
-          min-height: 70px;
+          min-height: 48px;
+          text-align: center;
         }
 
         .controls-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-top: 10px;
+          margin-top: 4px;
         }
 
         .pagination-dots {
@@ -253,9 +254,9 @@ const Welcome = () => {
         }
 
         .next-btn {
-          width: 56px;
-          height: 48px;
-          border-radius: 14px;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
           background-color: #B33A35;
           border: none;
           display: flex;
@@ -263,9 +264,9 @@ const Welcome = () => {
           justify-content: center;
           cursor: pointer;
           color: #FFFFFF;
-          font-size: 18px;
+          font-size: 14px;
           transition: transform 0.2s, background-color 0.2s;
-          box-shadow: 0 4px 14px rgba(179, 58, 53, 0.3);
+          box-shadow: 0 3px 10px rgba(179, 58, 53, 0.3);
         }
 
         .next-btn:active {
@@ -280,7 +281,7 @@ const Welcome = () => {
         }
       `}</style>
 
-      <div className="onboarding-root" style={{ backgroundColor: isDark ? '#09090b' : currentSlide.bgColor }}>
+      <div className="onboarding-root" style={{ backgroundColor: isDark ? '#121215' : currentSlide.bgColor }}>
         {/* Skip button at top right */}
         <button 
           className="skip-btn" 
@@ -320,10 +321,6 @@ const Welcome = () => {
                 alt={currentSlide.title}
                 className="slide-image transition-all duration-300"
                 draggable="false"
-                style={{
-                  filter: isDark ? 'invert(0.92) hue-rotate(180deg) contrast(105%)' : 'none',
-                  mixBlendMode: isDark ? 'screen' : 'normal'
-                }}
               />
             </motion.div>
           </AnimatePresence>

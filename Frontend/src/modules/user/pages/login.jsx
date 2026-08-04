@@ -7,6 +7,7 @@ import { userAuthService } from '../../../services/authService';
 import Logo from '../../../components/common/Logo';
 import LogoLoader from '../../../components/common/LogoLoader';
 import loginIllustration from '../../../assets/images/loginpage.png';
+import loginIllustrationDark from '../../../assets/images/pages/Home/loginpageDark.png';
 import { useTheme } from '../../../context/ThemeContext';
 
 import { z } from "zod";
@@ -40,6 +41,14 @@ const Login = () => {
   // Refs for focus management
   const phoneInputRef = useRef(null);
   const otpInputRefs = useRef([]);
+
+  // Preload login illustrations immediately
+  useEffect(() => {
+    const imgLight = new Image();
+    imgLight.src = loginIllustration;
+    const imgDark = new Image();
+    imgDark.src = loginIllustrationDark;
+  }, []);
 
   // Auto-focus logic
   useEffect(() => {
@@ -199,12 +208,16 @@ const Login = () => {
           <img
             src={loginIllustration}
             alt="Login Illustration Light"
+            loading="eager"
+            fetchPriority="high"
             className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'hidden' : 'block'}`}
             style={{ transform: 'scale(1.05)' }}
           />
           <img
-            src="/loginpageDark.png"
+            src={loginIllustrationDark}
             alt="Login Illustration Dark"
+            loading="eager"
+            fetchPriority="high"
             className={`w-full h-full object-cover scale-105 transition-all duration-300 ${isDark ? 'block' : 'hidden'}`}
             style={{ transform: 'scale(1.05)' }}
           />
